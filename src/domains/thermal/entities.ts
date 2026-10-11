@@ -2,6 +2,7 @@ import type { AnyEntity, Device, PortSpec, Transform } from '../../core/entity.j
 import { entityId } from '../../core/ids.js';
 import { ORIGIN, type Vec2 } from '../../core/math/vec2.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { specificEnthalpy, type PhaseParams } from './phase.js';
 import { joules, type Joules, type Kelvin, type Kilograms, type SpecificHeat, type Watts } from '../../core/units.js';
 
 /**
@@ -14,13 +15,25 @@ const SURFACE: readonly PortSpec<ThermalPortName>[] = [{ name: 'surface', domain
 
 // ---------- Body: block of matter (water, copper cube, brick) ----------
 export interface ThermalBodyParams {
+  /** Initial mass. Boiling can reduce it — see state.boiledOff. */
   readonly mass: Kilograms;
+  /** Specific heat of the liquid (or of the only phase, for bodies without phase data). */
   readonly specificHeat: SpecificHeat;
+  /** Melting / boiling data — present for substances that can change phase in the experiment. */
+  readonly phase?: PhaseParams;
+  /** Key in the substance catalog, when the body is made of a catalog substance. */
+  readonly substance?: string;
   /** Key in MATERIALS the values came from — lets explanations cite the data source. */
   readonly material?: string;
 }
 export interface ThermalBodyState {
   readonly temperature: Kelvin;
+  /** 0 — all liquid, 1 — all solid; between — melting/freezing in progress. */
+  readonly solidFraction?: number;
+  /** Mass that has boiled away, kg. */
+  readonly boiledOff?: number;
+  /** Energy the vapour carried away, J (relative to the same 0 °C reference). */
+  readonly vaporEnergy?: number;
 }
 export type ThermalBody = Device<'thermal.body', ThermalBodyParams, ThermalBodyState, ThermalPortName>;
 
@@ -91,21 +104,37 @@ function assertTemperature(t: Kelvin): void {
 }
 
 export function thermalBody(
-  o: Common & ThermalBodyParams & { readonly temperature: Kelvin },
+  o: Common & ThermalBodyParams & { readonly temperature: Kelvin; readonly solidFraction?: number },
 ): ThermalBody {
   assertPositive('mass', o.mass);
   assertPositive('specificHeat', o.specificHeat);
   assertTemperature(o.temperature);
+  // Below the melting point a body with phase data is solid, above — liquid, unless stated.
+  const mp = o.phase?.meltingPoint;
+  const solid = o.phase && mp !== undefined ? (o.solidFraction ?? (o.temperature < mp ? 1 : 0)) : undefined;
   return {
     id: entityId(o.id),
     kind: 'thermal.body',
     ...withLabel(o.label),
     transform: transform(o.position),
     ports: SURFACE,
-    params: { mass: o.mass, specificHeat: o.specificHeat, ...(o.material === undefined ? {} : { material: o.material }) },
-    state: { temperature: o.temperature },
+    params: {
+      mass: o.mass,
+      specificHeat: o.specificHeat,
+      ...(o.material === undefined ? {} : { material: o.material }),
+      ...(o.phase === undefined ? {} : { phase: o.phase }),
+      ...(o.substance === undefined ? {} : { substance: o.substance }),
+    },
+    state: { temperature: o.temperature, ...(solid === undefined ? {} : { solidFraction: solid }) },
   };
 }
+
+/** Current mass of a body (what has not boiled away). */
+export const bodyMass = (e: ThermalBody | Heater): number => e.params.mass - (('boiledOff' in e.state ? e.state.boiledOff : 0) ?? 0);
+
+/** Energy stored in a body, J, relative to liquid at 0 °C (latent heat included). */
+export const bodyEnergy = (e: ThermalBody | Heater): number =>
+  bodyMass(e) * specificEnthalpy(e.state.temperature, ('solidFraction' in e.state ? e.state.solidFraction : 0) ?? 0, e.params.specificHeat, 'phase' in e.params ? e.params.phase : undefined);
 
 export function heater(
   o: Common & ThermalBodyParams & { readonly power: Watts; readonly on?: boolean; readonly device?: string; readonly temperature: Kelvin },
@@ -155,6 +184,39 @@ export function burner(o: Common & { readonly power: Watts; readonly on?: boolea
     ports: SURFACE,
     params: { power: o.power, on: o.on ?? true, ...(o.device === undefined ? {} : { device: o.device }) },
     state: { energyDelivered: joules(0) },
+  };
+}
+
+// ---------- Thermostat: switches a heater to hold a target temperature ----------
+export interface ThermostatParams {
+  /** Body whose temperature is measured. */
+  readonly sensor: string;
+  /** Heater or burner it switches. */
+  readonly actuator: string;
+  readonly target: Kelvin;
+  /** Switching band below the target, K (a real thermostat clicks, it does not hold exactly). */
+  readonly hysteresis: number;
+}
+export interface ThermostatState {
+  /** Is it letting the heater work right now? */
+  readonly heating: boolean;
+  /** How many times it switched the heater on or off. */
+  readonly switches: number;
+}
+export type Thermostat = Device<'thermal.thermostat', ThermostatParams, ThermostatState, ThermalPortName>;
+
+export const isThermostat = (e: AnyEntity): e is Thermostat => e.kind === 'thermal.thermostat';
+
+export function thermostat(o: Common & { readonly sensor: string; readonly actuator: string; readonly target: Kelvin; readonly hysteresis?: number }): Thermostat {
+  assertTemperature(o.target);
+  return {
+    id: entityId(o.id),
+    kind: 'thermal.thermostat',
+    ...withLabel(o.label),
+    transform: transform(o.position),
+    ports: SURFACE,
+    params: { sensor: o.sensor, actuator: o.actuator, target: o.target, hysteresis: o.hysteresis ?? 1 },
+    state: { heating: true, switches: 0 },
   };
 }
 

@@ -11,3 +11,5 @@ export * from './explain.js';
 export * from './debrief.js';
 export * from './energy.js';
 export * from './assembly.js';
+export * from './substance.js';
+export * from './phase.js';

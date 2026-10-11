@@ -63,6 +63,9 @@ export const timeConstant = (c: HeatCapacity, g: ThermalConductance): Seconds =>
 export const newtonCooling = (t0: Kelvin, tEnv: Kelvin, tau: Seconds, t: Seconds): Kelvin =>
   kelvin(tEnv + (t0 - tEnv) * Math.exp(-t / tau));
 
+/** Q = λ·m — heat to melt (or released when freezing) / to vaporise a mass m. */
+export const latentHeat = (m: Kilograms, lambda: number): Joules => joules(m * lambda);
+
 /** E = P·t — energy delivered by a source of constant power P during t. */
 export const energyFromPower = (p: Watts, t: Seconds): Joules => joules(p * t);
 

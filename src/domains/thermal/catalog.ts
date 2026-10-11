@@ -85,6 +85,43 @@ export const THERMAL_FORMULAS: readonly FormulaSpec[] = [
     reviewed: false,
   }),
   defineFormula({
+    id: 'thermal.latent-heat',
+    law: 'latent-heat',
+    title: { uk: 'Теплота плавлення / пароутворення', en: 'Latent heat of melting / vaporisation' },
+    latex: 'Q = \\lambda \\cdot m',
+    plain: 'Q = λ · m',
+    argSymbols: ['m', 'λ'],
+    resultSymbol: 'Q',
+    variables: {
+      Q: { name: { uk: 'кількість теплоти', en: 'heat' }, unit: 'J' },
+      m: { name: { uk: 'маса, що розплавилась (застигла) чи випарувалась', en: 'mass that melted (froze) or boiled away' }, unit: 'kg' },
+      λ: {
+        name: { uk: 'питома теплота плавлення або пароутворення', en: 'specific latent heat of fusion or vaporisation' },
+        unit: 'J/kg',
+        meaning: { school: { uk: 'скільки джоулів потрібно, щоб перетворити 1 кг речовини без зміни температури', en: 'joules needed to change the phase of 1 kg without changing its temperature' } },
+      },
+    },
+    curriculum: [
+      { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Розрахунок кількості теплоти при пароутворенні /конденсації.' },
+      { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Розрахунок кількості теплоти при плавленні/твердненні тіл.' },
+      { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Розрахунок кількості теплоти при пароутворенні/конденсації.' },
+    ],
+    explanation: {
+      novice: {
+        uk: 'Щоб розтопити лід чи випарувати воду, потрібно багато енергії, хоча термометр при цьому показує те саме.',
+        en: 'Melting ice or boiling water away takes a lot of energy, even though the thermometer shows the same number.',
+      },
+      school: {
+        uk: 'Щоб розплавити 1 кг льоду, потрібно ≈ 334 кДж — стільки ж, скільки, щоб нагріти 1 кг води майже на 80 °C. А щоб випарувати 1 кг води — ≈ 2256 кДж, у кілька разів більше.',
+        en: 'Melting 1 kg of ice takes ≈ 334 kJ — as much as warming 1 kg of water by almost 80 °C. Boiling away 1 kg of water takes ≈ 2256 kJ, several times more.',
+      },
+    },
+    compute: f.latentHeat,
+    examples: [{ args: [kilograms(0.5), 334_000], expected: 167_000, note: 'Розплавити 0,5 кг льоду' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
     id: 'thermal.heat-capacity',
     law: 'specific-heat',
     title: { uk: 'Теплоємність тіла', en: 'Heat capacity of a body' },

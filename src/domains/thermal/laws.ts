@@ -119,6 +119,50 @@ export const THERMAL_LAWS: readonly LawSpec[] = [
     },
   },
   {
+    id: 'latent-heat',
+    kind: 'law',
+    name: { uk: 'Прихована теплота: плавлення і кипіння', en: 'Latent heat: melting and boiling' },
+    statement: {
+      novice: {
+        uk: 'Поки лід тане або вода кипить, її температура не змінюється: уся теплота йде на перетворення — твердого на рідину чи рідини на пару.',
+        en: 'While ice melts or water boils, its temperature does not change: all the heat goes into the change itself — solid to liquid or liquid to vapour.',
+      },
+      school: {
+        uk: 'Щоб розплавити тіло масою m при температурі плавлення, потрібно Q = λ·m (λ — питома теплота плавлення); щоб випарувати при кипінні — Q = r·m (r — питома теплота пароутворення). Під час тверднення й конденсації стільки ж теплоти виділяється.',
+        en: 'Melting a mass m at its melting point takes Q = λ·m (λ — specific latent heat of fusion); boiling it away takes Q = r·m (r — latent heat of vaporisation). Freezing and condensing release the same amount.',
+      },
+      expert: {
+        uk: 'У моделі тіло зберігає ентальпію; на площадці фазового переходу температура стала, а змінюється частка твердої фази або маса (пара залишає систему разом зі своєю енергією).',
+        en: 'In the model a body stores enthalpy; on a phase-change plateau the temperature is constant while the solid fraction or the mass changes (vapour leaves with its energy).',
+      },
+    },
+    history: {
+      people: [BLACK],
+      role: 'discovered',
+      when: '1761',
+      story: {
+        novice: {
+          uk: 'Джозеф Блек помітив: якщо гріти лід, що тане, його температура не росте, доки весь лід не розтане.',
+          en: 'Joseph Black noticed: if you heat melting ice, its temperature does not rise until all the ice has melted.',
+        },
+        school: {
+          uk: 'У 1761 році Джозеф Блек помітив, що теплота, яку отримує лід у точці плавлення або вода в точці кипіння, не підвищує температуру, а збільшує кількість води чи пари. Він назвав цю теплоту «прихованою».',
+          en: 'In 1761 Joseph Black observed that heat added to ice at its melting point, or to water at its boiling point, does not raise the temperature but increases the amount of water or steam. He called this heat «latent».',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-joseph-black', locator: 'Latent heat', claim: 'In 1761 Black observed that heat applied at the melting/boiling point increases the amount of water/steam rather than the temperature; latent heat' },
+        { source: 'wikidata', locator: 'Q272512 (P569, P570)', claim: 'life dates' },
+      ],
+    },
+    limits: {
+      school: {
+        uk: 'Температура кипіння залежить від тиску (в горах вода кипить за нижчої температури); у моделі тиск — нормальний атмосферний.',
+        en: 'The boiling point depends on pressure (water boils at a lower temperature in the mountains); the model assumes normal atmospheric pressure.',
+      },
+    },
+  },
+  {
     id: 'heat-balance',
     kind: 'law',
     name: { uk: 'Рівняння теплового балансу', en: 'Heat balance' },
