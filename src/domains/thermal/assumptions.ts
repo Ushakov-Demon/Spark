@@ -24,19 +24,19 @@ export const THERMAL_ASSUMPTIONS: readonly ModelAssumption[] = [
     },
   },
   {
-    id: 'thermal.no-phase-change',
+    id: 'thermal.phases',
     text: {
       novice: {
-        uk: 'Поки що модель не вміє кип’ятити й заморожувати воду: вище 100 °C вода в ній просто гріється далі.',
-        en: 'The model cannot boil or freeze water yet: above 100 °C the water simply keeps warming.',
+        uk: 'Швидкість випаровування в моделі — наближена: справжня залежить ще й від того, як рухається повітря.',
+        en: 'The evaporation rate in the model is approximate: the real one also depends on how the air moves.',
       },
       school: {
-        uk: 'Кипіння, випаровування і плавлення поки не враховуються: вище 100 °C вода в моделі залишається рідиною і продовжує нагріватися.',
-        en: 'Boiling, evaporation and melting are not modelled yet: above 100 °C the water stays liquid and keeps heating.',
+        uk: 'Тиск — нормальний атмосферний (від нього залежить температура кипіння). Швидкість випаровування — оцінка порядку величини. Прихована теплота пароутворення змінюється з температурою, у моделі — за двома табличними точками.',
+        en: 'Pressure is normal atmospheric (the boiling point depends on it). The evaporation rate is an order-of-magnitude estimate. The latent heat of vaporisation changes with temperature; the model interpolates between two table points.',
       },
       expert: {
-        uk: 'Фазові переходи і прихована теплота не моделюються; температура не обмежена точкою кипіння.',
-        en: 'Phase changes and latent heat are not modelled; temperature is not capped at the boiling point.',
+        uk: 'Ентальпійна модель із фазовими площадками; кипіння — за надлишком ентальпії над рідиною в точці кипіння; випаровування — аналогія Чилтона — Колберна (Le^(2/3) ≈ 0,9), густина повітря стала; конденсація на рідину з вологого повітря не враховується.',
+        en: 'Enthalpy model with phase plateaus; boiling from the enthalpy excess over the liquid at the boiling point; evaporation via the Chilton–Colburn analogy (Le^(2/3) ≈ 0.9), constant air density; condensation from humid air onto the liquid is ignored.',
       },
     },
   },

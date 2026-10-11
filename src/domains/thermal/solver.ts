@@ -22,6 +22,7 @@ import {
 } from './entities.js';
 import { isSupplyLink, isThermalLink, type SupplyLink, type ThermalLink } from './links.js';
 import { decodeEnthalpy, specificHeatAt, type PhaseParams } from './phase.js';
+import { latentAt, massTransferCoefficient, saturationDensity, saturationPressure, type EvaporationParams } from './evaporation.js';
 
 /**
  * Lumped thermal network solver.
@@ -48,6 +49,9 @@ interface Node {
   readonly finite: boolean;
   readonly cLiquid: number;
   readonly phase: PhaseParams | undefined;
+  readonly evaporation: EvaporationParams | undefined;
+  /** Air reservoirs: relative humidity (water vapour already in the air). */
+  readonly humidity: number;
   /** Current mass (shrinks while boiling). */
   mass: number;
   /** Stored energy, J (finite nodes). */
@@ -62,6 +66,8 @@ interface Node {
   boiled: number;
   vapor: number;
   melted: number;
+  /** This tick: mass evaporated from the open surface (its energy went to the air). */
+  evaporated: number;
 }
 
 interface Edge {
@@ -71,6 +77,11 @@ interface Edge {
   readonly link: ThermalLink;
   /** Net energy a → b during this step (only tracked when tracing). */
   moved: number;
+  /** Free liquid surface: evaporation goes along this link too. */
+  readonly surface: boolean;
+  /** Latent heat carried a → b by vapour this step, J; mass evaporated, kg. */
+  vaporEnergy: number;
+  vaporMass: number;
 }
 
 /** Below this mass a body counts as boiled dry, kg. */
@@ -122,11 +133,14 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         index.set(e.id, nodes.length);
         const reservoir = isReservoir(e);
         const phase = !reservoir && 'phase' in e.params ? e.params.phase : undefined;
+        const evaporation = !reservoir && 'evaporation' in e.params ? e.params.evaporation : undefined;
         nodes.push({
           entity: e,
           finite: !reservoir,
           cLiquid: reservoir ? 0 : e.params.specificHeat,
           phase,
+          evaporation,
+          humidity: reservoir ? (e.params.humidity ?? 0) : 0,
           mass: reservoir ? 0 : bodyMass(e),
           energy: reservoir ? 0 : bodyEnergy(e),
           temperature: temperatureOf(e),
@@ -138,6 +152,7 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           boiled: 0,
           vapor: 0,
           melted: 0,
+          evaporated: 0,
         });
       }
       if (nodes.length === 0) return state;
@@ -163,9 +178,20 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         const a = index.get(c.a.entity);
         const b = index.get(c.b.entity);
         if (a === undefined || b === undefined || a === b || c.params.conductance === 0) continue;
-        edges.push({ a, b, g: c.params.conductance, link: c, moved: 0 });
+        const surface = c.params.origin?.type === 'convection' && c.params.origin.surface === true;
+        edges.push({ a, b, g: c.params.conductance, link: c, moved: 0, surface, vaporEnergy: 0, vaporMass: 0 });
         nodes[a]!.sumG += c.params.conductance;
         nodes[b]!.sumG += c.params.conductance;
+        // Evaporation behaves like an extra (strongly temperature-dependent) conductance: include it in the stability limit.
+        const ev = nodes[a]!.evaporation;
+        if (surface && ev && c.params.origin?.type === 'convection') {
+          const n = nodes[a]!;
+          const hm = massTransferCoefficient(c.params.origin.coefficient);
+          const T = n.temperature;
+          const gEv = hm * c.params.origin.area * latentAt(ev, T) * (saturationDensity(ev, T + 0.5) - saturationDensity(ev, T - 0.5));
+          n.sumG += gEv;
+          if (nodes[b]!.finite) nodes[b]!.sumG += gEv;
+        }
       }
 
       // 3. Choose sub-step from the stiffest finite node.
@@ -190,7 +216,13 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         for (const edge of edges) {
           const { a, b, g } = edge;
           if (isDry(nodes[a]!) || isDry(nodes[b]!)) continue;
-          const q = g * (nodes[a]!.temperature - nodes[b]!.temperature); // W, a → b
+          let q = g * (nodes[a]!.temperature - nodes[b]!.temperature); // W, a → b
+          // Under a lid: vapour condenses on it and drips back — no mass is lost, its latent heat is.
+          if (edge.surface && nodes[b]!.finite) {
+            const qv = vaporFlux(nodes[a]!, edge, nodes[b]!).energy;
+            q += qv;
+            edge.vaporEnergy += qv * h;
+          }
           flow[a]! -= q;
           flow[b]! += q;
           if (trace) {
@@ -220,18 +252,67 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
             const hBoil = n.cLiquid * (n.phase.boilingPoint - ZERO_CELSIUS_IN_KELVIN);
             const dm = Math.min(n.mass, (n.mass * d.excess) / lv);
             // Boiled dry: whatever energy is left leaves with the last vapour.
-            const carried = dm >= n.mass - DRY_MASS ? n.energy : dm * (hBoil + lv);
-            n.mass -= dm;
-            n.energy -= carried;
+            const dry = dm >= n.mass - DRY_MASS;
+            const carried = dry ? n.energy : dm * (hBoil + lv);
+            n.mass = dry ? 0 : n.mass - dm;
+            n.energy = dry ? 0 : n.energy - carried;
             n.boiled += dm;
             n.vapor += carried;
             if (trace) given[i]! += carried;
+          }
+        }
+        // Open surface: vapour leaves into the air with its mass and energy.
+        for (const edge of edges) {
+          if (!edge.surface) continue;
+          const n = nodes[edge.a]!;
+          const air = nodes[edge.b]!;
+          if (air.finite || isDry(n) || !n.evaporation) continue;
+          const f = vaporFlux(n, edge, air);
+          let dm = Math.min(n.mass, f.mass * h);
+          if (!(dm > 0)) continue;
+          let carried = dm * (n.cLiquid * (n.temperature - ZERO_CELSIUS_IN_KELVIN) + latentAt(n.evaporation, n.temperature));
+          if (n.mass - dm <= DRY_MASS) {
+            // Evaporated completely: the rest of its energy leaves with the last vapour.
+            dm = n.mass;
+            carried = n.energy;
+            n.mass = 0;
+            n.energy = 0;
+          } else {
+            n.mass -= dm;
+            n.energy -= carried;
+            const d = decodeEnthalpy(n.energy / n.mass, n.cLiquid, n.phase);
+            n.temperature = d.temperature;
+            n.solidFraction = d.solidFraction;
+          }
+          air.reservoirHeat += carried;
+          n.evaporated += dm;
+          edge.vaporEnergy += carried;
+          edge.vaporMass += dm;
+          if (trace) {
+            given[edge.a]! += carried;
           }
         }
       }
 
       if (trace) {
         traceStep(trace, nodes, edges, t0, m0, received, given, dt, substeps);
+        for (const e of edges) {
+          if (!e.surface || !nodes[e.a]!.evaporation || e.vaporEnergy === 0) continue;
+          const a = nodes[e.a]!;
+          const ev = a.evaporation!;
+          trace.record({ kind: 'transfer', connection: `${e.link.id}:vapour`, a: a.entity.id, b: nodes[e.b]!.entity.id, quantity: 'energy', amount: e.vaporEnergy });
+          if (e.link.params.origin?.type === 'convection') {
+            const hm = massTransferCoefficient(e.link.params.origin.coefficient);
+            const area = e.link.params.origin.area * (1 - a.solidFraction);
+            const rs = saturationDensity(ev, t0[e.a]!);
+            const rInf = ambientVapour(a, nodes[e.b]!, ev);
+            trace.record({ kind: 'formula', formula: 'thermal.evaporation-rate', entities: [a.entity.id, nodes[e.b]!.entity.id], args: [hm, area, rs, rInf], output: hm * area * (rs - rInf) });
+          }
+          if (e.vaporMass > 0) {
+            const L = latentAt(ev, a.temperature);
+            trace.record({ kind: 'formula', formula: 'thermal.latent-heat', entities: [a.entity.id], args: [e.vaporMass, L], output: e.vaporMass * L });
+          }
+        }
         for (const s of supplies) {
           trace.record({ kind: 'transfer', connection: s.link.id, a: s.burner.id, b: nodes[s.target]!.entity.id, quantity: 'energy', amount: s.power * dt });
         }
@@ -251,12 +332,14 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         const body = e as ThermalBody;
         const boiledOff = (body.state.boiledOff ?? 0) + n.boiled;
         const vaporEnergy = (body.state.vaporEnergy ?? 0) + n.vapor;
+        const evaporated = (body.state.evaporated ?? 0) + n.evaporated;
         return {
           ...body,
           state: {
             temperature,
             ...(n.phase ? { solidFraction: n.solidFraction } : {}),
             ...(boiledOff > 0 ? { boiledOff, vaporEnergy } : {}),
+            ...(evaporated > 0 ? { evaporated } : {}),
           },
         };
       });
@@ -268,6 +351,23 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
       return withEntities(state, updated);
     },
   };
+}
+
+/** Water vapour already in the air (humid room); none for other substances' vapour. Kg/m³. */
+function ambientVapour(liquid: Node, other: Node, ev: EvaporationParams): number {
+  if (other.finite) return saturationDensity(ev, other.temperature); // a lid: vapour condenses where it is saturated
+  return ev.vaporPressure.kind === 'buck' ? (other.humidity * saturationPressure(ev.vaporPressure, other.temperature) * ev.molarMass) / (8.31446261815324 * other.temperature) : 0;
+}
+
+/** Vapour leaving the liquid surface of edge `e`: mass rate (kg/s) and latent energy rate (W). Never negative (no condensation onto the liquid). */
+function vaporFlux(liquid: Node, e: Edge, other: Node): { readonly mass: number; readonly energy: number } {
+  const ev = liquid.evaporation;
+  const o = e.link.params.origin;
+  if (!ev || o?.type !== 'convection' || liquid.solidFraction >= 1) return { mass: 0, energy: 0 };
+  const hm = massTransferCoefficient(o.coefficient);
+  const area = o.area * (1 - liquid.solidFraction);
+  const mass = Math.max(0, hm * area * (saturationDensity(ev, liquid.temperature) - ambientVapour(liquid, other, ev)));
+  return { mass, energy: mass * latentAt(ev, liquid.temperature) };
 }
 
 /** Reports what this step computed, in terms of catalog formulas (see catalog.ts). */
@@ -318,7 +418,7 @@ function traceStep(
     if (n.phase?.latentVaporization && n.boiled > 0) {
       trace.record({ kind: 'formula', formula: 'thermal.latent-heat', entities: [id(i)], args: [n.boiled, n.phase.latentVaporization], output: n.boiled * n.phase.latentVaporization });
     }
-    if (!n.phase || (Math.abs(n.melted) === 0 && n.boiled === 0)) {
+    if ((!n.phase || (Math.abs(n.melted) === 0 && n.boiled === 0)) && n.evaporated === 0) {
       const dT = n.temperature - t0[i]!;
       const c = specificHeatAt(n.solidFraction, n.cLiquid, n.phase);
       trace.record({ kind: 'formula', formula: 'thermal.heat-for-temperature-change', entities: [id(i)], args: [m0[i]!, c, dT], output: m0[i]! * c * dT });

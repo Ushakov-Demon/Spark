@@ -41,6 +41,14 @@ export interface SubstanceItem {
     readonly point: SourcedValue; // °C
     readonly latentHeat: SourcedValue; // J/kg
   };
+  /** Evaporation below the boiling point. Absent: negligible (oil). */
+  readonly vapor?: {
+    readonly molarMass: SourcedValue; // kg/mol
+    readonly pressure: { readonly kind: 'buck' } | { readonly kind: 'antoine'; readonly A: number; readonly B: number; readonly C: number };
+    readonly pressureData: SourcedValue; // the source of the vapour-pressure equation
+    /** Latent heat at a lower temperature (it grows as temperature falls), °C and J/kg. */
+    readonly latentLow?: { readonly temperature: number; readonly value: SourcedValue };
+  };
   /** Temperature at which it starts to smoke / decompose, °C (oils). */
   readonly decomposes?: SourcedValue;
   /** Catches fire easily — never heated over an open flame in real life. */

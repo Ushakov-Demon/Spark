@@ -23,11 +23,11 @@ export const fixed = (v: number, decimals: number, locale: Locale): string =>
 /** Unit symbols per language (SI symbols are international, but Ukrainian uses Cyrillic ones). */
 const UNITS: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   uk: {
-    J: 'Дж', kJ: 'кДж', W: 'Вт', kg: 'кг', s: 'с', min: 'хв', m: 'м', 'm²': 'м²', K: 'K', '°C': '°C',
+    J: 'Дж', kJ: 'кДж', W: 'Вт', kg: 'кг', s: 'с', min: 'хв', 'J/kg': 'Дж/кг', 'kg/s': 'кг/с', 'm/s': 'м/с', 'kg/m³': 'кг/м³', m: 'м', 'm²': 'м²', K: 'K', '°C': '°C',
     'W/K': 'Вт/К', 'J/K': 'Дж/К', 'W/(m·K)': 'Вт/(м·К)', 'W/(m²·K)': 'Вт/(м²·К)', 'J/(kg·K)': 'Дж/(кг·К)', 'J/(kg·°C)': 'Дж/(кг·°C)',
   },
   en: {
-    J: 'J', kJ: 'kJ', W: 'W', kg: 'kg', s: 's', min: 'min', m: 'm', 'm²': 'm²', K: 'K', '°C': '°C',
+    J: 'J', kJ: 'kJ', W: 'W', kg: 'kg', s: 's', min: 'min', 'J/kg': 'J/kg', 'kg/s': 'kg/s', 'm/s': 'm/s', 'kg/m³': 'kg/m³', m: 'm', 'm²': 'm²', K: 'K', '°C': '°C',
     'W/K': 'W/K', 'J/K': 'J/K', 'W/(m·K)': 'W/(m·K)', 'W/(m²·K)': 'W/(m²·K)', 'J/(kg·K)': 'J/(kg·K)', 'J/(kg·°C)': 'J/(kg·°C)',
   },
 };

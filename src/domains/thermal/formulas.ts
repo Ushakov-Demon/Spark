@@ -66,6 +66,9 @@ export const newtonCooling = (t0: Kelvin, tEnv: Kelvin, tau: Seconds, t: Seconds
 /** Q = λ·m — heat to melt (or released when freezing) / to vaporise a mass m. */
 export const latentHeat = (m: Kilograms, lambda: number): Joules => joules(m * lambda);
 
+/** ṁ = h_m · A · (ρ_s − ρ_∞) — evaporation rate from a liquid surface, kg/s. */
+export const evaporationRate = (hm: number, area: SquareMeters, rhoSurface: number, rhoAir: number): number => hm * area * (rhoSurface - rhoAir);
+
 /** E = P·t — energy delivered by a source of constant power P during t. */
 export const energyFromPower = (p: Watts, t: Seconds): Joules => joules(p * t);
 

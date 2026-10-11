@@ -52,6 +52,12 @@ const LIST = {
       solidSpecificHeat: MATERIALS.ice.specificHeat,
       solidDensity: sv(916.7, 'kg/m³', 'ice at 0 °C', 'single-source', 0.01, [{ source: 'wikidata', locator: 'Q23392 density', conditions: '0 °C', value: 916.7 }], 'Ice is lighter than water — that is why it floats.'),
     },
+    vapor: {
+      molarMass: sv(0.01802, 'kg/mol', 'H₂O', 'single-source', 0.001, [{ source: 'wikidata', locator: 'Q283 mass (P2067)', conditions: '—', value: 0.01802 }]),
+      pressure: { kind: 'buck' },
+      pressureData: sv(101.3, 'kPa', 'Buck equation; value at 100 °C', 'single-source', 0.001, [{ source: 'wikipedia-vapour-pressure-water', locator: 'Buck equation; table 101.32 kPa at 100 °C', conditions: '0–100 °C', value: 101.32 }], 'Buck equation agrees with the table within 0.04 % over 0–100 °C.'),
+      latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [{ source: 'openstax-cp2e-latent', locator: 'Table 14.2 footnote: Lv at 37.0 °C', conditions: '37 °C', value: 2_430_000 }]) },
+    },
     boiling: {
       point: sv(100, '°C', '1 atm', 'cross-checked', 0.001, [
         { source: 'openstax-cp2e-latent', locator: 'Table 14.2, Water', conditions: '1 atm', value: 100 },
@@ -84,6 +90,13 @@ const LIST = {
       point: sv(-6.6, '°C', '10 % NaCl', 'single-source', 0.05, [{ source: 'texasbrine-nacl', locator: '10.0 % row: 20.2 °F', conditions: 'freezing point', value: -6.56 }], 'Consistent with the eutectic −21.1 °C at 23.3 % (Wikipedia, Brine).'),
       latentHeat: estimate(300_600, 'J/kg', 'ice freezing out of a 10 % solution', 280_000, 320_000, 'Estimate: latent heat of the water part (0.9 × 334 kJ/kg).'),
       solidSpecificHeat: estimate(2090, 'J/(kg·K)', 'frozen brine ≈ ice', 1800, 2300, 'Estimate: frozen brine is mostly ice.'),
+    },
+    vapor: {
+      // The water in the solution evaporates; salt lowers the vapour pressure a little (not modelled).
+      molarMass: sv(0.01802, 'kg/mol', 'H₂O', 'single-source', 0.001, [{ source: 'wikidata', locator: 'Q283 mass (P2067)', conditions: '—', value: 0.01802 }]),
+      pressure: { kind: 'buck' },
+      pressureData: sv(101.3, 'kPa', 'Buck equation; value at 100 °C', 'single-source', 0.001, [{ source: 'wikipedia-vapour-pressure-water', locator: 'Buck equation; table 101.32 kPa at 100 °C', conditions: '0–100 °C', value: 101.32 }], 'Buck equation agrees with the table within 0.04 % over 0–100 °C.'),
+      latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [{ source: 'openstax-cp2e-latent', locator: 'Table 14.2 footnote: Lv at 37.0 °C', conditions: '37 °C', value: 2_430_000 }]) },
     },
     boiling: {
       point: estimate(101.8, '°C', '10 % NaCl, 1 atm', 101, 102.5, 'Estimate by boiling-point elevation (Raoult); no direct measurement found.'),
@@ -120,6 +133,13 @@ const LIST = {
       point: sv(-16.4, '°C', '20 % NaCl', 'single-source', 0.05, [{ source: 'texasbrine-nacl', locator: '20.0 % row: 2.4 °F', conditions: 'freezing point', value: -16.44 }]),
       latentHeat: estimate(267_200, 'J/kg', 'ice freezing out of a 20 % solution', 240_000, 290_000, 'Estimate: 0.8 × 334 kJ/kg.'),
       solidSpecificHeat: estimate(2090, 'J/(kg·K)', 'frozen brine ≈ ice', 1800, 2300, 'Estimate.'),
+    },
+    vapor: {
+      // The water in the solution evaporates; salt lowers the vapour pressure a little (not modelled).
+      molarMass: sv(0.01802, 'kg/mol', 'H₂O', 'single-source', 0.001, [{ source: 'wikidata', locator: 'Q283 mass (P2067)', conditions: '—', value: 0.01802 }]),
+      pressure: { kind: 'buck' },
+      pressureData: sv(101.3, 'kPa', 'Buck equation; value at 100 °C', 'single-source', 0.001, [{ source: 'wikipedia-vapour-pressure-water', locator: 'Buck equation; table 101.32 kPa at 100 °C', conditions: '0–100 °C', value: 101.32 }], 'Buck equation agrees with the table within 0.04 % over 0–100 °C.'),
+      latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [{ source: 'openstax-cp2e-latent', locator: 'Table 14.2 footnote: Lv at 37.0 °C', conditions: '37 °C', value: 2_430_000 }]) },
     },
     boiling: {
       point: estimate(104, '°C', '20 % NaCl, 1 atm', 103, 105, 'Estimate by boiling-point elevation; no direct measurement found.'),
@@ -169,6 +189,11 @@ const LIST = {
       ]),
       latentHeat: sv(104_000, 'J/kg', 'at −114 °C', 'single-source', 0.01, [{ source: 'openstax-cp2e-latent', locator: 'Table 14.2, Ethyl alcohol', conditions: '1 atm', value: 104_000 }]),
       solidSpecificHeat: estimate(2000, 'J/(kg·K)', 'solid ethanol', 1500, 2500, 'Estimate; never reached in this lab (−114 °C).'),
+    },
+    vapor: {
+      molarMass: sv(0.046042, 'kg/mol', 'C₂H₅OH', 'single-source', 0.001, [{ source: 'wikidata', locator: 'Q153 mass (P2067)', conditions: '—', value: 0.046042 }]),
+      pressure: { kind: 'antoine', A: 8.04494, B: 1554.3, C: 222.65 },
+      pressureData: sv(760, 'mmHg', 'Antoine equation; value at 78.4 °C', 'single-source', 0.01, [{ source: 'wikipedia-ethanol-data', locator: 'Antoine constants; 760 mmHg at 78.4 °C', conditions: '°C, mmHg', value: 760 }], 'The equation gives 762 mmHg at 78.4 °C.'),
     },
     boiling: {
       point: sv(78.3, '°C', '1 atm', 'cross-checked', 0.01, [

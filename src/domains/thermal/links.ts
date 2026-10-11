@@ -12,7 +12,8 @@ import { conductionConductance, convectionConductance, seriesConductance } from 
 /** How G was obtained — lets the trace show the law behind each link. */
 export type ThermalLinkOrigin =
   | { readonly type: 'conduction'; readonly conductivity: ThermalConductivity; readonly area: SquareMeters; readonly length: Meters; readonly dataRef?: string }
-  | { readonly type: 'convection'; readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string }
+  /** `surface`: the free surface of a liquid — it also evaporates through this link. */
+  | { readonly type: 'convection'; readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string; readonly surface?: boolean }
   /** Vessel wall (conduction) in series with convection into the liquid. */
   | {
       readonly type: 'wall';
@@ -120,12 +121,12 @@ export const wallLink = (
 
 /** Surface ↔ fluid (air, water): G = h·A. `dataRef` = CONVECTION key of h. */
 export const convectionLink = (
-  o: LinkEnds & { readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string },
+  o: LinkEnds & { readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string; readonly surface?: boolean },
 ): ThermalLink =>
   thermalLink({
     id: o.id,
     a: o.a,
     b: o.b,
     conductance: convectionConductance(o.coefficient, o.area),
-    origin: { type: 'convection', coefficient: o.coefficient, area: o.area, ...ref(o.dataRef) },
+    origin: { type: 'convection', coefficient: o.coefficient, area: o.area, ...ref(o.dataRef), ...(o.surface ? { surface: true } : {}) },
   });

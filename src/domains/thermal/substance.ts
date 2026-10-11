@@ -1,9 +1,10 @@
 import { celsius } from '../../core/units.js';
 import type { SubstanceItem } from '../../substances/types.js';
+import type { EvaporationParams } from './evaporation.js';
 import type { PhaseParams } from './phase.js';
 
 /** Thermal view of a catalog substance: liquid heat capacity, density and phase changes (in K). */
-export function substanceThermal(s: SubstanceItem): { readonly specificHeat: number; readonly density: number; readonly phase?: PhaseParams } {
+export function substanceThermal(s: SubstanceItem): { readonly specificHeat: number; readonly density: number; readonly phase?: PhaseParams; readonly evaporation?: EvaporationParams } {
   const phase: PhaseParams = {
     ...(s.freezing
       ? { meltingPoint: celsius(s.freezing.point.value), latentFusion: s.freezing.latentHeat.value, specificHeatSolid: s.freezing.solidSpecificHeat.value }
@@ -11,5 +12,17 @@ export function substanceThermal(s: SubstanceItem): { readonly specificHeat: num
     ...(s.boiling ? { boilingPoint: celsius(s.boiling.point.value), latentVaporization: s.boiling.latentHeat.value } : {}),
   };
   const hasPhase = s.freezing !== undefined || s.boiling !== undefined;
-  return { specificHeat: s.liquid.specificHeat.value, density: s.liquid.density.value, ...(hasPhase ? { phase } : {}) };
+  const v = s.vapor;
+  const lv = s.boiling?.latentHeat.value;
+  const evaporation: EvaporationParams | undefined =
+    v && lv !== undefined
+      ? {
+          molarMass: v.molarMass.value,
+          vaporPressure: v.pressure,
+          latent: v.latentLow && s.boiling
+            ? { t1: celsius(v.latentLow.temperature), l1: v.latentLow.value.value, t2: celsius(s.boiling.point.value), l2: lv }
+            : lv,
+        }
+      : undefined;
+  return { specificHeat: s.liquid.specificHeat.value, density: s.liquid.density.value, ...(hasPhase ? { phase } : {}), ...(evaporation ? { evaporation } : {}) };
 }

@@ -46,6 +46,8 @@ export interface LabParams {
   /** Cold surroundings (cool-to, freeze; none = the room air). */
   readonly cooler?: { readonly id: CoolerId; readonly setpoint: number };
   readonly roomTemp: number; // °C
+  /** Relative humidity of the room air, 0…1 (default 0.5). */
+  readonly humidity?: number;
 }
 
 export const SAMPLE_ID = 'sample';
@@ -103,7 +105,7 @@ export function labSetup(p: LabParams): LabSetup {
       ...vessel.entities,
       ...(heater?.entities ?? []),
       ...(coolerPiece?.entities ?? []),
-      reservoir({ id: LAB_ROOM_ID, label: { uk: 'Повітря в кімнаті', en: 'Room air' }, temperature: room }),
+      reservoir({ id: LAB_ROOM_ID, label: { uk: 'Повітря в кімнаті', en: 'Room air' }, temperature: room, humidity: p.humidity ?? 0.5 }),
       ...extra,
     ],
     connections: [...vessel.connections, ...(heater?.connections ?? [])],
@@ -136,7 +138,9 @@ export function labGoalReached(p: LabParams, s: SystemState): boolean {
       return p.target !== undefined && T >= K(p.target) - 1e-6 && solid === 0;
     case 'boil': {
       const tb = boilingK(sub);
-      if (tb !== undefined) return T >= tb - 1e-6 && solid === 0;
+      // Boiling = bubbles in the whole volume (mass boils away), not just reaching the number:
+      // surface evaporation can keep the liquid a hair below the boiling point while it boils.
+      if (tb !== undefined) return ((b.state.boiledOff ?? 0) > 0 || T >= tb - 1e-6) && solid === 0;
       const smoke = smokeK(sub);
       return smoke !== undefined && T >= smoke;
     }

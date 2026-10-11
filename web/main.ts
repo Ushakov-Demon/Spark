@@ -257,7 +257,8 @@ function render() {
     const parts: string[] = [];
     const s = b.state.solidFraction ?? 0;
     parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
-    if ((b.state.boiledOff ?? 0) > 0) parts.push(u.boiledOff(formatQuantity(b.state.boiledOff!, 'kg', { locale, level: 'school' })));
+    const lost = (b.state.boiledOff ?? 0) + (b.state.evaporated ?? 0);
+    if (lost > 1e-4) parts.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
     return parts.join(', ');
   })();
   $('#r-time').innerHTML = `<span>${u.time}</span><strong>${formatDuration(Math.floor(session.state.time), locale)}</strong>`;

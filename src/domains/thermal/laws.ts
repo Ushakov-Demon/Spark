@@ -163,6 +163,47 @@ export const THERMAL_LAWS: readonly LawSpec[] = [
     },
   },
   {
+    id: 'evaporation',
+    kind: 'model',
+    name: { uk: 'Випаровування', en: 'Evaporation' },
+    statement: {
+      novice: {
+        uk: 'З поверхні рідини весь час відлітають найшвидші молекули — рідина випаровується й охолоджується. Що гарячіша рідина, то швидше вона випаровується.',
+        en: 'The fastest molecules keep escaping from a liquid surface — the liquid evaporates and cools. The hotter the liquid, the faster it evaporates.',
+      },
+      school: {
+        uk: 'Випаровування забирає теплоту: кожен кілограм пари уносить питому теплоту пароутворення. Тому гаряча вода у відкритій каструлі втрачає багато енергії, а кришка, на якій пара осідає й стікає назад, цю втрату майже прибирає.',
+        en: 'Evaporation takes heat away: every kilogram of vapour carries the latent heat of vaporisation. That is why hot water in an open pot loses a lot of energy, while a lid — on which vapour condenses and drips back — almost removes this loss.',
+      },
+      advanced: {
+        uk: 'Швидкість випаровування пропорційна площі поверхні й різниці густини насиченої пари над рідиною та пари в повітрі. Тиск насиченої пари води дуже швидко росте з температурою (рівняння Бака).',
+        en: 'The evaporation rate is proportional to the surface area and to the difference between the saturated vapour density above the liquid and the vapour already in the air. The saturated vapour pressure of water grows steeply with temperature (Buck equation).',
+      },
+      expert: {
+        uk: 'ṁ = h_m·A·(ρ_v,sat(T_s) − φ·ρ_v,sat(T_∞)); h_m = h/(ρ_air·c_p·Le^(2/3)) — аналогія Чилтона — Колберна. Вона виведена для турбулентного потоку в трубах, тож для спокійної поверхні дає оцінку порядку величини.',
+        en: 'ṁ = h_m·A·(ρ_v,sat(T_s) − φ·ρ_v,sat(T_∞)); h_m = h/(ρ_air·c_p·Le^(2/3)) — the Chilton–Colburn analogy. It is derived for turbulent flow in conduits, so for a still surface it gives an order-of-magnitude estimate.',
+      },
+    },
+    history: {
+      people: [],
+      role: 'associated',
+      when: '—',
+      story: {
+        school: {
+          uk: 'Швидкість випаровування в моделі оцінено за аналогією між теплообміном і масообміном (аналогія Чилтона — Колберна).',
+          en: 'The evaporation rate in the model is estimated from the analogy between heat and mass transfer (the Chilton–Colburn analogy).',
+        },
+      },
+      citations: [{ source: 'wikipedia-chilton-colburn', locator: 'Lead', claim: 'Analogy named after Thomas H. Chilton and Allan Philip Colburn; stated for turbulent flow in conduits' }],
+    },
+    limits: {
+      school: {
+        uk: 'Оцінка порядку величини: справжня швидкість залежить від руху повітря над поверхнею.',
+        en: 'An order-of-magnitude estimate: the real rate depends on air movement above the surface.',
+      },
+    },
+  },
+  {
     id: 'heat-balance',
     kind: 'law',
     name: { uk: 'Рівняння теплового балансу', en: 'Heat balance' },

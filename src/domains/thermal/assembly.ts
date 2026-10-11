@@ -81,6 +81,7 @@ export function placeVessel(v: VesselPlacement): Piece {
       specificHeat: specificHeat(contents.specificHeat),
       ...(substance ? { substance: substance.id } : { material: 'water' }),
       ...('phase' in contents && contents.phase ? { phase: contents.phase } : {}),
+      ...('evaporation' in contents && contents.evaporation ? { evaporation: contents.evaporation } : {}),
       temperature: celsius(v.startTemp),
     }),
   ];
@@ -121,12 +122,12 @@ export function placeVessel(v: VesselPlacement): Piece {
       }),
     );
     connections.push(
-      convectionLink({ id: `${v.liquidId}->${lidId}`, a: v.liquidId, b: lidId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir' }),
+      convectionLink({ id: `${v.liquidId}->${lidId}`, a: v.liquidId, b: lidId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir', surface: true }),
       convectionLink({ id: `${lidId}->${surfaceTo}`, a: lidId, b: surfaceTo, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir' }),
     );
   } else {
     connections.push(
-      convectionLink({ id: `${v.liquidId}->${surfaceTo}`, a: v.liquidId, b: surfaceTo, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir' }),
+      convectionLink({ id: `${v.liquidId}->${surfaceTo}`, a: v.liquidId, b: surfaceTo, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir', surface: true }),
     );
   }
   return { entities, connections, warnings: [] };

@@ -3,6 +3,7 @@ import { entityId } from '../../core/ids.js';
 import { ORIGIN, type Vec2 } from '../../core/math/vec2.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import { specificEnthalpy, type PhaseParams } from './phase.js';
+import type { EvaporationParams } from './evaporation.js';
 import { joules, type Joules, type Kelvin, type Kilograms, type SpecificHeat, type Watts } from '../../core/units.js';
 
 /**
@@ -23,6 +24,8 @@ export interface ThermalBodyParams {
   readonly phase?: PhaseParams;
   /** Key in the substance catalog, when the body is made of a catalog substance. */
   readonly substance?: string;
+  /** Evaporation from its free surface (liquids). */
+  readonly evaporation?: EvaporationParams;
   /** Key in MATERIALS the values came from — lets explanations cite the data source. */
   readonly material?: string;
 }
@@ -30,8 +33,10 @@ export interface ThermalBodyState {
   readonly temperature: Kelvin;
   /** 0 — all liquid, 1 — all solid; between — melting/freezing in progress. */
   readonly solidFraction?: number;
-  /** Mass that has boiled away, kg. */
+  /** Mass that has boiled away (bubbles in the whole volume at the boiling point), kg. */
   readonly boiledOff?: number;
+  /** Mass that has evaporated from the open surface below the boiling point, kg. */
+  readonly evaporated?: number;
   /** Energy the vapour carried away, J (relative to the same 0 °C reference). */
   readonly vaporEnergy?: number;
 }
@@ -56,6 +61,8 @@ export interface ReservoirParams {
   readonly temperature: Kelvin;
   /** Catalog id of a cooler this reservoir stands for (freezer air, ice bath…). */
   readonly device?: string;
+  /** Relative humidity of air, 0…1 (water vapour already in it); absent — not air / dry. */
+  readonly humidity?: number;
 }
 export interface ReservoirState {
   /** Net heat that flowed INTO the reservoir so far (negative = it gave heat away). */
@@ -126,13 +133,15 @@ export function thermalBody(
       ...(o.material === undefined ? {} : { material: o.material }),
       ...(o.phase === undefined ? {} : { phase: o.phase }),
       ...(o.substance === undefined ? {} : { substance: o.substance }),
+      ...(o.evaporation === undefined ? {} : { evaporation: o.evaporation }),
     },
     state: { temperature: o.temperature, ...(solid === undefined ? {} : { solidFraction: solid }) },
   };
 }
 
 /** Current mass of a body (what has not boiled away). */
-export const bodyMass = (e: ThermalBody | Heater): number => e.params.mass - (('boiledOff' in e.state ? e.state.boiledOff : 0) ?? 0);
+export const bodyMass = (e: ThermalBody | Heater): number =>
+  e.params.mass - (('boiledOff' in e.state ? e.state.boiledOff : 0) ?? 0) - (('evaporated' in e.state ? e.state.evaporated : 0) ?? 0);
 
 /** Energy stored in a body, J, relative to liquid at 0 °C (latent heat included). */
 export const bodyEnergy = (e: ThermalBody | Heater): number =>
@@ -163,7 +172,7 @@ export function heater(
   };
 }
 
-export function reservoir(o: Common & { readonly temperature: Kelvin; readonly device?: string }): Reservoir {
+export function reservoir(o: Common & { readonly temperature: Kelvin; readonly device?: string; readonly humidity?: number }): Reservoir {
   assertTemperature(o.temperature);
   return {
     id: entityId(o.id),
@@ -171,7 +180,7 @@ export function reservoir(o: Common & { readonly temperature: Kelvin; readonly d
     ...withLabel(o.label),
     transform: transform(o.position),
     ports: SURFACE,
-    params: { temperature: o.temperature, ...(o.device === undefined ? {} : { device: o.device }) },
+    params: { temperature: o.temperature, ...(o.device === undefined ? {} : { device: o.device }), ...(o.humidity === undefined ? {} : { humidity: o.humidity }) },
     state: { heatAbsorbed: joules(0) },
   };
 }
