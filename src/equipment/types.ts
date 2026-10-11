@@ -85,6 +85,8 @@ export interface HeaterSpec {
 export interface HeaterItem extends EquipmentCard {
   readonly kind: 'heater';
   readonly spec: HeaterSpec;
+  /** How the heater is named inside a sentence: "на газовій кухонній плиті" / "on a kitchen gas hob". */
+  readonly phrase: LocalizedText;
 }
 
 // ---------------------------------------------------------------- vessels
@@ -111,6 +113,8 @@ export interface VesselSpec {
 export interface VesselItem extends EquipmentCard {
   readonly kind: 'vessel';
   readonly spec: VesselSpec;
+  /** "у сталевій каструлі" / "in a steel pot" — per material (grammar differs per language). */
+  readonly phraseIn: Readonly<Record<string, LocalizedText>>;
 }
 
 export type EquipmentItem = HeaterItem | VesselItem;

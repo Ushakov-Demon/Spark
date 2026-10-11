@@ -23,6 +23,8 @@ export interface ReportInput<C extends Command> {
   readonly domain: DomainKnowledge<C>;
   /** Moment to explain step by step (default: middle of the run). */
   readonly focusTime?: number;
+  /** Headline result written by the scenario ("Water in an aluminium pot on a gas hob boiled in …"). Shown first. */
+  readonly summary?: readonly Block[];
 }
 
 export const entityLabel = (s: SystemState, id: EntityId | string, locale: Locale): string => {
@@ -43,6 +45,7 @@ export function buildReport<C extends Command>(input: ReportInput<C>): Block[] {
   const out: Block[] = [];
 
   out.push(h(1, input.title));
+  if (input.summary) out.push(...input.summary);
   out.push(p(m.level(t(LEVEL_INFO[level].name), t(LEVEL_INFO[level].audience))));
 
   // 1. What happened

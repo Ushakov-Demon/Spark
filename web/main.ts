@@ -13,10 +13,10 @@ import {
   type HeaterId,
   type VesselId,
 } from '../src/equipment/index.js';
-import { buildReport, entityLabel, formatQuantity, renderHtml, type ExplainContext } from '../src/explain/index.js';
+import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, type Block, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, LOCALES, tr, type Locale } from '../src/knowledge/i18n.js';
 import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels.js';
-import { heatingSetup, SOURCE_ID, VESSEL_ID, WATER_ID, type HeatingParams } from '../src/scenarios/index.js';
+import { heatingSetup, heatingStatus, heatingSummary, SOURCE_ID, VESSEL_ID, WATER_ID, type HeatingParams } from '../src/scenarios/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { UI } from './ui-text.js';
@@ -77,6 +77,8 @@ let points: { water: { t: number; v: number }[]; pot: { t: number; v: number }[]
 let lastPointAt = -Infinity;
 let stallSince: { t: number; temp: number } | null = null;
 let neverBoils = false;
+/** Headline of the finished (or stalled) experiment; computed once, re-rendered on language change. */
+let headline: (() => Block[]) | null = null;
 
 const device = () => HEATERS[params.heater];
 const vesselItem = () => VESSELS[params.vessel];
@@ -98,6 +100,7 @@ function newSession() {
   running = false;
   finished = null;
   neverBoils = false;
+  headline = null;
   stallSince = null;
   acc = 0;
   points = { water: [], pot: [], source: [] };
@@ -141,10 +144,19 @@ function describePower(v: number): string {
   return formatQuantity(w, 'W', { locale, level: 'school' });
 }
 
+/** Freeze the experiment outcome now; the text itself follows the current language. */
+function setHeadline() {
+  const result = session.result(finished === 'boiled');
+  const status = heatingStatus(result, simulation, warnings);
+  const p = params;
+  headline = () => heatingSummary(p, result, status, ctx());
+}
+
 function sendPower(v: number) {
   const power = currentPower(v);
   session.apply({ type: 'thermal.heater.set', entity: SOURCE_ID, on: power > 0, power: power as never });
   neverBoils = false;
+  headline = null;
   stallSince = null;
   render();
 }
@@ -165,7 +177,14 @@ function frame(now: number) {
     if (boiled) {
       finished = 'boiled';
       running = false;
-    } else detectStall();
+      setHeadline();
+    } else {
+      detectStall();
+      if (neverBoils && !headline) {
+        running = false;
+        setHeadline();
+      }
+    }
     render();
   }
   requestAnimationFrame(frame);
@@ -181,15 +200,8 @@ function detectStall() {
 }
 
 // ---------- rendering ----------
-/** 635 s → "10 хв 35 с" / "10 min 35 s" (compact, for the live readout). */
-function clock(s: number): string {
-  const total = Math.floor(s);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const sec = total % 60;
-  const [H, M, S] = locale === 'uk' ? ['год', 'хв', 'с'] : ['h', 'min', 's'];
-  return h ? `${h} ${H} ${m} ${M}` : m ? `${m} ${M} ${sec} ${S}` : `${sec} ${S}`;
-}
+const clock = (s: number): string => formatDuration(Math.floor(s), locale);
+
 const chart = createChart();
 
 function render() {
@@ -237,10 +249,10 @@ function render() {
   knob.element.setAttribute('aria-label', u.power);
 
   // Messages.
-  const msg: string[] = warnings.map((w) => `⚠ ${tr(w, locale)}`);
-  if (finished === 'boiled') msg.push(`✅ ${u.boiled(formatQuantity(session.state.time, 's', { locale, level: 'school' }))} ${u.boilNote}`);
-  else if (neverBoils) msg.push(`⚠ ${u.neverBoils}`);
-  $('#messages').innerHTML = msg.map((m) => `<p>${m}</p>`).join('');
+  const msg: string[] = headline ? [] : warnings.map((w) => `<p>⚠ ${tr(w, locale)}</p>`);
+  if (headline) msg.push(renderHtml(headline()));
+  if (finished === 'boiled') msg.push(`<p class="muted small">${u.boilNote}</p>`);
+  $('#messages').innerHTML = msg.join('');
 
   // Energy split.
   const split = energySplit(initialState, session.state);
@@ -411,10 +423,13 @@ function buildHeader() {
 function explain() {
   const result = session.result(finished === 'boiled');
   if (result.final.time === 0) return;
+  running = false;
+  if (!headline) setHeadline();
   const title = locale === 'uk' ? 'Що відбулося і чому' : 'What happened and why';
   $('#report').innerHTML = renderHtml(
-    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: THERMAL_KNOWLEDGE, focusTime: result.final.time / 2 }),
+    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: THERMAL_KNOWLEDGE, focusTime: result.final.time / 2, summary: headline!() }),
   );
+  render();
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 

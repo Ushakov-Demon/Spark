@@ -21,6 +21,10 @@ export function renderHtml(blocks: readonly Block[]): string {
           return `<ul>${b.items.map((i) => `<li>${lines(i)}</li>`).join('')}</ul>`;
         case 'note':
           return `<p class="note ${b.tone}">${lines(b.text)}</p>`;
+        case 'summary':
+          return `<div class="summary ${b.tone}">${b.lines.map((l, i) => (i === 0 ? `<p class="lead">${lines(l)}</p>` : `<p>${lines(l)}</p>`)).join('')}</div>`;
+        case 'details':
+          return `<details class="more"><summary>${esc(b.summary)}</summary>${renderHtml(b.blocks)}</details>`;
         case 'table':
           return `<div class="table-wrap"><table><thead><tr>${b.head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.rows
             .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`)

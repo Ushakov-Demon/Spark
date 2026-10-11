@@ -78,3 +78,15 @@ export const formatTime = (t: number, locale: Locale): string => {
   const whole = Math.abs(t - Math.round(t)) < 1e-6;
   return `${fixed(whole ? Math.round(t) : t, whole ? 0 : 1, locale)} ${UNITS[locale]['s']}`;
 };
+
+/** 594 s → "9 хв 54 с" / "9 min 54 s"; 3900 s → "1 год 5 хв". Compact, for headlines and live readouts. */
+export function formatDuration(seconds: number, locale: Locale): string {
+  const total = Math.round(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const [H, M, S] = locale === 'uk' ? ['год', 'хв', 'с'] : ['h', 'min', 's'];
+  if (h) return m ? `${h} ${H} ${m} ${M}` : `${h} ${H}`;
+  if (m) return s ? `${m} ${M} ${s} ${S}` : `${m} ${M}`;
+  return `${s} ${S}`;
+}

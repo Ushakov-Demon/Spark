@@ -10,6 +10,11 @@ const VESSEL_LIST = {
     kind: 'vessel',
     category: 'vessel.household',
     name: { uk: 'Каструля', en: 'Pot' },
+    phraseIn: {
+      steel: { uk: 'у сталевій каструлі', en: 'in a steel pot' },
+      aluminium: { uk: 'в алюмінієвій каструлі', en: 'in an aluminium pot' },
+      iron: { uk: 'у чавунній каструлі', en: 'in a cast-iron pot' },
+    },
     description: {
       novice: {
         uk: 'Звичайна кухонна каструля. Метал добре проводить теплоту, тому дно швидко передає її воді. З кришкою вода нагрівається швидше.',
@@ -58,6 +63,7 @@ const VESSEL_LIST = {
     kind: 'vessel',
     category: 'vessel.laboratory',
     name: { uk: 'Хімічний стакан', en: 'Beaker' },
+    phraseIn: { glass: { uk: 'у скляному хімічному стакані', en: 'in a glass beaker' } },
     description: {
       novice: {
         uk: 'Скляна посудина з носиком і поділками для вимірювання об’єму. Скло погано проводить теплоту, тому вода в ньому нагрівається повільніше, ніж у металевій каструлі.',

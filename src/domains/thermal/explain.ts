@@ -16,6 +16,10 @@ import { CONVECTION, MATERIALS } from './materials.js';
 import { thermalEnergy } from './solver.js';
 
 interface ThermalMessages {
+  start: string;
+  end: string;
+  peak: string;
+  showProcess(n: number): string;
   time: string;
   power: string;
   on: string;
@@ -49,6 +53,10 @@ interface ThermalMessages {
 
 const MSG: Readonly<Record<Locale, ThermalMessages>> = {
   uk: {
+    start: 'на початку',
+    end: 'наприкінці',
+    peak: 'найвища',
+    showProcess: (n) => `Показати весь процес (${n} записів)`,
     time: 'час',
     power: 'живлення',
     on: 'увімк',
@@ -81,6 +89,10 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     flameShare: (n) => `${n}: частка теплоти полум’я, що йде в посудину`,
   },
   en: {
+    start: 'start',
+    end: 'end',
+    peak: 'peak',
+    showProcess: (n) => `Show the whole process (${n} rows)`,
     time: 'time',
     power: 'power',
     on: 'on',
@@ -130,9 +142,31 @@ function timeline(result: ExperimentResult<ThermalCommand>, ctx: ExplainContext)
   const bodies = bodiesOf(result.final);
   const heaters = bodies.filter(isHeater);
   const name = (id: string) => entityLabel(result.final, id, locale);
-  // Keep the table short: at most ~12 rows, in whole minutes for long runs.
-  const every = Math.max(ROW_EVERY[level], Math.ceil(result.final.time / 12 / 60) * 60);
 
+  // Compact view: from → to (and the peak, if it was higher than both).
+  const summaryRows = bodies.map((b) => {
+    let start = NaN;
+    let max = { t: 0, temp: -Infinity };
+    for (const s of result.samples) {
+      const e = s.entities[b.id];
+      if (!e || !(isThermalBody(e) || isHeater(e))) continue;
+      if (Number.isNaN(start)) start = e.state.temperature;
+      if (e.state.temperature > max.temp) max = { t: s.time, temp: e.state.temperature };
+    }
+    const end = b.state.temperature;
+    const peak = max.temp - Math.max(start, end) > 0.05 ? `${T(max.temp, tableCtx)} (${formatTime(max.t, locale)})` : '—';
+    return [name(b.id), T(start, tableCtx), T(end, tableCtx), peak];
+  });
+  const out: Block[] = [
+    {
+      kind: 'table',
+      head: ['', `${m.start} (${formatTime(result.initial.time, locale)})`, `${m.end} (${formatTime(result.final.time, locale)})`, m.peak],
+      rows: summaryRows,
+    },
+  ];
+
+  // Full process, collapsed: at most ~30 rows.
+  const every = Math.max(ROW_EVERY[level] / 6, Math.ceil(result.final.time / 30 / 10) * 10);
   const rows = result.samples
     .filter((s, i, all) => Math.abs(s.time / every - Math.round(s.time / every)) < 1e-6 || i === all.length - 1)
     .map((s) => [
@@ -146,24 +180,11 @@ function timeline(result: ExperimentResult<ThermalCommand>, ctx: ExplainContext)
         return e && isHeater(e) ? (e.params.on ? m.on : m.off) : '—';
       }),
     ]);
-  const out: Block[] = [
-    { kind: 'table', head: [m.time, ...bodies.map((b) => name(b.id)), ...heaters.map((hh) => `${name(hh.id)}: ${m.power}`)], rows },
-  ];
-
-  const lines = bodies.map((b) => {
-    let start = NaN;
-    let max = { t: 0, temp: -Infinity };
-    for (const s of result.samples) {
-      const e = s.entities[b.id];
-      if (!e || !(isThermalBody(e) || isHeater(e))) continue;
-      if (Number.isNaN(start)) start = e.state.temperature;
-      if (e.state.temperature > max.temp) max = { t: s.time, temp: e.state.temperature };
-    }
-    const end = b.state.temperature;
-    const peak = max.temp - Math.max(start, end) > 0.05 ? `${T(max.temp)} (${formatTime(max.t, locale)})` : null;
-    return m.bodySummary(name(b.id), T(start), peak, T(end));
+  out.push({
+    kind: 'details',
+    summary: m.showProcess(rows.length),
+    blocks: [{ kind: 'table', head: [m.time, ...bodies.map((b) => name(b.id)), ...heaters.map((hh) => `${name(hh.id)}: ${m.power}`)], rows }],
   });
-  out.push(list(lines));
   return out;
 }
 

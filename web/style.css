@@ -127,3 +127,11 @@ footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 24px; }
 .about h4 { margin: 10px 0 2px; font-size: 0.92rem; }
 .about p { margin: 0 0 6px; }
 .about .safety { color: var(--source); }
+.summary { border-radius: 12px; padding: 12px 14px; margin: 10px 0; border-left: 5px solid var(--muted); background: var(--bg); }
+.summary.success { border-color: #22a35a; background: var(--ok-bg); }
+.summary.failure { border-color: var(--source); background: var(--warn-bg); }
+.summary p { margin: 4px 0; }
+.summary .lead { font-size: 1.12rem; font-weight: 600; }
+.messages .summary p { background: none; padding: 0; margin: 4px 0; }
+details.more { margin: 8px 0; }
+details.more > summary { cursor: pointer; color: var(--accent); }
