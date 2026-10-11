@@ -7,6 +7,7 @@ const allValues: [string, SourcedValue][] = [
   ...Object.values(MATERIALS).flatMap((m): [string, SourcedValue][] => [
     [`${m.id}.specificHeat`, m.specificHeat],
     [`${m.id}.conductivity`, m.conductivity],
+    ...('density' in m && m.density ? [[`${m.id}.density`, m.density] as [string, SourcedValue]] : []),
   ]),
   ...Object.entries(CONVECTION).map(([k, v]): [string, SourcedValue] => [`convection.${k}`, v]),
 ];

@@ -16,6 +16,9 @@ export type Kilograms = Quantity<'kg'>;
 export type Kelvin = Quantity<'K'>;
 export type Joules = Quantity<'J'>;
 export type Watts = Quantity<'W'>;
+/** Density ρ, kg/m³ */
+export type Density = Quantity<'kg/m3'>;
+export type CubicMeters = Quantity<'m3'>;
 /** Specific heat capacity c, J/(kg·K) */
 export type SpecificHeat = Quantity<'J/(kg*K)'>;
 /** Heat capacity C = m·c, J/K */
@@ -33,6 +36,9 @@ export const seconds = (v: number): Seconds => as(v);
 export const meters = (v: number): Meters => as(v);
 export const squareMeters = (v: number): SquareMeters => as(v);
 export const kilograms = (v: number): Kilograms => as(v);
+export const density = (v: number): Density => as(v);
+export const cubicMeters = (v: number): CubicMeters => as(v);
+export const liters = (l: number): CubicMeters => cubicMeters(l / 1000);
 export const kelvin = (v: number): Kelvin => as(v);
 export const joules = (v: number): Joules => as(v);
 export const watts = (v: number): Watts => as(v);

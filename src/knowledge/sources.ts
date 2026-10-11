@@ -89,6 +89,13 @@ export const SOURCES = {
     retrieved: '2026-10-11',
     caveats: 'Pre-НУШ programme, still the reference for classes not yet on НУШ.',
   }),
+  'wikipedia-properties-of-water': source({
+    id: 'wikipedia-properties-of-water',
+    title: 'Wikipedia, Properties of water (infobox)',
+    url: 'https://en.wikipedia.org/wiki/Properties_of_water',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
+  }),
   spark: source({
     id: 'spark',
     title: 'Spark team (original text)',

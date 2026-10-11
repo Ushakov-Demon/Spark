@@ -1,8 +1,10 @@
 import type { SourcedValue, LocalizedText } from '../../knowledge/types.js';
 import {
+  density,
   heatTransferCoeff,
   specificHeat,
   thermalConductivity,
+  type Density,
   type HeatTransferCoeff,
   type SpecificHeat,
   type ThermalConductivity,
@@ -19,6 +21,8 @@ export interface ThermalMaterial {
   readonly name: LocalizedText;
   readonly specificHeat: SourcedValue<SpecificHeat>;
   readonly conductivity: SourcedValue<ThermalConductivity>;
+  /** Needed to turn volumes ("20 L") into masses. Added per material as sources are checked. */
+  readonly density?: SourcedValue<Density>;
 }
 
 const C = 'J/(kg·K)';
@@ -52,6 +56,18 @@ export const MATERIALS = {
         { source: 'wikidata', locator: 'Q283 P2068', conditions: 'not stated', value: 0.56 },
       ],
       note: 'k of water grows with temperature (≈0.56 at 0 °C → ≈0.60 at 20 °C); Wikidata 0.56 has no qualifiers and most likely refers to 0 °C.',
+    },
+    density: {
+      value: density(997.05),
+      unit: 'kg/m³',
+      conditions: 'liquid, 25 °C, 1 atm',
+      verification: 'cross-checked',
+      tolerance: 0.0001,
+      citations: [
+        { source: 'wikidata', locator: 'Q283 P2054 (temperature 25)', conditions: '25 °C, liquid', value: 997.0479 },
+        { source: 'wikipedia-properties-of-water', locator: 'Infobox, Density', conditions: '25 °C, VSMOW, 1 atm', value: 997.04702 },
+      ],
+      note: 'Depends on temperature: 998.2 at 20 °C, 958.4 at 100 °C (Wikidata Q283 P2054). Volumes are converted at 25 °C; error < 0.2 % for 4–40 °C.',
     },
   },
   ice: {

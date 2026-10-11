@@ -52,6 +52,8 @@ export interface ExperimentResult<C extends Command> {
   readonly transfers: ReadonlyMap<string, TransferTotal>;
   /** Sum of energy brought in by commands, J. */
   readonly externalEnergy: number;
+  /** True when `until` ended the run before `duration`. */
+  readonly stoppedEarly: boolean;
 }
 
 export interface ExperimentInput<C extends Command> {
@@ -59,8 +61,11 @@ export interface ExperimentInput<C extends Command> {
   readonly simulation: Simulation;
   readonly commands: CommandRegistry<C>;
   readonly schedule?: readonly ScheduledCommand<C>[];
+  /** Maximum duration; the run may stop earlier via `until`. */
   readonly duration: Seconds;
   readonly sampleEvery: Seconds;
+  /** Stop condition checked after every step ("until the water reaches 100 °C"). */
+  readonly until?: (state: SystemState) => boolean;
 }
 
 /**
@@ -98,6 +103,7 @@ export function runExperiment<C extends Command>(input: ExperimentInput<C>): Exp
   let externalEnergy = 0;
   let next = 0;
   let s = input.initial;
+  let stoppedEarly = false;
 
   for (let i = 0; i < totalSteps; i++) {
     while (next < schedule.length && schedule[next]!.at <= s.time + eps) {
@@ -114,10 +120,13 @@ export function runExperiment<C extends Command>(input: ExperimentInput<C>): Exp
       }
     }
     s = sim.tick(s, dt, { trace: sink });
-    if (s.step % sampleSteps === 0 || i === totalSteps - 1) samples.push(s);
+    const stop = input.until?.(s) ?? false;
+    if (stop) stoppedEarly = true;
+    if (s.step % sampleSteps === 0 || i === totalSteps - 1 || stop) samples.push(s);
+    if (stop) break;
   }
 
-  return { initial: input.initial, final: s, samples, log, usage, transfers, externalEnergy };
+  return { initial: input.initial, final: s, samples, log, usage, transfers, externalEnergy, stoppedEarly };
 }
 
 /** Closest snapshot at or before `time`. */
