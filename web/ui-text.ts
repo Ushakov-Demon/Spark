@@ -28,6 +28,9 @@ export interface UiText {
   addTemp: string;
   addDoesNotFit(free: string): string;
   addedState(name: string, solidPct: number): string;
+  phaseFreezing(t: string, pct: number): string;
+  phaseMelting(t: string, pct: number): string;
+  phaseBoiling(t: string, lost: string): string;
   expectNone: string;
   expectPrediction: string;
   expectGoal: string;
@@ -115,6 +118,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     addTemp: 'Температура, °C',
     addDoesNotFit: (f) => `Не влізе: вільно лише ${f}.`,
     addedState: (n, p) => `${n}: ${p > 0 ? `тверде ${p} %` : 'розтануло'}`,
+    phaseFreezing: (t, p) => `❄ Температура стоїть на ${t}: речовина замерзає й віддає приховану теплоту. Замерзло ${p} %.`,
+    phaseMelting: (t, p) => `💧 Температура стоїть на ${t}: речовина тане й забирає приховану теплоту. Розтануло ${p} %.`,
+    phaseBoiling: (t, l) => `♨ Температура стоїть на ${t}: речовина кипить — уся теплота йде на пароутворення. Википіло ${l}.`,
     expectNone: 'Без прогнозу',
     expectPrediction: 'Мій прогноз',
     expectGoal: 'Моя ціль',
@@ -200,6 +206,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     addTemp: 'Temperature, °C',
     addDoesNotFit: (f) => `It will not fit: only ${f} free.`,
     addedState: (n, p) => `${n}: ${p > 0 ? `solid ${p} %` : 'melted'}`,
+    phaseFreezing: (t, p) => `❄ The temperature stays at ${t}: the substance is freezing and giving off latent heat. Frozen: ${p} %.`,
+    phaseMelting: (t, p) => `💧 The temperature stays at ${t}: the substance is melting and taking in latent heat. Melted: ${p} %.`,
+    phaseBoiling: (t, l) => `♨ The temperature stays at ${t}: the substance is boiling — all the heat goes into vaporisation. Boiled off: ${l}.`,
     expectNone: 'No prediction',
     expectPrediction: 'My prediction',
     expectGoal: 'My goal',

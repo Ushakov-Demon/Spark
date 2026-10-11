@@ -36,5 +36,7 @@ export default defineConfig({
   base: './',
   plugins: [singleFile()],
   build: { outDir: '../dist-web', emptyOutDir: true, assetsInlineLimit: 100_000_000, cssCodeSplit: false },
-  server: { open: true },
+  // 127.0.0.1 rather than "localhost": some browser setups never open the latter.
+  server: { host: '127.0.0.1', open: true },
+  preview: { host: '127.0.0.1' },
 });

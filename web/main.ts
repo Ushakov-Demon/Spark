@@ -148,6 +148,7 @@ function newSession() {
   finished = false;
   headline = null;
   checkpoint = null;
+  lastSolid = null;
   acc = 0;
   points = { sample: [], vessel: [], source: [] };
   lastPointAt = -Infinity;
@@ -380,6 +381,28 @@ function buildAdd() {
   box.open = open;
 }
 
+/** What is happening on a phase-change plateau right now (for the live banner). */
+let lastSolid: number | null = null;
+function phaseNote(): { text: string; pct: number } | null {
+  const b = sample();
+  if (!b || session.state.time === 0) return null;
+  const u = t();
+  const s = b.state.solidFraction ?? 0;
+  const T = formatQuantity(b.state.temperature, 'K', { locale, level: 'school' });
+  const trend = lastSolid === null ? 0 : s - lastSolid;
+  lastSolid = s;
+  if (s > 0 && s < 1) {
+    const freezing = trend > 0 || (trend === 0 && params.action === 'freeze');
+    return freezing ? { text: u.phaseFreezing(T, Math.round(s * 100)), pct: s * 100 } : { text: u.phaseMelting(T, Math.round((1 - s) * 100)), pct: (1 - s) * 100 };
+  }
+  const boiled = b.state.boiledOff ?? 0;
+  if (boiled > 0) {
+    const share = boiled / b.params.mass;
+    return { text: u.phaseBoiling(T, formatQuantity(boiled, 'kg', { locale, level: 'school' })), pct: share * 100 };
+  }
+  return null;
+}
+
 // ---------- rendering ----------
 const chart = createChart();
 
@@ -452,6 +475,9 @@ function render() {
   const msg: string[] = [];
   if (headline) msg.push(renderHtml(headline()));
   else {
+    // A flat line on the chart is not "nothing happens": say what is going on and how far it got.
+    const phase = phaseNote();
+    if (phase) msg.push(`<div class="phase"><p>${phase.text}</p><div class="progress"><span style="--p:${phase.pct}%"></span></div></div>`);
     for (const w of warnings) msg.push(`<p>⚠ ${tr(w, locale)}</p>`);
     const impossible = labImpossibility(params, locale);
     if (impossible) msg.push(`<p>⚠ ${tr(impossible, locale)}</p>`);
@@ -778,6 +804,9 @@ function defaultStart(action: LabAction, sub: SubstanceItem): number {
 
 function setAction(a: LabAction) {
   const uses = actionUses(a);
+  // Freezing and cooling take hours of model time: start faster so the result comes in a minute or two.
+  speed = a === 'heat-to' || a === 'boil' ? 60 : 600;
+  $<HTMLSelectElement>('#speed').value = String(speed);
   let next: LabParams = { ...params, action: a, startTemp: defaultStart(a, substance()) };
   if (a === 'heat-to') next = { ...next, target: 60 };
   else if (a === 'cool-to') next = { ...next, target: 5, startTemp: 60 };

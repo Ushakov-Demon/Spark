@@ -9,7 +9,7 @@ UI-независимый TypeScript-движок: работает в Node, б�
 
 ```bash
 npm install
-npm run web        # браузер відкриється сам на http://localhost:5173 ; зупинити — Ctrl+C
+npm run web        # браузер відкриється сам на http://127.0.0.1:5173 ; зупинити — Ctrl+C
 ```
 
 Сторінка працює, лише поки в терміналі запущено `npm run web`.

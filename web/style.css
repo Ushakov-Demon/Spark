@@ -177,3 +177,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .add > summary { cursor: pointer; color: var(--accent); }
 .add-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; margin-top: 8px; }
 .add-error { color: var(--source); margin: 6px 0 0; }
+.phase { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: var(--bg); border-left: 5px solid var(--water); }
+.phase p { margin: 0 0 8px; background: none; padding: 0; }
+.progress { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.progress span { display: block; height: 100%; width: var(--p); background: var(--water); transition: width 0.3s; }
