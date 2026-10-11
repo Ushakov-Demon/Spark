@@ -1,22 +1,40 @@
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
-import { celsius, toCelsius, kelvin } from '../src/core/units.js';
-import { createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, THERMAL_COMMANDS, THERMAL_KNOWLEDGE, type ThermalCommand } from '../src/domains/thermal/index.js';
+import { celsius, kelvin, toCelsius } from '../src/core/units.js';
+import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, THERMAL_COMMANDS, THERMAL_KNOWLEDGE, type ThermalCommand } from '../src/domains/thermal/index.js';
 import {
-  canHeat,
   childrenOf,
+  COOLERS,
   HEATERS,
   itemsUnder,
   powerAt,
+  canHeat,
   typicalVesselMass,
   VESSELS,
+  type CoolerId,
   type EquipmentItem,
   type HeaterId,
   type VesselId,
 } from '../src/equipment/index.js';
 import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, type Block, type ExplainContext } from '../src/explain/index.js';
-import { isLocale, LOCALES, tr, type Locale } from '../src/knowledge/i18n.js';
+import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels.js';
-import { heatingSetup, heatingStatus, heatingSummary, SOURCE_ID, VESSEL_ID, WATER_ID, type HeatingParams } from '../src/scenarios/index.js';
+import {
+  actionUses,
+  LAB_ACTIONS,
+  LAB_COOLER_ID,
+  LAB_HEATER_ID,
+  LAB_VESSEL_ID,
+  labCautions,
+  labGoalReached,
+  labImpossibility,
+  labSetup,
+  labStatus,
+  labSummary,
+  SAMPLE_ID,
+  type LabAction,
+  type LabParams,
+} from '../src/scenarios/index.js';
+import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { UI } from './ui-text.js';
@@ -38,8 +56,7 @@ const store = {
     }
   },
 };
-
-const browserLocale = (): Locale => (navigator.language.toLowerCase().startsWith('uk') ? 'uk' : navigator.language.toLowerCase().startsWith('en') ? 'en' : 'uk');
+const browserLocale = (): Locale => (navigator.language.toLowerCase().startsWith('en') ? 'en' : 'uk');
 let locale: Locale = (() => {
   const s = store.get('locale');
   return s && isLocale(s) ? s : browserLocale();
@@ -57,53 +74,74 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Readonly<Recor
   e.append(...children);
   return e;
 }
+const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** digits;
 
 // ---------- experiment state ----------
 const DT = seconds(0.5);
 const simulation = createSimulation({ solvers: [createThermalSolver()], fixedDt: DT });
 const commands = createCommandRegistry<ThermalCommand>(THERMAL_COMMANDS);
-const BOIL = celsius(100);
 
-let params: HeatingParams = { heater: 'electric-hotplate', rating: 2000, knob: 0.7, vessel: 'pot', size: 3, material: 'steel', lid: false, liters: 2, startTemp: 20, roomTemp: 20 };
-let warnings: readonly { uk: string; en: string }[] = [];
+let params: LabParams = {
+  action: 'boil',
+  substance: 'water',
+  liters: 1,
+  startTemp: 20,
+  vessel: 'pot',
+  size: 2,
+  material: 'steel',
+  lid: false,
+  heater: { id: 'electric-hotplate', rating: 2000, knob: 0.7 },
+  roomTemp: 20,
+};
+/** Remembered while the action switches between heating and cooling. */
+let lastHeater: NonNullable<LabParams['heater']> = params.heater!;
+let lastCooler: NonNullable<LabParams['cooler']> = { id: 'freezer', setpoint: -18 };
+
 let session: ExperimentSession<ThermalCommand>;
-let initialState: ReturnType<typeof heatingSetup>['state'];
+let initialState: ReturnType<typeof labSetup>['state'];
+let warnings: readonly LocalizedText[] = [];
 let running = false;
-let finished: 'boiled' | null = null;
+let finished = false;
 let speed = 60;
 let acc = 0;
 let lastFrame = 0;
-let points: { water: { t: number; v: number }[]; pot: { t: number; v: number }[]; source: { t: number; v: number }[] } = { water: [], pot: [], source: [] };
+let points: { sample: { t: number; v: number }[]; vessel: { t: number; v: number }[]; source: { t: number; v: number }[] } = { sample: [], vessel: [], source: [] };
 let lastPointAt = -Infinity;
-let stallSince: { t: number; temp: number } | null = null;
-let neverBoils = false;
-/** Headline of the finished (or stalled) experiment; computed once, re-rendered on language change. */
+let checkpoint: { t: number; T: number; s: number; m: number } | null = null;
+/** Headline of the finished (or stalled) experiment; re-rendered on language change. */
 let headline: (() => Block[]) | null = null;
 
-const device = () => HEATERS[params.heater];
+const heaterItem = () => (params.heater ? HEATERS[params.heater.id] : undefined);
 const vesselItem = () => VESSELS[params.vessel];
-const compatible = () => canHeat(device(), vesselItem(), params.material).ok;
-const currentPower = (knob: number) => (compatible() ? powerAt(device(), params.rating, knob) : 0);
+const substance = (): SubstanceItem => SUBSTANCES[params.substance];
 const ctx = (): ExplainContext => ({ level, locale });
 const t = () => UI[locale];
+const currentPower = (knob: number) => {
+  const h = heaterItem();
+  if (!h || !params.heater) return 0;
+  return canHeat(h, vesselItem(), params.material, params.size).ok ? powerAt(h, params.heater.rating, knob) : 0;
+};
 
+function sample() {
+  const e = session.state.entities[entityId(SAMPLE_ID)];
+  return e && isThermalBody(e) ? e : undefined;
+}
 function temperature(id: string): number | undefined {
   const e = session.state.entities[entityId(id)];
   return e && (isThermalBody(e) || isHeater(e)) ? e.state.temperature : undefined;
 }
 
 function newSession() {
-  const setup = heatingSetup(params);
+  const setup = labSetup(params);
   initialState = setup.state;
   warnings = setup.warnings;
   session = createExperimentSession<ThermalCommand>({ initial: initialState, simulation, commands, sampleEvery: seconds(10) });
   running = false;
-  finished = null;
-  neverBoils = false;
+  finished = false;
   headline = null;
-  stallSince = null;
+  checkpoint = null;
   acc = 0;
-  points = { water: [], pot: [], source: [] };
+  points = { sample: [], vessel: [], source: [] };
   lastPointAt = -Infinity;
   record();
   $('#report').innerHTML = '';
@@ -115,49 +153,35 @@ function record() {
   if (time - lastPointAt < 5 && time !== 0) return;
   lastPointAt = time;
   const m = time / 60;
-  const w = temperature(WATER_ID);
-  const p = temperature(VESSEL_ID);
-  const s = temperature(SOURCE_ID);
-  if (w !== undefined) points.water.push({ t: m, v: toCelsius(kelvin(w)) });
-  if (p !== undefined) points.pot.push({ t: m, v: toCelsius(kelvin(p)) });
-  if (s !== undefined && device().spec.method === 'contact') points.source.push({ t: m, v: toCelsius(kelvin(s)) });
+  const s = temperature(SAMPLE_ID);
+  const v = temperature(LAB_VESSEL_ID);
+  const h = temperature(LAB_HEATER_ID);
+  if (s !== undefined) points.sample.push({ t: m, v: toCelsius(kelvin(s)) });
+  if (v !== undefined) points.vessel.push({ t: m, v: toCelsius(kelvin(v)) });
+  if (h !== undefined && heaterItem()?.spec.method === 'contact') points.source.push({ t: m, v: toCelsius(kelvin(h)) });
 }
 
 // ---------- knob / switch ----------
 let knobTimer: number | undefined;
 const knob = createKnob(
   (v) => {
-    params = { ...params, knob: v };
+    if (!params.heater) return;
+    params = { ...params, heater: { ...params.heater, knob: v } };
+    lastHeater = params.heater!;
     window.clearTimeout(knobTimer);
     // Before the start the knob is part of the setup; afterwards it is an action in the log.
     if (session.state.time === 0) return newSession();
-    // Coalesce rapid turns into one command, like a real hand settling on a position.
     knobTimer = window.setTimeout(() => sendPower(v), running ? 150 : 0);
     render();
   },
-  (v) => describePower(v),
+  (v) => (v === 0 ? t().off : formatQuantity(currentPower(v), 'W', { locale, level: 'school' })),
 );
-
-function describePower(v: number): string {
-  if (v === 0) return t().off;
-  const w = currentPower(v);
-  return formatQuantity(w, 'W', { locale, level: 'school' });
-}
-
-/** Freeze the experiment outcome now; the text itself follows the current language. */
-function setHeadline() {
-  const result = session.result(finished === 'boiled');
-  const status = heatingStatus(result, simulation, warnings);
-  const p = params;
-  headline = () => heatingSummary(p, result, status, ctx());
-}
 
 function sendPower(v: number) {
   const power = currentPower(v);
-  session.apply({ type: 'thermal.heater.set', entity: SOURCE_ID, on: power > 0, power: power as never });
-  neverBoils = false;
+  session.apply({ type: 'thermal.heater.set', entity: LAB_HEATER_ID, on: power > 0, power: power as never });
   headline = null;
-  stallSince = null;
+  checkpoint = null;
   render();
 }
 
@@ -169,39 +193,44 @@ function frame(now: number) {
     acc += realDt * speed;
     const steps = Math.floor(acc / DT);
     acc -= steps * DT;
-    const boiled = session.advance(steps * DT, (s) => {
-      const w = s.entities[entityId(WATER_ID)];
-      return !!w && isThermalBody(w) && w.state.temperature >= BOIL;
-    });
+    const reached = session.advance(steps * DT, (s) => labGoalReached(params, s));
     record();
-    if (boiled) {
-      finished = 'boiled';
-      running = false;
-      setHeadline();
-    } else {
-      detectStall();
-      if (neverBoils && !headline) {
-        running = false;
-        setHeadline();
-      }
-    }
+    if (reached) stop();
+    else if (stalled()) stop();
     render();
   }
   requestAnimationFrame(frame);
 }
 
-/** Warn when the water stopped warming well below boiling for a long (simulated) time. */
-function detectStall() {
-  const w = temperature(WATER_ID);
-  if (w === undefined) return;
-  const time = session.state.time;
-  if (!stallSince || w - stallSince.temp > 0.5) stallSince = { t: time, temp: w };
-  else if (time - stallSince.t > 1800 && currentPower(params.knob) > 0) neverBoils = true;
+function stop() {
+  running = false;
+  finished = true;
+  setHeadline();
+}
+
+/** No progress for 30 simulated minutes — the outcome will not change, explain it. */
+function stalled(): boolean {
+  const b = sample();
+  if (!b) return false;
+  const now = { t: session.state.time, T: b.state.temperature, s: b.state.solidFraction ?? 0, m: bodyMass(b) };
+  if (!checkpoint) {
+    checkpoint = now;
+    return false;
+  }
+  if (now.t - checkpoint.t < 1800) return false;
+  const still = Math.abs(now.T - checkpoint.T) < 0.05 && Math.abs(now.s - checkpoint.s) < 0.001 && Math.abs(now.m - checkpoint.m) < 1e-5;
+  checkpoint = now;
+  return still;
+}
+
+function setHeadline() {
+  const result = session.result(labGoalReached(params, session.state));
+  const status = labStatus(params, result, simulation, warnings);
+  const p = params;
+  headline = () => labSummary(p, result, status, ctx());
 }
 
 // ---------- rendering ----------
-const clock = (s: number): string => formatDuration(Math.floor(s), locale);
-
 const chart = createChart();
 
 function render() {
@@ -218,43 +247,64 @@ function render() {
   $('#explain-hint').textContent = u.explainHint;
   $('#footer').textContent = u.footer;
 
-  const w = temperature(WATER_ID);
-  const p = temperature(VESSEL_ID);
+  const sub = substance();
+  const b = sample();
   const C = (k: number | undefined) => (k === undefined ? '—' : formatQuantity(k, 'K', { locale, level: 'school' }));
-  $('#r-time').innerHTML = `<span>${u.time}</span><strong>${clock(session.state.time)}</strong>`;
-  $('#r-water').innerHTML = `<span>${u.waterTemp}</span><strong>${C(w)}</strong>`;
-  $('#r-pot').innerHTML = `<span>${u.potTemp}</span><strong>${C(p)}</strong>`;
-  const src = session.state.entities[entityId(SOURCE_ID)];
-  const pw = src && (isHeater(src) || isBurner(src)) && src.params.on ? src.params.power : 0;
-  $('#r-power').innerHTML = `<span>${u.power}</span><strong>${pw > 0 ? formatQuantity(pw, 'W', { locale, level: 'school' }) : u.off}</strong>`;
+  const stateText = (() => {
+    if (!b) return '—';
+    const parts: string[] = [];
+    const s = b.state.solidFraction ?? 0;
+    parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
+    if ((b.state.boiledOff ?? 0) > 0) parts.push(u.boiledOff(formatQuantity(b.state.boiledOff!, 'kg', { locale, level: 'school' })));
+    return parts.join(', ');
+  })();
+  $('#r-time').innerHTML = `<span>${u.time}</span><strong>${formatDuration(Math.floor(session.state.time), locale)}</strong>`;
+  $('#r-water').innerHTML = `<span>${tr(sub.name, locale)}</span><strong>${C(b?.state.temperature)}</strong><small>${stateText}</small>`;
+  $('#r-pot').innerHTML = `<span>${u.potTemp}</span><strong>${C(temperature(LAB_VESSEL_ID))}</strong>`;
+  if (params.heater) {
+    const src = session.state.entities[entityId(LAB_HEATER_ID)];
+    const pw = src && (isHeater(src) || isBurner(src)) && src.params.on ? src.params.power : 0;
+    const thermo = Object.values(session.state.entities).find((e) => e.kind === 'thermal.thermostat') as { state: { heating: boolean } } | undefined;
+    const blocked = thermo && !thermo.state.heating;
+    $('#r-power').innerHTML = `<span>${u.power}</span><strong>${pw > 0 && !blocked ? formatQuantity(pw, 'W', { locale, level: 'school' }) : u.off}</strong>${thermo ? `<small>${locale === 'uk' ? 'терморегулятор' : 'thermostat'}</small>` : ''}`;
+  } else {
+    const around = params.cooler ? params.cooler.setpoint : params.roomTemp;
+    const name = params.cooler ? tr(COOLERS[params.cooler.id].name, locale) : u.justRoom;
+    $('#r-power').innerHTML = `<span>${u.surroundings}</span><strong>${C(celsius(around))}</strong><small>${name}</small>`;
+  }
 
   const startBtn = $<HTMLButtonElement>('#start');
   startBtn.textContent = running ? u.pause : u.start;
-  startBtn.disabled = finished !== null;
+  startBtn.disabled = finished;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $('#lbl-speed').textContent = u.speed;
 
-  // Changing the setup always starts a new experiment (see buildSetupForm); the knob is live during a run.
+  // Knob, switch or nothing (cooling has no knob: the cooler holds its setpoint).
+  const h = heaterItem();
+  $('#knob-wrap').hidden = !h || h.spec.control !== 'knob';
+  $('#switch-wrap').hidden = !h || h.spec.control !== 'switch';
+  const on = (params.heater?.knob ?? 0) > 0;
+  $<HTMLButtonElement>('#switch').textContent = on ? `⏻ ${u.on}` : `⏻ ${u.off}`;
+  $('#switch').classList.toggle('is-on', on);
+  if (h && params.heater) {
+    knob.setDisabled(finished);
+    knob.value = params.heater.knob;
+    knob.setLabels({ min: u.min, max: u.max, off: u.off }, h.spec.minFraction > 0 ? ['0', u.min, '', '', u.max] : ['0', '1', '2', '3', '4', '5', '6']);
+    knob.element.setAttribute('aria-label', u.power);
+  }
 
-  // Knob or switch.
-  const d = device();
-  $('#knob-wrap').hidden = d.spec.control !== 'knob';
-  $('#switch-wrap').hidden = d.spec.control !== 'switch';
-  $<HTMLButtonElement>('#switch').textContent = params.knob > 0 ? `⏻ ${u.on}` : `⏻ ${u.off}`;
-  $('#switch').classList.toggle('is-on', params.knob > 0);
-  knob.setDisabled(finished !== null);
-  knob.value = params.knob;
-  const ticks = d.spec.minFraction > 0 ? ['0', u.min, '', '', u.max] : ['0', '1', '2', '3', '4', '5', '6'];
-  knob.setLabels({ min: u.min, max: u.max, off: u.off }, ticks);
-  knob.element.setAttribute('aria-label', u.power);
-
-  // Messages.
-  const msg: string[] = headline ? [] : warnings.map((w) => `<p>⚠ ${tr(w, locale)}</p>`);
+  // Messages: impossibility before the start, headline after, warnings.
+  const msg: string[] = [];
   if (headline) msg.push(renderHtml(headline()));
-  if (finished === 'boiled') msg.push(`<p class="muted small">${u.boilNote}</p>`);
+  else {
+    for (const w of warnings) msg.push(`<p>⚠ ${tr(w, locale)}</p>`);
+    const impossible = labImpossibility(params, locale);
+    if (impossible) msg.push(`<p>⚠ ${tr(impossible, locale)}</p>`);
+    for (const c of labCautions(params)) msg.push(`<p>⚠ ${tr(c, locale)}</p>`);
+  }
   $('#messages').innerHTML = msg.join('');
 
-  // Energy split.
+  // Energy.
   const split = energySplit(initialState, session.state);
   const E = (j: number) => formatQuantity(j, 'J', { locale, level: 'school' });
   if (split.produced > 0) {
@@ -267,47 +317,54 @@ function render() {
         return `<li><span class="bar" style="--w:${Math.max(0, pct).toFixed(1)}%"></span><b>${pct.toFixed(0)} %</b> ${what} <small>(${E(s.energy)})</small></li>`;
       });
     $('#energy').innerHTML = `<h3>${u.energyTitle}</h3><p>${u.produced(E(split.produced))}</p><ul class="shares">${rows.join('')}</ul>`;
-  } else $('#energy').innerHTML = '';
+  } else {
+    const gave = -(split.shares.find((s) => s.entity === SAMPLE_ID)?.energy ?? 0);
+    $('#energy').innerHTML = gave > 1 ? `<h3>${u.energyTitle}</h3><p>${locale === 'uk' ? `Речовина віддала навколишньому ${E(gave)} теплоти.` : `The substance gave ${E(gave)} of heat to its surroundings.`}</p>` : '';
+  }
 
-  $('#legend').innerHTML = [
-    ['water', u.waterTemp],
-    ['pot', u.potTemp],
-    ...(d.spec.method === 'contact' ? [['source', tr(d.name, locale)]] : []),
-  ]
+  // Chart with the phase temperatures of this substance.
+  // Only the temperatures that matter for this action, so the interesting part is not squeezed.
+  const markers: { v: number; label: string }[] = [];
+  const heating = params.action === 'heat-to' || params.action === 'boil';
+  const cooling = params.action === 'cool-to' || params.action === 'freeze';
+  if (sub.freezing && (!heating || params.startTemp <= sub.freezing.point.value)) markers.push({ v: sub.freezing.point.value, label: `${u.meltLine} ${sub.freezing.point.value} °C` });
+  if (sub.boiling && !cooling && params.action !== 'melt') markers.push({ v: sub.boiling.point.value, label: `${u.boilLine} ${sub.boiling.point.value} °C` });
+  if (!sub.boiling && sub.decomposes && params.action === 'boil') markers.push({ v: sub.decomposes.value, label: `${locale === 'uk' ? 'димлення' : 'smoke'} ${sub.decomposes.value} °C` });
+  if (params.target !== undefined && (params.action === 'heat-to' || params.action === 'cool-to')) markers.push({ v: params.target, label: `${u.targetLine} ${params.target} °C` });
+  $('#legend').innerHTML = [['water', tr(sub.name, locale)], ['pot', u.potTemp], ...(h?.spec.method === 'contact' ? [['source', tr(h.name, locale)]] : [])]
     .map(([c, n]) => `<span class="key ${c}">${n}</span>`)
     .join('');
   chart.render(
     [
-      { name: u.waterTemp, className: 'water', points: points.water },
-      { name: u.potTemp, className: 'pot', points: points.pot },
-      { name: tr(d.name, locale), className: 'source', points: points.source },
+      { name: tr(sub.name, locale), className: 'water', points: points.sample },
+      { name: u.potTemp, className: 'pot', points: points.vessel },
+      { name: h ? tr(h.name, locale) : '', className: 'source', points: points.source },
     ],
     u.chartTime,
-    { v: 100, label: '100 °C' },
+    markers,
   );
 }
 
+// ---------- setup form ----------
 function buildSetupForm() {
   const u = t();
   const form = $('#setup');
   form.innerHTML = '';
   const field = (label: string, input: HTMLElement) => el('label', { className: 'field' }, el('span', {}, label), input);
-
-  /** <select> grouped by the sub-categories of `root` (household / laboratory). */
-  const grouped = (id: string, root: string, selected: string, onChange: (v: string) => void) => {
-    const sel = el('select', { id });
-    for (const cat of childrenOf(root)) {
-      const items = itemsUnder(cat.id);
-      if (!items.length) continue;
-      const group = el('optgroup', { label: tr(cat.name, locale) });
-      for (const i of items) group.append(el('option', { value: i.id, selected: i.id === selected }, tr(i.name, locale)));
-      sel.append(group);
-    }
-    sel.onchange = () => onChange(sel.value);
-    return sel;
+  const rebuild = () => {
+    buildSetupForm();
+    newSession();
   };
-  const select = (id: string, options: readonly (readonly [string, string])[], selected: string, onChange: (v: string) => void) => {
+  const select = (id: string, options: readonly (readonly [string, string])[], selected: string, onChange: (v: string) => void, groups?: readonly { label: string; options: readonly (readonly [string, string])[] }[]) => {
     const sel = el('select', { id });
+    if (groups) {
+      for (const g of groups) {
+        if (!g.options.length) continue;
+        const og = el('optgroup', { label: g.label });
+        for (const [value, label] of g.options) og.append(el('option', { value, selected: value === selected }, label));
+        sel.append(og);
+      }
+    }
     for (const [value, label] of options) sel.append(el('option', { value, selected: value === selected }, label));
     sel.onchange = () => onChange(sel.value);
     return sel;
@@ -323,75 +380,168 @@ function buildSetupForm() {
     };
     return i;
   };
-  const rebuild = () => {
-    buildSetupForm();
-    newSession();
-  };
+  const byCategory = (root: string) =>
+    childrenOf(root).map((c) => ({ label: tr(c.name, locale), options: itemsUnder(c.id).map((i) => [i.id, tr(i.name, locale)] as const) }));
   const volume = (l: number) => (l < 1 ? `${Math.round(l * 1000)} ${u.ml}` : `${l} ${u.liters}`);
-
-  const h = device();
+  const sub = substance();
   const v = vesselItem();
-  const heaterSel = grouped('f-device', 'device.heater', params.heater, (id) => {
-    const next = HEATERS[id as HeaterId];
-    params = { ...params, heater: next.id as HeaterId, rating: next.spec.defaultRating, knob: next.spec.control === 'switch' ? 0 : params.knob || 0.7 };
-    rebuild();
-  });
-  const ratingSel = select('f-rating', h.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.rating), (r) => {
-    params = { ...params, rating: Number(r) };
-    rebuild();
-  });
-  const estimate = h.spec.ratingData.verification === 'estimate' ? el('span', { className: 'badge', title: h.spec.ratingData.note ?? '' }, u.estimateBadge) : '';
 
-  const vesselSel = grouped('f-vessel', 'vessel', params.vessel, (id) => {
-    const next = VESSELS[id as VesselId];
-    const size = next.spec.defaultSize;
-    params = { ...params, vessel: next.id as VesselId, size, material: next.spec.defaultMaterial, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
-    delete (params as { vesselMass?: number }).vesselMass;
-    rebuild();
-  });
-  const sizeSel = select('f-size', v.spec.sizes.map((x) => [String(x), volume(x)] as const), String(params.size), (x) => {
-    const size = Number(x);
-    params = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7, size < 0.1 ? 3 : 2) };
-    delete (params as { vesselMass?: number }).vesselMass;
-    rebuild();
-  });
-  const materialSel = select('f-pot', v.spec.materials.map((m) => [m, u.materials[m] ?? m] as const), params.material, (m) => {
-    params = { ...params, material: m };
-    rebuild();
-  });
-  const mass = params.vesselMass ?? typicalVesselMass(v, params.size);
-  const lid = el('input', { id: 'f-lid', type: 'checkbox', checked: params.lid });
-  lid.onchange = () => {
-    params = { ...params, lid: lid.checked };
-    rebuild();
-  };
+  // 1. What we do.
+  const actionSel = select('f-action', LAB_ACTIONS.map((a) => [a, u.actions[a]] as const), params.action, (a) => setAction(a as LabAction));
+  form.append(field(u.action, actionSel));
+  if (params.action === 'heat-to' || params.action === 'cool-to') {
+    form.append(field(u.target, number('f-target', params.target ?? (params.action === 'heat-to' ? 60 : 5), -30, 300, 1, (x) => (params = { ...params, target: x }))));
+  }
 
+  // 2. Substance.
+  const subSel = select('f-substance', [], params.substance, (id) => {
+    params = { ...params, substance: id as SubstanceId, startTemp: defaultStart(params.action, SUBSTANCES[id as SubstanceId]) };
+    rebuild();
+  }, SUBSTANCE_CATEGORIES.map((c) => ({ label: tr(c.name, locale), options: Object.values(SUBSTANCES).filter((s) => s.category === c.id).map((s) => [s.id, tr(s.name, locale)] as const) })));
+  form.append(field(u.substance, subSel));
+  const small = params.size < 0.1;
   form.append(
-    field(u.device, heaterSel),
-    field(u.model, el('span', { className: 'inline' }, ratingSel, estimate)),
-    field(u.vessel, vesselSel),
-    field(u.size, sizeSel),
+    field(`${u.amount} (≤ ${volume(params.size)})`, number('f-liters', params.liters, small ? 0.001 : 0.01, params.size, small ? 0.001 : 0.01, (x) => (params = { ...params, liters: x }))),
+    field(u.startTemp, number('f-start', params.startTemp, -30, 300, 1, (x) => (params = { ...params, startTemp: x }))),
   );
-  if (v.spec.materials.length > 1) form.append(field(u.material, materialSel));
-  form.append(field(u.vesselMass, number('f-pot-mass', mass, 0.01, 20, 0.01, (x) => (params = { ...params, vesselMass: x }))));
-  if (v.spec.lid === 'optional') form.append(el('label', { className: 'check' }, lid, el('span', {}, u.lid)));
+
+  // 3. Vessel.
   form.append(
-    field(`${u.water} (≤ ${volume(params.size)})`, number('f-liters', params.liters, params.size < 0.1 ? 0.001 : 0.01, params.size, params.size < 0.1 ? 0.001 : 0.01, (x) => (params = { ...params, liters: x }))),
-    field(u.startTemp, number('f-start', params.startTemp, 0, 99, 1, (x) => (params = { ...params, startTemp: x }))),
-    field(u.room, number('f-room', params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x }))),
+    field(
+      u.vessel,
+      select('f-vessel', [], params.vessel, (id) => {
+        const next = VESSELS[id as VesselId];
+        const size = next.spec.defaultSize;
+        params = { ...params, vessel: next.id as VesselId, size, material: next.spec.defaultMaterial, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
+        delete (params as { vesselMass?: number }).vesselMass;
+        rebuild();
+      }, byCategory('vessel')),
+    ),
+    field(u.size, select('f-size', v.spec.sizes.map((x) => [String(x), volume(x)] as const), String(params.size), (x) => {
+      const size = Number(x);
+      params = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7, size < 0.1 ? 3 : 2) };
+      delete (params as { vesselMass?: number }).vesselMass;
+      rebuild();
+    })),
   );
-  form.append(about([h, v]));
+  if (v.spec.materials.length > 1) {
+    form.append(field(u.material, select('f-pot', v.spec.materials.map((m) => [m, u.materials[m] ?? m] as const), params.material, (m) => {
+      params = { ...params, material: m };
+      rebuild();
+    })));
+  }
+  form.append(field(u.vesselMass, number('f-pot-mass', params.vesselMass ?? typicalVesselMass(v, params.size), 0.01, 20, 0.01, (x) => (params = { ...params, vesselMass: x }))));
+  if (v.spec.lid === 'optional') {
+    const lid = el('input', { id: 'f-lid', type: 'checkbox', checked: params.lid });
+    lid.onchange = () => {
+      params = { ...params, lid: lid.checked };
+      rebuild();
+    };
+    form.append(el('label', { className: 'check' }, lid, el('span', {}, u.lid)));
+  }
+
+  // 4. Heater or cooler, depending on the action.
+  const uses = actionUses(params.action);
+  const NONE = 'none';
+  if (uses === 'heater' || uses === 'either') {
+    const heaterGroups = byCategory('device.heater');
+    const sel = select('f-device', uses === 'either' ? [[NONE, u.justRoom]] : [], params.heater?.id ?? NONE, (id) => {
+      if (id === NONE) {
+        const { heater: _h, ...rest } = params;
+        void _h;
+        params = rest;
+      } else {
+        const hi = HEATERS[id as HeaterId];
+        params = { ...params, heater: { id: hi.id as HeaterId, rating: hi.spec.defaultRating, knob: hi.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 } };
+        lastHeater = params.heater!;
+      }
+      rebuild();
+    }, heaterGroups);
+    form.append(field(uses === 'either' ? u.meltWith : u.device, sel));
+    const h = heaterItem();
+    if (h && params.heater) {
+      const est = h.spec.ratingData.verification === 'estimate' ? el('span', { className: 'badge', title: h.spec.ratingData.note ?? '' }, u.estimateBadge) : '';
+      form.append(field(u.model, el('span', { className: 'inline' }, select('f-rating', h.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.heater.rating), (r) => {
+        params = { ...params, heater: { ...params.heater!, rating: Number(r) } };
+        lastHeater = params.heater!;
+        rebuild();
+      }), est)));
+    }
+  } else {
+    const sel = select('f-cooler', [[NONE, u.justRoom]], params.cooler?.id ?? NONE, (id) => {
+      if (id === NONE) {
+        const { cooler: _c, ...rest } = params;
+        void _c;
+        params = rest;
+      } else {
+        const c = COOLERS[id as CoolerId];
+        params = { ...params, cooler: { id: c.id as CoolerId, setpoint: c.spec.setpoint.default } };
+        lastCooler = params.cooler!;
+      }
+      rebuild();
+    }, byCategory('device.cooler'));
+    form.append(field(u.coolWhere, sel));
+    if (params.cooler) {
+      const sp = COOLERS[params.cooler.id].spec.setpoint;
+      if (sp.max > sp.min) {
+        form.append(field(`${u.setpoint} (${sp.min}…${sp.max})`, number('f-setpoint', params.cooler.setpoint, sp.min, sp.max, 1, (x) => {
+          params = { ...params, cooler: { ...params.cooler!, setpoint: x } };
+          lastCooler = params.cooler!;
+        })));
+      }
+    }
+  }
+  form.append(field(u.room, number('f-room', params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x }))));
+
+  // 5. "What it is".
+  const items: (EquipmentItem | SubstanceItem)[] = [sub, v];
+  if (params.heater) items.push(HEATERS[params.heater.id]);
+  if (params.cooler) items.push(COOLERS[params.cooler.id]);
+  form.append(about(items));
 }
 
-const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** digits;
+/** Sensible starting temperature for an action: frozen below the melting point for "melt". */
+function defaultStart(action: LabAction, sub: SubstanceItem): number {
+  if (action === 'melt' && sub.freezing) return Math.round(sub.freezing.point.value - 10);
+  return 20;
+}
 
-/** "What it is" cards for the chosen equipment, at the chosen level. */
-function about(items: readonly EquipmentItem[]): HTMLElement {
+function setAction(a: LabAction) {
+  const uses = actionUses(a);
+  let next: LabParams = { ...params, action: a, startTemp: defaultStart(a, substance()) };
+  if (a === 'heat-to') next = { ...next, target: 60 };
+  else if (a === 'cool-to') next = { ...next, target: 5, startTemp: 60 };
+  else {
+    const { target: _t, ...rest } = next;
+    void _t;
+    next = rest;
+  }
+  if (uses === 'heater') {
+    const { cooler: _c, ...rest } = next;
+    void _c;
+    next = { ...rest, heater: lastHeater };
+  } else if (uses === 'cooler') {
+    const { heater: _h, ...rest } = next;
+    void _h;
+    next = { ...rest, cooler: lastCooler };
+  } else {
+    const { cooler: _c, heater: _h, ...rest } = next;
+    void _c;
+    void _h;
+    next = rest;
+  }
+  params = next;
+  buildSetupForm();
+  newSession();
+}
+
+function about(items: readonly (EquipmentItem | SubstanceItem)[]): HTMLElement {
   const u = t();
   const box = el('details', { className: 'about', open: true }, el('summary', {}, u.about));
   for (const i of items) {
     box.append(el('h4', {}, tr(i.name, locale)), el('p', {}, tr(textFor(i.description, level), locale)));
     if (i.safety) box.append(el('p', { className: 'safety' }, `⚠ ${u.safety}: ${tr(textFor(i.safety, level), locale)}`));
+    if ('modelNotes' in i && i.modelNotes) for (const n of i.modelNotes) box.append(el('p', { className: 'muted small' }, `ℹ ${tr(n, locale)}`));
   }
   return box;
 }
@@ -421,13 +571,14 @@ function buildHeader() {
 }
 
 function explain() {
-  const result = session.result(finished === 'boiled');
+  const result = session.result(labGoalReached(params, session.state));
   if (result.final.time === 0) return;
   running = false;
   if (!headline) setHeadline();
   const title = locale === 'uk' ? 'Що відбулося і чому' : 'What happened and why';
+  const notes: Block[] = (substance().modelNotes ?? []).map((n) => ({ kind: 'note', tone: 'info', text: tr(n, locale) }));
   $('#report').innerHTML = renderHtml(
-    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: THERMAL_KNOWLEDGE, focusTime: result.final.time / 2, summary: headline!() }),
+    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: THERMAL_KNOWLEDGE, focusTime: result.final.time / 2, summary: [...headline!(), ...notes] }),
   );
   render();
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -444,14 +595,15 @@ $('#start').onclick = () => {
 };
 $('#reset').onclick = () => newSession();
 $('#switch').onclick = () => {
-  const v = params.knob > 0 ? 0 : 1;
-  params = { ...params, knob: v };
+  if (!params.heater) return;
+  const v = params.heater.knob > 0 ? 0 : 1;
+  params = { ...params, heater: { ...params.heater, knob: v } };
+  lastHeater = params.heater!;
   if (session.state.time === 0) return newSession();
   sendPower(v);
-  render();
 };
 const speedSel = $<HTMLSelectElement>('#speed');
-for (const s of [1, 10, 60, 300, 600]) speedSel.append(el('option', { value: String(s), selected: s === speed }, `×${s}`));
+for (const s of [1, 10, 60, 300, 600, 3600]) speedSel.append(el('option', { value: String(s), selected: s === speed }, `×${s}`));
 speedSel.onchange = () => (speed = Number(speedSel.value));
 $('#explain').onclick = explain;
 

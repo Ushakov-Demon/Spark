@@ -9,7 +9,9 @@ import { atLeast, type Level } from '../../knowledge/levels.js';
 import { THERMAL_FORMULAS } from './catalog.js';
 import type { ThermalCommand } from './commands.js';
 import { isBurner, isHeater, isReservoir, isThermalBody, type Heater, type ThermalBody } from './entities.js';
-import { getHeater } from '../../equipment/catalog.js';
+import { getCooler, getHeater } from '../../equipment/catalog.js';
+import type { SourcedValue } from '../../knowledge/types.js';
+import { SUBSTANCES, type SubstanceId } from '../../substances/catalog.js';
 import { THERMAL_LAWS } from './laws.js';
 import { isSupplyLink, isThermalLink } from './links.js';
 import { CONVECTION, MATERIALS } from './materials.js';
@@ -254,12 +256,33 @@ function dataUsed(s: SystemState): DataUsage[] {
   const seen = new Set<string>();
   const both = (f: (l: Locale) => string) => ({ uk: f('uk'), en: f('en') });
   for (const b of bodiesOf(s)) {
+    const subId = 'substance' in b.params ? b.params.substance : undefined;
+    const sub = subId && subId in SUBSTANCES ? SUBSTANCES[subId as SubstanceId] : undefined;
+    if (sub && !seen.has(`sub:${sub.id}`)) {
+      seen.add(`sub:${sub.id}`);
+      const n = (l: Locale) => tr(sub.name, l);
+      const add = (label: (l: Locale) => string, v: SourcedValue) => out.push({ label: both(label), origin: 'catalog', sourced: v });
+      add((l) => MSG[l].specificHeatOf(n(l)), sub.liquid.specificHeat);
+      add((l) => `${n(l)}: ${l === 'uk' ? 'густина' : 'density'}`, sub.liquid.density);
+      if (sub.freezing) {
+        add((l) => `${n(l)}: ${l === 'uk' ? 'температура замерзання' : 'freezing point'}`, sub.freezing.point);
+        add((l) => `${n(l)}: ${l === 'uk' ? 'питома теплота плавлення' : 'latent heat of fusion'}`, sub.freezing.latentHeat);
+        add((l) => `${n(l)}: ${l === 'uk' ? 'теплоємність у твердому стані' : 'specific heat (solid)'}`, sub.freezing.solidSpecificHeat);
+      }
+      if (sub.boiling) {
+        add((l) => `${n(l)}: ${l === 'uk' ? 'температура кипіння' : 'boiling point'}`, sub.boiling.point);
+        add((l) => `${n(l)}: ${l === 'uk' ? 'питома теплота пароутворення' : 'latent heat of vaporisation'}`, sub.boiling.latentHeat);
+      }
+      if (sub.decomposes) add((l) => `${n(l)}: ${l === 'uk' ? 'температура димлення' : 'smoke point'}`, sub.decomposes);
+    }
     const mat = b.params.material ? MATERIALS[b.params.material as keyof typeof MATERIALS] : undefined;
     if (!mat || seen.has(mat.id)) continue;
     seen.add(mat.id);
     out.push({ label: both((l) => MSG[l].specificHeatOf(tr(mat.name, l))), origin: 'catalog', sourced: mat.specificHeat });
   }
   for (const e of Object.values(s.entities)) {
+    const cooler = isReservoir(e) && e.params.device ? getCooler(e.params.device) : undefined;
+    if (cooler) out.push({ label: both((l) => `${tr(cooler.name, l)}: ${l === 'uk' ? 'температура' : 'temperature'}`), origin: 'catalog', sourced: cooler.spec.setpoint.data });
     const d = (isHeater(e) || isBurner(e)) && e.params.device ? getHeater(e.params.device) : undefined;
     if (!d) continue;
     out.push({ label: both((l) => MSG[l].deviceRating(tr(d.name, l))), origin: 'catalog', sourced: d.spec.ratingData });

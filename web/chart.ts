@@ -7,7 +7,7 @@ export interface Series {
 
 export interface Chart {
   readonly element: SVGSVGElement;
-  render(series: readonly Series[], xLabel: string, marker?: { readonly v: number; readonly label: string }): void;
+  render(series: readonly Series[], xLabel: string, markers?: readonly { readonly v: number; readonly label: string }[]): void;
 }
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -28,16 +28,17 @@ export function createChart(): Chart {
 
   return {
     element: svg,
-    render(series, xLabel, marker) {
+    render(series, xLabel, markers = []) {
       const all = series.flatMap((s) => s.points);
       const tMax = Math.max(1, ...all.map((p) => p.t));
-      const vMin = Math.min(0, ...all.map((p) => p.v));
-      const vMax = Math.max(110, ...all.map((p) => p.v));
+      const vMin = Math.min(0, ...all.map((p) => p.v), ...markers.map((m) => m.v - 5));
+      const vMax = Math.max(40, ...all.map((p) => p.v), ...markers.map((m) => m.v + 5));
       const x = (t: number) => PAD.l + ((W - PAD.l - PAD.r) * t) / tMax;
       const y = (v: number) => H - PAD.b - ((H - PAD.t - PAD.b) * (v - vMin)) / (vMax - vMin);
       const parts: string[] = [];
 
-      for (let v = Math.ceil(vMin / 20) * 20; v <= vMax; v += 20) {
+      const gridStep = vMax - vMin > 200 ? 50 : 20;
+      for (let v = Math.ceil(vMin / gridStep) * gridStep; v <= vMax; v += gridStep) {
         parts.push(`<line class="grid" x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(v)}" y2="${y(v)}"/>`);
         parts.push(`<text class="axis" x="${PAD.l - 6}" y="${y(v) + 4}" text-anchor="end">${v}°</text>`);
       }
@@ -46,7 +47,7 @@ export function createChart(): Chart {
         parts.push(`<text class="axis" x="${x(t)}" y="${H - PAD.b + 16}" text-anchor="middle">${t}</text>`);
       }
       parts.push(`<text class="axis" x="${W - PAD.r}" y="${H - 4}" text-anchor="end">${xLabel}</text>`);
-      if (marker) {
+      for (const marker of markers) {
         parts.push(`<line class="marker" x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(marker.v)}" y2="${y(marker.v)}"/>`);
         parts.push(`<text class="marker-label" x="${W - PAD.r - 4}" y="${y(marker.v) - 5}" text-anchor="end">${marker.label}</text>`);
       }

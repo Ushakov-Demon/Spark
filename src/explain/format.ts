@@ -17,7 +17,8 @@ const nf = (locale: Locale, opts: Intl.NumberFormatOptions) => new Intl.NumberFo
 export const sig = (v: number, digits: number, locale: Locale): string =>
   v === 0 ? '0' : nf(locale, { maximumSignificantDigits: digits }).format(v);
 export const fixed = (v: number, decimals: number, locale: Locale): string =>
-  nf(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(v);
+  // Avoid "-0,0" after rounding a tiny negative number.
+  nf(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(Math.abs(v) < 0.5 * 10 ** -decimals ? 0 : v);
 
 /** Unit symbols per language (SI symbols are international, but Ukrainian uses Cyrillic ones). */
 const UNITS: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {

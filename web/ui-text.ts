@@ -2,6 +2,24 @@ import type { Locale } from '../src/knowledge/i18n.js';
 
 /** Interface strings of the web lab. Content texts (laws, formulas) live in the knowledge layer. */
 export interface UiText {
+  action: string;
+  actions: Readonly<Record<'heat-to' | 'boil' | 'cool-to' | 'freeze' | 'melt', string>>;
+  target: string;
+  substance: string;
+  amount: string;
+  coolWhere: string;
+  meltWith: string;
+  justRoom: string;
+  setpoint: string;
+  sampleTemp: string;
+  phaseState: string;
+  liquid: string;
+  solidShare(pct: number): string;
+  boiledOff(g: string): string;
+  surroundings: string;
+  meltLine: string;
+  boilLine: string;
+  targetLine: string;
   title: string;
   subtitle: string;
   language: string;
@@ -56,8 +74,26 @@ export interface UiText {
 
 export const UI: Readonly<Record<Locale, UiText>> = {
   uk: {
+    action: 'Що робимо',
+    actions: { 'heat-to': 'Нагріти до…', boil: 'Закип’ятити', 'cool-to': 'Охолодити до…', freeze: 'Заморозити', melt: 'Розплавити' },
+    target: 'Цільова температура, °C',
+    substance: 'Речовина',
+    amount: 'Кількість, л',
+    coolWhere: 'Де охолоджуємо',
+    meltWith: 'Чим розплавляємо',
+    justRoom: 'Просто в кімнаті',
+    setpoint: 'Температура охолоджувача, °C',
+    sampleTemp: 'Речовина',
+    phaseState: 'Стан',
+    liquid: 'рідина',
+    solidShare: (p) => `тверде ${p} %`,
+    boiledOff: (g) => `википіло ${g}`,
+    surroundings: 'Навколо',
+    meltLine: 'плавлення',
+    boilLine: 'кипіння',
+    targetLine: 'ціль',
     title: 'Spark · Лабораторія',
-    subtitle: 'Нагрій воду: обери прилад, крути ручку, дивись, що відбувається, — і дізнайся чому.',
+    subtitle: 'Нагрівай і охолоджуй, кип’яти й заморожуй: обери речовину, посуд і прилад — дивись, що відбувається, і дізнайся чому.',
     language: 'Мова',
     level: 'Рівень пояснень',
     setup: '1. Установка',
@@ -72,7 +108,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     safety: 'Безпека',
     ml: 'мл',
     water: 'Вода, л',
-    startTemp: 'Температура води, °C',
+    startTemp: 'Початкова температура, °C',
     room: 'Температура в кімнаті, °C',
     apply: 'Зібрати установку',
     experiment: '2. Дослід',
@@ -108,8 +144,26 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     footer: 'Spark — відкритий некомерційний проєкт. Код: MIT, тексти: CC BY-SA 4.0. Дані мають джерела; оцінки позначено.',
   },
   en: {
+    action: 'What we do',
+    actions: { 'heat-to': 'Heat to…', boil: 'Boil', 'cool-to': 'Cool to…', freeze: 'Freeze', melt: 'Melt' },
+    target: 'Target temperature, °C',
+    substance: 'Substance',
+    amount: 'Amount, L',
+    coolWhere: 'Where we cool it',
+    meltWith: 'How we melt it',
+    justRoom: 'Just in the room',
+    setpoint: 'Cooler temperature, °C',
+    sampleTemp: 'Substance',
+    phaseState: 'State',
+    liquid: 'liquid',
+    solidShare: (p) => `solid ${p} %`,
+    boiledOff: (g) => `boiled off ${g}`,
+    surroundings: 'Around it',
+    meltLine: 'melting',
+    boilLine: 'boiling',
+    targetLine: 'target',
     title: 'Spark · Lab',
-    subtitle: 'Heat some water: pick a device, turn the knob, watch what happens — and find out why.',
+    subtitle: 'Heat and cool, boil and freeze: pick a substance, a vessel and a device — watch what happens and find out why.',
     language: 'Language',
     level: 'Explanation level',
     setup: '1. Setup',
@@ -124,7 +178,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     safety: 'Safety',
     ml: 'mL',
     water: 'Water, L',
-    startTemp: 'Water temperature, °C',
+    startTemp: 'Starting temperature, °C',
     room: 'Room temperature, °C',
     apply: 'Build the setup',
     experiment: '2. Experiment',

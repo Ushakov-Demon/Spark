@@ -135,3 +135,4 @@ footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 24px; }
 .messages .summary p { background: none; padding: 0; margin: 4px 0; }
 details.more { margin: 8px 0; }
 details.more > summary { cursor: pointer; color: var(--accent); }
+.readout small { color: var(--muted); font-size: 0.78rem; }
