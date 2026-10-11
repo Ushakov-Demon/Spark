@@ -71,7 +71,7 @@ export function heatingSetup(p: HeatingParams = DEFAULT_HEATING): HeatingSetup {
     id: SOURCE_ID,
     rating: p.rating,
     knob: p.knob,
-    vessel: { item: vesselItem, id: VESSEL_ID, liquidId: WATER_ID, material: p.material },
+    vessel: { item: vesselItem, id: VESSEL_ID, liquidId: WATER_ID, material: p.material, size: p.size, liters: p.liters },
     roomId: ROOM_ID,
     roomTemp: p.roomTemp,
     liquidTemp: p.startTemp,

@@ -3,4 +3,5 @@ export * from './taxonomy.js';
 export * from './heaters.js';
 export * from './vessels.js';
 export * from './compatibility.js';
+export * from './geometry.js';
 export * from './catalog.js';

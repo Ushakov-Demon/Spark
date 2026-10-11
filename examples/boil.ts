@@ -25,7 +25,7 @@ import { buildReport, fixed, formatQuantity, renderText, type ExplainContext } f
 import { isLocale, tr } from '../src/knowledge/i18n.js';
 import { LEVELS, type Level } from '../src/knowledge/levels.js';
 import { boilLab, DEFAULT_BOIL, SOURCE_ID, type BoilParams, type PotMetal } from '../src/scenarios/index.js';
-import { vesselGeometry } from '../src/equipment/index.js';
+import { vesselGeometry, VESSELS } from '../src/equipment/index.js';
 import { kilograms } from '../src/core/units.js';
 
 const arg = (n: string) => {
@@ -111,15 +111,15 @@ const kWh = (v: number) => `${fixed(v / 3.6e6, 2, locale)} ${uk ? 'кВт·го�
 const MJ = (v: number) => `${fixed(v / 1e6, 2, locale)} ${uk ? 'МДж' : 'MJ'}`;
 const t = (s: number) => formatQuantity(s, 's', ctx);
 const T = (c: number) => formatQuantity(celsius(c), 'K', ctx);
-const g = vesselGeometry(p.liters, 1);
+const g = vesselGeometry(VESSELS.pot.spec.shape, p.liters, p.liters);
 const potName = tr(MATERIALS[p.potMaterial].name, locale).toLowerCase();
 const out: string[] = [];
 
 out.push('', uk ? '▌ Дослід: нагріти воду до кипіння' : '▌ Experiment: bring water to the boil', '');
 out.push(
   uk
-    ? `${p.liters} л води (${fixed(waterMass, 2, locale)} кг: густина ${fixed(MATERIALS.water.density.value, 2, locale)} кг/м³) від ${T(p.startTemp)}, каструля ${potName} ${p.potMass} кг (≈ ${fixed(g.radius * 200, 0, locale)} × ${fixed(g.height * 100, 0, locale)} см), електроплита ${p.power} Вт, кімната ${T(p.roomTemp)}.`
-    : `${p.liters} L of water (${fixed(waterMass, 2, locale)} kg: density ${fixed(MATERIALS.water.density.value, 2, locale)} kg/m³) from ${T(p.startTemp)}, ${potName} pot ${p.potMass} kg (≈ ${fixed(g.radius * 200, 0, locale)} × ${fixed(g.height * 100, 0, locale)} cm), ${p.power} W hotplate, room ${T(p.roomTemp)}.`,
+    ? `${p.liters} л води (${fixed(waterMass, 2, locale)} кг: густина ${fixed(MATERIALS.water.density.value, 2, locale)} кг/м³) від ${T(p.startTemp)}, каструля ${potName} ${p.potMass} кг (≈ ${fixed(g.opening * 100, 0, locale)} × ${fixed(g.height * 100, 0, locale)} см), електроплита ${p.power} Вт, кімната ${T(p.roomTemp)}.`
+    : `${p.liters} L of water (${fixed(waterMass, 2, locale)} kg: density ${fixed(MATERIALS.water.density.value, 2, locale)} kg/m³) from ${T(p.startTemp)}, ${potName} pot ${p.potMass} kg (≈ ${fixed(g.opening * 100, 0, locale)} × ${fixed(g.height * 100, 0, locale)} cm), ${p.power} W hotplate, room ${T(p.roomTemp)}.`,
 );
 
 out.push('', uk ? '▌ Мінімум за формулою (без жодних втрат)' : '▌ Minimum by formula (no losses at all)', '');

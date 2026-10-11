@@ -1,4 +1,5 @@
 import type { LocalizedText } from '../knowledge/i18n.js';
+import { hasFlatBottom, vesselGeometry } from './geometry.js';
 import type { HeaterItem, VesselItem } from './types.js';
 
 export type Compatibility = { readonly ok: true } | { readonly ok: false; readonly reason: LocalizedText };
@@ -8,15 +9,19 @@ const MATERIAL_NAMES: Readonly<Record<string, LocalizedText>> = {
   aluminium: { uk: 'алюміній', en: 'aluminium' },
   iron: { uk: 'чавун', en: 'cast iron' },
   glass: { uk: 'скло', en: 'glass' },
+  copper: { uk: 'мідь', en: 'copper' },
+  brass: { uk: 'латунь', en: 'brass' },
 };
 
 /**
- * Can this heater heat this vessel made of this material at all?
- * Only rules backed by a source live here (see HeaterSpec.requiresMaterial).
+ * Can this heater heat this vessel (of this material and capacity) at all?
+ * Rules come from a source (induction needs a ferromagnetic material) or from
+ * plain geometry (a round bottom touches a hob at one point; a 50 mm element
+ * does not fit through a narrow neck).
  */
-export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string): Compatibility {
-  void vessel;
-  const req = heater.spec.requiresMaterial;
+export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string, capacityL: number = vessel.spec.defaultSize): Compatibility {
+  const spec = heater.spec;
+  const req = spec.requiresMaterial;
   if (req && !req.materials.includes(material)) {
     const m = MATERIAL_NAMES[material] ?? { uk: material, en: material };
     return {
@@ -26,6 +31,28 @@ export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string
         en: `${heater.name.en} does not heat a ${m.en} vessel: it needs a magnetic metal (cast iron, magnetic steel). The hob simply does not «see» it.`,
       },
     };
+  }
+  if ((spec.method === 'contact' || spec.method === 'induction') && !hasFlatBottom(vessel.spec.shape)) {
+    return {
+      ok: false,
+      reason: {
+        uk: `${vessel.name.uk} має кругле дно: на плиті вона торкається її лише в одній точці й майже не нагрівається. Такий посуд гріють над полум’ям або в спеціальному нагрівачі.`,
+        en: `${vessel.name.en} has a round bottom: on a hob it touches it at a single point and hardly heats up. Such vessels are heated over a flame or in a heating mantle.`,
+      },
+    };
+  }
+  if (spec.method === 'immersion' && spec.elementDiameter) {
+    const g = vesselGeometry(vessel.spec.shape, capacityL, capacityL);
+    if (g.opening < spec.elementDiameter.value) {
+      const mm = (x: number) => Math.round(x * 1000);
+      return {
+        ok: false,
+        reason: {
+          uk: `Кип’ятильник (діаметр ≈ ${mm(spec.elementDiameter.value)} мм) не проходить в отвір посуду «${vessel.name.uk}» (≈ ${mm(g.opening)} мм).`,
+          en: `The immersion heater (≈ ${mm(spec.elementDiameter.value)} mm wide) does not fit through the opening of the ${vessel.name.en.toLowerCase()} (≈ ${mm(g.opening)} mm).`,
+        },
+      };
+    }
   }
   return { ok: true };
 }
@@ -41,14 +68,3 @@ export function powerAt(heater: HeaterItem, rating: number, position: number): n
 /** Typical empty mass of a vessel of this capacity, kg. */
 export const typicalVesselMass = (vessel: VesselItem, liters: number): number =>
   Math.round((vessel.spec.massModel.base + vessel.spec.massModel.perLiter * liters) * 1000) / 1000;
-
-/**
- * Cylinder geometry of a vessel of capacity `liters`, given height/diameter `k`.
- *   V = π r² h, h = 2kr  →  r = (V / 2πk)^(1/3)
- */
-export function vesselGeometry(liters: number, heightToDiameter: number) {
-  const v = liters / 1000;
-  const r = Math.cbrt(v / (2 * Math.PI * heightToDiameter));
-  const h = 2 * heightToDiameter * r;
-  return { radius: r, height: h, bottom: Math.PI * r * r, side: 2 * Math.PI * r * h };
-}

@@ -49,6 +49,11 @@ const HEATER_LIST = {
           note: 'Effective area for losses of the hot plate to the room; estimate.',
         },
       },
+      plateDiameter: {
+        value: 0.18, unit: 'm', conditions: '2000 W solid plate', verification: 'single-source', tolerance: 0.01,
+        citations: [{ source: 'zanussi-zee6140fxa', locator: 'cooking zones: 2000 W / 180 mm', conditions: '230 V', value: 0.18 }],
+        note: '1000 W plates are 145 mm; the 180 mm size is used for all ratings.',
+      },
       contactConductance: {
         value: 60, unit: 'W/K', conditions: 'flat pot bottom on a solid plate', verification: 'estimate', tolerance: 0.5,
         citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [30, 90] }],
@@ -197,6 +202,11 @@ const HEATER_LIST = {
           citations: [{ source: 'travel-immersion-1500', locator: 'listing: element dimensions', conditions: '315 × 50 mm', value: 0.0495 }],
           note: 'Computed from the dimensions of one listed model.',
         },
+      },
+      elementDiameter: {
+        value: 0.05, unit: 'm', conditions: 'element Ø 50 mm', verification: 'single-source', tolerance: 0.01,
+        citations: [{ source: 'travel-immersion-1500', locator: 'listing: element dimensions', conditions: '315 × 50 mm', value: 0.05 }],
+        note: 'One listed model; smaller immersion heaters exist.',
       },
     },
   },

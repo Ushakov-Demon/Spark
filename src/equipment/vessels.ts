@@ -31,10 +31,13 @@ const VESSEL_LIST = {
       defaultSize: 3,
       materials: ['steel', 'aluminium', 'iron'],
       defaultMaterial: 'steel',
-      heightToDiameter: {
-        value: 1, unit: '', conditions: 'stock pot', verification: 'estimate', tolerance: 0.5,
-        citations: [{ source: 'spark', locator: 'estimate', conditions: 'typical pots', range: [0.6, 1.2] }],
-        note: 'Estimate; saucepans are lower, stock pots taller.',
+      shape: {
+        type: 'cylinder',
+        heightToDiameter: {
+          value: 1, unit: '', conditions: 'stock pot', verification: 'estimate', tolerance: 0.5,
+          citations: [{ source: 'spark', locator: 'estimate', conditions: 'typical pots', range: [0.6, 1.2] }],
+          note: 'Estimate; saucepans are lower, stock pots taller.',
+        },
       },
       wallThickness: {
         value: 0.001, unit: 'm', conditions: 'sheet metal pot', verification: 'estimate', tolerance: 0.5,
@@ -56,6 +59,43 @@ const VESSEL_LIST = {
         citations: [{ source: 'spark', locator: 'estimate', conditions: 'not weighed', range: [0.15, 0.35] }],
         note: 'Estimate.',
       },
+    },
+  },
+  turka: {
+    id: 'turka',
+    kind: 'vessel',
+    category: 'vessel.household',
+    name: { uk: 'Турка (джезва)', en: 'Cezve (Turkish coffee pot)' },
+    phraseIn: {
+      copper: { uk: 'у мідній турці', en: 'in a copper cezve' },
+      brass: { uk: 'у латунній турці', en: 'in a brass cezve' },
+      steel: { uk: 'у сталевій турці', en: 'in a steel cezve' },
+      aluminium: { uk: 'в алюмінієвій турці', en: 'in an aluminium cezve' },
+    },
+    description: {
+      novice: {
+        uk: 'Невеликий посуд для кави з широким дном і вужчим горлом. Буває мідний, латунний, сталевий, алюмінієвий — і нагрівається по-різному.',
+        en: 'A small coffee pot with a wide bottom and a narrower neck. It can be copper, brass, steel or aluminium — and each heats differently.',
+      },
+      school: {
+        uk: 'Мідь проводить теплоту приблизно в 9 разів краще за сталь, латунь — приблизно в 2,5 раза краще; тому стінка мідної турки рівномірніше прогрівається. Але для тонкої стінки важливіше інше — скільки теплоти забирає сам метал: Q = c·m·Δt.',
+        en: 'Copper conducts heat about 9 times better than steel, brass about 2.5 times better; so a copper wall warms more evenly. For a thin wall, however, what matters more is how much heat the metal itself takes: Q = c·m·Δt.',
+      },
+    },
+    media: [],
+    spec: {
+      sizes: [0.15, 0.25, 0.4, 0.6],
+      defaultSize: 0.25,
+      materials: ['copper', 'brass', 'steel', 'aluminium'],
+      defaultMaterial: 'copper',
+      shape: {
+        type: 'frustum',
+        heightToDiameter: { value: 1.1, unit: '', conditions: 'cezve, height / bottom diameter', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.9, 1.4] }], note: 'Estimate of typical proportions.' },
+        topToBottom: { value: 0.75, unit: '', conditions: 'neck narrower than the bottom', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.6, 0.9] }], note: 'Estimate; real cezves narrow at the neck and flare at the rim.' },
+      },
+      wallThickness: { value: 0.001, unit: 'm', conditions: 'sheet metal', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.0006, 0.002] }], note: 'Estimate.' },
+      massModel: { base: 0.1, perLiter: 0.4, data: { value: 0.2, unit: 'kg', conditions: '0.25 L cezve', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.12, 0.35] }], note: 'Estimate: 0.1 kg + 0.4 kg per litre; the long handle is not counted.' } },
+      lid: 'none',
     },
   },
   beaker: {
@@ -80,10 +120,13 @@ const VESSEL_LIST = {
       defaultSize: 0.25,
       materials: ['glass'],
       defaultMaterial: 'glass',
-      heightToDiameter: {
-        value: 1.4, unit: '', conditions: 'low-form (Griffin) beaker', verification: 'estimate', tolerance: 0.3,
-        citations: [{ source: 'spark', locator: 'estimate', conditions: 'typical proportions', range: [1.2, 1.6] }],
-        note: 'Estimate of typical low-form proportions.',
+      shape: {
+        type: 'cylinder',
+        heightToDiameter: {
+          value: 1.4, unit: '', conditions: 'low-form (Griffin) beaker', verification: 'estimate', tolerance: 0.3,
+          citations: [{ source: 'spark', locator: 'estimate', conditions: 'typical proportions', range: [1.2, 1.6] }],
+          note: 'Estimate of typical low-form proportions.',
+        },
       },
       wallThickness: {
         value: 0.0015, unit: 'm', conditions: 'laboratory glass', verification: 'estimate', tolerance: 0.5,
@@ -99,6 +142,100 @@ const VESSEL_LIST = {
           note: 'Estimate: 0.02 kg + 0.25 kg per litre.',
         },
       },
+      lid: 'none',
+    },
+  },
+  'flask-conical': {
+    id: 'flask-conical',
+    kind: 'vessel',
+    category: 'vessel.laboratory',
+    name: { uk: 'Конічна колба', en: 'Conical (Erlenmeyer) flask' },
+    phraseIn: { glass: { uk: 'у конічній колбі', en: 'in a conical flask' } },
+    description: {
+      novice: {
+        uk: 'Скляна колба з плоским широким дном і вузьким горлом. Її можна ставити на плитку, а рідина в ній менше розхлюпується.',
+        en: 'A glass flask with a flat wide bottom and a narrow neck. It can stand on a hot plate, and liquid splashes out less.',
+      },
+      school: {
+        uk: 'Широке дно добре приймає теплоту від плитки, а вузьке горло зменшує відкриту поверхню рідини — менше теплоти йде в повітря.',
+        en: 'The wide bottom takes heat from a plate well, and the narrow neck reduces the open liquid surface — less heat escapes into the air.',
+      },
+    },
+    media: [],
+    spec: {
+      sizes: [0.1, 0.25, 0.5, 1],
+      defaultSize: 0.25,
+      materials: ['glass'],
+      defaultMaterial: 'glass',
+      shape: {
+        type: 'frustum',
+        heightToDiameter: { value: 1.2, unit: '', conditions: 'height / bottom diameter', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [1, 1.5] }], note: 'Estimate of typical proportions.' },
+        topToBottom: { value: 0.3, unit: '', conditions: 'neck / bottom diameter', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.2, 0.4] }], note: 'Estimate; the cone is approximated up to the neck.' },
+      },
+      wallThickness: { value: 0.0015, unit: 'm', conditions: 'laboratory glass', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.001, 0.0025] }], note: 'Estimate.' },
+      massModel: { base: 0.03, perLiter: 0.3, data: { value: 0.105, unit: 'kg', conditions: '250 mL flask', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.07, 0.15] }], note: 'Estimate: 0.03 kg + 0.3 kg per litre.' } },
+      lid: 'none',
+    },
+  },
+  'flask-round': {
+    id: 'flask-round',
+    kind: 'vessel',
+    category: 'vessel.laboratory',
+    name: { uk: 'Круглодонна колба', en: 'Round-bottom flask' },
+    phraseIn: { glass: { uk: 'у круглодонній колбі', en: 'in a round-bottom flask' } },
+    description: {
+      novice: {
+        uk: 'Колба-куля з вузьким горлом. Сама вона не стоїть — її закріплюють у штативі.',
+        en: 'A ball-shaped flask with a narrow neck. It cannot stand on its own — it is held in a clamp.',
+      },
+      school: {
+        uk: 'Кругле дно торкається плоскої плитки лише в одній точці, тому таку колбу гріють над полум’ям або в спеціальному нагрівачі, що охоплює її знизу.',
+        en: 'A round bottom touches a flat plate at a single point, so such a flask is heated over a flame or in a heating mantle that wraps around it.',
+      },
+    },
+    media: [],
+    spec: {
+      sizes: [0.1, 0.25, 0.5, 1],
+      defaultSize: 0.25,
+      materials: ['glass'],
+      defaultMaterial: 'glass',
+      shape: { type: 'sphere', neckToDiameter: { value: 0.3, unit: '', conditions: 'neck / ball diameter', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.2, 0.4] }], note: 'Estimate.' } },
+      wallThickness: { value: 0.0015, unit: 'm', conditions: 'laboratory glass', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.001, 0.0025] }], note: 'Estimate.' },
+      massModel: { base: 0.03, perLiter: 0.3, data: { value: 0.105, unit: 'kg', conditions: '250 mL flask', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.07, 0.15] }], note: 'Estimate: 0.03 kg + 0.3 kg per litre.' } },
+      lid: 'none',
+    },
+  },
+  'test-tube': {
+    id: 'test-tube',
+    kind: 'vessel',
+    category: 'vessel.laboratory',
+    name: { uk: 'Пробірка', en: 'Test tube' },
+    phraseIn: { glass: { uk: 'у пробірці', en: 'in a test tube' } },
+    description: {
+      novice: {
+        uk: 'Вузька скляна трубка із заокругленим дном для невеликих кількостей речовини. Її тримають тримачем над полум’ям.',
+        en: 'A narrow glass tube with a rounded bottom for small amounts of a substance. It is held with a holder over a flame.',
+      },
+      school: {
+        uk: 'Рідини в пробірці мало, тож навіть слабке полум’я спиртівки швидко її нагріває.',
+        en: 'A test tube holds little liquid, so even a weak spirit-lamp flame heats it quickly.',
+      },
+    },
+    safety: {
+      school: {
+        uk: 'Під час нагрівання отвір пробірки не спрямовують на себе чи інших людей.',
+        en: 'When heating, never point the open end of a test tube at yourself or others.',
+      },
+    },
+    media: [],
+    spec: {
+      sizes: [0.02, 0.03],
+      defaultSize: 0.02,
+      materials: ['glass'],
+      defaultMaterial: 'glass',
+      shape: { type: 'tube', heightToDiameter: { value: 9.4, unit: '', conditions: 'length / diameter (≈ 16 × 150 mm)', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [7, 11] }], note: 'Estimate of a typical 16 × 150 mm tube.' } },
+      wallThickness: { value: 0.001, unit: 'm', conditions: 'laboratory glass', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.0008, 0.0015] }], note: 'Estimate.' },
+      massModel: { base: 0.01, perLiter: 0.5, data: { value: 0.02, unit: 'kg', conditions: '20 mL tube', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.012, 0.03] }], note: 'Estimate: 0.01 kg + 0.5 kg per litre.' } },
       lid: 'none',
     },
   },

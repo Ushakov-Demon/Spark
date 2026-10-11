@@ -52,7 +52,8 @@ describe('heater specifications', () => {
 
 describe('vessel specifications', () => {
   it.each(Object.values(VESSELS).map((v) => [v.id, v] as const))('%s: data agrees with its sources', (_id, v) => {
-    expect(verifySourcedValue(v.spec.heightToDiameter)).toEqual([]);
+    const sh = v.spec.shape;
+    for (const sv of sh.type === 'sphere' ? [sh.neckToDiameter] : sh.type === 'frustum' ? [sh.heightToDiameter, sh.topToBottom] : [sh.heightToDiameter]) expect(verifySourcedValue(sv)).toEqual([]);
     expect(verifySourcedValue(v.spec.wallThickness)).toEqual([]);
     expect(verifySourcedValue(v.spec.massModel.data)).toEqual([]);
     if (v.spec.lidMassFraction) expect(verifySourcedValue(v.spec.lidMassFraction)).toEqual([]);

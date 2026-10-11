@@ -25,7 +25,8 @@ const rows: [string, SourcedValue][] = [
     return out;
   }),
   ...Object.values(VESSELS).flatMap((v): [string, SourcedValue][] => [
-    [`${v.name.uk} · пропорції`, v.spec.heightToDiameter],
+    ...(v.spec.shape.type === 'sphere' ? [[`${v.name.uk} · горло`, v.spec.shape.neckToDiameter] as [string, SourcedValue]] : [[`${v.name.uk} · пропорції`, v.spec.shape.heightToDiameter] as [string, SourcedValue]]),
+    ...(v.spec.shape.type === 'frustum' ? [[`${v.name.uk} · звуження`, v.spec.shape.topToBottom] as [string, SourcedValue]] : []),
     [`${v.name.uk} · стінка`, v.spec.wallThickness],
     [`${v.name.uk} · маса`, v.spec.massModel.data],
   ]),

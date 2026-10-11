@@ -1,6 +1,7 @@
 import type { AnyConnection, AnyEntity } from '../../core/entity.js';
 import { celsius, kilograms, meters, squareMeters, thermalConductance, watts } from '../../core/units.js';
-import { canHeat, powerAt, typicalVesselMass, vesselGeometry } from '../../equipment/compatibility.js';
+import { canHeat, powerAt, typicalVesselMass } from '../../equipment/compatibility.js';
+import { vesselGeometry } from '../../equipment/geometry.js';
 import type { HeaterItem, VesselItem } from '../../equipment/types.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import { burner, heater, thermalBody } from './entities.js';
@@ -46,9 +47,7 @@ export function placeVessel(v: VesselPlacement): Piece {
   if (!spec.materials.includes(v.material)) throw new RangeError(`${v.item.id} is not made of ${v.material}`);
   if (!(v.liters > 0) || v.liters > v.size + 1e-9) throw new RangeError(`Water (${v.liters} L) must be > 0 and fit into ${v.size} L`);
 
-  const g = vesselGeometry(v.size, spec.heightToDiameter.value);
-  const fill = v.liters / v.size;
-  const wetted = g.bottom + g.side * fill;
+  const g = vesselGeometry(spec.shape, v.size, v.liters);
   const lid = v.lid && spec.lid === 'optional';
   const mass = v.mass ?? typicalVesselMass(v.item, v.size);
   const lidId = `${v.id}.lid`;
@@ -78,11 +77,11 @@ export function placeVessel(v: VesselPlacement): Piece {
       thickness: meters(spec.wallThickness.value),
       material: v.material,
       coefficient: CONVECTION.stillWater.value,
-      area: squareMeters(wetted),
+      area: squareMeters(g.wetted),
       dataRef: 'stillWater',
     }),
     // Outer walls lose heat to the room; the bottom stands on the heater.
-    convectionLink({ id: `${v.id}->${v.roomId}`, a: v.id, b: v.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.side), dataRef: 'stillAir' }),
+    convectionLink({ id: `${v.id}->${v.roomId}`, a: v.id, b: v.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.outerSide), dataRef: 'stillAir' }),
   ];
   if (lid) {
     // A lid is its own body: water surface → air gap → lid → room. It is cooler than the
@@ -99,12 +98,12 @@ export function placeVessel(v: VesselPlacement): Piece {
       }),
     );
     connections.push(
-      convectionLink({ id: `${v.liquidId}->${lidId}`, a: v.liquidId, b: lidId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.bottom), dataRef: 'stillAir' }),
-      convectionLink({ id: `${lidId}->${v.roomId}`, a: lidId, b: v.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.bottom), dataRef: 'stillAir' }),
+      convectionLink({ id: `${v.liquidId}->${lidId}`, a: v.liquidId, b: lidId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir' }),
+      convectionLink({ id: `${lidId}->${v.roomId}`, a: lidId, b: v.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir' }),
     );
   } else {
     connections.push(
-      convectionLink({ id: `${v.liquidId}->${v.roomId}`, a: v.liquidId, b: v.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.bottom), dataRef: 'stillAir' }),
+      convectionLink({ id: `${v.liquidId}->${v.roomId}`, a: v.liquidId, b: v.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(g.freeSurface), dataRef: 'stillAir' }),
     );
   }
   return { entities, connections, warnings: [] };
@@ -117,15 +116,21 @@ export interface HeaterPlacement {
   /** Knob position 0 … 1 (switch-type: > 0 = on). */
   readonly knob: number;
   /** What it heats: the vessel it stands under, and the liquid (for immersion heaters). */
-  readonly vessel: { readonly item: VesselItem; readonly id: string; readonly liquidId: string; readonly material: string };
+  readonly vessel: { readonly item: VesselItem; readonly id: string; readonly liquidId: string; readonly material: string; readonly size: number; readonly liters: number };
   readonly roomId: string;
   readonly roomTemp: number; // °C
   readonly liquidTemp: number; // °C — immersion heaters start at the liquid temperature
 }
 
+function contactFraction(h: HeaterPlacement, plateDiameter: number | undefined): number {
+  if (!plateDiameter) return 1;
+  const g = vesselGeometry(h.vessel.item.spec.shape, h.vessel.size, h.vessel.liters);
+  return Math.min(1, g.contactArea / (Math.PI * (plateDiameter / 2) ** 2));
+}
+
 export function placeHeater(h: HeaterPlacement): Piece {
   const spec = h.item.spec;
-  const compat = canHeat(h.item, h.vessel.item, h.vessel.material);
+  const compat = canHeat(h.item, h.vessel.item, h.vessel.material, h.vessel.size);
   const power = watts(compat.ok ? powerAt(h.item, h.rating, h.knob) : 0);
   const on = power > 0;
   const warnings = compat.ok ? [] : [compat.reason];
@@ -140,7 +145,8 @@ export function placeHeater(h: HeaterPlacement): Piece {
         heater({ id: h.id, label: h.item.name, mass: kilograms(body.mass.value), specificHeat: mat.specificHeat.value, material: body.material, power, on, device: h.item.id, temperature: celsius(h.roomTemp) }),
       );
       connections.push(
-        thermalLink({ id: `${h.id}->${h.vessel.id}`, a: h.id, b: h.vessel.id, conductance: thermalConductance(spec.contactConductance!.value) }),
+        // Contact scales with how much of the plate the vessel bottom covers.
+        thermalLink({ id: `${h.id}->${h.vessel.id}`, a: h.id, b: h.vessel.id, conductance: thermalConductance(spec.contactConductance!.value * contactFraction(h, spec.plateDiameter?.value)) }),
         convectionLink({ id: `${h.id}->${h.roomId}`, a: h.id, b: h.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(body.area.value), dataRef: 'stillAir' }),
       );
       break;

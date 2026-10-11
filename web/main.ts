@@ -345,13 +345,13 @@ function buildSetupForm() {
   const vesselSel = grouped('f-vessel', 'vessel', params.vessel, (id) => {
     const next = VESSELS[id as VesselId];
     const size = next.spec.defaultSize;
-    params = { ...params, vessel: next.id as VesselId, size, material: next.spec.defaultMaterial, lid: false, liters: round(size * 0.7) };
+    params = { ...params, vessel: next.id as VesselId, size, material: next.spec.defaultMaterial, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
     delete (params as { vesselMass?: number }).vesselMass;
     rebuild();
   });
   const sizeSel = select('f-size', v.spec.sizes.map((x) => [String(x), volume(x)] as const), String(params.size), (x) => {
     const size = Number(x);
-    params = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7) };
+    params = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7, size < 0.1 ? 3 : 2) };
     delete (params as { vesselMass?: number }).vesselMass;
     rebuild();
   });
@@ -376,14 +376,14 @@ function buildSetupForm() {
   form.append(field(u.vesselMass, number('f-pot-mass', mass, 0.01, 20, 0.01, (x) => (params = { ...params, vesselMass: x }))));
   if (v.spec.lid === 'optional') form.append(el('label', { className: 'check' }, lid, el('span', {}, u.lid)));
   form.append(
-    field(`${u.water} (≤ ${volume(params.size)})`, number('f-liters', params.liters, 0.01, params.size, 0.01, (x) => (params = { ...params, liters: x }))),
+    field(`${u.water} (≤ ${volume(params.size)})`, number('f-liters', params.liters, params.size < 0.1 ? 0.001 : 0.01, params.size, params.size < 0.1 ? 0.001 : 0.01, (x) => (params = { ...params, liters: x }))),
     field(u.startTemp, number('f-start', params.startTemp, 0, 99, 1, (x) => (params = { ...params, startTemp: x }))),
     field(u.room, number('f-room', params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x }))),
   );
   form.append(about([h, v]));
 }
 
-const round = (x: number) => Math.round(x * 100) / 100;
+const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** digits;
 
 /** "What it is" cards for the chosen equipment, at the chosen level. */
 function about(items: readonly EquipmentItem[]): HTMLElement {

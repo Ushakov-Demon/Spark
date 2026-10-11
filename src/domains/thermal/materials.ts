@@ -182,6 +182,31 @@ export const MATERIALS = {
       ],
     },
   },
+  brass: {
+    id: 'brass',
+    name: { uk: 'Латунь', en: 'Brass' },
+    specificHeat: {
+      value: specificHeat(377),
+      unit: C,
+      conditions: 'solid, room temperature',
+      verification: 'single-source',
+      tolerance: 0.01,
+      citations: [{ source: 'wikidata', locator: 'Q39782 P2056', conditions: 'not stated', value: 377 }],
+      note: 'Only one source found; depends somewhat on the copper/zinc ratio.',
+    },
+    conductivity: {
+      value: thermalConductivity(111),
+      unit: K,
+      conditions: 'Cu ≈ 70 %, ≈ 293 K',
+      verification: 'cross-checked',
+      tolerance: 0.1,
+      citations: [
+        { source: 'wikidata', locator: 'Q39782 P2068', conditions: '20 °C', value: 111 },
+        { source: 'wikipedia-thermal-conductivity', locator: 'Brass Cu70%', conditions: '293–296 K', range: [109, 121] },
+      ],
+      note: 'Brass Cu63% is listed at 125; composition matters.',
+    },
+  },
   iron: {
     id: 'iron',
     name: { uk: 'Залізо', en: 'Iron' },

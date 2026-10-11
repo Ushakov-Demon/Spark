@@ -1,6 +1,7 @@
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LeveledText } from '../knowledge/levels.js';
 import type { License, SourceId, SourcedValue } from '../knowledge/types.js';
+import type { VesselShape } from './geometry.js';
 
 /**
  * Equipment catalog: everything an experimenter can put on the table.
@@ -78,8 +79,12 @@ export interface HeaterSpec {
     /** Area exchanging heat: plate → room (contact) or element → liquid (immersion), m². */
     readonly area: SourcedValue;
   };
-  /** contact: plate → vessel bottom conductance, W/K. */
+  /** contact: plate → vessel bottom conductance when the bottom covers the whole plate, W/K. */
   readonly contactConductance?: SourcedValue;
+  /** contact: plate diameter, m — a smaller vessel bottom touches only part of it. */
+  readonly plateDiameter?: SourcedValue;
+  /** immersion: element diameter, m — it must fit through the vessel opening. */
+  readonly elementDiameter?: SourcedValue;
 }
 
 export interface HeaterItem extends EquipmentCard {
@@ -98,8 +103,8 @@ export interface VesselSpec {
   /** Materials it is made of (keys in MATERIALS). */
   readonly materials: readonly string[];
   readonly defaultMaterial: string;
-  /** Cylinder proportions: height / diameter. */
-  readonly heightToDiameter: SourcedValue;
+  /** Shape and proportions (see geometry.ts). */
+  readonly shape: VesselShape;
   /** Wall thickness, m — glass walls slow heat down noticeably, thin metal hardly. */
   readonly wallThickness: SourcedValue;
   /** Typical empty mass: base + perLiter × capacity, kg (the experimenter can override). */
