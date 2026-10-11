@@ -7,6 +7,7 @@ export const OXYGEN = {
   kind: 'element',
   group: 'gas',
   name: { uk: 'Кисень', en: 'Oxygen' },
+  genitive: { uk: 'кисню', en: 'oxygen' },
   gender: 'm',
   formula: 'O₂',
   composition: { O: 2 },

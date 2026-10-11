@@ -12,6 +12,8 @@ import { formatDuration, formatQuantity, sig, type ExplainContext } from '../exp
 import { COOLERS, type CoolerId } from '../equipment/coolers.js';
 import { HEATERS, type HeaterId } from '../equipment/heaters.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
+import { ELECTRODES, SUPPLIES, type SupplyId } from '../equipment/supplies.js';
+import { placeSupply } from '../domains/electrical/assembly.js';
 import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { OPERATION_IDS, OPERATIONS, type Gender, type Operation, type OperationContext, type OperationId } from './operations/index.js';
@@ -44,6 +46,10 @@ export interface LabParams {
   readonly heater?: { readonly id: HeaterId; readonly rating: number; readonly knob: number };
   /** Cold surroundings (cool-to, freeze; none = the room air). */
   readonly cooler?: { readonly id: CoolerId; readonly setpoint: number };
+  /** Power supply with electrodes in the liquid (pass a current); knob 0…1 sets a lab supply's voltage. */
+  readonly supply?: { readonly id: SupplyId; readonly knob: number };
+  /** How long the operation runs, minutes (for timed operations). */
+  readonly duration?: number;
   readonly roomTemp: number; // °C
   /** Relative humidity of the room air, 0…1 (default 0.5). */
   readonly humidity?: number;
@@ -54,6 +60,7 @@ export const LAB_VESSEL_ID = 'vessel';
 export const LAB_HEATER_ID = 'heater';
 export const LAB_ROOM_ID = 'room';
 export const LAB_COOLER_ID = 'cooler';
+export const LAB_SUPPLY_ID = 'supply';
 const THERMOSTAT_ID = 'thermostat';
 
 export interface LabSetup {
@@ -83,6 +90,9 @@ export function labSetup(p: LabParams): LabSetup {
     roomTemp: p.roomTemp,
     ...(surroundings ? { outside: surroundings, surfaceTo: cooler!.spec.method === 'air' ? LAB_COOLER_ID : LAB_ROOM_ID } : {}),
   });
+  const supplyPiece = p.supply
+    ? placeSupply({ item: SUPPLIES[p.supply.id], id: LAB_SUPPLY_ID, knob: p.supply.knob, bodyId: SAMPLE_ID, electrodes: ELECTRODES })
+    : undefined;
   const heater = p.heater
     ? placeHeater({
         item: HEATERS[p.heater.id],
@@ -104,10 +114,11 @@ export function labSetup(p: LabParams): LabSetup {
       ...vessel.entities,
       ...(heater?.entities ?? []),
       ...(coolerPiece?.entities ?? []),
+      ...(supplyPiece?.entities ?? []),
       reservoir({ id: LAB_ROOM_ID, label: { uk: 'Повітря в кімнаті', en: 'Room air' }, temperature: room, humidity: p.humidity ?? 0.5 }),
       ...extra,
     ],
-    connections: [...vessel.connections, ...(heater?.connections ?? [])],
+    connections: [...vessel.connections, ...(heater?.connections ?? []), ...(supplyPiece?.connections ?? [])],
     environment: { ambientTemperature: room },
   });
   return { state, warnings: [...vessel.warnings, ...(heater?.warnings ?? [])] };
@@ -125,7 +136,7 @@ const K = (c: number) => c + ZERO_CELSIUS_IN_KELVIN;
 
 /** Has the experiment reached its goal? (Used as the `until` stop condition.) */
 export function labGoalReached(p: LabParams, s: SystemState): boolean {
-  return OPERATIONS[p.action].reached(sampleOf(s), p, SUBSTANCES[p.substance]);
+  return OPERATIONS[p.action].reached(sampleOf(s), p, SUBSTANCES[p.substance], s);
 }
 
 export type LabStatus =
@@ -173,6 +184,8 @@ export const labProgress = (state: SystemState): LabProgress => {
  * Slow evaporation alone is not progress — unless the goal is to boil the substance dry.
  */
 export const noProgress = (p: LabParams, a: LabProgress, b: LabProgress): boolean =>
+  // A timed operation progresses with time itself.
+  !OPERATIONS[p.action].duration &&
   Math.abs(b.T - a.T) < 0.05 && Math.abs(b.s - a.s) < 0.001 && (!OPERATIONS[p.action].massIsProgress || Math.abs(b.m - a.m) < 1e-5);
 
 /** Continues the experiment "in the mind" to tell "later" from "never" (stops on reaching the goal or a steady state). */
@@ -233,7 +246,7 @@ function subject(p: LabParams, locale: Locale, now?: SystemState): { text: strin
     } else name = locale === 'uk' ? `${sub.gender === 'f' ? 'Замерзла' : 'Замерзлий'} ${name.toLowerCase()}` : `Frozen ${name.toLowerCase()}`;
   }
   const where = tr(vessel.phraseIn[p.material] ?? vessel.name, locale) + (p.lid ? (locale === 'uk' ? ' з кришкою' : ' with a lid') : '');
-  const by = p.heater ? ` ${tr(HEATERS[p.heater.id].phrase, locale)}` : p.cooler ? ` ${tr(COOLERS[p.cooler.id].phrase, locale)}` : locale === 'uk' ? ' у кімнаті' : ' in the room';
+  const by = p.supply ? ` ${tr(SUPPLIES[p.supply.id].phrase, locale)}` : p.heater ? ` ${tr(HEATERS[p.heater.id].phrase, locale)}` : p.cooler ? ` ${tr(COOLERS[p.cooler.id].phrase, locale)}` : locale === 'uk' ? ' у кімнаті' : ' in the room';
   return { text: `${name} (${amount}) ${where}${by}`, gender };
 }
 
@@ -243,6 +256,12 @@ const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 export function labCautions(p: LabParams): LocalizedText[] {
   const sub = SUBSTANCES[p.substance];
   const out: LocalizedText[] = [];
+  if (p.supply) {
+    out.push({
+      uk: 'У справжньому досліді — лише безпечна низька напруга: батарейка або лабораторний блок живлення. Ніколи не опускай у воду дроти від розетки 230 В — це смертельно небезпечно.',
+      en: 'In a real experiment use only a safe low voltage: a battery or a lab power supply. Never put mains (230 V) wires into water — it can kill.',
+    });
+  }
   if (sub.flammable && p.heater && HEATERS[p.heater.id].spec.method === 'flame') {
     out.push({
       uk: `Насправді ${lowerFirst(tr(sub.name, 'uk'))} не гріють на відкритому вогні: він легко займається, а пара вибухонебезпечна. У віртуальній лабораторії — можна, у справжній — ні.`,
@@ -293,9 +312,11 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
 
   switch (status.kind) {
     case 'reached': {
-      const lines = [uk ? `${subj} ${past} за ${formatDuration(status.at, locale)}.` : `${subj} ${past} in ${formatDuration(status.at, locale)}.`];
-      lines.push(...(op.reachedNotes?.(b1, locale) ?? []));
-      const e = energyLine();
+      const word = op.durationWord ? tr(op.durationWord, locale) : uk ? 'за' : 'in';
+      const lines = [`${subj} ${past} ${word ? `${word} ` : ''}${formatDuration(status.at, locale)}.`];
+      lines.push(...(op.reachedNotes?.({ sample: b1, state: result.final, initial: result.initial, locale }) ?? []));
+      // A current's heat is told by the operation itself; "the heater released…" is for heaters.
+      const e = op.uses === 'supply' ? null : energyLine();
       if (e) lines.push(uk ? e.replace(/віддала навколишньому/, sub.gender === 'f' ? 'віддала навколишньому' : 'віддав навколишньому') : e);
       return [{ kind: 'summary', tone: 'success', lines }];
     }

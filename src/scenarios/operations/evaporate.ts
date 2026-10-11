@@ -29,7 +29,7 @@ export const EVAPORATE: Operation = {
     past: { uk: { f: 'википіла досуха', m: 'википів досуха', n: 'википіло досуха' }, en: 'boiled dry' },
     future: { uk: 'википить досуха', en: 'boil dry' },
   },
-  reachedNotes(b, locale) {
+  reachedNotes({ sample: b, locale }) {
     const crystals = b.state.mixture?.crystals ?? 0;
     if (!(crystals > 0)) return [];
     const g = formatQuantity(crystals, 'kg', { locale, level: 'school' });

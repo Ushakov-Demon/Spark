@@ -18,6 +18,19 @@ export interface UiText {
   crystals(mass: string): string;
   boiledOff(g: string): string;
   surroundings: string;
+  supplyWhat: string;
+  volts: string;
+  amps: string;
+  duration: string;
+  current: string;
+  supplyDetails(voltage: string, resistance: string): string;
+  noCurrent: string;
+  gases(list: string): string;
+  batteryFlat: string;
+  supplyEnergy(total: string): string;
+  supplyHeat: string;
+  supplyChemistry: string;
+  supplyInside: string;
   meltLine: string;
   boilLine: string;
   targetLine: string;
@@ -125,6 +138,19 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     crystals: (m) => `кристалів солі ${m}`,
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
+    supplyWhat: 'Джерело струму',
+    volts: 'В',
+    amps: 'А',
+    duration: 'Скільки часу, хв',
+    current: 'Струм',
+    supplyDetails: (u, r) => `${u}${r ? ` · рідина ${r}` : ''}`,
+    noCurrent: 'струму немає',
+    gases: (l) => `виділилось ${l}`,
+    batteryFlat: 'батарейка розрядилась',
+    supplyEnergy: (e) => `Джерело віддало ${e}:`,
+    supplyHeat: 'нагріло рідину (теплота Джоуля–Ленца)',
+    supplyChemistry: 'пішло на розклад рідини (гази)',
+    supplyInside: 'нагріло саме джерело',
     meltLine: 'плавлення',
     boilLine: 'кипіння',
     targetLine: 'ціль',
@@ -230,6 +256,19 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     crystals: (m) => `salt crystals ${m}`,
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
+    supplyWhat: 'Power source',
+    volts: 'V',
+    amps: 'A',
+    duration: 'How long, min',
+    current: 'Current',
+    supplyDetails: (u, r) => `${u}${r ? ` · liquid ${r}` : ''}`,
+    noCurrent: 'no current',
+    gases: (l) => `released ${l}`,
+    batteryFlat: 'battery flat',
+    supplyEnergy: (e) => `The source gave ${e}:`,
+    supplyHeat: 'heated the liquid (Joule heat)',
+    supplyChemistry: 'went into splitting the liquid (gases)',
+    supplyInside: 'heated the source itself',
     meltLine: 'melting',
     boilLine: 'boiling',
     targetLine: 'target',

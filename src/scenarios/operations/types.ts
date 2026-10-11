@@ -1,3 +1,4 @@
+import type { SystemState } from '../../core/state.js';
 import type { ThermalBody } from '../../domains/thermal/entities.js';
 import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import type { SubstanceItem } from '../../substances/types.js';
@@ -39,12 +40,14 @@ export interface Operation {
   readonly id: string;
   /** Button text: "Закип’ятити". */
   readonly label: LocalizedText;
-  /** A heater, a cooler, or either (melting also works in a warm room). */
-  readonly uses: 'heater' | 'cooler' | 'either';
+  /** A heater, a cooler, either (melting also works in a warm room), or a power supply. */
+  readonly uses: 'heater' | 'cooler' | 'either' | 'supply';
   /** Which way the temperature goes — for "the highest/lowest it can reach" and progress banners. */
   readonly direction: 'heating' | 'cooling';
   /** The experimenter sets a target temperature, °C (heat to…, cool to…). */
   readonly target?: { readonly default: number; readonly min: number; readonly max: number };
+  /** The experimenter sets how long it runs, minutes (pass a current for 10 min). */
+  readonly duration?: { readonly default: number; readonly min: number; readonly max: number };
   /** A thermostat holds the target (switches the heater off at the target). */
   readonly thermostat?: boolean;
   /** Model seconds per real second to start with: hours-long cooling runs faster. */
@@ -52,7 +55,7 @@ export interface Operation {
   /** Start temperature that makes sense for this operation and substance, °C. */
   startTemp(sub: SubstanceItem): number;
   /** Has the goal been reached? (The stop condition.) */
-  reached(sample: ThermalBody, p: LabParams, sub: SubstanceItem): boolean;
+  reached(sample: ThermalBody, p: LabParams, sub: SubstanceItem, state: SystemState): boolean;
   /** The run stops not at the goal but at something else for this substance (oil smokes instead of boiling). */
   endsInstead?(sub: SubstanceItem): 'decomposes' | undefined;
   /** Why the goal can never be reached — known before running anything. */
@@ -75,7 +78,9 @@ export interface Operation {
     readonly negative?: LocalizedText;
   };
   /** Extra lines when the goal is reached ("на дні залишилося 36 г солі"). */
-  reachedNotes?(sample: ThermalBody, locale: Locale): string[];
+  reachedNotes?(ctx: { readonly sample: ThermalBody; readonly state: SystemState; readonly initial: SystemState; readonly locale: Locale }): string[];
+  /** Word before the time in the headline: "закипіла за 6 хв" (default), "пробула під струмом 10 хв" (none). */
+  readonly durationWord?: LocalizedText;
   /** Replaces "X will not …" when the goal is impossible but something did happen (partly frozen). */
   impossibleHeadline?(sample: ThermalBody, subject: string, locale: Locale): string | undefined;
   /** Added to "it gave N J to its surroundings" (", most of it latent heat"). */

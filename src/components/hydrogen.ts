@@ -7,6 +7,7 @@ export const HYDROGEN = {
   kind: 'element',
   group: 'gas',
   name: { uk: 'Водень', en: 'Hydrogen' },
+  genitive: { uk: 'водню', en: 'hydrogen' },
   gender: 'm',
   formula: 'H₂',
   composition: { H: 2 },

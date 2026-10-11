@@ -170,7 +170,7 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         const b = state.entities[c.a.entity];
         const target = index.get(c.b.entity);
         if (!b || !isBurner(b) || target === undefined) continue;
-        const power = working(b) ? b.params.power * c.params.share : 0;
+        const power = working(b) ? burnerPower(b) * c.params.share : 0;
         nodes[target]!.supplied += power;
         supplies.push({ link: c, burner: b, target, power });
       }
@@ -385,14 +385,17 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         };
       });
       for (const b of burners) {
-        const p = working(b) ? b.params.power : 0;
-        updated.push({ ...b, state: { energyDelivered: joules(b.state.energyDelivered + p * dt) } });
+        const p = working(b) ? burnerPower(b) : 0;
+        updated.push({ ...b, state: { ...b.state, energyDelivered: joules(b.state.energyDelivered + p * dt) } });
       }
       updated.push(...thermostats.updated);
       return withEntities(state, updated);
     },
   };
 }
+
+/** A burner's power now: its own setting, or what another domain drives it with (Joule heat). */
+const burnerPower = (b: Burner): number => (b.params.driven ? (b.state.power ?? 0) : b.params.power);
 
 /** Re-derive temperature and phases of a mixture node after its energy or totals changed. */
 function setMixture(n: Node, water: number, salt: number): void {

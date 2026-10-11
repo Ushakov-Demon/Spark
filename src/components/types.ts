@@ -62,6 +62,21 @@ export interface SoluteModel {
   readonly vantHoff: SourcedValue;
   /** The tables behind the functions, for explanations. */
   readonly data: readonly SourcedValue[];
+  /** Electrical conductivity of the solution at 20 °C, S/m, by mass fraction w. */
+  conductivityAt20?(w: number): number;
+  /** Relative growth of the conductivity per kelvin (≈ 0.02). */
+  readonly conductivityTempCoeff?: SourcedValue;
+  /** What a direct current does to the solution. */
+  readonly electrolysis?: Electrolysis;
+}
+
+/** Electrolysis: the minimum voltage and the gases at the electrodes (Faraday: n = Q / (z·F)). */
+export interface Electrolysis {
+  /** Below this voltage (on top of the ohmic drop) no current flows, V. */
+  readonly voltage: SourcedValue;
+  readonly cathode: { readonly component: string; readonly electrons: number };
+  readonly anode: { readonly component: string; readonly electrons: number };
+  readonly note?: LocalizedText;
 }
 
 export interface InWater {
@@ -91,6 +106,8 @@ export interface Component {
   readonly kind: ComponentKind;
   readonly group: ComponentGroup;
   readonly name: LocalizedText;
+  /** "Скільки чого": the name after an amount ("200 мл водню"); defaults to the name. */
+  readonly genitive?: LocalizedText;
   /** Grammatical gender of the name in Ukrainian — verbs agree with it. */
   readonly gender: 'f' | 'm' | 'n';
   /** Chemical formula for display (H₂O). */
@@ -122,6 +139,10 @@ export interface Component {
     /** Metals conduct; ionic substances only melted or dissolved; the rest are insulators. */
     readonly conducts: 'metal' | 'ions-in-solution' | 'insulator';
     readonly resistivity?: SourcedValue; // Ω·m, solid at 20 °C
+    /** A liquid's own conductivity, S/m at 20 °C (distilled water conducts a little). */
+    readonly conductivity?: SourcedValue;
+    /** What a current does to the pure liquid (water splits into hydrogen and oxygen). */
+    readonly electrolysis?: Electrolysis;
   };
   readonly magnetic?: 'ferromagnetic' | 'paramagnetic' | 'diamagnetic';
   readonly hazards?: Hazards;

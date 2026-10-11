@@ -25,6 +25,7 @@ import {
   LAB_COOLER_ID,
   LAB_HEATER_ID,
   LAB_VESSEL_ID,
+  LAB_SUPPLY_ID,
   labCautions,
   labGoalReached,
   labImpossibility,
@@ -50,6 +51,8 @@ import {
 import type { ExperimentResult } from '../src/core/experiment.js';
 import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
+import { cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, electrolysisGases, isSupply, type ElectricalCommand } from '../src/domains/electrical/index.js';
+import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
@@ -102,8 +105,11 @@ const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** di
 
 // ---------- experiment state ----------
 const DT = seconds(0.5);
-const simulation = createSimulation({ solvers: [createThermalSolver()], fixedDt: DT });
-const commands = createCommandRegistry<ThermalCommand>(THERMAL_COMMANDS);
+/** Everything the page can do to an experiment: heat (thermal) and current (electrical). */
+type LabCommand = ThermalCommand | ElectricalCommand;
+// The electrical solver runs first: it sets the Joule heat the thermal solver then spreads.
+const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: DT });
+const commands = createCommandRegistry<LabCommand>([...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS]);
 
 let params: LabParams = {
   action: 'boil',
@@ -120,14 +126,15 @@ let params: LabParams = {
 /** Remembered while the action switches between heating and cooling. */
 let lastHeater: NonNullable<LabParams['heater']> = params.heater!;
 let lastCooler: NonNullable<LabParams['cooler']> = { id: 'freezer', setpoint: -18 };
+let lastSupply: NonNullable<LabParams['supply']> = { id: 'bench-supply', knob: 0.4 };
 
-let session: ExperimentSession<ThermalCommand>;
+let session: ExperimentSession<LabCommand>;
 /** State at the start of the current step (the whole experiment's start for step 1). */
 let initialState: SystemState;
 /** Finished steps of this experiment, oldest first; the current step is `session`. */
 interface StepRecord {
   readonly params: LabParams;
-  readonly result: ExperimentResult<ThermalCommand>;
+  readonly result: ExperimentResult<LabCommand>;
   readonly status: LabStatus;
   readonly adds: readonly Added[];
 }
@@ -194,7 +201,7 @@ function newSession() {
 function beginStep(placed: { readonly state: SystemState; readonly warnings: readonly LocalizedText[] }) {
   initialState = placed.state;
   warnings = placed.warnings;
-  session = createExperimentSession<ThermalCommand>({ initial: initialState, simulation, commands, sampleEvery: seconds(10) });
+  session = createExperimentSession<LabCommand>({ initial: initialState, simulation, commands, sampleEvery: seconds(10) });
   running = false;
   finished = false;
   headline = null;
@@ -249,19 +256,40 @@ function record() {
 
 // ---------- knob / switch ----------
 let knobTimer: number | undefined;
+/** What the knob turns: a heater's power or a lab supply's voltage. */
+const knobTurns = (): 'heater' | 'supply' | null =>
+  params.supply ? (SUPPLIES[params.supply.id].spec.control === 'knob' ? 'supply' : null) : params.heater ? 'heater' : null;
 const knob = createKnob(
   (v) => {
-    if (!params.heater) return;
-    params = { ...params, heater: { ...params.heater, knob: v } };
-    lastHeater = params.heater!;
+    const what = knobTurns();
+    if (!what) return;
+    if (what === 'supply') {
+      params = { ...params, supply: { ...params.supply!, knob: v } };
+      lastSupply = params.supply!;
+    } else {
+      params = { ...params, heater: { ...params.heater!, knob: v } };
+      lastHeater = params.heater!;
+    }
     window.clearTimeout(knobTimer);
     // Before the start the knob is part of the setup; afterwards it is an action in the log.
     if (stepElapsed() === 0 && !history.length) return newSession();
-    knobTimer = window.setTimeout(() => sendPower(v), running ? 150 : 0);
+    knobTimer = window.setTimeout(() => (what === 'supply' ? sendVoltage(v) : sendPower(v)), running ? 150 : 0);
     render();
   },
-  (v) => (v === 0 ? t().off : formatQuantity(currentPower(v), 'W', { locale, level: 'school' })),
+  (v) =>
+    knobTurns() === 'supply'
+      ? formatQuantity(supplyVoltage(SUPPLIES[params.supply!.id], v), 'V', { locale, level: 'school' })
+      : v === 0
+        ? t().off
+        : formatQuantity(currentPower(v), 'W', { locale, level: 'school' }),
 );
+
+function sendVoltage(v: number) {
+  session.apply({ type: 'electrical.supply.set', entity: LAB_SUPPLY_ID, voltage: supplyVoltage(SUPPLIES[params.supply!.id], v) });
+  headline = null;
+  checkpoint = null;
+  render();
+}
 
 function sendPower(v: number) {
   const power = currentPower(v);
@@ -538,12 +566,26 @@ function render() {
     }
     const lost = (b.state.boiledOff ?? 0) + (b.state.evaporated ?? 0);
     if (lost > 1e-4) parts.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
+    // Gases of electrolysis so far (Faraday's law from the charge that passed).
+    const supplyNow = Object.values(session.state.entities).find(isSupply);
+    const electrolysis = cellReading(b).electrolysis;
+    if (supplyNow && electrolysis && supplyNow.state.charge > 0) {
+      const gases = electrolysisGases(electrolysis, supplyNow.state.charge, celsius(params.roomTemp));
+      if (gases[0]!.volume > 5e-8) parts.push(u.gases(gases.map((g) => `${formatQuantity(g.volume * 1e6, 'mL', { locale, level: 'school' })} ${tr(COMPONENTS[g.component].genitive ?? COMPONENTS[g.component].name, locale).toLowerCase()}`).join(locale === 'uk' ? ' і ' : ' and ')));
+    }
     return parts.join(', ');
   })();
   $('#r-time').innerHTML = `<span>${u.time}</span><strong>${formatDuration(Math.floor(session.state.time), locale)}</strong>`;
   $('#r-water').innerHTML = `<span>${tr(b?.state.mixture && b.label ? b.label : sub.name, locale)}</span><strong>${C(b?.state.temperature)}</strong><small>${stateText}</small>`;
   $('#r-pot').innerHTML = `<span>${u.potTemp}</span><strong>${C(temperature(LAB_VESSEL_ID))}</strong>`;
-  if (params.heater) {
+  const sup = Object.values(session.state.entities).find(isSupply);
+  if (params.supply && sup) {
+    const I = sup.state.current;
+    const U = sup.state.current > 0 ? sup.state.decomposition + I * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage;
+    const flat = sup.params.capacity !== undefined && sup.state.charge >= sup.params.capacity;
+    const R = sup.state.resistance === null ? '' : formatQuantity(sup.state.resistance, 'Ω', { locale, level: 'school' });
+    $('#r-power').innerHTML = `<span>${u.current}</span><strong>${I > 1e-4 ? formatQuantity(I, 'A', { locale, level: 'school' }) : flat ? u.batteryFlat : u.noCurrent}</strong><small>${u.supplyDetails(formatQuantity(U, 'V', { locale, level: 'school' }), R)}</small>`;
+  } else if (params.heater) {
     const src = session.state.entities[entityId(LAB_HEATER_ID)];
     const pw = src && (isHeater(src) || isBurner(src)) && src.params.on ? src.params.power : 0;
     const thermo = Object.values(session.state.entities).find((e) => e.kind === 'thermal.thermostat') as { state: { heating: boolean } } | undefined;
@@ -562,12 +604,19 @@ function render() {
 
   // Knob, switch or nothing (cooling has no knob: the cooler holds its setpoint).
   const h = heaterItem();
-  $('#knob-wrap').hidden = !h || h.spec.control !== 'knob';
-  $('#switch-wrap').hidden = !h || h.spec.control !== 'switch';
+  const turns = knobTurns();
+  $('#knob-wrap').hidden = turns === 'supply' ? false : !h || h.spec.control !== 'knob';
+  $('#switch-wrap').hidden = turns === 'supply' || !h || h.spec.control !== 'switch';
   const on = (params.heater?.knob ?? 0) > 0;
   $<HTMLButtonElement>('#switch').textContent = on ? `⏻ ${u.on}` : `⏻ ${u.off}`;
   $('#switch').classList.toggle('is-on', on);
-  if (h && params.heater) {
+  if (turns === 'supply') {
+    const sp = SUPPLIES[params.supply!.id].spec.voltage;
+    knob.setDisabled(finished);
+    knob.value = params.supply!.knob;
+    knob.setLabels({ min: u.min, max: u.max, off: u.off }, Array.from({ length: 7 }, (_, i) => String(Math.round(sp.min + (i * (sp.max - sp.min)) / 6))));
+    knob.element.setAttribute('aria-label', locale === 'uk' ? 'Напруга' : 'Voltage');
+  } else if (h && params.heater) {
     knob.setDisabled(finished);
     knob.value = params.heater.knob;
     knob.setLabels({ min: u.min, max: u.max, off: u.off }, h.spec.minFraction > 0 ? ['0', u.min, '', '', u.max] : ['0', '1', '2', '3', '4', '5', '6']);
@@ -605,7 +654,21 @@ function render() {
   // Energy.
   const split = energySplit(initialState, session.state);
   const E = (j: number) => formatQuantity(j, 'J', { locale, level: 'school' });
-  if (split.produced > 0) {
+  const sup0 = sup ? initialState.entities[sup.id] : undefined;
+  if (sup && sup0 && isSupply(sup0) && sup.state.delivered - sup0.state.delivered > 1) {
+    // A current: the source's energy goes into Joule heat, chemistry (gases) and its own warming.
+    const total = sup.state.delivered - sup0.state.delivered;
+    const chem = sup.state.chemical - sup0.state.chemical;
+    const inside = sup.state.internal - sup0.state.internal;
+    const rows = [
+      [total - chem - inside, u.supplyHeat],
+      [chem, u.supplyChemistry],
+      [inside, u.supplyInside],
+    ]
+      .filter(([j]) => (j as number) > 1)
+      .map(([j, what]) => `<li><span class="bar" style="--w:${((100 * (j as number)) / total).toFixed(1)}%"></span><b>${((100 * (j as number)) / total).toFixed(0)} %</b> ${what} <small>(${E(j as number)})</small></li>`);
+    $('#energy').innerHTML = `<h3>${u.energyTitle}</h3><p>${u.supplyEnergy(E(total))}</p><ul class="shares">${rows.join('')}</ul>`;
+  } else if (split.produced > 0) {
     const label = (id: string) => entityLabel(session.state, id, locale);
     const rows = split.shares
       .filter((s) => Math.abs(s.energy) > 1)
@@ -649,16 +712,17 @@ function renderProtocol() {
   const u = t();
   const D = (s: number) => formatDuration(s, locale);
   const place = (p: LabParams) =>
-    p.heater ? tr(HEATERS[p.heater.id].name, locale) : p.cooler ? `${tr(COOLERS[p.cooler.id].name, locale)}, ${p.cooler.setpoint} °C` : u.justRoom;
-  const what = (p: LabParams) => `${tr(OPERATIONS[p.action].label, locale).replace('…', '')}${p.target !== undefined && OPERATIONS[p.action].target ? ` ${p.target} °C` : ''}`;
+    p.supply ? `${tr(SUPPLIES[p.supply.id].name, locale)}, ${formatQuantity(supplyVoltage(SUPPLIES[p.supply.id], p.supply.knob), 'V', { locale, level: 'school' })}` : p.heater ? tr(HEATERS[p.heater.id].name, locale) : p.cooler ? `${tr(COOLERS[p.cooler.id].name, locale)}, ${p.cooler.setpoint} °C` : u.justRoom;
+  const what = (p: LabParams) =>
+    `${tr(OPERATIONS[p.action].label, locale).replace('…', '')}${p.target !== undefined && OPERATIONS[p.action].target ? ` ${p.target} °C` : ''}${p.duration !== undefined && OPERATIONS[p.action].duration ? `, ${p.duration} ${locale === 'uk' ? 'хв' : 'min'}` : ''}`;
   const adds = (a: readonly Added[]) => a.map((x) => `<span class="added">${u.added(tr(x.what, locale).toLowerCase(), formatQuantity(x.mass, 'kg', { locale, level: 'school' }))}</span>`).join('');
-  const outcome = (st: LabStatus, r: ExperimentResult<ThermalCommand>) =>
-    st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
+  const outcome = (st: LabStatus, r: ExperimentResult<LabCommand>, p: LabParams) =>
+    st.kind === 'reached' && OPERATIONS[p.action].duration ? `✓ ${D(st.at)}` : st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
   const rows = history.map((h) => {
     const ok = h.status.kind === 'reached' || h.status.kind === 'will-reach';
-    return `<li class="${ok ? 'done' : 'failed'}"><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}<span class="outcome">${outcome(h.status, h.result)}</span></li>`;
+    return `<li class="${ok ? 'done' : 'failed'}"><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}<span class="outcome">${outcome(h.status, h.result, h.params)}</span></li>`;
   });
-  const now = doneRecord ? outcome(doneRecord.status, doneRecord.result) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
+  const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
   rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}<span class="outcome">${now}</span>${adds(pendingAdds)}</li>`);
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
@@ -758,6 +822,9 @@ function buildShelf() {
   if (op.target) {
     actionContent.push(number(u.target, params.target ?? op.target.default, op.target.min, op.target.max, 1, (x) => (params = { ...params, target: x }), stepChanged));
   }
+  if (op.duration) {
+    actionContent.push(number(u.duration, params.duration ?? op.duration.default, op.duration.min, op.duration.max, 1, (x) => (params = { ...params, duration: x }), stepChanged));
+  }
   if (!query) section('action', u.action, tr(op.label, locale), ...actionContent);
 
   // 2. Substance.
@@ -855,7 +922,28 @@ function buildShelf() {
   const uses = actionUses(params.action);
   const roomItem = (selected: boolean, onPick: () => void) =>
     !matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? null : item({ name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, note: `${params.roomTemp} °C`, selected, onPick });
-  if (uses === 'heater' || uses === 'either') {
+  if (uses === 'supply') {
+    const groups = childrenOf('device.power').map((c) => ({
+      label: tr(c.name, locale),
+      items: Object.values(SUPPLIES)
+        .filter((x) => x.category === c.id && matches(x.name))
+        .map((x) =>
+          item({
+            name: x.name,
+            note: `${x.spec.voltage.min === x.spec.voltage.max ? `${x.spec.voltage.max} ${u.volts}` : `${x.spec.voltage.min}–${x.spec.voltage.max} ${u.volts}`} · ≤ ${sig(x.spec.currentLimit.value, 3, locale)} ${u.amps}`,
+            ...([x.spec.currentLimit, x.spec.internalResistance].some((d) => d?.verification === 'estimate') ? { badge: u.estimateBadge } : {}),
+            selected: x.id === params.supply?.id,
+            onPick: () => {
+              params = { ...params, supply: { id: x.id as SupplyId, knob: lastSupply.knob } };
+              lastSupply = params.supply!;
+              stepChanged();
+            },
+            detail: () => describe(x),
+          }),
+        ),
+    }));
+    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...groupList(groups));
+  } else if (uses === 'heater' || uses === 'either') {
     const groups: { label: string; items: (HTMLElement | null)[] }[] = childrenOf('device.heater').map((c) => ({
       label: tr(c.name, locale),
       items: itemsUnder(c.id)
@@ -949,20 +1037,17 @@ function setAction(a: LabAction) {
     void _t;
     next = rest;
   }
-  if (uses === 'heater') {
-    const { cooler: _c, ...rest } = next;
-    void _c;
-    next = { ...rest, heater: lastHeater };
-  } else if (uses === 'cooler') {
-    const { heater: _h, ...rest } = next;
-    void _h;
-    next = { ...rest, cooler: lastCooler };
-  } else {
-    const { cooler: _c, heater: _h, ...rest } = next;
-    void _c;
-    void _h;
-    next = rest;
+  {
+    const { duration: _d, ...rest } = next;
+    void _d;
+    next = op.duration ? { ...rest, duration: op.duration.default } : rest;
   }
+  // Each operation brings its own device: a heater, a cooler, a power supply (or none).
+  const { cooler: _c, heater: _h, supply: _s, ...bare } = next;
+  void _c;
+  void _h;
+  void _s;
+  next = uses === 'heater' ? { ...bare, heater: lastHeater } : uses === 'cooler' ? { ...bare, cooler: lastCooler } : uses === 'supply' ? { ...bare, supply: lastSupply } : bare;
   params = next;
   stepChanged();
 }
@@ -1012,6 +1097,7 @@ function applyFix(f: LabFix) {
   params = f.params;
   if (params.heater) lastHeater = params.heater;
   if (params.cooler) lastCooler = params.cooler;
+  if (params.supply) lastSupply = params.supply;
   stepChanged();
   running = true;
   lastFrame = 0;

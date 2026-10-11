@@ -85,9 +85,16 @@ export interface BurnerParams {
   readonly on: boolean;
   /** Catalog id of the device (see devices.ts) — for explanations and data provenance. */
   readonly device?: string;
+  /**
+   * Its power is set by another domain every step (Joule heat of a current through the
+   * liquid) and kept in `state.power`; `params.power` is then unused.
+   */
+  readonly driven?: boolean;
 }
 export interface BurnerState {
   readonly energyDelivered: Joules;
+  /** Power set by a coupling from another domain (for `driven` burners), W. */
+  readonly power?: number;
 }
 /**
  * A flame. It has no heat capacity: every step it distributes `power` along its
@@ -220,7 +227,7 @@ export function reservoir(o: Common & { readonly temperature: Kelvin; readonly d
   };
 }
 
-export function burner(o: Common & { readonly power: Watts; readonly on?: boolean; readonly device?: string }): Burner {
+export function burner(o: Common & { readonly power: Watts; readonly on?: boolean; readonly device?: string; readonly driven?: boolean }): Burner {
   if (!(o.power >= 0)) throw new RangeError(`power must be ≥ 0, got ${o.power}`);
   return {
     id: entityId(o.id),
@@ -228,8 +235,8 @@ export function burner(o: Common & { readonly power: Watts; readonly on?: boolea
     ...withLabel(o.label),
     transform: transform(o.position),
     ports: SURFACE,
-    params: { power: o.power, on: o.on ?? true, ...(o.device === undefined ? {} : { device: o.device }) },
-    state: { energyDelivered: joules(0) },
+    params: { power: o.power, on: o.on ?? true, ...(o.device === undefined ? {} : { device: o.device }), ...(o.driven ? { driven: true } : {}) },
+    state: { energyDelivered: joules(0), ...(o.driven ? { power: 0 } : {}) },
   };
 }
 

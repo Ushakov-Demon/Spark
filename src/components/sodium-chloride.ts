@@ -81,6 +81,23 @@ export const fractionFreezingAt = (t: number): number => {
 
 export const solutionDensity = (w: number): number => interpolate(NACL_DENSITY.w, NACL_DENSITY.rho, w);
 
+/**
+ * Electrical conductivity of NaCl solutions at 20 °C, S/m, by mass fraction (CRC table in mS/cm ÷ 10).
+ * Cross-check: interpolated at 3.5 % (sea water) it gives 5.0 S/m; Wikipedia: sea water ≈ 50 mS/cm.
+ */
+export const NACL_CONDUCTIVITY: { readonly w: readonly number[]; readonly kappa: readonly number[]; readonly data: SourcedValue; readonly tempCoeff: SourcedValue } = {
+  w: [0, 0.005, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.25],
+  kappa: [0, 0.82, 1.6, 3.02, 7.01, 12.6, 17.1, 20.4, 22.2],
+  data: sv(5.0, 'S/m', '≈ 3.5 % NaCl (sea water), 20 °C', 'cross-checked', 0.05, [
+    cite('crc-electrical-conductivity', 'NaCl row, interpolated between 2 % (30.2 mS/cm) and 5 % (70.1 mS/cm)', '20 °C', 5.015),
+    cite('wikipedia-conductivity-electrolytic', 'sea water is about 50 mS/cm', 'not stated', 5.0),
+  ], 'Sea water is not pure NaCl, but its salts are mostly NaCl, so the two agree.'),
+  tempCoeff: sv(0.0212, '1/K', 'NaCl solutions, 5–45 °C', 'cross-checked', 0.07, [
+    cite('ricca-nacl-conductivity', 'conductivity change constant 2.12 %/°C', '5–45 °C', 0.0212),
+    cite('wikipedia-conductivity-electrolytic', 'linear increase of typically 2 % per kelvin', 'not stated', 0.02),
+  ], 'Linear rule; above 45 °C the model extrapolates it (an approximation).'),
+};
+
 export const NACL_SOLUTE: SoluteModel = {
   saturationFraction,
   freezingPointOf,
@@ -88,7 +105,18 @@ export const NACL_SOLUTE: SoluteModel = {
   eutectic: NACL_EUTECTIC,
   solutionDensity,
   vantHoff: VANT_HOFF,
-  data: [NACL_SOLUBILITY.data, NACL_FREEZING.data, NACL_DENSITY.data],
+  data: [NACL_SOLUBILITY.data, NACL_FREEZING.data, NACL_DENSITY.data, NACL_CONDUCTIVITY.data],
+  conductivityAt20: (w) => interpolate(NACL_CONDUCTIVITY.w, NACL_CONDUCTIVITY.kappa, w),
+  conductivityTempCoeff: NACL_CONDUCTIVITY.tempCoeff,
+  electrolysis: {
+    voltage: sv(2.19, 'V', 'NaCl solution: chlorine + hydrogen', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', '1.36 V (Cl₂/Cl⁻) − (−0.8277 V) (2H₂O/H₂ + 2OH⁻)', '298.15 K, standard conditions', 2.1877)], 'Thermodynamic minimum from standard potentials; real cells need more because of overpotentials.'),
+    cathode: { component: 'hydrogen', electrons: 2 },
+    anode: { component: 'chlorine', electrons: 2 },
+    note: {
+      uk: 'Під струмом солона вода розкладається: на катоді виділяється водень, на аноді — хлор, а в розчині лишається натрієвий луг (NaOH): 2NaCl + 2H₂O → Cl₂ + H₂ + 2NaOH.',
+      en: 'Under current salt water decomposes: hydrogen forms at the cathode, chlorine at the anode, and caustic soda (NaOH) stays in the solution: 2NaCl + 2H₂O → Cl₂ + H₂ + 2NaOH.',
+    },
+  },
 };
 
 export const SODIUM_CHLORIDE = {

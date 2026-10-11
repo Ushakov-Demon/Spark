@@ -140,5 +140,38 @@ export interface CoolerItem extends EquipmentCard {
   readonly phrase: LocalizedText;
 }
 
-export type EquipmentItem = HeaterItem | VesselItem | CoolerItem;
+// ---------------------------------------------------------------- power supplies
+
+/** A source of direct current: a battery, a USB charger, a laboratory power supply. */
+export interface SupplySpec {
+  /** Output voltage, V: the knob range of a lab supply, or the fixed voltage of a battery. */
+  readonly voltage: { readonly min: number; readonly max: number; readonly default: number; readonly data: SourcedValue };
+  readonly control: 'knob' | 'fixed';
+  /** The most current it gives, A (a lab supply limits it; a USB port cuts off above it). */
+  readonly currentLimit: SourcedValue;
+  /** Resistance inside the source, Ω (a battery's voltage sags under load). */
+  readonly internalResistance?: SourcedValue;
+  /** Charge it holds, A·h (a battery runs down); absent — from the mains, unlimited. */
+  readonly capacity?: SourcedValue;
+}
+
+export interface SupplyItem extends EquipmentCard {
+  readonly kind: 'supply';
+  readonly spec: SupplySpec;
+  /** "від батарейки 9 В" / "from a 9 V battery". */
+  readonly phrase: LocalizedText;
+}
+
+/**
+ * The electrodes dipped into the liquid. One standard pair for now: its geometry
+ * gives the cell constant L / A that turns conductivity into resistance (R = K / κ).
+ */
+export interface ElectrodesSpec {
+  readonly material: string;
+  readonly width: number; // m (immersed part)
+  readonly height: number; // m (immersed part)
+  readonly gap: number; // m
+}
+
+export type EquipmentItem = HeaterItem | VesselItem | CoolerItem | SupplyItem;
 export type EquipmentKind = EquipmentItem['kind'];

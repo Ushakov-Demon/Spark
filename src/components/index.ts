@@ -5,6 +5,7 @@ import { BRASS } from './brass.js';
 import { BRICK } from './brick.js';
 import { CALCIUM_CARBONATE } from './calcium-carbonate.js';
 import { CARBON_DIOXIDE } from './carbon-dioxide.js';
+import { CHLORINE } from './chlorine.js';
 import { COPPER } from './copper.js';
 import { COPPER_SULFATE } from './copper-sulfate.js';
 import { ETHANOL } from './ethanol.js';
@@ -26,7 +27,7 @@ import { molarMassOf } from './elements.js';
 
 export * from './types.js';
 export * from './elements.js';
-export { NACL_SOLUTE } from './sodium-chloride.js';
+export { NACL_CONDUCTIVITY, NACL_SOLUTE } from './sodium-chloride.js';
 
 /** Every component, by id. Adding a substance = a new file + one line here. */
 const LIST = {
@@ -44,6 +45,7 @@ const LIST = {
   nitrogen: NITROGEN,
   hydrogen: HYDROGEN,
   'carbon-dioxide': CARBON_DIOXIDE,
+  chlorine: CHLORINE,
   air: AIR,
   iron: IRON,
   steel: STEEL,

@@ -102,6 +102,18 @@ export const WATER = {
     latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [cite('openstax-cp2e-latent', 'Table 14.2 footnote: Lv at 37.0 °C', '37 °C', 2_430_000)], 'Only OpenStax checked so far.') },
   },
   inWater: { solubility: 'miscible' },
+  electrical: {
+    conducts: 'insulator',
+    conductivity: sv(7.5e-5, 'S/m', 'distilled, exposed to air, room temperature', 'single-source', 0.35, [{ source: 'wikipedia-conductivity-electrolytic', locator: 'distilled water exposed to air: 0.5–1 µS/cm', conditions: 'room temperature', range: [5e-5, 1e-4] }], 'Depends on how much carbon dioxide from the air has dissolved; ultrapure water is about 15 times lower (0.055 µS/cm).'),
+    electrolysis: {
+      voltage: sv(1.229, 'V', 'water splitting, 25 °C', 'cross-checked', 0.01, [
+        cite('wikipedia-electrolysis-of-water', 'minimum voltage about 1.23 V', '25 °C', 1.23),
+        cite('wikipedia-standard-electrode-potentials', 'O₂ + 4H⁺ + 4e⁻ ⇌ 2H₂O: 1.229 V', '298.15 K', 1.229),
+      ], 'Thermodynamic minimum; real cells need more (over 1.48 V for a useful current) because of overpotentials.'),
+      cathode: { component: 'hydrogen', electrons: 2 },
+      anode: { component: 'oxygen', electrons: 4 },
+    },
+  },
   description: {
     novice: {
       uk: 'Чиста вода без домішок. При нормальному тиску замерзає при 0 °C і кипить при 100 °C.',

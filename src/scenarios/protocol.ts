@@ -5,6 +5,7 @@ import type { Simulation } from '../core/simulation.js';
 import type { SystemState } from '../core/state.js';
 import { celsius, kilograms, type Seconds } from '../core/units.js';
 import { isBurner, isHeater, isThermalBody } from '../domains/thermal/entities.js';
+import { isSupply } from '../domains/electrical/entities.js';
 import type { ThermalCommand } from '../domains/thermal/commands.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SubstanceId } from '../substances/catalog.js';
@@ -26,6 +27,9 @@ export interface OperationStep {
   readonly target?: number;
   readonly heater?: LabParams['heater'];
   readonly cooler?: LabParams['cooler'];
+  readonly supply?: LabParams['supply'];
+  /** Minutes, for timed operations (pass a current). */
+  readonly duration?: number;
 }
 
 /** Put a portion of a substance into the vessel (salt into water, an ice cube into tea). */
@@ -39,22 +43,28 @@ export interface AddStep {
 
 /** The lab parameters of one operation step: the same vessel and sample, this step's action and device. */
 export function stepParams(base: LabParams, step: OperationStep): LabParams {
-  const { heater: _h, cooler: _c, target: _t, ...rest } = base;
+  const { heater: _h, cooler: _c, target: _t, supply: _s, duration: _d, ...rest } = base;
   void _h;
   void _c;
   void _t;
+  void _s;
+  void _d;
   return {
     ...rest,
     action: step.action,
     ...(step.target === undefined ? {} : { target: step.target }),
     ...(step.heater ? { heater: step.heater } : {}),
     ...(step.cooler ? { cooler: step.cooler } : {}),
+    ...(step.supply ? { supply: step.supply } : {}),
+    ...(step.duration === undefined ? {} : { duration: step.duration }),
   };
 }
 
-/** A heater (or flame) of the same model in both setups. */
+/** The same device in both setups (a heater, a flame, a power supply): it keeps its state — a hot hob, a half-used battery. */
 const sameHeater = (a: AnyEntity, b: AnyEntity): boolean =>
-  (isHeater(a) && isHeater(b)) || (isBurner(a) && isBurner(b)) ? (a.params as { device?: string }).device === (b.params as { device?: string }).device : false;
+  (isHeater(a) && isHeater(b)) || (isBurner(a) && isBurner(b)) || (isSupply(a) && isSupply(b))
+    ? (a.params as { device?: string }).device === (b.params as { device?: string }).device
+    : false;
 
 /** Bodies of matter (vessel, its contents, lid, added pieces) stay; devices and surroundings are the "place". */
 const isMatter = (e: AnyEntity | undefined): boolean => e !== undefined && isThermalBody(e);
@@ -73,7 +83,8 @@ export function configureStep(state: SystemState, p: LabParams): { readonly stat
   for (const e of Object.values(fresh.state.entities)) {
     if (isMatter(e) || e.id in entities) continue;
     const old = state.entities[e.id];
-    entities[e.id] = old && sameHeater(old, e) ? ({ ...e, state: old.state } as AnyEntity) : e;
+    // A power supply keeps its charge (a used battery stays used), but its timer counts this step.
+    entities[e.id] = old && sameHeater(old, e) ? ({ ...e, state: isSupply(old) ? { ...old.state, time: 0 } : old.state } as AnyEntity) : e;
   }
   const keeps = (c: AnyConnection) => isMatter(state.entities[c.a.entity]) && isMatter(state.entities[c.b.entity]);
   const place = (c: AnyConnection) => !(isMatter(fresh.state.entities[c.a.entity]) && isMatter(fresh.state.entities[c.b.entity]));
