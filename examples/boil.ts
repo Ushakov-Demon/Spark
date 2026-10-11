@@ -24,7 +24,8 @@ import {
 import { buildReport, fixed, formatQuantity, renderText, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, tr } from '../src/knowledge/i18n.js';
 import { LEVELS, type Level } from '../src/knowledge/levels.js';
-import { boilLab, DEFAULT_BOIL, potGeometry, type BoilParams, type PotMetal } from '../src/scenarios/index.js';
+import { boilLab, DEFAULT_BOIL, SOURCE_ID, type BoilParams, type PotMetal } from '../src/scenarios/index.js';
+import { vesselGeometry } from '../src/equipment/index.js';
 import { kilograms } from '../src/core/units.js';
 
 const arg = (n: string) => {
@@ -86,14 +87,14 @@ const body = (id: string) => {
   if (!(isThermalBody(e) || isHeater(e)) || !(isThermalBody(e0) || isHeater(e0))) throw new Error(id);
   return e.params.mass * e.params.specificHeat * (e.state.temperature - e0.state.temperature);
 };
-const plate = f.entities[entityId('source')]!;
+const plate = f.entities[entityId(SOURCE_ID)]!;
 const room = f.entities[entityId('room')]!;
 if (!isHeater(plate) || !isReservoir(room)) throw new Error('scene');
 const delivered = plate.state.energyDelivered;
 const parts = [
   { uk: 'нагріла воду', en: 'heated the water', j: body('water') },
-  { uk: 'нагріла каструлю', en: 'heated the pot', j: body('pot') },
-  { uk: 'залишилась у розжареній плиті', en: 'stayed in the hot plate', j: body('source') },
+  { uk: 'нагріла каструлю', en: 'heated the pot', j: body('vessel') },
+  { uk: 'залишилась у розжареній плиті', en: 'stayed in the hot plate', j: body(SOURCE_ID) },
   { uk: 'пішла в повітря кімнати', en: 'went into the room air', j: room.state.heatAbsorbed },
 ];
 
@@ -110,7 +111,7 @@ const kWh = (v: number) => `${fixed(v / 3.6e6, 2, locale)} ${uk ? 'кВт·го�
 const MJ = (v: number) => `${fixed(v / 1e6, 2, locale)} ${uk ? 'МДж' : 'MJ'}`;
 const t = (s: number) => formatQuantity(s, 's', ctx);
 const T = (c: number) => formatQuantity(celsius(c), 'K', ctx);
-const g = potGeometry(p.liters);
+const g = vesselGeometry(p.liters, 1);
 const potName = tr(MATERIALS[p.potMaterial].name, locale).toLowerCase();
 const out: string[] = [];
 

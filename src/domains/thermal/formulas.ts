@@ -41,6 +41,15 @@ export const conductionConductance = (k: ThermalConductivity, area: SquareMeters
 export const convectionConductance = (h: HeatTransferCoeff, area: SquareMeters): ThermalConductance =>
   thermalConductance(h * area);
 
+/**
+ * Two conductances one after another (wall, then boundary layer of water):
+ * 1/G = 1/G₁ + 1/G₂ — thermal resistances add up, like resistors in series.
+ */
+export const seriesConductance = (g1: ThermalConductance, g2: ThermalConductance): ThermalConductance => {
+  if (!(g1 > 0 && g2 > 0)) throw new RangeError('Conductances must be > 0');
+  return thermalConductance(1 / (1 / g1 + 1 / g2));
+};
+
 /** P = G·(Ta − Tb): heat flow from a to b, W. Positive when a is hotter. */
 export const heatFlow = (g: ThermalConductance, ta: Kelvin, tb: Kelvin): Watts => watts(g * (ta - tb));
 

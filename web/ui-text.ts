@@ -9,8 +9,14 @@ export interface UiText {
   setup: string;
   device: string;
   model: string;
-  pot: string;
-  potMass: string;
+  vessel: string;
+  size: string;
+  material: string;
+  lid: string;
+  vesselMass: string;
+  about: string;
+  safety: string;
+  ml: string;
   water: string;
   startTemp: string;
   room: string;
@@ -57,8 +63,14 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     setup: '1. Установка',
     device: 'Нагрівач',
     model: 'Модель (потужність)',
-    pot: 'Каструля',
-    potMass: 'Маса каструлі, кг',
+    vessel: 'Посуд',
+    size: 'Об’єм посуду',
+    material: 'Матеріал',
+    lid: 'З кришкою',
+    vesselMass: 'Маса порожнього посуду, кг',
+    about: 'Що це',
+    safety: 'Безпека',
+    ml: 'мл',
     water: 'Вода, л',
     startTemp: 'Температура води, °C',
     room: 'Температура в кімнаті, °C',
@@ -70,7 +82,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     speed: 'Швидкість часу',
     time: 'Час',
     waterTemp: 'Вода',
-    potTemp: 'Каструля',
+    potTemp: 'Посуд',
     power: 'Потужність',
     off: 'вимк.',
     on: 'увімк.',
@@ -87,7 +99,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     explain: '3. Пояснити, що відбулося',
     explainHint: 'Пояснення будується з того, що рушій справді обчислив у цьому досліді.',
     estimateBadge: 'оцінка',
-    materials: { steel: 'сталь', aluminium: 'алюміній', iron: 'залізо (чавун)' },
+    materials: { steel: 'сталь', aluminium: 'алюміній', iron: 'чавун', glass: 'скло' },
     liters: 'л',
     kg: 'кг',
     watt: 'Вт',
@@ -103,8 +115,14 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     setup: '1. Setup',
     device: 'Heater',
     model: 'Model (power)',
-    pot: 'Pot',
-    potMass: 'Pot mass, kg',
+    vessel: 'Vessel',
+    size: 'Vessel capacity',
+    material: 'Material',
+    lid: 'With lid',
+    vesselMass: 'Empty vessel mass, kg',
+    about: 'What it is',
+    safety: 'Safety',
+    ml: 'mL',
     water: 'Water, L',
     startTemp: 'Water temperature, °C',
     room: 'Room temperature, °C',
@@ -116,7 +134,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     speed: 'Time speed',
     time: 'Time',
     waterTemp: 'Water',
-    potTemp: 'Pot',
+    potTemp: 'Vessel',
     power: 'Power',
     off: 'off',
     on: 'on',
@@ -133,7 +151,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     explain: '3. Explain what happened',
     explainHint: 'The explanation is built from what the engine actually computed in this experiment.',
     estimateBadge: 'estimate',
-    materials: { steel: 'steel', aluminium: 'aluminium', iron: 'iron (cast iron)' },
+    materials: { steel: 'steel', aluminium: 'aluminium', iron: 'cast iron', glass: 'glass' },
     liters: 'L',
     kg: 'kg',
     watt: 'W',

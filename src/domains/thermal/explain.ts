@@ -9,7 +9,7 @@ import { atLeast, type Level } from '../../knowledge/levels.js';
 import { THERMAL_FORMULAS } from './catalog.js';
 import type { ThermalCommand } from './commands.js';
 import { isBurner, isHeater, isReservoir, isThermalBody, type Heater, type ThermalBody } from './entities.js';
-import { HEATING_DEVICES, type DeviceId } from './devices.js';
+import { getHeater } from '../../equipment/catalog.js';
 import { THERMAL_LAWS } from './laws.js';
 import { isSupplyLink, isThermalLink } from './links.js';
 import { CONVECTION, MATERIALS } from './materials.js';
@@ -112,6 +112,11 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     deviceRating: (n) => `${n}: rated power`,
     flameShare: (n) => `${n}: share of the flame's heat reaching the vessel`,
   },
+};
+
+const MATERIALS_MSG: Readonly<Record<Locale, { wall(link: string, material: string): string }>> = {
+  uk: { wall: (link, m) => `Стінка ${link}: теплопровідність матеріалу «${m}»` },
+  en: { wall: (link, m) => `Wall ${link}: conductivity of «${m}»` },
 };
 
 const bodiesOf = (s: SystemState) => Object.values(s.entities).filter((e): e is ThermalBody | Heater => isThermalBody(e) || isHeater(e));
@@ -234,21 +239,27 @@ function dataUsed(s: SystemState): DataUsage[] {
     out.push({ label: both((l) => MSG[l].specificHeatOf(tr(mat.name, l))), origin: 'catalog', sourced: mat.specificHeat });
   }
   for (const e of Object.values(s.entities)) {
-    if (!(isHeater(e) || isBurner(e)) || !e.params.device || !(e.params.device in HEATING_DEVICES)) continue;
-    const d = HEATING_DEVICES[e.params.device as DeviceId];
-    out.push({ label: both((l) => MSG[l].deviceRating(tr(d.name, l))), origin: 'catalog', sourced: d.ratingData });
+    const d = (isHeater(e) || isBurner(e)) && e.params.device ? getHeater(e.params.device) : undefined;
+    if (!d) continue;
+    out.push({ label: both((l) => MSG[l].deviceRating(tr(d.name, l))), origin: 'catalog', sourced: d.spec.ratingData });
   }
   for (const c of s.connections) {
-    if (isSupplyLink(c) && c.params.dataRef && c.params.dataRef in HEATING_DEVICES) {
-      const d = HEATING_DEVICES[c.params.dataRef as DeviceId];
+    if (isSupplyLink(c)) {
+      const d = c.params.dataRef ? getHeater(c.params.dataRef) : undefined;
       const target = s.entities[c.b.entity];
-      if (d.vesselShare && target && !isReservoir(target)) out.push({ label: both((l) => MSG[l].flameShare(tr(d.name, l))), origin: 'catalog', sourced: d.vesselShare });
+      const share = d?.spec.vesselShare;
+      if (d && share && target && !isReservoir(target)) out.push({ label: both((l) => MSG[l].flameShare(tr(d.name, l))), origin: 'catalog', sourced: share });
       continue;
     }
     if (!isThermalLink(c)) continue;
     const name = (l: Locale) => `${entityLabel(s, c.a.entity, l)} ↔ ${entityLabel(s, c.b.entity, l)}`;
     const o = c.params.origin;
-    if (o?.type === 'convection' && o.dataRef && o.dataRef in CONVECTION) {
+    if (o?.type === 'wall' && o.material in MATERIALS) {
+      out.push({ label: both((l) => MATERIALS_MSG[l].wall(name(l), tr(MATERIALS[o.material as keyof typeof MATERIALS].name, l))), origin: 'catalog', sourced: MATERIALS[o.material as keyof typeof MATERIALS].conductivity });
+      if (o.dataRef && o.dataRef in CONVECTION) {
+        out.push({ label: both((l) => MSG[l].convectionOf(name(l))), origin: 'catalog', sourced: CONVECTION[o.dataRef as keyof typeof CONVECTION] });
+      }
+    } else if (o?.type === 'convection' && o.dataRef && o.dataRef in CONVECTION) {
       out.push({ label: both((l) => MSG[l].convectionOf(name(l))), origin: 'catalog', sourced: CONVECTION[o.dataRef as keyof typeof CONVECTION] });
     } else if (o?.type === 'conduction' && o.dataRef && o.dataRef in MATERIALS) {
       out.push({ label: both((l) => MSG[l].conductionOf(name(l))), origin: 'catalog', sourced: MATERIALS[o.dataRef as keyof typeof MATERIALS].conductivity });

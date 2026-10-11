@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createSimulation, entityId, runExperiment, seconds } from '../../src/core/index.js';
 import { celsius } from '../../src/core/units.js';
 import { createThermalSolver, isHeater, isReservoir, isThermalBody, thermalEnergy, THERMAL_COMMANDS, type ThermalCommand } from '../../src/domains/thermal/index.js';
-import { boilLab, DEFAULT_BOIL, potGeometry } from '../../src/scenarios/index.js';
+import { boilLab, DEFAULT_BOIL, SOURCE_ID } from '../../src/scenarios/index.js';
+import { vesselGeometry } from '../../src/equipment/index.js';
 
 const run = (p = DEFAULT_BOIL) => {
   const initial = boilLab(p);
@@ -27,14 +28,14 @@ describe('boil scenario', () => {
   });
 
   it('pot geometry holds the requested volume', () => {
-    const g = potGeometry(20);
+    const g = vesselGeometry(20, 1);
     expect(Math.PI * g.radius ** 2 * g.height * 1000).toBeCloseTo(20, 9);
   });
 
   it('stops at 100 °C and closes the energy balance', () => {
     const r = run();
     expect(r.stoppedEarly).toBe(true);
-    const plate = r.final.entities[entityId('source')]!;
+    const plate = r.final.entities[entityId(SOURCE_ID)]!;
     const room = r.final.entities[entityId('room')]!;
     if (!isHeater(plate) || !isReservoir(room)) throw new Error();
     const dU = thermalEnergy(r.final) - thermalEnergy(r.initial);

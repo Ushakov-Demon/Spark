@@ -232,6 +232,39 @@ export const THERMAL_FORMULAS: readonly FormulaSpec[] = [
     reviewed: false,
   }),
   defineFormula({
+    id: 'thermal.series-conductance',
+    law: 'linear-heat-transfer',
+    title: { uk: 'Теплота проходить шари один за одним', en: 'Heat passing layers in series' },
+    latex: '\\dfrac{1}{G} = \\dfrac{1}{G_1} + \\dfrac{1}{G_2}',
+    plain: '1/G = 1/G₁ + 1/G₂',
+    argSymbols: ['G₁', 'G₂'],
+    resultSymbol: 'G',
+    variables: {
+      G: { name: { uk: 'загальна теплова провідність', en: 'total conductance' }, unit: 'W/K' },
+      'G₁': { name: { uk: 'провідність стінки посуду', en: 'conductance of the vessel wall' }, unit: 'W/K' },
+      'G₂': { name: { uk: 'провідність тепловіддачі воді', en: 'conductance of the transfer to water' }, unit: 'W/K' },
+    },
+    curriculum: [],
+    beyondCurriculum: {
+      uk: 'Поза програмою; має пряму аналогію з послідовним з’єднанням резисторів (8 клас).',
+      en: 'Beyond the curriculum; a direct analogy of resistors in series.',
+    },
+    explanation: {
+      novice: {
+        uk: 'Теплоті доводиться пройти дві «перешкоди» одна за одною: стінку посуду і шар води біля неї. Найважча перешкода сильніше за все гальмує нагрівання.',
+        en: 'Heat must pass two «obstacles» one after another: the vessel wall and the water layer next to it. The hardest obstacle slows heating the most.',
+      },
+      school: {
+        uk: 'Як резистори, з’єднані послідовно: опори теплопередачі додаються. Тонка металева стінка майже нічого не додає, а скляна — помітно.',
+        en: 'Like resistors in series: thermal resistances add up. A thin metal wall adds almost nothing, a glass wall adds noticeably.',
+      },
+    },
+    compute: f.seriesConductance,
+    examples: [{ args: [thermalConductance(2), thermalConductance(2)], expected: 1, note: 'Два однакові шари по 2 Вт/К → 1 Вт/К' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
     id: 'thermal.heat-flow',
     law: 'linear-heat-transfer',
     title: { uk: 'Потік теплоти між тілами', en: 'Heat flow between bodies' },

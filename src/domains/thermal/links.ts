@@ -7,12 +7,22 @@ import type {
   ThermalConductance,
   ThermalConductivity,
 } from '../../core/units.js';
-import { conductionConductance, convectionConductance } from './formulas.js';
+import { conductionConductance, convectionConductance, seriesConductance } from './formulas.js';
 
 /** How G was obtained — lets the trace show the law behind each link. */
 export type ThermalLinkOrigin =
   | { readonly type: 'conduction'; readonly conductivity: ThermalConductivity; readonly area: SquareMeters; readonly length: Meters; readonly dataRef?: string }
-  | { readonly type: 'convection'; readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string };
+  | { readonly type: 'convection'; readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string }
+  /** Vessel wall (conduction) in series with convection into the liquid. */
+  | {
+      readonly type: 'wall';
+      readonly conductivity: ThermalConductivity;
+      readonly thickness: Meters;
+      readonly material: string;
+      readonly coefficient: HeatTransferCoeff;
+      readonly area: SquareMeters;
+      readonly dataRef?: string;
+    };
 
 export interface ThermalLinkParams {
   /** G, W/K. Precomputed from geometry/material so the solver stays trivial. */
@@ -79,6 +89,33 @@ export const conductionLink = (
     b: o.b,
     conductance: conductionConductance(o.conductivity, o.area, o.length),
     origin: { type: 'conduction', conductivity: o.conductivity, area: o.area, length: o.length, ...ref(o.dataRef) },
+  });
+
+/** Vessel → liquid through the wall: 1/G = L/(k·A) + 1/(h·A). */
+export const wallLink = (
+  o: LinkEnds & {
+    readonly conductivity: ThermalConductivity;
+    readonly thickness: Meters;
+    readonly material: string;
+    readonly coefficient: HeatTransferCoeff;
+    readonly area: SquareMeters;
+    readonly dataRef?: string;
+  },
+): ThermalLink =>
+  thermalLink({
+    id: o.id,
+    a: o.a,
+    b: o.b,
+    conductance: seriesConductance(conductionConductance(o.conductivity, o.area, o.thickness), convectionConductance(o.coefficient, o.area)),
+    origin: {
+      type: 'wall',
+      conductivity: o.conductivity,
+      thickness: o.thickness,
+      material: o.material,
+      coefficient: o.coefficient,
+      area: o.area,
+      ...ref(o.dataRef),
+    },
   });
 
 /** Surface ↔ fluid (air, water): G = h·A. `dataRef` = CONVECTION key of h. */

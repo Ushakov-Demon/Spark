@@ -40,6 +40,7 @@ spark/
 │   │       └── explain.ts     # тепловая часть отчёта: таблица, баланс энергии, данные
 │   │       └── solver.ts      # createThermalSolver(): шаг по времени
 │   │   # далее: electrical/, mechanics/, chemistry/ — по тому же шаблону
+│   ├── equipment/             # каталог оборудования: категории, нагреватели, посуда, совместимость (см. EQUIPMENT.md)
 │   ├── knowledge/             # происхождение данных и тексты: Source, SourcedValue, FormulaSpec, LawSpec,
 │   │                          # уровни (по возрасту), языки (uk, en), учебные программы стран (CURRICULA)
 │   ├── explain/               # отчёт об эксперименте (Block[]) по уровню читателя + текстовый рендерер

@@ -7,6 +7,7 @@ import { CONVECTION, MATERIALS } from '../src/domains/thermal/materials.js';
 import { THERMAL_FORMULAS } from '../src/domains/thermal/catalog.js';
 import { verifySourcedValue } from '../src/knowledge/verify.js';
 import type { SourcedValue } from '../src/knowledge/types.js';
+import { HEATERS, VESSELS } from '../src/equipment/index.js';
 
 const rows: [string, SourcedValue][] = [
   ...Object.values(MATERIALS).flatMap((m): [string, SourcedValue][] => [
@@ -14,6 +15,20 @@ const rows: [string, SourcedValue][] = [
     [`${m.name.uk} · k`, m.conductivity],
   ]),
   ...Object.entries(CONVECTION).map(([k, v]): [string, SourcedValue] => [`h · ${k}`, v]),
+  ...Object.values(HEATERS).flatMap((h): [string, SourcedValue][] => {
+    const s = h.spec;
+    const out: [string, SourcedValue][] = [[`${h.name.uk} · потужність`, s.ratingData]];
+    if (s.vesselShare) out.push([`${h.name.uk} · частка в посуд`, s.vesselShare]);
+    if (s.minFractionData) out.push([`${h.name.uk} · мін. полум’я`, s.minFractionData]);
+    if (s.body) out.push([`${h.name.uk} · маса тіла`, s.body.mass], [`${h.name.uk} · площа`, s.body.area]);
+    if (s.contactConductance) out.push([`${h.name.uk} · контакт`, s.contactConductance]);
+    return out;
+  }),
+  ...Object.values(VESSELS).flatMap((v): [string, SourcedValue][] => [
+    [`${v.name.uk} · пропорції`, v.spec.heightToDiameter],
+    [`${v.name.uk} · стінка`, v.spec.wallThickness],
+    [`${v.name.uk} · маса`, v.spec.massModel.data],
+  ]),
 ];
 
 const mark = { 'cross-checked': '✅', 'single-source': '⚠️ ', estimate: '❓' } as const;
@@ -25,7 +40,7 @@ for (const [name, v] of rows) {
   problems += issues.length;
   const sources = new Set(v.citations.map((c) => c.source)).size;
   console.log(
-    `${mark[v.verification]} ${name.padEnd(28)} ${String(v.value).padStart(7)} ${v.unit.padEnd(12)} ±${(v.tolerance * 100).toFixed(0).padStart(2)}%  источников: ${sources}` +
+    `${mark[v.verification]} ${name.padEnd(46)} ${String(v.value).padStart(7)} ${v.unit.padEnd(12)} ±${(v.tolerance * 100).toFixed(0).padStart(2)}%  источников: ${sources}` +
       (issues.length ? `  ❌ ${issues.map((i) => i.message).join('; ')}` : ''),
   );
   if (v.verification !== 'cross-checked' && v.note) console.log(`     ↳ ${v.note}`);

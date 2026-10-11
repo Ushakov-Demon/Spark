@@ -120,3 +120,10 @@ footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 24px; }
 .legend .water::before { border-color: var(--water); }
 .legend .pot::before { border-color: var(--pot); border-top-style: dashed; }
 .legend .source::before { border-color: var(--source); }
+.check { display: flex; gap: 8px; align-items: center; font-size: 0.9rem; }
+.check input { min-height: auto; width: 18px; height: 18px; }
+.about { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 0.88rem; }
+.about summary { cursor: pointer; color: var(--muted); }
+.about h4 { margin: 10px 0 2px; font-size: 0.92rem; }
+.about p { margin: 0 0 6px; }
+.about .safety { color: var(--source); }

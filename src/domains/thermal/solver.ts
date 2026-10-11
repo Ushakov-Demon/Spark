@@ -201,6 +201,12 @@ function traceStep(
     const o = link.params.origin;
     if (o?.type === 'convection') {
       trace.record({ kind: 'formula', formula: 'thermal.convection-conductance', entities: [id(a), id(b)], args: [o.coefficient, o.area], output: g });
+    } else if (o?.type === 'wall') {
+      const gWall = (o.conductivity * o.area) / o.thickness;
+      const gConv = o.coefficient * o.area;
+      trace.record({ kind: 'formula', formula: 'thermal.conduction-conductance', entities: [id(a), id(b)], args: [o.conductivity, o.area, o.thickness], output: gWall });
+      trace.record({ kind: 'formula', formula: 'thermal.convection-conductance', entities: [id(a), id(b)], args: [o.coefficient, o.area], output: gConv });
+      trace.record({ kind: 'formula', formula: 'thermal.series-conductance', entities: [id(a), id(b)], args: [gWall, gConv], output: g });
     } else if (o?.type === 'conduction') {
       trace.record({ kind: 'formula', formula: 'thermal.conduction-conductance', entities: [id(a), id(b)], args: [o.conductivity, o.area, o.length], output: g });
     }
