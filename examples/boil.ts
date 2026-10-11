@@ -86,14 +86,14 @@ const body = (id: string) => {
   if (!(isThermalBody(e) || isHeater(e)) || !(isThermalBody(e0) || isHeater(e0))) throw new Error(id);
   return e.params.mass * e.params.specificHeat * (e.state.temperature - e0.state.temperature);
 };
-const plate = f.entities[entityId('plate')]!;
+const plate = f.entities[entityId('source')]!;
 const room = f.entities[entityId('room')]!;
 if (!isHeater(plate) || !isReservoir(room)) throw new Error('scene');
 const delivered = plate.state.energyDelivered;
 const parts = [
   { uk: 'нагріла воду', en: 'heated the water', j: body('water') },
   { uk: 'нагріла каструлю', en: 'heated the pot', j: body('pot') },
-  { uk: 'залишилась у розжареній плиті', en: 'stayed in the hot plate', j: body('plate') },
+  { uk: 'залишилась у розжареній плиті', en: 'stayed in the hot plate', j: body('source') },
   { uk: 'пішла в повітря кімнати', en: 'went into the room air', j: room.state.heatAbsorbed },
 ];
 

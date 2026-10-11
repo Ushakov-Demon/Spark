@@ -4,7 +4,7 @@ import { entityId } from '../../core/ids.js';
 import { err, ok } from '../../core/result.js';
 import { withEntities, type SystemState } from '../../core/state.js';
 import { kilograms, type Kelvin, type Kilograms, type Watts } from '../../core/units.js';
-import { isHeater, isThermalBody, type Heater, type ThermalBody } from './entities.js';
+import { isBurner, isHeater, isThermalBody, type Burner, type Heater, type ThermalBody } from './entities.js';
 import { equilibriumTemperature } from './formulas.js';
 import { ENERGY_REFERENCE_TEMPERATURE } from './solver.js';
 
@@ -38,15 +38,16 @@ const find = <T extends AnyEntity>(s: SystemState, id: string, guard: (e: AnyEnt
   return e && guard(e) ? e : undefined;
 };
 const isBodyOrHeater = (e: AnyEntity): e is ThermalBody | Heater => isThermalBody(e) || isHeater(e);
+const isPowerSource = (e: AnyEntity): e is Heater | Burner => isHeater(e) || isBurner(e);
 
 export const setHeater: CommandHandler<SetHeaterCommand> = {
   type: 'thermal.heater.set',
   apply(state, c) {
-    const h = find(state, c.entity, isHeater);
+    const h = find(state, c.entity, isPowerSource);
     if (!h) return err({ uk: `«${c.entity}» — не нагрівач`, en: `"${c.entity}" is not a heater` });
     if (c.power !== undefined && !(c.power >= 0 && Number.isFinite(c.power))) return err({ uk: 'Потужність має бути ≥ 0', en: 'Power must be ≥ 0' });
     const params = { ...h.params, ...(c.on === undefined ? {} : { on: c.on }), ...(c.power === undefined ? {} : { power: c.power }) };
-    return ok({ state: withEntities(state, [{ ...h, params }]), kind: 'control', externalEnergy: 0, trace: [] });
+    return ok({ state: withEntities(state, [{ ...h, params } as Heater | Burner]), kind: 'control', externalEnergy: 0, trace: [] });
   },
 };
 

@@ -8,9 +8,10 @@ import { tr, type Locale } from '../../knowledge/i18n.js';
 import { atLeast, type Level } from '../../knowledge/levels.js';
 import { THERMAL_FORMULAS } from './catalog.js';
 import type { ThermalCommand } from './commands.js';
-import { isHeater, isReservoir, isThermalBody, type Heater, type ThermalBody } from './entities.js';
+import { isBurner, isHeater, isReservoir, isThermalBody, type Heater, type ThermalBody } from './entities.js';
+import { HEATING_DEVICES, type DeviceId } from './devices.js';
 import { THERMAL_LAWS } from './laws.js';
-import { isThermalLink } from './links.js';
+import { isSupplyLink, isThermalLink } from './links.js';
 import { CONVECTION, MATERIALS } from './materials.js';
 import { thermalEnergy } from './solver.js';
 
@@ -42,6 +43,8 @@ interface ThermalMessages {
   convectionOf(name: string): string;
   conductionOf(name: string): string;
   linkOf(name: string): string;
+  deviceRating(name: string): string;
+  flameShare(name: string): string;
 }
 
 const MSG: Readonly<Record<Locale, ThermalMessages>> = {
@@ -74,6 +77,8 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     convectionOf: (n) => `Тепловіддача ${n}: коефіцієнт h`,
     conductionOf: (n) => `Теплопровідність ${n}`,
     linkOf: (n) => `Зв’язок ${n}: провідність G`,
+    deviceRating: (n) => `${n}: номінальна потужність`,
+    flameShare: (n) => `${n}: частка теплоти полум’я, що йде в посудину`,
   },
   en: {
     time: 'time',
@@ -104,6 +109,8 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     convectionOf: (n) => `Heat transfer ${n}: coefficient h`,
     conductionOf: (n) => `Conduction ${n}`,
     linkOf: (n) => `Link ${n}: conductance G`,
+    deviceRating: (n) => `${n}: rated power`,
+    flameShare: (n) => `${n}: share of the flame's heat reaching the vessel`,
   },
 };
 
@@ -118,7 +125,8 @@ function timeline(result: ExperimentResult<ThermalCommand>, ctx: ExplainContext)
   const bodies = bodiesOf(result.final);
   const heaters = bodies.filter(isHeater);
   const name = (id: string) => entityLabel(result.final, id, locale);
-  const every = ROW_EVERY[level];
+  // Keep the table short: at most ~12 rows, in whole minutes for long runs.
+  const every = Math.max(ROW_EVERY[level], Math.ceil(result.final.time / 12 / 60) * 60);
 
   const rows = result.samples
     .filter((s, i, all) => Math.abs(s.time / every - Math.round(s.time / every)) < 1e-6 || i === all.length - 1)
@@ -181,7 +189,7 @@ function energyBalance(result: ExperimentResult<ThermalCommand>, ctx: ExplainCon
   const m = MSG[locale];
   const sum = (s: SystemState, f: (e: SystemState['entities'][keyof SystemState['entities']]) => number) =>
     Object.values(s.entities).reduce((acc, e) => acc + f(e), 0);
-  const heat = (s: SystemState) => sum(s, (e) => (isHeater(e) ? e.state.energyDelivered : 0));
+  const heat = (s: SystemState) => sum(s, (e) => (isHeater(e) || isBurner(e) ? e.state.energyDelivered : 0));
   const lost = (s: SystemState) => sum(s, (e) => (isReservoir(e) ? e.state.heatAbsorbed : 0));
   const fromHeaters = heat(result.final) - heat(result.initial);
   const toRoom = lost(result.final) - lost(result.initial);
@@ -225,7 +233,18 @@ function dataUsed(s: SystemState): DataUsage[] {
     seen.add(mat.id);
     out.push({ label: both((l) => MSG[l].specificHeatOf(tr(mat.name, l))), origin: 'catalog', sourced: mat.specificHeat });
   }
+  for (const e of Object.values(s.entities)) {
+    if (!(isHeater(e) || isBurner(e)) || !e.params.device || !(e.params.device in HEATING_DEVICES)) continue;
+    const d = HEATING_DEVICES[e.params.device as DeviceId];
+    out.push({ label: both((l) => MSG[l].deviceRating(tr(d.name, l))), origin: 'catalog', sourced: d.ratingData });
+  }
   for (const c of s.connections) {
+    if (isSupplyLink(c) && c.params.dataRef && c.params.dataRef in HEATING_DEVICES) {
+      const d = HEATING_DEVICES[c.params.dataRef as DeviceId];
+      const target = s.entities[c.b.entity];
+      if (d.vesselShare && target && !isReservoir(target)) out.push({ label: both((l) => MSG[l].flameShare(tr(d.name, l))), origin: 'catalog', sourced: d.vesselShare });
+      continue;
+    }
     if (!isThermalLink(c)) continue;
     const name = (l: Locale) => `${entityLabel(s, c.a.entity, l)} ↔ ${entityLabel(s, c.b.entity, l)}`;
     const o = c.params.origin;

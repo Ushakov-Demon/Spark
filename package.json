@@ -9,19 +9,22 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web",
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "tsx examples/kettle-cli.ts",
     "knowledge:report": "tsx scripts/knowledge-report.ts",
     "experiment": "tsx examples/kettle-experiment.ts",
     "lab": "tsx examples/mixing-lab.ts",
-    "boil": "tsx examples/boil.ts"
+    "boil": "tsx examples/boil.ts",
+    "web": "vite",
+    "web:build": "vite build"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
+    "vite": "^6.4.4",
     "vitest": "^5.0.3"
   },
   "license": "MIT"

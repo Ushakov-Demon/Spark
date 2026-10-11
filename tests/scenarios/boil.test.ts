@@ -34,7 +34,7 @@ describe('boil scenario', () => {
   it('stops at 100 °C and closes the energy balance', () => {
     const r = run();
     expect(r.stoppedEarly).toBe(true);
-    const plate = r.final.entities[entityId('plate')]!;
+    const plate = r.final.entities[entityId('source')]!;
     const room = r.final.entities[entityId('room')]!;
     if (!isHeater(plate) || !isReservoir(room)) throw new Error();
     const dU = thermalEnergy(r.final) - thermalEnergy(r.initial);

@@ -6,12 +6,12 @@ export const THERMAL_ASSUMPTIONS: readonly ModelAssumption[] = [
     id: 'thermal.lumped',
     text: {
       novice: {
-        uk: 'Вважаємо, що вся вода в чайнику має однакову температуру — ніби її весь час перемішують.',
-        en: 'We assume all the water in the kettle has the same temperature — as if it were stirred all the time.',
+        uk: 'Вважаємо, що вся вода в посудині має однакову температуру — ніби її весь час перемішують.',
+        en: 'We assume all the water in the vessel has the same temperature — as if it were stirred all the time.',
       },
       school: {
-        uk: 'Кожне тіло має одну температуру на все тіло одразу. Насправді біля дна чайника вода гарячіша, ніж зверху.',
-        en: 'Each body has a single temperature throughout. In reality the water near the kettle bottom is hotter than at the top.',
+        uk: 'Кожне тіло має одну температуру на все тіло одразу. Насправді біля дна посудини вода гарячіша, ніж зверху.',
+        en: 'Each body has a single temperature throughout. In reality the water near the bottom of the vessel is hotter than at the top.',
       },
       advanced: {
         uk: 'Кожне тіло — одна точка з однією температурою. Добре працює для невеликих або добре перемішаних тіл.',

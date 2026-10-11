@@ -24,6 +24,28 @@ export type ThermalLink = Connection<'thermal', 'thermal.link', ThermalLinkParam
 export const isThermalLink = (c: AnyConnection): c is ThermalLink =>
   c.domain === 'thermal' && c.kind === 'thermal.link';
 
+/** Burner → body: `share` of the burner's power goes into `b` (a pot, the room). */
+export interface SupplyLinkParams {
+  readonly share: number;
+  /** Device id whose `vesselShare` data this share comes from (for provenance). */
+  readonly dataRef?: string;
+}
+export type SupplyLink = Connection<'thermal', 'thermal.supply', SupplyLinkParams>;
+
+export const isSupplyLink = (c: AnyConnection): c is SupplyLink => c.domain === 'thermal' && c.kind === 'thermal.supply';
+
+export function supplyLink(o: LinkEnds & { readonly share: number; readonly dataRef?: string }): SupplyLink {
+  if (!(o.share >= 0 && o.share <= 1)) throw new RangeError(`share must be in [0, 1], got ${o.share}`);
+  return {
+    id: connectionId(o.id),
+    domain: 'thermal',
+    kind: 'thermal.supply',
+    a: { entity: entityId(o.a), port: 'surface' },
+    b: { entity: entityId(o.b), port: 'surface' },
+    params: { share: o.share, ...(o.dataRef === undefined ? {} : { dataRef: o.dataRef }) },
+  };
+}
+
 interface LinkEnds {
   readonly id: string;
   /** Entity ids; thermal entities expose a single "surface" port. */

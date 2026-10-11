@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Spark — open science lab for school students" />
+    <title>Spark</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232563eb'/%3E%3Cpath d='M16 6c3 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 0-3-1-5 0-8z' fill='%23fff'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <h1 id="title">Spark</h1>
+        <p id="subtitle" class="muted"></p>
+      </div>
+      <div class="prefs">
+        <label><span id="lbl-language"></span><select id="language"></select></label>
+        <label><span id="lbl-level"></span><select id="level"></select></label>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <h2 id="setup-title"></h2>
+        <div id="setup" class="setup"></div>
+      </section>
+
+      <section class="card experiment">
+        <h2 id="exp-title"></h2>
+        <div class="controls">
+          <div class="control-left">
+            <div id="knob-wrap"></div>
+            <div id="switch-wrap" hidden><button id="switch" class="switch" type="button"></button></div>
+          </div>
+          <div class="readouts" aria-live="polite">
+            <div id="r-time" class="readout"></div>
+            <div id="r-water" class="readout water"></div>
+            <div id="r-pot" class="readout pot"></div>
+            <div id="r-power" class="readout"></div>
+          </div>
+        </div>
+        <div class="buttons">
+          <button id="start" class="primary" type="button"></button>
+          <button id="reset" type="button"></button>
+          <label class="speed"><span id="lbl-speed"></span><select id="speed"></select></label>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div id="chart" class="chart-wrap"></div>
+        <div id="legend" class="legend"></div>
+        <div id="energy" class="energy"></div>
+      </section>
+
+      <section class="card">
+        <button id="explain" class="primary wide" type="button"></button>
+        <p id="explain-hint" class="muted small"></p>
+        <article id="report" class="report"></article>
+      </section>
+    </main>
+
+    <footer><p id="footer" class="muted small"></p></footer>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -4,8 +4,8 @@ import type { Solver, StepContext } from '../../core/solver.js';
 import { withEntities, type SystemState } from '../../core/state.js';
 import { joules, kelvin, seconds, ZERO_CELSIUS_IN_KELVIN, type Seconds } from '../../core/units.js';
 import { THERMAL_ASSUMPTIONS } from './assumptions.js';
-import { isHeater, isReservoir, isThermalEntity, temperatureOf, type ThermalEntity } from './entities.js';
-import { isThermalLink, type ThermalLink } from './links.js';
+import { isBurner, isHeater, isReservoir, isThermalEntity, temperatureOf, type Burner, type ThermalEntity } from './entities.js';
+import { isSupplyLink, isThermalLink, type SupplyLink, type ThermalLink } from './links.js';
 
 /**
  * Lumped thermal network solver.
@@ -30,7 +30,8 @@ export interface ThermalSolverOptions {
 interface Node {
   readonly entity: ThermalEntity;
   readonly capacity: number; // J/K, Infinity for reservoirs
-  readonly power: number; // W
+  readonly power: number; // W — own heater power
+  supplied: number; // W — what burners hand to this node
   temperature: number; // K, mutated only inside this local working copy
   sumG: number; // W/K
   reservoirHeat: number; // J absorbed during this tick
@@ -69,12 +70,27 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           entity: e,
           capacity: isReservoir(e) ? Infinity : e.params.mass * e.params.specificHeat,
           power: isHeater(e) && e.params.on ? e.params.power : 0,
+          supplied: 0,
           temperature: temperatureOf(e),
           sumG: 0,
           reservoirHeat: 0,
         });
       }
       if (nodes.length === 0) return state;
+
+      // 1b. Burners hand their power to bodies along supply links (constant over the step).
+      const supplies: { link: SupplyLink; burner: Burner; target: number; power: number }[] = [];
+      const burners: Burner[] = [];
+      for (const e of Object.values(state.entities)) if (isBurner(e)) burners.push(e);
+      for (const c of state.connections) {
+        if (!isSupplyLink(c)) continue;
+        const b = state.entities[c.a.entity];
+        const target = index.get(c.b.entity);
+        if (!b || !isBurner(b) || target === undefined) continue;
+        const power = b.params.on ? b.params.power * c.params.share : 0;
+        nodes[target]!.supplied += power;
+        supplies.push({ link: c, burner: b, target, power });
+      }
 
       // 2. Edges. Dangling links are reported by validateState(), the solver just skips them.
       const edges: Edge[] = [];
@@ -123,14 +139,24 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         }
         for (let i = 0; i < nodes.length; i++) {
           const n = nodes[i]!;
-          const net = flow[i]! + n.power;
-          if (trace) received[i]! += n.power * h;
+          const net = flow[i]! + n.power + n.supplied;
+          if (trace) received[i]! += (n.power + n.supplied) * h;
           if (Number.isFinite(n.capacity)) n.temperature += (net * h) / n.capacity;
           else n.reservoirHeat += net * h;
         }
       }
 
-      if (trace) traceStep(trace, nodes, edges, t0, received, given, dt, substeps);
+      if (trace) {
+        traceStep(trace, nodes, edges, t0, received, given, dt, substeps);
+        for (const s of supplies) {
+          trace.record({ kind: 'transfer', connection: s.link.id, a: s.burner.id, b: nodes[s.target]!.entity.id, quantity: 'energy', amount: s.power * dt });
+        }
+        for (const b of burners) {
+          if (b.params.on && b.params.power > 0) {
+            trace.record({ kind: 'formula', formula: 'thermal.energy-from-power', entities: [b.id], args: [b.params.power, seconds(dt)], output: b.params.power * dt });
+          }
+        }
+      }
 
       // 5. Write back immutably.
       const updated: AnyEntity[] = nodes.map((n): ThermalEntity => {
@@ -147,6 +173,10 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         }
         return { ...e, state: { temperature } };
       });
+      for (const b of burners) {
+        const p = b.params.on ? b.params.power : 0;
+        updated.push({ ...b, state: { energyDelivered: joules(b.state.energyDelivered + p * dt) } });
+      }
       return withEntities(state, updated);
     },
   };

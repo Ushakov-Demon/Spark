@@ -29,6 +29,8 @@ export interface HeaterParams extends ThermalBodyParams {
   readonly power: Watts;
   /** Student-controlled switch. Will move to `state` once thermostats can toggle it. */
   readonly on: boolean;
+  /** Catalog id of the device (see devices.ts) — for explanations and data provenance. */
+  readonly device?: string;
 }
 export interface HeaterState extends ThermalBodyState {
   /** Total electrical energy converted to heat so far — shown in the UI, used in energy checks. */
@@ -46,12 +48,29 @@ export interface ReservoirState {
 }
 export type Reservoir = Device<'thermal.reservoir', ReservoirParams, ReservoirState, ThermalPortName>;
 
+// ---------- Burner: an open flame — no mass of its own, it hands its power out ----------
+export interface BurnerParams {
+  readonly power: Watts;
+  readonly on: boolean;
+  /** Catalog id of the device (see devices.ts) — for explanations and data provenance. */
+  readonly device?: string;
+}
+export interface BurnerState {
+  readonly energyDelivered: Joules;
+}
+/**
+ * A flame. It has no heat capacity: every step it distributes `power` along its
+ * supply links (e.g. 36 % into the pot, 64 % into the room). Shares must add up to 1.
+ */
+export type Burner = Device<'thermal.burner', BurnerParams, BurnerState, ThermalPortName>;
+
 export type ThermalEntity = ThermalBody | Heater | Reservoir;
 
 // ---------- Type guards ----------
 export const isThermalBody = (e: AnyEntity): e is ThermalBody => e.kind === 'thermal.body';
 export const isHeater = (e: AnyEntity): e is Heater => e.kind === 'thermal.heater';
 export const isReservoir = (e: AnyEntity): e is Reservoir => e.kind === 'thermal.reservoir';
+export const isBurner = (e: AnyEntity): e is Burner => e.kind === 'thermal.burner';
 export const isThermalEntity = (e: AnyEntity): e is ThermalEntity =>
   isThermalBody(e) || isHeater(e) || isReservoir(e);
 
@@ -89,7 +108,7 @@ export function thermalBody(
 }
 
 export function heater(
-  o: Common & ThermalBodyParams & { readonly power: Watts; readonly on?: boolean; readonly temperature: Kelvin },
+  o: Common & ThermalBodyParams & { readonly power: Watts; readonly on?: boolean; readonly device?: string; readonly temperature: Kelvin },
 ): Heater {
   assertPositive('mass', o.mass);
   assertPositive('specificHeat', o.specificHeat);
@@ -107,6 +126,7 @@ export function heater(
       ...(o.material === undefined ? {} : { material: o.material }),
       power: o.power,
       on: o.on ?? true,
+      ...(o.device === undefined ? {} : { device: o.device }),
     },
     state: { temperature: o.temperature, energyDelivered: joules(0) },
   };
@@ -122,6 +142,19 @@ export function reservoir(o: Common & { readonly temperature: Kelvin }): Reservo
     ports: SURFACE,
     params: { temperature: o.temperature },
     state: { heatAbsorbed: joules(0) },
+  };
+}
+
+export function burner(o: Common & { readonly power: Watts; readonly on?: boolean; readonly device?: string }): Burner {
+  if (!(o.power >= 0)) throw new RangeError(`power must be ≥ 0, got ${o.power}`);
+  return {
+    id: entityId(o.id),
+    kind: 'thermal.burner',
+    ...withLabel(o.label),
+    transform: transform(o.position),
+    ports: SURFACE,
+    params: { power: o.power, on: o.on ?? true, ...(o.device === undefined ? {} : { device: o.device }) },
+    state: { energyDelivered: joules(0) },
   };
 }
 
