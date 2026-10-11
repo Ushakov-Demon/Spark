@@ -291,6 +291,95 @@ function buildExpect() {
   box.append(el('p', { className: 'muted small' }, u.expectHint));
 }
 
+// ---------- add a substance during the experiment ----------
+let addSub: SubstanceId = 'water';
+let addFrozen = true;
+let addGrams = 30;
+let addTemp = -18;
+let addError = '';
+
+/** Can it be frozen within the temperatures the page offers (down to −30 °C)? Ethanol (−114 °C) cannot. */
+const canFreezeHere = (s: SubstanceItem) => s.freezing !== undefined && s.freezing.point.value > -30;
+
+/** Volume taken by everything in the vessel now, litres. */
+function usedVolume(): number {
+  let v = 0;
+  for (const e of Object.values(session.state.entities)) {
+    if (!isThermalBody(e) || !(e.id === SAMPLE_ID || e.id.startsWith(`${SAMPLE_ID}+`))) continue;
+    const sub = 'substance' in e.params && e.params.substance ? SUBSTANCES[e.params.substance as SubstanceId] : undefined;
+    const density = sub ? ((e.state.solidFraction ?? 0) >= 1 ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value) : 1000;
+    v += (bodyMass(e) / density) * 1000;
+  }
+  return v;
+}
+
+function buildAdd() {
+  const u = t();
+  const box = $<HTMLDetailsElement>('#add');
+  const open = box.open;
+  box.innerHTML = '';
+  box.append(el('summary', {}, u.addTitle));
+  const sub = SUBSTANCES[addSub];
+  const sel = el('select', {});
+  for (const c of SUBSTANCE_CATEGORIES) {
+    const g = el('optgroup', { label: tr(c.name, locale) });
+    for (const x of Object.values(SUBSTANCES).filter((y) => y.category === c.id)) g.append(el('option', { value: x.id, selected: x.id === addSub }, tr(x.name, locale)));
+    sel.append(g);
+  }
+  sel.onchange = () => {
+    addSub = sel.value as SubstanceId;
+    if (!canFreezeHere(SUBSTANCES[addSub])) addFrozen = false;
+    addTemp = addFrozen ? -18 : 20;
+    buildAdd();
+  };
+  const state = el('div', { className: 'chips' });
+  for (const [frozen, label] of [[false, u.addLiquid], [true, u.addFrozen]] as const) {
+    if (frozen && !canFreezeHere(sub)) continue;
+    const b = el('button', { type: 'button', className: `chip${addFrozen === frozen ? ' selected' : ''}` }, frozen && sub.solidName ? `${label} (${tr(sub.solidName, locale).toLowerCase()})` : label);
+    b.onclick = () => {
+      addFrozen = frozen;
+      addTemp = frozen ? Math.min(addTemp, Math.round((sub.freezing?.point.value ?? 0) - 18)) : Math.max(addTemp, 20);
+      buildAdd();
+    };
+    state.append(b);
+  }
+  const num = (value: number, min: number, max: number, step: number, set: (v: number) => void) => {
+    const i = el('input', { type: 'number', value: String(value), min: String(min), max: String(max), step: String(step), inputMode: 'decimal' });
+    i.onchange = () => {
+      const v = Number(i.value);
+      if (Number.isFinite(v) && v >= min && v <= max) set(v);
+      else i.value = String(value);
+    };
+    return i;
+  };
+  const button = el('button', { type: 'button', className: 'primary' }, u.addButton);
+  button.onclick = () => {
+    const density = addFrozen ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
+    const free = params.size - usedVolume();
+    if (((addGrams / 1000) / density) * 1000 > free + 1e-9) {
+      addError = u.addDoesNotFit(free < 1 ? `${Math.round(free * 1000)} ${u.ml}` : `${sig(free, 3, locale)} ${u.liters}`);
+      return buildAdd();
+    }
+    const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: addSub, mass: (addGrams / 1000) as never, temperature: celsius(addTemp), ...(addFrozen ? { frozen: true } : {}) });
+    addError = entry.ok ? '' : tr(entry.error, locale);
+    headline = null;
+    checkpoint = null;
+    buildAdd();
+    render();
+  };
+  box.append(
+    el('div', { className: 'add-grid' },
+      el('label', { className: 'mini-field' }, el('span', {}, u.substance), sel),
+      state,
+      el('label', { className: 'mini-field' }, el('span', {}, u.addAmount), num(addGrams, 1, 5000, 1, (v) => (addGrams = v))),
+      el('label', { className: 'mini-field' }, el('span', {}, u.addTemp), num(addTemp, -30, 300, 1, (v) => (addTemp = v))),
+      button,
+    ),
+  );
+  if (addError) box.append(el('p', { className: 'add-error' }, `⚠ ${addError}`));
+  box.open = open;
+}
+
 // ---------- rendering ----------
 const chart = createChart();
 
@@ -317,6 +406,9 @@ function render() {
     const parts: string[] = [];
     const s = b.state.solidFraction ?? 0;
     parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
+    for (const e of Object.values(session.state.entities)) {
+      if (isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`) && e.label) parts.push(u.addedState(tr(e.label, locale), Math.round((e.state.solidFraction ?? 0) * 100)));
+    }
     const lost = (b.state.boiledOff ?? 0) + (b.state.evaporated ?? 0);
     if (lost > 1e-4) parts.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
     return parts.join(', ');
@@ -724,6 +816,7 @@ function buildHeader() {
     buildHeader();
     buildShelf();
     buildExpect();
+    buildAdd();
     render();
     if ($('#report').innerHTML) explain();
   };
@@ -783,4 +876,5 @@ buildHeader();
 buildShelf();
 buildExpect();
 newSession();
+buildAdd();
 requestAnimationFrame(frame);

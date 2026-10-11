@@ -173,3 +173,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .expect .inline { display: flex; gap: 8px; align-items: center; }
 .expect input { width: 90px; }
 .summary h4, .messages h4 { margin: 12px 0 4px; }
+.add { margin: 8px 0; border: 1px dashed var(--line); border-radius: 12px; padding: 8px 12px; }
+.add > summary { cursor: pointer; color: var(--accent); }
+.add-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; margin-top: 8px; }
+.add-error { color: var(--source); margin: 6px 0 0; }

@@ -3,10 +3,19 @@ import type { AnyEntity } from '../../core/entity.js';
 import { entityId } from '../../core/ids.js';
 import { err, ok } from '../../core/result.js';
 import { withEntities, type SystemState } from '../../core/state.js';
-import { kilograms, type Kelvin, type Kilograms, type Watts } from '../../core/units.js';
+import { kelvin, kilograms, type Kelvin, type Kilograms, type Watts } from '../../core/units.js';
 import { isBurner, isHeater, isThermalBody, type Burner, type Heater, type ThermalBody } from './entities.js';
 import { equilibriumTemperature } from './formulas.js';
 import { ENERGY_REFERENCE_TEMPERATURE } from './solver.js';
+import { bodyEnergy, bodyMass, thermalBody } from './entities.js';
+import { convectionLink } from './links.js';
+import { CONVECTION } from './materials.js';
+import { decodeEnthalpy, specificEnthalpy } from './phase.js';
+import { substanceThermal } from './substance.js';
+import { SUBSTANCES, type SubstanceId } from '../../substances/catalog.js';
+import type { SubstanceItem } from '../../substances/types.js';
+import { specificHeat, squareMeters } from '../../core/units.js';
+import type { AnyConnection } from '../../core/entity.js';
 
 /** Turn a heater on/off or change its power. */
 export interface SetHeaterCommand {
@@ -31,7 +40,23 @@ export interface SetTemperatureCommand {
   readonly temperature: Kelvin;
 }
 
-export type ThermalCommand = SetHeaterCommand | PourCommand | SetTemperatureCommand;
+/**
+ * Add a portion of a catalog substance into a vessel's contents during the experiment:
+ * hot water into water (mixing), an ice cube into tea (a separate melting body),
+ * oil onto water (a separate layer).
+ */
+export interface AddCommand {
+  readonly type: 'thermal.add';
+  /** The liquid already in the vessel (a body made of a catalog substance). */
+  readonly into: string;
+  readonly substance: string;
+  readonly mass: Kilograms;
+  readonly temperature: Kelvin;
+  /** Add it frozen (an ice cube); needs freezing data and a temperature below the melting point. */
+  readonly frozen?: boolean;
+}
+
+export type ThermalCommand = SetHeaterCommand | PourCommand | SetTemperatureCommand | AddCommand;
 
 const find = <T extends AnyEntity>(s: SystemState, id: string, guard: (e: AnyEntity) => e is T): T | undefined => {
   const e = s.entities[entityId(id)];
@@ -100,4 +125,91 @@ export const setTemperature: CommandHandler<SetTemperatureCommand> = {
   },
 };
 
-export const THERMAL_COMMANDS = [setHeater, pour, setTemperature] as const;
+/** Liquids that mix into one solution: water, salt solutions and alcohol. Oil does not mix with them. */
+const MISCIBLE = new Set<SubstanceItem['category']>(['liquid.water', 'liquid.solution', 'liquid.alcohol']);
+
+export const add: CommandHandler<AddCommand> = {
+  type: 'thermal.add',
+  apply(state, c) {
+    const target = find(state, c.into, isThermalBody);
+    const targetSub = target && 'substance' in target.params && target.params.substance ? SUBSTANCES[target.params.substance as SubstanceId] : undefined;
+    const sub = SUBSTANCES[c.substance as SubstanceId];
+    if (!target || !targetSub) return err({ uk: `У «${c.into}» не можна нічого додати`, en: `Cannot add anything to "${c.into}"` });
+    if (!sub) return err({ uk: `Невідома речовина «${c.substance}»`, en: `Unknown substance "${c.substance}"` });
+    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err({ uk: 'Маса має бути > 0', en: 'Mass must be > 0' });
+    const th = substanceThermal(sub);
+    const tm = th.phase?.meltingPoint;
+    if (c.frozen && (tm === undefined || !(c.temperature < tm))) {
+      return err({
+        uk: tm === undefined ? `Для «${sub.name.uk}» немає даних про твердий стан` : `Тверда речовина має бути холоднішою за ${Math.round(tm - ENERGY_REFERENCE_TEMPERATURE)} °C`,
+        en: tm === undefined ? `No solid-state data for ${sub.name.en}` : `A frozen portion must be colder than ${Math.round(tm - ENERGY_REFERENCE_TEMPERATURE)} °C`,
+      });
+    }
+    const solid = c.frozen ? 1 : 0;
+    const hAdded = specificEnthalpy(c.temperature, solid, th.specificHeat, th.phase);
+    const external = c.mass * hAdded;
+
+    // Same substance, both liquid: it simply mixes in (heat balance with phases).
+    if (sub.id === targetSub.id && !c.frozen && (target.state.solidFraction ?? 0) === 0) {
+      const m0 = bodyMass(target);
+      const energy = bodyEnergy(target) + external;
+      const m1 = m0 + c.mass;
+      const d = decodeEnthalpy(energy / m1, target.params.specificHeat, target.params.phase);
+      const next: ThermalBody = {
+        ...target,
+        params: { ...target.params, mass: kilograms(target.params.mass + c.mass) },
+        state: { ...target.state, temperature: kelvin(d.temperature), ...(target.params.phase ? { solidFraction: d.solidFraction } : {}) },
+      };
+      const parts = [
+        { mass: kilograms(m0), specificHeat: target.params.specificHeat, temperature: target.state.temperature },
+        { mass: c.mass, specificHeat: target.params.specificHeat, temperature: c.temperature },
+      ] as const;
+      return ok({
+        state: withEntities(state, [next]),
+        kind: 'matter',
+        externalEnergy: external,
+        trace: d.solidFraction === 0 && d.excess === 0 ? [{ kind: 'formula', formula: 'thermal.equilibrium-temperature', entities: [target.id], args: [parts], output: equilibriumTemperature(parts) }] : [],
+      });
+    }
+
+    // Different liquids that would form a solution: properties of mixtures are not modelled.
+    if (!c.frozen && MISCIBLE.has(sub.category) && MISCIBLE.has(targetSub.category)) {
+      return err({
+        uk: `«${sub.name.uk}» змішується з «${targetSub.name.uk}» в один розчин зі своїми властивостями — даних про такі суміші в нас поки немає.`,
+        en: `${sub.name.en} mixes with ${targetSub.name.en} into one solution with its own properties — we have no data on such mixtures yet.`,
+      });
+    }
+
+    // Otherwise a separate body in the liquid: a frozen piece, or an immiscible layer (oil on water).
+    const n = Object.keys(state.entities).filter((id) => id.startsWith(`${c.into}+`)).length + 1;
+    const id = `${c.into}+${n}`;
+    const density = c.frozen ? (sub.freezing?.solidDensity?.value ?? th.density) : th.density;
+    const volume = c.mass / density;
+    // A frozen piece: a cube of that volume, all sides wetted. A liquid layer: it spreads over the surface.
+    const surface = Object.values(state.connections).find(
+      (x) => x.a.entity === target.id && (x.params as { origin?: { surface?: boolean; area?: number } }).origin?.surface,
+    ) as AnyConnection | undefined;
+    const layerArea = (surface?.params as { origin?: { area?: number } } | undefined)?.origin?.area;
+    const area = c.frozen || layerArea === undefined ? 6 * Math.cbrt(volume) ** 2 : layerArea;
+    const body = thermalBody({
+      id,
+      label: c.frozen && sub.solidName ? { uk: `${sub.solidName.uk} (додано)`, en: `${sub.solidName.en} (added)` } : { uk: `${sub.name.uk} (додано)`, en: `${sub.name.en} (added)` },
+      mass: c.mass,
+      specificHeat: specificHeat(th.specificHeat),
+      substance: sub.id,
+      ...(th.phase ? { phase: th.phase } : {}),
+      temperature: c.temperature,
+      ...(th.phase?.meltingPoint !== undefined ? { solidFraction: solid } : {}),
+    });
+    const link = convectionLink({ id: `${id}<->${target.id}`, a: id, b: target.id, coefficient: CONVECTION.stillWater.value, area: squareMeters(area), dataRef: 'stillWater' });
+    return ok({
+      state: { ...withEntities(state, [body]), connections: [...state.connections, link] },
+      kind: 'matter',
+      externalEnergy: external,
+      trace: [],
+    });
+  },
+};
+
+export const THERMAL_COMMANDS = [setHeater, pour, setTemperature, add] as const;
+

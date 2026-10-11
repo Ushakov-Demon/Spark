@@ -32,6 +32,7 @@ interface ThermalMessages {
   heaterCmd(actions: string, name: string): string;
   and: string;
   pour(mass: string, temp: string, into: string): string;
+  added(into: string, mass: string, what: string, temp: string): string;
   setTemp(name: string, temp: string): string;
   intervention(energy: string): string;
   energyTitleNovice: string;
@@ -69,6 +70,7 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     heaterCmd: (a, n) => `«${n}»: ${a}`,
     and: ' і ',
     pour: (mass, temp, into) => `«${into}»: долили ${mass} за ${temp}`,
+    added: (into, mass, what, temp) => `«${into}»: додали ${mass} — ${what}, ${temp}`,
     setTemp: (n, temp) => `«${n}»: вручну задали температуру ${temp}`,
     intervention: (e) => `; це втручання: енергія ${e} взялася «ззовні» і врахована в балансі`,
     energyTitleNovice: 'Куди поділася енергія',
@@ -105,6 +107,7 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     heaterCmd: (a, n) => `${a} "${n}"`,
     and: ' and ',
     pour: (mass, temp, into) => `poured ${mass} at ${temp} into "${into}"`,
+    added: (into, mass, what, temp) => `"${into}": added ${mass} of ${what} at ${temp}`,
     setTemp: (n, temp) => `manually set the temperature of "${n}" to ${temp}`,
     intervention: (e) => `; this is an intervention: ${e} of energy came «from outside» and is included in the balance`,
     energyTitleNovice: 'Where the energy went',
@@ -205,6 +208,11 @@ function describeCommand(e: ExperimentLogEntry<ThermalCommand>, ctx: ExplainCont
     }
     case 'thermal.pour':
       return m.pour(formatQuantity(c.mass, 'kg', ctx), formatQuantity(c.temperature, 'K', ctx), name(c.into)) + note;
+    case 'thermal.add': {
+      const sub = SUBSTANCES[c.substance as SubstanceId];
+      const what = sub ? tr(c.frozen && sub.solidName ? sub.solidName : sub.name, locale).toLowerCase() : c.substance;
+      return m.added(name(c.into), formatQuantity(c.mass, 'kg', ctx), what, formatQuantity(c.temperature, 'K', ctx)) + note;
+    }
     case 'thermal.temperature.set': {
       const energy = e.ok && atLeast(ctx.level, 'school') ? m.intervention(formatQuantity(e.externalEnergy, 'J', ctx)) : '';
       return m.setTemp(name(c.entity), formatQuantity(c.temperature, 'K', ctx)) + note + energy;

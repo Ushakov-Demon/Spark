@@ -20,6 +20,14 @@ export interface UiText {
   meltLine: string;
   boilLine: string;
   targetLine: string;
+  addTitle: string;
+  addButton: string;
+  addLiquid: string;
+  addFrozen: string;
+  addAmount: string;
+  addTemp: string;
+  addDoesNotFit(free: string): string;
+  addedState(name: string, solidPct: number): string;
   expectNone: string;
   expectPrediction: string;
   expectGoal: string;
@@ -99,6 +107,14 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     meltLine: 'плавлення',
     boilLine: 'кипіння',
     targetLine: 'ціль',
+    addTitle: 'Додати під час досліду',
+    addButton: 'Додати',
+    addLiquid: 'рідина',
+    addFrozen: 'заморожене',
+    addAmount: 'Кількість, г',
+    addTemp: 'Температура, °C',
+    addDoesNotFit: (f) => `Не влізе: вільно лише ${f}.`,
+    addedState: (n, p) => `${n}: ${p > 0 ? `тверде ${p} %` : 'розтануло'}`,
     expectNone: 'Без прогнозу',
     expectPrediction: 'Мій прогноз',
     expectGoal: 'Моя ціль',
@@ -176,6 +192,14 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     meltLine: 'melting',
     boilLine: 'boiling',
     targetLine: 'target',
+    addTitle: 'Add during the experiment',
+    addButton: 'Add',
+    addLiquid: 'liquid',
+    addFrozen: 'frozen',
+    addAmount: 'Amount, g',
+    addTemp: 'Temperature, °C',
+    addDoesNotFit: (f) => `It will not fit: only ${f} free.`,
+    addedState: (n, p) => `${n}: ${p > 0 ? `solid ${p} %` : 'melted'}`,
     expectNone: 'No prediction',
     expectPrediction: 'My prediction',
     expectGoal: 'My goal',

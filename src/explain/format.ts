@@ -60,6 +60,10 @@ export function formatQuantity(value: number, unit: string, ctx: ExplainContext)
     }
     case 'ΔK':
       return `${fixed(value, DELTA_DECIMALS[level], locale)} ${unitLabel(unit, ctx)}`;
+    case 'kg':
+      // Below a kilogram, grams read better ("30 г", not "0,03 кг").
+      if (Math.abs(value) < 1 && level !== 'expert') return `${sig(value * 1000, n, locale)} ${locale === 'uk' ? 'г' : 'g'}`;
+      return `${sig(value, n, locale)} ${unitLabel(unit, ctx)}`;
     case 'J':
       if (Math.abs(value) >= 1000 && level !== 'expert') return `${sig(value / 1000, n, locale)} ${UNITS[locale]['kJ']}`;
       return `${sig(value, n, locale)} ${UNITS[locale]['J']}`;

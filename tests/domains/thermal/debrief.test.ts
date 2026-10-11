@@ -112,7 +112,7 @@ describe('debrief', () => {
     expect(s.status).toBe('found');
     if (s.status !== 'found') return;
     expect(Math.abs(water({ ...DEFAULT_MIXING, hotMass: s.value }) - celsius(40))).toBeLessThan(0.5);
-    expect(text(o, [s])).toContain('Маса гарячої води: 0,38 кг замість 0,5 кг');
+    expect(text(o, [s])).toContain('Маса гарячої води: 380 г замість 500 г');
   });
 
   it('addresses the student without grammatical gender (uk)', () => {
