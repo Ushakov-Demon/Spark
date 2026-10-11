@@ -10,6 +10,7 @@ export interface ExplainContext {
 
 const SIGNIFICANT: Readonly<Record<Level, number>> = { novice: 2, school: 4, advanced: 4, expert: 6 };
 const TEMP_DECIMALS: Readonly<Record<Level, number>> = { novice: 0, school: 1, advanced: 1, expert: 3 };
+const DELTA_DECIMALS: Readonly<Record<Level, number>> = { novice: 1, school: 1, advanced: 2, expert: 3 };
 
 const nf = (locale: Locale, opts: Intl.NumberFormatOptions) => new Intl.NumberFormat(NUMBER_LOCALE[locale], opts);
 
@@ -21,11 +22,11 @@ export const fixed = (v: number, decimals: number, locale: Locale): string =>
 /** Unit symbols per language (SI symbols are international, but Ukrainian uses Cyrillic ones). */
 const UNITS: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   uk: {
-    J: 'Дж', kJ: 'кДж', W: 'Вт', kg: 'кг', s: 'с', m: 'м', 'm²': 'м²', K: 'K', '°C': '°C',
+    J: 'Дж', kJ: 'кДж', W: 'Вт', kg: 'кг', s: 'с', min: 'хв', m: 'м', 'm²': 'м²', K: 'K', '°C': '°C',
     'W/K': 'Вт/К', 'J/K': 'Дж/К', 'W/(m·K)': 'Вт/(м·К)', 'W/(m²·K)': 'Вт/(м²·К)', 'J/(kg·K)': 'Дж/(кг·К)', 'J/(kg·°C)': 'Дж/(кг·°C)',
   },
   en: {
-    J: 'J', kJ: 'kJ', W: 'W', kg: 'kg', s: 's', m: 'm', 'm²': 'm²', K: 'K', '°C': '°C',
+    J: 'J', kJ: 'kJ', W: 'W', kg: 'kg', s: 's', min: 'min', m: 'm', 'm²': 'm²', K: 'K', '°C': '°C',
     'W/K': 'W/K', 'J/K': 'J/K', 'W/(m·K)': 'W/(m·K)', 'W/(m²·K)': 'W/(m²·K)', 'J/(kg·K)': 'J/(kg·K)', 'J/(kg·°C)': 'J/(kg·°C)',
   },
 };
@@ -56,9 +57,16 @@ export function formatQuantity(value: number, unit: string, ctx: ExplainContext)
       const c = `${fixed(value - ZERO_CELSIUS_IN_KELVIN, TEMP_DECIMALS[level], locale)} °C`;
       return level === 'expert' ? `${c} (${fixed(value, 3, locale)} K)` : c;
     }
+    case 'ΔK':
+      return `${fixed(value, DELTA_DECIMALS[level], locale)} ${unitLabel(unit, ctx)}`;
     case 'J':
-      if (Math.abs(value) >= 10_000 && level !== 'expert') return `${sig(value / 1000, n, locale)} ${UNITS[locale]['kJ']}`;
+      if (Math.abs(value) >= 1000 && level !== 'expert') return `${sig(value / 1000, n, locale)} ${UNITS[locale]['kJ']}`;
       return `${sig(value, n, locale)} ${UNITS[locale]['J']}`;
+    case 's':
+      if (value >= 120 && level !== 'expert') {
+        return `${fixed(Math.round(value), 0, locale)} ${UNITS[locale]['s']} (≈ ${fixed(value / 60, 1, locale)} ${UNITS[locale]['min']})`;
+      }
+      return `${sig(value, n, locale)} ${UNITS[locale]['s']}`;
     case '':
       return sig(value, n, locale);
     default:

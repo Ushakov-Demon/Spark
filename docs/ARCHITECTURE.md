@@ -86,6 +86,8 @@ C_i · dT_i/dt = P_i + Σ_j G_ij · (T_j − T_i)
 5. `buildReport` строит `Block[]` по уровню (novice / school / advanced / expert), языку (`uk`, `en`) и стране программы (`UA`); консоль рендерит текстом, веб отрендерит карточками и KaTeX.
 6. Ни ядро, ни тексты не предполагают конкретную страну: язык — ключ в `LocalizedText`, классы — только в `CurriculumRef` с кодом страны. Правила тона — [CONTENT_STYLE.md](CONTENT_STYLE.md).
 
+Разбор «цель против результата» ([LEARNING_MODEL.md](LEARNING_MODEL.md)): солвер пишет `TransferRecord` — точную энергию по каждой связи за шаг; `runExperiment` суммирует их в `result.transfers`. `analyzeTemperature` раскладывает итоговую температуру тела на «простой расчёт» + вклад каждого участника (сумма сходится до 1e-9). `Expectation` (прогноз/цель) — необязательна; `solveKnob` бисекцией переигрывает опыт и находит, какой параметр как изменить.
+
 Команды делятся на `control` (управление), `matter` (долить — приносит свою энергию) и `intervention` («режим бога» — энергия извне записывается), поэтому баланс энергии всегда сходится.
 
 ## Многодоменность (как будут жить вместе)
@@ -111,6 +113,8 @@ createSimulation({
 **Шаг 1 — ядро + теплообмен в консоли (готово).** `npm test`, `npm run demo`.
 
 **Шаг 1.5 — команды, трассировка, объяснения по уровням (готово).** `npm run experiment -- --level novice|school|advanced|expert|all --lang uk|en --country UA`.
+
+**Шаг 1.6 — лаборатория с необязательными прогнозом/целью и разбором (готово).** `npm run lab -- --hot 0.3 --pot glass --goal 40`.
 
 **Шаг 2 — электрическая цепь постоянного тока** (`src/domains/electrical/`):
 `Battery(EMF, r)`, `Resistor(R)`, `Lamp`, `Switch`, `Ammeter`, `Voltmeter`, `Wire`.

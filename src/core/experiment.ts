@@ -31,6 +31,15 @@ export interface FormulaUsage {
   readonly entities: ReadonlySet<string>;
 }
 
+/** Net amount moved along one connection over the whole run (from `a` to `b`). */
+export interface TransferTotal {
+  readonly connection: string;
+  readonly a: string;
+  readonly b: string;
+  readonly quantity: 'energy';
+  readonly amount: number;
+}
+
 export interface ExperimentResult<C extends Command> {
   readonly initial: SystemState;
   readonly final: SystemState;
@@ -39,6 +48,8 @@ export interface ExperimentResult<C extends Command> {
   readonly log: readonly ExperimentLogEntry<C>[];
   /** Which formulas the solvers actually used during the whole run. */
   readonly usage: ReadonlyMap<string, FormulaUsage>;
+  /** Net transfers per connection over the whole run. */
+  readonly transfers: ReadonlyMap<string, TransferTotal>;
   /** Sum of energy brought in by commands, J. */
   readonly externalEnergy: number;
 }
@@ -63,8 +74,15 @@ export function runExperiment<C extends Command>(input: ExperimentInput<C>): Exp
   const eps = dt * 1e-6;
 
   const usage = new Map<string, { formula: string; count: number; entities: Set<string> }>();
+  const transfers = new Map<string, { connection: string; a: string; b: string; quantity: 'energy'; amount: number }>();
   const sink = {
     record(r: TraceRecord) {
+      if (r.kind === 'transfer') {
+        const t = transfers.get(r.connection);
+        if (t) t.amount += r.amount;
+        else transfers.set(r.connection, { connection: r.connection, a: r.a, b: r.b, quantity: r.quantity, amount: r.amount });
+        return;
+      }
       if (r.kind !== 'formula') return;
       let u = usage.get(r.formula);
       if (!u) usage.set(r.formula, (u = { formula: r.formula, count: 0, entities: new Set() }));
@@ -99,7 +117,7 @@ export function runExperiment<C extends Command>(input: ExperimentInput<C>): Exp
     if (s.step % sampleSteps === 0 || i === totalSteps - 1) samples.push(s);
   }
 
-  return { initial: input.initial, final: s, samples, log, usage, externalEnergy };
+  return { initial: input.initial, final: s, samples, log, usage, transfers, externalEnergy };
 }
 
 /** Closest snapshot at or before `time`. */

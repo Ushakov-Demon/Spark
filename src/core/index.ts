@@ -10,3 +10,4 @@ export * from './validation.js';
 export * from './trace.js';
 export * from './commands.js';
 export * from './experiment.js';
+export * from './expectation.js';

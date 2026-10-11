@@ -41,6 +41,8 @@ interface Edge {
   readonly b: number;
   readonly g: number;
   readonly link: ThermalLink;
+  /** Net energy a → b during this step (only tracked when tracing). */
+  moved: number;
 }
 
 export class ThermalSolverError extends Error {
@@ -81,7 +83,7 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         const a = index.get(c.a.entity);
         const b = index.get(c.b.entity);
         if (a === undefined || b === undefined || a === b || c.params.conductance === 0) continue;
-        edges.push({ a, b, g: c.params.conductance, link: c });
+        edges.push({ a, b, g: c.params.conductance, link: c, moved: 0 });
         nodes[a]!.sumG += c.params.conductance;
         nodes[b]!.sumG += c.params.conductance;
       }
@@ -107,11 +109,13 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
       const flow = new Float64Array(nodes.length);
       for (let s = 0; s < substeps; s++) {
         flow.fill(0);
-        for (const { a, b, g } of edges) {
+        for (const edge of edges) {
+          const { a, b, g } = edge;
           const q = g * (nodes[a]!.temperature - nodes[b]!.temperature); // W, a → b
           flow[a]! -= q;
           flow[b]! += q;
           if (trace) {
+            edge.moved += q * h;
             const [from, to] = q >= 0 ? [a, b] : [b, a];
             given[from]! += Math.abs(q) * h;
             received[to]! += Math.abs(q) * h;
@@ -162,7 +166,8 @@ function traceStep(
   const id = (i: number): EntityId => nodes[i]!.entity.id;
   trace.record({ kind: 'numerics', solver: 'thermal', method: 'explicit-euler', dt, substeps });
 
-  for (const { a, b, g, link } of edges) {
+  for (const { a, b, g, link, moved } of edges) {
+    trace.record({ kind: 'transfer', connection: link.id, a: id(a), b: id(b), quantity: 'energy', amount: moved });
     const o = link.params.origin;
     if (o?.type === 'convection') {
       trace.record({ kind: 'formula', formula: 'thermal.convection-conductance', entities: [id(a), id(b)], args: [o.coefficient, o.area], output: g });

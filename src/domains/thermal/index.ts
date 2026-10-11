@@ -8,3 +8,4 @@ export * from './commands.js';
 export * from './laws.js';
 export * from './catalog.js';
 export * from './explain.js';
+export * from './debrief.js';

@@ -24,7 +24,21 @@ export interface NumericsRecord {
   readonly substeps: number;
 }
 
-export type TraceRecord = FormulaApplication | NumericsRecord;
+/**
+ * Something (energy, later mass or charge) moved along a connection during one
+ * step. `amount` is the exact net quantity from `a` to `b` (negative = b → a).
+ * Summed over a run it answers "where did it go?" in goal/result debriefs.
+ */
+export interface TransferRecord {
+  readonly kind: 'transfer';
+  readonly connection: string;
+  readonly a: EntityId;
+  readonly b: EntityId;
+  readonly quantity: 'energy';
+  readonly amount: number;
+}
+
+export type TraceRecord = FormulaApplication | NumericsRecord | TransferRecord;
 
 export interface TraceSink {
   record(r: TraceRecord): void;
