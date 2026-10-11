@@ -15,7 +15,7 @@ import {
   type HeaterId,
   type VesselId,
 } from '../src/equipment/index.js';
-import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, type Block, type ExplainContext } from '../src/explain/index.js';
+import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels.js';
 import {
@@ -29,6 +29,7 @@ import {
   labImpossibility,
   labSetup,
   labStatus,
+  labSubject,
   labSummary,
   SAMPLE_ID,
   type LabAction,
@@ -247,6 +248,7 @@ function render() {
   $('#explain-hint').textContent = u.explainHint;
   $('#footer').textContent = u.footer;
 
+  $('#setup-line').textContent = labSubject(params, locale);
   const sub = substance();
   const b = sample();
   const C = (k: number | undefined) => (k === undefined ? '—' : formatQuantity(k, 'K', { locale, level: 'school' }));
@@ -345,32 +347,46 @@ function render() {
   );
 }
 
-// ---------- setup form ----------
-function buildSetupForm() {
+// ---------- shelf (left panel) ----------
+const openSections = new Set<string>((store.get('open') ?? 'action,substance,vessel,device,conditions').split(','));
+let query = '';
+
+function buildShelf() {
   const u = t();
-  const form = $('#setup');
-  form.innerHTML = '';
-  const field = (label: string, input: HTMLElement) => el('label', { className: 'field' }, el('span', {}, label), input);
+  const root = $('#setup');
+  const shelf = $('#shelf');
+  const scroll = shelf.scrollTop;
+  root.innerHTML = '';
+  $<HTMLInputElement>('#search').placeholder = locale === 'uk' ? 'Пошук: речовина, посуд, прилад…' : 'Search: substance, vessel, device…';
   const rebuild = () => {
-    buildSetupForm();
+    buildShelf();
     newSession();
   };
-  const select = (id: string, options: readonly (readonly [string, string])[], selected: string, onChange: (v: string) => void, groups?: readonly { label: string; options: readonly (readonly [string, string])[] }[]) => {
-    const sel = el('select', { id });
-    if (groups) {
-      for (const g of groups) {
-        if (!g.options.length) continue;
-        const og = el('optgroup', { label: g.label });
-        for (const [value, label] of g.options) og.append(el('option', { value, selected: value === selected }, label));
-        sel.append(og);
-      }
-    }
-    for (const [value, label] of options) sel.append(el('option', { value, selected: value === selected }, label));
-    sel.onchange = () => onChange(sel.value);
-    return sel;
+  const matches = (name: LocalizedText) => !query || name.uk.toLowerCase().includes(query) || name.en.toLowerCase().includes(query);
+
+  const section = (id: string, title: string, chosen: string, ...content: HTMLElement[]) => {
+    const d = el('details', { className: 'shelf-section', open: openSections.has(id) || !!query });
+    d.append(el('summary', {}, el('span', {}, title), el('span', { className: 'chosen' }, chosen)), ...content);
+    d.addEventListener('toggle', () => {
+      if (d.open) openSections.add(id);
+      else openSections.delete(id);
+      store.set('open', [...openSections].join(','));
+    });
+    root.append(d);
   };
-  const number = (id: string, value: number, min: number, max: number, step: number, apply: (v: number) => void) => {
-    const i = el('input', { id, type: 'number', value: String(value), min: String(min), max: String(max), step: String(step), inputMode: 'decimal' });
+  const chips = (options: readonly (readonly [string, string])[], selected: string, onPick: (v: string) => void) =>
+    el(
+      'div',
+      { className: 'chips' },
+      ...options.map(([v, label]) => {
+        const b = el('button', { type: 'button', className: `chip${v === selected ? ' selected' : ''}` }, label);
+        b.setAttribute('aria-pressed', String(v === selected));
+        b.onclick = () => onPick(v);
+        return b;
+      }),
+    );
+  const number = (label: string, value: number, min: number, max: number, step: number, apply: (v: number) => void) => {
+    const i = el('input', { type: 'number', value: String(value), min: String(min), max: String(max), step: String(step), inputMode: 'decimal' });
     i.onchange = () => {
       const v = Number(i.value);
       if (Number.isFinite(v) && v >= min && v <= max) {
@@ -378,126 +394,227 @@ function buildSetupForm() {
         rebuild();
       } else i.value = String(value);
     };
-    return i;
+    return el('label', { className: 'mini-field' }, el('span', {}, label), i);
   };
-  const byCategory = (root: string) =>
-    childrenOf(root).map((c) => ({ label: tr(c.name, locale), options: itemsUnder(c.id).map((i) => [i.id, tr(i.name, locale)] as const) }));
-  const volume = (l: number) => (l < 1 ? `${Math.round(l * 1000)} ${u.ml}` : `${l} ${u.liters}`);
-  const sub = substance();
-  const v = vesselItem();
+  /** One selectable card; `detail` is shown under the selected one. */
+  const item = (o: { name: LocalizedText; note?: string | undefined; badge?: string; selected: boolean; problem?: string; onPick: () => void; detail?: () => HTMLElement[] }) => {
+    const li = el('li');
+    const b = el('button', { type: 'button', className: `item${o.selected ? ' selected' : ''}${o.problem ? ' incompatible' : ''}` });
+    b.setAttribute('aria-pressed', String(o.selected));
+    b.append(el('span', { className: 'item-name' }, tr(o.name, locale), ...(o.badge ? [el('span', { className: 'badge' }, o.badge)] : [])));
+    if (o.problem || o.note) b.append(el('span', { className: 'item-note' }, o.problem ? `⚠ ${o.problem}` : o.note!));
+    if (o.problem) b.title = o.problem;
+    b.onclick = o.onPick;
+    li.append(b);
+    if (o.selected && o.detail) li.append(el('div', { className: 'item-detail' }, ...o.detail()));
+    return li;
+  };
+  const describe = (i: { description: Parameters<typeof textFor>[0]; safety?: Parameters<typeof textFor>[0]; modelNotes?: readonly LocalizedText[] }): HTMLElement[] => [
+    el('p', {}, tr(textFor(i.description, level), locale)),
+    ...(i.safety ? [el('p', { className: 'safety' }, `⚠ ${u.safety}: ${tr(textFor(i.safety, level), locale)}`)] : []),
+    ...(i.modelNotes ?? []).map((n) => el('p', { className: 'muted small' }, `ℹ ${tr(n, locale)}`)),
+  ];
+  const groupList = (groups: readonly { label: string; items: (HTMLElement | null)[] }[]) => {
+    const out: HTMLElement[] = [];
+    for (const g of groups) {
+      const items = g.items.filter((x): x is HTMLElement => x !== null);
+      if (!items.length) continue;
+      out.push(el('div', { className: 'group-label' }, g.label), el('ul', { className: 'items' }, ...items));
+    }
+    return out;
+  };
+  const volume = (l: number) => (l < 1 ? `${Math.round(l * 1000)} ${u.ml}` : `${num(l)} ${u.liters}`);
+  const num = (x: number) => sig(x, 4, locale);
+  const hasEstimate = (vals: readonly ({ verification: string } | undefined)[]) => vals.some((v) => v?.verification === 'estimate');
 
   // 1. What we do.
-  const actionSel = select('f-action', LAB_ACTIONS.map((a) => [a, u.actions[a]] as const), params.action, (a) => setAction(a as LabAction));
-  form.append(field(u.action, actionSel));
-  if (params.action === 'heat-to' || params.action === 'cool-to') {
-    form.append(field(u.target, number('f-target', params.target ?? (params.action === 'heat-to' ? 60 : 5), -30, 300, 1, (x) => (params = { ...params, target: x }))));
+  const actionBox = el('div', { className: 'actions' });
+  for (const a of LAB_ACTIONS) {
+    const b = el('button', { type: 'button', className: `chip${a === params.action ? ' selected' : ''}` }, u.actions[a]);
+    b.setAttribute('aria-pressed', String(a === params.action));
+    b.onclick = () => setAction(a);
+    actionBox.append(b);
   }
+  const actionContent: HTMLElement[] = [actionBox];
+  if (params.action === 'heat-to' || params.action === 'cool-to') {
+    actionContent.push(number(u.target, params.target ?? (params.action === 'heat-to' ? 60 : 5), -30, 300, 1, (x) => (params = { ...params, target: x })));
+  }
+  if (!query) section('action', u.action, u.actions[params.action], ...actionContent);
 
   // 2. Substance.
-  const subSel = select('f-substance', [], params.substance, (id) => {
-    params = { ...params, substance: id as SubstanceId, startTemp: defaultStart(params.action, SUBSTANCES[id as SubstanceId]) };
-    rebuild();
-  }, SUBSTANCE_CATEGORIES.map((c) => ({ label: tr(c.name, locale), options: Object.values(SUBSTANCES).filter((s) => s.category === c.id).map((s) => [s.id, tr(s.name, locale)] as const) })));
-  form.append(field(u.substance, subSel));
+  const sub = substance();
   const small = params.size < 0.1;
-  form.append(
-    field(`${u.amount} (≤ ${volume(params.size)})`, number('f-liters', params.liters, small ? 0.001 : 0.01, params.size, small ? 0.001 : 0.01, (x) => (params = { ...params, liters: x }))),
-    field(u.startTemp, number('f-start', params.startTemp, -30, 300, 1, (x) => (params = { ...params, startTemp: x }))),
+  section(
+    'substance',
+    u.substance,
+    tr(sub.name, locale),
+    ...groupList(
+      SUBSTANCE_CATEGORIES.map((c) => ({
+        label: tr(c.name, locale),
+        items: Object.values(SUBSTANCES)
+          .filter((x) => x.category === c.id && matches(x.name))
+          .map((x) =>
+            item({
+              name: x.name,
+              note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
+              ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
+              selected: x.id === params.substance,
+              onPick: () => {
+                params = { ...params, substance: x.id as SubstanceId, startTemp: defaultStart(params.action, x) };
+                rebuild();
+              },
+              detail: () => [
+                ...describe(x),
+                number(`${u.amount} (≤ ${volume(params.size)})`, params.liters, small ? 0.001 : 0.01, params.size, small ? 0.001 : 0.01, (v) => (params = { ...params, liters: v })),
+                number(u.startTemp, params.startTemp, -30, 300, 1, (v) => (params = { ...params, startTemp: v })),
+              ],
+            }),
+          ),
+      })),
+    ),
   );
 
   // 3. Vessel.
-  form.append(
-    field(
-      u.vessel,
-      select('f-vessel', [], params.vessel, (id) => {
-        const next = VESSELS[id as VesselId];
-        const size = next.spec.defaultSize;
-        params = { ...params, vessel: next.id as VesselId, size, material: next.spec.defaultMaterial, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
-        delete (params as { vesselMass?: number }).vesselMass;
-        rebuild();
-      }, byCategory('vessel')),
+  const v = vesselItem();
+  section(
+    'vessel',
+    u.vessel,
+    `${tr(v.name, locale)}, ${volume(params.size)}`,
+    ...groupList(
+      childrenOf('vessel').map((c) => ({
+        label: tr(c.name, locale),
+        items: itemsUnder(c.id)
+          .filter((x): x is typeof v => x.kind === 'vessel' && matches(x.name))
+          .map((x) =>
+            item({
+              name: x.name,
+              note: `${x.spec.materials.map((m) => u.materials[m] ?? m).join(', ')} · ${volume(x.spec.sizes[0]!)}–${volume(x.spec.sizes.at(-1)!)}`,
+              selected: x.id === params.vessel,
+              onPick: () => {
+                const size = x.spec.defaultSize;
+                params = { ...params, vessel: x.id as VesselId, size, material: x.spec.defaultMaterial, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
+                delete (params as { vesselMass?: number }).vesselMass;
+                rebuild();
+              },
+              detail: () => {
+                const out: HTMLElement[] = [...describe(x), el('span', { className: 'muted small' }, u.size)];
+                out.push(
+                  chips(x.spec.sizes.map((z) => [String(z), volume(z)] as const), String(params.size), (z) => {
+                    const size = Number(z);
+                    params = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7, size < 0.1 ? 3 : 2) };
+                    delete (params as { vesselMass?: number }).vesselMass;
+                    rebuild();
+                  }),
+                );
+                if (x.spec.materials.length > 1) {
+                  out.push(
+                    el('span', { className: 'muted small' }, u.material),
+                    chips(x.spec.materials.map((m) => [m, u.materials[m] ?? m] as const), params.material, (m) => {
+                      params = { ...params, material: m };
+                      rebuild();
+                    }),
+                  );
+                }
+                out.push(number(u.vesselMass, params.vesselMass ?? typicalVesselMass(x, params.size), 0.01, 20, 0.01, (m) => (params = { ...params, vesselMass: m })));
+                if (x.spec.lid === 'optional') {
+                  const lid = el('input', { type: 'checkbox', checked: params.lid });
+                  lid.onchange = () => {
+                    params = { ...params, lid: lid.checked };
+                    rebuild();
+                  };
+                  out.push(el('label', { className: 'check' }, lid, el('span', {}, u.lid)));
+                }
+                return out;
+              },
+            }),
+          ),
+      })),
     ),
-    field(u.size, select('f-size', v.spec.sizes.map((x) => [String(x), volume(x)] as const), String(params.size), (x) => {
-      const size = Number(x);
-      params = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7, size < 0.1 ? 3 : 2) };
-      delete (params as { vesselMass?: number }).vesselMass;
-      rebuild();
-    })),
   );
-  if (v.spec.materials.length > 1) {
-    form.append(field(u.material, select('f-pot', v.spec.materials.map((m) => [m, u.materials[m] ?? m] as const), params.material, (m) => {
-      params = { ...params, material: m };
-      rebuild();
-    })));
-  }
-  form.append(field(u.vesselMass, number('f-pot-mass', params.vesselMass ?? typicalVesselMass(v, params.size), 0.01, 20, 0.01, (x) => (params = { ...params, vesselMass: x }))));
-  if (v.spec.lid === 'optional') {
-    const lid = el('input', { id: 'f-lid', type: 'checkbox', checked: params.lid });
-    lid.onchange = () => {
-      params = { ...params, lid: lid.checked };
-      rebuild();
-    };
-    form.append(el('label', { className: 'check' }, lid, el('span', {}, u.lid)));
-  }
 
   // 4. Heater or cooler, depending on the action.
   const uses = actionUses(params.action);
-  const NONE = 'none';
+  const roomItem = (selected: boolean, onPick: () => void) =>
+    !matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? null : item({ name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, note: `${params.roomTemp} °C`, selected, onPick });
   if (uses === 'heater' || uses === 'either') {
-    const heaterGroups = byCategory('device.heater');
-    const sel = select('f-device', uses === 'either' ? [[NONE, u.justRoom]] : [], params.heater?.id ?? NONE, (id) => {
-      if (id === NONE) {
-        const { heater: _h, ...rest } = params;
-        void _h;
-        params = rest;
-      } else {
-        const hi = HEATERS[id as HeaterId];
-        params = { ...params, heater: { id: hi.id as HeaterId, rating: hi.spec.defaultRating, knob: hi.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 } };
-        lastHeater = params.heater!;
-      }
+    const groups: { label: string; items: (HTMLElement | null)[] }[] = childrenOf('device.heater').map((c) => ({
+      label: tr(c.name, locale),
+      items: itemsUnder(c.id)
+        .filter((x): x is NonNullable<ReturnType<typeof heaterItem>> => x.kind === 'heater' && matches(x.name))
+        .map((x) => {
+          const compat = canHeat(x, v, params.material, params.size);
+          return item({
+            name: x.name,
+            note: x.spec.ratings.map((r) => formatQuantity(r, 'W', { locale, level: 'school' })).join(' / '),
+            ...(x.spec.ratingData.verification === 'estimate' ? { badge: u.estimateBadge } : {}),
+            ...(compat.ok ? {} : { problem: tr(compat.reason, locale) }),
+            selected: x.id === params.heater?.id,
+            onPick: () => {
+              params = { ...params, heater: { id: x.id as HeaterId, rating: x.spec.defaultRating, knob: x.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 } };
+              lastHeater = params.heater!;
+              rebuild();
+            },
+            detail: () => [
+              ...describe(x),
+              el('span', { className: 'muted small' }, u.model),
+              chips(x.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.heater?.rating), (r) => {
+                params = { ...params, heater: { ...params.heater!, rating: Number(r) } };
+                lastHeater = params.heater!;
+                rebuild();
+              }),
+            ],
+          });
+        }),
+    }));
+    if (uses === 'either') groups.unshift({ label: locale === 'uk' ? 'Без нагрівача' : 'No heater', items: [roomItem(!params.heater, () => {
+      const { heater: _h, ...rest } = params;
+      void _h;
+      params = rest;
       rebuild();
-    }, heaterGroups);
-    form.append(field(uses === 'either' ? u.meltWith : u.device, sel));
-    const h = heaterItem();
-    if (h && params.heater) {
-      const est = h.spec.ratingData.verification === 'estimate' ? el('span', { className: 'badge', title: h.spec.ratingData.note ?? '' }, u.estimateBadge) : '';
-      form.append(field(u.model, el('span', { className: 'inline' }, select('f-rating', h.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.heater.rating), (r) => {
-        params = { ...params, heater: { ...params.heater!, rating: Number(r) } };
-        lastHeater = params.heater!;
-        rebuild();
-      }), est)));
-    }
+    })] });
+    section('device', uses === 'either' ? u.meltWith : u.device, params.heater ? tr(HEATERS[params.heater.id].name, locale) : u.justRoom, ...groupList(groups));
   } else {
-    const sel = select('f-cooler', [[NONE, u.justRoom]], params.cooler?.id ?? NONE, (id) => {
-      if (id === NONE) {
+    const groups = [
+      { label: locale === 'uk' ? 'Без охолоджувача' : 'No cooler', items: [roomItem(!params.cooler, () => {
         const { cooler: _c, ...rest } = params;
         void _c;
         params = rest;
-      } else {
-        const c = COOLERS[id as CoolerId];
-        params = { ...params, cooler: { id: c.id as CoolerId, setpoint: c.spec.setpoint.default } };
-        lastCooler = params.cooler!;
-      }
-      rebuild();
-    }, byCategory('device.cooler'));
-    form.append(field(u.coolWhere, sel));
-    if (params.cooler) {
-      const sp = COOLERS[params.cooler.id].spec.setpoint;
-      if (sp.max > sp.min) {
-        form.append(field(`${u.setpoint} (${sp.min}…${sp.max})`, number('f-setpoint', params.cooler.setpoint, sp.min, sp.max, 1, (x) => {
-          params = { ...params, cooler: { ...params.cooler!, setpoint: x } };
-          lastCooler = params.cooler!;
-        })));
-      }
-    }
+        rebuild();
+      })] },
+      ...childrenOf('device.cooler').map((c) => ({
+        label: tr(c.name, locale),
+        items: itemsUnder(c.id)
+          .filter((x): x is (typeof COOLERS)[CoolerId] => x.kind === 'cooler' && matches(x.name))
+          .map((x) =>
+            item({
+              name: x.name,
+              note: x.spec.setpoint.max > x.spec.setpoint.min ? `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C` : `${x.spec.setpoint.default} °C`,
+              selected: x.id === params.cooler?.id,
+              onPick: () => {
+                params = { ...params, cooler: { id: x.id as CoolerId, setpoint: x.spec.setpoint.default } };
+                lastCooler = params.cooler!;
+                rebuild();
+              },
+              detail: () => [
+                ...describe(x),
+                ...(x.spec.setpoint.max > x.spec.setpoint.min
+                  ? [number(`${u.setpoint} (${x.spec.setpoint.min}…${x.spec.setpoint.max})`, params.cooler?.setpoint ?? x.spec.setpoint.default, x.spec.setpoint.min, x.spec.setpoint.max, 1, (sp) => {
+                      params = { ...params, cooler: { ...params.cooler!, setpoint: sp } };
+                      lastCooler = params.cooler!;
+                    })]
+                  : []),
+              ],
+            }),
+          ),
+      })),
+    ];
+    section('device', u.coolWhere, params.cooler ? tr(COOLERS[params.cooler.id].name, locale) : u.justRoom, ...groupList(groups));
   }
-  form.append(field(u.room, number('f-room', params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x }))));
 
-  // 5. "What it is".
-  const items: (EquipmentItem | SubstanceItem)[] = [sub, v];
-  if (params.heater) items.push(HEATERS[params.heater.id]);
-  if (params.cooler) items.push(COOLERS[params.cooler.id]);
-  form.append(about(items));
+  // 5. Conditions.
+  if (!query) section('conditions', locale === 'uk' ? 'Умови' : 'Conditions', `${params.roomTemp} °C`, number(u.room, params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x })));
+
+  shelf.scrollTop = scroll;
 }
 
 /** Sensible starting temperature for an action: frozen below the melting point for "melt". */
@@ -531,19 +648,8 @@ function setAction(a: LabAction) {
     next = rest;
   }
   params = next;
-  buildSetupForm();
+  buildShelf();
   newSession();
-}
-
-function about(items: readonly (EquipmentItem | SubstanceItem)[]): HTMLElement {
-  const u = t();
-  const box = el('details', { className: 'about', open: true }, el('summary', {}, u.about));
-  for (const i of items) {
-    box.append(el('h4', {}, tr(i.name, locale)), el('p', {}, tr(textFor(i.description, level), locale)));
-    if (i.safety) box.append(el('p', { className: 'safety' }, `⚠ ${u.safety}: ${tr(textFor(i.safety, level), locale)}`));
-    if ('modelNotes' in i && i.modelNotes) for (const n of i.modelNotes) box.append(el('p', { className: 'muted small' }, `ℹ ${tr(n, locale)}`));
-  }
-  return box;
 }
 
 function buildHeader() {
@@ -555,7 +661,7 @@ function buildHeader() {
     locale = lang.value as Locale;
     store.set('locale', locale);
     buildHeader();
-    buildSetupForm();
+    buildShelf();
     render();
     if ($('#report').innerHTML) explain();
   };
@@ -565,7 +671,7 @@ function buildHeader() {
   lv.onchange = () => {
     level = lv.value as Level;
     store.set('level', level);
-    buildSetupForm();
+    buildShelf();
     if ($('#report').innerHTML) explain();
   };
 }
@@ -606,8 +712,12 @@ const speedSel = $<HTMLSelectElement>('#speed');
 for (const s of [1, 10, 60, 300, 600, 3600]) speedSel.append(el('option', { value: String(s), selected: s === speed }, `×${s}`));
 speedSel.onchange = () => (speed = Number(speedSel.value));
 $('#explain').onclick = explain;
+$<HTMLInputElement>('#search').addEventListener('input', (e) => {
+  query = (e.target as HTMLInputElement).value.trim().toLowerCase();
+  buildShelf();
+});
 
 buildHeader();
-buildSetupForm();
+buildShelf();
 newSession();
 requestAnimationFrame(frame);

@@ -20,43 +20,47 @@
       </div>
     </header>
 
-    <main class="layout">
-      <section class="card">
-        <h2 id="setup-title"></h2>
-        <div id="setup" class="setup"></div>
-      </section>
+    <div class="app">
+      <aside id="shelf" class="shelf" aria-labelledby="setup-title">
+        <h2 id="setup-title" class="shelf-title"></h2>
+        <input id="search" class="search" type="search" autocomplete="off" />
+        <div id="setup"></div>
+      </aside>
 
-      <section class="card experiment">
-        <h2 id="exp-title"></h2>
-        <div class="controls">
-          <div class="control-left">
-            <div id="knob-wrap"></div>
-            <div id="switch-wrap" hidden><button id="switch" class="switch" type="button"></button></div>
+      <main class="main">
+        <section class="card experiment">
+          <h2 id="exp-title"></h2>
+          <p id="setup-line" class="setup-line"></p>
+          <div class="controls">
+            <div class="control-left">
+              <div id="knob-wrap"></div>
+              <div id="switch-wrap" hidden><button id="switch" class="switch" type="button"></button></div>
+            </div>
+            <div class="readouts" aria-live="polite">
+              <div id="r-time" class="readout"></div>
+              <div id="r-water" class="readout water"></div>
+              <div id="r-pot" class="readout pot"></div>
+              <div id="r-power" class="readout"></div>
+            </div>
           </div>
-          <div class="readouts" aria-live="polite">
-            <div id="r-time" class="readout"></div>
-            <div id="r-water" class="readout water"></div>
-            <div id="r-pot" class="readout pot"></div>
-            <div id="r-power" class="readout"></div>
+          <div class="buttons">
+            <button id="start" class="primary" type="button"></button>
+            <button id="reset" type="button"></button>
+            <label class="speed"><span id="lbl-speed"></span><select id="speed"></select></label>
           </div>
-        </div>
-        <div class="buttons">
-          <button id="start" class="primary" type="button"></button>
-          <button id="reset" type="button"></button>
-          <label class="speed"><span id="lbl-speed"></span><select id="speed"></select></label>
-        </div>
-        <div id="messages" class="messages"></div>
-        <div id="chart" class="chart-wrap"></div>
-        <div id="legend" class="legend"></div>
-        <div id="energy" class="energy"></div>
-      </section>
+          <div id="messages" class="messages"></div>
+          <div id="chart" class="chart-wrap"></div>
+          <div id="legend" class="legend"></div>
+          <div id="energy" class="energy"></div>
+        </section>
 
-      <section class="card">
-        <button id="explain" class="primary wide" type="button"></button>
-        <p id="explain-hint" class="muted small"></p>
-        <article id="report" class="report"></article>
-      </section>
-    </main>
+        <section class="card">
+          <button id="explain" class="primary wide" type="button"></button>
+          <p id="explain-hint" class="muted small"></p>
+          <article id="report" class="report"></article>
+        </section>
+      </main>
+    </div>
 
     <footer><p id="footer" class="muted small"></p></footer>
     <script type="module" src="./main.ts"></script>

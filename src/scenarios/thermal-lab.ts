@@ -423,3 +423,6 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
       return [{ kind: 'summary', tone: 'neutral', lines: [uk ? `Нагрівач вимкнено (зараз ${T(b1.state.temperature)}).` : `The heater is off (now ${T(b1.state.temperature)}).`] }];
   }
 }
+
+/** "Distilled water (1 L) in a steel pot on an electric hob" — what is on the table right now. */
+export const labSubject = (p: LabParams, locale: Locale): string => subject(p, locale).text;
