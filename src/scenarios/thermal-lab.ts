@@ -187,8 +187,10 @@ export function forecastLab(p: LabParams, simulation: Simulation, from: SystemSt
 export function labStatus<C extends Command>(p: LabParams, result: ExperimentResult<C>, simulation: Simulation, warnings: readonly LocalizedText[]): LabStatus {
   const sub = SUBSTANCES[p.substance];
   if (labGoalReached(p, result.final)) {
-    if (OPERATIONS[p.action].endsInstead?.(sub) === 'decomposes') return { kind: 'decomposes', at: result.final.time };
-    return { kind: 'reached', at: result.final.time };
+    // Times are counted from the start of this run (a protocol step starts later than 0).
+    const at = result.final.time - result.initial.time;
+    if (OPERATIONS[p.action].endsInstead?.(sub) === 'decomposes') return { kind: 'decomposes', at };
+    return { kind: 'reached', at };
   }
   const impossible = labImpossibility(p);
   if (impossible) return { kind: 'impossible', reason: impossible };
@@ -291,8 +293,8 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
           tone: 'neutral',
           lines: [
             uk
-              ? `Дослід зупинено через ${formatDuration(result.final.time, locale)}: температура змінилася з ${T(b0.state.temperature)} до ${T(b1.state.temperature)}${b1.state.solidFraction !== undefined && b1.state.solidFraction > 0 && b1.state.solidFraction < 1 ? ` (твердого — ${Math.round(b1.state.solidFraction * 100)} %)` : ''}.`
-              : `The experiment was stopped after ${formatDuration(result.final.time, locale)}: the temperature changed from ${T(b0.state.temperature)} to ${T(b1.state.temperature)}.`,
+              ? `Дослід зупинено через ${formatDuration(result.final.time - result.initial.time, locale)}: температура змінилася з ${T(b0.state.temperature)} до ${T(b1.state.temperature)}${b1.state.solidFraction !== undefined && b1.state.solidFraction > 0 && b1.state.solidFraction < 1 ? ` (твердого — ${Math.round(b1.state.solidFraction * 100)} %)` : ''}.`
+              : `The experiment was stopped after ${formatDuration(result.final.time - result.initial.time, locale)}: the temperature changed from ${T(b0.state.temperature)} to ${T(b1.state.temperature)}.`,
             uk ? `Якщо продовжити, ${lowerFirst(subj)} ${future} приблизно ще за ${formatDuration(status.after, locale)}.` : `If continued, it would ${future} in about ${formatDuration(status.after, locale)} more.`,
           ],
         },

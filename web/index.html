@@ -10,7 +10,7 @@
   </head>
   <body>
     <header class="top">
-      <div>
+      <div class="brand">
         <h1 id="title">Spark</h1>
         <p id="subtitle" class="muted"></p>
       </div>
@@ -28,9 +28,18 @@
       </aside>
 
       <main class="main">
-        <section class="card experiment">
-          <h2 id="exp-title"></h2>
-          <p id="setup-line" class="setup-line"></p>
+        <section class="card kitchen">
+          <div class="kitchen-head">
+            <div>
+              <h2 id="exp-title"></h2>
+              <p id="setup-line" class="setup-line"></p>
+            </div>
+            <div class="buttons">
+              <button id="start" class="primary" type="button"></button>
+              <button id="reset" type="button"></button>
+              <label class="speed"><span id="lbl-speed"></span><select id="speed"></select></label>
+            </div>
+          </div>
           <div class="controls">
             <div class="control-left">
               <div id="knob-wrap"></div>
@@ -43,20 +52,23 @@
               <div id="r-power" class="readout"></div>
             </div>
           </div>
-          <div id="expect" class="expect"></div>
-          <details id="add" class="add"></details>
-          <div class="buttons">
-            <button id="start" class="primary" type="button"></button>
-            <button id="reset" type="button"></button>
-            <label class="speed"><span id="lbl-speed"></span><select id="speed"></select></label>
-          </div>
-          <div id="messages" class="messages"></div>
           <div id="chart" class="chart-wrap"></div>
           <div id="legend" class="legend"></div>
+          <div id="messages" class="messages"></div>
           <div id="energy" class="energy"></div>
         </section>
 
-        <section class="card">
+        <aside class="side">
+          <section class="card">
+            <h3 id="protocol-title" class="side-title"></h3>
+            <ol id="protocol" class="protocol"></ol>
+            <p id="protocol-hint" class="muted small"></p>
+          </section>
+          <section class="card"><div id="expect" class="expect"></div></section>
+          <section class="card"><details id="add" class="add" open></details></section>
+        </aside>
+
+        <section class="card report-card">
           <button id="explain" class="primary wide" type="button"></button>
           <p id="explain-hint" class="muted small"></p>
           <article id="report" class="report"></article>

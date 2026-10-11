@@ -59,6 +59,16 @@ export interface UiText {
   apply: string;
   experiment: string;
   start: string;
+  continueStep: string;
+  protocolTitle: string;
+  protocolHint: string;
+  protocolNext: string;
+  stepRunning(elapsed: string): string;
+  stepReached(time: string): string;
+  stepStopped(time: string): string;
+  stepFailed: string;
+  stepWaiting: string;
+  added(what: string, mass: string): string;
   pause: string;
   reset: string;
   speed: string;
@@ -150,6 +160,16 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     apply: 'Зібрати установку',
     experiment: '2. Дослід',
     start: '▶ Старт',
+    continueStep: '▶ Продовжити',
+    protocolTitle: 'Протокол досліду',
+    protocolHint: 'Дослід можна продовжити: обери ліворуч іншу дію або прилад — посуд із тим самим вмістом переставлять, і почнеться наступний крок.',
+    protocolNext: 'Крок завершено. Що далі? Обери дію чи прилад ліворуч або досип щось — і натисни «Продовжити».',
+    stepRunning: (e) => `іде ${e}`,
+    stepReached: (t) => `✓ за ${t}`,
+    stepStopped: (t) => `зупинено через ${t}`,
+    stepFailed: '✗ мети не досягнуто',
+    stepWaiting: 'чекає на старт',
+    added: (w, m) => `+ ${w}, ${m}`,
     pause: '⏸ Пауза',
     reset: '↺ Спочатку',
     speed: 'Швидкість часу',
@@ -239,6 +259,16 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     apply: 'Build the setup',
     experiment: '2. Experiment',
     start: '▶ Start',
+    continueStep: '▶ Continue',
+    protocolTitle: 'Experiment protocol',
+    protocolHint: 'The experiment can go on: pick another action or device on the left — the vessel moves with its contents and the next step begins.',
+    protocolNext: 'Step done. What next? Pick an action or a device on the left, or add something — then press “Continue”.',
+    stepRunning: (e) => `running ${e}`,
+    stepReached: (t) => `✓ in ${t}`,
+    stepStopped: (t) => `stopped after ${t}`,
+    stepFailed: '✗ goal not reached',
+    stepWaiting: 'waiting to start',
+    added: (w, m) => `+ ${w}, ${m}`,
     pause: '⏸ Pause',
     reset: '↺ Restart',
     speed: 'Time speed',

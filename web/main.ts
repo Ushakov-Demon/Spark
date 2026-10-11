@@ -38,7 +38,12 @@ import {
   SAMPLE_ID,
   type LabAction,
   type LabParams,
+  type LabStatus,
+  configureStep,
+  sampleOf,
 } from '../src/scenarios/index.js';
+import type { ExperimentResult } from '../src/core/experiment.js';
+import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
@@ -104,7 +109,27 @@ let lastHeater: NonNullable<LabParams['heater']> = params.heater!;
 let lastCooler: NonNullable<LabParams['cooler']> = { id: 'freezer', setpoint: -18 };
 
 let session: ExperimentSession<ThermalCommand>;
-let initialState: ReturnType<typeof labSetup>['state'];
+/** State at the start of the current step (the whole experiment's start for step 1). */
+let initialState: SystemState;
+/** Finished steps of this experiment, oldest first; the current step is `session`. */
+interface StepRecord {
+  readonly params: LabParams;
+  readonly result: ExperimentResult<ThermalCommand>;
+  readonly status: LabStatus;
+  readonly adds: readonly Added[];
+}
+interface Added {
+  readonly what: LocalizedText;
+  readonly mass: number; // kg
+}
+let history: StepRecord[] = [];
+/** The current step's own settings (the shelf may already show the next step's). */
+let stepP: LabParams = params;
+/** Added during the current step / after it finished (those go to the next step). */
+let stepAdds: Added[] = [];
+let pendingAdds: Added[] = [];
+/** The current step's record, frozen at the moment it finished. */
+let doneRecord: Omit<StepRecord, 'adds'> | null = null;
 let warnings: readonly LocalizedText[] = [];
 let running = false;
 let finished = false;
@@ -141,22 +166,56 @@ function temperature(id: string): number | undefined {
   return e && (isThermalBody(e) || isHeater(e)) ? e.state.temperature : undefined;
 }
 
+/** A new experiment: fresh setup, empty protocol. */
 function newSession() {
-  const setup = labSetup(params);
-  initialState = setup.state;
-  warnings = setup.warnings;
+  history = [];
+  pendingAdds = [];
+  points = { sample: [], vessel: [], source: [] };
+  lastPointAt = -Infinity;
+  beginStep(labSetup(params));
+}
+
+/** Start a step from a placed state (the vessel already stands where this step needs it). */
+function beginStep(placed: { readonly state: SystemState; readonly warnings: readonly LocalizedText[] }) {
+  initialState = placed.state;
+  warnings = placed.warnings;
   session = createExperimentSession<ThermalCommand>({ initial: initialState, simulation, commands, sampleEvery: seconds(10) });
   running = false;
   finished = false;
   headline = null;
   checkpoint = null;
   lastSolid = null;
+  stepP = params;
+  stepAdds = pendingAdds;
+  pendingAdds = [];
+  doneRecord = null;
   acc = 0;
-  points = { sample: [], vessel: [], source: [] };
-  lastPointAt = -Infinity;
   record();
   $('#report').innerHTML = '';
   render();
+}
+
+const stepElapsed = () => session.state.time - initialState.time;
+
+/** Close the current step (if it ran at all) and put it into the protocol. */
+function closeStep() {
+  if (doneRecord) return void history.push({ ...doneRecord, adds: stepAdds });
+  if (stepElapsed() <= 0 && !stepAdds.length) return;
+  const result = session.result(labGoalReached(stepP, session.state));
+  history.push({ params: stepP, result, status: labStatus(stepP, result, simulation, warnings), adds: stepAdds });
+}
+
+/**
+ * The action or the device changed. Before anything happened it is still the setup;
+ * once the experiment is under way the vessel moves on: the current step closes and
+ * the next one starts with the same contents.
+ */
+function stepChanged() {
+  buildShelf();
+  if (!history.length && stepElapsed() === 0 && !stepAdds.length) return newSession();
+  if (stepElapsed() === 0 && !stepAdds.length) return beginStep(configureStep(initialState, params));
+  closeStep();
+  beginStep(configureStep(session.state, params));
 }
 
 function record() {
@@ -181,7 +240,7 @@ const knob = createKnob(
     lastHeater = params.heater!;
     window.clearTimeout(knobTimer);
     // Before the start the knob is part of the setup; afterwards it is an action in the log.
-    if (session.state.time === 0) return newSession();
+    if (stepElapsed() === 0 && !history.length) return newSession();
     knobTimer = window.setTimeout(() => sendPower(v), running ? 150 : 0);
     render();
   },
@@ -204,7 +263,7 @@ function frame(now: number) {
     acc += realDt * speed;
     const steps = Math.floor(acc / DT);
     acc -= steps * DT;
-    const reached = session.advance(steps * DT, (s) => labGoalReached(params, s));
+    const reached = session.advance(steps * DT, (s) => labGoalReached(stepP, s));
     record();
     if (reached) stop();
     else if (stalled()) stop();
@@ -216,6 +275,8 @@ function frame(now: number) {
 function stop() {
   running = false;
   finished = true;
+  const result = session.result(labGoalReached(stepP, session.state));
+  doneRecord = { params: stepP, result, status: labStatus(stepP, result, simulation, warnings) };
   setHeadline();
 }
 
@@ -235,9 +296,9 @@ function stalled(): boolean {
 }
 
 function setHeadline() {
-  const result = session.result(labGoalReached(params, session.state));
-  const status = labStatus(params, result, simulation, warnings);
-  const p = params;
+  const p = stepP;
+  const result = doneRecord?.result ?? session.result(labGoalReached(p, session.state));
+  const status = doneRecord?.status ?? labStatus(p, result, simulation, warnings);
   const reachedAt = status.kind === 'reached' ? status.at : undefined;
   const expectation: LabExpectation | undefined = expectKind === 'none' ? undefined : { kind: expectKind, seconds: expectMinutes * 60 };
   goalChoices = null;
@@ -373,6 +434,7 @@ function buildAdd() {
     }
     const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: addSub, mass: (addGrams / 1000) as never, temperature: celsius(addTemp), ...(addFrozen ? { frozen: true } : {}) });
     addError = entry.ok ? '' : tr(entry.error, locale);
+    if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: sub.name, mass: addGrams / 1000 });
     headline = null;
     checkpoint = null;
     buildAdd();
@@ -395,7 +457,7 @@ function buildAdd() {
 let lastSolid: number | null = null;
 function phaseNote(): { text: string; pct: number } | null {
   const b = sample();
-  if (!b || session.state.time === 0) return null;
+  if (!b || stepElapsed() === 0) return null;
   const u = t();
   const s = b.state.solidFraction ?? 0;
   const T = formatQuantity(b.state.temperature, 'K', { locale, level: 'school' });
@@ -405,9 +467,11 @@ function phaseNote(): { text: string; pct: number } | null {
     const freezing = trend > 0 || (trend === 0 && OPERATIONS[params.action].direction === 'cooling');
     return freezing ? { text: u.phaseFreezing(T, Math.round(s * 100)), pct: s * 100 } : { text: u.phaseMelting(T, Math.round((1 - s) * 100)), pct: (1 - s) * 100 };
   }
-  const boiled = b.state.boiledOff ?? 0;
+  // Counted within this step: earlier steps may have boiled some off already.
+  const before = sampleOf(initialState).state.boiledOff ?? 0;
+  const boiled = (b.state.boiledOff ?? 0) - before;
   if (boiled > 0) {
-    const share = boiled / b.params.mass;
+    const share = boiled / (bodyMass(sampleOf(initialState)) || b.params.mass);
     return { text: u.phaseBoiling(T, formatQuantity(boiled, 'kg', { locale, level: 'school' })), pct: share * 100 };
   }
   return null;
@@ -466,8 +530,7 @@ function render() {
   }
 
   const startBtn = $<HTMLButtonElement>('#start');
-  startBtn.textContent = running ? u.pause : u.start;
-  startBtn.disabled = finished;
+  startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $('#lbl-speed').textContent = u.speed;
 
@@ -484,6 +547,8 @@ function render() {
     knob.setLabels({ min: u.min, max: u.max, off: u.off }, h.spec.minFraction > 0 ? ['0', u.min, '', '', u.max] : ['0', '1', '2', '3', '4', '5', '6']);
     knob.element.setAttribute('aria-label', u.power);
   }
+
+  renderProtocol();
 
   // Messages: impossibility before the start, headline after, warnings.
   const msg: string[] = [];
@@ -526,18 +591,40 @@ function render() {
   if (sub.boiling && op.markers.includes('boiling')) markers.push({ v: sub.boiling.point.value, label: `${u.boilLine} ${sub.boiling.point.value} °C` });
   if (!sub.boiling && sub.decomposes && op.markers.includes('smoke')) markers.push({ v: sub.decomposes.value, label: `${locale === 'uk' ? 'димлення' : 'smoke'} ${sub.decomposes.value} °C` });
   if (params.target !== undefined && op.target) markers.push({ v: params.target, label: `${u.targetLine} ${params.target} °C` });
-  $('#legend').innerHTML = [['water', tr(sub.name, locale)], ['pot', u.potTemp], ...(h?.spec.method === 'contact' ? [['source', tr(h.name, locale)]] : [])]
+  const sampleName = tr(b?.state.mixture && b.label ? b.label : sub.name, locale);
+  $('#legend').innerHTML = [['water', sampleName], ['pot', u.potTemp], ...(h?.spec.method === 'contact' ? [['source', tr(h.name, locale)]] : [])]
     .map(([c, n]) => `<span class="key ${c}">${n}</span>`)
     .join('');
   chart.render(
     [
-      { name: tr(sub.name, locale), className: 'water', points: points.sample },
+      { name: sampleName, className: 'water', points: points.sample },
       { name: u.potTemp, className: 'pot', points: points.vessel },
       { name: h ? tr(h.name, locale) : '', className: 'source', points: points.source },
     ],
     u.chartTime,
     markers,
   );
+}
+
+// ---------- protocol (right panel) ----------
+function renderProtocol() {
+  const u = t();
+  const D = (s: number) => formatDuration(s, locale);
+  const place = (p: LabParams) =>
+    p.heater ? tr(HEATERS[p.heater.id].name, locale) : p.cooler ? `${tr(COOLERS[p.cooler.id].name, locale)}, ${p.cooler.setpoint} °C` : u.justRoom;
+  const what = (p: LabParams) => `${tr(OPERATIONS[p.action].label, locale).replace('…', '')}${p.target !== undefined && OPERATIONS[p.action].target ? ` ${p.target} °C` : ''}`;
+  const adds = (a: readonly Added[]) => a.map((x) => `<span class="added">${u.added(tr(x.what, locale).toLowerCase(), formatQuantity(x.mass, 'kg', { locale, level: 'school' }))}</span>`).join('');
+  const outcome = (st: LabStatus, r: ExperimentResult<ThermalCommand>) =>
+    st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
+  const rows = history.map((h) => {
+    const ok = h.status.kind === 'reached' || h.status.kind === 'will-reach';
+    return `<li class="${ok ? 'done' : 'failed'}"><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}<span class="outcome">${outcome(h.status, h.result)}</span></li>`;
+  });
+  const now = doneRecord ? outcome(doneRecord.status, doneRecord.result) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
+  rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}<span class="outcome">${now}</span>${adds(pendingAdds)}</li>`);
+  $('#protocol-title').textContent = u.protocolTitle;
+  $('#protocol').innerHTML = rows.join('');
+  $('#protocol-hint').textContent = finished ? u.protocolNext : u.protocolHint;
 }
 
 // ---------- shelf (left panel) ----------
@@ -578,13 +665,13 @@ function buildShelf() {
         return b;
       }),
     );
-  const number = (label: string, value: number, min: number, max: number, step: number, apply: (v: number) => void) => {
+  const number = (label: string, value: number, min: number, max: number, step: number, apply: (v: number) => void, after: () => void = rebuild) => {
     const i = el('input', { type: 'number', value: String(value), min: String(min), max: String(max), step: String(step), inputMode: 'decimal' });
     i.onchange = () => {
       const v = Number(i.value);
       if (Number.isFinite(v) && v >= min && v <= max) {
         apply(v);
-        rebuild();
+        after();
       } else i.value = String(value);
     };
     return el('label', { className: 'mini-field' }, el('span', {}, label), i);
@@ -631,7 +718,7 @@ function buildShelf() {
   const actionContent: HTMLElement[] = [actionBox];
   const op = OPERATIONS[params.action];
   if (op.target) {
-    actionContent.push(number(u.target, params.target ?? op.target.default, op.target.min, op.target.max, 1, (x) => (params = { ...params, target: x })));
+    actionContent.push(number(u.target, params.target ?? op.target.default, op.target.min, op.target.max, 1, (x) => (params = { ...params, target: x }), stepChanged));
   }
   if (!query) section('action', u.action, tr(op.label, locale), ...actionContent);
 
@@ -746,7 +833,7 @@ function buildShelf() {
             onPick: () => {
               params = { ...params, heater: { id: x.id as HeaterId, rating: x.spec.defaultRating, knob: x.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 } };
               lastHeater = params.heater!;
-              rebuild();
+              stepChanged();
             },
             detail: () => [
               ...describe(x),
@@ -754,7 +841,7 @@ function buildShelf() {
               chips(x.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.heater?.rating), (r) => {
                 params = { ...params, heater: { ...params.heater!, rating: Number(r) } };
                 lastHeater = params.heater!;
-                rebuild();
+                stepChanged();
               }),
             ],
           });
@@ -764,7 +851,7 @@ function buildShelf() {
       const { heater: _h, ...rest } = params;
       void _h;
       params = rest;
-      rebuild();
+      stepChanged();
     })] });
     section('device', uses === 'either' ? u.meltWith : u.device, params.heater ? tr(HEATERS[params.heater.id].name, locale) : u.justRoom, ...groupList(groups));
   } else {
@@ -773,7 +860,7 @@ function buildShelf() {
         const { cooler: _c, ...rest } = params;
         void _c;
         params = rest;
-        rebuild();
+        stepChanged();
       })] },
       ...childrenOf('device.cooler').map((c) => ({
         label: tr(c.name, locale),
@@ -787,7 +874,7 @@ function buildShelf() {
               onPick: () => {
                 params = { ...params, cooler: { id: x.id as CoolerId, setpoint: x.spec.setpoint.default } };
                 lastCooler = params.cooler!;
-                rebuild();
+                stepChanged();
               },
               detail: () => [
                 ...describe(x),
@@ -795,7 +882,7 @@ function buildShelf() {
                   ? [number(`${u.setpoint} (${x.spec.setpoint.min}…${x.spec.setpoint.max})`, params.cooler?.setpoint ?? x.spec.setpoint.default, x.spec.setpoint.min, x.spec.setpoint.max, 1, (sp) => {
                       params = { ...params, cooler: { ...params.cooler!, setpoint: sp } };
                       lastCooler = params.cooler!;
-                    })]
+                    }, stepChanged)]
                   : []),
               ],
             }),
@@ -839,8 +926,7 @@ function setAction(a: LabAction) {
     next = rest;
   }
   params = next;
-  buildShelf();
-  newSession();
+  stepChanged();
 }
 
 function buildHeader() {
@@ -870,14 +956,14 @@ function buildHeader() {
 }
 
 function explain() {
-  const result = session.result(labGoalReached(params, session.state));
-  if (result.final.time === 0) return;
+  const result = doneRecord?.result ?? session.result(labGoalReached(stepP, session.state));
+  if (result.final.time === result.initial.time) return;
   running = false;
   if (!headline) setHeadline();
   const title = locale === 'uk' ? 'Що відбулося і чому' : 'What happened and why';
   const notes: Block[] = (substance().modelNotes ?? []).map((n) => ({ kind: 'note', tone: 'info', text: tr(n, locale) }));
   $('#report').innerHTML = renderHtml(
-    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: THERMAL_KNOWLEDGE, focusTime: result.final.time / 2, summary: [...headline!(), ...notes] }),
+    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: THERMAL_KNOWLEDGE, focusTime: (result.initial.time + result.final.time) / 2, summary: [...headline!(), ...notes] }),
   );
   render();
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -887,7 +973,14 @@ function explain() {
 $('#knob-wrap').append(knob.element);
 $('#chart').append(chart.element);
 $('#start').onclick = () => {
-  if (finished) return;
+  // A finished step: the next one continues with the same contents (the user may have changed nothing).
+  if (finished) {
+    closeStep();
+    beginStep(configureStep(session.state, params));
+    running = true;
+    lastFrame = 0;
+    return render();
+  }
   running = !running;
   lastFrame = 0;
   render();
@@ -898,7 +991,7 @@ $('#switch').onclick = () => {
   const v = params.heater.knob > 0 ? 0 : 1;
   params = { ...params, heater: { ...params.heater, knob: v } };
   lastHeater = params.heater!;
-  if (session.state.time === 0) return newSession();
+  if (stepElapsed() === 0 && !history.length) return newSession();
   sendPower(v);
 };
 const speedSel = $<HTMLSelectElement>('#speed');

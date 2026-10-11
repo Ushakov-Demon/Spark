@@ -47,9 +47,14 @@ export function createChart(): Chart {
         parts.push(`<text class="axis" x="${x(t)}" y="${H - PAD.b + 16}" text-anchor="middle">${t}</text>`);
       }
       parts.push(`<text class="axis" x="${W - PAD.r}" y="${H - 4}" text-anchor="end">${xLabel}</text>`);
-      for (const marker of markers) {
-        parts.push(`<line class="marker" x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(marker.v)}" y2="${y(marker.v)}"/>`);
-        parts.push(`<text class="marker-label" x="${W - PAD.r - 4}" y="${y(marker.v) - 5}" text-anchor="end">${marker.label}</text>`);
+      // Labels of close lines would overlap: put the next one under its line instead of above.
+      let lastLabelY = -Infinity;
+      for (const marker of [...markers].sort((a, b) => b.v - a.v)) {
+        const ly = y(marker.v);
+        const labelY = ly - 5 - lastLabelY < 13 ? ly + 14 : ly - 5;
+        lastLabelY = labelY;
+        parts.push(`<line class="marker" x1="${PAD.l}" x2="${W - PAD.r}" y1="${ly}" y2="${ly}"/>`);
+        parts.push(`<text class="marker-label" x="${W - PAD.r - 4}" y="${labelY}" text-anchor="end">${marker.label}</text>`);
       }
       for (const s of series) {
         if (s.points.length < 2) continue;
