@@ -3,6 +3,7 @@ import type { Simulation } from './simulation.js';
 import type { SystemState } from './state.js';
 import { createTraceCollector, type TraceRecord } from './trace.js';
 import type { Seconds } from './units.js';
+import type { LocalizedText } from '../knowledge/i18n.js';
 
 export interface ScheduledCommand<C extends Command> {
   readonly at: Seconds;
@@ -21,7 +22,7 @@ export type ExperimentLogEntry<C extends Command> =
       readonly externalEnergy: number;
       readonly trace: readonly TraceRecord[];
     }
-  | { readonly ok: false; readonly time: Seconds; readonly command: C; readonly note?: string; readonly error: string };
+  | { readonly ok: false; readonly time: Seconds; readonly command: C; readonly note?: string; readonly error: LocalizedText };
 
 export interface FormulaUsage {
   readonly formula: string;

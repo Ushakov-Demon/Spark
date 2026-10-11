@@ -30,7 +30,7 @@ describe('withEntities', () => {
     const a = body('a');
     const b = body('b');
     const s = createState({ entities: [a, b] });
-    const b2 = { ...b, label: 'changed' };
+    const b2 = { ...b, label: { uk: 'інше', en: 'changed' } };
     const next = withEntities(s, [b2]);
     expect(next).not.toBe(s);
     expect(Object.values(next.entities)).toContain(a);

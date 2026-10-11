@@ -43,8 +43,8 @@ export const setHeater: CommandHandler<SetHeaterCommand> = {
   type: 'thermal.heater.set',
   apply(state, c) {
     const h = find(state, c.entity, isHeater);
-    if (!h) return err(`«${c.entity}» — не нагреватель`);
-    if (c.power !== undefined && !(c.power >= 0 && Number.isFinite(c.power))) return err('Мощность должна быть ≥ 0');
+    if (!h) return err({ uk: `«${c.entity}» — не нагрівач`, en: `"${c.entity}" is not a heater` });
+    if (c.power !== undefined && !(c.power >= 0 && Number.isFinite(c.power))) return err({ uk: 'Потужність має бути ≥ 0', en: 'Power must be ≥ 0' });
     const params = { ...h.params, ...(c.on === undefined ? {} : { on: c.on }), ...(c.power === undefined ? {} : { power: c.power }) };
     return ok({ state: withEntities(state, [{ ...h, params }]), kind: 'control', externalEnergy: 0, trace: [] });
   },
@@ -54,9 +54,9 @@ export const pour: CommandHandler<PourCommand> = {
   type: 'thermal.pour',
   apply(state, c) {
     const b = find(state, c.into, isThermalBody);
-    if (!b) return err(`«${c.into}» — не тело, в которое можно долить`);
-    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err('Масса должна быть > 0');
-    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err('Температура должна быть ≥ 0 K');
+    if (!b) return err({ uk: `У «${c.into}» не можна долити речовину`, en: `Cannot pour into "${c.into}"` });
+    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err({ uk: 'Маса має бути > 0', en: 'Mass must be > 0' });
+    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err({ uk: 'Температура має бути ≥ 0 K', en: 'Temperature must be ≥ 0 K' });
 
     const { specificHeat } = b.params;
     const parts = [
@@ -83,8 +83,8 @@ export const setTemperature: CommandHandler<SetTemperatureCommand> = {
   type: 'thermal.temperature.set',
   apply(state, c) {
     const e = find(state, c.entity, isBodyOrHeater);
-    if (!e) return err(`«${c.entity}» — не тело с температурой`);
-    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err('Температура должна быть ≥ 0 K');
+    if (!e) return err({ uk: `«${c.entity}» не має власної температури`, en: `"${c.entity}" has no temperature of its own` });
+    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err({ uk: 'Температура має бути ≥ 0 K', en: 'Temperature must be ≥ 0 K' });
     const dT = c.temperature - e.state.temperature;
     const q = e.params.mass * e.params.specificHeat * dT;
     const next = { ...e, state: { ...e.state, temperature: c.temperature } } as ThermalBody | Heater;

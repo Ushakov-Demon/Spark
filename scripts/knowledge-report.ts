@@ -10,8 +10,8 @@ import type { SourcedValue } from '../src/knowledge/types.js';
 
 const rows: [string, SourcedValue][] = [
   ...Object.values(MATERIALS).flatMap((m): [string, SourcedValue][] => [
-    [`${m.name.ru} · c`, m.specificHeat],
-    [`${m.name.ru} · k`, m.conductivity],
+    [`${m.name.uk} · c`, m.specificHeat],
+    [`${m.name.uk} · k`, m.conductivity],
   ]),
   ...Object.entries(CONVECTION).map(([k, v]): [string, SourcedValue] => [`h · ${k}`, v]),
 ];
@@ -33,7 +33,7 @@ for (const [name, v] of rows) {
 
 console.log('\nКаталог формул\n');
 for (const s of THERMAL_FORMULAS) {
-  console.log(`${s.reviewed ? '✅' : '📝'} ${s.title.ru.padEnd(48)} ${s.grade ? `${s.grade} кл.` : 'вне программы'}`);
+  console.log(`${s.reviewed ? '✅' : '📝'} ${s.title.uk.padEnd(52)} ${s.curriculum.length ? `UA: ${[...new Set(s.curriculum.map((r) => r.grade))].join(', ')} клас` : 'поза програмою'}`);
 }
 
 const count = (v: SourcedValue['verification']) => rows.filter(([, r]) => r.verification === v).length;

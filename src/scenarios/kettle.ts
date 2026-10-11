@@ -12,7 +12,7 @@ export interface KettleOptions {
 }
 
 /**
- * Electric kettle: a steel heating element immersed in water,
+ * Electric kettle: a steel heating element (ТЕН) immersed in water,
  * the water loses heat to the room through the kettle walls.
  *
  *   [heater] ──30 W/K── [water] ──h·A── [room air]
@@ -24,7 +24,7 @@ export function kettleScenario(o: KettleOptions = {}): SystemState {
     entities: [
       heater({
         id: 'heater',
-        label: 'ТЭН',
+        label: { uk: 'ТЕН', en: 'Heating element' },
         mass: kilograms(0.2),
         specificHeat: MATERIALS.steel.specificHeat.value,
         material: 'steel',
@@ -33,13 +33,13 @@ export function kettleScenario(o: KettleOptions = {}): SystemState {
       }),
       thermalBody({
         id: 'water',
-        label: 'Вода',
+        label: { uk: 'Вода', en: 'Water' },
         mass: kilograms(o.waterMass ?? 1),
         specificHeat: MATERIALS.water.specificHeat.value,
         material: 'water',
         temperature: start,
       }),
-      reservoir({ id: 'room', label: 'Воздух в комнате', temperature: room }),
+      reservoir({ id: 'room', label: { uk: 'Повітря в кімнаті', en: 'Room air' }, temperature: room }),
     ],
     connections: [
       thermalLink({ id: 'heater-water', a: 'heater', b: 'water', conductance: thermalConductance(30) }),

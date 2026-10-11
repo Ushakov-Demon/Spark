@@ -27,7 +27,7 @@ const K = 'W/(m·K)';
 export const MATERIALS = {
   water: {
     id: 'water',
-    name: { ru: 'Вода', en: 'Water' },
+    name: { uk: 'Вода', en: 'Water' },
     specificHeat: {
       value: specificHeat(4181),
       unit: C,
@@ -56,7 +56,7 @@ export const MATERIALS = {
   },
   ice: {
     id: 'ice',
-    name: { ru: 'Лёд', en: 'Ice' },
+    name: { uk: 'Лід', en: 'Ice' },
     specificHeat: {
       value: specificHeat(2090),
       unit: C,
@@ -83,7 +83,7 @@ export const MATERIALS = {
   },
   air: {
     id: 'air',
-    name: { ru: 'Воздух', en: 'Air' },
+    name: { uk: 'Повітря', en: 'Air' },
     specificHeat: {
       value: specificHeat(1012),
       unit: C,
@@ -111,7 +111,7 @@ export const MATERIALS = {
   },
   aluminium: {
     id: 'aluminium',
-    name: { ru: 'Алюминий', en: 'Aluminium' },
+    name: { uk: 'Алюміній', en: 'Aluminium' },
     specificHeat: {
       value: specificHeat(897),
       unit: C,
@@ -140,7 +140,7 @@ export const MATERIALS = {
   },
   copper: {
     id: 'copper',
-    name: { ru: 'Медь', en: 'Copper' },
+    name: { uk: 'Мідь', en: 'Copper' },
     specificHeat: {
       value: specificHeat(385),
       unit: C,
@@ -168,7 +168,7 @@ export const MATERIALS = {
   },
   iron: {
     id: 'iron',
-    name: { ru: 'Железо', en: 'Iron' },
+    name: { uk: 'Залізо', en: 'Iron' },
     specificHeat: {
       value: specificHeat(449),
       unit: C,
@@ -196,7 +196,7 @@ export const MATERIALS = {
   },
   steel: {
     id: 'steel',
-    name: { ru: 'Сталь (углеродистая)', en: 'Carbon steel' },
+    name: { uk: 'Сталь (вуглецева)', en: 'Carbon steel' },
     specificHeat: {
       value: specificHeat(466),
       unit: C,
@@ -223,7 +223,7 @@ export const MATERIALS = {
   },
   glass: {
     id: 'glass',
-    name: { ru: 'Стекло', en: 'Glass' },
+    name: { uk: 'Скло', en: 'Glass' },
     specificHeat: {
       value: specificHeat(840),
       unit: C,
@@ -250,7 +250,7 @@ export const MATERIALS = {
   },
   brick: {
     id: 'brick',
-    name: { ru: 'Кирпич', en: 'Brick' },
+    name: { uk: 'Цегла', en: 'Brick' },
     specificHeat: {
       value: specificHeat(840),
       unit: C,
@@ -275,7 +275,7 @@ export const MATERIALS = {
   },
   wood: {
     id: 'wood',
-    name: { ru: 'Дерево', en: 'Wood' },
+    name: { uk: 'Деревина', en: 'Wood' },
     specificHeat: {
       value: specificHeat(1700),
       unit: C,

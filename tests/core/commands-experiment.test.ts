@@ -21,7 +21,7 @@ describe('command registry', () => {
   });
 
   it('rejects duplicate handlers', () => {
-    const h: CommandHandler<{ type: 'x' }> = { type: 'x', apply: () => ({ ok: false, error: '' }) };
+    const h: CommandHandler<{ type: 'x' }> = { type: 'x', apply: () => ({ ok: false, error: { uk: '', en: '' } }) };
     expect(() => createCommandRegistry<{ type: 'x' }>([h, h])).toThrow(/Duplicate/);
   });
 });

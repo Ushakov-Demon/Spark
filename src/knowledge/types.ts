@@ -1,4 +1,7 @@
+import type { LocalizedText } from './i18n.js';
 import type { LeveledText } from './levels.js';
+
+export type { LocalizedText } from './i18n.js';
 
 /**
  * Knowledge layer: where every number and every text in the platform comes from.
@@ -14,7 +17,9 @@ export type License =
   | 'CC-BY-SA-4.0'
   | 'CC-BY-NC-SA-4.0'
   /** Text written by the Spark team, licensed with the project. */
-  | 'project';
+  | 'project'
+  /** Copyrighted or unclear: only facts and short quotes are used, with attribution. */
+  | 'facts-only';
 
 export type SourceId = string & { readonly __source?: never };
 
@@ -57,11 +62,6 @@ export interface SourcedValue<Q extends number = number> {
   readonly note?: string;
 }
 
-export interface LocalizedText {
-  readonly ru: string;
-  readonly en?: string;
-}
-
 export interface VariableSpec {
   readonly name: LocalizedText;
   readonly unit: string;
@@ -86,10 +86,9 @@ export interface FormulaSpec<F extends (...args: any[]) => number = (...args: an
   readonly argSymbols: readonly string[];
   readonly resultSymbol: string;
   readonly variables: Readonly<Record<string, VariableSpec>>;
-  /** School grade where the formula is introduced (RU curriculum), null = beyond the basic school course. */
-  readonly grade: number | null;
-  /** Where in the curriculum it appears, or why it is beyond it. */
-  readonly curriculum: string;
+  /** Where school curricula cover it. Empty = beyond the basic school course (see `beyondCurriculum`). */
+  readonly curriculum: readonly CurriculumRef[];
+  readonly beyondCurriculum?: LocalizedText;
   readonly explanation: LeveledText;
   readonly compute: F;
   /** Worked examples, recomputed in tests against hand-calculated answers. */
@@ -140,4 +139,33 @@ export interface LawSpec {
   };
   /** Where the law stops working — shown from `advanced` level. */
   readonly limits?: LeveledText;
+}
+
+/**
+ * Link to a school curriculum, backed by an exact quote from the programme
+ * document (a Source), so the grade can be re-checked.
+ */
+export interface CurriculumRef {
+  /** Id in CURRICULA (country + programme). */
+  readonly program: string;
+  readonly grade: number;
+  /** quantitative — students calculate with it; qualitative — the idea only, no formula. */
+  readonly depth: 'quantitative' | 'qualitative';
+  /** Exact wording from the programme, in its original language. */
+  readonly quote: string;
+}
+
+/**
+ * A national (or regional) school programme. Countries are added over time;
+ * nothing in the engine or texts assumes a particular country.
+ */
+export interface Curriculum {
+  readonly id: string;
+  /** ISO 3166-1 alpha-2 country code. */
+  readonly country: string;
+  readonly name: LocalizedText;
+  /** Source documenting this programme (for quotes and grade checks). */
+  readonly source: SourceId;
+  /** Age at which grade 1 usually starts — lets the UI relate grades to levels. */
+  readonly firstGradeAge: number;
 }

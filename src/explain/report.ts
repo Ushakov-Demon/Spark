@@ -2,16 +2,22 @@ import type { Command, ExperimentResult, FormulaApplication, Simulation, TraceRe
 import { sampleAt, traceTick } from '../core/experiment.js';
 import type { EntityId } from '../core/ids.js';
 import type { SystemState } from '../core/state.js';
+import { getCurriculum } from '../knowledge/curricula.js';
+import { tr, type Locale } from '../knowledge/i18n.js';
 import { atLeast, LEVEL_INFO, textFor, type Level } from '../knowledge/levels.js';
 import { getSource } from '../knowledge/sources.js';
-import type { FormulaSpec, LawSpec, SourcedValue } from '../knowledge/types.js';
+import type { FormulaSpec, LawSpec } from '../knowledge/types.js';
 import { h, list, note, p, type Block } from './blocks.js';
-import type { DomainKnowledge } from './domain.js';
-import { formatQuantity, formatTime, sig, unitLabel } from './format.js';
+import type { DataUsage, DomainKnowledge } from './domain.js';
+import { formatQuantity, formatTime, sig, unitLabel, type ExplainContext } from './format.js';
+import { REPORT_MESSAGES } from './messages.js';
 
 export interface ReportInput<C extends Command> {
   readonly title: string;
   readonly level: Level;
+  readonly locale: Locale;
+  /** ISO country code whose school programmes to relate formulas to (e.g. 'UA'). Omit to skip. */
+  readonly country?: string;
   readonly result: ExperimentResult<C>;
   readonly simulation: Simulation;
   readonly domain: DomainKnowledge<C>;
@@ -19,36 +25,39 @@ export interface ReportInput<C extends Command> {
   readonly focusTime?: number;
 }
 
-const ru = (t: { ru: string }) => t.ru;
-const VERIFICATION_RU = { 'cross-checked': 'сверено', 'single-source': 'один источник', estimate: 'оценка' } as const;
-
-export const entityLabel = (s: SystemState, id: EntityId | string): string => s.entities[id as EntityId]?.label ?? id;
+export const entityLabel = (s: SystemState, id: EntityId | string, locale: Locale): string => {
+  const label = s.entities[id as EntityId]?.label;
+  return label ? tr(label, locale) : id;
+};
 
 /**
- * Builds the explanation of a finished experiment for a reader of `level`.
+ * Builds the explanation of a finished experiment for a reader of `level`, in `locale`.
  * Everything listed under "laws" comes from what the engine actually traced.
  */
 export function buildReport<C extends Command>(input: ReportInput<C>): Block[] {
-  const { level, result, domain, simulation } = input;
+  const { level, locale, result, domain, simulation } = input;
+  const ctx: ExplainContext = { level, locale };
+  const m = REPORT_MESSAGES[locale];
+  const t = (x: Parameters<typeof tr>[0]) => tr(x, locale);
   const formulas = new Map(domain.formulas.map((f) => [f.id, f]));
   const out: Block[] = [];
 
   out.push(h(1, input.title));
-  out.push(p(`Уровень объяснения: ${LEVEL_INFO[level].name} (${LEVEL_INFO[level].audience}).`));
+  out.push(p(m.level(t(LEVEL_INFO[level].name), t(LEVEL_INFO[level].audience))));
 
   // 1. What happened
-  out.push(h(2, 'Что произошло'));
-  out.push(...domain.timeline(result, level));
+  out.push(h(2, m.whatHappened));
+  out.push(...domain.timeline(result, ctx));
 
   // 2. Experimenter's actions
   if (result.log.length) {
-    out.push(h(2, 'Ваши действия'));
+    out.push(h(2, m.yourActions));
     const items: string[] = [];
     for (const e of result.log) {
-      let line = `${formatTime(e.time)} — ${domain.describeCommand(e, level, result.final)}`;
-      if (!e.ok) line += ` — не получилось: ${e.error}`;
+      let line = `${formatTime(e.time, locale)} — ${domain.describeCommand(e, ctx, result.final)}`;
+      if (!e.ok) line += ` — ${m.failed(t(e.error))}`;
       else if (atLeast(level, 'school')) {
-        for (const r of e.trace) if (r.kind === 'formula') line += `\n    ${describeApplication(r, formulas, result.final, level)}`;
+        for (const r of e.trace) if (r.kind === 'formula') line += `\n    ${describeApplication(r, formulas, result.final, ctx)}`;
       }
       items.push(line);
     }
@@ -56,160 +65,177 @@ export function buildReport<C extends Command>(input: ReportInput<C>): Block[] {
   }
 
   // 3. Laws that were actually used
-  out.push(h(2, 'Какие законы физики работали'));
+  out.push(h(2, m.lawsUsed));
   const usedFormulaIds = new Set(result.usage.keys());
   const laws = domain.laws.filter((l) => domain.formulas.some((f) => f.law === l.id && usedFormulaIds.has(f.id)));
-  if (!atLeast(level, 'school')) {
-    out.push(p('Компьютер не «рисует» результат, а считает его по настоящим законам физики:'));
-  }
+  if (!atLeast(level, 'school')) out.push(p(m.lawsIntroNovice));
   for (const law of laws) {
     const used = domain.formulas.filter((f) => f.law === law.id && usedFormulaIds.has(f.id));
-    out.push(...explainLaw(law, used, level, result));
+    out.push(...explainLaw(law, used, ctx, result, input.country));
   }
 
   // 4. A moment in detail
   if (atLeast(level, 'school')) {
-    const t = input.focusTime ?? result.final.time / 2;
-    const snapshot = sampleAt(result.samples, t);
+    const snapshot = sampleAt(result.samples, input.focusTime ?? result.final.time / 2);
     const { records } = traceTick(simulation, snapshot);
-    out.push(h(2, `Как посчитан один шаг: момент ${formatTime(snapshot.time)}`));
-    out.push(
-      p(
-        atLeast(level, 'expert')
-          ? 'Ниже — фактические записи трассировки одного шага (пересчитан из снимка состояния; физика детерминирована).'
-          : 'Компьютер повторяет такой расчёт тысячи раз подряд. Вот что он посчитал за один короткий шаг:',
-      ),
-    );
-    out.push(list(records.flatMap((r) => describeRecord(r, formulas, snapshot, level))));
+    out.push(h(2, m.oneStep(formatTime(snapshot.time, locale))));
+    out.push(p(atLeast(level, 'expert') ? m.oneStepIntroExpert : m.oneStepIntro));
+    out.push(list(records.flatMap((r) => describeRecord(r, formulas, snapshot, ctx))));
   }
 
   // 5. Energy balance
-  out.push(...domain.energyBalance(result, level));
+  out.push(...domain.energyBalance(result, ctx));
 
   // 6. Simplifications
   const assumptions = simulation.solvers.flatMap((s) => s.assumptions ?? []);
   const shown = level === 'novice' ? assumptions.filter((a) => a.text.novice) : assumptions;
   if (shown.length) {
-    out.push(h(2, level === 'novice' ? 'В жизни будет немного иначе' : 'Что модель упрощает'));
-    out.push(list(shown.map((a) => ru(textFor(a.text, level)))));
+    out.push(h(2, level === 'novice' ? m.simplificationsNovice : m.simplifications));
+    out.push(list(shown.map((a) => t(textFor(a.text, level)))));
   }
 
   // 7. Data provenance
   const data = domain.dataUsed(result.final);
   const estimates = data.filter((d) => d.origin === 'scenario' || d.sourced.verification !== 'cross-checked');
   if (atLeast(level, 'advanced')) {
-    out.push(h(2, 'Откуда взяты числа'));
-    out.push(list(data.map((d) => describeData(d, level))));
+    out.push(h(2, m.dataTitle));
+    out.push(list(data.map((d) => describeData(d, ctx))));
   } else if (atLeast(level, 'school') && estimates.length) {
-    out.push(note('warning', `Примерные значения: ${estimates.map((d) => d.label).join('; ')}. Поэтому в жизни результат может немного отличаться.`));
+    out.push(note('warning', m.estimatesWarning(estimates.map((d) => t(d.label)).join('; '))));
   }
 
   if (atLeast(level, 'expert')) {
     const unreviewed = [...usedFormulaIds].map((id) => formulas.get(id)).filter((f): f is FormulaSpec => !!f && !f.reviewed);
-    if (unreviewed.length) out.push(note('warning', `Тексты ${unreviewed.length} формул ещё не проверены учителем физики (reviewed: false).`));
+    if (unreviewed.length) out.push(note('warning', m.unreviewed(unreviewed.length)));
   }
   return out;
 }
 
-function explainLaw<C extends Command>(law: LawSpec, used: readonly FormulaSpec[], level: Level, result: ExperimentResult<C>): Block[] {
+function explainLaw<C extends Command>(
+  law: LawSpec,
+  used: readonly FormulaSpec[],
+  ctx: ExplainContext,
+  result: ExperimentResult<C>,
+  country: string | undefined,
+): Block[] {
+  const { level, locale } = ctx;
+  const m = REPORT_MESSAGES[locale];
+  const t = (x: Parameters<typeof tr>[0]) => tr(x, locale);
   const out: Block[] = [];
-  const kind = law.kind === 'definition' && atLeast(level, 'advanced') ? ' (определение)' : '';
-  out.push(h(3, `${ru(law.name)}${kind}`));
-  out.push(p(ru(textFor(law.statement, level))));
+  out.push(h(3, `${t(law.name)}${law.kind === 'definition' && atLeast(level, 'advanced') ? m.definitionTag : ''}`));
+  out.push(p(t(textFor(law.statement, level))));
 
   const { history } = law;
+  const who = history.role === 'discovered' ? m.discoveredBy : m.associatedWith;
   if (history.people.length) {
-    const names = history.people.map((x) => ru(x.name));
     if (level === 'novice') {
-      const who = history.role === 'discovered' ? 'Открыл' : 'Связано с именами';
-      out.push(p(history.story.novice ? ru(history.story.novice) : `${who}: ${names.join(', ')} (${history.when}).`));
+      const names = history.people.map((x) => t(x.name)).join(', ');
+      out.push(p(history.story.novice ? t(history.story.novice) : `${who}: ${names} (${history.when}).`));
     } else {
       if (atLeast(level, 'advanced')) {
-        const people = history.people.map((x) => `${ru(x.name)} (${x.born}–${x.died})`).join(', ');
-        const who = history.role === 'discovered' ? 'Кто открыл' : 'Связано с именами';
-        out.push(p(`${who}: ${people}. Когда: ${history.when}.${history.work ? ` Работа: ${history.work}.` : ''}`));
+        const people = history.people.map((x) => `${t(x.name)} (${x.born}–${x.died})`).join(', ');
+        out.push(p(`${who}: ${people}. ${m.when}: ${history.when}.${history.work ? ` ${m.work}: ${history.work}.` : ''}`));
       }
-      out.push(p(ru(textFor(history.story, level))));
+      out.push(p(t(textFor(history.story, level))));
     }
   } else if (atLeast(level, 'school')) {
-    out.push(p(ru(textFor(history.story, level))));
+    out.push(p(t(textFor(history.story, level))));
   }
 
-  if (law.limits && atLeast(level, 'advanced')) out.push(p(`Когда перестаёт работать: ${ru(textFor(law.limits, level))}`));
-
+  if (law.limits && atLeast(level, 'advanced')) out.push(p(`${m.limits}: ${t(textFor(law.limits, level))}`));
   if (atLeast(level, 'expert') && history.citations.length) {
-    out.push(list(history.citations.map((c) => `источник: ${getSource(c.source)?.title ?? c.source} [${c.locator}] — ${c.claim}`)));
+    out.push(list(history.citations.map((c) => `${m.source}: ${getSource(c.source)?.title ?? c.source} [${c.locator}] — ${c.claim}`)));
   }
 
   for (const f of used) {
     if (level === 'novice') {
-      if (f.explanation.novice) out.push(p(`• ${ru(f.explanation.novice)}`));
+      if (f.explanation.novice) out.push(p(`• ${t(f.explanation.novice)}`));
       continue;
     }
     out.push({ kind: 'formula', plain: f.plain, latex: f.latex });
     const vars = Object.entries(f.variables)
       .filter(([, v]) => v.unit !== '' || atLeast(level, 'advanced'))
       .map(([sym, v]) => {
-        const meaning = v.meaning ? ` — ${ru(textFor(v.meaning, level))}` : '';
-        const unit = v.unit ? `, ${unitLabel(v.unit, level)}` : '';
-        return `${sym} — ${ru(v.name)}${unit}${meaning}`;
+        const meaning = v.meaning ? ` — ${t(textFor(v.meaning, level))}` : '';
+        const unit = v.unit ? `, ${unitLabel(v.unit, ctx)}` : '';
+        return `${sym} — ${t(v.name)}${unit}${meaning}`;
       });
     out.push(list(vars));
-    out.push(p(ru(textFor(f.explanation, level))));
+    out.push(p(t(textFor(f.explanation, level))));
+    if (country) out.push(...curriculumBlock(f, country, ctx));
     if (atLeast(level, 'expert')) {
       const u = result.usage.get(f.id);
-      if (u) out.push(p(`Применена ${u.count} раз; объекты: ${[...u.entities].map((id) => entityLabel(result.final, id)).join(', ')}.`));
+      if (u) out.push(p(m.appliedTimes(u.count, [...u.entities].map((id) => entityLabel(result.final, id, locale)).join(', '))));
     }
   }
   return out;
 }
 
-function describeApplication(r: FormulaApplication, formulas: ReadonlyMap<string, FormulaSpec>, s: SystemState, level: Level): string {
+/** "In the school curriculum: grade 8 — «…»" for the chosen country. */
+function curriculumBlock(f: FormulaSpec, country: string, ctx: ExplainContext): Block[] {
+  const m = REPORT_MESSAGES[ctx.locale];
+  const refs = f.curriculum.filter((r) => getCurriculum(r.program)?.country === country);
+  if (!refs.length) return f.beyondCurriculum ? [p(`${m.curriculumBeyond}: ${tr(f.beyondCurriculum, ctx.locale)}`)] : [];
+  const items = refs.map((r) => {
+    const program = getCurriculum(r.program);
+    const depth = r.depth === 'qualitative' ? ` (${m.qualitative})` : '';
+    const base = `${m.grade(r.grade)}${depth}`;
+    return atLeast(ctx.level, 'advanced') && program ? `${base} — «${r.quote}» — ${tr(program.name, ctx.locale)}` : base;
+  });
+  const unique = [...new Set(items)];
+  return [p(`${m.curriculum}: ${unique.join('; ')}`)];
+}
+
+function describeApplication(r: FormulaApplication, formulas: ReadonlyMap<string, FormulaSpec>, s: SystemState, ctx: ExplainContext): string {
+  const { locale } = ctx;
   const f = formulas.get(r.formula);
-  if (!f) return `${r.formula}: ${sig(r.output, 4)}`;
+  if (!f) return `${r.formula}: ${sig(r.output, 4, locale)}`;
   const resultVar = f.variables[f.resultSymbol];
-  const who = r.entities.map((id) => entityLabel(s, id)).join(' → ');
+  const who = r.entities.map((id) => entityLabel(s, id, locale)).join(' → ');
   const args = f.argSymbols
     .map((sym, i) => {
       const v = r.args[i];
       const unit = f.variables[sym]?.unit ?? '';
-      if (typeof v === 'number') return `${sym} = ${formatQuantity(v, unit, level)}`;
+      if (typeof v === 'number') return `${sym} = ${formatQuantity(v, unit, ctx)}`;
       if (Array.isArray(v)) {
         return v
-          .map((b: { mass: number; specificHeat: number; temperature: number }) =>
-            `[m = ${formatQuantity(b.mass, 'kg', level)}, c = ${formatQuantity(b.specificHeat, 'J/(kg·K)', level)}, t = ${formatQuantity(b.temperature, 'K', level)}]`,
+          .map(
+            (b: { mass: number; specificHeat: number; temperature: number }) =>
+              `[m = ${formatQuantity(b.mass, 'kg', ctx)}, c = ${formatQuantity(b.specificHeat, 'J/(kg·K)', ctx)}, t = ${formatQuantity(b.temperature, 'K', ctx)}]`,
           )
           .join(' + ');
       }
       return `${sym} = ?`;
     })
     .join(', ');
-  return `${ru(f.title)} (${who}): ${f.plain} → ${f.resultSymbol} = ${formatQuantity(r.output, resultVar?.unit ?? '', level)}, где ${args}`;
+  return `${tr(f.title, locale)} (${who}): ${f.plain} → ${f.resultSymbol} = ${formatQuantity(r.output, resultVar?.unit ?? '', ctx)}, ${REPORT_MESSAGES[locale].where} ${args}`;
 }
 
-function describeRecord(r: TraceRecord, formulas: ReadonlyMap<string, FormulaSpec>, s: SystemState, level: Level): string[] {
+function describeRecord(r: TraceRecord, formulas: ReadonlyMap<string, FormulaSpec>, s: SystemState, ctx: ExplainContext): string[] {
+  const m = REPORT_MESSAGES[ctx.locale];
   if (r.kind === 'numerics') {
-    return atLeast(level, 'expert')
-      ? [`Численный метод: ${r.method}, шаг dt = ${formatTime(r.dt)} разбит на ${r.substeps} подшаг(а) по ${sig(r.dt / r.substeps, 3)} с`]
-      : [`Шаг по времени: ${formatTime(r.dt)}`];
+    return atLeast(ctx.level, 'expert')
+      ? [m.numerics(r.method, formatTime(r.dt, ctx.locale), r.substeps, formatQuantity(r.dt / r.substeps, 's', ctx))]
+      : [m.timeStep(formatTime(r.dt, ctx.locale))];
   }
-  return [describeApplication(r, formulas, s, level)];
+  return [describeApplication(r, formulas, s, ctx)];
 }
 
-function describeData(d: ReturnType<DomainKnowledge<Command>['dataUsed']>[number], level: Level): string {
-  if (d.origin === 'scenario') {
-    return `${d.label}: ${formatQuantity(d.value, d.unit, level)} — задано в сценарии, источника нет (оценка)`;
-  }
-  const v: SourcedValue = d.sourced;
+function describeData(d: DataUsage, ctx: ExplainContext): string {
+  const { locale } = ctx;
+  const m = REPORT_MESSAGES[locale];
+  const label = tr(d.label, locale);
+  if (d.origin === 'scenario') return `${label}: ${formatQuantity(d.value, d.unit, ctx)} — ${m.scenarioValue}`;
+  const v = d.sourced;
   const sources = new Set(v.citations.map((c) => c.source));
-  let line = `${d.label}: ${formatQuantity(v.value, v.unit, level)} — ${VERIFICATION_RU[v.verification]}, источников: ${sources.size}`;
-  if (atLeast(level, 'expert')) {
-    line += `; условия: ${v.conditions}; допуск ±${sig(v.tolerance * 100, 2)} %`;
+  let line = `${label}: ${formatQuantity(v.value, v.unit, ctx)} — ${m.verification[v.verification]}, ${m.sources(sources.size)}`;
+  if (atLeast(ctx.level, 'expert')) {
+    line += `; ${m.conditions}: ${v.conditions}; ${m.tolerance} ±${sig(v.tolerance * 100, 2, locale)} %`;
     for (const c of v.citations) {
-      const what = 'value' in c ? sig(c.value, 5) : `${sig(c.range[0], 4)}–${sig(c.range[1], 4)}`;
+      const what = 'value' in c ? sig(c.value, 5, locale) : `${sig(c.range[0], 4, locale)}–${sig(c.range[1], 4, locale)}`;
       line += `\n    ${getSource(c.source)?.title ?? c.source} [${c.locator}, ${c.conditions}]: ${what}`;
     }
-    if (v.note) line += `\n    примечание: ${v.note}`;
+    if (v.note) line += `\n    ${m.noteLabel}: ${v.note}`;
   } else if (v.verification !== 'cross-checked' && v.note) {
     line += ` (${v.note})`;
   }

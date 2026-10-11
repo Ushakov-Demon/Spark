@@ -72,6 +72,23 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-11',
   }),
+  'ua-mnp-2023-holovko': source({
+    id: 'ua-mnp-2023-holovko',
+    title:
+      'Модельна навчальна програма «Фізика. 7–9 класи» (Головко М. В., Засєкін Д. О. та ін.), рекомендовано наказом МОН України від 16.08.2023 № 1001',
+    url: 'https://osvita.ua/doc/files/news/901/90160/Fizyka_7-9_kl_Holovko_ta_in_16_08_2023.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-11',
+    caveats: 'НУШ: one of several recommended model programmes; schools choose one. Topic placement by grade may differ slightly between programmes.',
+  }),
+  'ua-mon-2017-physics-7-9': source({
+    id: 'ua-mon-2017-physics-7-9',
+    title: 'Навчальна програма «Фізика. 7–9 класи» для загальноосвітніх навчальних закладів, МОН України (редакція 2017 р.)',
+    url: 'https://phys.ippo.kubg.edu.ua/wp-content/uploads/2017/06/Physics_7-9_17.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-11',
+    caveats: 'Pre-НУШ programme, still the reference for classes not yet on НУШ.',
+  }),
   spark: source({
     id: 'spark',
     title: 'Spark team (original text)',

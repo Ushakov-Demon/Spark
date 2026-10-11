@@ -14,7 +14,7 @@ export function calorimeterScenario(): SystemState {
     entities: [
       thermalBody({
         id: 'copper',
-        label: 'Медный цилиндр',
+        label: { uk: 'Мідний циліндр', en: 'Copper cylinder' },
         mass: kilograms(0.5),
         specificHeat: MATERIALS.copper.specificHeat.value,
         material: 'copper',
@@ -22,7 +22,7 @@ export function calorimeterScenario(): SystemState {
       }),
       thermalBody({
         id: 'water',
-        label: 'Вода',
+        label: { uk: 'Вода', en: 'Water' },
         mass: kilograms(0.2),
         specificHeat: MATERIALS.water.specificHeat.value,
         material: 'water',

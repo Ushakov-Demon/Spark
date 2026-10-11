@@ -1,6 +1,7 @@
 import type { AnyEntity, Device, PortSpec, Transform } from '../../core/entity.js';
 import { entityId } from '../../core/ids.js';
 import { ORIGIN, type Vec2 } from '../../core/math/vec2.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
 import { joules, type Joules, type Kelvin, type Kilograms, type SpecificHeat, type Watts } from '../../core/units.js';
 
 /**
@@ -57,11 +58,11 @@ export const isThermalEntity = (e: AnyEntity): e is ThermalEntity =>
 // ---------- Factories (validate physical sanity at creation) ----------
 interface Common {
   readonly id: string;
-  readonly label?: string;
+  readonly label?: LocalizedText;
   readonly position?: Vec2;
 }
 const transform = (position: Vec2 = ORIGIN): Transform => ({ position, rotation: 0 });
-const withLabel = (label: string | undefined): { label?: string } => (label === undefined ? {} : { label });
+const withLabel = (label: LocalizedText | undefined): { label?: LocalizedText } => (label === undefined ? {} : { label });
 
 function assertPositive(name: string, v: number): void {
   if (!(v > 0) || !Number.isFinite(v)) throw new RangeError(`${name} must be a positive finite number, got ${v}`);

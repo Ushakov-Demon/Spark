@@ -20,7 +20,7 @@ function collect(): FormulaApplication[] {
     { type: 'thermal.temperature.set', entity: 'water', temperature: kelvin(350) },
   ] as const) {
     const r = cmds.apply(s, cmd);
-    if (!r.ok) throw new Error(r.error);
+    if (!r.ok) throw new Error(r.error.en);
     r.value.trace.forEach((t) => sink.record(t));
     s = r.value.state;
   }

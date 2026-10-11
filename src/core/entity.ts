@@ -1,6 +1,7 @@
 import type { ConnectionId, EntityId } from './ids.js';
 import type { Vec2 } from './math/vec2.js';
 import type { Kilograms } from './units.js';
+import type { LocalizedText } from '../knowledge/i18n.js';
 
 /**
  * Physical domain a port / connection belongs to. A port can only be wired to
@@ -31,7 +32,8 @@ export interface Transform {
 export interface Entity<K extends string = string, P = unknown, S = unknown> {
   readonly id: EntityId;
   readonly kind: K;
-  readonly label?: string;
+  /** Human name shown to students, in every content language. */
+  readonly label?: LocalizedText;
   readonly transform: Transform;
   readonly params: Readonly<P>;
   readonly state: Readonly<S>;

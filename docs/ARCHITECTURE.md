@@ -40,7 +40,8 @@ spark/
 │   │       └── explain.ts     # тепловая часть отчёта: таблица, баланс энергии, данные
 │   │       └── solver.ts      # createThermalSolver(): шаг по времени
 │   │   # далее: electrical/, mechanics/, chemistry/ — по тому же шаблону
-│   ├── knowledge/             # происхождение данных и тексты: Source, SourcedValue, FormulaSpec, LawSpec, уровни
+│   ├── knowledge/             # происхождение данных и тексты: Source, SourcedValue, FormulaSpec, LawSpec,
+│   │                          # уровни (по возрасту), языки (uk, en), учебные программы стран (CURRICULA)
 │   ├── explain/               # отчёт об эксперименте (Block[]) по уровню читателя + текстовый рендерер
 │   ├── scenarios/             # готовые сцены-лабораторки (данные, не код UI)
 │   └── index.ts               # публичный API пакета
@@ -82,7 +83,8 @@ C_i · dT_i/dt = P_i + Σ_j G_ij · (T_j − T_i)
 2. `runExperiment` собирает статистику использования формул за весь прогон; `traceTick` пересчитывает один шаг из снимка с полной трассой («объясни момент t») — возможно, потому что физика чистая и детерминированная.
 3. Тест `trace-consistency` повторно вызывает функцию каталога на аргументах из трассы и сверяет результат: объяснение не может разойтись с расчётом.
 4. Формула → закон (`LawSpec`): формулировка по уровням, авторы (даты из Wikidata), история с цитатами, границы применимости. `role: 'associated'` — когда единственного «открывателя» нет.
-5. `buildReport` строит `Block[]` по уровню (novice / school / advanced / expert); консоль рендерит текстом, веб отрендерит карточками и KaTeX.
+5. `buildReport` строит `Block[]` по уровню (novice / school / advanced / expert), языку (`uk`, `en`) и стране программы (`UA`); консоль рендерит текстом, веб отрендерит карточками и KaTeX.
+6. Ни ядро, ни тексты не предполагают конкретную страну: язык — ключ в `LocalizedText`, классы — только в `CurriculumRef` с кодом страны. Правила тона — [CONTENT_STYLE.md](CONTENT_STYLE.md).
 
 Команды делятся на `control` (управление), `matter` (долить — приносит свою энергию) и `intervention` («режим бога» — энергия извне записывается), поэтому баланс энергии всегда сходится.
 
@@ -108,7 +110,7 @@ createSimulation({
 
 **Шаг 1 — ядро + теплообмен в консоли (готово).** `npm test`, `npm run demo`.
 
-**Шаг 1.5 — команды, трассировка, объяснения по уровням (готово).** `npm run experiment -- --level novice|school|advanced|expert|all`.
+**Шаг 1.5 — команды, трассировка, объяснения по уровням (готово).** `npm run experiment -- --level novice|school|advanced|expert|all --lang uk|en --country UA`.
 
 **Шаг 2 — электрическая цепь постоянного тока** (`src/domains/electrical/`):
 `Battery(EMF, r)`, `Resistor(R)`, `Lamp`, `Switch`, `Ammeter`, `Voltmeter`, `Wire`.
