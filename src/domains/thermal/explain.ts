@@ -2,7 +2,7 @@ import type { ExperimentLogEntry, ExperimentResult } from '../../core/experiment
 import type { SystemState } from '../../core/state.js';
 import { h, list, p, type Block } from '../../explain/blocks.js';
 import type { DataUsage, DomainKnowledge } from '../../explain/domain.js';
-import { formatQuantity, formatTime, sig, type ExplainContext } from '../../explain/format.js';
+import { formatQuantity, formatTime, pluralUk, sig, type ExplainContext } from '../../explain/format.js';
 import { entityLabel } from '../../explain/report.js';
 import { tr, type Locale } from '../../knowledge/i18n.js';
 import { atLeast, type Level } from '../../knowledge/levels.js';
@@ -56,7 +56,7 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     start: 'на початку',
     end: 'наприкінці',
     peak: 'найвища',
-    showProcess: (n) => `Показати весь процес (${n} записів)`,
+    showProcess: (n) => `Показати весь процес (${n} ${pluralUk(n, 'запис', 'записи', 'записів')})`,
     time: 'час',
     power: 'живлення',
     on: 'увімк',
@@ -92,7 +92,7 @@ const MSG: Readonly<Record<Locale, ThermalMessages>> = {
     start: 'start',
     end: 'end',
     peak: 'peak',
-    showProcess: (n) => `Show the whole process (${n} rows)`,
+    showProcess: (n) => `Show the whole process (${n} ${n === 1 ? 'row' : 'rows'})`,
     time: 'time',
     power: 'power',
     on: 'on',

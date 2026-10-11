@@ -90,3 +90,16 @@ export function formatDuration(seconds: number, locale: Locale): string {
   if (m) return s ? `${m} ${M} ${s} ${S}` : `${m} ${M}`;
   return `${s} ${S}`;
 }
+
+/**
+ * Ukrainian noun form after a number: 1 запис, 2 записи, 5 записів, 11 записів, 21 запис.
+ * (English: 1 row, 2 rows.)
+ */
+export function pluralUk(n: number, one: string, few: string, many: string): string {
+  const a = Math.abs(n) % 100;
+  const b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b === 1) return one;
+  if (b >= 2 && b <= 4) return few;
+  return many;
+}
