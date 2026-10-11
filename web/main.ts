@@ -1,6 +1,6 @@
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
-import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, THERMAL_COMMANDS, THERMAL_KNOWLEDGE, type ThermalCommand } from '../src/domains/thermal/index.js';
+import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, THERMAL_COMMANDS } from '../src/domains/thermal/index.js';
 import {
   childrenOf,
   COOLERS,
@@ -41,6 +41,8 @@ import {
   type LabParams,
   type LabStatus,
   configureStep,
+  LAB_KNOWLEDGE,
+  type LabCommand,
   sampleOf,
   labFixes,
   labProgress,
@@ -51,7 +53,7 @@ import {
 import type { ExperimentResult } from '../src/core/experiment.js';
 import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
-import { cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, electrolysisGases, isSupply, type ElectricalCommand } from '../src/domains/electrical/index.js';
+import { cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, electrolysisGases, isSupply } from '../src/domains/electrical/index.js';
 import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
@@ -105,8 +107,6 @@ const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** di
 
 // ---------- experiment state ----------
 const DT = seconds(0.5);
-/** Everything the page can do to an experiment: heat (thermal) and current (electrical). */
-type LabCommand = ThermalCommand | ElectricalCommand;
 // The electrical solver runs first: it sets the Joule heat the thermal solver then spreads.
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: DT });
 const commands = createCommandRegistry<LabCommand>([...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS]);
@@ -1086,7 +1086,7 @@ function explain() {
   const title = locale === 'uk' ? 'Що відбулося і чому' : 'What happened and why';
   const notes: Block[] = (substance().modelNotes ?? []).map((n) => ({ kind: 'note', tone: 'info', text: tr(n, locale) }));
   $('#report').innerHTML = renderHtml(
-    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: THERMAL_KNOWLEDGE, focusTime: (result.initial.time + result.final.time) / 2, summary: [...headline!(), ...notes] }),
+    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: LAB_KNOWLEDGE, focusTime: (result.initial.time + result.final.time) / 2, summary: [...headline!(), ...notes] }),
   );
   render();
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });

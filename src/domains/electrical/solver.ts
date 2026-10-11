@@ -3,13 +3,13 @@ import { withEntities } from '../../core/state.js';
 import type { AnyEntity } from '../../core/entity.js';
 import { isBurner, isThermalBody } from '../thermal/entities.js';
 import { cellReading } from './conductivity.js';
+import { cellCurrentOhm, faradayMoles } from './formulas.js';
 import { isSupply, type Supply } from './entities.js';
 
 /** Current through the cell: I = (U − U_decomposition) / (R_liquid + R_inside), capped by the source. */
 export function cellCurrent(voltage: number, decomposition: number, resistance: number, internal: number, limit: number): number {
-  const drive = voltage - decomposition;
-  if (!(drive > 0) || !Number.isFinite(resistance)) return 0;
-  return Math.min(limit, drive / (resistance + internal));
+  if (!(voltage - decomposition > 0) || !Number.isFinite(resistance)) return 0;
+  return Math.min(limit, cellCurrentOhm(voltage, decomposition, resistance, internal));
 }
 
 /**
@@ -22,7 +22,8 @@ export function createElectricalSolver(): Solver {
   return {
     name: 'electrical',
     assumptions: [],
-    step(state, dt) {
+    step(state, dt, ctx) {
+      const trace = ctx?.trace;
       const updated: AnyEntity[] = [];
       for (const e of Object.values(state.entities)) {
         if (!isSupply(e)) continue;
@@ -35,6 +36,19 @@ export function createElectricalSolver(): Solver {
         const depleted = e.params.capacity !== undefined && e.state.charge >= e.params.capacity;
         const I = e.params.on && !depleted ? cellCurrent(e.params.voltage, Ud, R, e.params.internalResistance, e.params.currentLimit) : 0;
         const joule = I > 0 ? I * I * R : 0;
+        if (trace) {
+          // What was computed, with the exact numbers — explanations are built from these records.
+          const ids = [e.id, body.id];
+          if (Number.isFinite(R)) trace.record({ kind: 'formula', formula: 'electrical.cell-resistance', entities: ids, args: [e.params.cell.constant, reading.conductivity], output: R });
+          const ohm = Number.isFinite(R) && Number.isFinite(Ud) ? cellCurrentOhm(e.params.voltage, Ud, R, e.params.internalResistance) : undefined;
+          // Recorded only when the source did not cap the current (then I is not Ohm's I).
+          if (ohm !== undefined && I === ohm) trace.record({ kind: 'formula', formula: 'electrical.cell-current', entities: ids, args: [e.params.voltage, Ud, R, e.params.internalResistance], output: I });
+          if (I > 0) {
+            trace.record({ kind: 'formula', formula: 'electrical.joule-power', entities: ids, args: [I, R], output: joule });
+            const z = reading.electrolysis!.cathode.electrons;
+            trace.record({ kind: 'formula', formula: 'electrical.faraday-moles', entities: ids, args: [I * dt, z], output: faradayMoles(I * dt, z) });
+          }
+        }
         const chemical = I > 0 ? I * Ud : 0;
         const internal = I * I * e.params.internalResistance;
         const next: Supply = {

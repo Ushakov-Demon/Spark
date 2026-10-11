@@ -1,0 +1,169 @@
+import { defineFormula, type CurriculumRef, type FormulaSpec } from '../../knowledge/types.js';
+import * as f from './formulas.js';
+
+/**
+ * Human-facing catalog of the electrical formulas (see thermal/catalog.ts for the rules).
+ * Curriculum quotes checked against the programme PDFs on 2026-10-12.
+ */
+const UA_RESISTANCE: readonly CurriculumRef[] = [
+  { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Залежність опору провідника від його довжини, площі перерізу та матеріалу.' },
+  { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Електричний опір. Залежність опору провідника від його довжини, площі перерізу та матеріалу.' },
+];
+const UA_OHM: readonly CurriculumRef[] = [
+  { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Закон Ома для ділянки кола.' },
+  { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Закон Ома для ділянки кола.' },
+];
+const UA_JOULE: readonly CurriculumRef[] = [
+  { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Робота й потужність електричного струму. Закон Джоуля–Ленца.' },
+  { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Робота й потужність електричного струму. Закон Джоуля—Ленца.' },
+];
+const UA_FARADAY: readonly CurriculumRef[] = [
+  { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Природа електричного струму в розчинах і розплавах електролітах. Закон Фарадея для електролізу.' },
+  { program: 'ua-nus-2023-holovko', grade: 8, depth: 'qualitative', quote: 'Природа електричного струму в різних середовищах.' },
+];
+
+export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
+  defineFormula({
+    id: 'electrical.cell-resistance',
+    law: 'resistance',
+    title: { uk: 'Опір рідини між електродами', en: 'Resistance of the liquid between the electrodes' },
+    latex: 'R = \\frac{K}{\\kappa}, \\quad K = \\frac{L}{S}',
+    plain: 'R = K / κ, K = L / S',
+    argSymbols: ['K', 'κ'],
+    resultSymbol: 'R',
+    variables: {
+      R: { name: { uk: 'опір', en: 'resistance' }, unit: 'Ω' },
+      K: {
+        name: { uk: 'стала комірки', en: 'cell constant' },
+        unit: '1/m',
+        meaning: { school: { uk: 'відстань між електродами L, поділена на їхню площу S: що далі пластини й що вони менші, то більший опір', en: 'the gap L between the electrodes divided by their area S: the farther apart and the smaller the plates, the larger the resistance' } },
+      },
+      κ: {
+        name: { uk: 'питома електропровідність рідини', en: 'electrical conductivity of the liquid' },
+        unit: 'S/m',
+        meaning: { school: { uk: 'наскільки добре рідина проводить струм; залежить від того, скільки в ній йонів, і від температури', en: 'how well the liquid conducts; depends on how many ions it holds and on the temperature' } },
+      },
+    },
+    curriculum: UA_RESISTANCE,
+    explanation: {
+      novice: {
+        uk: 'Чиста вода майже не пропускає струм, а солона — добре: розчинена сіль дає заряджені частинки, які й переносять струм.',
+        en: 'Pure water hardly lets current through, salt water does it well: dissolved salt gives charged particles that carry the current.',
+      },
+      school: {
+        uk: 'Це та сама формула опору провідника R = ρ·L/S, тільки для рідини: ρ = 1/κ. Що довший шлях струму і що менша площа електродів, то більший опір.',
+        en: 'It is the same conductor formula R = ρ·L/S, only for a liquid: ρ = 1/κ. The longer the path and the smaller the electrodes, the larger the resistance.',
+      },
+      expert: {
+        uk: 'Модель плоского конденсатора без крайових ефектів; κ — з таблиці за складом рідини з лінійною температурною поправкою.',
+        en: 'Parallel-plate model without fringe effects; κ from a table by composition with a linear temperature correction.',
+      },
+    },
+    compute: f.cellResistance,
+    examples: [{ args: [30, 5], expected: 6, note: 'Пластини 2×5 см на відстані 3 см у морській воді (κ ≈ 5 См/м)' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'electrical.cell-current',
+    law: 'ohm',
+    title: { uk: 'Сила струму в рідині (закон Ома)', en: 'Current through the liquid (Ohm’s law)' },
+    latex: 'I = \\frac{U - U_р}{R + r}',
+    plain: 'I = (U − Uр) / (R + r)',
+    argSymbols: ['U', 'Uр', 'R', 'r'],
+    resultSymbol: 'I',
+    variables: {
+      I: { name: { uk: 'сила струму', en: 'current' }, unit: 'A' },
+      U: { name: { uk: 'напруга джерела', en: 'source voltage' }, unit: 'V' },
+      Uр: {
+        name: { uk: 'напруга розкладу', en: 'decomposition voltage' },
+        unit: 'V',
+        meaning: { school: { uk: 'мінімальна напруга, з якої струм починає розкладати рідину; нижче неї струму майже немає', en: 'the least voltage at which the current starts to split the liquid; below it there is almost no current' } },
+      },
+      R: { name: { uk: 'опір рідини', en: 'resistance of the liquid' }, unit: 'Ω' },
+      r: { name: { uk: 'внутрішній опір джерела', en: 'internal resistance of the source' }, unit: 'Ω' },
+    },
+    curriculum: UA_OHM,
+    explanation: {
+      novice: {
+        uk: 'Що більша напруга і що менший опір, то більший струм.',
+        en: 'The higher the voltage and the lower the resistance, the larger the current.',
+      },
+      school: {
+        uk: 'Закон Ома: I = U/R. У рідині частина напруги йде на те, щоб розкласти її на електродах (Uр), а ще частина «губиться» всередині батарейки (r). Тому струм рахуємо від того, що лишилося.',
+        en: 'Ohm’s law: I = U/R. In a liquid part of the voltage goes into splitting it at the electrodes (Uр) and part is “lost” inside the battery (r), so the current is counted from what is left.',
+      },
+      expert: {
+        uk: 'Uр — термодинамічний мінімум зі стандартних потенціалів; перенапруги на електродах не враховано, тож модель трохи завищує струм за малих напруг.',
+        en: 'Uр is the thermodynamic minimum from standard potentials; electrode overpotentials are ignored, so the model somewhat overestimates the current at low voltages.',
+      },
+    },
+    compute: f.cellCurrentOhm,
+    examples: [{ args: [12, 2.19, 6, 0], expected: 1.635, note: '12 В на морську воду між пластинами (R = 6 Ом)' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'electrical.joule-power',
+    law: 'joule-lenz',
+    title: { uk: 'Теплова потужність струму (закон Джоуля–Ленца)', en: 'Heating power of a current (Joule–Lenz law)' },
+    latex: 'P = I^2 \\cdot R',
+    plain: 'P = I² · R',
+    argSymbols: ['I', 'R'],
+    resultSymbol: 'P',
+    variables: {
+      P: { name: { uk: 'теплова потужність', en: 'heating power' }, unit: 'W' },
+      I: { name: { uk: 'сила струму', en: 'current' }, unit: 'A' },
+      R: { name: { uk: 'опір', en: 'resistance' }, unit: 'Ω' },
+    },
+    curriculum: UA_JOULE,
+    explanation: {
+      novice: {
+        uk: 'Струм нагріває все, крізь що проходить. Удвічі більший струм гріє вчетверо сильніше.',
+        en: 'A current heats whatever it passes through. Twice the current heats four times as much.',
+      },
+      school: {
+        uk: 'Закон Джоуля–Ленца: за час t виділяється теплота Q = I²·R·t. Саме так працюють кип’ятильники й електроплити.',
+        en: 'The Joule–Lenz law: in time t the heat Q = I²·R·t is released. That is how immersion heaters and electric hobs work.',
+      },
+    },
+    compute: f.joulePower,
+    examples: [{ args: [1.635, 6], expected: 16.03935, note: 'Струм 1,635 А через морську воду з опором 6 Ом' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'electrical.faraday-moles',
+    law: 'faraday-electrolysis',
+    title: { uk: 'Скільки газу виділяє струм (закон Фарадея)', en: 'How much gas a current releases (Faraday’s law)' },
+    latex: 'n = \\frac{q}{z \\cdot F}',
+    plain: 'n = q / (z · F)',
+    argSymbols: ['q', 'z'],
+    resultSymbol: 'n',
+    variables: {
+      n: { name: { uk: 'кількість речовини газу', en: 'amount of gas' }, unit: 'mol' },
+      q: { name: { uk: 'заряд, що пройшов через рідину', en: 'charge passed through the liquid' }, unit: 'C' },
+      z: {
+        name: { uk: 'кількість електронів на молекулу', en: 'electrons per molecule' },
+        unit: '',
+        meaning: { school: { uk: 'скільки електронів потрібно на одну молекулу газу: для водню й хлору — 2, для кисню — 4', en: 'electrons needed per gas molecule: 2 for hydrogen and chlorine, 4 for oxygen' } },
+      },
+      F: { name: { uk: 'стала Фарадея', en: 'Faraday constant' }, unit: 'C/mol', meaning: { school: { uk: '96 485 Кл — заряд одного моля електронів', en: '96 485 C — the charge of one mole of electrons' } } },
+    },
+    curriculum: UA_FARADAY,
+    explanation: {
+      novice: {
+        uk: 'Що більше заряду пройшло крізь рідину, то більше газу виділилося на електродах.',
+        en: 'The more charge passes through the liquid, the more gas forms at the electrodes.',
+      },
+      school: {
+        uk: 'Закон Фарадея: маса речовини, що виділилася на електроді, пропорційна заряду q = I·t. Один моль водню потребує 2 моль електронів, тобто 2 × 96 485 Кл.',
+        en: 'Faraday’s law: the mass released at an electrode is proportional to the charge q = I·t. One mole of hydrogen needs 2 moles of electrons, that is 2 × 96 485 C.',
+      },
+    },
+    compute: f.faradayMoles,
+    examples: [{ args: [96_485.33212, 2], expected: 0.5, note: 'Заряд одного моля електронів дає пів моля водню' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+];

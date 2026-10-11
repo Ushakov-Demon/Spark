@@ -4,3 +4,6 @@ export * from './solver.js';
 export * from './gases.js';
 export * from './assembly.js';
 export * from './commands.js';
+export * from './formulas.js';
+export * from './catalog.js';
+export * from './laws.js';
