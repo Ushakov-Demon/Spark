@@ -13,6 +13,9 @@ export const CATEGORIES: readonly Category[] = [
   c('device.heater', 'device', 'Нагрівачі', 'Heaters'),
   c('device.heater.household', 'device.heater', 'Побутові нагрівачі', 'Household heaters'),
   c('device.heater.laboratory', 'device.heater', 'Лабораторні нагрівачі', 'Laboratory heaters'),
+  c('device.cooler', 'device', 'Охолоджувачі', 'Coolers'),
+  c('device.cooler.household', 'device.cooler', 'Побутові охолоджувачі', 'Household coolers'),
+  c('device.cooler.laboratory', 'device.cooler', 'Лабораторні охолоджувачі', 'Laboratory cooling baths'),
   c('device.measuring', 'device', 'Вимірювальні прилади', 'Measuring instruments'),
   c('vessel', null, 'Посуд', 'Vessels'),
   c('vessel.household', 'vessel', 'Побутовий посуд', 'Household vessels'),
@@ -36,8 +39,8 @@ export const isUnder = (id: CategoryId, ancestor: CategoryId): boolean => catego
 
 /** 'household' | 'laboratory' — taken from the path. */
 export const contextOf = (id: CategoryId): 'household' | 'laboratory' | undefined =>
-  isUnder(id, 'device.heater.household') || isUnder(id, 'vessel.household')
+  categoryPath(id).some((c) => c.id.endsWith('.household'))
     ? 'household'
-    : isUnder(id, 'device.heater.laboratory') || isUnder(id, 'vessel.laboratory')
+    : categoryPath(id).some((c) => c.id.endsWith('.laboratory'))
       ? 'laboratory'
       : undefined;

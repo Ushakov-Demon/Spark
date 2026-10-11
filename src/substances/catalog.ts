@@ -137,6 +137,7 @@ const LIST = {
     category: 'liquid.alcohol',
     name: { uk: 'Спирт (етанол)', en: 'Alcohol (ethanol)' },
     gender: 'm',
+    flammable: true,
     description: {
       novice: {
         uk: 'Безбарвна рідина, яка кипить уже при 78 °C, а замерзає лише при −114 °C — жодна домашня морозилка її не заморозить.',

@@ -18,7 +18,7 @@ describe('equipment taxonomy', () => {
       expect(getCategory(i.category), i.id).toBeDefined();
       expect(childrenOf(i.category), `${i.id}: category must be a leaf`).toHaveLength(0);
       expect(contextOf(i.category), i.id).toMatch(/household|laboratory/);
-      expect(categoryPath(i.category)[0]!.id).toBe(i.kind === 'heater' ? 'device' : 'vessel');
+      expect(categoryPath(i.category)[0]!.id).toBe(i.kind === 'vessel' ? 'vessel' : 'device');
     }
   });
 

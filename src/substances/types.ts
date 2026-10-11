@@ -43,6 +43,8 @@ export interface SubstanceItem {
   };
   /** Temperature at which it starts to smoke / decompose, °C (oils). */
   readonly decomposes?: SourcedValue;
+  /** Catches fire easily — never heated over an open flame in real life. */
+  readonly flammable?: boolean;
   /** Simplifications specific to this substance, shown in explanations. */
   readonly modelNotes?: readonly LocalizedText[];
 }

@@ -54,6 +54,8 @@ export type Heater = Device<'thermal.heater', HeaterParams, HeaterState, Thermal
 // ---------- Reservoir: infinite heat capacity at fixed temperature (room air, ice bath) ----------
 export interface ReservoirParams {
   readonly temperature: Kelvin;
+  /** Catalog id of a cooler this reservoir stands for (freezer air, ice bath…). */
+  readonly device?: string;
 }
 export interface ReservoirState {
   /** Net heat that flowed INTO the reservoir so far (negative = it gave heat away). */
@@ -161,7 +163,7 @@ export function heater(
   };
 }
 
-export function reservoir(o: Common & { readonly temperature: Kelvin }): Reservoir {
+export function reservoir(o: Common & { readonly temperature: Kelvin; readonly device?: string }): Reservoir {
   assertTemperature(o.temperature);
   return {
     id: entityId(o.id),
@@ -169,7 +171,7 @@ export function reservoir(o: Common & { readonly temperature: Kelvin }): Reservo
     ...withLabel(o.label),
     transform: transform(o.position),
     ports: SURFACE,
-    params: { temperature: o.temperature },
+    params: { temperature: o.temperature, ...(o.device === undefined ? {} : { device: o.device }) },
     state: { heatAbsorbed: joules(0) },
   };
 }

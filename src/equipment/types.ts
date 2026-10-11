@@ -122,5 +122,23 @@ export interface VesselItem extends EquipmentCard {
   readonly phraseIn: Readonly<Record<string, LocalizedText>>;
 }
 
-export type EquipmentItem = HeaterItem | VesselItem;
+// ---------------------------------------------------------------- coolers
+
+export interface CoolerSpec {
+  /** air — the vessel stands inside (fridge, freezer); bath — the vessel sits in a cold liquid. */
+  readonly method: 'air' | 'bath';
+  /** Temperature it holds, °C; `min`/`max` — the setting range of its thermostat (equal for baths). */
+  readonly setpoint: { readonly min: number; readonly max: number; readonly default: number; readonly data: SourcedValue };
+  /** Heat transfer to the vessel: key in CONVECTION (forced air in a freezer, still water in a bath). */
+  readonly convection: string;
+}
+
+export interface CoolerItem extends EquipmentCard {
+  readonly kind: 'cooler';
+  readonly spec: CoolerSpec;
+  /** "у морозильній камері" / "in a freezer". */
+  readonly phrase: LocalizedText;
+}
+
+export type EquipmentItem = HeaterItem | VesselItem | CoolerItem;
 export type EquipmentKind = EquipmentItem['kind'];
