@@ -1,9 +1,11 @@
 import type { AnyEntity } from '../../core/entity.js';
-import type { Solver } from '../../core/solver.js';
+import type { EntityId } from '../../core/ids.js';
+import type { Solver, StepContext } from '../../core/solver.js';
 import { withEntities, type SystemState } from '../../core/state.js';
-import { joules, kelvin, type Seconds } from '../../core/units.js';
+import { joules, kelvin, seconds, ZERO_CELSIUS_IN_KELVIN, type Seconds } from '../../core/units.js';
+import { THERMAL_ASSUMPTIONS } from './assumptions.js';
 import { isHeater, isReservoir, isThermalEntity, temperatureOf, type ThermalEntity } from './entities.js';
-import { isThermalLink } from './links.js';
+import { isThermalLink, type ThermalLink } from './links.js';
 
 /**
  * Lumped thermal network solver.
@@ -38,6 +40,7 @@ interface Edge {
   readonly a: number;
   readonly b: number;
   readonly g: number;
+  readonly link: ThermalLink;
 }
 
 export class ThermalSolverError extends Error {
@@ -51,7 +54,9 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
 
   return {
     name: 'thermal',
-    step(state: SystemState, dt: Seconds): SystemState {
+    assumptions: THERMAL_ASSUMPTIONS,
+    step(state: SystemState, dt: Seconds, ctx?: StepContext): SystemState {
+      const trace = ctx?.trace;
       // 1. Build working copies of nodes (never touch the input state).
       const nodes: Node[] = [];
       const index = new Map<string, number>();
@@ -76,7 +81,7 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         const a = index.get(c.a.entity);
         const b = index.get(c.b.entity);
         if (a === undefined || b === undefined || a === b || c.params.conductance === 0) continue;
-        edges.push({ a, b, g: c.params.conductance });
+        edges.push({ a, b, g: c.params.conductance, link: c });
         nodes[a]!.sumG += c.params.conductance;
         nodes[b]!.sumG += c.params.conductance;
       }
@@ -95,7 +100,10 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
       }
       const h = dt / substeps;
 
-      // 4. Integrate.
+      // 4. Integrate. `received`/`given` are only needed for the trace.
+      const t0 = trace ? nodes.map((n) => n.temperature) : [];
+      const received = new Float64Array(nodes.length);
+      const given = new Float64Array(nodes.length);
       const flow = new Float64Array(nodes.length);
       for (let s = 0; s < substeps; s++) {
         flow.fill(0);
@@ -103,14 +111,22 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           const q = g * (nodes[a]!.temperature - nodes[b]!.temperature); // W, a → b
           flow[a]! -= q;
           flow[b]! += q;
+          if (trace) {
+            const [from, to] = q >= 0 ? [a, b] : [b, a];
+            given[from]! += Math.abs(q) * h;
+            received[to]! += Math.abs(q) * h;
+          }
         }
         for (let i = 0; i < nodes.length; i++) {
           const n = nodes[i]!;
           const net = flow[i]! + n.power;
+          if (trace) received[i]! += n.power * h;
           if (Number.isFinite(n.capacity)) n.temperature += (net * h) / n.capacity;
           else n.reservoirHeat += net * h;
         }
       }
+
+      if (trace) traceStep(trace, nodes, edges, t0, received, given, dt, substeps);
 
       // 5. Write back immutably.
       const updated: AnyEntity[] = nodes.map((n): ThermalEntity => {
@@ -132,14 +148,67 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
   };
 }
 
+/** Reports what this step computed, in terms of catalog formulas (see catalog.ts). */
+function traceStep(
+  trace: NonNullable<StepContext['trace']>,
+  nodes: readonly Node[],
+  edges: readonly Edge[],
+  t0: readonly number[],
+  received: Float64Array,
+  given: Float64Array,
+  dt: number,
+  substeps: number,
+): void {
+  const id = (i: number): EntityId => nodes[i]!.entity.id;
+  trace.record({ kind: 'numerics', solver: 'thermal', method: 'explicit-euler', dt, substeps });
+
+  for (const { a, b, g, link } of edges) {
+    const o = link.params.origin;
+    if (o?.type === 'convection') {
+      trace.record({ kind: 'formula', formula: 'thermal.convection-conductance', entities: [id(a), id(b)], args: [o.coefficient, o.area], output: g });
+    } else if (o?.type === 'conduction') {
+      trace.record({ kind: 'formula', formula: 'thermal.conduction-conductance', entities: [id(a), id(b)], args: [o.conductivity, o.area, o.length], output: g });
+    }
+    // Instantaneous flow at the start of the step.
+    trace.record({ kind: 'formula', formula: 'thermal.heat-flow', entities: [id(a), id(b)], args: [g, t0[a], t0[b]], output: g * (t0[a]! - t0[b]!) });
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i]!;
+    if (n.power > 0) {
+      trace.record({ kind: 'formula', formula: 'thermal.energy-from-power', entities: [id(i)], args: [n.power, seconds(dt)], output: n.power * dt });
+    }
+    if (!Number.isFinite(n.capacity)) continue;
+    const e = n.entity as Exclude<ThermalEntity, { kind: 'thermal.reservoir' }>;
+    trace.record({ kind: 'formula', formula: 'thermal.energy-balance', entities: [id(i)], args: [received[i]!, given[i]!], output: received[i]! - given[i]! });
+    const dT = n.temperature - t0[i]!;
+    trace.record({
+      kind: 'formula',
+      formula: 'thermal.heat-for-temperature-change',
+      entities: [id(i)],
+      args: [e.params.mass, e.params.specificHeat, dT],
+      output: e.params.mass * e.params.specificHeat * dT,
+    });
+  }
+}
+
 /**
- * Total internal energy of all finite thermal bodies relative to 0 K, J.
- * Used by tests and by the "energy balance" panel in the UI.
+ * Reference point for internal energy: 0 °C. The choice is arbitrary (only
+ * differences are physical) but must be the same everywhere, including the
+ * energy that poured matter brings in (see commands.ts).
+ */
+export const ENERGY_REFERENCE_TEMPERATURE = ZERO_CELSIUS_IN_KELVIN;
+
+/**
+ * Total internal energy of all finite thermal bodies relative to 0 °C, J.
+ * Used by tests and by the "energy balance" panel.
  */
 export function thermalEnergy(state: SystemState): number {
   let u = 0;
   for (const e of Object.values(state.entities)) {
-    if (isThermalEntity(e) && !isReservoir(e)) u += e.params.mass * e.params.specificHeat * e.state.temperature;
+    if (isThermalEntity(e) && !isReservoir(e)) {
+      u += e.params.mass * e.params.specificHeat * (e.state.temperature - ENERGY_REFERENCE_TEMPERATURE);
+    }
   }
   return u;
 }

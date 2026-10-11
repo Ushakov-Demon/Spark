@@ -3,4 +3,8 @@ export * from './links.js';
 export * from './formulas.js';
 export * from './materials.js';
 export * from './solver.js';
+export * from './assumptions.js';
+export * from './commands.js';
+export * from './laws.js';
 export * from './catalog.js';
+export * from './explain.js';

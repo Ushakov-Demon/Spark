@@ -17,6 +17,7 @@ export function calorimeterScenario(): SystemState {
         label: 'Медный цилиндр',
         mass: kilograms(0.5),
         specificHeat: MATERIALS.copper.specificHeat.value,
+        material: 'copper',
         temperature: celsius(100),
       }),
       thermalBody({
@@ -24,6 +25,7 @@ export function calorimeterScenario(): SystemState {
         label: 'Вода',
         mass: kilograms(0.2),
         specificHeat: MATERIALS.water.specificHeat.value,
+        material: 'water',
         temperature: celsius(20),
       }),
     ],

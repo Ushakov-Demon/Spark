@@ -7,3 +7,6 @@ export * from './state.js';
 export * from './solver.js';
 export * from './simulation.js';
 export * from './validation.js';
+export * from './trace.js';
+export * from './commands.js';
+export * from './experiment.js';

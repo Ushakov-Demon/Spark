@@ -15,6 +15,8 @@ const SURFACE: readonly PortSpec<ThermalPortName>[] = [{ name: 'surface', domain
 export interface ThermalBodyParams {
   readonly mass: Kilograms;
   readonly specificHeat: SpecificHeat;
+  /** Key in MATERIALS the values came from — lets explanations cite the data source. */
+  readonly material?: string;
 }
 export interface ThermalBodyState {
   readonly temperature: Kelvin;
@@ -80,7 +82,7 @@ export function thermalBody(
     ...withLabel(o.label),
     transform: transform(o.position),
     ports: SURFACE,
-    params: { mass: o.mass, specificHeat: o.specificHeat },
+    params: { mass: o.mass, specificHeat: o.specificHeat, ...(o.material === undefined ? {} : { material: o.material }) },
     state: { temperature: o.temperature },
   };
 }
@@ -98,7 +100,13 @@ export function heater(
     ...withLabel(o.label),
     transform: transform(o.position),
     ports: SURFACE,
-    params: { mass: o.mass, specificHeat: o.specificHeat, power: o.power, on: o.on ?? true },
+    params: {
+      mass: o.mass,
+      specificHeat: o.specificHeat,
+      ...(o.material === undefined ? {} : { material: o.material }),
+      power: o.power,
+      on: o.on ?? true,
+    },
     state: { temperature: o.temperature, energyDelivered: joules(0) },
   };
 }

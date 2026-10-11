@@ -5,11 +5,11 @@ const source = <const S extends Source>(s: S): S => s;
 export const SOURCES = {
   wikidata: source({
     id: 'wikidata',
-    title: 'Wikidata (properties P2056 specific heat capacity, P2068 thermal conductivity)',
+    title: 'Wikidata',
     url: 'https://www.wikidata.org',
     license: 'CC0-1.0',
     retrieved: '2026-10-11',
-    caveats: 'Several statements per item; conditions (temperature, phase) often missing — always check qualifiers.',
+    caveats: 'Used for material properties (P2056, P2068) and life dates (P569, P570). Several statements per item; conditions often missing — always check qualifiers.',
   }),
   'openstax-cp2e': source({
     id: 'openstax-cp2e',
@@ -43,6 +43,34 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-11',
     caveats: 'The ranges are tagged [citation needed] — usable for orders of magnitude only.',
+  }),
+  'wikipedia-newton-cooling': source({
+    id: 'wikipedia-newton-cooling',
+    title: "Wikipedia, Newton's law of cooling (History)",
+    url: 'https://en.wikipedia.org/wiki/Newton%27s_law_of_cooling',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
+  }),
+  'wikipedia-fourier': source({
+    id: 'wikipedia-fourier',
+    title: 'Wikipedia, Joseph Fourier',
+    url: 'https://en.wikipedia.org/wiki/Joseph_Fourier',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
+  }),
+  'wikipedia-joseph-black': source({
+    id: 'wikipedia-joseph-black',
+    title: 'Wikipedia, Joseph Black',
+    url: 'https://en.wikipedia.org/wiki/Joseph_Black',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
+  }),
+  'wikipedia-energy-conservation': source({
+    id: 'wikipedia-energy-conservation',
+    title: 'Wikipedia, Conservation of energy (History)',
+    url: 'https://en.wikipedia.org/wiki/Conservation_of_energy',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
   }),
   spark: source({
     id: 'spark',

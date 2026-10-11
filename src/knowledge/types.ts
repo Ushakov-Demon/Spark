@@ -1,3 +1,5 @@
+import type { LeveledText } from './levels.js';
+
 /**
  * Knowledge layer: where every number and every text in the platform comes from.
  *
@@ -63,6 +65,8 @@ export interface LocalizedText {
 export interface VariableSpec {
   readonly name: LocalizedText;
   readonly unit: string;
+  /** What the quantity means physically, by level. */
+  readonly meaning?: LeveledText;
 }
 
 /**
@@ -71,15 +75,22 @@ export interface VariableSpec {
  */
 export interface FormulaSpec<F extends (...args: any[]) => number = (...args: any[]) => number> {
   readonly id: string;
+  /** The law (or definition) this formula expresses. */
+  readonly law: string;
   readonly title: LocalizedText;
   /** LaTeX for the UI. */
   readonly latex: string;
+  /** Plain-text form for consoles and screen readers. */
+  readonly plain: string;
+  /** Symbol of each positional argument of `compute` (keys of `variables`), and of the result. */
+  readonly argSymbols: readonly string[];
+  readonly resultSymbol: string;
   readonly variables: Readonly<Record<string, VariableSpec>>;
   /** School grade where the formula is introduced (RU curriculum), null = beyond the basic school course. */
   readonly grade: number | null;
   /** Where in the curriculum it appears, or why it is beyond it. */
   readonly curriculum: string;
-  readonly explanation: LocalizedText;
+  readonly explanation: LeveledText;
   readonly compute: F;
   /** Worked examples, recomputed in tests against hand-calculated answers. */
   readonly examples: readonly { readonly args: Parameters<F>; readonly expected: number; readonly note: string }[];
@@ -90,3 +101,43 @@ export interface FormulaSpec<F extends (...args: any[]) => number = (...args: an
 
 /** Helper that keeps `F` inferred per formula while erasing it for the catalog array. */
 export const defineFormula = <F extends (...args: any[]) => number>(spec: FormulaSpec<F>): FormulaSpec => spec as FormulaSpec;
+
+/** Source for a non-numeric fact (a date, an attribution, a publication). */
+export interface FactCitation {
+  readonly source: SourceId;
+  readonly locator: string;
+  /** The exact claim the source supports. */
+  readonly claim: string;
+}
+
+export interface Person {
+  readonly name: LocalizedText;
+  readonly born: number;
+  readonly died: number;
+  /** Wikidata id — the source of the dates. */
+  readonly wikidata: string;
+}
+
+/**
+ * A law of nature, or a definition / model, that one or more formulas express.
+ * Historical facts are sourced just like numbers: attributions in popular texts
+ * are often wrong.
+ */
+export interface LawSpec {
+  readonly id: string;
+  readonly kind: 'law' | 'definition' | 'model';
+  readonly name: LocalizedText;
+  readonly statement: LeveledText;
+  readonly history: {
+    readonly people: readonly Person[];
+    /** 'discovered' — these people discovered it; 'associated' — no single discoverer, names are context. */
+    readonly role: 'discovered' | 'associated';
+    /** e.g. "1701", "1807–1822" */
+    readonly when: string;
+    readonly work?: string;
+    readonly story: LeveledText;
+    readonly citations: readonly FactCitation[];
+  };
+  /** Where the law stops working — shown from `advanced` level. */
+  readonly limits?: LeveledText;
+}

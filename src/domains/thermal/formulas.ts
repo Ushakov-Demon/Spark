@@ -54,6 +54,12 @@ export const timeConstant = (c: HeatCapacity, g: ThermalConductance): Seconds =>
 export const newtonCooling = (t0: Kelvin, tEnv: Kelvin, tau: Seconds, t: Seconds): Kelvin =>
   kelvin(tEnv + (t0 - tEnv) * Math.exp(-t / tau));
 
+/** E = P·t — energy delivered by a source of constant power P during t. */
+export const energyFromPower = (p: Watts, t: Seconds): Joules => joules(p * t);
+
+/** ΔU = Q_received − Q_given: energy conservation for one body over a time step. */
+export const energyBalance = (received: Joules, given: Joules): Joules => joules(received - given);
+
 /** Heat balance equation: final temperature of bodies brought into contact (no losses). */
 export function equilibriumTemperature(
   bodies: readonly { readonly mass: Kilograms; readonly specificHeat: SpecificHeat; readonly temperature: Kelvin }[],

@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "tsx examples/kettle-cli.ts",
-    "knowledge:report": "tsx scripts/knowledge-report.ts"
+    "knowledge:report": "tsx scripts/knowledge-report.ts",
+    "experiment": "tsx examples/kettle-experiment.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

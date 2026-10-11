@@ -7,6 +7,8 @@ UI-независимый TypeScript-движок: работает в Node, б�
 npm install
 npm test        # vitest: физика проверяется против аналитических решений
 npm run demo    # консольное демо: закипание чайника
+npm run experiment -- --level school   # эксперимент с объяснением: novice | school | advanced | expert | all
+npm run knowledge:report               # насколько надёжны данные
 npm run typecheck
 ```
 

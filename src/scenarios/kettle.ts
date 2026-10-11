@@ -24,9 +24,10 @@ export function kettleScenario(o: KettleOptions = {}): SystemState {
     entities: [
       heater({
         id: 'heater',
-        label: 'Нагревательный элемент',
+        label: 'ТЭН',
         mass: kilograms(0.2),
         specificHeat: MATERIALS.steel.specificHeat.value,
+        material: 'steel',
         power: watts(o.heaterPower ?? 2000),
         temperature: start,
       }),
@@ -35,6 +36,7 @@ export function kettleScenario(o: KettleOptions = {}): SystemState {
         label: 'Вода',
         mass: kilograms(o.waterMass ?? 1),
         specificHeat: MATERIALS.water.specificHeat.value,
+        material: 'water',
         temperature: start,
       }),
       reservoir({ id: 'room', label: 'Воздух в комнате', temperature: room }),
@@ -46,6 +48,7 @@ export function kettleScenario(o: KettleOptions = {}): SystemState {
         a: 'water',
         b: 'room',
         coefficient: CONVECTION.stillAir.value,
+        dataRef: 'stillAir',
         area: squareMeters(0.06),
       }),
     ],

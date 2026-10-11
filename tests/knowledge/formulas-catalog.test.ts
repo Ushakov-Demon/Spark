@@ -26,7 +26,7 @@ describe('thermal formula catalog', () => {
 
   it('every entry has an explanation, a known text source and a curriculum note', () => {
     for (const s of THERMAL_FORMULAS) {
-      expect(s.explanation.ru.length, s.id).toBeGreaterThan(20);
+      expect(s.explanation.school.ru.length, s.id).toBeGreaterThan(20);
       expect(getSource(s.textSource), s.id).toBeDefined();
       expect(s.curriculum.length, s.id).toBeGreaterThan(0);
       expect(Object.keys(s.variables).length, s.id).toBeGreaterThan(1);

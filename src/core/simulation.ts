@@ -1,10 +1,12 @@
-import type { Solver } from './solver.js';
+import type { Solver, StepContext } from './solver.js';
 import type { SystemState } from './state.js';
 import { seconds, type Seconds } from './units.js';
 
 export interface Simulation {
+  readonly solvers: readonly Solver[];
+  readonly fixedDt: Seconds;
   /** Pure: one fixed physics step of length dt through all solvers. */
-  tick(state: SystemState, dt: Seconds): SystemState;
+  tick(state: SystemState, dt: Seconds, ctx?: StepContext): SystemState;
   /** Pure: integrates for `duration` using the fixed step, returning the final state. */
   run(state: SystemState, duration: Seconds, onStep?: (s: SystemState) => void): SystemState;
 }
@@ -18,10 +20,10 @@ export interface SimulationOptions {
 export function createSimulation({ solvers, fixedDt }: SimulationOptions): Simulation {
   if (!(fixedDt > 0)) throw new RangeError(`fixedDt must be > 0, got ${fixedDt}`);
 
-  const tick = (state: SystemState, dt: Seconds): SystemState => {
+  const tick = (state: SystemState, dt: Seconds, ctx?: StepContext): SystemState => {
     if (!(dt > 0)) throw new RangeError(`dt must be > 0, got ${dt}`);
     let next = state;
-    for (const solver of solvers) next = solver.step(next, dt);
+    for (const solver of solvers) next = solver.step(next, dt, ctx);
     return { ...next, time: seconds(state.time + dt), step: state.step + 1 };
   };
 
@@ -35,7 +37,7 @@ export function createSimulation({ solvers, fixedDt }: SimulationOptions): Simul
     return s;
   };
 
-  return { tick, run };
+  return { solvers, fixedDt, tick, run };
 }
 
 /**

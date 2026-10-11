@@ -1,5 +1,7 @@
 import type { SystemState } from './state.js';
+import type { TraceSink } from './trace.js';
 import type { Seconds } from './units.js';
+import type { LeveledText } from '../knowledge/levels.js';
 
 /**
  * A solver advances one physical domain by `dt`.
@@ -12,7 +14,20 @@ import type { Seconds } from './units.js';
  * Multiple solvers are chained per tick (operator splitting):
  * electrical → thermal (Joule heat) → mechanical …
  */
+export interface StepContext {
+  /** When present, the solver reports which formulas it applied, with what numbers. */
+  readonly trace?: TraceSink;
+}
+
+/** A simplification the model makes — part of every honest explanation. */
+export interface ModelAssumption {
+  readonly id: string;
+  readonly text: LeveledText;
+}
+
 export interface Solver {
   readonly name: string;
-  step(state: SystemState, dt: Seconds): SystemState;
+  /** What this solver deliberately ignores or simplifies. */
+  readonly assumptions?: readonly ModelAssumption[];
+  step(state: SystemState, dt: Seconds, ctx?: StepContext): SystemState;
 }
