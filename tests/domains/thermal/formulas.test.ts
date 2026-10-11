@@ -16,17 +16,17 @@ import { MATERIALS } from '../../../src/domains/thermal/materials.js';
 
 describe('thermal formulas', () => {
   it('Q = m·c·ΔT: heating 1 kg of water by 80 K takes ~335 kJ', () => {
-    expect(heatForTemperatureChange(kilograms(1), MATERIALS.water.specificHeat, 80)).toBeCloseTo(334_880);
+    expect(heatForTemperatureChange(kilograms(1), MATERIALS.water.specificHeat.value, 80)).toBeCloseTo(4181 * 80);
   });
 
   it('Fourier: copper rod 1 cm², 10 cm long', () => {
-    expect(conductionConductance(MATERIALS.copper.conductivity, squareMeters(1e-4), meters(0.1))).toBeCloseTo(0.401);
+    expect(conductionConductance(MATERIALS.copper.conductivity.value, squareMeters(1e-4), meters(0.1))).toBeCloseTo(0.401);
   });
 
   it('heat balance equation', () => {
     const t = equilibriumTemperature([
-      { mass: kilograms(1), specificHeat: MATERIALS.water.specificHeat, temperature: kelvin(300) },
-      { mass: kilograms(1), specificHeat: MATERIALS.water.specificHeat, temperature: kelvin(340) },
+      { mass: kilograms(1), specificHeat: MATERIALS.water.specificHeat.value, temperature: kelvin(300) },
+      { mass: kilograms(1), specificHeat: MATERIALS.water.specificHeat.value, temperature: kelvin(340) },
     ]);
     expect(t).toBeCloseTo(320);
   });

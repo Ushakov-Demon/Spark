@@ -29,14 +29,17 @@ spark/
 │   │       ├── entities.ts    # ThermalBody, Heater, Reservoir + фабрики + type guards
 │   │       ├── links.ts       # ThermalLink, conductionLink (kA/L), convectionLink (hA)
 │   │       ├── formulas.ts    # Q=mcΔT, закон Фурье, Ньютона, уравнение теплового баланса
-│   │       ├── materials.ts   # справочник: c, k, h
+│   │       ├── materials.ts   # справочник c, k, h — каждое значение с источниками
+│   │       ├── catalog.ts     # каталог формул: LaTeX, переменные, класс, пояснение, примеры
 │   │       └── solver.ts      # createThermalSolver(): шаг по времени
 │   │   # далее: electrical/, mechanics/, chemistry/ — по тому же шаблону
+│   ├── knowledge/             # происхождение данных: Source, Citation, SourcedValue, FormulaSpec, verify
 │   ├── scenarios/             # готовые сцены-лабораторки (данные, не код UI)
 │   └── index.ts               # публичный API пакета
 ├── tests/                     # зеркалит src/; тесты против аналитики
 ├── examples/kettle-cli.ts     # консольное демо: `npm run demo`
-└── docs/ARCHITECTURE.md
+├── scripts/knowledge-report.ts # `npm run knowledge:report` — статус достоверности данных
+└── docs/ARCHITECTURE.md, DATA_POLICY.md
 ```
 
 ## Ключевые типы

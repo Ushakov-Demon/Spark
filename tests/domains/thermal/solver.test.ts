@@ -17,6 +17,7 @@ import {
   isHeater,
   isReservoir,
   isThermalBody,
+  MATERIALS,
   newtonCooling,
   reservoir,
   thermalBody,
@@ -66,8 +67,8 @@ describe('thermal solver', () => {
     const s0 = calorimeterScenario();
     const s = sim(0.5).run(s0, seconds(600));
     const theta = equilibriumTemperature([
-      { mass: kilograms(0.5), specificHeat: specificHeat(385), temperature: celsius(100) },
-      { mass: kilograms(0.2), specificHeat: specificHeat(4186), temperature: celsius(20) },
+      { mass: kilograms(0.5), specificHeat: MATERIALS.copper.specificHeat.value, temperature: celsius(100) },
+      { mass: kilograms(0.2), specificHeat: MATERIALS.water.specificHeat.value, temperature: celsius(20) },
     ]);
     expect(tempOf(s, 'copper')).toBeCloseTo(theta, 2);
     expect(tempOf(s, 'water')).toBeCloseTo(theta, 2);

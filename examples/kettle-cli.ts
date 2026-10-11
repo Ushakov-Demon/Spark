@@ -43,6 +43,6 @@ while (toCelsius(water(s).state.temperature) < 100 && s.time < 3600) {
   }
 }
 
-const ideal = heatForTemperatureChange(kilograms(1), MATERIALS.water.specificHeat, 80) / 2000;
+const ideal = heatForTemperatureChange(kilograms(1), MATERIALS.water.specificHeat.value, 80) / 2000;
 console.log(`\nВода закипела за ${s.time.toFixed(1)} с.`);
 console.log(`Теория без потерь (t = c·m·ΔT / P): ${ideal.toFixed(1)} с — разница из-за нагрева ТЭНа и потерь в комнату.`);

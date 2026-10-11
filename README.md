@@ -19,4 +19,4 @@ const sim = createSimulation({ solvers: [createThermalSolver()], fixedDt: second
 const after60s = sim.run(kettleScenario(), seconds(60));
 ```
 
-Архитектура и план — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Архитектура и план — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Откуда берутся данные — [docs/DATA_POLICY.md](docs/DATA_POLICY.md) (`npm run knowledge:report`).
