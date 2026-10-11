@@ -4,3 +4,4 @@ export * from './mixing.js';
 export * from './boil.js';
 export * from './heating-summary.js';
 export * from './thermal-lab.js';
+export * from './lab-debrief.js';

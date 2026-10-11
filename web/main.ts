@@ -30,6 +30,9 @@ import {
   labSetup,
   labStatus,
   labSubject,
+  labDebrief,
+  goalOptions,
+  type LabExpectation,
   labSummary,
   SAMPLE_ID,
   type LabAction,
@@ -111,6 +114,10 @@ let lastPointAt = -Infinity;
 let checkpoint: { t: number; T: number; s: number; m: number } | null = null;
 /** Headline of the finished (or stalled) experiment; re-rendered on language change. */
 let headline: (() => Block[]) | null = null;
+/** Optional prediction or goal: minutes to reach the action's goal. */
+let expectKind: 'none' | 'prediction' | 'goal' = 'none';
+let expectMinutes = 10;
+let goalChoices: ReturnType<typeof goalOptions> | null | 'computing' = null;
 
 const heaterItem = () => (params.heater ? HEATERS[params.heater.id] : undefined);
 const vesselItem = () => VESSELS[params.vessel];
@@ -228,7 +235,60 @@ function setHeadline() {
   const result = session.result(labGoalReached(params, session.state));
   const status = labStatus(params, result, simulation, warnings);
   const p = params;
-  headline = () => labSummary(p, result, status, ctx());
+  const reachedAt = status.kind === 'reached' ? status.at : undefined;
+  const expectation: LabExpectation | undefined = expectKind === 'none' ? undefined : { kind: expectKind, seconds: expectMinutes * 60 };
+  goalChoices = null;
+  // "What to change" needs several re-runs: compute it after the headline is on screen.
+  if (expectation?.kind === 'goal' && (reachedAt === undefined || reachedAt > expectation.seconds * 1.1)) {
+    goalChoices = 'computing';
+    window.setTimeout(() => {
+      goalChoices = goalOptions(p, simulation, expectation.seconds, locale);
+      render();
+      if ($('#report').innerHTML) explain();
+    }, 30);
+  }
+  headline = () => [
+    ...labSummary(p, result, status, ctx()),
+    ...(actionUses(p.action) !== 'cooler' || expectation
+      ? labDebrief({
+          params: p,
+          result,
+          reachedAt,
+          ...(expectation ? { expectation } : {}),
+          ...(Array.isArray(goalChoices) ? { options: goalChoices } : {}),
+          ctx: ctx(),
+        })
+      : []),
+    ...(goalChoices === 'computing' ? [{ kind: 'paragraph' as const, text: t().computing }] : []),
+  ];
+}
+
+// ---------- prediction / goal ----------
+function buildExpect() {
+  const u = t();
+  const box = $('#expect');
+  box.innerHTML = '';
+  const chips = el('div', { className: 'chips' });
+  for (const [k, label] of [['none', u.expectNone], ['prediction', u.expectPrediction], ['goal', u.expectGoal]] as const) {
+    const b = el('button', { type: 'button', className: `chip${expectKind === k ? ' selected' : ''}` }, label);
+    b.setAttribute('aria-pressed', String(expectKind === k));
+    b.onclick = () => {
+      expectKind = k;
+      buildExpect();
+    };
+    chips.append(b);
+  }
+  box.append(chips);
+  if (expectKind !== 'none') {
+    const i = el('input', { type: 'number', value: String(expectMinutes), min: '0.1', max: '1440', step: '0.5', inputMode: 'decimal' });
+    i.onchange = () => {
+      const v = Number(i.value);
+      if (Number.isFinite(v) && v > 0) expectMinutes = v;
+      else i.value = String(expectMinutes);
+    };
+    box.append(el('label', { className: 'mini-field inline' }, i, el('span', {}, u.expectMinutes)));
+  }
+  box.append(el('p', { className: 'muted small' }, u.expectHint));
 }
 
 // ---------- rendering ----------
@@ -316,7 +376,7 @@ function render() {
       .filter((s) => Math.abs(s.energy) > 1)
       .map((s) => {
         const pct = (100 * s.energy) / split.produced;
-        const what = s.role === 'room' ? u.shareRoom : s.role === 'source' ? u.shareSource(label(s.entity)) : u.shareBody(label(s.entity));
+        const what = s.role === 'room' ? u.shareRoom : s.role === 'vapour' ? u.shareVapour : s.role === 'source' ? u.shareSource(label(s.entity)) : u.shareBody(label(s.entity));
         return `<li><span class="bar" style="--w:${Math.max(0, pct).toFixed(1)}%"></span><b>${pct.toFixed(0)} %</b> ${what} <small>(${E(s.energy)})</small></li>`;
       });
     $('#energy').innerHTML = `<h3>${u.energyTitle}</h3><p>${u.produced(E(split.produced))}</p><ul class="shares">${rows.join('')}</ul>`;
@@ -663,6 +723,7 @@ function buildHeader() {
     store.set('locale', locale);
     buildHeader();
     buildShelf();
+    buildExpect();
     render();
     if ($('#report').innerHTML) explain();
   };
@@ -720,5 +781,6 @@ $<HTMLInputElement>('#search').addEventListener('input', (e) => {
 
 buildHeader();
 buildShelf();
+buildExpect();
 newSession();
 requestAnimationFrame(frame);

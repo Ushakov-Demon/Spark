@@ -20,6 +20,12 @@ export interface UiText {
   meltLine: string;
   boilLine: string;
   targetLine: string;
+  expectNone: string;
+  expectPrediction: string;
+  expectGoal: string;
+  expectMinutes: string;
+  expectHint: string;
+  computing: string;
   title: string;
   subtitle: string;
   language: string;
@@ -60,6 +66,7 @@ export interface UiText {
   shareBody(name: string): string;
   shareSource(name: string): string;
   shareRoom: string;
+  shareVapour: string;
   explain: string;
   explainHint: string;
   estimateBadge: string;
@@ -92,6 +99,12 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     meltLine: 'плавлення',
     boilLine: 'кипіння',
     targetLine: 'ціль',
+    expectNone: 'Без прогнозу',
+    expectPrediction: 'Мій прогноз',
+    expectGoal: 'Моя ціль',
+    expectMinutes: 'хвилин до мети',
+    expectHint: 'Спробуй передбачити, скільки часу займе дослід, — або постав ціль. Після досліду буде розбір.',
+    computing: 'Рахую, що можна змінити…',
     title: 'Spark · Лабораторія',
     subtitle: 'Нагрівай і охолоджуй, кип’яти й заморожуй: обери речовину, посуд і прилад — дивись, що відбувається, і дізнайся чому.',
     language: 'Мова',
@@ -132,6 +145,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     shareBody: (n) => `нагріло «${n}»`,
     shareSource: (n) => `залишилось у нагрівачі «${n}»`,
     shareRoom: 'пішло в повітря кімнати',
+    shareVapour: 'забрала пара, що википіла',
     explain: '3. Пояснити, що відбулося',
     explainHint: 'Пояснення будується з того, що рушій справді обчислив у цьому досліді.',
     estimateBadge: 'оцінка',
@@ -162,6 +176,12 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     meltLine: 'melting',
     boilLine: 'boiling',
     targetLine: 'target',
+    expectNone: 'No prediction',
+    expectPrediction: 'My prediction',
+    expectGoal: 'My goal',
+    expectMinutes: 'minutes to the goal',
+    expectHint: 'Try to predict how long the experiment will take — or set a goal. A debrief follows the experiment.',
+    computing: 'Working out what could be changed…',
     title: 'Spark · Lab',
     subtitle: 'Heat and cool, boil and freeze: pick a substance, a vessel and a device — watch what happens and find out why.',
     language: 'Language',
@@ -202,6 +222,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     shareBody: (n) => `warmed "${n}"`,
     shareSource: (n) => `stayed in the heater "${n}"`,
     shareRoom: 'went into the room air',
+    shareVapour: 'carried away by boiled-off vapour',
     explain: '3. Explain what happened',
     explainHint: 'The explanation is built from what the engine actually computed in this experiment.',
     estimateBadge: 'estimate',

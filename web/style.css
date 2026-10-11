@@ -169,3 +169,7 @@ footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 24px; }
 details.more { margin: 8px 0; }
 details.more > summary { cursor: pointer; color: var(--accent); }
 .readout small { color: var(--muted); font-size: 0.78rem; }
+.expect { display: grid; gap: 6px; margin: 12px 0 4px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.expect .inline { display: flex; gap: 8px; align-items: center; }
+.expect input { width: 90px; }
+.summary h4, .messages h4 { margin: 12px 0 4px; }

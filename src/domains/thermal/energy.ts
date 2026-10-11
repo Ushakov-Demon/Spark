@@ -1,10 +1,14 @@
 import type { SystemState } from '../../core/state.js';
-import { isBurner, isHeater, isReservoir, isThermalBody } from './entities.js';
+import { bodyEnergy, isBurner, isHeater, isReservoir, isThermalBody } from './entities.js';
 
 export interface EnergyShare {
   readonly entity: string;
-  /** 'body' — warmed this body; 'source' — stayed in the (hot) heater; 'room' — lost to the surroundings. */
-  readonly role: 'body' | 'source' | 'room';
+  /**
+   * 'body' — stored in this body (warming, melting); 'source' — stayed in the hot heater;
+   * 'room' — absorbed by the surroundings (incl. vapour that evaporated into them);
+   * 'vapour' — carried away by vapour that boiled off.
+   */
+  readonly role: 'body' | 'source' | 'room' | 'vapour';
   readonly energy: number; // J, since `initial`
 }
 
@@ -17,9 +21,8 @@ export interface EnergySplit {
 }
 
 /**
- * "Where did the energy go?" between two states of the same scene: how much
- * each body stored, how much stayed in heaters, how much the room absorbed.
- * Assumes masses did not change (no pouring) — the lab UIs use it for heating.
+ * "Where did the energy go?" between two states of the same scene. Uses the
+ * energy each body stores (latent heat included) and what vapour carried away.
  */
 export function energySplit(initial: SystemState, final: SystemState): EnergySplit {
   let produced = 0;
@@ -29,11 +32,13 @@ export function energySplit(initial: SystemState, final: SystemState): EnergySpl
     if (!e0) continue;
     if (isHeater(e) && isHeater(e0)) {
       produced += e.state.energyDelivered - e0.state.energyDelivered;
-      shares.push({ entity: e.id, role: 'source', energy: e.params.mass * e.params.specificHeat * (e.state.temperature - e0.state.temperature) });
+      shares.push({ entity: e.id, role: 'source', energy: bodyEnergy(e) - bodyEnergy(e0) });
     } else if (isBurner(e) && isBurner(e0)) {
       produced += e.state.energyDelivered - e0.state.energyDelivered;
     } else if (isThermalBody(e) && isThermalBody(e0)) {
-      shares.push({ entity: e.id, role: 'body', energy: e.params.mass * e.params.specificHeat * (e.state.temperature - e0.state.temperature) });
+      shares.push({ entity: e.id, role: 'body', energy: bodyEnergy(e) - bodyEnergy(e0) });
+      const vapour = (e.state.vaporEnergy ?? 0) - (e0.state.vaporEnergy ?? 0);
+      if (vapour !== 0) shares.push({ entity: e.id, role: 'vapour', energy: vapour });
     } else if (isReservoir(e) && isReservoir(e0)) {
       shares.push({ entity: e.id, role: 'room', energy: e.state.heatAbsorbed - e0.state.heatAbsorbed });
     }
