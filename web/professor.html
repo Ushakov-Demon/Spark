@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Професор — ескіз</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; background: #f6f7f9; color: #1c2330; }
+      @media (prefers-color-scheme: dark) { body { background: #11151b; color: #e6eaf0; } .card { background: #1a2029 !important; border-color: #2b3340 !important; } }
+      h1 { font-size: 1.3rem; padding: 16px 16px 0; margin: 0; }
+      p { padding: 0 16px; color: #5b6575; }
+      .grid { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; }
+      .card { background: #fff; border: 1px solid #e2e6ec; border-radius: 14px; padding: 12px; text-align: center; }
+      .card span { display: block; margin-top: 6px; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Професор — ескіз</h1>
+    <p>Чернетка персонажа: розкуйовджене волосся, крейда на окулярах, халат застебнутий не на той ґудзик.</p>
+    <div id="grid" class="grid"></div>
+    <script type="module">
+      import { MOODS, professorSvg } from './professor.ts';
+      const names = { neutral: 'спокійний', thinking: 'думає', happy: 'радіє (вийшло!)', surprised: 'здивований', sooty: 'після вибуху' };
+      document.getElementById('grid').innerHTML = MOODS.map((m) => `<div class="card">${professorSvg(m, 200)}<span>${names[m]}</span></div>`).join('');
+    </script>
+  </body>
+</html>
