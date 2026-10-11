@@ -1,6 +1,7 @@
 import { ZERO_CELSIUS_IN_KELVIN } from '../../core/units.js';
-import { NACL, NACL_EUTECTIC, VANT_HOFF_NACL, fractionFreezingAt, saturationFraction } from '../../substances/nacl.js';
-import { MATERIALS } from './materials.js';
+import { molarMassOf } from '../../components/elements.js';
+import { SODIUM_CHLORIDE } from '../../components/sodium-chloride.js';
+import { WATER } from '../../components/water.js';
 import { saturationPressure } from './evaporation.js';
 
 /**
@@ -16,6 +17,10 @@ import { saturationPressure } from './evaporation.js';
  *
  * Enthalpy is measured from liquid water and solid salt at 0 °C; the heat of
  * dissolution is ignored (small for NaCl).
+ *
+ * Every number comes from the component models (src/components/water.ts,
+ * sodium-chloride.ts): heat capacities, latent heat, molar masses from the
+ * formulas, and the salt's own solute model (solubility and freezing curves).
  */
 export interface MixtureAmounts {
   /** All H₂O in the body (liquid + ice), kg. */
@@ -26,14 +31,16 @@ export interface MixtureAmounts {
   readonly crystals: number;
 }
 
+const SOLUTE = SODIUM_CHLORIDE.inWater.model;
 const T0 = ZERO_CELSIUS_IN_KELVIN;
-const TE = T0 + NACL_EUTECTIC.t;
-const CW = MATERIALS.water.specificHeat.value;
-const CI = MATERIALS.ice.specificHeat.value;
-const CS = NACL.specificHeat.value;
-const LF = 334_000; // J/kg, water (OpenStax, Wikipedia: see the substance catalog)
-const M_WATER = 0.01802;
-const M_SALT = NACL.molarMass.value;
+const TE = T0 + SOLUTE.eutectic.t;
+const CW = WATER.phases.liquid.specificHeat.value;
+const CI = WATER.phases.solid.specificHeat.value;
+const CS = SODIUM_CHLORIDE.phases.solid.specificHeat.value;
+const LF = WATER.melting.latentHeat.value;
+const M_WATER = molarMassOf(WATER.composition);
+const M_SALT = molarMassOf(SODIUM_CHLORIDE.composition);
+const VANT_HOFF = SOLUTE.vantHoff.value;
 const P_ATM = 101_325;
 
 export function mixtureEnthalpy(m: MixtureAmounts, temperature: number): number {
@@ -50,12 +57,12 @@ export function equilibriumAt(water: number, salt: number, temperature: number):
   const t = temperature - T0;
   let ice = 0;
   if (t < 0) {
-    const wf = fractionFreezingAt(t);
+    const wf = SOLUTE.fractionFreezingAt(t);
     const liquidWater = wf > 0 ? (salt * (1 - wf)) / wf : 0;
     if (liquidWater < water) ice = water - liquidWater;
   }
   const liquid = water - ice;
-  const ws = saturationFraction(Math.max(t, 0));
+  const ws = SOLUTE.saturationFraction(Math.max(t, 0));
   let crystals = 0;
   if (liquid <= 0) crystals = salt;
   else if (salt / (liquid + salt) > ws) crystals = salt - (ws / (1 - ws)) * liquid;
@@ -98,7 +105,7 @@ export function decodeMixture(h: number, water: number, salt: number): { tempera
 /** Mole fraction of water in the liquid (dissolved salt counted as ions). */
 export function waterMoleFraction(m: MixtureAmounts): number {
   const nw = (m.water - m.ice) / M_WATER;
-  const ns = ((m.salt - m.crystals) / M_SALT) * VANT_HOFF_NACL.value;
+  const ns = ((m.salt - m.crystals) / M_SALT) * VANT_HOFF;
   return nw <= 0 ? 0 : nw / (nw + ns);
 }
 

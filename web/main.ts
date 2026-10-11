@@ -38,7 +38,8 @@ import {
   type LabAction,
   type LabParams,
 } from '../src/scenarios/index.js';
-import { NACL, SUBSTANCE_CATEGORIES, SUBSTANCES, solutionDensity, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
+import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
+import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { UI } from './ui-text.js';
@@ -311,7 +312,7 @@ function usedVolume(): number {
     if (mix) {
       // Solution + ice + salt crystals, each with its own density.
       const solution = mix.water - mix.ice + mix.salt - mix.crystals;
-      v += (solution / solutionDensity(liquidConcentration(mix)) + mix.ice / 916.7 + mix.crystals / NACL.density.value) * 1000;
+      v += (solution / NACL_SOLUTE.solutionDensity(liquidConcentration(mix)) + mix.ice / COMPONENTS.water.phases.solid!.density!.value + mix.crystals / COMPONENTS['sodium-chloride'].phases.solid!.density!.value) * 1000;
       continue;
     }
     const sub = 'substance' in e.params && e.params.substance ? SUBSTANCES[e.params.substance as SubstanceId] : undefined;

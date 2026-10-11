@@ -1,0 +1,45 @@
+import type { Component } from './types.js';
+
+export const STEEL = {
+  id: 'steel',
+  kind: 'material',
+  group: 'alloy',
+  name: { uk: 'Сталь (вуглецева)', en: 'Carbon steel' },
+  gender: 'f',
+  madeOf: [{ part: { uk: 'залізо', en: 'iron' }, fraction: 0.98 }, { part: { uk: 'вуглець', en: 'carbon' } }],
+  stateAtRoom: 'solid',
+  phases: {
+    solid: {
+      specificHeat: {
+        value: 466,
+        unit: 'J/(kg·K)',
+        conditions: 'solid, 25 °C',
+        verification: 'cross-checked',
+        tolerance: 0.04,
+        citations: [
+          { source: 'wikipedia-specific-heat', locator: 'Steel', conditions: '25 °C', value: 466 },
+          { source: 'openstax-cp2e', locator: 'Table 14.1, Iron, steel', conditions: '25 °C', value: 452 },
+        ],
+      },
+      conductivity: {
+        value: 45,
+        unit: 'W/(m·K)',
+        conditions: 'carbon / mild steel, ≈ 293–298 K',
+        verification: 'single-source',
+        tolerance: 0.2,
+        citations: [
+          { source: 'wikipedia-thermal-conductivity', locator: 'Steel, carbon (range)', conditions: '293–298 K', range: [36, 54] },
+        ],
+        note:
+          'Strongly depends on grade (stainless ≈ 14–24). OpenStax "steel iron = 80" effectively describes iron and is not used. Needs a primary reference (e.g. CRC Handbook) before marking cross-checked.',
+      },
+    },
+  },
+  magnetic: 'ferromagnetic',
+  description: {
+    novice: { uk: 'Сплав заліза з невеликою кількістю вуглецю — міцніший за чисте залізо. З нього роблять каструлі, інструменти, конструкції.', en: "An alloy of iron with a little carbon — stronger than pure iron. Used for pots, tools, structures." },
+    school: { uk: 'Сталь проводить теплоту приблизно в 5 разів гірше за алюміній, зате міцна й не боїться високих температур.', en: "Steel conducts heat about 5 times worse than aluminium, but it is strong and withstands high temperatures." },
+  },
+  media: [],
+  modelNotes: [{ uk: 'Властивості сталі залежать від марки: нержавіюча сталь проводить теплоту в 2–3 рази гірше за вуглецеву, а деякі її марки не магнітні.', en: 'Steel properties depend on the grade: stainless steel conducts heat 2–3 times worse than carbon steel, and some grades are not magnetic.' }],
+} as const satisfies Component;

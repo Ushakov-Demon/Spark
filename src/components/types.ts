@@ -1,0 +1,133 @@
+import type { MediaAsset } from '../equipment/types.js';
+import type { LocalizedText } from '../knowledge/i18n.js';
+import type { LeveledText } from '../knowledge/levels.js';
+import type { SourcedValue } from '../knowledge/types.js';
+import type { ElementSymbol } from './elements.js';
+
+/**
+ * A component — one substance with its own model: what it is made of, how it
+ * behaves in each state of matter, when it melts and boils, how it dissolves,
+ * conducts, burns. Every number carries its sources.
+ *
+ * One component = one file (src/components/<id>.ts). The engine never asks
+ * "is this water?" — it asks the model ("do you boil? at what temperature?
+ * how much of you dissolves in water at 40 °C?"), so a new substance needs a
+ * new file, not changes in the physics. Domains read only the sections they
+ * need: thermal — phases and transitions, electricity — `electrical`,
+ * chemistry — composition and `inWater`.
+ *
+ * Temperatures in data are in °C, as in the sources.
+ */
+export type ComponentKind =
+  /** A chemical element (iron, copper, O₂ as the element's usual form). */
+  | 'element'
+  /** A compound with a fixed formula (water, NaCl, sucrose). */
+  | 'compound'
+  /** A material with a variable composition (steel, glass, wood, sunflower oil, air). */
+  | 'material';
+
+export type Phase = 'solid' | 'liquid' | 'gas';
+
+/** Family for grouping on shelves and in the reference ("acids", "metals"). */
+export type ComponentGroup = 'water' | 'salt' | 'sugar' | 'alcohol' | 'acid' | 'oil' | 'gas' | 'metal' | 'alloy' | 'mineral' | 'material';
+
+/** Properties of one state of matter. */
+export interface PhaseProps {
+  /** Special name of this state ("лід", "сухий лід"), if any. */
+  readonly name?: LocalizedText;
+  readonly density?: SourcedValue; // kg/m³
+  readonly specificHeat?: SourcedValue; // J/(kg·K), at constant pressure
+  readonly conductivity?: SourcedValue; // W/(m·K)
+}
+
+/** Vapour pressure model for evaporation below the boiling point (data, so states stay JSON). */
+export type VapourPressureModel = { readonly kind: 'buck' } | { readonly kind: 'antoine'; readonly A: number; readonly B: number; readonly C: number };
+
+/**
+ * How a substance behaves dissolved in water — the "solute model". Data plus the
+ * substance's own functions where a table is needed (solubility curve, freezing curve).
+ */
+export interface SoluteModel {
+  /** Saturated mass fraction (solute / solution) at t, °C. */
+  saturationFraction(t: number): number;
+  /** Temperature at which ice starts to form in a solution with mass fraction w, °C. */
+  freezingPointOf(w: number): number;
+  /** Inverse: mass fraction of the liquid in equilibrium with ice at t, °C. */
+  fractionFreezingAt(t: number): number;
+  /** Lowest point where solution, ice and solid solute coexist; below it everything is solid. */
+  readonly eutectic: { readonly w: number; readonly t: number };
+  /** Density of the solution with mass fraction w, kg/m³. */
+  solutionDensity(w: number): number;
+  /** Particles per formula unit in solution (NaCl → Na⁺ + Cl⁻ = 2), for Raoult's law. */
+  readonly vantHoff: SourcedValue;
+  /** The tables behind the functions, for explanations. */
+  readonly data: readonly SourcedValue[];
+}
+
+export interface InWater {
+  /** 'miscible' — mixes in any proportion; otherwise grams per 100 g of water at `solubility.conditions`. */
+  readonly solubility: 'miscible' | 'immiscible' | SourcedValue;
+  /** Full model of the solution, when the engine can compute it (freezing, boiling, crystals). */
+  readonly model?: SoluteModel;
+  /** Splits into ions in water (conducts current then). */
+  readonly ions?: readonly string[];
+}
+
+export interface Hazards {
+  /** Catches fire easily (flash point near or below room temperature, or a flammable gas). */
+  readonly flammable?: boolean;
+  readonly corrosive?: boolean;
+  readonly irritant?: boolean;
+  /** Feeds a fire (oxygen). */
+  readonly oxidizer?: boolean;
+  /** Displaces oxygen in closed rooms. */
+  readonly asphyxiant?: boolean;
+  /** Flash point, °C. */
+  readonly flashPoint?: SourcedValue;
+}
+
+export interface Component {
+  readonly id: string;
+  readonly kind: ComponentKind;
+  readonly group: ComponentGroup;
+  readonly name: LocalizedText;
+  /** Grammatical gender of the name in Ukrainian — verbs agree with it. */
+  readonly gender: 'f' | 'm' | 'n';
+  /** Chemical formula for display (H₂O). */
+  readonly formula?: string;
+  /** Atoms per formula unit; molar mass is computed from it with standard atomic weights. */
+  readonly composition?: Readonly<Partial<Record<ElementSymbol, number>>>;
+  /** For materials with a variable composition: main parts, mass fractions (approximate, for explanations). */
+  readonly madeOf?: readonly { readonly part: LocalizedText; readonly fraction?: number }[];
+  /** Wikidata item, e.g. 'Q283'. */
+  readonly wikidata?: string;
+  /** State at room conditions (20 °C, 1 atm). */
+  readonly stateAtRoom: Phase;
+  readonly phases: Readonly<Partial<Record<Phase, PhaseProps>>>;
+  readonly melting?: { readonly point: SourcedValue; readonly latentHeat?: SourcedValue };
+  readonly boiling?: { readonly point: SourcedValue; readonly latentHeat?: SourcedValue };
+  /** Turns straight from solid into gas at 1 atm (dry ice). */
+  readonly sublimation?: { readonly point: SourcedValue };
+  /** Breaks down chemically on heating instead of (or before) melting / boiling. */
+  readonly decomposes?: { readonly point: SourcedValue; readonly into?: LocalizedText };
+  /** Evaporation below the boiling point. */
+  readonly vapour?: {
+    readonly pressure: VapourPressureModel;
+    readonly data: SourcedValue;
+    /** Latent heat at a lower temperature (it grows as temperature falls), °C and J/kg. */
+    readonly latentLow?: { readonly temperature: number; readonly value: SourcedValue };
+  };
+  readonly inWater?: InWater;
+  readonly electrical?: {
+    /** Metals conduct; ionic substances only melted or dissolved; the rest are insulators. */
+    readonly conducts: 'metal' | 'ions-in-solution' | 'insulator';
+    readonly resistivity?: SourcedValue; // Ω·m, solid at 20 °C
+  };
+  readonly magnetic?: 'ferromagnetic' | 'paramagnetic' | 'diamagnetic';
+  readonly hazards?: Hazards;
+  readonly description: LeveledText;
+  readonly safety?: LeveledText;
+  readonly media: readonly MediaAsset[];
+  /** Simplifications of the model for this substance, shown in explanations. */
+  readonly modelNotes?: readonly LocalizedText[];
+}

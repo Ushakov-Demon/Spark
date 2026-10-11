@@ -4,16 +4,20 @@ import type { SourcedValue } from '../knowledge/types.js';
 import type { MediaAsset } from '../equipment/types.js';
 
 /**
- * Substances the experimenter can put into a vessel. Not tied to one physics
- * domain: thermal data today, chemical data later.
+ * A shelf item: what the experimenter can put into a vessel — a component
+ * (src/components) or a recipe of components (src/recipes), seen through the
+ * lab's eyes. Built from them in catalog.ts; holds no numbers of its own.
  *
  * Temperatures in data are in °C (as in the sources); the thermal domain
  * converts them.
  */
-export type SubstanceCategory = 'liquid.water' | 'liquid.alcohol' | 'liquid.oil' | 'liquid.solution' | 'solid.salt';
+export type SubstanceCategory = 'liquid.water' | 'liquid.alcohol' | 'liquid.acid' | 'liquid.oil' | 'liquid.solution' | 'solid.salt';
 
 export interface SubstanceItem {
   readonly id: string;
+  /** Where it comes from: one component, or a recipe of several. */
+  readonly component?: string;
+  readonly recipe?: string;
   readonly category: SubstanceCategory;
   readonly name: LocalizedText;
   /** Grammatical gender of the name in Ukrainian — verbs in sentences agree with it. */

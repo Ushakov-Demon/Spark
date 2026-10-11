@@ -15,6 +15,7 @@ import { decodeEnthalpy, specificEnthalpy } from './phase.js';
 import { substanceThermal } from './substance.js';
 import { SUBSTANCES, type SubstanceId } from '../../substances/catalog.js';
 import type { SubstanceItem } from '../../substances/types.js';
+import { COMPONENTS, type ComponentId } from '../../components/index.js';
 import { specificHeat, squareMeters } from '../../core/units.js';
 import type { AnyConnection } from '../../core/entity.js';
 
@@ -126,8 +127,9 @@ export const setTemperature: CommandHandler<SetTemperatureCommand> = {
   },
 };
 
-/** Liquids that mix into one solution: water, salt solutions and alcohol. Oil does not mix with them. */
-const MISCIBLE = new Set<SubstanceItem['category']>(['liquid.water', 'liquid.solution', 'liquid.alcohol']);
+/** Mixes with water in any proportion — asked from the component model (a recipe is water-based). */
+const mixesWithWater = (s: SubstanceItem): boolean =>
+  s.recipe !== undefined || (s.component !== undefined && COMPONENTS[s.component as ComponentId]?.inWater?.solubility === 'miscible');
 
 export const add: CommandHandler<AddCommand> = {
   type: 'thermal.add',
@@ -211,7 +213,7 @@ export const add: CommandHandler<AddCommand> = {
     }
 
     // Different liquids that would form a solution: properties of mixtures are not modelled.
-    if (!c.frozen && MISCIBLE.has(sub.category) && MISCIBLE.has(targetSub.category)) {
+    if (!c.frozen && mixesWithWater(sub) && mixesWithWater(targetSub)) {
       return err({
         uk: `«${sub.name.uk}» змішується з «${targetSub.name.uk}» в один розчин зі своїми властивостями — даних про такі суміші в нас поки немає.`,
         en: `${sub.name.en} mixes with ${targetSub.name.en} into one solution with its own properties — we have no data on such mixtures yet.`,

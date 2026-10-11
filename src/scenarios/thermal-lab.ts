@@ -14,7 +14,7 @@ import { HEATERS, type HeaterId } from '../equipment/heaters.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
 import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
-import { NACL_EUTECTIC } from '../substances/nacl.js';
+import { NACL_SOLUTE } from '../components/index.js';
 import { mixtureBoilingPoint } from '../domains/thermal/mixture.js';
 import type { SubstanceItem } from '../substances/types.js';
 
@@ -185,8 +185,8 @@ export function labImpossibility(p: LabParams, locale: Locale): LocalizedText | 
       if (!sub.freezing) {
         return both((l) => (l === 'uk' ? `Для речовини «${tr(sub.name, l)}» ми не знайшли даних про застигання, тому модель не може показати замерзання.` : `We found no freezing data for ${name(l)}, so the model cannot show it freezing.`));
       }
-      if (sub.mixture && surroundingTemp >= NACL_EUTECTIC.t && surroundingTemp < sub.freezing.point.value) {
-        const te = NACL_EUTECTIC.t;
+      if (sub.mixture && surroundingTemp >= NACL_SOLUTE.eutectic.t && surroundingTemp < sub.freezing.point.value) {
+        const te = NACL_SOLUTE.eutectic.t;
         return both((l) =>
           l === 'uk'
             ? `${where(l).charAt(0).toUpperCase() + where(l).slice(1)} ${T(surroundingTemp, l)}: лід почне утворюватися, але замерзає лише прісна вода, а розсіл, що лишається, стає дедалі солонішим і замерзає дедалі холодніше. Повністю солона вода замерзає тільки нижче ${T(te, l)}.`

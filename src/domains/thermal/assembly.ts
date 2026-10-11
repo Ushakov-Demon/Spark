@@ -7,7 +7,7 @@ import type { SubstanceItem } from '../../substances/types.js';
 import { substanceThermal } from './substance.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import { burner, heater, mixtureBody, reservoir, thermalBody } from './entities.js';
-import { solutionDensity } from '../../substances/nacl.js';
+import { NACL_SOLUTE } from '../../components/index.js';
 import { convectionLink, supplyLink, thermalLink, wallLink } from './links.js';
 import { CONVECTION, MATERIALS, type MaterialName } from './materials.js';
 
@@ -75,7 +75,7 @@ export function placeVessel(v: VesselPlacement): Piece {
 
   const w = substance?.mixture?.saltFraction;
   // Water + salt: total mass from the solution density, then split into the components.
-  const solutionMass = w === undefined ? 0 : (v.liters / 1000) * solutionDensity(w);
+  const solutionMass = w === undefined ? 0 : (v.liters / 1000) * NACL_SOLUTE.solutionDensity(w);
   const entities: AnyEntity[] = [
     thermalBody({ id: v.id, label, mass: kilograms(mass), specificHeat: material.specificHeat.value, material: v.material, temperature: celsius(v.roomTemp) }),
     w !== undefined ? mixtureBody({

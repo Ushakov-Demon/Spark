@@ -1,0 +1,44 @@
+import type { Component } from './types.js';
+import { cite, sv } from './sourced.js';
+
+/** Cp 87.6 J/(mol·K) ÷ 0.084006 kg/mol. */
+export const SODIUM_BICARBONATE = {
+  id: 'sodium-bicarbonate',
+  kind: 'compound',
+  group: 'salt',
+  name: { uk: 'Харчова сода', en: 'Baking soda' },
+  gender: 'f',
+  formula: 'NaHCO₃',
+  composition: { Na: 1, H: 1, C: 1, O: 3 },
+  wikidata: 'Q179731',
+  stateAtRoom: 'solid',
+  phases: {
+    solid: {
+      density: sv(2200, 'kg/m³', 'solid', 'cross-checked', 0.02, [cite('wikipedia-sodium-bicarbonate', 'Chembox: density 2.20 g/cm³ (CRC)', 'solid', 2200), cite('wikidata', 'Q179731 P2054', 'solid', 2159)]),
+      specificHeat: sv(1043, 'J/(kg·K)', 'solid, 25 °C', 'single-source', 0.01, [cite('wikipedia-sodium-bicarbonate', 'Chembox: heat capacity 87.6 J/(mol·K) ÷ 0.084006 kg/mol', '—', 1042.8)], 'Wikidata has no heat capacity for it; Second source not checked yet.'),
+    },
+  },
+  decomposes: {
+    point: sv(50, '°C', 'starts to decompose', 'single-source', 0.05, [cite('wikipedia-sodium-bicarbonate', 'Chembox: decomposes to sodium carbonate starting at 50 °C', '—', 50)], 'Decomposition is slow at first and speeds up with temperature.'),
+    into: { uk: 'кальциновану соду (Na₂CO₃), воду й вуглекислий газ', en: 'washing soda (Na₂CO₃), water and carbon dioxide' },
+  },
+  inWater: {
+    solubility: sv(9.6, 'g/100 mL water', '20 °C', 'single-source', 0.01, [cite('wikipedia-sodium-bicarbonate', 'Chembox: 96 g/L at 20 °C', '20 °C', 9.6)], 'Wikidata has no solubility value for it; Second source not checked yet.'),
+    ions: ['Na⁺', 'HCO₃⁻'],
+  },
+  electrical: { conducts: 'ions-in-solution' },
+  hazards: { irritant: true },
+  description: {
+    novice: {
+      uk: 'Білий порошок, який є на кожній кухні. З оцтом бурхливо шипить — виділяється вуглекислий газ. Тому сода «розпушує» тісто.',
+      en: 'A white powder found in every kitchen. With vinegar it fizzes violently, giving off carbon dioxide. That is why soda makes dough rise.',
+    },
+    school: {
+      uk: 'Гідрокарбонат натрію NaHCO₃ уже від ≈ 50 °C починає розкладатися на Na₂CO₃, воду й CO₂. З кислотами (оцтова, лимонна) реагує, виділяючи CO₂.',
+      en: 'Sodium hydrogen carbonate NaHCO₃ starts to decompose from ≈ 50 °C into Na₂CO₃, water and CO₂. With acids (acetic, citric) it reacts, releasing CO₂.',
+    },
+  },
+  safety: { school: { uk: 'Подразнює очі — не допускай потрапляння в очі.', en: 'Irritates the eyes — keep it out of your eyes.' } },
+  media: [],
+  modelNotes: [{ uk: 'Хімічні реакції (сода + оцет) рушій поки не розраховує.', en: 'The engine does not compute chemical reactions (soda + vinegar) yet.' }],
+} as const satisfies Component;
