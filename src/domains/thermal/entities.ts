@@ -3,7 +3,12 @@ import { entityId } from '../../core/ids.js';
 import { ORIGIN, type Vec2 } from '../../core/math/vec2.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import { specificEnthalpy, type PhaseParams } from './phase.js';
+import { kilograms } from '../../core/units.js';
+import { MATERIALS } from './materials.js';
+
+const MATERIALS_WATER_C = MATERIALS.water.specificHeat.value;
 import type { EvaporationParams } from './evaporation.js';
+import { equilibriumAt, mixtureEnthalpy, type MixtureAmounts } from './mixture.js';
 import { joules, type Joules, type Kelvin, type Kilograms, type SpecificHeat, type Watts } from '../../core/units.js';
 
 /**
@@ -26,6 +31,8 @@ export interface ThermalBodyParams {
   readonly substance?: string;
   /** Evaporation from its free surface (liquids). */
   readonly evaporation?: EvaporationParams;
+  /** Composition model: 'nacl-water' — water + table salt with a changing composition (see mixture.ts). */
+  readonly mixture?: 'nacl-water';
   /** Key in MATERIALS the values came from — lets explanations cite the data source. */
   readonly material?: string;
 }
@@ -39,6 +46,8 @@ export interface ThermalBodyState {
   readonly evaporated?: number;
   /** Energy the vapour carried away, J (relative to the same 0 °C reference). */
   readonly vaporEnergy?: number;
+  /** Composition of a mixture body (water, salt, ice, crystals in kg). */
+  readonly mixture?: MixtureAmounts;
 }
 export type ThermalBody = Device<'thermal.body', ThermalBodyParams, ThermalBodyState, ThermalPortName>;
 
@@ -112,6 +121,28 @@ function assertTemperature(t: Kelvin): void {
   if (!(t >= 0) || !Number.isFinite(t)) throw new RangeError(`Temperature must be ≥ 0 K, got ${t}`);
 }
 
+/** A body of water + salt; ice and crystals follow from the temperature. */
+export function mixtureBody(o: Common & { readonly water: number; readonly salt: number; readonly temperature: Kelvin; readonly substance?: string; readonly evaporation?: EvaporationParams }): ThermalBody {
+  if (!(o.water >= 0 && o.salt >= 0 && o.water + o.salt > 0)) throw new RangeError('A mixture needs some water or salt');
+  assertTemperature(o.temperature);
+  const amounts = equilibriumAt(o.water, o.salt, o.temperature);
+  return {
+    id: entityId(o.id),
+    kind: 'thermal.body',
+    ...withLabel(o.label),
+    transform: transform(o.position),
+    ports: SURFACE,
+    params: {
+      mass: kilograms(o.water + o.salt),
+      specificHeat: MATERIALS_WATER_C,
+      mixture: 'nacl-water',
+      ...(o.substance === undefined ? {} : { substance: o.substance }),
+      ...(o.evaporation === undefined ? {} : { evaporation: o.evaporation }),
+    },
+    state: { temperature: o.temperature, mixture: amounts, solidFraction: o.water > 0 ? amounts.ice / o.water : 0 },
+  };
+}
+
 export function thermalBody(
   o: Common & ThermalBodyParams & { readonly temperature: Kelvin; readonly solidFraction?: number },
 ): ThermalBody {
@@ -140,12 +171,16 @@ export function thermalBody(
 }
 
 /** Current mass of a body (what has not boiled away). */
-export const bodyMass = (e: ThermalBody | Heater): number =>
-  e.params.mass - (('boiledOff' in e.state ? e.state.boiledOff : 0) ?? 0) - (('evaporated' in e.state ? e.state.evaporated : 0) ?? 0);
+export const bodyMass = (e: ThermalBody | Heater): number => {
+  if ('mixture' in e.state && e.state.mixture) return e.state.mixture.water + e.state.mixture.salt;
+  return e.params.mass - (('boiledOff' in e.state ? e.state.boiledOff : 0) ?? 0) - (('evaporated' in e.state ? e.state.evaporated : 0) ?? 0);
+};
 
 /** Energy stored in a body, J, relative to liquid at 0 °C (latent heat included). */
 export const bodyEnergy = (e: ThermalBody | Heater): number =>
-  bodyMass(e) * specificEnthalpy(e.state.temperature, ('solidFraction' in e.state ? e.state.solidFraction : 0) ?? 0, e.params.specificHeat, 'phase' in e.params ? e.params.phase : undefined);
+  'mixture' in e.state && e.state.mixture
+    ? mixtureEnthalpy(e.state.mixture, e.state.temperature)
+    : bodyMass(e) * specificEnthalpy(e.state.temperature, ('solidFraction' in e.state ? e.state.solidFraction : 0) ?? 0, e.params.specificHeat, 'phase' in e.params ? e.params.phase : undefined);
 
 export function heater(
   o: Common & ThermalBodyParams & { readonly power: Watts; readonly on?: boolean; readonly device?: string; readonly temperature: Kelvin },

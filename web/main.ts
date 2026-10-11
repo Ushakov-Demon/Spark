@@ -1,6 +1,6 @@
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
-import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, THERMAL_COMMANDS, THERMAL_KNOWLEDGE, type ThermalCommand } from '../src/domains/thermal/index.js';
+import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, THERMAL_COMMANDS, THERMAL_KNOWLEDGE, type ThermalCommand } from '../src/domains/thermal/index.js';
 import {
   childrenOf,
   COOLERS,
@@ -38,7 +38,7 @@ import {
   type LabAction,
   type LabParams,
 } from '../src/scenarios/index.js';
-import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
+import { NACL, SUBSTANCE_CATEGORIES, SUBSTANCES, solutionDensity, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { UI } from './ui-text.js';
@@ -307,6 +307,13 @@ function usedVolume(): number {
   let v = 0;
   for (const e of Object.values(session.state.entities)) {
     if (!isThermalBody(e) || !(e.id === SAMPLE_ID || e.id.startsWith(`${SAMPLE_ID}+`))) continue;
+    const mix = e.state.mixture;
+    if (mix) {
+      // Solution + ice + salt crystals, each with its own density.
+      const solution = mix.water - mix.ice + mix.salt - mix.crystals;
+      v += (solution / solutionDensity(liquidConcentration(mix)) + mix.ice / 916.7 + mix.crystals / NACL.density.value) * 1000;
+      continue;
+    }
     const sub = 'substance' in e.params && e.params.substance ? SUBSTANCES[e.params.substance as SubstanceId] : undefined;
     const density = sub ? ((e.state.solidFraction ?? 0) >= 1 ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value) : 1000;
     v += (bodyMass(e) / density) * 1000;
@@ -335,6 +342,7 @@ function buildAdd() {
   };
   const state = el('div', { className: 'chips' });
   for (const [frozen, label] of [[false, u.addLiquid], [true, u.addFrozen]] as const) {
+    if (sub.category.startsWith('solid.')) break;
     if (frozen && !canFreezeHere(sub)) continue;
     const b = el('button', { type: 'button', className: `chip${addFrozen === frozen ? ' selected' : ''}` }, frozen && sub.solidName ? `${label} (${tr(sub.solidName, locale).toLowerCase()})` : label);
     b.onclick = () => {
@@ -420,7 +428,7 @@ function render() {
   $('#explain-hint').textContent = u.explainHint;
   $('#footer').textContent = u.footer;
 
-  $('#setup-line').textContent = labSubject(params, locale);
+  $('#setup-line').textContent = labSubject(params, locale, session.state);
   const sub = substance();
   const b = sample();
   const C = (k: number | undefined) => (k === undefined ? '—' : formatQuantity(k, 'K', { locale, level: 'school' }));
@@ -428,7 +436,11 @@ function render() {
     if (!b) return '—';
     const parts: string[] = [];
     const s = b.state.solidFraction ?? 0;
-    parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
+    const mix = b.state.mixture;
+    if (mix && mix.water > 1e-9) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
+    else if (!mix) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
+    if (mix && s < 1 && mix.water - mix.ice > 1e-9) parts.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
+    if (mix && mix.crystals > 1e-6) parts.push(u.crystals(formatQuantity(mix.crystals, 'kg', { locale, level: 'school' })));
     for (const e of Object.values(session.state.entities)) {
       if (isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`) && e.label) parts.push(u.addedState(tr(e.label, locale), Math.round((e.state.solidFraction ?? 0) * 100)));
     }
@@ -437,7 +449,7 @@ function render() {
     return parts.join(', ');
   })();
   $('#r-time').innerHTML = `<span>${u.time}</span><strong>${formatDuration(Math.floor(session.state.time), locale)}</strong>`;
-  $('#r-water').innerHTML = `<span>${tr(sub.name, locale)}</span><strong>${C(b?.state.temperature)}</strong><small>${stateText}</small>`;
+  $('#r-water').innerHTML = `<span>${tr(b?.state.mixture && b.label ? b.label : sub.name, locale)}</span><strong>${C(b?.state.temperature)}</strong><small>${stateText}</small>`;
   $('#r-pot').innerHTML = `<span>${u.potTemp}</span><strong>${C(temperature(LAB_VESSEL_ID))}</strong>`;
   if (params.heater) {
     const src = session.state.entities[entityId(LAB_HEATER_ID)];
@@ -506,7 +518,7 @@ function render() {
   // Chart with the phase temperatures of this substance.
   // Only the temperatures that matter for this action, so the interesting part is not squeezed.
   const markers: { v: number; label: string }[] = [];
-  const heating = params.action === 'heat-to' || params.action === 'boil';
+  const heating = params.action === 'heat-to' || params.action === 'boil' || params.action === 'evaporate';
   const cooling = params.action === 'cool-to' || params.action === 'freeze';
   if (sub.freezing && (!heating || params.startTemp <= sub.freezing.point.value)) markers.push({ v: sub.freezing.point.value, label: `${u.meltLine} ${sub.freezing.point.value} °C` });
   if (sub.boiling && !cooling && params.action !== 'melt') markers.push({ v: sub.boiling.point.value, label: `${u.boilLine} ${sub.boiling.point.value} °C` });
@@ -628,7 +640,7 @@ function buildShelf() {
     u.substance,
     tr(sub.name, locale),
     ...groupList(
-      SUBSTANCE_CATEGORIES.map((c) => ({
+      SUBSTANCE_CATEGORIES.filter((c) => c.id.startsWith('liquid.')).map((c) => ({
         label: tr(c.name, locale),
         items: Object.values(SUBSTANCES)
           .filter((x) => x.category === c.id && matches(x.name))
@@ -805,7 +817,7 @@ function defaultStart(action: LabAction, sub: SubstanceItem): number {
 function setAction(a: LabAction) {
   const uses = actionUses(a);
   // Freezing and cooling take hours of model time: start faster so the result comes in a minute or two.
-  speed = a === 'heat-to' || a === 'boil' ? 60 : 600;
+  speed = a === 'heat-to' || a === 'boil' || a === 'evaporate' ? 60 : 600;
   $<HTMLSelectElement>('#speed').value = String(speed);
   let next: LabParams = { ...params, action: a, startTemp: defaultStart(a, substance()) };
   if (a === 'heat-to') next = { ...next, target: 60 };

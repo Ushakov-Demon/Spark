@@ -1,8 +1,13 @@
 import type { Citation, SourcedValue, Verification } from '../knowledge/types.js';
 import { MATERIALS } from '../domains/thermal/materials.js';
+import { mixtureBoilingPoint } from '../domains/thermal/mixture.js';
+import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import type { SubstanceItem } from './types.js';
+import { NACL, NACL_DENSITY, NACL_FREEZING, SEAWATER_SALINITY, freezingPointOf, solutionDensity } from './nacl.js';
+import type { LocalizedText } from '../knowledge/i18n.js';
+import type { LeveledText } from '../knowledge/levels.js';
 
-const sv = (value: number, unit: string, conditions: string, verification: Verification, tolerance: number, citations: Citation[], note?: string): SourcedValue => ({
+const sv = (value: number, unit: string, conditions: string, verification: Verification, tolerance: number, citations: readonly Citation[], note?: string): SourcedValue => ({
   value,
   unit,
   conditions,
@@ -22,6 +27,49 @@ const WATER_LV = sv(2_256_000, 'J/kg', 'at 100 °C, 1 atm', 'cross-checked', 0.0
   { source: 'openstax-cp2e-latent', locator: 'Table 14.2, Water', conditions: '100 °C, 1 atm', value: 2_256_000 },
   { source: 'wikidata', locator: 'Q283 molar enthalpy of vaporization 40.656 kJ/mol at 373.15 K ÷ 18.015 g/mol', conditions: '373.15 K', value: 2_256_800 },
 ]);
+
+const WATER_VAPOR = {
+  molarMass: sv(0.01802, 'kg/mol', 'H₂O', 'single-source', 0.001, [{ source: 'wikidata', locator: 'Q283 mass (P2067)', conditions: '—', value: 0.01802 }]),
+  pressure: { kind: 'buck' },
+  pressureData: sv(101.3, 'kPa', 'Buck equation; value at 100 °C', 'single-source', 0.001, [{ source: 'wikipedia-vapour-pressure-water', locator: 'Buck equation; table 101.32 kPa at 100 °C', conditions: '0–100 °C', value: 101.32 }], 'Buck equation agrees with the table within 0.04 % over 0–100 °C.'),
+  latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [{ source: 'openstax-cp2e-latent', locator: 'Table 14.2 footnote: Lv at 37.0 °C', conditions: '37 °C', value: 2_430_000 }]) },
+} as const satisfies SubstanceItem['vapor'];
+
+/**
+ * Water + table salt at mass fraction w: a recipe, not a substance of its own. The
+ * numbers below are for the shelf card; the experiment computes everything from the
+ * composition (mixture model).
+ */
+function brine(id: string, w: number, t: { name: LocalizedText; gender: SubstanceItem['gender']; description: LeveledText; notes?: LocalizedText[] }): SubstanceItem {
+  const pct = `${Math.round(w * 1000) / 10} % NaCl`;
+  const fromModel = (value: number, unit: string, conditions: string, note: string): SourcedValue =>
+    sv(value, unit, conditions, 'estimate', 0.05, [{ source: 'spark', locator: 'mixture model', conditions: 'computed from water + NaCl data', range: [value - Math.abs(value) * 0.05, value + Math.abs(value) * 0.05] }], note);
+  return {
+    id,
+    category: 'liquid.solution',
+    name: t.name,
+    gender: t.gender,
+    description: t.description,
+    media: [],
+    mixture: { saltFraction: w },
+    liquid: {
+      // Weighted by mass: water + solid salt (the heat of dissolution and non-ideal mixing ignored).
+      specificHeat: fromModel(Math.round((1 - w) * MATERIALS.water.specificHeat.value + w * NACL.specificHeat.value), 'J/(kg·K)', pct, 'Mass-weighted average of water and salt; real brine is a few per cent lower.'),
+      density: sv(Math.round(solutionDensity(w)), 'kg/m³', pct, 'single-source', 0.01, NACL_DENSITY.data.citations, 'Interpolated in the table.'),
+    },
+    freezing: {
+      point: sv(Math.round(freezingPointOf(w) * 100) / 100, '°C', `${pct}: ice starts to form`, 'single-source', 0.05, NACL_FREEZING.data.citations, 'Ice starts to form here; the rest freezes gradually down to −21.1 °C.'),
+      latentHeat: WATER_LF,
+      solidSpecificHeat: MATERIALS.ice.specificHeat,
+    },
+    vapor: WATER_VAPOR,
+    boiling: {
+      point: fromModel(Math.round((mixtureBoilingPoint({ water: 1 - w, salt: w, ice: 0, crystals: 0 }) - ZERO_CELSIUS_IN_KELVIN) * 10) / 10, '°C', `${pct}, 1 atm, at the start`, "Raoult's law with full dissociation; rises as water boils away."),
+      latentHeat: WATER_LV,
+    },
+    ...(t.notes ? { modelNotes: t.notes } : {}),
+  };
+}
 
 /** Liquids for the heating/cooling lab. Order = order in the UI. */
 const LIST = {
@@ -66,9 +114,27 @@ const LIST = {
       latentHeat: WATER_LV,
     },
   },
-  'salt-water-10': {
-    id: 'salt-water-10',
-    category: 'liquid.solution',
+  'sea-water': brine('sea-water', SEAWATER_SALINITY.value, {
+    name: { uk: 'Морська вода', en: 'Sea water' },
+    gender: 'f',
+    description: {
+      novice: {
+        uk: 'Вода з розчиненою сіллю — приблизно 35 г солі на кожен кілограм. Її можна «зробити» самому: дистильована вода + кухонна сіль. А якщо випарити воду — сіль залишиться.',
+        en: 'Water with salt dissolved in it — about 35 g per kilogram. You can "make" it yourself: distilled water + table salt. Boil the water away and the salt stays behind.',
+      },
+      school: {
+        uk: 'Солоність океану в середньому 3,5 %. Сіль знижує тиск пари води, тому морська вода кипить трохи вище за 100 °C і замерзає близько −2 °C, причому поступово: спершу вимерзає прісний лід, а розсіл, що лишається, стає солонішим.',
+        en: 'Ocean salinity averages 3.5 %. Salt lowers the vapour pressure of water, so sea water boils a little above 100 °C and freezes at about −2 °C — gradually: fresh ice freezes out first and the remaining brine gets saltier.',
+      },
+    },
+    notes: [
+      {
+        uk: 'Справжня морська сіль — це не лише NaCl (≈ 86 % іонів Na⁺ і Cl⁻, решта — магній, сульфати тощо). У моделі вся сіль вважається кухонною.',
+        en: 'Real sea salt is not only NaCl (≈ 86 % Na⁺ and Cl⁻ ions, the rest magnesium, sulfates, etc.). The model treats all of it as table salt.',
+      },
+    ],
+  }),
+  'salt-water-10': brine('salt-water-10', 0.1, {
     name: { uk: 'Соляний розчин 10 %', en: 'Salt water 10 %' },
     gender: 'm',
     description: {
@@ -77,80 +143,43 @@ const LIST = {
         en: 'Water with table salt dissolved in it (10 g of salt per 100 g of solution). Salt water freezes at a lower temperature than fresh water — that is why roads are salted in winter.',
       },
       school: {
-        uk: 'Розчин NaCl 10 % замерзає приблизно при −6,6 °C. Що більше солі, то нижча температура замерзання — аж до −21,1 °C при 23,3 % солі.',
-        en: 'A 10 % NaCl solution freezes at about −6.6 °C. The more salt, the lower the freezing point — down to −21.1 °C at 23.3 % salt.',
+        uk: 'Розчин NaCl 10 % починає замерзати приблизно при −6,6 °C. Що більше солі, то нижча температура замерзання — аж до −21,1 °C при 23,3 % солі: нижче цієї температури розсіл замерзає повністю.',
+        en: 'A 10 % NaCl solution starts to freeze at about −6.6 °C. The more salt, the lower the freezing point — down to −21.1 °C at 23.3 % salt: below that the brine freezes completely.',
       },
     },
-    media: [],
-    liquid: {
-      specificHeat: estimate(3700, 'J/(kg·K)', '10 % NaCl, room temperature', 3500, 3900, 'No source with numbers found; lower than pure water because salt has a low specific heat.'),
-      density: sv(1074, 'kg/m³', '10 % NaCl, 60 °F (15.6 °C)', 'single-source', 0.01, [{ source: 'texasbrine-nacl', locator: '10.0 % row, specific gravity 1.074', conditions: '60 °F', value: 1074 }]),
-    },
-    freezing: {
-      point: sv(-6.6, '°C', '10 % NaCl', 'single-source', 0.05, [{ source: 'texasbrine-nacl', locator: '10.0 % row: 20.2 °F', conditions: 'freezing point', value: -6.56 }], 'Consistent with the eutectic −21.1 °C at 23.3 % (Wikipedia, Brine).'),
-      latentHeat: estimate(300_600, 'J/kg', 'ice freezing out of a 10 % solution', 280_000, 320_000, 'Estimate: latent heat of the water part (0.9 × 334 kJ/kg).'),
-      solidSpecificHeat: estimate(2090, 'J/(kg·K)', 'frozen brine ≈ ice', 1800, 2300, 'Estimate: frozen brine is mostly ice.'),
-    },
-    vapor: {
-      // The water in the solution evaporates; salt lowers the vapour pressure a little (not modelled).
-      molarMass: sv(0.01802, 'kg/mol', 'H₂O', 'single-source', 0.001, [{ source: 'wikidata', locator: 'Q283 mass (P2067)', conditions: '—', value: 0.01802 }]),
-      pressure: { kind: 'buck' },
-      pressureData: sv(101.3, 'kPa', 'Buck equation; value at 100 °C', 'single-source', 0.001, [{ source: 'wikipedia-vapour-pressure-water', locator: 'Buck equation; table 101.32 kPa at 100 °C', conditions: '0–100 °C', value: 101.32 }], 'Buck equation agrees with the table within 0.04 % over 0–100 °C.'),
-      latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [{ source: 'openstax-cp2e-latent', locator: 'Table 14.2 footnote: Lv at 37.0 °C', conditions: '37 °C', value: 2_430_000 }]) },
-    },
-    boiling: {
-      point: estimate(101.8, '°C', '10 % NaCl, 1 atm', 101, 102.5, 'Estimate by boiling-point elevation (Raoult); no direct measurement found.'),
-      latentHeat: WATER_LV,
-    },
-    modelNotes: [
-      {
-        uk: 'Насправді солоний розчин замерзає поступово: спершу вимерзає лід, а залишок стає солонішим і замерзає дедалі холодніше. У моделі він замерзає при одній температурі.',
-        en: 'In reality brine freezes gradually: ice freezes out first and the rest gets saltier and freezes ever colder. In the model it freezes at one temperature.',
-      },
-    ],
-  },
-  'salt-water-20': {
-    id: 'salt-water-20',
-    category: 'liquid.solution',
+  }),
+  'salt-water-20': brine('salt-water-20', 0.2, {
     name: { uk: 'Соляний розчин 20 %', en: 'Salt water 20 %' },
     gender: 'm',
     description: {
       novice: {
-        uk: 'Дуже солона вода (20 г солі на 100 г розчину). Замерзає лише приблизно при −16 °C — звичайна морозилка (−18 °C) ледве з цим справляється.',
-        en: 'Very salty water (20 g of salt per 100 g of solution). It freezes only at about −16 °C — an ordinary −18 °C freezer barely manages it.',
+        uk: 'Дуже солона вода (20 г солі на 100 г розчину). Починає замерзати лише приблизно при −16 °C, а повністю замерзає тільки нижче −21 °C — звичайна морозилка (−18 °C) заморозить лише частину.',
+        en: 'Very salty water (20 g of salt per 100 g of solution). It starts to freeze only at about −16 °C and freezes completely only below −21 °C — an ordinary −18 °C freezer freezes just part of it.',
       },
       school: {
-        uk: 'Розчин NaCl 20 % замерзає приблизно при −16,4 °C — лише трохи вище за температуру звичайної морозилки.',
-        en: 'A 20 % NaCl solution freezes at about −16.4 °C — just a little above the temperature of an ordinary freezer.',
+        uk: 'Розчин NaCl 20 % починає замерзати приблизно при −16,4 °C. Що більше льоду вимерзло, то солоніший розсіл і то холодніше треба, аж до −21,1 °C.',
+        en: 'A 20 % NaCl solution starts to freeze at about −16.4 °C. The more ice has frozen out, the saltier the brine and the colder it takes, down to −21.1 °C.',
+      },
+    },
+  }),
+  'table-salt': {
+    id: 'table-salt',
+    category: 'solid.salt',
+    name: { uk: 'Кухонна сіль', en: 'Table salt' },
+    gender: 'f',
+    description: {
+      novice: {
+        uk: 'Хлорид натрію (NaCl) — звичайна сіль. Добре розчиняється у воді: у 100 г води — до ≈ 36 г. Якщо солі більше, решта лежить на дні кристалами.',
+        en: 'Sodium chloride (NaCl) — ordinary salt. It dissolves well in water: up to ≈ 36 g in 100 g of water. Any more stays on the bottom as crystals.',
+      },
+      school: {
+        uk: 'Розчинність NaCl майже не залежить від температури: ≈ 35,7 г на 100 г води при 0 °C і ≈ 39 г при 100 °C. Тому сіль зручно добувати випарюванням, а не охолодженням.',
+        en: 'The solubility of NaCl barely depends on temperature: ≈ 35.7 g per 100 g of water at 0 °C and ≈ 39 g at 100 °C. So salt is obtained by evaporation rather than by cooling.',
       },
     },
     media: [],
-    liquid: {
-      specificHeat: estimate(3400, 'J/(kg·K)', '20 % NaCl, room temperature', 3200, 3600, 'No source with numbers found.'),
-      density: sv(1151, 'kg/m³', '20 % NaCl, 60 °F', 'single-source', 0.01, [{ source: 'texasbrine-nacl', locator: '20.0 % row, specific gravity 1.151', conditions: '60 °F', value: 1151 }]),
-    },
-    freezing: {
-      point: sv(-16.4, '°C', '20 % NaCl', 'single-source', 0.05, [{ source: 'texasbrine-nacl', locator: '20.0 % row: 2.4 °F', conditions: 'freezing point', value: -16.44 }]),
-      latentHeat: estimate(267_200, 'J/kg', 'ice freezing out of a 20 % solution', 240_000, 290_000, 'Estimate: 0.8 × 334 kJ/kg.'),
-      solidSpecificHeat: estimate(2090, 'J/(kg·K)', 'frozen brine ≈ ice', 1800, 2300, 'Estimate.'),
-    },
-    vapor: {
-      // The water in the solution evaporates; salt lowers the vapour pressure a little (not modelled).
-      molarMass: sv(0.01802, 'kg/mol', 'H₂O', 'single-source', 0.001, [{ source: 'wikidata', locator: 'Q283 mass (P2067)', conditions: '—', value: 0.01802 }]),
-      pressure: { kind: 'buck' },
-      pressureData: sv(101.3, 'kPa', 'Buck equation; value at 100 °C', 'single-source', 0.001, [{ source: 'wikipedia-vapour-pressure-water', locator: 'Buck equation; table 101.32 kPa at 100 °C', conditions: '0–100 °C', value: 101.32 }], 'Buck equation agrees with the table within 0.04 % over 0–100 °C.'),
-      latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [{ source: 'openstax-cp2e-latent', locator: 'Table 14.2 footnote: Lv at 37.0 °C', conditions: '37 °C', value: 2_430_000 }]) },
-    },
-    boiling: {
-      point: estimate(104, '°C', '20 % NaCl, 1 atm', 103, 105, 'Estimate by boiling-point elevation; no direct measurement found.'),
-      latentHeat: WATER_LV,
-    },
-    modelNotes: [
-      {
-        uk: 'Насправді солоний розчин замерзає поступово; у моделі — при одній температурі.',
-        en: 'In reality brine freezes gradually; in the model at one temperature.',
-      },
-    ],
+    mixture: { saltFraction: 1 },
+    liquid: { specificHeat: NACL.specificHeat, density: NACL.density },
   },
   ethanol: {
     id: 'ethanol',
@@ -248,4 +277,5 @@ export const SUBSTANCE_CATEGORIES: readonly { readonly id: SubstanceItem['catego
   { id: 'liquid.solution', name: { uk: 'Розчини', en: 'Solutions' } },
   { id: 'liquid.alcohol', name: { uk: 'Спирти', en: 'Alcohols' } },
   { id: 'liquid.oil', name: { uk: 'Олії', en: 'Oils' } },
+  { id: 'solid.salt', name: { uk: 'Солі', en: 'Salts' } },
 ];

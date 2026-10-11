@@ -257,6 +257,28 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-11',
   }),
+  'wikipedia-sodium-chloride': source({
+    id: 'wikipedia-sodium-chloride',
+    title: 'Wikipedia, Sodium chloride (infobox): M = 58.44 g/mol, ρ = 2.17 g/cm³, mp 800.7 °C, C = 50.5 J/(K·mol), solubility 360 g/kg at 25 °C; saturated 26.4 w% at 20 °C',
+    url: 'https://en.wikipedia.org/wiki/Sodium_chloride',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
+  }),
+  'wikipedia-solubility-table': source({
+    id: 'wikipedia-solubility-table',
+    title: 'Wikipedia, Solubility table: NaCl 35.65…38.99 per 100 of water at 0…100 °C',
+    url: 'https://en.wikipedia.org/wiki/Solubility_table',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
+    caveats: 'Table header: g per 100 mL of water (≈ 100 g for water); cross-checked: 35.89 at 20 °C ↔ 26.4 w% saturated (Sodium chloride article).',
+  }),
+  'wikipedia-seawater': source({
+    id: 'wikipedia-seawater',
+    title: 'Wikipedia, Seawater: average salinity ≈ 3.5 %; Na⁺ + Cl⁻ ≈ 86 % of dissolved salts by mass; freezes at about −2 °C',
+    url: 'https://en.wikipedia.org/wiki/Seawater',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-11',
+  }),
   spark: source({
     id: 'spark',
     title: 'Spark team (original text)',

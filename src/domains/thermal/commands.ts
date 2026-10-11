@@ -7,7 +7,8 @@ import { kelvin, kilograms, type Kelvin, type Kilograms, type Watts } from '../.
 import { isBurner, isHeater, isThermalBody, type Burner, type Heater, type ThermalBody } from './entities.js';
 import { equilibriumTemperature } from './formulas.js';
 import { ENERGY_REFERENCE_TEMPERATURE } from './solver.js';
-import { bodyEnergy, bodyMass, thermalBody } from './entities.js';
+import { bodyEnergy, bodyMass, mixtureBody, thermalBody } from './entities.js';
+import { decodeMixture, equilibriumAt, mixtureEnthalpy } from './mixture.js';
 import { convectionLink } from './links.js';
 import { CONVECTION } from './materials.js';
 import { decodeEnthalpy, specificEnthalpy } from './phase.js';
@@ -145,6 +146,43 @@ export const add: CommandHandler<AddCommand> = {
         en: tm === undefined ? `No solid-state data for ${sub.name.en}` : `A frozen portion must be colder than ${Math.round(tm - ENERGY_REFERENCE_TEMPERATURE)} °C`,
       });
     }
+    // Water, salt and salt solutions all merge into one water + salt body: the composition
+    // changes, and everything else (freezing, boiling, crystals) follows from it.
+    const isWater = (s: SubstanceItem) => s.id === 'water' || s.mixture !== undefined;
+    const targetMix = 'mixture' in target.state ? target.state.mixture : undefined;
+    if (!c.frozen && isWater(sub) && (targetMix || targetSub.id === 'water') && (targetMix || sub.mixture)) {
+      const w = sub.mixture?.saltFraction ?? 0;
+      const added = equilibriumAt(c.mass * (1 - w), c.mass * w, c.temperature);
+      const externalMix = mixtureEnthalpy(added, c.temperature);
+      const water = (targetMix ? targetMix.water : bodyMass(target)) + added.water;
+      const salt = (targetMix ? targetMix.salt : 0) + added.salt;
+      const energy = bodyEnergy(target) + externalMix;
+      const d = decodeMixture(energy, water, salt);
+      const base = mixtureBody({
+        id: target.id,
+        label: targetMix ? (target.label ?? targetSub.name) : { uk: 'Розчин солі', en: 'Salt solution' },
+        water,
+        salt,
+        temperature: kelvin(d.temperature),
+        substance: targetSub.id,
+        ...(target.params.evaporation ? { evaporation: target.params.evaporation } : {}),
+      });
+      const { boiledOff, evaporated, vaporEnergy } = target.state;
+      const next: ThermalBody = {
+        ...base,
+        transform: target.transform,
+        state: {
+          temperature: kelvin(d.temperature),
+          mixture: d.amounts,
+          solidFraction: water > 0 ? d.amounts.ice / water : 0,
+          ...(boiledOff === undefined ? {} : { boiledOff }),
+          ...(evaporated === undefined ? {} : { evaporated }),
+          ...(vaporEnergy === undefined ? {} : { vaporEnergy }),
+        },
+      };
+      return ok({ state: withEntities(state, [next]), kind: 'matter', externalEnergy: externalMix, trace: [] });
+    }
+
     const solid = c.frozen ? 1 : 0;
     const hAdded = specificEnthalpy(c.temperature, solid, th.specificHeat, th.phase);
     const external = c.mass * hAdded;

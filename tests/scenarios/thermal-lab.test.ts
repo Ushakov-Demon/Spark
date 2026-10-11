@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createSimulation, runExperiment, seconds } from '../../src/core/index.js';
 import { createThermalSolver, thermalEnergy, THERMAL_COMMANDS, type ThermalCommand } from '../../src/domains/thermal/index.js';
 import { renderText } from '../../src/explain/index.js';
-import { labGoalReached, labSetup, labStatus, labSummary, type LabParams } from '../../src/scenarios/index.js';
+import { labGoalReached, labSetup, labStatus, labSummary, sampleOf, type LabParams } from '../../src/scenarios/index.js';
 
 const simulation = createSimulation({ solvers: [createThermalSolver()], fixedDt: seconds(2) });
 const commands = createCommandRegistry<ThermalCommand>(THERMAL_COMMANDS);
@@ -68,9 +68,13 @@ describe('thermal lab presets', () => {
     expect(r.text()).toMatch(/не замерзне\.[\s\S]*замерзає при [−-]114 °C/);
   });
 
-  it('salt water: 10 % freezes in a freezer, 20 % not in a refrigerator', () => {
-    const ok = run(cooling({ action: 'freeze', substance: 'salt-water-10', liters: 0.2, size: 0.25, vessel: 'beaker', material: 'glass', cooler: { id: 'freezer', setpoint: -18 } }), 24);
-    expect(ok.status.kind).toBe('reached');
+  it('salt water: 10 % freezes only partly in a freezer, 20 % not at all in a refrigerator', () => {
+    // −18 °C is above the eutectic (−21.1 °C): ice forms, a pocket of salty brine stays liquid.
+    const part = run(cooling({ action: 'freeze', substance: 'salt-water-10', liters: 0.2, size: 0.25, vessel: 'beaker', material: 'glass', cooler: { id: 'freezer', setpoint: -18 } }), 6);
+    expect(part.status.kind).toBe('impossible');
+    const s = sampleOf(part.result.final).state.solidFraction!;
+    expect(s).toBeGreaterThan(0.5);
+    expect(s).toBeLessThan(1);
     const no = run(cooling({ action: 'freeze', substance: 'salt-water-20', cooler: { id: 'fridge', setpoint: 4 } }), 1);
     expect(no.status.kind).toBe('impossible');
   });

@@ -14,6 +14,8 @@ import { HEATERS, type HeaterId } from '../equipment/heaters.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
 import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
+import { NACL_EUTECTIC } from '../substances/nacl.js';
+import { mixtureBoilingPoint } from '../domains/thermal/mixture.js';
 import type { SubstanceItem } from '../substances/types.js';
 
 /**
@@ -21,12 +23,12 @@ import type { SubstanceItem } from '../substances/types.js';
  * freeze or melt it. Presets set the stop condition; the experimenter chooses
  * everything else.
  */
-export type LabAction = 'heat-to' | 'boil' | 'cool-to' | 'freeze' | 'melt';
-export const LAB_ACTIONS: readonly LabAction[] = ['heat-to', 'boil', 'cool-to', 'freeze', 'melt'];
+export type LabAction = 'heat-to' | 'boil' | 'evaporate' | 'cool-to' | 'freeze' | 'melt';
+export const LAB_ACTIONS: readonly LabAction[] = ['heat-to', 'boil', 'evaporate', 'cool-to', 'freeze', 'melt'];
 
 /** Heating actions use a heater; cooling actions a cooler; melting either (or just the room). */
 export const actionUses = (a: LabAction): 'heater' | 'cooler' | 'either' =>
-  a === 'heat-to' || a === 'boil' ? 'heater' : a === 'melt' ? 'either' : 'cooler';
+  a === 'heat-to' || a === 'boil' || a === 'evaporate' ? 'heater' : a === 'melt' ? 'either' : 'cooler';
 
 export interface LabParams {
   readonly action: LabAction;
@@ -137,13 +139,18 @@ export function labGoalReached(p: LabParams, s: SystemState): boolean {
     case 'heat-to':
       return p.target !== undefined && T >= K(p.target) - 1e-6 && solid === 0;
     case 'boil': {
-      const tb = boilingK(sub);
+      // A salt solution boils at its own, composition-dependent temperature.
+      const mix = b.state.mixture;
+      const tb = mix ? mixtureBoilingPoint(mix) : boilingK(sub);
       // Boiling = bubbles in the whole volume (mass boils away), not just reaching the number:
       // surface evaporation can keep the liquid a hair below the boiling point while it boils.
       if (tb !== undefined) return ((b.state.boiledOff ?? 0) > 0 || T >= tb - 1e-6) && solid === 0;
       const smoke = smokeK(sub);
       return smoke !== undefined && T >= smoke;
     }
+    case 'evaporate':
+      // Boiled dry: no water left (a salt solution leaves its salt behind).
+      return b.state.mixture ? b.state.mixture.water <= 1e-6 : bodyMass(b) <= 1e-6;
     case 'cool-to':
       return p.target !== undefined && T <= K(p.target) + 1e-6;
     case 'freeze':
@@ -177,6 +184,14 @@ export function labImpossibility(p: LabParams, locale: Locale): LocalizedText | 
     case 'freeze':
       if (!sub.freezing) {
         return both((l) => (l === 'uk' ? `Для речовини «${tr(sub.name, l)}» ми не знайшли даних про застигання, тому модель не може показати замерзання.` : `We found no freezing data for ${name(l)}, so the model cannot show it freezing.`));
+      }
+      if (sub.mixture && surroundingTemp >= NACL_EUTECTIC.t && surroundingTemp < sub.freezing.point.value) {
+        const te = NACL_EUTECTIC.t;
+        return both((l) =>
+          l === 'uk'
+            ? `${where(l).charAt(0).toUpperCase() + where(l).slice(1)} ${T(surroundingTemp, l)}: лід почне утворюватися, але замерзає лише прісна вода, а розсіл, що лишається, стає дедалі солонішим і замерзає дедалі холодніше. Повністю солона вода замерзає тільки нижче ${T(te, l)}.`
+            : `It is ${T(surroundingTemp, l)} ${where(l)}: ice will start to form, but only fresh water freezes, and the remaining brine gets ever saltier and freezes ever colder. Salt water freezes completely only below ${T(te, l)}.`,
+        );
       }
       if (surroundingTemp >= sub.freezing.point.value) {
         const tf = sub.freezing.point.value;
@@ -220,6 +235,15 @@ export function labImpossibility(p: LabParams, locale: Locale): LocalizedText | 
       }
       return undefined;
     case 'boil':
+      return undefined;
+    case 'evaporate':
+      if (!sub.boiling) {
+        return both((l) =>
+          l === 'uk'
+            ? `Речовина «${tr(sub.name, l)}» не кипить: задовго до того вона почне димітися й розкладатися, тож випарити її досуха не вийде.`
+            : `${tr(sub.name, l)} does not boil: long before that it starts to smoke and break down, so it cannot be boiled dry.`,
+        );
+      }
       return undefined;
   }
 }
@@ -274,6 +298,7 @@ type Gender = 'f' | 'm' | 'n';
 const PAST: Readonly<Record<LabAction, Readonly<Record<Gender, string>>>> = {
   'heat-to': { f: 'нагрілася до', m: 'нагрівся до', n: 'нагрілося до' },
   boil: { f: 'закипіла', m: 'закипів', n: 'закипіло' },
+  evaporate: { f: 'википіла досуха', m: 'википів досуха', n: 'википіло досуха' },
   'cool-to': { f: 'охолола до', m: 'охолов до', n: 'охололо до' },
   freeze: { f: 'повністю замерзла', m: 'повністю замерз', n: 'повністю замерзло' },
   melt: { f: 'повністю розтанула', m: 'повністю розтанув', n: 'повністю розтануло' },
@@ -281,23 +306,26 @@ const PAST: Readonly<Record<LabAction, Readonly<Record<Gender, string>>>> = {
 const FUTURE_UK: Readonly<Record<LabAction, string>> = {
   'heat-to': 'нагріється до',
   boil: 'закипить',
+  evaporate: 'википить досуха',
   'cool-to': 'охолоне до',
   freeze: 'повністю замерзне',
   melt: 'повністю розтане',
 };
 /** In a negative sentence "completely" sounds wrong: "не замерзне", "will not freeze". */
 const NEG_FUTURE_UK: Readonly<Record<LabAction, string>> = { ...FUTURE_UK, freeze: 'замерзне', melt: 'розтане' };
-const NEG_FUTURE_EN: Readonly<Record<LabAction, string>> = { 'heat-to': 'heat up to', boil: 'boil', 'cool-to': 'cool down to', freeze: 'freeze', melt: 'melt' };
-const PAST_EN: Readonly<Record<LabAction, string>> = { 'heat-to': 'heated up to', boil: 'boiled', 'cool-to': 'cooled down to', freeze: 'froze completely', melt: 'melted completely' };
-const FUTURE_EN: Readonly<Record<LabAction, string>> = { 'heat-to': 'heat up to', boil: 'boil', 'cool-to': 'cool down to', freeze: 'freeze completely', melt: 'melt completely' };
+const NEG_FUTURE_EN: Readonly<Record<LabAction, string>> = { 'heat-to': 'heat up to', boil: 'boil', evaporate: 'boil dry', 'cool-to': 'cool down to', freeze: 'freeze', melt: 'melt' };
+const PAST_EN: Readonly<Record<LabAction, string>> = { 'heat-to': 'heated up to', boil: 'boiled', evaporate: 'boiled dry', 'cool-to': 'cooled down to', freeze: 'froze completely', melt: 'melted completely' };
+const FUTURE_EN: Readonly<Record<LabAction, string>> = { 'heat-to': 'heat up to', boil: 'boil', evaporate: 'boil dry', 'cool-to': 'cool down to', freeze: 'freeze completely', melt: 'melt completely' };
 
 /** "Distilled water (2 L) in a steel pot on a kitchen gas hob" — the subject of the headline. */
-function subject(p: LabParams, locale: Locale): { text: string; gender: Gender } {
+function subject(p: LabParams, locale: Locale, now?: SystemState): { text: string; gender: Gender } {
   const sub = SUBSTANCES[p.substance];
+  // Salt was added during the experiment: it is a solution now.
+  const salted = now !== undefined && !sub.mixture && sampleOf(now).state.mixture !== undefined;
   const vessel = VESSELS[p.vessel];
   const amount = p.liters < 1 ? `${Math.round(p.liters * 1000)} ${locale === 'uk' ? 'мл' : 'mL'}` : `${sig(p.liters, 3, locale)} ${locale === 'uk' ? 'л' : 'L'}`;
-  let name = tr(sub.name, locale);
-  let gender: Gender = sub.gender;
+  let name = salted ? (locale === 'uk' ? 'Вода з сіллю' : 'Salt water') : tr(sub.name, locale);
+  let gender: Gender = salted ? 'f' : sub.gender;
   if (p.action === 'melt') {
     if (sub.solidName) {
       name = tr(sub.solidName, locale);
@@ -334,7 +362,7 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
   const { locale } = ctx;
   const uk = locale === 'uk';
   const sub = SUBSTANCES[p.substance];
-  const { text: subj, gender } = subject(p, locale);
+  const { text: subj, gender } = subject(p, locale, result.final);
   const T = (k: number) => formatQuantity(k, 'K', { locale, level: 'school' });
   const target = p.target !== undefined && (p.action === 'heat-to' || p.action === 'cool-to') ? ` ${T(K(p.target))}` : '';
   const past = uk ? `${PAST[p.action][gender]}${target}` : `${PAST_EN[p.action]}${target}`;
@@ -346,7 +374,8 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
   const energyLine = (): string | null => {
     const split = energySplit(result.initial, result.final);
     if (split.produced > 0) {
-      const toSample = split.shares.find((s) => s.entity === SAMPLE_ID)?.energy ?? 0;
+      // Into the contents = what they store now + what their boiling vapour carried away.
+      const toSample = split.shares.filter((s) => s.entity === SAMPLE_ID && (s.role === 'body' || s.role === 'vapour')).reduce((sum, s) => sum + s.energy, 0);
       const pct = Math.round((100 * toSample) / split.produced);
       return uk
         ? `Нагрівач виділив ${formatQuantity(split.produced, 'J', { locale, level: 'school' })} енергії; у вміст посуду пішло ${pct} %.`
@@ -364,6 +393,11 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
   switch (status.kind) {
     case 'reached': {
       const lines = [uk ? `${subj} ${past} за ${formatDuration(status.at, locale)}.` : `${subj} ${past} in ${formatDuration(status.at, locale)}.`];
+      const crystals = b1.state.mixture?.crystals ?? 0;
+      if (p.action === 'evaporate' && crystals > 0) {
+        const g = formatQuantity(crystals, 'kg', { locale, level: 'school' });
+        lines.push(uk ? `Вода пішла парою, а на дні залишилося ${g} кристалів солі — стільки ж, скільки її було розчинено.` : `The water left as steam, and ${g} of salt crystals remained on the bottom — as much as was dissolved.`);
+      }
       const e = energyLine();
       if (e) lines.push(uk ? e.replace(/віддала навколишньому/, sub.gender === 'f' ? 'віддала навколишньому' : 'віддав навколишньому') : e);
       return [{ kind: 'summary', tone: 'success', lines }];
@@ -402,8 +436,19 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
         },
       ];
     }
-    case 'impossible':
-      return [{ kind: 'summary', tone: 'failure', lines: [uk ? `${subj} не ${notFuture}.` : `${subj} will not ${notFuture}.`, tr(status.reason, locale)] }];
+    case 'impossible': {
+      // Brine above the eutectic: part of it freezes, a salty pocket stays liquid.
+      const part = p.action === 'freeze' && b1.state.mixture && (b1.state.solidFraction ?? 0) > 0 ? Math.round((b1.state.solidFraction ?? 0) * 100) : undefined;
+      const first =
+        part !== undefined
+          ? uk
+            ? `${subj} замерзне лише частково: льодом стало ${part} % води.`
+            : `${subj} will freeze only partly: ${part} % of the water turned to ice.`
+          : uk
+            ? `${subj} не ${notFuture}.`
+            : `${subj} will not ${notFuture}.`;
+      return [{ kind: 'summary', tone: 'failure', lines: [first, tr(status.reason, locale)] }];
+    }
     case 'decomposes': {
       const smoke = sub.decomposes!.value;
       return [
@@ -429,4 +474,4 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
 }
 
 /** "Distilled water (1 L) in a steel pot on an electric hob" — what is on the table right now. */
-export const labSubject = (p: LabParams, locale: Locale): string => subject(p, locale).text;
+export const labSubject = (p: LabParams, locale: Locale, now?: SystemState): string => subject(p, locale, now).text;

@@ -14,3 +14,4 @@ export * from './assembly.js';
 export * from './substance.js';
 export * from './phase.js';
 export * from './evaporation.js';
+export * from './mixture.js';

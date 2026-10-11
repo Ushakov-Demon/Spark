@@ -10,7 +10,7 @@ import type { MediaAsset } from '../equipment/types.js';
  * Temperatures in data are in °C (as in the sources); the thermal domain
  * converts them.
  */
-export type SubstanceCategory = 'liquid.water' | 'liquid.alcohol' | 'liquid.oil' | 'liquid.solution';
+export type SubstanceCategory = 'liquid.water' | 'liquid.alcohol' | 'liquid.oil' | 'liquid.solution' | 'solid.salt';
 
 export interface SubstanceItem {
   readonly id: string;
@@ -23,6 +23,13 @@ export interface SubstanceItem {
   readonly description: LeveledText;
   readonly safety?: LeveledText;
   readonly media: readonly MediaAsset[];
+  /**
+   * Water + table salt (NaCl) in this proportion: not a substance of its own but a mix of
+   * components, computed by the mixture model (freezing, boiling, crystals follow from the
+   * composition). saltFraction = salt / (salt + water); 1 = dry salt.
+   */
+  readonly mixture?: { readonly saltFraction: number };
+  /** For liquids — the liquid; for a solid component (salt) — the solid's own properties. */
   readonly liquid: {
     readonly specificHeat: SourcedValue; // J/(kg·K)
     readonly density: SourcedValue; // kg/m³

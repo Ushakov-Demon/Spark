@@ -3,7 +3,7 @@ import type { Locale } from '../src/knowledge/i18n.js';
 /** Interface strings of the web lab. Content texts (laws, formulas) live in the knowledge layer. */
 export interface UiText {
   action: string;
-  actions: Readonly<Record<'heat-to' | 'boil' | 'cool-to' | 'freeze' | 'melt', string>>;
+  actions: Readonly<Record<'heat-to' | 'boil' | 'evaporate' | 'cool-to' | 'freeze' | 'melt', string>>;
   target: string;
   substance: string;
   amount: string;
@@ -15,6 +15,8 @@ export interface UiText {
   phaseState: string;
   liquid: string;
   solidShare(pct: number): string;
+  salinity(pct: string): string;
+  crystals(mass: string): string;
   boiledOff(g: string): string;
   surroundings: string;
   meltLine: string;
@@ -93,7 +95,7 @@ export interface UiText {
 export const UI: Readonly<Record<Locale, UiText>> = {
   uk: {
     action: 'Що робимо',
-    actions: { 'heat-to': 'Нагріти до…', boil: 'Закип’ятити', 'cool-to': 'Охолодити до…', freeze: 'Заморозити', melt: 'Розплавити' },
+    actions: { 'heat-to': 'Нагріти до…', boil: 'Закип’ятити', evaporate: 'Випарити досуха', 'cool-to': 'Охолодити до…', freeze: 'Заморозити', melt: 'Розплавити' },
     target: 'Цільова температура, °C',
     substance: 'Речовина',
     amount: 'Кількість, л',
@@ -105,6 +107,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     phaseState: 'Стан',
     liquid: 'рідина',
     solidShare: (p) => `тверде ${p} %`,
+    salinity: (p) => `солоність ${p} %`,
+    crystals: (m) => `кристалів солі ${m}`,
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     meltLine: 'плавлення',
@@ -181,7 +185,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
   },
   en: {
     action: 'What we do',
-    actions: { 'heat-to': 'Heat to…', boil: 'Boil', 'cool-to': 'Cool to…', freeze: 'Freeze', melt: 'Melt' },
+    actions: { 'heat-to': 'Heat to…', boil: 'Boil', evaporate: 'Boil dry', 'cool-to': 'Cool to…', freeze: 'Freeze', melt: 'Melt' },
     target: 'Target temperature, °C',
     substance: 'Substance',
     amount: 'Amount, L',
@@ -193,6 +197,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     phaseState: 'State',
     liquid: 'liquid',
     solidShare: (p) => `solid ${p} %`,
+    salinity: (p) => `salinity ${p} %`,
+    crystals: (m) => `salt crystals ${m}`,
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     meltLine: 'melting',

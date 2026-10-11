@@ -57,8 +57,10 @@ export function paperTime(p: LabParams): number | undefined {
     q += m * sub.freezing!.solidSpecificHeat.value * (tm - t) + m * sub.freezing!.latentHeat.value;
     t = tm;
   }
-  const end = p.action === 'heat-to' ? (p.target ?? t) : p.action === 'boil' ? (sub.boiling?.point.value ?? sub.decomposes?.value ?? t) : t;
+  const end = p.action === 'heat-to' ? (p.target ?? t) : p.action === 'boil' || p.action === 'evaporate' ? (sub.boiling?.point.value ?? sub.decomposes?.value ?? t) : t;
   q += m * c * Math.max(0, end - t);
+  // Boiling dry: all the water turns into steam (the salt of a solution stays).
+  if (p.action === 'evaporate' && sub.boiling) q += m * (1 - (sub.mixture?.saltFraction ?? 0)) * sub.boiling.latentHeat.value;
   return q / power;
 }
 
@@ -88,6 +90,12 @@ export function lossBreakdown<C extends Command>(result: ExperimentResult<C>): {
     else if (s.role === 'source') parts.push({ key: 'heater', energy: s.energy });
     else if (s.role === 'body') parts.push({ key: s.entity.endsWith('.lid') ? 'lid' : 'vessel', energy: s.energy });
     else if (s.role === 'room') parts.push({ key: 'air', energy: s.energy - (intoSurroundings.get(s.entity) ?? 0) - (pastVessel.get(s.entity) ?? 0) });
+  }
+  // Boiled dry: the substance's own heat left with the steam too — count it there, not as a negative share.
+  const sample = parts.findIndex((x) => x.key === 'sample');
+  if (sample >= 0 && parts[sample]!.energy < 0 && vapour > 0) {
+    vapour += parts[sample]!.energy;
+    parts.splice(sample, 1);
   }
   parts.push({ key: 'vapour', energy: vapour });
   return { produced: split.produced, parts: parts.filter((x) => Math.abs(x.energy) > 1) };

@@ -23,6 +23,7 @@ import {
 import { isSupplyLink, isThermalLink, type SupplyLink, type ThermalLink } from './links.js';
 import { decodeEnthalpy, specificHeatAt, type PhaseParams } from './phase.js';
 import { latentAt, massTransferCoefficient, saturationDensity, saturationPressure, type EvaporationParams } from './evaporation.js';
+import { decodeMixture, equilibriumAt, MIXTURE_CONSTANTS, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
 
 /**
  * Lumped thermal network solver.
@@ -52,6 +53,8 @@ interface Node {
   readonly evaporation: EvaporationParams | undefined;
   /** Air reservoirs: relative humidity (water vapour already in the air). */
   readonly humidity: number;
+  /** Water + salt bodies: current composition (water leaves as vapour, ice and crystals come and go). */
+  mix: MixtureAmounts | undefined;
   /** Current mass (shrinks while boiling). */
   mass: number;
   /** Stored energy, J (finite nodes). */
@@ -141,6 +144,7 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           phase,
           evaporation,
           humidity: reservoir ? (e.params.humidity ?? 0) : 0,
+          mix: !reservoir && 'mixture' in e.state ? e.state.mixture : undefined,
           mass: reservoir ? 0 : bodyMass(e),
           energy: reservoir ? 0 : bodyEnergy(e),
           temperature: temperatureOf(e),
@@ -197,7 +201,10 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
       // 3. Choose sub-step from the stiffest finite node.
       let minTau = Infinity;
       for (const n of nodes) {
-        if (n.finite && n.sumG > 0) minTau = Math.min(minTau, (n.mass * specificHeatAt(n.solidFraction, n.cLiquid, n.phase)) / n.sumG);
+        if (n.finite && n.sumG > 0) {
+          const capacity = n.mix ? mixtureHeatCapacity(n.mix) : n.mass * specificHeatAt(n.solidFraction, n.cLiquid, n.phase);
+          minTau = Math.min(minTau, capacity / n.sumG);
+        }
       }
       const substeps = Math.max(1, Math.ceil(dt / (safety * minTau)));
       if (substeps > maxSubsteps) {
@@ -242,6 +249,10 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           }
           if (n.mass <= DRY_MASS) continue;
           n.energy += net * h;
+          if (n.mix) {
+            stepMixture(n, trace ? (carried) => (given[i]! += carried) : undefined);
+            continue;
+          }
           const d = decodeEnthalpy(n.energy / n.mass, n.cLiquid, n.phase);
           if (n.phase?.latentFusion) n.melted += (n.solidFraction - d.solidFraction) * n.mass * n.phase.latentFusion;
           n.temperature = d.temperature;
@@ -268,6 +279,21 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           const air = nodes[edge.b]!;
           if (air.finite || isDry(n) || !n.evaporation) continue;
           const f = vaporFlux(n, edge, air);
+          if (n.mix) {
+            // Only water evaporates from brine; the salt stays.
+            const liquidWater = n.mix.water - n.mix.ice;
+            const dm = Math.min(liquidWater, f.mass * h);
+            if (!(dm > 0)) continue;
+            const carried = dm * (MIXTURE_CONSTANTS.CW * (n.temperature - ZERO_CELSIUS_IN_KELVIN) + latentAt(n.evaporation, n.temperature));
+            n.energy -= carried;
+            setMixture(n, n.mix.water - dm, n.mix.salt);
+            air.reservoirHeat += carried;
+            n.evaporated += dm;
+            edge.vaporEnergy += carried;
+            edge.vaporMass += dm;
+            if (trace) given[edge.a]! += carried;
+            continue;
+          }
           let dm = Math.min(n.mass, f.mass * h);
           if (!(dm > 0)) continue;
           let carried = dm * (n.cLiquid * (n.temperature - ZERO_CELSIUS_IN_KELVIN) + latentAt(n.evaporation, n.temperature));
@@ -330,6 +356,21 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         const temperature = kelvin(n.temperature);
         if (isHeater(e)) return { ...e, state: { temperature, energyDelivered: joules(e.state.energyDelivered + n.power * dt) } };
         const body = e as ThermalBody;
+        if (n.mix) {
+          const boiledOff = (body.state.boiledOff ?? 0) + n.boiled;
+          const evaporated = (body.state.evaporated ?? 0) + n.evaporated;
+          const vaporEnergy = (body.state.vaporEnergy ?? 0) + n.vapor;
+          return {
+            ...body,
+            state: {
+              temperature,
+              mixture: n.mix,
+              solidFraction: n.mix.water > 0 ? n.mix.ice / n.mix.water : 0,
+              ...(boiledOff > 0 ? { boiledOff, vaporEnergy } : {}),
+              ...(evaporated > 0 ? { evaporated } : {}),
+            },
+          };
+        }
         const boiledOff = (body.state.boiledOff ?? 0) + n.boiled;
         const vaporEnergy = (body.state.vaporEnergy ?? 0) + n.vapor;
         const evaporated = (body.state.evaporated ?? 0) + n.evaporated;
@@ -353,6 +394,40 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
   };
 }
 
+/** Re-derive temperature and phases of a mixture node after its energy or totals changed. */
+function setMixture(n: Node, water: number, salt: number): void {
+  const d = decodeMixture(n.energy, Math.max(0, water), salt);
+  n.temperature = d.temperature;
+  n.mix = d.amounts;
+  n.mass = d.amounts.water + d.amounts.salt;
+  n.solidFraction = d.amounts.water > 0 ? d.amounts.ice / d.amounts.water : 0;
+}
+
+/**
+ * One integration step for a water + salt body: phases from energy, then boiling —
+ * above the (concentration-dependent) boiling point the excess energy boils water away.
+ */
+function stepMixture(n: Node, onCarried?: (energy: number) => void): void {
+  const before = n.mix!;
+  setMixture(n, before.water, before.salt);
+  n.melted += (before.ice - n.mix!.ice) * MIXTURE_CONSTANTS.LF;
+  const tb = mixtureBoilingPoint(n.mix!);
+  if (n.temperature > tb) {
+    const atBoil = mixtureEnthalpy(equilibriumAt(n.mix!.water, n.mix!.salt, tb), tb);
+    const lv = n.evaporation ? latentAt(n.evaporation, tb) : 2_256_000;
+    const liquidWater = n.mix!.water - n.mix!.ice;
+    const dm = Math.max(0, Math.min(liquidWater, (n.energy - atBoil) / lv));
+    if (dm > 0) {
+      const carried = dm * (MIXTURE_CONSTANTS.CW * (tb - ZERO_CELSIUS_IN_KELVIN) + lv);
+      n.energy -= carried;
+      n.boiled += dm;
+      n.vapor += carried;
+      onCarried?.(carried);
+      setMixture(n, n.mix!.water - dm, n.mix!.salt);
+    }
+  }
+}
+
 /** Water vapour already in the air (humid room); none for other substances' vapour. Kg/m³. */
 function ambientVapour(liquid: Node, other: Node, ev: EvaporationParams): number {
   if (other.finite) return saturationDensity(ev, other.temperature); // a lid: vapour condenses where it is saturated
@@ -366,7 +441,9 @@ function vaporFlux(liquid: Node, e: Edge, other: Node): { readonly mass: number;
   if (!ev || o?.type !== 'convection' || liquid.solidFraction >= 1) return { mass: 0, energy: 0 };
   const hm = massTransferCoefficient(o.coefficient);
   const area = o.area * (1 - liquid.solidFraction);
-  const mass = Math.max(0, hm * area * (saturationDensity(ev, liquid.temperature) - ambientVapour(liquid, other, ev)));
+  // Dissolved salt lowers the vapour pressure of water (Raoult's law).
+  const lowering = liquid.mix ? waterMoleFraction(liquid.mix) : 1;
+  const mass = Math.max(0, hm * area * (lowering * saturationDensity(ev, liquid.temperature) - ambientVapour(liquid, other, ev)));
   return { mass, energy: mass * latentAt(ev, liquid.temperature) };
 }
 
@@ -418,7 +495,7 @@ function traceStep(
     if (n.phase?.latentVaporization && n.boiled > 0) {
       trace.record({ kind: 'formula', formula: 'thermal.latent-heat', entities: [id(i)], args: [n.boiled, n.phase.latentVaporization], output: n.boiled * n.phase.latentVaporization });
     }
-    if ((!n.phase || (Math.abs(n.melted) === 0 && n.boiled === 0)) && n.evaporated === 0) {
+    if ((!n.phase || (Math.abs(n.melted) === 0 && n.boiled === 0)) && n.evaporated === 0 && !n.mix) {
       const dT = n.temperature - t0[i]!;
       const c = specificHeatAt(n.solidFraction, n.cLiquid, n.phase);
       trace.record({ kind: 'formula', formula: 'thermal.heat-for-temperature-change', entities: [id(i)], args: [m0[i]!, c, dT], output: m0[i]! * c * dT });
