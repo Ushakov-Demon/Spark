@@ -32,6 +32,12 @@ export const FREEZE: Operation = {
         : `It is only ${T(surroundingTemp, l)} ${where(l)}, but ${lower(sub, l)} freezes at ${T(tf, l)} — not cold enough.`,
     );
   },
+  needs({ sub, surroundingTemp }) {
+    if (!sub.freezing) return undefined;
+    // A solution freezes completely only below the eutectic; pure substances below their freezing point.
+    const below = sub.mixture ? NACL_SOLUTE.eutectic.t : sub.freezing.point.value;
+    return surroundingTemp >= below ? { colderThan: below } : undefined;
+  },
   markers: ['freezing'],
   verbs: {
     past: { uk: { f: 'повністю замерзла', m: 'повністю замерз', n: 'повністю замерзло' }, en: 'froze completely' },

@@ -55,10 +55,13 @@
           <div id="chart" class="chart-wrap"></div>
           <div id="legend" class="legend"></div>
           <div id="messages" class="messages"></div>
+          <div id="offer"></div>
           <div id="energy" class="energy"></div>
         </section>
 
-        <aside class="side">
+        <aside id="side" class="side">
+          <button id="side-toggle" class="side-toggle" type="button" aria-controls="side-body" aria-expanded="true"></button>
+          <div id="side-body" class="side-body">
           <section class="card">
             <h3 id="protocol-title" class="side-title"></h3>
             <ol id="protocol" class="protocol"></ol>
@@ -66,6 +69,7 @@
           </section>
           <section class="card"><div id="expect" class="expect"></div></section>
           <section class="card"><details id="add" class="add" open></details></section>
+          </div>
         </aside>
 
         <section class="card report-card">

@@ -5,6 +5,19 @@ import type { LabParams } from '../thermal-lab.js';
 
 export type Gender = 'f' | 'm' | 'n';
 
+/**
+ * What is missing for the goal, in terms the lab can act on: colder surroundings,
+ * some heat, or a different target.
+ */
+export interface Needs {
+  /** Surroundings colder than this, °C. */
+  readonly colderThan?: number;
+  /** A heater (or surroundings warmer than this, °C). */
+  readonly heatAbove?: number;
+  /** A target in this range, °C. */
+  readonly target?: { readonly min?: number; readonly max?: number };
+}
+
 /** What an operation may look at when it judges the setup. */
 export interface OperationContext {
   readonly p: LabParams;
@@ -44,8 +57,12 @@ export interface Operation {
   endsInstead?(sub: SubstanceItem): 'decomposes' | undefined;
   /** Why the goal can never be reached — known before running anything. */
   impossible?(ctx: OperationContext): LocalizedText | undefined;
+  /** What would make it possible — the lab turns it into concrete fixes from the catalog. */
+  needs?(ctx: OperationContext): Needs | undefined;
   /** "On paper" (no losses): the temperature to reach, °C, and extra energy on top, J. */
   paper?(p: LabParams, sub: SubstanceItem, mass: number): { readonly end: number; readonly extra?: number } | undefined;
+  /** Losing mass is progress towards the goal (boiling dry); for other operations slow evaporation is not. */
+  readonly massIsProgress?: boolean;
   /** Phase lines worth drawing on the chart. */
   readonly markers: readonly ('freezing' | 'boiling' | 'smoke' | 'target')[];
   /** The headline names the solid form ("Лід розтанув"). */

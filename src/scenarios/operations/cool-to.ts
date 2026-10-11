@@ -18,6 +18,7 @@ export const COOL_TO: Operation = {
         : `It is ${T(surroundingTemp, l)} ${where(l)}: a body cannot cool below the temperature of its surroundings.`,
     );
   },
+  needs: ({ p, surroundingTemp }) => (p.target !== undefined && p.target <= surroundingTemp ? { colderThan: p.target, target: { min: Math.floor(surroundingTemp) + 1 } } : undefined),
   markers: ['freezing', 'target'],
   verbs: {
     past: { uk: { f: 'охолола до', m: 'охолов до', n: 'охололо до' }, en: 'cooled down to' },

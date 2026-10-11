@@ -61,9 +61,20 @@ button.wide { width: 100%; }
 .app { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 14px; padding: 6px 16px 24px; max-width: 1800px; margin: 0 auto; align-items: start; }
 /* The kitchen gets the room; the protocol, prediction and "add" panels sit on its right on wide screens. */
 .main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; min-width: 0; align-items: start; }
-.side { display: grid; gap: 14px; min-width: 0; position: sticky; top: 8px; }
+.side { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.side-body { display: grid; gap: 14px; min-width: 0; }
+.side-toggle { justify-self: end; min-height: 32px; padding: 4px 10px; font-size: 0.85rem; color: var(--muted); }
+/* Folded: the kitchen and the report take the whole width, a slim button stays. */
+.main.side-folded { grid-template-columns: minmax(0, 1fr) auto; }
+.main.side-folded .side-body { display: none; }
+.main.side-folded .side-toggle { writing-mode: vertical-rl; padding: 12px 6px; }
+.offer { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: var(--warn-bg); border-left: 5px solid var(--source); }
+.offer p { margin: 0 0 8px; padding: 0; background: none; }
+.offer .fixes { display: flex; flex-wrap: wrap; gap: 6px; }
+.offer .fixes button { min-height: 34px; padding: 4px 12px; border-radius: 999px; }
+.offer .fixes .stop { border-color: var(--source); color: var(--source); }
 .report-card { grid-column: 1 / -1; }
-@media (max-width: 1280px) { .main { grid-template-columns: minmax(0, 1fr); } .side { position: static; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; } }
+@media (max-width: 1280px) { .main, .main.side-folded { grid-template-columns: minmax(0, 1fr); } .side-body { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; } .main.side-folded .side-toggle { writing-mode: horizontal-tb; } }
 @media (max-width: 900px) { .app { grid-template-columns: 1fr; } .main { order: -1; } }
 
 /* ---------- shelf (left) ---------- */
@@ -207,3 +218,4 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .phase p { margin: 0 0 8px; background: none; padding: 0; }
 .progress { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .progress span { display: block; height: 100%; width: var(--p); background: var(--water); transition: width 0.3s; }
+.chart { max-height: 380px; }

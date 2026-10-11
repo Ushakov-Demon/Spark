@@ -23,6 +23,7 @@ export const EVAPORATE: Operation = {
   },
   paper: (_p, sub, mass) =>
     sub.boiling ? { end: sub.boiling.point.value, extra: mass * (1 - (sub.mixture?.saltFraction ?? 0)) * sub.boiling.latentHeat.value } : undefined,
+  massIsProgress: true,
   markers: ['freezing', 'boiling'],
   verbs: {
     past: { uk: { f: 'википіла досуха', m: 'википів досуха', n: 'википіло досуха' }, en: 'boiled dry' },

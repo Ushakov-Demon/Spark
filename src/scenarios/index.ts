@@ -7,3 +7,4 @@ export * from './thermal-lab.js';
 export * from './lab-debrief.js';
 export * from './operations/index.js';
 export * from './protocol.js';
+export * from './lab-fixes.js';

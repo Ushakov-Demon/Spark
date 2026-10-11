@@ -23,6 +23,7 @@ export const MELT: Operation = {
         : `It is only ${T(surroundingTemp, l)} ${where(l)} — not warmer than the melting point (${T(tm, l)}), so nothing melts without a heater.`,
     );
   },
+  needs: ({ p, sub, surroundingTemp }) => (sub.freezing && !p.heater && surroundingTemp <= sub.freezing.point.value ? { heatAbove: sub.freezing.point.value } : undefined),
   paper: (_p, sub) => (sub.freezing ? { end: sub.freezing.point.value } : undefined),
   markers: ['freezing'],
   subjectIsSolid: true,

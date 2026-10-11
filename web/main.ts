@@ -41,6 +41,11 @@ import {
   type LabStatus,
   configureStep,
   sampleOf,
+  labFixes,
+  labProgress,
+  noProgress,
+  stallFixes,
+  type LabFix,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
 import type { SystemState } from '../src/core/state.js';
@@ -84,6 +89,14 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Readonly<Recor
   Object.assign(e, props);
   e.append(...children);
   return e;
+}
+/** Replace an element's HTML only when it changed. */
+function setHtml(sel: string, html: string) {
+  const e = $(sel);
+  if (e.innerHTML !== html && e.dataset['html'] !== html) {
+    e.innerHTML = html;
+    e.dataset['html'] = html;
+  }
 }
 const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** digits;
 
@@ -130,6 +143,8 @@ let stepAdds: Added[] = [];
 let pendingAdds: Added[] = [];
 /** The current step's record, frozen at the moment it finished. */
 let doneRecord: Omit<StepRecord, 'adds'> | null = null;
+/** Changes that would make the goal reachable (offered with buttons). */
+let fixes: LabFix[] | 'computing' = [];
 let warnings: readonly LocalizedText[] = [];
 let running = false;
 let finished = false;
@@ -189,6 +204,7 @@ function beginStep(placed: { readonly state: SystemState; readonly warnings: rea
   stepAdds = pendingAdds;
   pendingAdds = [];
   doneRecord = null;
+  fixes = labFixes(params);
   acc = 0;
   record();
   $('#report').innerHTML = '';
@@ -277,6 +293,15 @@ function stop() {
   finished = true;
   const result = session.result(labGoalReached(stepP, session.state));
   doneRecord = { params: stepP, result, status: labStatus(stepP, result, simulation, warnings) };
+  // Heating that stalls: find what helps by re-running in the mind (after the headline is on screen).
+  if (doneRecord.status.kind === 'stalls' && OPERATIONS[stepP.action].direction === 'heating') {
+    fixes = 'computing';
+    const p = stepP;
+    window.setTimeout(() => {
+      fixes = stallFixes(p, simulation);
+      render();
+    }, 30);
+  } else if (doneRecord.status.kind === 'reached') fixes = [];
   setHeadline();
 }
 
@@ -284,13 +309,13 @@ function stop() {
 function stalled(): boolean {
   const b = sample();
   if (!b) return false;
-  const now = { t: session.state.time, T: b.state.temperature, s: b.state.solidFraction ?? 0, m: bodyMass(b) };
+  const now = { t: session.state.time, ...labProgress(session.state) };
   if (!checkpoint) {
     checkpoint = now;
     return false;
   }
   if (now.t - checkpoint.t < 1800) return false;
-  const still = Math.abs(now.T - checkpoint.T) < 0.05 && Math.abs(now.s - checkpoint.s) < 0.001 && Math.abs(now.m - checkpoint.m) < 1e-5;
+  const still = noProgress(stepP, checkpoint, now);
   checkpoint = now;
   return still;
 }
@@ -493,6 +518,7 @@ function render() {
   $('#explain').textContent = u.explain;
   $('#explain-hint').textContent = u.explainHint;
   $('#footer').textContent = u.footer;
+  renderSide();
 
   $('#setup-line').textContent = labSubject(params, locale, session.state);
   const sub = substance();
@@ -552,17 +578,29 @@ function render() {
 
   // Messages: impossibility before the start, headline after, warnings.
   const msg: string[] = [];
-  if (headline) msg.push(renderHtml(headline()));
-  else {
+  const offer: string[] = [];
+  const fixButtons = () =>
+    Array.isArray(fixes) ? fixes.map((f, i) => `<button type="button" data-fix="${i}">${tr(f.label, locale)}</button>`).join('') : `<span class="muted small">${u.computing}</span>`;
+  if (headline) {
+    msg.push(renderHtml(headline()));
+    // The goal was not reached: offer what would reach it — the experiment continues from where it is.
+    if (fixes === 'computing' || fixes.length) offer.push(`<div class="offer"><p>${doneRecord?.status.kind === 'stalls' ? u.offerAfterStall : u.offerAfterImpossible}</p><div class="fixes">${fixButtons()}</div></div>`);
+  } else {
     // A flat line on the chart is not "nothing happens": say what is going on and how far it got.
     const phase = phaseNote();
     if (phase) msg.push(`<div class="phase"><p>${phase.text}</p><div class="progress"><span style="--p:${phase.pct}%"></span></div></div>`);
     for (const w of warnings) msg.push(`<p>⚠ ${tr(w, locale)}</p>`);
-    const impossible = labImpossibility(params);
-    if (impossible) msg.push(`<p>⚠ ${tr(impossible, locale)}</p>`);
+    const impossible = labImpossibility(stepP);
+    if (impossible) {
+      // No point going on as it is: say why, offer to stop or to change the conditions.
+      const stop = running || stepElapsed() > 0 ? `<button type="button" class="stop" data-stop="1">${u.offerStop}</button>` : '';
+      offer.push(`<div class="offer"><p>⚠ ${tr(impossible, locale)}</p><p>${u.offerTitle}</p><div class="fixes">${fixButtons()}${stop}</div></div>`);
+    }
     for (const c of labCautions(params)) msg.push(`<p>⚠ ${tr(c, locale)}</p>`);
   }
-  $('#messages').innerHTML = msg.join('');
+  setHtml('#messages', msg.join(''));
+  // Buttons must not be rebuilt every frame, or a click may land on a replaced element.
+  setHtml('#offer', offer.join(''));
 
   // Energy.
   const split = energySplit(initialState, session.state);
@@ -969,7 +1007,38 @@ function explain() {
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+/** Apply an offered change: the vessel moves on with its contents and the experiment goes on at once. */
+function applyFix(f: LabFix) {
+  params = f.params;
+  if (params.heater) lastHeater = params.heater;
+  if (params.cooler) lastCooler = params.cooler;
+  stepChanged();
+  running = true;
+  lastFrame = 0;
+  render();
+}
+
+// ---------- side panel: fold / unfold ----------
+function renderSide() {
+  const folded = store.get('side') === 'folded';
+  $('.main').classList.toggle('side-folded', folded);
+  const b = $<HTMLButtonElement>('#side-toggle');
+  b.textContent = folded ? t().sideUnfold : t().sideFold;
+  b.setAttribute('aria-expanded', String(!folded));
+}
+$('#side-toggle').onclick = () => {
+  store.set('side', store.get('side') === 'folded' ? 'open' : 'folded');
+  renderSide();
+};
+
 // ---------- wiring ----------
+$('#offer').addEventListener('click', (e) => {
+  const target = (e.target as HTMLElement).closest<HTMLElement>('[data-fix], [data-stop]');
+  if (!target) return;
+  if (target.dataset['stop']) return stop();
+  const f = Array.isArray(fixes) ? fixes[Number(target.dataset['fix'])] : undefined;
+  if (f) applyFix(f);
+});
 $('#knob-wrap').append(knob.element);
 $('#chart').append(chart.element);
 $('#start').onclick = () => {

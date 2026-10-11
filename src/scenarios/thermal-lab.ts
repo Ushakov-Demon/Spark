@@ -138,7 +138,7 @@ export type LabStatus =
   | { readonly kind: 'off' };
 
 /** What surrounds the vessel: the cooler or the room. */
-function operationContext(p: LabParams): OperationContext {
+export function operationContext(p: LabParams): OperationContext {
   const cold = p.cooler ? COOLERS[p.cooler.id] : undefined;
   return {
     p,
@@ -158,16 +158,29 @@ const sourcePower = (s: SystemState): number => {
   return e && (isHeater(e) || isBurner(e)) && e.params.on ? e.params.power : 0;
 };
 
+/** What "getting closer to the goal" is measured by: temperature, how much is solid, mass. */
+export interface LabProgress {
+  readonly T: number;
+  readonly s: number;
+  readonly m: number;
+}
+export const labProgress = (state: SystemState): LabProgress => {
+  const b = sampleOf(state);
+  return { T: b.state.temperature, s: b.state.solidFraction ?? 0, m: bodyMass(b) };
+};
+/**
+ * Nothing changed between two checkpoints (half an hour apart): the outcome will not change.
+ * Slow evaporation alone is not progress — unless the goal is to boil the substance dry.
+ */
+export const noProgress = (p: LabParams, a: LabProgress, b: LabProgress): boolean =>
+  Math.abs(b.T - a.T) < 0.05 && Math.abs(b.s - a.s) < 0.001 && (!OPERATIONS[p.action].massIsProgress || Math.abs(b.m - a.m) < 1e-5);
+
 /** Continues the experiment "in the mind" to tell "later" from "never" (stops on reaching the goal or a steady state). */
 export function forecastLab(p: LabParams, simulation: Simulation, from: SystemState): LabStatus {
   const sim = createSimulation({ solvers: simulation.solvers, fixedDt: seconds(2) });
   const sub = SUBSTANCES[p.substance];
   let s = from;
-  const progress = (x: SystemState) => {
-    const b = sampleOf(x);
-    return { T: b.state.temperature, s: b.state.solidFraction ?? 0, m: bodyMass(b) };
-  };
-  let checkpoint = { t: s.time, ...progress(s) };
+  let checkpoint = { t: s.time, ...labProgress(s) };
   const limit = s.time + 24 * 3600;
   while (s.time < limit) {
     s = sim.tick(s, sim.fixedDt);
@@ -176,8 +189,8 @@ export function forecastLab(p: LabParams, simulation: Simulation, from: SystemSt
       return { kind: 'will-reach', after: s.time - from.time };
     }
     if (s.time - checkpoint.t >= 1800) {
-      const now = progress(s);
-      if (Math.abs(now.T - checkpoint.T) < 0.05 && Math.abs(now.s - checkpoint.s) < 0.001 && Math.abs(now.m - checkpoint.m) < 1e-5) return { kind: 'stalls', limit: now.T };
+      const now = labProgress(s);
+      if (noProgress(p, checkpoint, now)) return { kind: 'stalls', limit: now.T };
       checkpoint = { t: s.time, ...now };
     }
   }

@@ -60,6 +60,12 @@ export interface UiText {
   experiment: string;
   start: string;
   continueStep: string;
+  sideFold: string;
+  sideUnfold: string;
+  offerTitle: string;
+  offerStop: string;
+  offerAfterStall: string;
+  offerAfterImpossible: string;
   protocolTitle: string;
   protocolHint: string;
   protocolNext: string;
@@ -161,6 +167,12 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     experiment: '2. Дослід',
     start: '▶ Старт',
     continueStep: '▶ Продовжити',
+    sideFold: 'Згорнути ⇥',
+    sideUnfold: '⇤ Протокол',
+    offerTitle: 'Так мети не досягти. Можна зупинити дослід або змінити умови:',
+    offerStop: '⏹ Зупинити дослід',
+    offerAfterStall: 'Що допоможе (перевірено розрахунком):',
+    offerAfterImpossible: 'Щоб досягти мети, можна продовжити з іншими умовами:',
     protocolTitle: 'Протокол досліду',
     protocolHint: 'Дослід можна продовжити: обери ліворуч іншу дію або прилад — посуд із тим самим вмістом переставлять, і почнеться наступний крок.',
     protocolNext: 'Крок завершено. Що далі? Обери дію чи прилад ліворуч або досип щось — і натисни «Продовжити».',
@@ -260,6 +272,12 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     experiment: '2. Experiment',
     start: '▶ Start',
     continueStep: '▶ Continue',
+    sideFold: 'Fold ⇥',
+    sideUnfold: '⇤ Protocol',
+    offerTitle: 'The goal cannot be reached like this. Stop the experiment or change the conditions:',
+    offerStop: '⏹ Stop the experiment',
+    offerAfterStall: 'What helps (checked by calculation):',
+    offerAfterImpossible: 'To reach the goal, continue with other conditions:',
     protocolTitle: 'Experiment protocol',
     protocolHint: 'The experiment can go on: pick another action or device on the left — the vessel moves with its contents and the next step begins.',
     protocolNext: 'Step done. What next? Pick an action or a device on the left, or add something — then press “Continue”.',

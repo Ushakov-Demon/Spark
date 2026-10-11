@@ -20,6 +20,10 @@ export const HEAT_TO: Operation = {
         : `In an open vessel ${lower(sub, l)} will not get hotter than ${T(tb, l)}: at that temperature it boils and all the heat goes into vaporisation.`,
     );
   },
+  needs({ p, sub }) {
+    const tb = sub.boiling?.point.value;
+    return p.target !== undefined && tb !== undefined && p.target > tb ? { target: { max: Math.floor(tb) } } : undefined;
+  },
   paper: (p) => (p.target === undefined ? undefined : { end: p.target }),
   markers: ['freezing', 'boiling', 'target'],
   verbs: {

@@ -4,11 +4,11 @@ import { createExperimentSession, type ExperimentLogEntry, type ExperimentResult
 import type { Simulation } from '../core/simulation.js';
 import type { SystemState } from '../core/state.js';
 import { celsius, kilograms, type Seconds } from '../core/units.js';
-import { bodyMass, isBurner, isHeater, isThermalBody } from '../domains/thermal/entities.js';
+import { isBurner, isHeater, isThermalBody } from '../domains/thermal/entities.js';
 import type { ThermalCommand } from '../domains/thermal/commands.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SubstanceId } from '../substances/catalog.js';
-import { LAB_ROOM_ID, labGoalReached, labSetup, labStatus, sampleOf, SAMPLE_ID, type LabAction, type LabParams, type LabStatus } from './thermal-lab.js';
+import { LAB_ROOM_ID, labGoalReached, labProgress, noProgress, labSetup, labStatus, SAMPLE_ID, type LabAction, type LabParams, type LabStatus } from './thermal-lab.js';
 
 /**
  * A protocol: one sample, several steps. "Heat the water to a boil → add salt →
@@ -131,15 +131,11 @@ export function runProtocol(input: ProtocolInput): StepOutcome[] {
 /** Advance until the goal, a steady state (no change for 30 min) or the time limit. */
 function runStep(session: ReturnType<typeof createExperimentSession<ThermalCommand>>, p: LabParams, maxSeconds: number): void {
   const start = session.state.time;
-  const progress = () => {
-    const b = sampleOf(session.state);
-    return { T: b.state.temperature, s: b.state.solidFraction ?? 0, m: bodyMass(b) };
-  };
-  let checkpoint = progress();
+  let checkpoint = labProgress(session.state);
   while (session.state.time - start < maxSeconds) {
     if (session.advance(1800, (s) => labGoalReached(p, s))) return;
-    const now = progress();
-    if (Math.abs(now.T - checkpoint.T) < 0.05 && Math.abs(now.s - checkpoint.s) < 0.001 && Math.abs(now.m - checkpoint.m) < 1e-5) return;
+    const now = labProgress(session.state);
+    if (noProgress(p, checkpoint, now)) return;
     checkpoint = now;
   }
 }
