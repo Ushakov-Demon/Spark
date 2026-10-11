@@ -13,7 +13,8 @@ import { VESSELS } from '../equipment/vessels.js';
 import { canHeat, powerAt } from '../equipment/compatibility.js';
 import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { SUBSTANCES } from '../substances/catalog.js';
-import { actionUses, labGoalReached, labSetup, SAMPLE_ID, type LabParams } from './thermal-lab.js';
+import { labGoalReached, labSetup, SAMPLE_ID, type LabParams } from './thermal-lab.js';
+import { OPERATIONS } from './operations/index.js';
 
 /** What the experimenter expected: a time to reach the goal. */
 export interface LabExpectation {
@@ -43,7 +44,8 @@ export function timeToGoal(p: LabParams, simulation: Simulation, maxHours = 12):
  * no vessel) divided by the heater's power. Only for heating actions.
  */
 export function paperTime(p: LabParams): number | undefined {
-  if (actionUses(p.action) === 'cooler' || !p.heater) return undefined;
+  const op = OPERATIONS[p.action];
+  if (op.uses === 'cooler' || !p.heater) return undefined;
   const sub = SUBSTANCES[p.substance];
   const heater = HEATERS[p.heater.id];
   const power = canHeat(heater, VESSELS[p.vessel], p.material, p.size).ok ? powerAt(heater, p.heater.rating, p.heater.knob) : 0;
@@ -57,10 +59,9 @@ export function paperTime(p: LabParams): number | undefined {
     q += m * sub.freezing!.solidSpecificHeat.value * (tm - t) + m * sub.freezing!.latentHeat.value;
     t = tm;
   }
-  const end = p.action === 'heat-to' ? (p.target ?? t) : p.action === 'boil' || p.action === 'evaporate' ? (sub.boiling?.point.value ?? sub.decomposes?.value ?? t) : t;
-  q += m * c * Math.max(0, end - t);
-  // Boiling dry: all the water turns into steam (the salt of a solution stays).
-  if (p.action === 'evaporate' && sub.boiling) q += m * (1 - (sub.mixture?.saltFraction ?? 0)) * sub.boiling.latentHeat.value;
+  // Each operation says where "done" is: the target, the boiling point, + boiling the water away…
+  const goal = op.paper?.(p, sub, m);
+  q += m * c * Math.max(0, (goal?.end ?? t) - t) + (goal?.extra ?? 0);
   return q / power;
 }
 

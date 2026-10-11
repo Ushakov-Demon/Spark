@@ -21,6 +21,7 @@ import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels
 import {
   actionUses,
   LAB_ACTIONS,
+  OPERATIONS,
   LAB_COOLER_ID,
   LAB_HEATER_ID,
   LAB_VESSEL_ID,
@@ -401,7 +402,7 @@ function phaseNote(): { text: string; pct: number } | null {
   const trend = lastSolid === null ? 0 : s - lastSolid;
   lastSolid = s;
   if (s > 0 && s < 1) {
-    const freezing = trend > 0 || (trend === 0 && params.action === 'freeze');
+    const freezing = trend > 0 || (trend === 0 && OPERATIONS[params.action].direction === 'cooling');
     return freezing ? { text: u.phaseFreezing(T, Math.round(s * 100)), pct: s * 100 } : { text: u.phaseMelting(T, Math.round((1 - s) * 100)), pct: (1 - s) * 100 };
   }
   const boiled = b.state.boiledOff ?? 0;
@@ -492,7 +493,7 @@ function render() {
     const phase = phaseNote();
     if (phase) msg.push(`<div class="phase"><p>${phase.text}</p><div class="progress"><span style="--p:${phase.pct}%"></span></div></div>`);
     for (const w of warnings) msg.push(`<p>⚠ ${tr(w, locale)}</p>`);
-    const impossible = labImpossibility(params, locale);
+    const impossible = labImpossibility(params);
     if (impossible) msg.push(`<p>⚠ ${tr(impossible, locale)}</p>`);
     for (const c of labCautions(params)) msg.push(`<p>⚠ ${tr(c, locale)}</p>`);
   }
@@ -519,12 +520,12 @@ function render() {
   // Chart with the phase temperatures of this substance.
   // Only the temperatures that matter for this action, so the interesting part is not squeezed.
   const markers: { v: number; label: string }[] = [];
-  const heating = params.action === 'heat-to' || params.action === 'boil' || params.action === 'evaporate';
-  const cooling = params.action === 'cool-to' || params.action === 'freeze';
-  if (sub.freezing && (!heating || params.startTemp <= sub.freezing.point.value)) markers.push({ v: sub.freezing.point.value, label: `${u.meltLine} ${sub.freezing.point.value} °C` });
-  if (sub.boiling && !cooling && params.action !== 'melt') markers.push({ v: sub.boiling.point.value, label: `${u.boilLine} ${sub.boiling.point.value} °C` });
-  if (!sub.boiling && sub.decomposes && params.action === 'boil') markers.push({ v: sub.decomposes.value, label: `${locale === 'uk' ? 'димлення' : 'smoke'} ${sub.decomposes.value} °C` });
-  if (params.target !== undefined && (params.action === 'heat-to' || params.action === 'cool-to')) markers.push({ v: params.target, label: `${u.targetLine} ${params.target} °C` });
+  const op = OPERATIONS[params.action];
+  const heating = op.direction === 'heating';
+  if (sub.freezing && op.markers.includes('freezing') && (!heating || params.startTemp <= sub.freezing.point.value)) markers.push({ v: sub.freezing.point.value, label: `${u.meltLine} ${sub.freezing.point.value} °C` });
+  if (sub.boiling && op.markers.includes('boiling')) markers.push({ v: sub.boiling.point.value, label: `${u.boilLine} ${sub.boiling.point.value} °C` });
+  if (!sub.boiling && sub.decomposes && op.markers.includes('smoke')) markers.push({ v: sub.decomposes.value, label: `${locale === 'uk' ? 'димлення' : 'smoke'} ${sub.decomposes.value} °C` });
+  if (params.target !== undefined && op.target) markers.push({ v: params.target, label: `${u.targetLine} ${params.target} °C` });
   $('#legend').innerHTML = [['water', tr(sub.name, locale)], ['pot', u.potTemp], ...(h?.spec.method === 'contact' ? [['source', tr(h.name, locale)]] : [])]
     .map(([c, n]) => `<span class="key ${c}">${n}</span>`)
     .join('');
@@ -622,16 +623,17 @@ function buildShelf() {
   // 1. What we do.
   const actionBox = el('div', { className: 'actions' });
   for (const a of LAB_ACTIONS) {
-    const b = el('button', { type: 'button', className: `chip${a === params.action ? ' selected' : ''}` }, u.actions[a]);
+    const b = el('button', { type: 'button', className: `chip${a === params.action ? ' selected' : ''}` }, tr(OPERATIONS[a].label, locale));
     b.setAttribute('aria-pressed', String(a === params.action));
     b.onclick = () => setAction(a);
     actionBox.append(b);
   }
   const actionContent: HTMLElement[] = [actionBox];
-  if (params.action === 'heat-to' || params.action === 'cool-to') {
-    actionContent.push(number(u.target, params.target ?? (params.action === 'heat-to' ? 60 : 5), -30, 300, 1, (x) => (params = { ...params, target: x })));
+  const op = OPERATIONS[params.action];
+  if (op.target) {
+    actionContent.push(number(u.target, params.target ?? op.target.default, op.target.min, op.target.max, 1, (x) => (params = { ...params, target: x })));
   }
-  if (!query) section('action', u.action, u.actions[params.action], ...actionContent);
+  if (!query) section('action', u.action, tr(op.label, locale), ...actionContent);
 
   // 2. Substance.
   const sub = substance();
@@ -652,7 +654,7 @@ function buildShelf() {
               ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
               selected: x.id === params.substance,
               onPick: () => {
-                params = { ...params, substance: x.id as SubstanceId, startTemp: defaultStart(params.action, x) };
+                params = { ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x) };
                 rebuild();
               },
               detail: () => [
@@ -809,20 +811,14 @@ function buildShelf() {
   shelf.scrollTop = scroll;
 }
 
-/** Sensible starting temperature for an action: frozen below the melting point for "melt". */
-function defaultStart(action: LabAction, sub: SubstanceItem): number {
-  if (action === 'melt' && sub.freezing) return Math.round(sub.freezing.point.value - 10);
-  return 20;
-}
-
 function setAction(a: LabAction) {
-  const uses = actionUses(a);
-  // Freezing and cooling take hours of model time: start faster so the result comes in a minute or two.
-  speed = a === 'heat-to' || a === 'boil' || a === 'evaporate' ? 60 : 600;
+  const op = OPERATIONS[a];
+  const uses = op.uses;
+  // Freezing and cooling take hours of model time: such operations start faster.
+  speed = op.speed;
   $<HTMLSelectElement>('#speed').value = String(speed);
-  let next: LabParams = { ...params, action: a, startTemp: defaultStart(a, substance()) };
-  if (a === 'heat-to') next = { ...next, target: 60 };
-  else if (a === 'cool-to') next = { ...next, target: 5, startTemp: 60 };
+  let next: LabParams = { ...params, action: a, startTemp: op.startTemp(substance()) };
+  if (op.target) next = { ...next, target: op.target.default };
   else {
     const { target: _t, ...rest } = next;
     void _t;

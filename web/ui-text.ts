@@ -3,7 +3,6 @@ import type { Locale } from '../src/knowledge/i18n.js';
 /** Interface strings of the web lab. Content texts (laws, formulas) live in the knowledge layer. */
 export interface UiText {
   action: string;
-  actions: Readonly<Record<'heat-to' | 'boil' | 'evaporate' | 'cool-to' | 'freeze' | 'melt', string>>;
   target: string;
   substance: string;
   amount: string;
@@ -95,7 +94,6 @@ export interface UiText {
 export const UI: Readonly<Record<Locale, UiText>> = {
   uk: {
     action: 'Що робимо',
-    actions: { 'heat-to': 'Нагріти до…', boil: 'Закип’ятити', evaporate: 'Випарити досуха', 'cool-to': 'Охолодити до…', freeze: 'Заморозити', melt: 'Розплавити' },
     target: 'Цільова температура, °C',
     substance: 'Речовина',
     amount: 'Кількість, л',
@@ -185,7 +183,6 @@ export const UI: Readonly<Record<Locale, UiText>> = {
   },
   en: {
     action: 'What we do',
-    actions: { 'heat-to': 'Heat to…', boil: 'Boil', evaporate: 'Boil dry', 'cool-to': 'Cool to…', freeze: 'Freeze', melt: 'Melt' },
     target: 'Target temperature, °C',
     substance: 'Substance',
     amount: 'Amount, L',
