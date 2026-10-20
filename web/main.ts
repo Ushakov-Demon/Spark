@@ -14,6 +14,7 @@ import {
   type EquipmentItem,
   type HeaterId,
   type VesselId,
+  EQUIPMENT,
 } from '../src/equipment/index.js';
 import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
@@ -41,6 +42,10 @@ import {
   type LabParams,
   type LabStatus,
   configureStep,
+  fitChoices,
+  substancesFor,
+  vesselsFor,
+  addableTo,
   PRESETS,
   PRESET_GRADES,
   stepParams,
@@ -63,8 +68,11 @@ import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplie
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
-import { createScene, liquidColor, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
+import { createScene, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './icons.js';
+import { bottleSvg } from './pictures.js';
+import { referenceHtml, type RefTarget } from './reference.js';
+import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
 
 // ---------- persistent preferences (per browser, optional) ----------
@@ -222,6 +230,7 @@ function beginStep(placed: { readonly state: SystemState; readonly warnings: rea
   pendingAdds = [];
   doneRecord = null;
   fixes = labFixes(params);
+  if (document.querySelector('#add summary')) buildAdd();
   acc = 0;
   record();
   $('#report').innerHTML = '';
@@ -229,6 +238,8 @@ function beginStep(placed: { readonly state: SystemState; readonly warnings: rea
 }
 
 const stepElapsed = () => session.state.time - initialState.time;
+/** Has anything happened yet? (The page builds the shelf before the first session exists.) */
+const experimentStarted = (): boolean => session !== undefined && (history.length > 0 || stepElapsed() > 0);
 
 /** Close the current step (if it ran at all) and put it into the protocol. */
 function closeStep() {
@@ -455,10 +466,13 @@ function buildAdd() {
   box.append(el('summary', {}, u.addTitle));
   const sub = SUBSTANCES[addSub];
   const sel = el('select', {});
+  // Only what the engine can really put into these contents (a dry run of the add command).
+  const addable = new Set(addableTo(session.state, commands).map((x) => x.id));
+  if (!addable.has(addSub)) addSub = ([...addable][0] as SubstanceId | undefined) ?? addSub;
   for (const c of SUBSTANCE_CATEGORIES) {
     const g = el('optgroup', { label: tr(c.name, locale) });
-    for (const x of Object.values(SUBSTANCES).filter((y) => y.category === c.id)) g.append(el('option', { value: x.id, selected: x.id === addSub }, tr(x.name, locale)));
-    sel.append(g);
+    for (const x of Object.values(SUBSTANCES).filter((y) => y.category === c.id && addable.has(y.id))) g.append(el('option', { value: x.id, selected: x.id === addSub }, tr(x.name, locale)));
+    if (g.children.length) sel.append(g);
   }
   sel.onchange = () => {
     addSub = sel.value as SubstanceId;
@@ -892,51 +906,78 @@ function buildShelf() {
     };
     return el('label', { className: 'mini-field' }, el('span', {}, label), i);
   };
-  /** One selectable card; `detail` is shown under the selected one. */
-  const item = (o: { name: LocalizedText; note?: string | undefined; badge?: string; selected: boolean; problem?: string; onPick: () => void; detail?: () => HTMLElement[]; look?: string | undefined; swatch?: string }) => {
-    const li = el('li');
-    const b = el('button', { type: 'button', className: `item${o.selected ? ' selected' : ''}${o.problem ? ' incompatible' : ''}` });
+  /** One selectable card with a picture; the "i" button opens the reference card. */
+  const card = (o: { name: LocalizedText; note?: string | undefined; badge?: string; selected: boolean; pic: string; ref?: string; onPick: () => void }) => {
+    const li = el('li', { className: 'card-li' });
+    const b = el('button', { type: 'button', className: `card-item${o.selected ? ' selected' : ''}` });
     b.setAttribute('aria-pressed', String(o.selected));
-    // A picture first: a drop of the liquid or the device's icon.
-    const pic = el('span', { className: 'item-pic' });
-    if (o.swatch) pic.append(el('span', { className: 'swatch', style: `--c:${o.swatch}` } as Record<string, unknown>));
-    else pic.innerHTML = icon(o.look);
-    b.append(pic, el('span', { className: 'item-name' }, tr(o.name, locale), ...(o.badge ? [el('span', { className: 'badge' }, o.badge)] : [])));
-    if (o.problem || o.note) b.append(el('span', { className: 'item-note' }, o.problem ? `⚠ ${o.problem}` : o.note!));
-    if (o.problem) b.title = o.problem;
+    b.innerHTML = `<span class="card-pic">${o.pic}</span>`;
+    b.append(el('span', { className: 'card-name' }, tr(o.name, locale)), ...(o.badge ? [el('span', { className: 'badge' }, o.badge)] : []), ...(o.note ? [el('span', { className: 'card-note' }, o.note)] : []));
     b.onclick = o.onPick;
     li.append(b);
-    if (o.selected && o.detail) li.append(el('div', { className: 'item-detail' }, ...o.detail()));
+    if (o.ref) {
+      const info = el('button', { type: 'button', className: 'info', title: u.reference }, 'i');
+      info.setAttribute('aria-label', `${u.reference}: ${tr(o.name, locale)}`);
+      info.dataset['ref'] = o.ref;
+      li.append(info);
+    }
     return li;
   };
   const describe = (i: { description: Parameters<typeof textFor>[0]; safety?: Parameters<typeof textFor>[0]; modelNotes?: readonly LocalizedText[] }): HTMLElement[] => [
     el('p', {}, tr(textFor(i.description, level), locale)),
     ...(i.safety ? [el('p', { className: 'safety' }, `⚠ ${u.safety}: ${tr(textFor(i.safety, level), locale)}`)] : []),
-    ...(i.modelNotes ?? []).map((n) => el('p', { className: 'muted small' }, `ℹ ${tr(n, locale)}`)),
   ];
-  const groupList = (groups: readonly { label: string; items: (HTMLElement | null)[] }[]) => {
+  /** Cards in groups; the selected card's settings follow the cards. */
+  const cardGroups = (groups: readonly { label: string; cards: HTMLElement[] }[], detail?: HTMLElement[]) => {
     const out: HTMLElement[] = [];
     for (const g of groups) {
-      const items = g.items.filter((x): x is HTMLElement => x !== null);
-      if (!items.length) continue;
-      out.push(el('div', { className: 'group-label' }, g.label), el('ul', { className: 'items' }, ...items));
+      if (!g.cards.length) continue;
+      out.push(el('div', { className: 'group-label' }, g.label), el('ul', { className: 'cards' }, ...g.cards));
     }
+    if (detail?.length) out.push(el('div', { className: 'item-detail' }, ...detail));
     return out;
   };
   const volume = (l: number) => (l < 1 ? `${Math.round(l * 1000)} ${u.ml}` : `${num(l)} ${u.liters}`);
   const num = (x: number) => sig(x, 4, locale);
   const hasEstimate = (vals: readonly ({ verification: string } | undefined)[]) => vals.some((v) => v?.verification === 'estimate');
+  /** Once the experiment is under way, the vessel and its contents stay: only what fits them is offered. */
+  const started = experimentStarted();
+  const sub = substance();
+  const v = vesselItem();
+  const pick = (next: LabParams, after: () => void) => {
+    params = fitChoices(next);
+    after();
+  };
 
-  // 1. What we do.
-  const actionBox = el('div', { className: 'actions' });
-  for (const a of LAB_ACTIONS) {
+  // 1. What we do: a carousel of tiles, three at a time.
+  const actions = LAB_ACTIONS.filter((a) => !started || (OPERATIONS[a].accepts?.(sub) ?? true));
+  const track = el('div', { className: 'car-track' });
+  for (const a of actions) {
     const b = el('button', { type: 'button', className: `tile${a === params.action ? ' selected' : ''}` });
     b.innerHTML = `${icon(OPERATIONS[a].icon, 'ic big')}<span>${tr(OPERATIONS[a].label, locale)}</span>`;
     b.setAttribute('aria-pressed', String(a === params.action));
     b.onclick = () => setAction(a);
-    actionBox.append(b);
+    track.append(b);
   }
-  const actionContent: HTMLElement[] = [actionBox];
+  const prev = el('button', { type: 'button', className: 'car-btn' }, '‹');
+  const next = el('button', { type: 'button', className: 'car-btn' }, '›');
+  prev.setAttribute('aria-label', locale === 'uk' ? 'Попередні' : 'Previous');
+  next.setAttribute('aria-label', locale === 'uk' ? 'Наступні' : 'Next');
+  const dots = el('div', { className: 'car-dots' }, ...Array.from({ length: Math.ceil(actions.length / 3) }, () => el('span')));
+  const sync = () => {
+    const page = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    [...dots.children].forEach((d, i) => d.classList.toggle('on', i === page));
+    prev.disabled = track.scrollLeft <= 2;
+    next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+  };
+  prev.onclick = () => track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' });
+  next.onclick = () => track.scrollBy({ left: track.clientWidth, behavior: 'smooth' });
+  track.addEventListener('scroll', sync, { passive: true });
+  requestAnimationFrame(() => {
+    track.scrollLeft = Math.floor(Math.max(0, actions.indexOf(params.action)) / 3) * track.clientWidth;
+    sync();
+  });
+  const actionContent: HTMLElement[] = [el('div', { className: 'carousel' }, prev, track, next), dots];
   const op = OPERATIONS[params.action];
   if (op.target) {
     actionContent.push(number(u.target, params.target ?? op.target.default, op.target.min, op.target.max, 1, (x) => (params = { ...params, target: x }), stepChanged));
@@ -946,201 +987,204 @@ function buildShelf() {
   }
   if (!query) section('action', u.action, tr(op.label, locale), ...actionContent);
 
-  // 2. Substance.
-  const sub = substance();
-  const small = params.size < 0.1;
-  section(
-    'substance',
-    u.substance,
-    tr(sub.name, locale),
-    ...groupList(
-      SUBSTANCE_CATEGORIES.filter((c) => c.id.startsWith('liquid.')).map((c) => ({
-        label: tr(c.name, locale),
-        items: Object.values(SUBSTANCES)
-          .filter((x) => x.category === c.id && matches(x.name))
-          .map((x) =>
-            item({
-              name: x.name,
-              swatch: liquidColor(liquidKindOf(x)),
-              note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
-              ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
-              selected: x.id === params.substance,
-              onPick: () => {
-                params = { ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x) };
-                rebuild();
-              },
-              detail: () => [
-                ...describe(x),
-                number(`${u.amount} (≤ ${volume(params.size)})`, params.liters, small ? 0.001 : 0.01, params.size, small ? 0.001 : 0.01, (v) => (params = { ...params, liters: v })),
-                number(u.startTemp, params.startTemp, -30, 300, 1, (v) => (params = { ...params, startTemp: v })),
-              ],
-            }),
-          ),
-      })),
-    ),
-  );
-
-  // 3. Vessel.
-  const v = vesselItem();
-  section(
-    'vessel',
-    u.vessel,
-    `${tr(v.name, locale)}, ${volume(params.size)}`,
-    ...groupList(
-      childrenOf('vessel').map((c) => ({
-        label: tr(c.name, locale),
-        items: itemsUnder(c.id)
-          .filter((x): x is typeof v => x.kind === 'vessel' && matches(x.name))
-          .map((x) =>
-            item({
-              name: x.name,
-              look: x.look,
-              note: `${x.spec.materials.map((m) => u.materials[m] ?? m).join(', ')} · ${volume(x.spec.sizes[0]!)}–${volume(x.spec.sizes.at(-1)!)}`,
-              selected: x.id === params.vessel,
-              onPick: () => {
-                const size = x.spec.defaultSize;
-                params = { ...params, vessel: x.id as VesselId, size, material: x.spec.defaultMaterial, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
-                delete (params as { vesselMass?: number }).vesselMass;
-                rebuild();
-              },
-              detail: () => {
-                const out: HTMLElement[] = [...describe(x), el('span', { className: 'muted small' }, u.size)];
-                out.push(
-                  chips(x.spec.sizes.map((z) => [String(z), volume(z)] as const), String(params.size), (z) => {
-                    const size = Number(z);
-                    params = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7, size < 0.1 ? 3 : 2) };
-                    delete (params as { vesselMass?: number }).vesselMass;
-                    rebuild();
-                  }),
-                );
-                if (x.spec.materials.length > 1) {
-                  out.push(
-                    el('span', { className: 'muted small' }, u.material),
-                    chips(x.spec.materials.map((m) => [m, u.materials[m] ?? m] as const), params.material, (m) => {
-                      params = { ...params, material: m };
-                      rebuild();
-                    }),
-                  );
-                }
-                out.push(number(u.vesselMass, params.vesselMass ?? typicalVesselMass(x, params.size), 0.01, 20, 0.01, (m) => (params = { ...params, vesselMass: m })));
-                if (x.spec.lid === 'optional') {
-                  const lid = el('input', { type: 'checkbox', checked: params.lid });
-                  lid.onchange = () => {
-                    params = { ...params, lid: lid.checked };
-                    rebuild();
-                  };
-                  out.push(el('label', { className: 'check' }, lid, el('span', {}, u.lid)));
-                }
-                return out;
-              },
-            }),
-          ),
-      })),
-    ),
-  );
-
-  // 4. Heater or cooler, depending on the action.
+  // 2. The device — it decides which vessels can be used.
   const uses = actionUses(params.action);
-  const roomItem = (selected: boolean, onPick: () => void) =>
-    !matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? null : item({ name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, look: 'room', note: `${params.roomTemp} °C`, selected, onPick });
+  const devPic = (look: string | undefined) => `<span class="dev-pic">${icon(look, 'ic huge')}</span>`;
+  const roomCard = (selected: boolean, onPick: () => void) =>
+    matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? [card({ name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, pic: devPic('room'), note: `${params.roomTemp} °C`, selected, onPick })] : [];
   if (uses === 'supply') {
     const groups = childrenOf('device.power').map((c) => ({
       label: tr(c.name, locale),
-      items: Object.values(SUPPLIES)
+      cards: Object.values(SUPPLIES)
         .filter((x) => x.category === c.id && matches(x.name))
         .map((x) =>
-          item({
+          card({
             name: x.name,
-            look: x.look,
+            pic: devPic(x.look),
+            ref: `equipment:${x.id}`,
             note: `${x.spec.voltage.min === x.spec.voltage.max ? `${x.spec.voltage.max} ${u.volts}` : `${x.spec.voltage.min}–${x.spec.voltage.max} ${u.volts}`} · ≤ ${sig(x.spec.currentLimit.value, 3, locale)} ${u.amps}`,
             ...([x.spec.currentLimit, x.spec.internalResistance].some((d) => d?.verification === 'estimate') ? { badge: u.estimateBadge } : {}),
             selected: x.id === params.supply?.id,
             onPick: () => {
-              params = { ...params, supply: { id: x.id as SupplyId, knob: lastSupply.knob } };
-              lastSupply = params.supply!;
-              stepChanged();
+              lastSupply = { id: x.id as SupplyId, knob: lastSupply.knob };
+              pick({ ...params, supply: lastSupply }, stepChanged);
             },
-            detail: () => describe(x),
           }),
         ),
     }));
-    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...groupList(groups));
+    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...cardGroups(groups));
   } else if (uses === 'heater' || uses === 'either') {
-    const groups: { label: string; items: (HTMLElement | null)[] }[] = childrenOf('device.heater').map((c) => ({
+    const h = params.heater ? HEATERS[params.heater.id] : undefined;
+    const groups = childrenOf('device.heater').map((c) => ({
       label: tr(c.name, locale),
-      items: itemsUnder(c.id)
+      cards: itemsUnder(c.id)
         .filter((x): x is NonNullable<ReturnType<typeof heaterItem>> => x.kind === 'heater' && matches(x.name))
-        .map((x) => {
-          const compat = canHeat(x, v, params.material, params.size);
-          return item({
+        // During an experiment the vessel stays: only heaters that work with it.
+        .filter((x) => !started || canHeat(x, v, params.material, params.size).ok)
+        .map((x) =>
+          card({
             name: x.name,
-            look: x.look,
+            pic: devPic(x.look),
+            ref: `equipment:${x.id}`,
             note: x.spec.ratings.map((r) => formatQuantity(r, 'W', { locale, level: 'school' })).join(' / '),
             ...(x.spec.ratingData.verification === 'estimate' ? { badge: u.estimateBadge } : {}),
-            ...(compat.ok ? {} : { problem: tr(compat.reason, locale) }),
             selected: x.id === params.heater?.id,
             onPick: () => {
-              params = { ...params, heater: { id: x.id as HeaterId, rating: x.spec.defaultRating, knob: x.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 } };
-              lastHeater = params.heater!;
-              stepChanged();
+              lastHeater = { id: x.id as HeaterId, rating: x.spec.defaultRating, knob: x.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 };
+              pick({ ...params, heater: lastHeater }, stepChanged);
             },
-            detail: () => [
-              ...describe(x),
-              el('span', { className: 'muted small' }, u.model),
-              chips(x.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.heater?.rating), (r) => {
-                params = { ...params, heater: { ...params.heater!, rating: Number(r) } };
-                lastHeater = params.heater!;
-                stepChanged();
-              }),
-            ],
-          });
-        }),
+          }),
+        ),
     }));
-    if (uses === 'either') groups.unshift({ label: locale === 'uk' ? 'Без нагрівача' : 'No heater', items: [roomItem(!params.heater, () => {
-      const { heater: _h, ...rest } = params;
-      void _h;
-      params = rest;
-      stepChanged();
-    })] });
-    section('device', uses === 'either' ? u.meltWith : u.device, params.heater ? tr(HEATERS[params.heater.id].name, locale) : u.justRoom, ...groupList(groups));
+    if (uses === 'either') {
+      groups.unshift({
+        label: locale === 'uk' ? 'Без нагрівача' : 'No heater',
+        cards: roomCard(!params.heater, () => {
+          const { heater: _h, ...rest } = params;
+          void _h;
+          pick(rest, stepChanged);
+        }),
+      });
+    }
+    const detail = h && params.heater && h.spec.ratings.length > 1
+      ? [el('span', { className: 'muted small' }, u.model), chips(h.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.heater.rating), (r) => {
+          lastHeater = { ...params.heater!, rating: Number(r) };
+          pick({ ...params, heater: lastHeater }, stepChanged);
+        })]
+      : [];
+    section('device', uses === 'either' ? u.meltWith : u.device, h ? tr(h.name, locale) : u.justRoom, ...cardGroups(groups, detail));
   } else {
+    const cool = params.cooler ? COOLERS[params.cooler.id] : undefined;
     const groups = [
-      { label: locale === 'uk' ? 'Без охолоджувача' : 'No cooler', items: [roomItem(!params.cooler, () => {
-        const { cooler: _c, ...rest } = params;
-        void _c;
-        params = rest;
-        stepChanged();
-      })] },
+      {
+        label: locale === 'uk' ? 'Без охолоджувача' : 'No cooler',
+        cards: roomCard(!params.cooler, () => {
+          const { cooler: _c, ...rest } = params;
+          void _c;
+          pick(rest, stepChanged);
+        }),
+      },
       ...childrenOf('device.cooler').map((c) => ({
         label: tr(c.name, locale),
-        items: itemsUnder(c.id)
+        cards: itemsUnder(c.id)
           .filter((x): x is (typeof COOLERS)[CoolerId] => x.kind === 'cooler' && matches(x.name))
           .map((x) =>
-            item({
+            card({
               name: x.name,
-              look: x.look,
+              pic: devPic(x.look),
+              ref: `equipment:${x.id}`,
               note: x.spec.setpoint.max > x.spec.setpoint.min ? `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C` : `${x.spec.setpoint.default} °C`,
               selected: x.id === params.cooler?.id,
               onPick: () => {
-                params = { ...params, cooler: { id: x.id as CoolerId, setpoint: x.spec.setpoint.default } };
-                lastCooler = params.cooler!;
-                stepChanged();
+                lastCooler = { id: x.id as CoolerId, setpoint: x.spec.setpoint.default };
+                pick({ ...params, cooler: lastCooler }, stepChanged);
               },
-              detail: () => [
-                ...describe(x),
-                ...(x.spec.setpoint.max > x.spec.setpoint.min
-                  ? [number(`${u.setpoint} (${x.spec.setpoint.min}…${x.spec.setpoint.max})`, params.cooler?.setpoint ?? x.spec.setpoint.default, x.spec.setpoint.min, x.spec.setpoint.max, 1, (sp) => {
-                      params = { ...params, cooler: { ...params.cooler!, setpoint: sp } };
-                      lastCooler = params.cooler!;
-                    }, stepChanged)]
-                  : []),
-              ],
             }),
           ),
       })),
     ];
-    section('device', u.coolWhere, params.cooler ? tr(COOLERS[params.cooler.id].name, locale) : u.justRoom, ...groupList(groups));
+    const detail = cool && cool.spec.setpoint.max > cool.spec.setpoint.min
+      ? [number(`${u.setpoint} (${cool.spec.setpoint.min}…${cool.spec.setpoint.max})`, params.cooler!.setpoint, cool.spec.setpoint.min, cool.spec.setpoint.max, 1, (sp) => {
+          lastCooler = { ...params.cooler!, setpoint: sp };
+          params = { ...params, cooler: lastCooler };
+        }, stepChanged)]
+      : [];
+    section('device', u.coolWhere, cool ? tr(cool.name, locale) : u.justRoom, ...cardGroups(groups, detail));
   }
+
+  // 3. Substance — only what the chosen operation can be done with.
+  const accepted = new Set(substancesFor(params.action).map((x) => x.id));
+  const small = params.size < 0.1;
+  const formulaOf = (x: SubstanceItem) =>
+    x.recipe ? RECIPES[x.recipe as RecipeId].parts.map((p) => COMPONENTS[p.component].formula ?? '').join('+') : (x.component && COMPONENTS[x.component as keyof typeof COMPONENTS]?.formula) || '';
+  section(
+    'substance',
+    u.substance,
+    tr(sub.name, locale),
+    ...cardGroups(
+      SUBSTANCE_CATEGORIES.filter((c) => c.id.startsWith('liquid.')).map((c) => ({
+        label: tr(c.name, locale),
+        cards: Object.values(SUBSTANCES)
+          .filter((x) => x.category === c.id && accepted.has(x.id) && matches(x.name))
+          .filter(() => !started)
+          .map((x) =>
+            card({
+              name: x.name,
+              pic: bottleSvg(liquidKindOf(x), formulaOf(x)),
+              ref: `substance:${x.id}`,
+              note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
+              ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
+              selected: x.id === params.substance,
+              onPick: () => pick({ ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x) }, rebuild),
+            }),
+          ),
+      })),
+      [
+        ...describe(sub),
+        ...(started
+          ? [el('p', { className: 'muted small' }, u.lockedDuringExperiment)]
+          : [
+              number(`${u.amount} (≤ ${volume(params.size)})`, params.liters, small ? 0.001 : 0.01, params.size, small ? 0.001 : 0.01, (x) => (params = { ...params, liters: x })),
+              number(u.startTemp, params.startTemp, -30, 300, 1, (x) => (params = { ...params, startTemp: x })),
+            ]),
+      ],
+    ),
+  );
+
+  // 4. Vessel — only what the chosen device can work with.
+  const fits = vesselsFor(params);
+  const fit = fits.find((f) => f.vessel.id === params.vessel);
+  section(
+    'vessel',
+    u.vessel,
+    `${tr(v.name, locale)}, ${volume(params.size)}`,
+    ...cardGroups(
+      childrenOf('vessel').map((c) => ({
+        label: tr(c.name, locale),
+        cards: fits
+          .filter((f) => f.vessel.category === c.id && matches(f.vessel.name))
+          .filter(() => !started)
+          .map((f) =>
+            card({
+              name: f.vessel.name,
+              pic: vesselPreview((f.vessel.look ?? 'pot') as VesselShape, f.vessel.id === params.vessel ? params.material : f.materials[0]!, liquidKindOf(sub)),
+              ref: `equipment:${f.vessel.id}`,
+              note: `${f.materials.map((m) => u.materials[m] ?? m).join(', ')} · ${volume(f.sizes[0]!)}${f.sizes.length > 1 ? `–${volume(f.sizes.at(-1)!)}` : ''}`,
+              selected: f.vessel.id === params.vessel,
+              onPick: () => {
+                const size = f.sizes.includes(f.vessel.spec.defaultSize) ? f.vessel.spec.defaultSize : f.sizes[0]!;
+                const material = f.materials.includes(f.vessel.spec.defaultMaterial) ? f.vessel.spec.defaultMaterial : f.materials[0]!;
+                const q = { ...params, vessel: f.vessel.id as VesselId, size, material, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
+                delete (q as { vesselMass?: number }).vesselMass;
+                pick(q, rebuild);
+              },
+            }),
+          ),
+      })),
+      started || !fit
+        ? [el('p', { className: 'muted small' }, started ? u.lockedDuringExperiment : '')]
+        : [
+            el('span', { className: 'muted small' }, u.size),
+            chips(fit.sizes.map((z) => [String(z), volume(z)] as const), String(params.size), (z) => {
+              const size = Number(z);
+              const q = { ...params, size, liters: params.liters <= size ? params.liters : round(size * 0.7, size < 0.1 ? 3 : 2) };
+              delete (q as { vesselMass?: number }).vesselMass;
+              pick(q, rebuild);
+            }),
+            ...(fit.materials.length > 1
+              ? [el('span', { className: 'muted small' }, u.material), chips(fit.materials.map((m) => [m, u.materials[m] ?? m] as const), params.material, (m) => pick({ ...params, material: m }, rebuild))]
+              : []),
+            number(u.vesselMass, params.vesselMass ?? typicalVesselMass(v, params.size), 0.01, 20, 0.01, (m) => (params = { ...params, vesselMass: m })),
+            ...(v.spec.lid === 'optional'
+              ? (() => {
+                  const lid = el('input', { type: 'checkbox', checked: params.lid });
+                  lid.onchange = () => pick({ ...params, lid: lid.checked }, rebuild);
+                  return [el('label', { className: 'check' }, lid, el('span', {}, u.lid))];
+                })()
+              : []),
+          ],
+    ),
+  );
 
   // 5. Conditions.
   if (!query) section('conditions', locale === 'uk' ? 'Умови' : 'Conditions', `${params.roomTemp} °C`, number(u.room, params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x })));
@@ -1172,6 +1216,13 @@ function setAction(a: LabAction) {
   void _h;
   void _s;
   next = uses === 'heater' ? { ...bare, heater: lastHeater } : uses === 'cooler' ? { ...bare, cooler: lastCooler } : uses === 'supply' ? { ...bare, supply: lastSupply } : bare;
+  const started = experimentStarted();
+  if (started && next.heater && !canHeat(HEATERS[next.heater.id], vesselItem(), next.material, next.size).ok) {
+    // The vessel stays during an experiment: take the first heater that works with it.
+    const ok = (Object.keys(HEATERS) as HeaterId[]).find((id) => canHeat(HEATERS[id], vesselItem(), next.material, next.size).ok);
+    if (ok) next = { ...next, heater: { id: ok, rating: HEATERS[ok].spec.defaultRating, knob: 1 } };
+  }
+  if (!started) next = fitChoices(next);
   params = next;
   stepChanged();
 }
@@ -1190,6 +1241,7 @@ function buildHeader() {
     buildAdd();
     buildPresets();
     render();
+    if (refTarget) openRef(refTarget);
     if ($('#report').innerHTML) explain();
   };
   const lv = $<HTMLSelectElement>('#level');
@@ -1199,6 +1251,7 @@ function buildHeader() {
     level = lv.value as Level;
     store.set('level', level);
     buildShelf();
+    if (refTarget) openRef(refTarget);
     if ($('#report').innerHTML) explain();
   };
 }
@@ -1325,6 +1378,42 @@ function applyFix(f: LabFix) {
   lastFrame = 0;
   render();
 }
+
+// ---------- reference card ----------
+let refTarget: RefTarget | null = null;
+function openRef(target: RefTarget) {
+  refTarget = target;
+  $('#ref-body').innerHTML = referenceHtml(target, { locale, level });
+  const r = $('#ref');
+  r.classList.add('open');
+  r.setAttribute('aria-hidden', 'false');
+  $('#ref-body').scrollTop = 0;
+  $<HTMLButtonElement>('#ref-close').focus();
+}
+function closeRef() {
+  refTarget = null;
+  const r = $('#ref');
+  r.classList.remove('open');
+  r.setAttribute('aria-hidden', 'true');
+}
+/** "substance:water", "equipment:pot", "component:sodium-chloride" → what to show. */
+function refFor(key: string): RefTarget | null {
+  const [kind, id] = key.split(':') as [string, string];
+  if (kind === 'substance' && id in SUBSTANCES) return { kind: 'substance', item: SUBSTANCES[id as SubstanceId] };
+  if (kind === 'component' && id in COMPONENTS) return { kind: 'component', id: id as keyof typeof COMPONENTS };
+  const eq = EQUIPMENT.find((e) => e.id === id);
+  return kind === 'equipment' && eq ? { kind: 'equipment', item: eq } : null;
+}
+document.addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLElement>('[data-ref]');
+  if (!b) return;
+  const target = refFor(b.dataset['ref']!.includes(':') ? b.dataset['ref']! : `component:${b.dataset['ref']}`);
+  if (target) openRef(target);
+});
+$('#ref-close').onclick = closeRef;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && refTarget) closeRef();
+});
 
 // ---------- side panel: fold / unfold ----------
 function renderSide() {

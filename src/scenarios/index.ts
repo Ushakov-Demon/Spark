@@ -10,3 +10,4 @@ export * from './protocol.js';
 export * from './lab-fixes.js';
 export * from './lab-knowledge.js';
 export * from './presets.js';
+export * from './choices.js';

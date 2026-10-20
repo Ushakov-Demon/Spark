@@ -1,6 +1,6 @@
 import type { LocalizedText } from '../knowledge/i18n.js';
 import { hasFlatBottom, vesselGeometry } from './geometry.js';
-import type { HeaterItem, VesselItem } from './types.js';
+import type { ElectrodesSpec, HeaterItem, VesselItem } from './types.js';
 
 export type Compatibility = { readonly ok: true } | { readonly ok: false; readonly reason: LocalizedText };
 
@@ -55,6 +55,21 @@ export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string
     }
   }
   return { ok: true };
+}
+
+/** Do two electrodes (their gap plus two plates) fit through the opening of this vessel? */
+export function canHoldElectrodes(electrodes: ElectrodesSpec, vessel: VesselItem, capacityL: number = vessel.spec.defaultSize): Compatibility {
+  const need = electrodes.gap + 0.01; // the gap plus two plates ≈ 5 mm each
+  const g = vesselGeometry(vessel.spec.shape, capacityL, capacityL);
+  if (g.opening >= need) return { ok: true };
+  const mm = (x: number) => Math.round(x * 1000);
+  return {
+    ok: false,
+    reason: {
+      uk: `Два електроди (потрібно ≈ ${mm(need)} мм) не вміщаються в отвір посуду «${vessel.name.uk}» (≈ ${mm(g.opening)} мм).`,
+      en: `Two electrodes (≈ ${mm(need)} mm needed) do not fit into the opening of the ${vessel.name.en.toLowerCase()} (≈ ${mm(g.opening)} mm).`,
+    },
+  };
 }
 
 /** Knob position (0 … 1) → power, W. 0 is always off; flames have a minimum stable flame. */

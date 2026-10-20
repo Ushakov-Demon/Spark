@@ -9,6 +9,8 @@ export const BOIL: Operation = {
   uses: 'heater',
   direction: 'heating',
   speed: 60,
+  // Boils — or, like oil, heats up until it smokes (the lab explains that it does not boil).
+  accepts: (sub) => sub.boiling !== undefined || sub.decomposes !== undefined,
   startTemp: () => 20,
   reached(b, _p, sub) {
     const T = b.state.temperature;

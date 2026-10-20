@@ -254,6 +254,23 @@ function deviceSvg(d: DeviceKind, g: VesselGeom): string {
   }
 }
 
+/** A small picture of a vessel for the shelf: the same drawing as on the table, with some liquid in it. */
+export function vesselPreview(shape: VesselShape, material: string, liquid: LiquidKind = 'water', fill = 0.6): string {
+  const g = vesselGeom(shape, TABLE);
+  const glass = isGlass(material);
+  const metal = METAL[material] ?? METAL['steel']!;
+  const level = g.bottom - fill * (g.bottom - g.top);
+  const id = `vp-${shape}-${material}`.replace(/[^a-z0-9-]/gi, '');
+  const pad = shape === 'turka' ? 130 : shape === 'flask-round' || shape === 'test-tube' ? 90 : 34;
+  return `<svg class="thumb" viewBox="${g.left - 34} ${g.top - 16} ${g.right - g.left + 34 + pad} ${g.bottom - g.top + 22}" aria-hidden="true">
+    <defs><clipPath id="${id}"><path d="${g.inner}"/></clipPath></defs>
+    ${glass ? '' : `<path d="${g.outer}" style="fill:${metal.fill};stroke:${metal.edge}" stroke-width="3"/>`}
+    <g clip-path="url(#${id})"><rect x="${g.left - 10}" y="${level}" width="${g.right - g.left + 20}" height="${g.bottom - level + 10}" style="fill:${LIQUID[liquid]}"/></g>
+    ${glass ? `<path d="${g.outer}" style="fill:rgba(210,232,255,0.18);stroke:#8fb8dd" stroke-width="4"/>` : ''}
+    <g class="thumb-extras">${g.extras.replace(/class="stand"[^/]*\/>/, '')}</g>
+  </svg>`;
+}
+
 export function createScene(): Scene {
   const root = document.createElement('div');
   root.className = 'scene';

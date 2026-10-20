@@ -23,12 +23,12 @@ export const fixed = (v: number, decimals: number, locale: Locale): string =>
 /** Unit symbols per language (SI symbols are international, but Ukrainian uses Cyrillic ones). */
 const UNITS: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   uk: {
-    J: 'Дж', kJ: 'кДж', W: 'Вт', kg: 'кг', s: 'с', min: 'хв', 'J/kg': 'Дж/кг', 'kg/s': 'кг/с', 'm/s': 'м/с', 'kg/m³': 'кг/м³', m: 'м', 'm²': 'м²', K: 'K', '°C': '°C',
+    J: 'Дж', kJ: 'кДж', W: 'Вт', kg: 'кг', s: 'с', min: 'хв', 'J/kg': 'Дж/кг', 'kg/s': 'кг/с', 'm/s': 'м/с', 'kg/m³': 'кг/м³', 'kg/mol': 'кг/моль', 'g/100 g water': 'г на 100 г води', 'g/100 mL water': 'г на 100 мл води', 'g CuSO₄/100 mL water': 'г CuSO₄ на 100 мл води', '1/K': '1/К', 'A·h': 'А·год', m: 'м', 'm²': 'м²', K: 'K', '°C': '°C',
     'W/K': 'Вт/К', 'J/K': 'Дж/К', 'W/(m·K)': 'Вт/(м·К)', 'W/(m²·K)': 'Вт/(м²·К)', 'J/(kg·K)': 'Дж/(кг·К)', 'J/(kg·°C)': 'Дж/(кг·°C)',
     A: 'А', V: 'В', 'Ω': 'Ом', C: 'Кл', mL: 'мл', 'S/m': 'См/м', 'Ω·m': 'Ом·м', 'C/mol': 'Кл/моль', mol: 'моль', '1/m': 'м⁻¹', '': '',
   },
   en: {
-    J: 'J', kJ: 'kJ', W: 'W', kg: 'kg', s: 's', min: 'min', 'J/kg': 'J/kg', 'kg/s': 'kg/s', 'm/s': 'm/s', 'kg/m³': 'kg/m³', m: 'm', 'm²': 'm²', K: 'K', '°C': '°C',
+    J: 'J', kJ: 'kJ', W: 'W', kg: 'kg', s: 's', min: 'min', 'J/kg': 'J/kg', 'kg/s': 'kg/s', 'm/s': 'm/s', 'kg/m³': 'kg/m³', 'kg/mol': 'kg/mol', 'g/100 g water': 'g per 100 g of water', 'g/100 mL water': 'g per 100 mL of water', 'g CuSO₄/100 mL water': 'g CuSO₄ per 100 mL of water', '1/K': '1/K', 'A·h': 'A·h', m: 'm', 'm²': 'm²', K: 'K', '°C': '°C',
     'W/K': 'W/K', 'J/K': 'J/K', 'W/(m·K)': 'W/(m·K)', 'W/(m²·K)': 'W/(m²·K)', 'J/(kg·K)': 'J/(kg·K)', 'J/(kg·°C)': 'J/(kg·°C)',
     A: 'A', V: 'V', 'Ω': 'Ω', C: 'C', mL: 'mL', 'S/m': 'S/m', 'Ω·m': 'Ω·m', 'C/mol': 'C/mol', mol: 'mol', '1/m': '1/m', '': '',
   },

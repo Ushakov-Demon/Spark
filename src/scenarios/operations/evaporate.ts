@@ -11,6 +11,7 @@ export const EVAPORATE: Operation = {
   uses: 'heater',
   direction: 'heating',
   speed: 60,
+  accepts: (sub) => sub.boiling !== undefined,
   startTemp: () => 20,
   // Boiled dry: no water left (a salt solution leaves its salt behind).
   reached: (b) => (b.state.mixture ? b.state.mixture.water <= 1e-6 : bodyMass(b) <= 1e-6),

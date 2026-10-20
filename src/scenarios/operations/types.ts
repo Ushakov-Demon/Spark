@@ -56,6 +56,8 @@ export interface Operation {
   readonly speed: number;
   /** Start temperature that makes sense for this operation and substance, °C. */
   startTemp(sub: SubstanceItem): number;
+  /** Can this operation be done with this substance at all (melting needs a solid state)? Absent — any. */
+  accepts?(sub: SubstanceItem): boolean;
   /** Has the goal been reached? (The stop condition.) */
   reached(sample: ThermalBody, p: LabParams, sub: SubstanceItem, state: SystemState): boolean;
   /** The run stops not at the goal but at something else for this substance (oil smokes instead of boiling). */

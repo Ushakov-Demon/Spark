@@ -19,6 +19,8 @@ export interface UiText {
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
+  reference: string;
+  lockedDuringExperiment: string;
   presetsButton: string;
   presetsTitle: string;
   grade(n: number): string;
@@ -163,6 +165,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
+    reference: 'Довідка',
+    lockedDuringExperiment: 'Під час досліду речовину й посуд не міняють — щоб почати інший дослід, натисни «Спочатку».',
     presetsButton: 'Досліди за класами',
     presetsTitle: 'Готові досліди',
     grade: (n) => `${n} клас`,
@@ -305,6 +309,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
+    reference: 'Reference',
+    lockedDuringExperiment: 'The substance and the vessel stay during an experiment — press “Start over” for another one.',
     presetsButton: 'Experiments by grade',
     presetsTitle: 'Ready-made experiments',
     grade: (n) => `Grade ${n}`,

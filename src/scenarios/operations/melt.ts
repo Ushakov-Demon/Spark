@@ -10,6 +10,7 @@ export const MELT: Operation = {
   direction: 'heating',
   speed: 600,
   // Start frozen: 10 °C below the melting point.
+  accepts: (sub) => sub.freezing !== undefined,
   startTemp: (sub) => (sub.freezing ? Math.round(sub.freezing.point.value - 10) : 20),
   reached: (b, _p, sub) => (b.state.solidFraction ?? 0) <= 0 && sub.freezing !== undefined && b.state.temperature >= K(sub.freezing.point.value) - 1e-6,
   impossible({ p, sub, surroundingTemp, where }) {

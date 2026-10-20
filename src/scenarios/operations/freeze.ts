@@ -10,6 +10,7 @@ export const FREEZE: Operation = {
   uses: 'cooler',
   direction: 'cooling',
   speed: 600,
+  accepts: (sub) => sub.freezing !== undefined,
   startTemp: () => 20,
   reached: (b) => (b.state.solidFraction ?? 0) >= 1,
   impossible({ sub, surroundingTemp, where }) {
