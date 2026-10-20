@@ -1,6 +1,7 @@
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
+import { SUBSTANCES } from '../substances/catalog.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -26,6 +27,15 @@ export interface Preset {
   /** Show only the programme quotes that contain this ("плавлен" — melting, not boiling). */
   readonly quoteHas?: string;
   /**
+   * A measuring procedure, led step by step from the very start (no "Start"): each plan step is a
+   * button; the readings go onto the board one by one.
+   */
+  readonly guided?: boolean;
+  /** When the choices are offered: before the start (a prediction, default) or at the end (the conclusion). */
+  readonly choicesAt?: 'start' | 'end';
+  /** The choices come as a table of this property (the experimenter looks the result up in it). */
+  readonly choiceTable?: 'density';
+  /**
    * Possible answers to the question, to pick before the start (a prediction).
    * Which one is right is not written here: the answer works it out from the run.
    */
@@ -41,6 +51,11 @@ export interface Choice {
   readonly label: LocalizedText;
 }
 const ch = (id: string, uk: string, en: string): Choice => ({ id, label: { uk, en } });
+/** Every solid body on the shelf (what a density table lists), by density. */
+export const DENSITY_TABLE: readonly Choice[] = Object.values(SUBSTANCES)
+  .filter((s) => s.category === 'solid.metal' || s.category === 'solid.material')
+  .sort((a, b) => a.liquid.density.value - b.liquid.density.value)
+  .map((s) => ({ id: s.id, label: s.name }));
 
 const THERMAL: LocalizedText = { uk: 'Теплові явища', en: 'Thermal phenomena' };
 const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
@@ -78,17 +93,23 @@ export const PRESETS: readonly Preset[] = [
     topic: MECH,
     title: { uk: 'Що це за метал?', en: 'Which metal is it?' },
     question: {
-      uk: 'Мензурку з 50 мл води зважили й записали рівень, а потім опустили в неї брусок із невідомого металу. Зваж її ще раз і подивись на поділки: яка густина металу, ρ = m/V, — і що це за метал?',
-      en: 'A measuring cylinder with 50 mL of water was weighed and its level noted; then a block of an unknown metal went in. Weigh it again and read the marks: what is the density, ρ = m/V — and which metal is it?',
+      uk: 'Перед нами брусок із невідомого металу. Визначимо його густину ρ = m/V і знайдемо метал у таблиці густин. Масу дізнаємося терезами, а об’єм — мензуркою: на скільки підніметься вода. Почнемо: зважимо мензурку з водою.',
+      en: 'Here is a block of an unknown metal. We find its density ρ = m/V and look the metal up in a table of densities. The scales give the mass; the measuring cylinder the volume — by how far the water rises. Let us start: weigh the cylinder with water.',
     },
     params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'water', startTemp: 20 },
-    setup: [
+    guided: true,
+    plan: [
       { kind: 'weigh', scale: 'lab-balance' },
       { kind: 'level' },
-      { kind: 'add', substance: 'iron', mass: 0.157, temperature: 20, label: { uk: 'Невідомий метал', en: 'Unknown metal' } },
+      // Copper: its nearest neighbour in the table (brass) is 4.5 % off, more than the cylinder's half-division error
+      // on 20 mL; iron and steel (7874 / 7850) could not be told apart this way.
+      { kind: 'add', substance: 'copper', mass: 0.179, temperature: 20, label: { uk: 'Невідомий метал', en: 'Unknown metal' } },
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'level' },
     ],
-    plan: [{ kind: 'weigh', scale: 'lab-balance' }, { kind: 'level' }],
-    choices: [ch('aluminium', 'Алюміній', 'Aluminium'), ch('iron', 'Залізо', 'Iron'), ch('copper', 'Мідь', 'Copper'), ch('brass', 'Латунь', 'Brass')],
+    choices: DENSITY_TABLE,
+    choicesAt: 'end',
+    choiceTable: 'density',
     formulas: ['mechanics.density'],
     quoteHas: 'густини',
     expect: 'reached',
@@ -99,12 +120,13 @@ export const PRESETS: readonly Preset[] = [
     topic: MECH,
     title: { uk: 'Де архімедова сила більша?', en: 'Where is the buoyant force larger?' },
     question: {
-      uk: 'Брусок алюмінію (250 г) у повітрі тягне динамометр із силою ≈ 2,5 Н. Опустимо його у воду, а потім — у ту саму воду, розчинивши в ній сіль. Де архімедова сила буде більшою?',
-      en: 'An aluminium block (250 g) pulls the dynamometer with ≈ 2.5 N in the air. We lower it into water, then into the same water with salt dissolved in it. Where will the buoyant force be larger?',
+      uk: 'Підвісимо брусок алюмінію (250 г) на динамометр — спершу в повітрі, потім опустимо у воду, а тоді — у ту саму воду, розчинивши в ній сіль. Де архімедова сила буде більшою?',
+      en: 'We hang an aluminium block (250 g) on a dynamometer — first in the air, then lowered into water, then into the same water with salt dissolved in it. Where will the buoyant force be larger?',
     },
     params: { ...room, ...beaker, liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
-    setup: [{ kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'air' }],
+    guided: true,
     plan: [
+      { kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'air' },
       { kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'liquid' },
       { kind: 'add', substance: 'table-salt', mass: 0.04, temperature: 20 },
       { kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'liquid' },

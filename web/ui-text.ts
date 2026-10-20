@@ -43,6 +43,25 @@ export interface UiText {
   };
   /** On a solid's shelf card: it goes into the liquid. */
   putIn: string;
+  guide: {
+    step(k: number, n: number): string;
+    weigh(again: boolean): string;
+    level(again: boolean): string;
+    add(what: string): string;
+    dissolve(what: string): string;
+    hang(what: string, into: 'air' | 'liquid'): string;
+    btnWeigh: string;
+    btnLevel: string;
+    btnAdd(what: string): string;
+    btnHang(into: 'air' | 'liquid'): string;
+    dropped: string;
+    dissolved: string;
+    btnDissolve(what: string): string;
+    tableTitle(rho: string): string;
+    tableName: string;
+    tableDensity: string;
+    pick: string;
+  };
   instruments: string;
   dissolves: string;
   boardEmpty: string;
@@ -56,6 +75,8 @@ export interface UiText {
     noted: string;
     right(choice: string): string;
     wrong(choice: string, real: string): string;
+    concludedRight(choice: string): string;
+    concludedWrong(choice: string, real: string): string;
     weighAir(d: string): string;
     weighScales(div: string, d: string): string;
     weighShrink: string;
@@ -266,6 +287,25 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       rowHang: (s, into) => `🧷 ${s} (${into === 'air' ? 'у повітрі' : 'у рідині'})`,
     },
     putIn: 'кладуть у рідину',
+    guide: {
+      step: (k, n) => `Крок ${k} з ${n}`,
+      weigh: (again) => (again ? 'Зваж мензурку ще раз — тепер разом із бруском.' : 'Зваж мензурку з водою на лабораторних терезах і запиши масу.'),
+      level: (again) => (again ? 'Подивись на поділки знову: на скільки піднялася вода?' : 'Подивись на поділки: скільки води в мензурці? Очі — на рівні меніска.'),
+      add: (w) => `Обережно опусти ${w} у мензурку — по стінці, щоб не розбити скло й не розплескати воду.`,
+      dissolve: (w) => `Насип у воду ${w} і розмішай, поки не розчиниться.`,
+      hang: (w, into) => (into === 'air' ? `Підвісь ${w} на динамометр у повітрі.` : `Опусти ${w} на динамометрі в рідину — повністю, але не торкаючись дна.`),
+      btnWeigh: '⚖ Зважити',
+      btnLevel: '📏 Подивитися на поділки',
+      btnAdd: (w) => `⬇ Опустити: ${w}`,
+      btnHang: (into) => (into === 'air' ? '🧷 Підвісити в повітрі' : '🧷 Занурити в рідину'),
+      dropped: 'Бульк! Брусок ліг на дно — і вода в мензурці піднялася.',
+      dissolved: 'Сіль розчинилася: вода стала солоною — і густішою.',
+      btnDissolve: (w) => `🥄 Розчинити: ${w}`,
+      tableTitle: (rho) => `Твоя густина: ρ ≈ ${rho}. Знайди в таблиці речовину з такою густиною:`,
+      tableName: 'Речовина',
+      tableDensity: 'Густина, кг/м³',
+      pick: 'Це він!',
+    },
     instruments: 'Вимірювальні прилади',
     dissolves: 'розчиняється у воді',
     boardEmpty: 'Тут з’являтимуться формули досліду',
@@ -278,6 +318,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       predictTitle: 'Твій прогноз:',
       noted: 'Записав твій прогноз! Тепер натисни «Старт» — і перевіримо.',
       right: (c) => `Твій прогноз «${c}» справдився!`,
+      concludedRight: (c) => `Твоя відповідь «${c}» — правильно!`,
+      concludedWrong: (c, r) => `Ти обрав «${c}», але виміряна густина найближча до «${r}». Порівняй ще раз із таблицею.`,
       wrong: (c, r) => `Твій прогноз: «${c}». А вийшло — «${r}». Саме для цього й роблять досліди!`,
       weighAir: (d) => `Так! Ці ${d} випарувалися: вода стала парою, і пара пішла в повітря кімнати. Речовина не зникла — вона просто вийшла з каструлі.`,
       weighScales: (div, d) => `Ні, ваги точні до ${div}, а різниця — ${d}. Спробуй ще!`,
@@ -486,6 +528,25 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       rowHang: (s, into) => `🧷 ${s} (${into === 'air' ? 'in the air' : 'in the liquid'})`,
     },
     putIn: 'goes into a liquid',
+    guide: {
+      step: (k, n) => `Step ${k} of ${n}`,
+      weigh: (again) => (again ? 'Weigh the cylinder again — now with the block in it.' : 'Weigh the cylinder with water on the laboratory balance and note the mass.'),
+      level: (again) => (again ? 'Read the marks again: how far did the water rise?' : 'Read the marks: how much water is in the cylinder? Eyes level with the meniscus.'),
+      add: (w) => `Gently lower ${w} into the cylinder — along the wall, so the glass does not break and the water does not splash.`,
+      dissolve: (w) => `Pour ${w} into the water and stir until it dissolves.`,
+      hang: (w, into) => (into === 'air' ? `Hang ${w} on the dynamometer in the air.` : `Lower ${w} on the dynamometer into the liquid — fully, without touching the bottom.`),
+      btnWeigh: '⚖ Weigh',
+      btnLevel: '📏 Read the marks',
+      btnAdd: (w) => `⬇ Lower in: ${w}`,
+      btnHang: (into) => (into === 'air' ? '🧷 Hang in the air' : '🧷 Lower into the liquid'),
+      dropped: 'Plop! The block lies on the bottom — and the water in the cylinder rose.',
+      dissolved: 'The salt dissolved: the water is salty now — and denser.',
+      btnDissolve: (w) => `🥄 Dissolve: ${w}`,
+      tableTitle: (rho) => `Your density: ρ ≈ ${rho}. Find the substance with this density in the table:`,
+      tableName: 'Substance',
+      tableDensity: 'Density, kg/m³',
+      pick: 'This one!',
+    },
     instruments: 'Measuring instruments',
     dissolves: 'dissolves in water',
     boardEmpty: 'The formulas of the experiment will appear here',
@@ -498,6 +559,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       predictTitle: 'Your prediction:',
       noted: 'Noted your prediction! Now press “Start” — and we will check.',
       right: (c) => `Your prediction “${c}” came true!`,
+      concludedRight: (c) => `Your answer “${c}” is right!`,
+      concludedWrong: (c, r) => `You chose “${c}”, but the measured density is nearest to “${r}”. Compare with the table again.`,
       wrong: (c, r) => `Your prediction: “${c}”. What happened: “${r}”. That is exactly why we do experiments!`,
       weighAir: (d) => `Yes! Those ${d} evaporated: the water turned to vapour and the vapour went into the room air. The matter did not vanish — it just left the pot.`,
       weighScales: (div, d) => `No, the scales are accurate to ${div}, and the difference is ${d}. Try again!`,

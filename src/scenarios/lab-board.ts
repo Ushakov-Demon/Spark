@@ -229,6 +229,8 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
   let addedSince = { v: false, m: false };
   let body: { m?: number; v?: number } = {};
   const airByBody = new Map<string, number>();
+  const count = { volume: 0, mass: 0 };
+  const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
     if (!e.ok) return;
     const c = e.command as { type: string } & Record<string, unknown>;
@@ -241,6 +243,8 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
     if (!r || r.value === null) return;
     if (r.quantity === 'volume') {
       const div = r.inputs?.['division'] ?? 1e-6;
+      // Written down as in a lab notebook: V₁ = 50 мл, then V₂…
+      out.push({ id: `recV:${i}`, title: uk ? (addedSince.v ? 'рівень після того, як опустили тіло' : 'рівень рідини за поділками') : addedSince.v ? 'the level after the body went in' : 'the level by the marks', formula: `V${sub(++count.volume)} = ${formatMeasured('volume', r.value, div, locale)}` });
       if (lastV && addedSince.v) {
         const dv = r.value - lastV.v;
         body = { ...body, v: dv };
@@ -250,6 +254,7 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       addedSince = { ...addedSince, v: false };
     } else if (r.quantity === 'mass') {
       const scale = r.instrument;
+      out.push({ id: `recM:${i}`, title: uk ? (addedSince.m ? 'покази терезів разом із тілом' : 'покази терезів') : addedSince.m ? 'the scales with the body' : 'the scales', formula: `m${sub(++count.mass)} = ${formatReading(scale as ScaleId, r.value, locale)}` });
       if (lastM && addedSince.m && lastM.scale === scale) {
         const dm = r.value - lastM.m;
         body = { ...body, m: dm };

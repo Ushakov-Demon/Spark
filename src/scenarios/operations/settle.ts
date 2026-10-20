@@ -23,7 +23,7 @@ export const SETTLE: Operation = {
   uses: 'either',
   // Neither heating nor cooling as such: the contents may go either way; "cooling" keeps heater fixes away.
   direction: 'cooling',
-  speed: 30,
+  speed: 60, // one of the page's speeds (1, 10, 60, 300, 600, 3600)
   startTemp: () => 20,
   reached(sample, p, _sub, state) {
     // Every piece put into the liquid (a block, a lump of ice) has come to the liquid's temperature…

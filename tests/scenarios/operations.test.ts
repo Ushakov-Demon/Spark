@@ -40,3 +40,10 @@ describe('no code outside src/scenarios/operations branches on an operation name
     expect(readFileSync(file, 'utf8')).not.toMatch(pattern);
   });
 });
+
+describe('operation speeds', () => {
+  it('start at one of the speeds the page offers', async () => {
+    const { OPERATIONS } = await import('../../src/scenarios/index.js');
+    for (const op of Object.values(OPERATIONS)) expect([1, 10, 60, 300, 600, 3600], op.id).toContain(op.speed);
+  });
+});

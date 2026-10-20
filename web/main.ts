@@ -637,9 +637,11 @@ function stop() {
 /** A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind). */
 function answerPreset() {
   const answerOf = preset ? PRESET_ANSWERS[preset.id] : undefined;
-  if (!answerOf || !doneRecord) return;
+  if (!answerOf) return;
   presetAnswer = 'computing';
-  const done = { ...doneRecord, result: { ...doneRecord.result, log: session.result().log } };
+  // A guided procedure runs no operation: the step so far stands for itself.
+  const now = session.result(false);
+  const done = doneRecord ? { ...doneRecord, result: { ...doneRecord.result, log: now.log } } : { params: stepP, result: now, status: labStatus(stepP, now, simulation, warnings) };
   const steps = [...history, done].map((h) => ({ params: h.params, result: h.result as never, status: h.status }));
   const readings = allReadings() as never;
   window.setTimeout(() => {
@@ -945,6 +947,8 @@ function sceneView(): SceneView {
     ? { mood: verdict === predictionVerdictRight() ? 'happy' : 'surprised', says: `${tr(presetAnswer.say, locale)} ${verdict}` }
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
+    : showingDrop()
+    ? { mood: 'surprised', says: showingDrop() === 'salt' ? u.guide.dissolved : u.guide.dropped }
     : measured
     ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
@@ -1050,7 +1054,7 @@ let prediction: { readonly preset: string; readonly choice: string } | null = nu
 /** The question the Professor is asking now, with its choices — or none. */
 function quizNow(): Quiz | null {
   const u = t().quiz;
-  if (preset?.choices && !running && stepElapsed() === 0 && !history.length && !doneRecord) {
+  if (preset?.choices && preset.choicesAt !== 'end' && !running && stepElapsed() === 0 && !history.length && !doneRecord && (!preset.guided || plan.length === planTotal)) {
     // Which choice is right only the run will tell, so a prediction offers all of them (at most four), shuffled.
     const key = `p:${preset.id}`;
     return { key, title: u.predictTitle, predict: true, options: pickChoices(preset.choices.map((c) => ({ id: c.id, text: tr(c.label, locale), reply: u.noted })), key) };
@@ -1105,8 +1109,78 @@ function quizReply(q: Quiz | null): string | null {
   if (!q || picked.key !== q.key || !picked.ids.length) return null;
   return q.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.reply ?? null;
 }
+/** The steps of a guided procedure: how many in all (set when the preset starts). */
+let planTotal = 0;
+/** The latest thing put into the vessel during a guided procedure (the Professor comments on it). */
+let lastDrop: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
+/** What was just put in, while nothing has happened since: a body that sank, or salt that dissolved. */
+function showingDrop(): 'body' | 'salt' | null {
+  if (!lastDrop || lastDrop.step !== session || running || session.state.time !== lastDrop.at) return null;
+  const l = session.result().log;
+  const c = l[l.length - 1]?.command;
+  if (c?.type !== 'thermal.add') return null;
+  return SUBSTANCES[c.substance as SubstanceId]?.category === 'solid.salt' ? 'salt' : 'body';
+}
+/** The density measured so far: the change of the scales over the change of the level (both around the drop). */
+function measuredDensity(): number | null {
+  const all = allReadings();
+  const m = all.filter((x) => x.record.quantity === 'mass' && x.record.value !== null);
+  const v = all.filter((x) => x.record.quantity === 'volume' && x.record.value !== null);
+  if (m.length < 2 || v.length < 2) return null;
+  const dm = m[m.length - 1]!.record.value! - m[0]!.record.value!;
+  const dv = v[v.length - 1]!.record.value! - v[0]!.record.value!;
+  return dv > 0 ? dm / dv : null;
+}
+/** A guided procedure under the scene: the step, what to do, one button — and at the end the table to look the result up in. */
+function renderGuide(): boolean {
+  if (!preset?.guided) return false;
+  const u = t().guide;
+  if (plan.length) {
+    const s = plan[0]!;
+    const k = planTotal - plan.length + 1;
+    const done = allReadings();
+    const added = session.result().log.some((e) => e.ok && e.command.type === 'thermal.add');
+    const again = (q: 'mass' | 'volume') => done.some((x) => x.record.quantity === q);
+    const what = s.kind === 'add' || s.kind === 'hang' ? tr(('label' in s && s.label) || SUBSTANCES[s.substance].name, locale).toLowerCase() : '';
+    // Salt is poured in and dissolves; a body is lowered in.
+    const salt = s.kind === 'add' && SUBSTANCES[s.substance].category === 'solid.salt';
+    const say = s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added) : s.kind === 'add' ? (salt ? u.dissolve(what) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : '';
+    const btn = s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : '';
+    // Before the first step: the prediction, if the experiment asks for one.
+    const q = k === 1 ? quizNow() : null;
+    setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1">${btn}</button></div>`);
+    return true;
+  }
+  // Measured out: the answer to the question (and the verdict on the prediction), here under the scene.
+  if (preset.choiceTable !== 'density') {
+    if (!presetAnswer) return (setHtml('#quiz', ''), true);
+    const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>`;
+    setHtml('#quiz', `<div class="guide"><span class="guide-step">${t().answerTitle}</span>${text}</div>`);
+    return true;
+  }
+  if (preset.choiceTable === 'density' && preset.choices) {
+    const rho = measuredDensity();
+    const chosen = prediction?.preset === preset.id ? prediction.choice : null;
+    const right = presetAnswer && presetAnswer !== 'computing' ? presetAnswer.correct : undefined;
+    const rows = preset.choices
+      .map((c) => {
+        const x = SUBSTANCES[c.id as SubstanceId];
+        const cls = chosen === c.id ? (right === undefined ? 'picked' : right === c.id ? 'right' : 'wrong') : right && chosen && right === c.id ? 'right' : '';
+        return `<tr class="${cls}"><td>${tr(c.label, locale)}</td><td class="num">${sig(x.liquid.density.value, 4, locale)}</td><td>${chosen ? (cls === 'right' ? '✓' : cls === 'wrong' ? '✗' : '') : `<button type="button" data-choice="${c.id}">${u.pick}</button>`}</td></tr>`;
+      })
+      .join('');
+    const rhoText = rho === null ? '—' : `${sig(rho / 1000, 3, locale)} ${locale === 'uk' ? 'г/см³' : 'g/cm³'} = ${sig(rho, 3, locale)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'}`;
+    const verdict = predictionVerdict();
+    const answer = verdict && presetAnswer && presetAnswer !== 'computing' ? `<p class="verdict">${verdict}</p><p class="answer-text">${tr(presetAnswer.text, locale)}</p>` : '';
+    setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`);
+    return true;
+  }
+  return false;
+}
 function renderQuiz(q: Quiz | null) {
-  if (!q) return setHtml('#quiz', '');
+  setHtml('#quiz', q ? quizHtml(q) : '');
+}
+function quizHtml(q: Quiz): string {
   const mine = picked.key === q.key ? picked.ids : [];
   const solved = !q.predict && q.options.some((o) => o.right && mine.includes(o.id));
   const buttons = q.options
@@ -1117,14 +1191,17 @@ function renderQuiz(q: Quiz | null) {
       return `<button type="button" class="${cls}" data-choice="${o.id}"${off ? ' disabled' : ''}>${cls === 'right' ? '✓ ' : cls === 'wrong' ? '✗ ' : ''}${o.text}</button>`;
     })
     .join('');
-  setHtml('#quiz', `<div class="quiz" data-key="${q.key}"><span class="quiz-title">${q.title}</span><div class="quiz-options">${buttons}</div></div>`);
+  return `<div class="quiz" data-key="${q.key}"><span class="quiz-title">${q.title}</span><div class="quiz-options">${buttons}</div></div>`;
 }
 const predictionVerdictRight = () => (prediction && presetAnswer && presetAnswer !== 'computing' && prediction.choice === presetAnswer.correct ? predictionVerdict() : null);
 /** The verdict on a prediction, once the run has answered the question. */
 function predictionVerdict(): string {
   if (!prediction || !preset || prediction.preset !== preset.id || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return '';
   const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? { uk: id, en: id }, locale);
-  return prediction.choice === presetAnswer.correct ? t().quiz.right(label(prediction.choice)) : t().quiz.wrong(label(prediction.choice), label(presetAnswer.correct));
+  const q = t().quiz;
+  // Chosen at the end it is the conclusion of the experiment, not a prediction.
+  if (preset.choicesAt === 'end') return prediction.choice === presetAnswer.correct ? q.concludedRight(label(prediction.choice)) : q.concludedWrong(label(prediction.choice), label(presetAnswer.correct));
+  return prediction.choice === presetAnswer.correct ? q.right(label(prediction.choice)) : q.wrong(label(prediction.choice), label(presetAnswer.correct));
 }
 
 /** The blackboard: recomputed a few times a second while running (it walks the step's recorded states). */
@@ -1221,6 +1298,9 @@ function render() {
 
   const startBtn = $<HTMLButtonElement>('#start');
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
+  // A guided procedure is led by its steps, not by "Start".
+  startBtn.hidden = !!preset?.guided;
+  $('#speed').closest<HTMLElement>('label')!.hidden = !!preset?.guided;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
   $<HTMLButtonElement>('#read-level').textContent = u.measure.level;
@@ -1260,7 +1340,7 @@ function render() {
 
   renderProtocol();
   scene.render(sceneView());
-  renderQuiz(quizNow());
+  if (!renderGuide()) renderQuiz(quizNow());
 
   // Messages: impossibility before the start, headline after, warnings.
   const msg: string[] = [];
@@ -1277,7 +1357,7 @@ function render() {
       );
     }
     // A ready-made experiment goes on along its plan.
-    if (plan.length) offer.push(`<div class="offer plan"><p>${u.planNext(planLabel(plan))}</p><div class="fixes"><button type="button" class="primary" data-plan="1">▶ ${planLabel(plan)}</button></div></div>`);
+    if (plan.length && !preset?.guided) offer.push(`<div class="offer plan"><p>${u.planNext(planLabel(plan))}</p><div class="fixes"><button type="button" class="primary" data-plan="1">▶ ${planLabel(plan)}</button></div></div>`);
     // The goal was not reached: offer what would reach it — the experiment continues from where it is.
     if (fixes === 'computing' || fixes.length) offer.push(`<div class="offer"><p>${doneRecord?.status.kind === 'stalls' ? u.offerAfterStall : u.offerAfterImpossible}</p><div class="fixes">${fixButtons()}</div></div>`);
   } else {
@@ -1961,14 +2041,21 @@ function nextPlanStep() {
       const entry = session.apply(stepCommand(s, params));
       if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: s.label ?? SUBSTANCES[s.substance].name, mass: s.mass });
       boardEpoch++;
+      // In a guided procedure dropping the body is a step of its own: watch it go in.
+      if (preset?.guided) {
+        lastDrop = { at: session.state.time, step: session };
+        break;
+      }
       continue;
     }
     if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang') {
       // Stop at the instrument: the reading (and the Professor's question) first, the next step on the next press.
       if (s.kind === 'weigh') weighNow(s.scale);
       else measureNow(stepCommand(s, params));
-      // The plan ended with a measurement: the question can be answered now.
-      if (!plan.length) answerPreset();
+      // The plan ended with a measurement: the question can be answered now (or once the table is looked into).
+      if (!plan.length && preset?.choicesAt !== 'end') answerPreset();
+      // A guided procedure is measured out: the table moves aside — the whole board is there to read.
+      if (!plan.length && preset?.guided) window.setTimeout(() => scene.read(true), 1400);
       break;
     }
     params = stepParams(params, s);
@@ -2027,6 +2114,7 @@ function startPreset(p: Preset) {
   preset = p;
   prediction = null;
   plan = [...(p.plan ?? [])];
+  planTotal = plan.length;
   params = p.params;
   if (params.heater) lastHeater = params.heater;
   if (params.cooler) lastCooler = params.cooler;
@@ -2443,6 +2531,16 @@ setConsole(store.get('console') === 'open');
 
 // ---------- wiring ----------
 $('#quiz').addEventListener('click', (e) => {
+  const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
+  if (step) return nextPlanStep();
+  if (preset?.guided && !plan.length) {
+    const pick = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-choice]');
+    if (!pick) return;
+    // The conclusion of the procedure: what the table says — judged against the run.
+    prediction = { preset: preset.id, choice: pick.dataset['choice']! };
+    answerPreset();
+    return render();
+  }
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-choice]');
   const q = quizNow();
   if (!b || !q) return;
@@ -2491,6 +2589,9 @@ $<HTMLSelectElement>('#scale').onchange = (e) => {
 function resetExperiment() {
   // Starting over: a ready-made experiment starts over too, with its whole plan.
   if (preset) plan = [...(preset.plan ?? [])];
+  planTotal = plan.length;
+  prediction = null;
+  presetAnswer = null;
   newSession();
   presetSetup();
 }

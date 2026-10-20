@@ -18,7 +18,8 @@ describe('the blackboard', () => {
   const lines = boardLines(ice, [...r.samples, r.final], 'uk', ['kitchen-scale'], true, r.log);
 
   it('writes each phase in the order it happened, then boiling and the weighing', () => {
-    expect(lines.map((l) => l.formula)).toEqual(['Q = c·m·Δt', 'Q = λ·m', 'Q = c·m·Δt', 'Q = L·m', 'E = P·t', 'η = Q/E', 'm = m₁ + m₂']);
+    // (The reading itself is written down first: m₁ = … g.)
+    expect(lines.map((l) => l.formula).filter((f) => !/^m₁ = \d/.test(f))).toEqual(['Q = c·m·Δt', 'Q = λ·m', 'Q = c·m·Δt', 'Q = L·m', 'E = P·t', 'η = Q/E', 'm = m₁ + m₂']);
     expect(lines[0]!.title).toContain('льоду');
     expect(lines[1]!.title).toMatch(/^плавлення/);
   });
@@ -40,7 +41,7 @@ describe('the blackboard', () => {
   it('every line is in both languages without broken numbers', () => {
     const en = boardLines(ice, [...r.samples, r.final], 'en', ['kitchen-scale'], true, r.log);
     expect(en.length).toBe(lines.length);
-    for (const l of [...lines, ...en]) expect(l.numbers).not.toMatch(/NaN|Infinity|undefined/);
+    for (const l of [...lines, ...en]) expect(`${l.formula} ${l.numbers ?? ''}`).not.toMatch(/NaN|Infinity|undefined/);
   });
 
   it('while a phase goes on only its formula is written; the numbers come when it is over', () => {

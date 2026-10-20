@@ -69,6 +69,8 @@ export interface Scene {
   readonly element: HTMLElement;
   /** Is the Professor reading the blackboard (the table moved aside)? */
   readonly reading: boolean;
+  /** Move the table aside so the whole board is seen (or back). */
+  read(on: boolean): void;
   render(view: SceneView): void;
 }
 
@@ -88,6 +90,12 @@ export function createScene(): Scene {
   let act = '';
   const profBox = root.querySelector<HTMLElement>('.scene-prof')!;
   let geom: VesselGeom | null = null;
+  let lastView: SceneView | null = null;
+  let shownFill: number | null = null;
+  let fillAnim = 0;
+  let lastDevice = '';
+  /** Bodies drawn in the liquid so far: one more means one was just dropped in. */
+  let piecesShown = 0;
   let scaleKey = '';
   const board = root.querySelector<HTMLElement>('#sc-board')!;
   const boardLines = board.querySelector<HTMLElement>('.board-lines')!;
@@ -173,7 +181,34 @@ export function createScene(): Scene {
     get reading() {
       return root.classList.contains('reading');
     },
+    read(on) {
+      root.classList.toggle('reading', on);
+      setToggle();
+    },
     render(v) {
+      lastView = v;
+      // The level moves smoothly when it changes between frames of a paused experiment (a body
+      // dropped in, water poured): from what is shown to the new value — after the body has fallen.
+      if (shownFill === null || v.running || v.device !== lastDevice) shownFill = v.fill;
+      lastDevice = v.device;
+      const grew = (v.pieces?.length ?? 0) > piecesShown;
+      if (Math.abs(v.fill - shownFill) > 0.002 && !fillAnim) {
+        const from = shownFill;
+        const to = v.fill;
+        const t0 = performance.now() + (grew ? 420 : 0);
+        const tick = (now: number) => {
+          const k = Math.max(0, Math.min(1, (now - t0) / 700));
+          shownFill = from + (to - from) * (1 - (1 - k) ** 3);
+          draw({ ...lastView!, fill: shownFill });
+          fillAnim = k < 1 ? requestAnimationFrame(tick) : 0;
+        };
+        fillAnim = requestAnimationFrame(tick);
+      }
+      draw({ ...v, fill: shownFill });
+    },
+  };
+
+  function draw(v: SceneView) {
       const k = [v.device, v.vessel, v.material, v.lid].join('|');
       if (k !== key) {
         key = k;
@@ -198,11 +233,15 @@ export function createScene(): Scene {
       }
       // Bodies in the liquid, side by side: on the bottom if they sink, at the surface if they float
       // (the share under water as by Archimedes). A 10 cm³ block is about 22 units wide; narrow vessels squeeze them.
-      const pk = `${(v.pieces ?? []).map((x) => `${x.color}:${x.volume.toExponential(2)}:${x.share.toFixed(2)}`).join('|')}@${Math.round(level)}`;
+      // Floating bodies follow the level; sunk ones do not (so a falling block is not redrawn as the water rises).
+      const floats = (v.pieces ?? []).some((x) => x.share < 1);
+      const pk = `${(v.pieces ?? []).map((x) => `${x.color}:${x.volume.toExponential(2)}:${x.share.toFixed(2)}`).join('|')}@${floats ? Math.round(level) : ''}`;
       const pg = $<SVGGElement>('sc-pieces');
       if (pg && pg.dataset['k'] !== pk) {
         pg.dataset['k'] = pk;
-        pg.innerHTML = blocksSvg(v.pieces ?? [], g, level);
+        const n = v.pieces?.length ?? 0;
+        pg.innerHTML = blocksSvg(v.pieces ?? [], g, level, n > piecesShown ? n - 1 : -1);
+        piecesShown = n;
       }
       // The dynamometer with its body, and the level mark.
       const hk = v.hang ? `${v.hang.display}|${v.hang.into}|${v.hang.color}|${v.hang.volume}|${Math.round(level)}` : '';
@@ -340,6 +379,5 @@ export function createScene(): Scene {
       }
       if (says.textContent !== v.professor.says) says.textContent = v.professor.says;
       says.hidden = !v.professor.says;
-    },
-  };
+  }
 }

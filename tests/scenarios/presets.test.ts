@@ -65,9 +65,9 @@ describe('choices of the ready-made experiments', () => {
 });
 
 describe('prediction choices', () => {
-  // Which one is right only the run tells, so all of them are shown: no more than four.
+  // Which one is right only the run tells, so all of them are shown: no more than four (a table may hold more).
   it('a preset offers two to four choices', () => {
-    for (const p of PRESETS.filter((x) => x.choices)) {
+    for (const p of PRESETS.filter((x) => x.choices && !x.choiceTable)) {
       expect(p.choices!.length, p.id).toBeGreaterThanOrEqual(2);
       expect(p.choices!.length, p.id).toBeLessThanOrEqual(4);
     }
