@@ -234,7 +234,9 @@ export const add: CommandHandler<AddCommand> = {
       (x) => x.a.entity === target.id && (x.params as { origin?: { surface?: boolean; area?: number } }).origin?.surface,
     ) as AnyConnection | undefined;
     const layerArea = (surface?.params as { origin?: { area?: number } } | undefined)?.origin?.area;
-    const area = solidPiece || layerArea === undefined ? 6 * Math.cbrt(volume) ** 2 : layerArea;
+    // A ball has less surface than a cube of the same volume: (36π)^(1/3)·V^(2/3) ≈ 4.84·V^(2/3) against 6·V^(2/3).
+    const shapeFactor = sub.bodyShape === 'ball' ? Math.cbrt(36 * Math.PI) : 6;
+    const area = solidPiece || layerArea === undefined ? shapeFactor * Math.cbrt(volume) ** 2 : layerArea;
     const body = thermalBody({
       id,
       label: c.label ?? (c.frozen && sub.solidName ? { uk: `${sub.solidName.uk} (додано)`, en: `${sub.solidName.en} (added)` } : { uk: `${sub.name.uk} (додано)`, en: `${sub.name.en} (added)` }),

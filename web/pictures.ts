@@ -37,3 +37,13 @@ export function blockSvg(color: string, label: string): string {
     ${tag ? `<rect x="22" y="12" width="36" height="14" rx="3" class="label"/><text x="40" y="22" class="label-text">${tag}</text>` : ''}
   </svg>`;
 }
+
+/** A ball (a glass marble) for the shelf: a sphere with a highlight. */
+export function ballSvg(color: string): string {
+  return `<svg class="thumb" viewBox="0 0 80 96" aria-hidden="true">
+    <ellipse cx="40" cy="84" rx="20" ry="4" fill="rgba(0,0,0,0.15)"/>
+    <circle cx="40" cy="58" r="24" style="fill:${color};stroke:rgba(0,0,0,0.3);stroke-width:1.5"/>
+    <path d="M30 48 q4 -8 14 -8" stroke="rgba(255,255,255,0.85)" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="48" cy="68" r="4" fill="rgba(255,255,255,0.35)"/>
+  </svg>`;
+}

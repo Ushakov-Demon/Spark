@@ -89,7 +89,7 @@ import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { createScene, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './icons.js';
-import { blockSvg, bottleSvg } from './pictures.js';
+import { ballSvg, blockSvg, bottleSvg } from './pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
 import { referenceHtml, type RefTarget } from './reference.js';
@@ -1016,10 +1016,10 @@ function sceneView(): SceneView {
       const ice = (e.state.solidFraction ?? 0) > 0.5;
       if (!sub.category.startsWith('solid.') && !ice) return [];
       const density = ice ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
-      return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: bodyMass(e) / density, share: pieceShare(session.state, e) }];
+      return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: bodyMass(e) / density, share: pieceShare(session.state, e), ...(!ice && sub.bodyShape === 'ball' ? { ball: true } : {}) }];
     }),
     ...(measured?.command.type === 'lab.hang'
-      ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1 } }
+      ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1, ...(SUBSTANCES[measured.command.substance as SubstanceId]?.bodyShape === 'ball' ? { ball: true } : {}) } }
       : {}),
     ...(measured?.command.type === 'lab.read-level' ? { levelMark: formatMeasured('volume', measured.record.value, measured.record.inputs?.['division'] ?? 1e-6, locale) } : {}),
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
@@ -1709,7 +1709,7 @@ function buildShelf() {
                 })
               : card({
                   name: x.name,
-                  pic: x.category === 'solid.salt' ? bottleSvg('salt', formulaOf(x), true) : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x)),
+                  pic: x.category === 'solid.salt' ? bottleSvg('salt', formulaOf(x), true) : x.bodyShape === 'ball' ? ballSvg(BODY_COLOR[x.id] ?? '#9aa1a8') : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x)),
                   ref: `substance:${x.id}`,
                   note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${x.category === 'solid.salt' ? u.dissolves : u.putIn}`,
                   ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),

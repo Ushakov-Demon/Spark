@@ -54,9 +54,9 @@ export interface SceneView {
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
   /** Solid pieces lying in the vessel (a metal block): colour and volume, m³. */
-  readonly pieces?: readonly { readonly color: string; readonly volume: number; readonly share: number }[];
+  readonly pieces?: readonly { readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean }[];
   /** A body hanging on the dynamometer, in the air above the vessel or lowered into the liquid; what the dial shows. */
-  readonly hang?: { readonly display: string; readonly into: 'air' | 'liquid'; readonly color: string; readonly volume: number; readonly share: number };
+  readonly hang?: { readonly display: string; readonly into: 'air' | 'liquid'; readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean };
   /** The level was just read by the marks: a line at the level and the reading. */
   readonly levelMark?: string;
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
@@ -318,8 +318,12 @@ export function vesselPreview(shape: VesselShape, material: string, liquid: Liqu
   </svg>`;
 }
 
+/** A ball with a highlight (a glass marble). */
+const ballAt = (cx: number, cy: number, r: number, color: string) =>
+  `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:${color};stroke:rgba(0,0,0,0.35)"/><path d="M${cx - r * 0.45},${cy - r * 0.35} q${r * 0.2},${-r * 0.35} ${r * 0.6},${-r * 0.35}" stroke="rgba(255,255,255,0.8)" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+
 /** Bodies in the liquid: sinking ones on the bottom, floating ones at the surface with their share under it. */
-function blocksSvg(pieces: readonly { color: string; volume: number; share: number }[], g: VesselGeom, level: number): string {
+function blocksSvg(pieces: readonly { color: string; volume: number; share: number; ball?: boolean }[], g: VesselGeom, level: number): string {
   if (!pieces.length) return '';
   let sides = pieces.map((p) => Math.max(10, Math.min(60, 22 * Math.cbrt(p.volume / 1e-5))));
   const room = g.right - g.left - 12;
@@ -329,9 +333,9 @@ function blocksSvg(pieces: readonly { color: string; volume: number; share: numb
   return pieces
     .map((p, i) => {
       const w = sides[i]!;
-      const h = w * 0.7;
+      const h = p.ball ? w : w * 0.7;
       const y = p.share < 1 ? level - (1 - p.share) * h : g.bottom - h;
-      const r = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" style="fill:${p.color};stroke:rgba(0,0,0,0.35)"/><path d="M${x + 3},${y + 3} h${w * 0.5}" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>`;
+      const r = p.ball ? ballAt(x + w / 2, y + h / 2, w / 2, p.color) : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" style="fill:${p.color};stroke:rgba(0,0,0,0.35)"/><path d="M${x + 3},${y + 3} h${w * 0.5}" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>`;
       x += w + 5;
       return r;
     })
@@ -339,10 +343,10 @@ function blocksSvg(pieces: readonly { color: string; volume: number; share: numb
 }
 
 /** A spring dynamometer hanging over the vessel; its body in the air above it or lowered into the liquid. */
-function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number }, g: VesselGeom, level: number): string {
+function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number; ball?: boolean }, g: VesselGeom, level: number): string {
   const x = (g.left + g.right) / 2;
   const w = Math.max(12, Math.min(44, 22 * Math.cbrt(h.volume / 1e-5), g.right - g.left - 10));
-  const bh = w * 0.7;
+  const bh = h.ball ? w : w * 0.7;
   // In the liquid the body hangs under the surface (or floats on it); in the air, above the rim.
   const bodyTop = h.into === 'air' ? g.top - bh - 26 : h.share < 1 ? level - (1 - h.share) * bh : Math.min(g.bottom - bh - 4, level + 10);
   // The dial never leaves the picture (its top edge is at VIEW_TOP).
@@ -353,7 +357,7 @@ function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: str
     <g class="dyn-ticks">${ticks}</g>
     <path class="dyn-pointer" d="M${x + 3},${top + 40} h9"/>
     <path class="dyn-hook" d="M${x},${top + caseH} V${bodyTop}"/>
-    <rect x="${x - w / 2}" y="${bodyTop}" width="${w}" height="${bh}" rx="2" style="fill:${h.color};stroke:rgba(0,0,0,0.35)"/>
+    ${h.ball ? ballAt(x, bodyTop + bh / 2, w / 2, h.color) : `<rect x="${x - w / 2}" y="${bodyTop}" width="${w}" height="${bh}" rx="2" style="fill:${h.color};stroke:rgba(0,0,0,0.35)"/>`}
     <text class="dyn-text" x="${x + 18}" y="${top + 44}">${h.display}</text>`;
 }
 

@@ -35,6 +35,8 @@ export interface SubstanceItem {
    * composition). saltFraction = salt / (salt + water); 1 = dry salt.
    */
   readonly mixture?: { readonly saltFraction: number };
+  /** The shape of a solid body put into a liquid: a block (default) or a ball (a glass marble). */
+  readonly bodyShape?: 'block' | 'ball';
   /** For liquids — the liquid; for a solid component (salt) — the solid's own properties. */
   readonly liquid: {
     readonly specificHeat: SourcedValue; // J/(kg·K)

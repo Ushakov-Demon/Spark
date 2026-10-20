@@ -17,6 +17,7 @@ interface ShelfName {
   readonly name: LocalizedText;
   readonly genitive?: LocalizedText;
   readonly gender: Component['gender'];
+  readonly bodyShape?: 'block' | 'ball';
 }
 
 const CATEGORY: Partial<Record<ComponentGroup, SubstanceCategory>> = {
@@ -55,6 +56,7 @@ function fromComponent(c: Component, id: string = c.id, shelfName?: ShelfName): 
     name: shelfName?.name ?? c.name,
     ...((shelfName?.genitive ?? c.genitive) ? { genitive: (shelfName?.genitive ?? c.genitive)! } : {}),
     gender: shelfName?.gender ?? c.gender,
+    ...(shelfName?.bodyShape ? { bodyShape: shelfName.bodyShape } : {}),
     ...(solid?.name ? { solidName: solid.name } : {}),
     description: c.description,
     ...(c.safety ? { safety: c.safety } : {}),
@@ -136,7 +138,7 @@ const SHELF = [
   { id: 'steel', component: 'steel' },
   { id: 'brass', component: 'brass' },
   { id: 'wood', component: 'wood', as: { name: { uk: 'Дерев’яний брусок (сосна)', en: 'Wooden block (pine)' }, gender: 'm' } },
-  { id: 'glass', component: 'glass', as: { name: { uk: 'Скляна кулька', en: 'Glass marble' }, gender: 'f' } },
+  { id: 'glass', component: 'glass', as: { name: { uk: 'Скляна кулька', en: 'Glass marble' }, gender: 'f', bodyShape: 'ball' } },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];
 
 export type SubstanceId = (typeof SHELF)[number]['id'];
