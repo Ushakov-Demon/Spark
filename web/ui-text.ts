@@ -30,6 +30,7 @@ export interface UiText {
     more(d: string): string;
     less(d: string): string;
   };
+  boardEmpty: string;
   quiz: {
     title: string;
     predictTitle: string;
@@ -230,6 +231,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       more: (d) => `Це на ${d} більше, ніж минулого разу.`,
       less: (d) => `Це на ${d} менше, ніж минулого разу. Куди поділися ці грами?`,
     },
+    boardEmpty: 'Тут з’являтимуться формули досліду',
     quiz: {
       title: 'Як гадаєш?',
       predictTitle: 'Твій прогноз:',
@@ -427,6 +429,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       more: (d) => `That is ${d} more than last time.`,
       less: (d) => `That is ${d} less than last time. Where did those grams go?`,
     },
+    boardEmpty: 'The formulas of the experiment will appear here',
     quiz: {
       title: 'What do you think?',
       predictTitle: 'Your prediction:',

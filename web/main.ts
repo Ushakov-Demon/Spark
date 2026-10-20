@@ -24,6 +24,7 @@ import {
   LAB_ACTIONS,
   LAB_COMMANDS,
   labCourse,
+  boardLines,
   stepPlace,
   formatReading,
   weigh,
@@ -235,6 +236,7 @@ function newSession() {
 
 /** Start a step from a placed state (the vessel already stands where this step needs it). */
 function beginStep(placed: { readonly state: SystemState; readonly warnings: readonly LocalizedText[] }) {
+  boardEpoch++;
   initialState = placed.state;
   warnings = placed.warnings;
   session = createExperimentSession<LabCommand>({ initial: initialState, simulation, commands, sampleEvery: seconds(10) });
@@ -266,6 +268,7 @@ function weighNow(scale: ScaleId): string {
   const entry = session.apply({ type: 'lab.weigh', scale });
   if (!entry.ok) return tr(entry.error, locale);
   lastWeigh = { at: session.state.time, step: session };
+  boardEpoch++;
   render();
   return weighSay();
 }
@@ -624,6 +627,7 @@ function addPortion(id: SubstanceId, grams: number, tempC: number, frozen: boole
   const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: id, mass: (grams / 1000) as never, temperature: celsius(tempC), ...(frozen ? { frozen: true } : {}) });
   if (!entry.ok) return tr(entry.error, locale);
   (finished ? pendingAdds : stepAdds).push({ what: sub.name, mass: grams / 1000 });
+  boardEpoch++;
   headline = null;
   checkpoint = null;
   buildAdd();
@@ -828,6 +832,7 @@ function sceneView(): SceneView {
     running,
     decimal: locale === 'uk' ? ',' : '.',
     professor,
+    board: { empty: u.boardEmpty, lines: boardNow() },
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
 }
@@ -930,6 +935,20 @@ function predictionVerdict(): string {
   if (!prediction || !preset || prediction.preset !== preset.id || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return '';
   const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? { uk: id, en: id }, locale);
   return prediction.choice === presetAnswer.correct ? t().quiz.right(label(prediction.choice)) : t().quiz.wrong(label(prediction.choice), label(presetAnswer.correct));
+}
+
+/** The blackboard: recomputed a few times a second while running (it walks the step's recorded states). */
+let boardCache: { at: number; key: string; lines: ReturnType<typeof boardLines> } | null = null;
+/** Bumped by whatever changes the step without time passing (a weighing, salt added, a new step). */
+let boardEpoch = 0;
+function boardNow(): ReturnType<typeof boardLines> {
+  const key = `${locale}|${boardEpoch}|${session.state.time}`;
+  const now = performance.now();
+  if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
+  const r = session.result();
+  const lines = boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale));
+  boardCache = { at: now, key, lines };
+  return lines;
 }
 
 /** The latest weighing while nothing has happened since: the vessel still stands on the scales. */

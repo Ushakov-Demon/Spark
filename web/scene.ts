@@ -53,6 +53,8 @@ export interface SceneView {
   readonly running: boolean;
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
+  /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
+  readonly board?: { readonly empty: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
   readonly scale?: { readonly look: 'kitchen-scale' | 'lab-balance'; readonly display: string };
   /** `act` — an idle scene the Professor plays when nobody does anything ("pace", "glasses"…). */
@@ -293,7 +295,8 @@ function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string): strin
 export function createScene(): Scene {
   const root = document.createElement('div');
   root.className = 'scene';
-  root.innerHTML = `<svg class="scene-svg" viewBox="0 52 ${W} ${H - 52}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div></div>`;
+  // The stage (drawing + Professor) and the blackboard: on a phone the board goes under the stage.
+  root.innerHTML = `<div class="scene-stage"><svg class="scene-svg" viewBox="0 52 ${W} ${H - 52}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div></div></div><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div><div class="board-tray"></div></div>`;
   const svg = root.querySelector('svg')!;
   const says = root.querySelector<HTMLElement>('#sc-says')!;
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
@@ -303,6 +306,12 @@ export function createScene(): Scene {
   const profBox = root.querySelector<HTMLElement>('.scene-prof')!;
   let geom: VesselGeom | null = null;
   let scaleKey = '';
+  const board = root.querySelector<HTMLElement>('#sc-board')!;
+  const boardLines = board.querySelector<HTMLElement>('.board-lines')!;
+  const boardEmpty = board.querySelector<HTMLElement>('.board-empty')!;
+  /** Lines on the board by id: a new one is written in chalk once, then only its numbers change. */
+  const written = new Map<string, HTMLElement>();
+  const BOARD_ROWS = 3;
   const $ = <T extends Element>(id: string) => svg.querySelector<T>(`#${id}`);
 
   function build(v: SceneView) {
@@ -428,6 +437,28 @@ export function createScene(): Scene {
       }
       const cloud = $<SVGEllipseElement>('sc-cloud');
       if (cloud) cloud.style.opacity = v.current?.toxicGas && (v.current.amps ?? 0) > 0.05 ? String(Math.min(0.45, 0.1 + v.current.amps / 10)) : '0';
+      // The blackboard: the latest few formulas; a line no longer there is wiped.
+      const lines = (v.board?.lines ?? []).slice(-BOARD_ROWS);
+      const keep = new Set(lines.map((l) => l.id));
+      for (const [id, e] of written) if (!keep.has(id)) (e.remove(), written.delete(id));
+      lines.forEach((l, idx) => {
+        let e = written.get(l.id);
+        if (!e) {
+          e = document.createElement('div');
+          e.className = 'board-line chalk-in';
+          e.innerHTML = '<div class="bl-title"></div><div class="bl-formula"></div><div class="bl-numbers"></div>';
+          written.set(l.id, e);
+        }
+        // The latest at the bottom; move a line only when the order changed (moving restarts its chalk).
+        if (boardLines.children[idx] !== e) boardLines.insertBefore(e, boardLines.children[idx] ?? null);
+        const [ti, fo, nu] = Array.from(e.children) as HTMLElement[];
+        if (ti!.textContent !== l.title) ti!.textContent = l.title;
+        if (fo!.textContent !== l.formula) fo!.textContent = l.formula;
+        const num = `= ${l.numbers}`;
+        if (nu!.textContent !== num) nu!.textContent = num;
+      });
+      boardEmpty.textContent = lines.length ? '' : (v.board?.empty ?? '');
+      board.hidden = !v.board;
       // Scales: appear when the vessel was weighed, with a small copy of it on the platform.
       const sc = $<SVGGElement>('sc-scale');
       const scKey = v.scale ? [v.scale.look, v.vessel, v.material, v.liquid, Math.round(v.fill * 20), v.solid >= 1].join('|') : '';

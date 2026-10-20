@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest';
+import { createCommandRegistry, createExperimentSession, createSimulation, seconds } from '../../src/core/index.js';
+import { createElectricalSolver } from '../../src/domains/electrical/index.js';
+import { bodyMass, createThermalSolver } from '../../src/domains/thermal/index.js';
+import { boardLines, LAB_COMMANDS, labGoalReached, labSetup, sampleOf, type LabCommand, type LabParams } from '../../src/scenarios/index.js';
+import { SUBSTANCES } from '../../src/substances/index.js';
+
+const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: seconds(2) });
+const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS as never);
+const ice: LabParams = { action: 'boil', substance: 'water', liters: 0.2, startTemp: -10, vessel: 'beaker', size: 0.25, material: 'glass', lid: false, roomTemp: 20, heater: { id: 'electric-hotplate', rating: 1000, knob: 1 } };
+
+describe('the blackboard', () => {
+  const s = createExperimentSession<LabCommand>({ initial: labSetup(ice).state, simulation, commands, sampleEvery: seconds(10) });
+  s.advance(6 * 3600, (x) => labGoalReached(ice, x));
+  s.advance(120); // and let it boil a little
+  s.apply({ type: 'lab.weigh', scale: 'kitchen-scale' });
+  const r = s.result(false);
+  const lines = boardLines(ice, [...r.samples, r.final], 'uk', ['kitchen-scale']);
+
+  it('writes each phase in the order it happened, then boiling and the weighing', () => {
+    expect(lines.map((l) => l.formula)).toEqual(['Q = c·m·Δt', 'Q = λ·m', 'Q = c·m·Δt', 'Q = L·m', 'm = m₁ + m₂']);
+    expect(lines[0]!.title).toContain('льоду');
+    expect(lines[1]!.title).toMatch(/^плавлення/);
+  });
+
+  it('melting puts in the latent heat of the model and the whole mass of the ice', () => {
+    const lambda = SUBSTANCES.water.freezing!.latentHeat.value;
+    const m = bodyMass(sampleOf(r.initial));
+    const q = Number(lines[1]!.numbers.split('≈')[1]!.replace(/[^\d,]/g, '').replace(',', '.'));
+    expect(q).toBeCloseTo((lambda * m) / 1000, -1);
+  });
+
+  it('every line is in both languages without broken numbers', () => {
+    const en = boardLines(ice, [...r.samples, r.final], 'en', ['kitchen-scale']);
+    expect(en.length).toBe(lines.length);
+    for (const l of [...lines, ...en]) expect(l.numbers).not.toMatch(/NaN|Infinity|undefined/);
+  });
+});

@@ -15,3 +15,4 @@ export * from './preset-answers.js';
 export * from './recording.js';
 export * from './weighing.js';
 export * from './lab-course.js';
+export * from './lab-board.js';
