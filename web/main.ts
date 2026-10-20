@@ -369,11 +369,7 @@ for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) window.addEv
 
 /** Start, advance or end an idle scene; true when the picture or the line changed. */
 function idleTick(now: number): boolean {
-  if (running || document.hidden) {
-    if (!idleAct) return false;
-    idleAct = null;
-    return true;
-  }
+  // A scene that is playing (also one called from the console during a run) plays to its end.
   if (idleAct) {
     const t = now - idleAct.started;
     if (t >= idleAct.length) {
@@ -388,7 +384,8 @@ function idleTick(now: number): boolean {
     idleLine = line;
     return true;
   }
-  if (now < nextActAt) return false;
+  // New scenes only when nothing is going on.
+  if (running || document.hidden || now < nextActAt) return false;
   const pool = ACTS.filter((a) => a.name !== lastActName);
   const a = pool[Math.floor(Math.random() * pool.length)]!;
   lastActName = a.name;
@@ -412,6 +409,7 @@ function frame(now: number) {
     record();
     if (reached) stop();
     else if (stalled()) stop();
+    idleTick(now);
     render();
   } else if (idleTick(now)) render();
   requestAnimationFrame(frame);
@@ -1612,6 +1610,18 @@ const labConsole = createConsole({
     return !!target;
   },
   startPreset: (p) => startPreset(p),
+  scenes: () => ACTS.map((a) => a.name),
+  playScene(name) {
+    const a = ACTS.find((x) => x.name === name);
+    if (!a) return;
+    // Played at once, as if he got bored right now (the next key or click still ends it).
+    const u = t();
+    const idea = PRESETS[Math.floor(Math.random() * PRESETS.length)]!;
+    idleAct = { ...a, lines: a.name === 'chalk' ? u.idle.chalk(tr(idea.title, locale)) : u.idle[a.name], started: performance.now() };
+    lastActName = a.name;
+    idleLine = 0;
+    render();
+  },
 });
 // A dock at the bottom of the window: slides up, its top edge is a handle to drag it taller or lower.
 $('#console-wrap').append(labConsole);

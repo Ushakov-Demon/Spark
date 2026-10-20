@@ -36,6 +36,9 @@ export interface ConsoleApi {
   explain(): void;
   openRef(key: string): boolean;
   startPreset(p: Preset): void;
+  /** The Professor's idle scenes by name, and playing one now. */
+  scenes(): readonly string[];
+  playScene(name: string): void;
 }
 
 interface Cmd {
@@ -85,32 +88,32 @@ export function createConsole(api: ConsoleApi): HTMLElement {
   const T = (x: LocalizedText) => tr(x, loc());
   const uk = () => loc() === 'uk';
   const ambiguous = (items: readonly { name: LocalizedText }[]) => [`${uk() ? 'Уточни, яке саме' : 'Which one'}: ${items.map((x) => T(x.name)).join(', ')}`];
-  const notFound = (what: string) => [uk() ? `Не знаю «${what}». Спробуй команду без слів — побачиш список.` : `I don't know "${what}". Run the command without words to see the list.`];
+  const notFound = (what: string) => [uk() ? `Не знаю «${what}». Спробуй команду без слів — побачиш список (наприклад, «substances»).` : `I don't know "${what}". Run the command without words to see the list.`];
   const list = (title: string, items: readonly string[]) => [title, ...items.map((x) => `  • ${x}`)];
 
   const COMMANDS: Cmd[] = [
     {
-      names: ['допомога', 'help', '?'],
-      usage: L('допомога [команда]', 'help [command]'),
+      names: ['help', '?', 'допомога'],
+      usage: L('help [command]', 'help [command]'),
       about: L('список команд або опис однієї', 'the list of commands or one of them'),
       run(args) {
         if (args[0]) {
           const c = COMMANDS.find((x) => x.names.includes(norm(args[0]!)));
-          return c ? [`${T(c.usage)} — ${T(c.about)}`, `${uk() ? 'Інші назви' : 'Also'}: ${c.names.join(', ')}`] : notFound(args[0]!);
+          return c ? [`${T(c.usage)} — ${T(c.about)}`, ...(c.names.length > 1 ? [`${uk() ? 'Інші назви' : 'Also'}: ${c.names.slice(1).join(', ')}`] : [])] : notFound(args[0]!);
         }
-        return [uk() ? 'Команди (Tab доповнює, ↑/↓ — історія):' : 'Commands (Tab completes, ↑/↓ — history):', ...COMMANDS.map((c) => `  ${T(c.usage).padEnd(34)} ${T(c.about)}`)];
+        return [uk() ? 'Команди (Tab доповнює, ↑/↓ — історія):' : 'Commands (Tab completes, ↑/↓ — history):', ...COMMANDS.map((c) => `  ${T(c.usage).padEnd(36)} ${T(c.about)}`)];
       },
     },
     {
-      names: ['дії', 'actions'],
-      usage: L('дії', 'actions'),
+      names: ['actions', 'дії'],
+      usage: L('actions', 'actions'),
       about: L('що можна робити', 'what can be done'),
       run: () => list(uk() ? 'Дії:' : 'Actions:', LAB_ACTIONS.map((a) => `${T(OPERATIONS[a].label)}${a === api.params().action ? ' ◀' : ''}`)),
     },
     {
-      names: ['дія', 'action', 'do'],
-      usage: L('дія <назва>', 'action <name>'),
-      about: L('вибрати дію: дія заморозити', 'choose an action: action freeze'),
+      names: ['action', 'do', 'дія'],
+      usage: L('action <name>', 'action <name>'),
+      about: L('вибрати дію: action freeze', 'choose an action: action freeze'),
       run(args) {
         const f = find(LAB_ACTIONS, (a) => [a, OPERATIONS[a].label.uk, OPERATIONS[a].label.en], words(args));
         if (!f) return notFound(words(args));
@@ -120,17 +123,17 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['речовини', 'substances'],
-      usage: L('речовини', 'substances'),
+      names: ['substances', 'речовини'],
+      usage: L('substances', 'substances'),
       about: L('речовини для вибраної дії', 'substances for the chosen action'),
       run: () => list(uk() ? 'Речовини:' : 'Substances:', substancesFor(api.params().action).map((x) => `${T(x.name)}${x.id === api.params().substance ? ' ◀' : ''}`)),
     },
     {
-      names: ['речовина', 'substance'],
-      usage: L('речовина <назва> [кількість л|мл]', 'substance <name> [amount L|mL]'),
-      about: L('налити речовину: речовина морська 0.5 л', 'pour a substance: substance sea 0.5 L'),
+      names: ['substance', 'речовина'],
+      usage: L('substance <name> [amount L|mL]', 'substance <name> [amount L|mL]'),
+      about: L('налити речовину: substance sea 0.5 l', 'pour a substance: substance sea 0.5 L'),
       run(args) {
-        if (api.started()) return [uk() ? 'Під час досліду речовину не міняють — спершу «спочатку».' : 'The substance stays during an experiment — "reset" first.'];
+        if (api.started()) return [uk() ? 'Під час досліду речовину не міняють — спершу «reset».' : 'The substance stays during an experiment — "reset" first.'];
         const p = api.params();
         const f = find(substancesFor(p.action), names, words(args));
         if (!f) return notFound(words(args));
@@ -142,17 +145,17 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['посуд', 'vessels'],
-      usage: L('посуд', 'vessels'),
+      names: ['vessels', 'посуд'],
+      usage: L('vessels', 'vessels'),
       about: L('посуд, що підходить до приладу', 'vessels that fit the device'),
       run: () => list(uk() ? 'Посуд:' : 'Vessels:', vesselsFor(api.params()).map((f) => `${T(f.vessel.name)} (${f.sizes.join(', ')} ${uk() ? 'л' : 'L'})${f.vessel.id === api.params().vessel ? ' ◀' : ''}`)),
     },
     {
-      names: ['посудина', 'vessel'],
-      usage: L('посудина <назва> [об’єм л] [матеріал]', 'vessel <name> [size L] [material]'),
-      about: L('поставити посуд: посудина стакан 0.25', 'choose a vessel: vessel beaker 0.25'),
+      names: ['vessel', 'посудина'],
+      usage: L('vessel <name> [size L] [material]', 'vessel <name> [size L] [material]'),
+      about: L('поставити посуд: vessel beaker 0.25', 'choose a vessel: vessel beaker 0.25'),
       run(args) {
-        if (api.started()) return [uk() ? 'Під час досліду посуд не міняють — спершу «спочатку».' : 'The vessel stays during an experiment — "reset" first.'];
+        if (api.started()) return [uk() ? 'Під час досліду посуд не міняють — спершу «reset».' : 'The vessel stays during an experiment — "reset" first.'];
         const p = api.params();
         const fits = vesselsFor(p);
         const text = words(args);
@@ -170,8 +173,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['прилади', 'devices'],
-      usage: L('прилади', 'devices'),
+      names: ['devices', 'прилади'],
+      usage: L('devices', 'devices'),
       about: L('прилади для вибраної дії', 'devices for the chosen action'),
       run() {
         const uses = OPERATIONS[api.params().action].uses;
@@ -180,9 +183,9 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['прилад', 'device'],
-      usage: L('прилад <назва> [Вт | °C | В]', 'device <name> [W | °C | V]'),
-      about: L('прилад і його налаштування: прилад морозилка -22', 'a device and its setting: device freezer -22'),
+      names: ['device', 'прилад'],
+      usage: L('device <name> [W | °C | V]', 'device <name> [W | °C | V]'),
+      about: L('прилад і його налаштування: device freezer -22', 'a device and its setting: device freezer -22'),
       run(args) {
         const p = api.params();
         const uses = OPERATIONS[p.action].uses;
@@ -222,8 +225,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['ручка', 'knob'],
-      usage: L('ручка <0…100 %>', 'knob <0…100 %>'),
+      names: ['knob', 'ручка'],
+      usage: L('knob <0…100 %>', 'knob <0…100 %>'),
       about: L('повернути ручку нагрівача чи блока живлення', 'turn the heater or power supply knob'),
       run(args) {
         const q = quantities(args)[0];
@@ -234,8 +237,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['ціль', 'target'],
-      usage: L('ціль <°C>', 'target <°C>'),
+      names: ['target', 'ціль'],
+      usage: L('target <°C>', 'target <°C>'),
       about: L('до якої температури гріти чи охолоджувати', 'the temperature to heat or cool to'),
       run(args) {
         const p = api.params();
@@ -248,8 +251,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['час', 'duration'],
-      usage: L('час <хв>', 'duration <min>'),
+      names: ['duration', 'час'],
+      usage: L('duration <min>', 'duration <min>'),
       about: L('скільки хвилин іде дія (струм)', 'how many minutes the action runs (current)'),
       run(args) {
         const p = api.params();
@@ -262,11 +265,11 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['температура', 'temp', 'start'],
-      usage: L('температура <°C>', 'temp <°C>'),
+      names: ['temp', 'температура'],
+      usage: L('temp <°C>', 'temp <°C>'),
       about: L('початкова температура речовини', 'starting temperature of the substance'),
       run(args) {
-        if (api.started()) return [uk() ? 'Дослід уже йде — почни «спочатку».' : 'The experiment is running — "reset" first.'];
+        if (api.started()) return [uk() ? 'Дослід уже йде — спершу «reset».' : 'The experiment is running — "reset" first.'];
         const q = quantities(args)[0];
         if (!q) return [T(this.usage)];
         api.choose({ ...api.params(), startTemp: Math.max(-30, Math.min(300, q.value)) }, 'experiment');
@@ -274,8 +277,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['кімната', 'room'],
-      usage: L('кімната <°C>', 'room <°C>'),
+      names: ['room', 'кімната'],
+      usage: L('room <°C>', 'room <°C>'),
       about: L('температура в кімнаті', 'room temperature'),
       run(args) {
         const q = quantities(args)[0];
@@ -285,8 +288,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['кришка', 'lid'],
-      usage: L('кришка так|ні', 'lid on|off'),
+      names: ['lid', 'кришка'],
+      usage: L('lid on|off', 'lid on|off'),
       about: L('накрити посуд кришкою', 'put a lid on'),
       run(args) {
         const on = /^(так|yes|on|1|є)/.test(norm(args[0] ?? 'так'));
@@ -295,9 +298,9 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['додати', 'add'],
-      usage: L('додати <речовина> <маса г> [°C] [лід]', 'add <substance> <mass g> [°C] [frozen]'),
-      about: L('досипати чи долити: додати сіль 7 г', 'add something: add salt 7 g'),
+      names: ['add', 'додати'],
+      usage: L('add <substance> <mass g> [°C] [frozen]', 'add <substance> <mass g> [°C] [frozen]'),
+      about: L('досипати чи долити: add salt 7 g', 'add something: add salt 7 g'),
       run(args) {
         const frozen = args.some((a) => /^(лід|льод|frozen|ice)/.test(norm(a)));
         const text = args.filter((a) => !/^(лід|льод|frozen|ice)/.test(norm(a)));
@@ -313,8 +316,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['старт', 'start', 'go', 'продовжити', 'continue'],
-      usage: L('старт', 'start'),
+      names: ['start', 'go', 'continue', 'старт', 'продовжити'],
+      usage: L('start', 'start'),
       about: L('запустити (або продовжити) дослід', 'start (or continue) the experiment'),
       run() {
         if (!api.isRunning()) api.toggleStart();
@@ -322,8 +325,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['пауза', 'pause', 'stop'],
-      usage: L('пауза', 'pause'),
+      names: ['pause', 'stop', 'пауза'],
+      usage: L('pause', 'pause'),
       about: L('зупинити час', 'stop the clock'),
       run() {
         if (api.isRunning()) api.toggleStart();
@@ -331,8 +334,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['спочатку', 'reset'],
-      usage: L('спочатку', 'reset'),
+      names: ['reset', 'спочатку'],
+      usage: L('reset', 'reset'),
       about: L('почати дослід заново', 'start the experiment over'),
       run() {
         api.reset();
@@ -340,8 +343,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['швидкість', 'speed'],
-      usage: L('швидкість <1…3600>', 'speed <1…3600>'),
+      names: ['speed', 'швидкість'],
+      usage: L('speed <1…3600>', 'speed <1…3600>'),
       about: L('у скільки разів швидше за справжній час', 'how many times faster than real time'),
       run(args) {
         const q = quantities(args)[0];
@@ -353,14 +356,14 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['стан', 'status'],
-      usage: L('стан', 'status'),
+      names: ['status', 'стан'],
+      usage: L('status', 'status'),
       about: L('що зараз показують прилади', 'what the readouts show now'),
       run: () => api.status(),
     },
     {
-      names: ['прогноз', 'predict'],
-      usage: L('прогноз <хв>', 'predict <min>'),
+      names: ['predict', 'прогноз'],
+      usage: L('predict <min>', 'predict <min>'),
       about: L('мій прогноз: за скільки хвилин', 'my prediction: in how many minutes'),
       run(args) {
         const q = quantities(args)[0];
@@ -370,8 +373,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['довідка', 'info', 'ref'],
-      usage: L('довідка <назва>', 'info <name>'),
+      names: ['info', 'ref', 'довідка'],
+      usage: L('info <name>', 'info <name>'),
       about: L('довідка про речовину чи прилад', 'reference card of a substance or device'),
       run(args) {
         const text = words(args);
@@ -386,14 +389,14 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['досліди', 'presets'],
-      usage: L('досліди', 'presets'),
+      names: ['presets', 'досліди'],
+      usage: L('presets', 'presets'),
       about: L('готові досліди з номерами', 'ready-made experiments with numbers'),
       run: () => list(uk() ? 'Готові досліди (дослід <номер>):' : 'Ready-made experiments (preset <number>):', PRESETS.map((p, i) => `${i + 1}. ${T(p.title)}${p.grade ? ` — ${p.grade} ${uk() ? 'клас' : 'grade'}` : ''}`)),
     },
     {
-      names: ['дослід', 'preset'],
-      usage: L('дослід <номер або назва>', 'preset <number or name>'),
+      names: ['preset', 'дослід'],
+      usage: L('preset <number or name>', 'preset <number or name>'),
       about: L('запустити готовий дослід', 'start a ready-made experiment'),
       run(args) {
         const n = quantities(args)[0];
@@ -407,8 +410,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['пояснити', 'explain'],
-      usage: L('пояснити', 'explain'),
+      names: ['explain', 'пояснити'],
+      usage: L('explain', 'explain'),
       about: L('розбір: що відбулося і чому', 'what happened and why'),
       run() {
         api.explain();
@@ -416,8 +419,21 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       },
     },
     {
-      names: ['очистити', 'clear', 'cls'],
-      usage: L('очистити', 'clear'),
+      names: ['prof', 'professor', 'проф'],
+      usage: L('prof [scene]', 'prof [scene]'),
+      about: L('сценки Професора: prof coffee', 'the Professor\'s scenes: prof coffee'),
+      run(args) {
+        const scenes = api.scenes();
+        if (!args[0]) return list(uk() ? 'Сценки (prof <назва>):' : 'Scenes (prof <name>):', scenes);
+        const f = scenes.find((x) => x.startsWith(norm(args[0]!)));
+        if (!f) return notFound(args[0]!);
+        api.playScene(f);
+        return [`✓ ${f}`];
+      },
+    },
+    {
+      names: ['clear', 'cls', 'очистити'],
+      usage: L('clear', 'clear'),
       about: L('очистити консоль', 'clear the console'),
       run: () => [],
     },
@@ -440,9 +456,9 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     }
     out.scrollTop = out.scrollHeight;
   };
-  const greet = () => print([uk() ? 'Консоль лабораторії. Напиши «допомога», щоб побачити команди.' : 'Lab console. Type "help" to see the commands.'], 'muted');
+  const greet = () => print([uk() ? 'Консоль лабораторії. Напиши «help», щоб побачити команди.' : 'Lab console. Type "help" to see the commands.'], 'muted');
   greet();
-  input.placeholder = uk() ? 'наприклад: дія заморозити' : 'e.g. action freeze';
+  input.placeholder = uk() ? 'наприклад: action freeze' : 'e.g. action freeze';
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -454,8 +470,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       print([`› ${line}`], 'cmd');
       const [head, ...args] = line.split(/\s+/);
       const c = COMMANDS.find((x) => x.names.includes(norm(head!)));
-      if (!c) return print(uk() ? [`Немає команди «${head}». Напиши «допомога».`] : [`No command "${head}". Type "help".`], 'err');
-      if (c.names[0] === 'очистити') {
+      if (!c) return print(uk() ? [`Немає команди «${head}». Напиши «help».`] : [`No command "${head}". Type "help".`], 'err');
+      if (c.names[0] === 'clear') {
         out.innerHTML = '';
         return greet();
       }
@@ -477,7 +493,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       e.preventDefault();
       const parts = input.value.split(/\s+/);
       if (parts.length <= 1) {
-        const opts = COMMANDS.flatMap((c) => c.names).filter((n) => n.startsWith(norm(parts[0] ?? '')));
+        const opts = COMMANDS.flatMap((c) => c.names).filter((n) => /^[a-z?]/.test(n) || /[^\x00-\x7f]/.test(norm(parts[0] ?? ''))).filter((n) => n.startsWith(norm(parts[0] ?? '')));
         if (opts.length === 1) input.value = `${opts[0]} `;
         else if (opts.length) print([opts.join('  ')], 'muted');
         return;
