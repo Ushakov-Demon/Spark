@@ -551,18 +551,29 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 }
 
 /* ---------- the blackboard ---------- */
-.scene-stage { position: relative; }
-.scene .board { position: absolute; right: 1.5%; top: 3%; width: 25%; max-height: 54%; overflow: hidden; box-sizing: border-box; padding: 6px 8px 10px; border: 5px solid #8a5a2e; border-radius: 6px; background: radial-gradient(ellipse at 30% 20%, #3b5a47, #2a4434); color: #f1efe4; box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 0 18px rgba(0,0,0,0.35); font-family: 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', cursive; font-size: clamp(9px, 0.95vw, 12.5px); line-height: 1.25; }
+/* The wall of the drawing is see-through: the stage paints it, the board hangs on it, the table and devices are in front. */
+.scene-stage { position: relative; background: var(--scene-wall); }
+.scene .wall { fill: transparent; }
+.scene-svg { position: relative; z-index: 1; pointer-events: none; } /* the drawing takes no clicks: the board's button behind it stays reachable */
+.scene-prof { z-index: 2; }
+/* From near the top down to the table top (86 % of the drawing), almost the whole width. */
+.scene .board { position: absolute; z-index: 0; left: 2.5%; right: 2.5%; top: 3%; bottom: 14%; overflow: hidden; box-sizing: border-box; padding: 10px 16px 12px; border: 8px solid #8a5a2e; border-bottom-width: 10px; border-radius: 6px; background: radial-gradient(ellipse at 30% 20%, #3b5a47, #2a4434); color: #f1efe4; box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 0 28px rgba(0,0,0,0.35); font-family: 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', cursive; font-size: clamp(12px, 1.7vw, 21px); line-height: 1.25; transition: box-shadow 0.25s, transform 0.25s; }
 .scene .board[hidden] { display: none; }
-.board-tray { position: absolute; left: 6%; right: 6%; bottom: 0; height: 4px; background: #6d4524; border-radius: 2px; }
-.board-empty { opacity: 0.45; font-style: italic; text-align: center; padding: 10px 0; }
-.board-line + .board-line { margin-top: 5px; padding-top: 4px; border-top: 1px dashed rgba(241,239,228,0.25); }
-.bl-title { opacity: 0.7; font-size: 0.86em; }
-.bl-formula { font-size: 1.12em; letter-spacing: 0.02em; }
+/* Pulled forward: over everything, the whole board readable (scrolls if it has to). */
+.scene .board.front { z-index: 3; overflow: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 0 28px rgba(0,0,0,0.35); }
+/* The toggle lives over everything, on the front edge of the table at the right (free on a phone too), so the writing starts at the very top of the board. */
+.board-toggle { position: absolute; right: 12px; bottom: 3%; z-index: 4; min-height: 0; padding: 3px 12px; font: 600 clamp(11px, 1.1vw, 13px) system-ui, sans-serif; color: #f1efe4; background: rgba(42, 68, 52, 0.85); border: 1px solid rgba(241,239,228,0.45); border-radius: 999px; cursor: pointer; }
+.board-toggle[hidden] { display: none; }
+.board-toggle:hover { background: rgba(0,0,0,0.4); }
+.board-lines { display: grid; margin-top: 0; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14em), 1fr)); gap: 10px 26px; }
+.board-empty { opacity: 0.45; font-style: italic; text-align: center; padding-top: 3em; }
+.board-line { border-left: 2px dashed rgba(241,239,228,0.25); padding-left: 10px; }
+.bl-title { opacity: 0.7; font-size: 0.8em; }
+.bl-formula { font-size: 1.25em; letter-spacing: 0.02em; }
 .bl-numbers { overflow-wrap: anywhere; }
 .chalk-in { animation: chalk 1.1s steps(18, end) both; }
 @keyframes chalk { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @media (prefers-reduced-motion: reduce) { .chalk-in { animation: none; } }
 @media (max-width: 700px) {
-  .scene .board { position: static; width: auto; max-height: none; margin: 0; border-width: 4px; border-radius: 0 0 12px 12px; font-size: 11px; }
+  .scene .board { border-width: 5px; padding: 6px 8px; font-size: 11px; }
 }

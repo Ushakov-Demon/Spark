@@ -832,7 +832,7 @@ function sceneView(): SceneView {
     running,
     decimal: locale === 'uk' ? ',' : '.',
     professor,
-    board: { empty: u.boardEmpty, lines: boardNow() },
+    board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
 }
@@ -942,11 +942,11 @@ let boardCache: { at: number; key: string; lines: ReturnType<typeof boardLines> 
 /** Bumped by whatever changes the step without time passing (a weighing, salt added, a new step). */
 let boardEpoch = 0;
 function boardNow(): ReturnType<typeof boardLines> {
-  const key = `${locale}|${boardEpoch}|${session.state.time}`;
+  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}`;
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
-  const lines = boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale));
+  const lines = boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished);
   boardCache = { at: now, key, lines };
   return lines;
 }

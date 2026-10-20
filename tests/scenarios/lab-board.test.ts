@@ -15,7 +15,7 @@ describe('the blackboard', () => {
   s.advance(120); // and let it boil a little
   s.apply({ type: 'lab.weigh', scale: 'kitchen-scale' });
   const r = s.result(false);
-  const lines = boardLines(ice, [...r.samples, r.final], 'uk', ['kitchen-scale']);
+  const lines = boardLines(ice, [...r.samples, r.final], 'uk', ['kitchen-scale'], true);
 
   it('writes each phase in the order it happened, then boiling and the weighing', () => {
     expect(lines.map((l) => l.formula)).toEqual(['Q = c·m·Δt', 'Q = λ·m', 'Q = c·m·Δt', 'Q = L·m', 'm = m₁ + m₂']);
@@ -26,13 +26,23 @@ describe('the blackboard', () => {
   it('melting puts in the latent heat of the model and the whole mass of the ice', () => {
     const lambda = SUBSTANCES.water.freezing!.latentHeat.value;
     const m = bodyMass(sampleOf(r.initial));
-    const q = Number(lines[1]!.numbers.split('≈')[1]!.replace(/[^\d,]/g, '').replace(',', '.'));
+    const q = Number(lines[1]!.numbers!.split('≈')[1]!.replace(/[^\d,]/g, '').replace(',', '.'));
     expect(q).toBeCloseTo((lambda * m) / 1000, -1);
   });
 
   it('every line is in both languages without broken numbers', () => {
-    const en = boardLines(ice, [...r.samples, r.final], 'en', ['kitchen-scale']);
+    const en = boardLines(ice, [...r.samples, r.final], 'en', ['kitchen-scale'], true);
     expect(en.length).toBe(lines.length);
     for (const l of [...lines, ...en]) expect(l.numbers).not.toMatch(/NaN|Infinity|undefined/);
+  });
+
+  it('while a phase goes on only its formula is written; the numbers come when it is over', () => {
+    // In the middle of melting: warming the ice is over, melting is still going on.
+    const mid = r.samples.findIndex((x) => { const f = sampleOf(x).state.solidFraction ?? 0; return f > 0.3 && f < 0.7; });
+    const now = boardLines(ice, r.samples.slice(0, mid + 1), 'uk');
+    expect(now.map((l) => l.formula)).toEqual(['Q = c·m·Δt', 'Q = λ·m']);
+    expect(now[0]!.numbers).toBeDefined();
+    expect(now[1]!.numbers).toBeUndefined();
+    expect(now[1]!.title).toBe('плавлення');
   });
 });

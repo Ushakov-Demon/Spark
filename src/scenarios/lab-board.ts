@@ -14,7 +14,8 @@ import { sampleOf, type LabParams } from './thermal-lab.js';
  * The blackboard over the lab table: the formulas of what is going on in the
  * current step, with this run's numbers put in. Each phase of the step —
  * warming the ice, melting it, warming the water, boiling — gets its own line,
- * in the order they happened, and its numbers grow as the step goes on. The
+ * in the order they happened. While a phase goes on only its formula is on the
+ * board; its numbers are written when it is over. The
  * physical constants come from the substance models (sourced data).
  */
 export interface BoardLine {
@@ -23,8 +24,8 @@ export interface BoardLine {
   /** What it is about: "нагрівання води". */
   readonly title: string;
   readonly formula: string;
-  /** The formula with the numbers put in, and the result. */
-  readonly numbers: string;
+  /** The formula with the numbers put in, and the result — written once the phase is over (the formula has done its work). */
+  readonly numbers?: string;
 }
 
 type Phase = 'solid' | 'liquid' | 'mix';
@@ -38,7 +39,7 @@ const phaseOf = (b: ThermalBody): Phase => {
 const boiled = (b: ThermalBody) => b.state.boiledOff ?? 0;
 
 /** The board for a step: `states` are the step's states in time order (the recorded samples and now); `weighed` — the scales used in it, latest last. */
-export function boardLines(p: LabParams, states: readonly SystemState[], locale: Locale, weighed: readonly ScaleId[] = []): BoardLine[] {
+export function boardLines(p: LabParams, states: readonly SystemState[], locale: Locale, weighed: readonly ScaleId[] = [], finished = false): BoardLine[] {
   const uk = locale === 'uk';
   const sub = SUBSTANCES[p.substance];
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
@@ -59,6 +60,8 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     const b = bodies[i - 1]!;
     const ph = phaseOf(bodies[start]!);
     const id = `${k++}:${ph}`;
+    // The phase still going on: the formula now, the numbers when it is over.
+    const over = i < bodies.length || finished;
     if (ph === 'mix') {
       const dm = iceMass(b) - iceMass(a);
       // Ice is frozen water, also when it forms in salt water.
@@ -67,9 +70,9 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
         const m = Math.abs(dm);
         out.push({
           id,
-          title: dm > 0 ? (uk ? `кристалізація: замерзло ${n(m * 1000)} г` : `freezing: ${n(m * 1000)} g froze`) : uk ? `плавлення: розтануло ${n(m * 1000)} г` : `melting: ${n(m * 1000)} g melted`,
+          title: dm > 0 ? (uk ? `кристалізація${over ? `: замерзло ${n(m * 1000)} г` : ''}` : `freezing${over ? `: ${n(m * 1000)} g froze` : ''}`) : uk ? `плавлення${over ? `: розтануло ${n(m * 1000)} г` : ''}` : `melting${over ? `: ${n(m * 1000)} g melted` : ''}`,
           formula: 'Q = λ·m',
-          numbers: `${n(lambda)} · ${n(m)} ≈ ${kJ(lambda * m)}`,
+          ...(over ? { numbers: `${n(lambda)} · ${n(m)} ≈ ${kJ(lambda * m)}` } : {}),
         });
       }
     } else {
@@ -82,7 +85,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
           id,
           title: dT > 0 ? (uk ? `нагрівання ${what}` : `warming the ${what}`) : uk ? `охолодження ${what}` : `cooling the ${what}`,
           formula: 'Q = c·m·Δt',
-          numbers: `${n(c)} · ${n(m)} · ${n(Math.abs(dT), 2)} ≈ ${kJ(c * m * Math.abs(dT))}`,
+          ...(over ? { numbers: `${n(c)} · ${n(m)} · ${n(Math.abs(dT), 2)} ≈ ${kJ(c * m * Math.abs(dT))}` } : {}),
         });
       }
     }
@@ -94,7 +97,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
   const L = sub.boiling?.latentHeat.value;
   // A tenth of a gram: less is the very first bubbles, not boiling yet worth a line.
   if (L && steam >= 1e-4) {
-    out.push({ id: 'boil', title: uk ? `кипіння: википіло ${n(steam * 1000)} г` : `boiling: ${n(steam * 1000)} g boiled off`, formula: 'Q = L·m', numbers: `${n(L)} · ${n(steam)} ≈ ${kJ(L * steam)}` });
+    out.push({ id: 'boil', title: uk ? `кипіння${finished ? `: википіло ${n(steam * 1000)} г` : ''}` : `boiling${finished ? `: ${n(steam * 1000)} g boiled off` : ''}`, formula: 'Q = L·m', ...(finished ? { numbers: `${n(L)} · ${n(steam)} ≈ ${kJ(L * steam)}` } : {}) });
   }
 
   // A current through the liquid: Ohm's law and the heat it releases (Joule–Lenz).
@@ -104,8 +107,8 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     const R = sup.state.resistance;
     const t = sup.state.time;
     const amps = I < 0.1 ? `${n(I * 1000, 2)} ${uk ? 'мА' : 'mA'}` : `${n(I, 3)} ${uk ? 'А' : 'A'}`;
-    out.push({ id: 'ohm', title: uk ? 'струм у рідині' : 'current in the liquid', formula: 'I = U/R', numbers: `${n(I * R, 3)} ${uk ? 'В' : 'V'} / ${n(R, 3)} ${uk ? 'Ом' : 'Ω'} ≈ ${amps}` });
-    if (t > 0) out.push({ id: 'joule', title: uk ? 'теплота від струму' : 'heat from the current', formula: 'Q = I²·R·t', numbers: `${n(I, 3)}² · ${n(R, 3)} · ${n(t, 3)} ≈ ${kJ(I * I * R * t)}` });
+    out.push({ id: 'ohm', title: uk ? 'струм у рідині' : 'current in the liquid', formula: 'I = U/R', ...(finished ? { numbers: `${n(I * R, 3)} ${uk ? 'В' : 'V'} / ${n(R, 3)} ${uk ? 'Ом' : 'Ω'} ≈ ${amps}` } : {}) });
+    if (t > 0) out.push({ id: 'joule', title: uk ? 'теплота від струму' : 'heat from the current', formula: 'Q = I²·R·t', ...(finished ? { numbers: `${n(I, 3)}² · ${n(R, 3)} · ${n(t, 3)} ≈ ${kJ(I * I * R * t)}` } : {}) });
   }
   // The latest weighing: what the scales show is the vessel plus what is in it.
   const scale = weighed[weighed.length - 1];

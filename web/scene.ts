@@ -54,7 +54,7 @@ export interface SceneView {
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
-  readonly board?: { readonly empty: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers: string }[] };
+  readonly board?: { readonly empty: string; readonly front: string; readonly back: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers?: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
   readonly scale?: { readonly look: 'kitchen-scale' | 'lab-balance'; readonly display: string };
   /** `act` — an idle scene the Professor plays when nobody does anything ("pace", "glasses"…). */
@@ -295,8 +295,9 @@ function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string): strin
 export function createScene(): Scene {
   const root = document.createElement('div');
   root.className = 'scene';
-  // The stage (drawing + Professor) and the blackboard: on a phone the board goes under the stage.
-  root.innerHTML = `<div class="scene-stage"><svg class="scene-svg" viewBox="0 52 ${W} ${H - 52}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div></div></div><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div><div class="board-tray"></div></div>`;
+  // The blackboard hangs on the wall behind everything on the table (the drawing's wall is see-through);
+  // a button pulls it to the front to read it all, and back.
+  root.innerHTML = `<div class="scene-stage"><button type="button" class="board-toggle"></button><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 52 ${W} ${H - 52}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div></div></div>`;
   const svg = root.querySelector('svg')!;
   const says = root.querySelector<HTMLElement>('#sc-says')!;
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
@@ -311,7 +312,19 @@ export function createScene(): Scene {
   const boardEmpty = board.querySelector<HTMLElement>('.board-empty')!;
   /** Lines on the board by id: a new one is written in chalk once, then only its numbers change. */
   const written = new Map<string, HTMLElement>();
-  const BOARD_ROWS = 3;
+  const BOARD_ROWS = 8;
+  const boardToggle = root.querySelector<HTMLButtonElement>('.board-toggle')!;
+  let boardLabels = { front: '', back: '' };
+  const setToggle = () => {
+    const front = board.classList.contains('front');
+    boardToggle.textContent = front ? boardLabels.back : boardLabels.front;
+    boardToggle.setAttribute('aria-pressed', String(front));
+  };
+  boardToggle.onclick = () => {
+    board.classList.toggle('front');
+    boardToggle.classList.toggle('front', board.classList.contains('front'));
+    setToggle();
+  };
   const $ = <T extends Element>(id: string) => svg.querySelector<T>(`#${id}`);
 
   function build(v: SceneView) {
@@ -454,11 +467,20 @@ export function createScene(): Scene {
         const [ti, fo, nu] = Array.from(e.children) as HTMLElement[];
         if (ti!.textContent !== l.title) ti!.textContent = l.title;
         if (fo!.textContent !== l.formula) fo!.textContent = l.formula;
-        const num = `= ${l.numbers}`;
-        if (nu!.textContent !== num) nu!.textContent = num;
+        // The numbers come when the formula has done its work — written in chalk too.
+        const num = l.numbers ? `= ${l.numbers}` : '';
+        if (nu!.textContent !== num) {
+          if (num && !nu!.textContent) nu!.classList.add('chalk-in');
+          nu!.textContent = num;
+        }
       });
       boardEmpty.textContent = lines.length ? '' : (v.board?.empty ?? '');
+      if (v.board && (v.board.front !== boardLabels.front || v.board.back !== boardLabels.back)) {
+        boardLabels = { front: v.board.front, back: v.board.back };
+        setToggle();
+      }
       board.hidden = !v.board;
+      boardToggle.hidden = !v.board;
       // Scales: appear when the vessel was weighed, with a small copy of it on the platform.
       const sc = $<SVGGElement>('sc-scale');
       const scKey = v.scale ? [v.scale.look, v.vessel, v.material, v.liquid, Math.round(v.fill * 20), v.solid >= 1].join('|') : '';
