@@ -19,6 +19,21 @@ export interface UiText {
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
+  prof: {
+    idle: string;
+    impossible: string;
+    heating: string;
+    cooling: string;
+    boiling: string;
+    freezing: string;
+    melting: string;
+    current: string;
+    chlorine: string;
+    noCurrent: string;
+    reached: string;
+    failed: string;
+    smoke: string;
+  };
   volts: string;
   amps: string;
   duration: string;
@@ -139,6 +154,21 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
+    prof: {
+      idle: 'Обери, що робимо, і тисни «Старт». Або спершу спробуй передбачити результат!',
+      impossible: 'Хм… Так мети не досягти. Глянь підказку під графіком — я дещо придумав.',
+      heating: 'Гріємо! Слідкуй за термометром.',
+      cooling: 'Холоне… Тепло тікає в холодніше довкілля.',
+      boiling: 'Кипить! Бачиш бульбашки? Температура більше не росте — уся теплота йде на пару.',
+      freezing: 'Лід росте! Поки вода замерзає, температура стоїть на місці.',
+      melting: 'Тане! Уся теплота зараз іде на плавлення льоду.',
+      current: 'Іде струм! Бачиш бульбашки на електродах? Це гази виділяються.',
+      chlorine: 'Кхе-кхе! Це хлор… У справжній лабораторії тут потрібна витяжка!',
+      noCurrent: 'Струму майже немає… Може, у воді чогось бракує? Спробуй досипати солі.',
+      reached: 'Вийшло! Можна продовжити: обери наступну дію ліворуч.',
+      failed: 'Не вийшло… Але це теж результат! Подивимось, що можна змінити.',
+      smoke: 'Кхе! Олія димить — далі гріти небезпечно.',
+    },
     volts: 'В',
     amps: 'А',
     duration: 'Скільки часу, хв',
@@ -257,6 +287,21 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
+    prof: {
+      idle: 'Choose what we do and press “Start”. Or try to predict the result first!',
+      impossible: 'Hmm… The goal can’t be reached like this. See the hint under the chart — I have an idea.',
+      heating: 'Heating! Watch the thermometer.',
+      cooling: 'Cooling… The heat escapes into the colder surroundings.',
+      boiling: 'It’s boiling! See the bubbles? The temperature no longer rises — all the heat turns water into steam.',
+      freezing: 'Ice is growing! While water freezes, the temperature stands still.',
+      melting: 'Melting! All the heat goes into melting the ice now.',
+      current: 'Current is flowing! See the bubbles at the electrodes? Those are gases.',
+      chlorine: 'Cough, cough! That’s chlorine… A real lab would need a fume hood here!',
+      noCurrent: 'Almost no current… Maybe something is missing in the water? Try adding salt.',
+      reached: 'It worked! You can go on: pick the next action on the left.',
+      failed: 'Didn’t work… But that is a result too! Let’s see what we can change.',
+      smoke: 'Cough! The oil is smoking — heating further is dangerous.',
+    },
     volts: 'V',
     amps: 'A',
     duration: 'How long, min',

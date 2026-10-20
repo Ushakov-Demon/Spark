@@ -219,3 +219,79 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .progress { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .progress span { display: block; height: 100%; width: var(--p); background: var(--water); transition: width 0.3s; }
 .chart { max-height: 380px; }
+
+/* ---------- scene (the table with the experiment) ---------- */
+.scene { position: relative; margin: 4px 0 10px; border-radius: 14px; overflow: hidden; background: var(--scene-wall); }
+.scene-svg { width: 100%; aspect-ratio: 640 / 308; max-height: 360px; display: block; }
+/* The Professor stands at the left edge of the table, in front of it. */
+.scene-prof { position: absolute; left: 1%; bottom: 2%; width: 15%; max-width: 120px; min-width: 64px; }
+.scene-prof .prof svg { display: block; width: 100%; height: auto; }
+.scene .bubble { position: absolute; left: 0; bottom: 100%; margin-bottom: 6px; width: 230px; z-index: 2; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; font-size: 0.88rem; line-height: 1.35; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+.scene .bubble::after { content: ''; position: absolute; left: 40px; bottom: -8px; border: 8px solid transparent; border-top-color: var(--card); border-bottom: 0; }
+@media (max-width: 700px) { .scene .bubble { width: 160px; font-size: 0.78rem; padding: 6px 9px; } }
+:root { --scene-wall: #eef3f8; --scene-table: #c9a77c; --scene-table-edge: #a5855c; --appliance: #2f3640; }
+@media (prefers-color-scheme: dark) { :root { --scene-wall: #1c2430; --scene-table: #5a4632; --scene-table-edge: #3f3122; --appliance: #11161d; } }
+.scene .wall { fill: var(--scene-wall); }
+.scene .table { fill: var(--scene-table); }
+.scene .table-edge { stroke: var(--scene-table-edge); stroke-width: 3; }
+.scene .appliance { fill: var(--appliance); }
+.scene .glass-top { fill: #1b1f26; stroke: #3a414c; }
+.scene .plate { fill: #3a3a3e; stroke: #222; stroke-width: 1.5; transition: fill 0.6s; }
+.scene .lamp { fill: #4a2a2a; }
+.scene .lamp.on { fill: #ff4b2b; filter: drop-shadow(0 0 4px #ff4b2b); }
+.scene .coil ellipse { fill: none; stroke: #47a3ff; stroke-width: 2.5; }
+.scene .coil { transition: opacity 0.4s; filter: drop-shadow(0 0 3px #47a3ff); }
+.scene .grate, .scene .stand { stroke: #555c66; stroke-width: 5; stroke-linecap: round; fill: none; }
+.scene .tube { fill: #7d858f; }
+.scene .lamp-glass { fill: rgba(200, 225, 255, 0.35); stroke: #8fb8dd; stroke-width: 2; }
+.scene .flame { transform-box: fill-box; transform-origin: 50% 100%; transition: opacity 0.3s; }
+.scene .flame path { fill: #3d8bff; opacity: 0.85; }
+.scene .flame.candle path, .scene .flame.cone .inner { fill: #ffb02e; }
+.scene .flame.cone path:not(.inner) { fill: #4f8dff; opacity: 0.7; }
+.scene .flame.flicker { animation: flicker 0.18s infinite alternate; }
+@keyframes flicker { from { filter: brightness(1); } to { filter: brightness(1.25) drop-shadow(0 -2px 3px rgba(255, 170, 60, 0.6)); } }
+.scene .element { fill: none; stroke: #6e6e73; stroke-width: 7; stroke-linecap: round; transition: stroke 0.6s; }
+.scene .cable { fill: none; stroke: #222; stroke-width: 3; }
+.scene .cabinet { fill: #e9edf1; stroke: #b8c1cb; stroke-width: 3; }
+.scene .cabinet-in { fill: #f5fbff; }
+.scene .cabinet-in.freezer { fill: #e6f3ff; }
+.scene .display { fill: #2b7bd6; font: 600 14px system-ui, sans-serif; }
+.scene .snow text { fill: #9cc8ef; font-size: 18px; }
+.scene .basin { fill: #d6dde5; stroke: #9aa5b1; stroke-width: 2; }
+.scene .bath-water { fill: rgba(120, 180, 235, 0.45); }
+.scene .cubes rect { fill: rgba(235, 248, 255, 0.95); stroke: #b6d6f0; }
+.scene .salt-dots circle { fill: #fff; }
+.scene .psu { fill: #39424e; }
+.scene .psu-screen { fill: #0f1b12; }
+.scene .psu-text { fill: #6dff8c; font: 600 13px ui-monospace, monospace; }
+.scene .jack.plus { fill: #d33; } .scene .jack.minus { fill: #222; stroke: #666; }
+.scene .wire { fill: none; stroke-width: 3; } .scene .wire.plus { stroke: #d33; } .scene .wire.minus { stroke: #222; }
+.scene .electrode { fill: #8a939d; stroke: #5d656e; }
+.scene .vessel .inside { fill: rgba(0, 0, 0, 0.14); }
+.scene .vessel .handle { fill: none; stroke: #2b2f36; stroke-width: 5; stroke-linecap: round; }
+.scene .vessel .handle.long { stroke: #6b4a2b; stroke-width: 8; }
+.scene .vessel .grad { stroke: #8fb8dd; stroke-width: 1.5; }
+.scene .vessel .rim { stroke: #8fb8dd; stroke-width: 4; stroke-linecap: round; }
+.scene .vessel .clamp { fill: #555c66; }
+.scene .vessel .lid { stroke-width: 2; }
+#sc-liquid { transition: fill 0.8s; }
+.scene .ice rect { fill: rgba(205, 234, 252, 0.95); stroke: #6ea8d6; stroke-width: 1.5; }
+.scene .ice .cracks { fill: none; stroke: #8fc0e6; stroke-width: 1.2; }
+.scene .ice { transition: opacity 0.4s; }
+.scene .crystals path { fill: #fff; stroke: #c9d6e2; stroke-width: 0.8; }
+.scene .crystals { transition: opacity 0.8s; }
+.scene .bubbles circle, .scene .gas-bubbles circle { fill: rgba(255, 255, 255, 0.75); opacity: 0; }
+.scene .bubbles.on circle { animation: rise 1.6s infinite ease-in; }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.9; } 100% { transform: translateY(-120px); opacity: 0; } }
+.scene .gas-bubbles { transition: opacity 0.4s; }
+.scene .gas-bubbles.on circle { animation: rise-gas 1.4s infinite ease-in; }
+@keyframes rise-gas { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.9; } 100% { transform: translateY(calc(-1 * var(--rise, 80px))); opacity: 0; } }
+.scene .steam path { fill: none; stroke: url(#sc-steam); stroke: rgba(255, 255, 255, 0.85); stroke-width: 6; stroke-linecap: round; opacity: 0; }
+@media (prefers-color-scheme: light) { .scene .steam path { stroke: rgba(150, 165, 180, 0.55); } }
+.scene .steam.on path { animation: steam 2.4s infinite ease-out; }
+@keyframes steam { 0% { transform: translateY(6px); opacity: 0; } 30% { opacity: 0.9; } 100% { transform: translateY(-40px); opacity: 0; } }
+.scene .toxic { fill: #b8d84a; transition: opacity 1s; filter: blur(6px); opacity: 0; }
+.scene .thermo rect:first-child, .scene .thermo circle:first-of-type { fill: #fff; stroke: #9aa3ac; stroke-width: 1.5; }
+.scene .thermo .merc { fill: #e23b3b; transition: y 0.4s, height 0.4s; }
+.scene .thermo-text { font: 700 13px system-ui, sans-serif; fill: var(--text); }
+@media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } }

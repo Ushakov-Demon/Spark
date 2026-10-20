@@ -46,6 +46,8 @@ export interface EquipmentCard {
   /** Safety notes worth knowing before using the real thing. */
   readonly safety?: LeveledText;
   readonly media: readonly MediaAsset[];
+  /** How the lab scene draws it (until a picture or a 3D model is added to `media`). */
+  readonly look?: string;
 }
 
 // ---------------------------------------------------------------- heaters

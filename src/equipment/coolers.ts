@@ -8,6 +8,7 @@ import type { CoolerItem } from './types.js';
 const LIST = {
   freezer: {
     id: 'freezer',
+    look: 'freezer',
     kind: 'cooler',
     category: 'device.cooler.household',
     name: { uk: 'Морозильна камера', en: 'Freezer' },
@@ -40,6 +41,7 @@ const LIST = {
   },
   fridge: {
     id: 'fridge',
+    look: 'fridge',
     kind: 'cooler',
     category: 'device.cooler.household',
     name: { uk: 'Холодильник', en: 'Refrigerator' },
@@ -71,6 +73,7 @@ const LIST = {
   },
   'ice-bath': {
     id: 'ice-bath',
+    look: 'ice-bath',
     kind: 'cooler',
     category: 'device.cooler.laboratory',
     name: { uk: 'Льодяна баня (лід + вода)', en: 'Ice bath (ice + water)' },
@@ -105,6 +108,7 @@ const LIST = {
   },
   'ice-salt-bath': {
     id: 'ice-salt-bath',
+    look: 'ice-salt-bath',
     kind: 'cooler',
     category: 'device.cooler.laboratory',
     name: { uk: 'Охолоджувальна суміш (лід + сіль)', en: 'Ice-salt bath' },

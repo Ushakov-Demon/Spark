@@ -58,6 +58,7 @@ import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplie
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
+import { createScene, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { UI } from './ui-text.js';
 
 // ---------- persistent preferences (per browser, optional) ----------
@@ -532,6 +533,89 @@ function phaseNote(): { text: string; pct: number } | null {
 
 // ---------- rendering ----------
 const chart = createChart();
+const scene = createScene();
+/** Bulk boiling in the last frames (boiled-off mass grew) — for the bubbles and the Professor. */
+let lastBoiled = 0;
+let boilingNow = false;
+
+/** What the scene should show right now: read from the state, nothing computed here. */
+function sceneView(): SceneView {
+  const u = t();
+  const b = sample();
+  const sub = substance();
+  const sup = Object.values(session.state.entities).find(isSupply);
+  const heaterEntity = session.state.entities[entityId(LAB_HEATER_ID)];
+  const device: DeviceKind = (params.supply
+    ? SUPPLIES[params.supply.id].look
+    : params.heater
+      ? HEATERS[params.heater.id].look
+      : params.cooler
+        ? COOLERS[params.cooler.id].look
+        : 'none') as DeviceKind;
+  const power = heaterEntity && (isHeater(heaterEntity) || isBurner(heaterEntity)) && heaterEntity.params.on ? heaterEntity.params.power : 0;
+  const maxPower = params.heater ? Math.max(...HEATERS[params.heater.id].spec.ratings) : 1;
+  const T = b ? b.state.temperature - 273.15 : params.startTemp;
+  const mix = b && 'mixture' in b.state ? b.state.mixture : undefined;
+  const boiled = b?.state.boiledOff ?? 0;
+  if (boiled > lastBoiled + 1e-7) boilingNow = true;
+  else if (!running) boilingNow = boilingNow && finished && power > 0;
+  else boilingNow = false;
+  lastBoiled = boiled;
+  const electrolysis = b ? cellReading(b).electrolysis : undefined;
+  const group = sub.component ? COMPONENTS[sub.component as keyof typeof COMPONENTS]?.group : 'salt';
+  const liquid: LiquidKind = sub.recipe || mix ? 'salt' : group === 'water' ? 'water' : group === 'alcohol' ? 'alcohol' : group === 'acid' ? 'acid' : group === 'oil' ? 'oil' : 'other';
+  const s = b?.state.solidFraction ?? 0;
+  const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: electrolysis?.anode.component === 'chlorine' } : undefined;
+  // The Professor: what is going on, in one line.
+  const st = doneRecord?.status;
+  const professor: SceneView['professor'] = st
+    ? st.kind === 'reached'
+      ? { mood: 'happy', says: u.prof.reached }
+      : st.kind === 'decomposes'
+        ? { mood: 'sooty', says: u.prof.smoke }
+        : { mood: 'thinking', says: u.prof.failed }
+    : !running && stepElapsed() === 0
+      ? labImpossibility(params)
+        ? { mood: 'thinking', says: u.prof.impossible }
+        : { mood: 'neutral', says: u.prof.idle }
+      : current && current.amps > 0.005
+        ? current.toxicGas && current.amps > 0.05
+          ? { mood: 'sooty', says: u.prof.chlorine }
+          : { mood: 'surprised', says: u.prof.current }
+        : params.supply
+          ? { mood: 'thinking', says: u.prof.noCurrent }
+          : boilingNow
+            ? { mood: 'surprised', says: u.prof.boiling }
+            : s > 0 && s < 1
+              ? OPERATIONS[params.action].direction === 'cooling'
+                ? { mood: 'neutral', says: u.prof.freezing }
+                : { mood: 'neutral', says: u.prof.melting }
+              : OPERATIONS[params.action].direction === 'cooling'
+                ? { mood: 'neutral', says: u.prof.cooling }
+                : { mood: 'neutral', says: u.prof.heating };
+  const evaporating = Math.max(0, (T - 45) / 60);
+  return {
+    device,
+    on: params.supply ? (sup?.state.current ?? 0) > 0 : params.heater ? power > 0 : !!params.cooler,
+    intensity: params.heater ? Math.min(1, power / maxPower) : 1,
+    ...(heaterEntity && isHeater(heaterEntity) ? { deviceTemp: heaterEntity.state.temperature - 273.15 } : {}),
+    vessel: (vesselItem().look ?? 'pot') as VesselShape,
+    material: params.material,
+    lid: params.lid,
+    liquid,
+    fill: Math.min(1, usedVolume() / params.size),
+    temperature: T,
+    solid: mix && mix.water <= 1e-9 ? 0 : s,
+    crystals: mix && mix.salt > 0 ? mix.crystals / mix.salt : 0,
+    boiling: boilingNow,
+    steam: s >= 1 ? 0 : boilingNow ? (params.lid ? 0.5 : 1) : Math.min(0.6, evaporating) * (params.lid ? 0.3 : 1),
+    ...(current ? { current } : {}),
+    ...(params.cooler ? { setpoint: params.cooler.setpoint } : {}),
+    running,
+    decimal: locale === 'uk' ? ',' : '.',
+    professor,
+  };
+}
 
 function render() {
   const u = t();
@@ -624,6 +708,7 @@ function render() {
   }
 
   renderProtocol();
+  scene.render(sceneView());
 
   // Messages: impossibility before the start, headline after, warnings.
   const msg: string[] = [];
@@ -1127,6 +1212,7 @@ $('#offer').addEventListener('click', (e) => {
 });
 $('#knob-wrap').append(knob.element);
 $('#chart').append(chart.element);
+$('#scene').append(scene.element);
 $('#start').onclick = () => {
   // A finished step: the next one continues with the same contents (the user may have changed nothing).
   if (finished) {

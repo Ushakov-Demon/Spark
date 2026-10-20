@@ -7,6 +7,7 @@ import type { VesselItem } from './types.js';
 const VESSEL_LIST = {
   pot: {
     id: 'pot',
+    look: 'pot',
     kind: 'vessel',
     category: 'vessel.household',
     name: { uk: 'Каструля', en: 'Pot' },
@@ -63,6 +64,7 @@ const VESSEL_LIST = {
   },
   turka: {
     id: 'turka',
+    look: 'turka',
     kind: 'vessel',
     category: 'vessel.household',
     name: { uk: 'Турка (джезва)', en: 'Cezve (Turkish coffee pot)' },
@@ -100,6 +102,7 @@ const VESSEL_LIST = {
   },
   beaker: {
     id: 'beaker',
+    look: 'beaker',
     kind: 'vessel',
     category: 'vessel.laboratory',
     name: { uk: 'Хімічний стакан', en: 'Beaker' },
@@ -147,6 +150,7 @@ const VESSEL_LIST = {
   },
   'flask-conical': {
     id: 'flask-conical',
+    look: 'flask-conical',
     kind: 'vessel',
     category: 'vessel.laboratory',
     name: { uk: 'Конічна колба', en: 'Conical (Erlenmeyer) flask' },
@@ -179,6 +183,7 @@ const VESSEL_LIST = {
   },
   'flask-round': {
     id: 'flask-round',
+    look: 'flask-round',
     kind: 'vessel',
     category: 'vessel.laboratory',
     name: { uk: 'Круглодонна колба', en: 'Round-bottom flask' },
@@ -207,6 +212,7 @@ const VESSEL_LIST = {
   },
   'test-tube': {
     id: 'test-tube',
+    look: 'test-tube',
     kind: 'vessel',
     category: 'vessel.laboratory',
     name: { uk: 'Пробірка', en: 'Test tube' },

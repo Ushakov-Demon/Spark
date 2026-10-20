@@ -11,6 +11,7 @@ const W = 'W';
 const HEATER_LIST = {
   'electric-hotplate': {
     id: 'electric-hotplate',
+    look: 'hotplate',
     phrase: { uk: 'на електроплиті', en: 'on an electric hob' },
     name: { uk: 'Електроплита (чавунна конфорка)', en: 'Electric hob (cast-iron plate)' },
     kind: 'heater',
@@ -63,6 +64,7 @@ const HEATER_LIST = {
   },
   'induction-hob': {
     id: 'induction-hob',
+    look: 'induction',
     phrase: { uk: 'на індукційній плиті', en: 'on an induction hob' },
     name: { uk: 'Індукційна плита', en: 'Induction hob' },
     kind: 'heater',
@@ -112,6 +114,7 @@ const HEATER_LIST = {
   },
   'gas-hob': {
     id: 'gas-hob',
+    look: 'gas',
     phrase: { uk: 'на газовій кухонній плиті', en: 'on a kitchen gas hob' },
     name: { uk: 'Газова плита (кухонна конфорка)', en: 'Gas hob (kitchen burner)' },
     kind: 'heater',
@@ -164,6 +167,7 @@ const HEATER_LIST = {
   },
   'immersion-heater': {
     id: 'immersion-heater',
+    look: 'immersion',
     phrase: { uk: 'кип’ятильником', en: 'with an immersion heater' },
     name: { uk: 'Кип’ятильник', en: 'Immersion heater' },
     kind: 'heater',
@@ -212,6 +216,7 @@ const HEATER_LIST = {
   },
   'bunsen-burner': {
     id: 'bunsen-burner',
+    look: 'bunsen',
     phrase: { uk: 'над газовим пальником', en: 'over a Bunsen burner' },
     name: { uk: 'Газовий пальник (лабораторний)', en: 'Bunsen burner' },
     kind: 'heater',
@@ -262,6 +267,7 @@ const HEATER_LIST = {
   },
   'spirit-lamp': {
     id: 'spirit-lamp',
+    look: 'spirit',
     phrase: { uk: 'над спиртівкою', en: 'over a spirit lamp' },
     name: { uk: 'Спиртівка', en: 'Spirit lamp' },
     kind: 'heater',
