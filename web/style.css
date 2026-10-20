@@ -395,8 +395,8 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 /* ---------- the Professor gets bored: idle scenes ---------- */
 .prof-svg g, .prof-svg rect, .prof-svg path, .prof-svg ellipse { transform-box: view-box; }
 .p-head { transform-origin: 100px 160px; }
-.p-hand-l { transform-origin: 54px 210px; }
-.p-hand-r { transform-origin: 146px 210px; }
+.p-hand-l { transform-origin: 62px 184px; } /* the shoulders */
+.p-hand-r { transform-origin: 138px 184px; }
 .p-leg-l { transform-origin: 86px 268px; }
 .p-leg-r { transform-origin: 114px 270px; }
 .p-glasses, .p-zzz, .p-chalk-fly { transform-origin: 100px 100px; }
@@ -418,8 +418,9 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .scene-prof.act-glasses .p-hand-l { animation: pat-left 9s ease-in-out; }
 .scene-prof.act-glasses .p-head { animation: look-around 9s ease-in-out; }
 @keyframes glasses-up { 0% { transform: translateY(0); } 8%, 74% { transform: translateY(-30px); } 80% { transform: translateY(2px); } 84%, 100% { transform: translateY(0); } }
-@keyframes pat-right { 0%, 24% { transform: none; } 28%, 36%, 44% { transform: translate(-28px, -50px); } 32%, 40% { transform: translate(-28px, -44px); } 50%, 58% { transform: translate(-40px, -14px); } 54% { transform: translate(-40px, -8px); } 64%, 100% { transform: none; } }
-@keyframes pat-left { 0%, 30% { transform: none; } 38%, 46% { transform: translate(30px, -16px); } 42% { transform: translate(30px, -10px); } 54%, 100% { transform: none; } }
+/* Pats the coat pockets: the arm swings in at the shoulder and taps (twice at the hip, twice lower). */
+@keyframes pat-right { 0%, 24% { transform: none; } 28%, 36%, 44% { transform: rotate(24deg); } 32%, 40% { transform: rotate(20deg); } 50%, 58% { transform: rotate(31deg); } 54% { transform: rotate(27deg); } 64%, 100% { transform: none; } }
+@keyframes pat-left { 0%, 30% { transform: none; } 38%, 46% { transform: rotate(-25deg); } 42% { transform: rotate(-20deg); } 54%, 100% { transform: none; } }
 @keyframes look-around { 0%, 24% { transform: none; } 32% { transform: rotate(-8deg); } 46% { transform: rotate(8deg); } 60%, 100% { transform: none; } }
 
 /* Stretch and yawn. */
@@ -472,7 +473,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .messages .answer p { background: none; padding: 0; border-radius: 0; }
 
 /* Coffee break: the hanging arm is swapped for one bent at the elbow, holding the mug at the moustache; two sips. */
-.p-coffee { transform-origin: 76px 250px; }
+.p-coffee { transform-origin: 72px 228px; } /* the elbow */
 .scene-prof.act-coffee .p-coffee { animation: coffee-arm 9s ease-in-out; }
 .scene-prof.act-coffee .p-hand-l { animation: coffee-swap 9s; }
 .scene-prof.act-coffee .p-mug-steam path { animation: steam 1.6s ease-out infinite; }

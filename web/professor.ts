@@ -71,16 +71,16 @@ export function professorSvg(mood: Mood = 'neutral', size = 220): string {
 
   // In the happy mood he raises a flask; otherwise a piece of chalk in his hand.
   const hand = mood === 'happy'
-    ? `<path d="M150,212 q18,-30 22,-62" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M150,212 q18,-30 22,-62" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
+    ? `<path d="M138,184 q30,-4 34,-34" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M138,184 q30,-4 34,-34" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
        <circle cx="172" cy="146" r="8" fill="${skin}"/>
        <path d="M166,140 l-4,-22 h20 l-4,22 l10,22 h-32 z" fill="rgba(120,200,255,0.75)" stroke="#333" stroke-width="2"/>
        <path d="M164,152 h28" stroke="#4aa8ff" stroke-width="6"/>`
-    : `<path d="M150,214 q10,24 6,46" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M150,214 q10,24 6,46" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
+    : `<path d="M138,184 q22,34 18,76" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M138,184 q22,34 18,76" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
        <circle cx="156" cy="262" r="8" fill="${skin}"/>
        <rect class="p-chalk" x="160" y="256" width="12" height="4" rx="1.5" fill="#fff" stroke="#bbb" transform="rotate(-20 160 256)"/>`;
   const thinkingHand = mood === 'thinking'
-    ? `<path d="M50,214 q-10,-20 30,-62" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M50,214 q-10,-20 30,-62" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="84" cy="146" r="8" fill="${skin}"/>`
-    : `<path d="M50,214 q-12,24 -6,46" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M50,214 q-12,24 -6,46" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="44" cy="262" r="8" fill="${skin}"/>`;
+    ? `<path d="M62,184 q-14,-10 22,-34" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M62,184 q-14,-10 22,-34" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="84" cy="150" r="8" fill="${skin}"/>`
+    : `<path d="M62,182 q-22,36 -18,78" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M62,182 q-22,36 -18,78" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="44" cy="262" r="8" fill="${skin}"/>`;
 
   // Parts are grouped (legs, hands, head, eyes, glasses, mouth) so the idle scenes can move them;
   // closed eyes, a yawning mouth, "z-z-z" and a flying piece of chalk wait hidden until needed.
@@ -123,8 +123,8 @@ export function professorSvg(mood: Mood = 'neutral', size = 220): string {
   </g>
   <!-- coffee break: an arm bent at the elbow brings the mug to the moustache (body → mug → hand) -->
   <g class="p-coffee" opacity="0">
-    <path d="M54,212 Q56,252 76,250 Q92,230 92,172" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/>
-    <path d="M54,212 Q56,252 76,250 Q92,230 92,172" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
+    <path d="M62,182 Q52,216 72,228 Q90,214 92,172" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/>
+    <path d="M62,182 Q52,216 72,228 Q90,214 92,172" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
     <g class="p-mug">
       <path d="M101,141 h24 v22 a5,5 0 0 1 -5,5 h-14 a5,5 0 0 1 -5,-5 z" fill="#c0392b" stroke="#7b241c" stroke-width="2"/>
       <path d="M101,146 q-9,0 -9,8 q0,8 9,8" fill="none" stroke="#7b241c" stroke-width="3"/>
