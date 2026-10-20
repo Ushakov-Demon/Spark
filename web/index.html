@@ -39,7 +39,6 @@
               <button id="start" class="primary" type="button"></button>
               <button id="reset" type="button"></button>
               <label class="speed"><span id="lbl-speed"></span><select id="speed"></select></label>
-              <button id="console-toggle" class="console-toggle" type="button" aria-controls="console-wrap" aria-expanded="false"></button>
             </div>
           </div>
           <div id="scene"></div>
@@ -55,7 +54,6 @@
               <div id="r-power" class="readout"></div>
             </div>
           </div>
-          <div id="console-wrap" hidden></div>
           <div id="chart" class="chart-wrap"></div>
           <div id="legend" class="legend"></div>
           <div id="messages" class="messages"></div>
@@ -97,6 +95,11 @@
       <div id="presets-tabs" class="chips"></div>
       <div id="presets-list" class="presets-list"></div>
     </dialog>
+
+    <div id="console-wrap" class="console-dock" aria-hidden="true">
+      <div id="console-grip" class="console-grip" role="separator" aria-orientation="horizontal" tabindex="0"><span></span></div>
+    </div>
+    <button id="console-toggle" class="console-fab" type="button" aria-controls="console-wrap" aria-expanded="false">_&gt;</button>
 
     <footer><p id="footer" class="muted small"></p></footer>
     <script type="module" src="./main.ts"></script>

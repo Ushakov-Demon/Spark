@@ -827,7 +827,8 @@ function render() {
   const startBtn = $<HTMLButtonElement>('#start');
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
-  $('#console-toggle').textContent = locale === 'uk' ? '›_ Консоль' : '›_ Console';
+  $('#console-toggle').title = locale === 'uk' ? 'Консоль команд' : 'Command console';
+  $('#console-grip').setAttribute('aria-label', locale === 'uk' ? 'Потягни, щоб змінити висоту консолі' : 'Drag to resize the console');
   $('#lbl-speed').textContent = u.speed;
 
   // Knob, switch or nothing (cooling has no knob: the cooler holds its setpoint).
@@ -1612,15 +1613,58 @@ const labConsole = createConsole({
   },
   startPreset: (p) => startPreset(p),
 });
+// A dock at the bottom of the window: slides up, its top edge is a handle to drag it taller or lower.
 $('#console-wrap').append(labConsole);
-$('#console-toggle').onclick = () => {
+let consoleHeight = Number(store.get('console-h')) || 260;
+const clampConsole = (h: number) => Math.round(Math.max(120, Math.min(window.innerHeight * 0.85, h)));
+function layoutConsole() {
+  const open = $('#console-wrap').classList.contains('open');
+  consoleHeight = clampConsole(consoleHeight);
+  document.documentElement.style.setProperty('--console-h', `${consoleHeight}px`);
+  // Room at the end of the page, so the dock never hides the last lines.
+  document.body.style.paddingBottom = open ? `${consoleHeight}px` : '';
+  document.body.classList.toggle('console-open', open);
+}
+function setConsole(open: boolean) {
   const wrap = $('#console-wrap');
-  wrap.hidden = !wrap.hidden;
-  $('#console-toggle').setAttribute('aria-expanded', String(!wrap.hidden));
-  store.set('console', wrap.hidden ? 'closed' : 'open');
-  if (!wrap.hidden) wrap.querySelector('input')?.focus();
-};
-if (store.get('console') === 'open') $('#console-wrap').hidden = false;
+  wrap.classList.toggle('open', open);
+  wrap.setAttribute('aria-hidden', String(!open));
+  $('#console-toggle').setAttribute('aria-expanded', String(open));
+  store.set('console', open ? 'open' : 'closed');
+  layoutConsole();
+  if (open) wrap.querySelector('input')?.focus();
+}
+$('#console-toggle').onclick = () => setConsole(!$('#console-wrap').classList.contains('open'));
+$('#console-wrap').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    setConsole(false);
+    $<HTMLButtonElement>('#console-toggle').focus();
+  }
+});
+const grip = $('#console-grip');
+grip.addEventListener('pointerdown', (e) => {
+  grip.setPointerCapture(e.pointerId);
+  const move = (ev: PointerEvent) => {
+    consoleHeight = clampConsole(window.innerHeight - ev.clientY);
+    layoutConsole();
+  };
+  const up = () => {
+    grip.removeEventListener('pointermove', move);
+    store.set('console-h', String(consoleHeight));
+  };
+  grip.addEventListener('pointermove', move);
+  grip.addEventListener('pointerup', up, { once: true });
+  grip.addEventListener('pointercancel', up, { once: true });
+});
+grip.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  consoleHeight = clampConsole(consoleHeight + (e.key === 'ArrowUp' ? 30 : -30));
+  layoutConsole();
+  store.set('console-h', String(consoleHeight));
+  e.preventDefault();
+});
+window.addEventListener('resize', layoutConsole);
+setConsole(store.get('console') === 'open');
 
 // ---------- wiring ----------
 $('#offer').addEventListener('click', (e) => {

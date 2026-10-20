@@ -485,14 +485,22 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 @keyframes sip-eyes { 0%, 24% { opacity: 1; } 26%, 34% { opacity: 0; } 36%, 63% { opacity: 1; } 65%, 72% { opacity: 0; } 74%, 100% { opacity: 1; } }
 @keyframes sip-squint { 0%, 24% { opacity: 0; } 26%, 34% { opacity: 1; } 36%, 63% { opacity: 0; } 65%, 72% { opacity: 1; } 74%, 100% { opacity: 0; } }
 
-/* ---------- the lab console ---------- */
-.console-toggle { font: 600 0.85rem ui-monospace, Menlo, Consolas, monospace; }
-.console { margin: 6px 0 10px; border-radius: 12px; background: #0f1720; color: #d7e3ef; font: 0.85rem/1.45 ui-monospace, Menlo, Consolas, monospace; overflow: hidden; border: 1px solid #22303e; }
-.console-out { max-height: 220px; overflow: auto; padding: 10px 12px 4px; white-space: pre-wrap; }
+/* ---------- the lab console: a dock at the bottom ---------- */
+.console-fab { position: fixed; left: 16px; bottom: 16px; z-index: 16; width: 52px; height: 52px; min-height: 0; padding: 0; border-radius: 14px; background: #0f1720; color: #6dff8c; border: 1px solid #22303e; font: 700 1.05rem ui-monospace, Menlo, Consolas, monospace; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); transition: bottom 0.25s ease, transform 0.12s; }
+.console-fab:hover { transform: translateY(-2px); }
+body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
+.console-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; height: var(--console-h, 260px); display: flex; flex-direction: column; background: #0f1720; border-top: 1px solid #22303e; box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.25); transform: translateY(100%); visibility: hidden; transition: transform 0.25s ease, visibility 0s linear 0.25s; }
+/* Visible at once when opening (so the input can take the focus), hidden only after sliding away. */
+.console-dock.open { transform: none; visibility: visible; transition: transform 0.25s ease, visibility 0s; }
+.console-grip { flex: none; height: 14px; cursor: ns-resize; display: grid; place-items: center; touch-action: none; }
+.console-grip span { width: 48px; height: 4px; border-radius: 2px; background: #3a4b5c; }
+.console-grip:hover span, .console-grip:focus-visible span { background: #6dff8c; }
+.console { flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 0; border-radius: 0; border: 0; background: transparent; color: #d7e3ef; font: 0.85rem/1.45 ui-monospace, Menlo, Consolas, monospace; }
+.console-out { flex: 1; min-height: 0; overflow: auto; padding: 4px 16px 4px; white-space: pre-wrap; }
 .console-out .cmd { color: #7fb8ff; }
 .console-out .err { color: #ff8a7a; }
 .console-out .muted { color: #8a9aab; }
-.console-in { display: flex; align-items: center; gap: 8px; padding: 6px 12px 10px; }
+.console-in { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 16px 10px; border-top: 1px solid #1c2733; }
 .console-in span { color: #6dff8c; font-weight: 700; }
 .console-in input { flex: 1; background: transparent; border: 0; color: #e8f1fa; font: inherit; min-height: 30px; padding: 0; outline: none; }
 .console-in input::placeholder { color: #5a6b7c; }
