@@ -69,7 +69,7 @@ export interface UiText {
   instruments: string;
   renew: string;
   sound: { on: string; off: string };
-  voice: { label: string; names: Readonly<Record<string, string>>; sample: string };
+  voice: { label: string; names: Readonly<Record<string, string>>; sample: string; noSpeech: string };
   dissolves: string;
   boardEmpty: string;
   chartShow: string;
@@ -320,7 +320,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     instruments: 'Вимірювальні прилади',
     renew: '🔄 Новий дослід',
     sound: { on: 'Звук увімкнено — вимкнути', off: 'Звук вимкнено — увімкнути' },
-    voice: { label: 'Голос', names: { mumble: 'Бурмотіння', gruff: 'Басовитий дідусь', chirp: 'Мультяшне щебетання', robot: 'Робот', whistle: 'Посвистування', none: 'Мовчки' }, sample: 'Ну що ж, колего, почнімо дослід! Що будемо нагрівати?' },
+    voice: { label: 'Голос', names: { speech: 'Озвучення (справжня мова)', mumble: 'Бурмотіння', gruff: 'Басовитий дідусь', chirp: 'Мультяшне щебетання', robot: 'Робот', whistle: 'Посвистування', none: 'Мовчки' }, sample: 'Ну що ж, колего, почнімо дослід! Що будемо нагрівати?', noSpeech: ' — у браузері немає голосу, буде бурмотіння' },
     dissolves: 'розчиняється у воді',
     boardEmpty: 'Тут з’являтимуться формули досліду',
     chartShow: '📈 Показати графік',
@@ -568,7 +568,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     instruments: 'Measuring instruments',
     renew: '🔄 New experiment',
     sound: { on: 'Sound on — turn off', off: 'Sound off — turn on' },
-    voice: { label: 'Voice', names: { mumble: 'Mumble', gruff: 'Gruff grandpa', chirp: 'Cartoon chirp', robot: 'Robot', whistle: 'Whistling', none: 'Silent' }, sample: 'Well then, colleague, shall we start? What shall we heat?' },
+    voice: { label: 'Voice', names: { speech: 'Speech (real words)', mumble: 'Mumble', gruff: 'Gruff grandpa', chirp: 'Cartoon chirp', robot: 'Robot', whistle: 'Whistling', none: 'Silent' }, sample: 'Well then, colleague, shall we start? What shall we heat?', noSpeech: ' — no voice in this browser, it will mumble' },
     dissolves: 'dissolves in water',
     boardEmpty: 'The formulas of the experiment will appear here',
     chartShow: '📈 Show the chart',

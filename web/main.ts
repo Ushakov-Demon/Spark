@@ -92,7 +92,7 @@ import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
-import { babble, currentVoice, fizz, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
+import { babble, canSpeak, currentVoice, fizz, hush, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -522,12 +522,14 @@ const voiceSel = $<HTMLSelectElement>('#voice');
 const renderVoice = () => {
   const u = t().voice;
   $('#lbl-voice').textContent = u.label;
-  const opts = VOICE_IDS.map((v) => `<option value="${v}"${v === currentVoice() ? ' selected' : ''}>${u.names[v] ?? v}</option>`).join('');
+  const opts = VOICE_IDS.map((v) => `<option value="${v}"${v === currentVoice() ? ' selected' : ''}>${u.names[v] ?? v}${v === 'speech' && !canSpeak(locale) ? u.noSpeech : ''}</option>`).join('');
   if (voiceSel.dataset['html'] !== opts) {
     voiceSel.innerHTML = opts;
     voiceSel.dataset['html'] = opts;
   }
 };
+// The browser's voices load a little later: the list says then whether real speech is there.
+if (typeof speechSynthesis !== 'undefined') speechSynthesis.addEventListener('voiceschanged', () => renderVoice());
 voiceSel.onchange = () => {
   setVoice(voiceSel.value as VoiceId);
   store.set('voice', voiceSel.value);
@@ -536,7 +538,7 @@ voiceSel.onchange = () => {
     store.set('sound', 'on');
     renderSound();
   }
-  scene.talk(babble(t().voice.sample));
+  scene.talk(babble(t().voice.sample, currentVoice(), locale));
 };
 $('#sound').onclick = () => {
   setSound(!soundOn());
@@ -1429,7 +1431,8 @@ function render() {
   const view = sceneView();
   scene.render(view);
   // A new line of the Professor: he burbles it (the same line again stays quiet).
-  if (view.professor.says && view.professor.says !== lastSaid && !scene.reading) scene.talk(babble(view.professor.says));
+  if (view.professor.says !== lastSaid) hush();
+  if (view.professor.says && view.professor.says !== lastSaid && !scene.reading) scene.talk(babble(view.professor.says, currentVoice(), locale));
   lastSaid = view.professor.says;
   if (!renderGuide()) {
     const q = quizNow();

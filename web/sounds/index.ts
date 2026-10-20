@@ -19,6 +19,11 @@ if (typeof window !== 'undefined') {
 export const soundOn = (): boolean => on;
 export function setSound(v: boolean): void {
   on = v;
+  if (!v) hush();
+}
+/** Stop reading out loud (a new line, the sound off, another voice). */
+export function hush(): void {
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
 
 function audio(): AudioContext | null {
@@ -86,84 +91,149 @@ function noise(a: AudioContext, out: AudioNode, t: number, len: number, freq: nu
 
 /**
  * The Professor's voices: a cartoon burble, synthesized — no recordings. Each voice is a recipe:
- * a source wave, a pitch range, a syllable length, and (for the human-like ones) vowel formants,
- * so the syllables sound like "а-о-у-е-и" in a made-up language.
+ * a source, a pitch range, a syllable length and, for the human-like ones, consonants and vowel
+ * formants, so the syllables sound like "та-ко-лу-ме" in a made-up language. Or "speech": the
+ * browser's own voice reads the line out in the page's language.
  */
-export type VoiceId = 'mumble' | 'gruff' | 'chirp' | 'robot' | 'whistle' | 'none';
+export type VoiceId = 'speech' | 'mumble' | 'gruff' | 'chirp' | 'robot' | 'whistle' | 'none';
 interface Voice {
-  readonly wave: OscillatorType;
+  /** 'glottal' — a soft buzz like vocal folds (harmonics falling off); otherwise a plain wave. */
+  readonly wave: OscillatorType | 'glottal';
   readonly low: number; // Hz
   readonly high: number;
   readonly step: number; // s per syllable
-  readonly vowels: boolean;
+  /** Human-like: a consonant, a vowel with formants, a little tremble, the pitch falling over the line. */
+  readonly human: boolean;
   readonly glide: number; // pitch change within a syllable (×)
   readonly volume: number;
   readonly quantize?: readonly number[]; // pitch ratios (a robot sings notes)
 }
-const VOICES: Readonly<Record<Exclude<VoiceId, 'none'>, Voice>> = {
-  mumble: { wave: 'sawtooth', low: 130, high: 190, step: 0.095, vowels: true, glide: 0.92, volume: 0.32 },
-  gruff: { wave: 'sawtooth', low: 82, high: 115, step: 0.12, vowels: true, glide: 0.9, volume: 0.38 },
-  chirp: { wave: 'triangle', low: 420, high: 720, step: 0.062, vowels: false, glide: 1.25, volume: 0.2 },
-  robot: { wave: 'square', low: 220, high: 220, step: 0.075, vowels: false, glide: 1, volume: 0.09, quantize: [1, 1.26, 1.5, 2] },
-  whistle: { wave: 'sine', low: 950, high: 1500, step: 0.1, vowels: false, glide: 1.12, volume: 0.16 },
+const VOICES: Readonly<Record<Exclude<VoiceId, 'none' | 'speech'>, Voice>> = {
+  mumble: { wave: 'glottal', low: 135, high: 175, step: 0.13, human: true, glide: 0.97, volume: 0.55 },
+  gruff: { wave: 'glottal', low: 88, high: 112, step: 0.15, human: true, glide: 0.96, volume: 0.65 },
+  chirp: { wave: 'triangle', low: 420, high: 720, step: 0.062, human: false, glide: 1.25, volume: 0.2 },
+  robot: { wave: 'square', low: 220, high: 220, step: 0.075, human: false, glide: 1, volume: 0.09, quantize: [1, 1.26, 1.5, 2] },
+  whistle: { wave: 'sine', low: 950, high: 1500, step: 0.1, human: false, glide: 1.12, volume: 0.16 },
 };
-export const VOICE_IDS: readonly VoiceId[] = ['mumble', 'gruff', 'chirp', 'robot', 'whistle', 'none'];
-/** Formants (F1, F2), Hz, of the vowels а, о, у, е, и — what makes a buzz sound like a voice. */
-const VOWELS: readonly (readonly [number, number])[] = [[750, 1250], [520, 900], [330, 760], [480, 1850], [320, 2250]];
+export const VOICE_IDS: readonly VoiceId[] = ['speech', 'mumble', 'gruff', 'chirp', 'robot', 'whistle', 'none'];
+/** Formants (F1, F2, F3), Hz, of the vowels а, о, у, е, и. */
+const VOWELS: readonly (readonly [number, number, number])[] = [[750, 1250, 2600], [520, 900, 2500], [340, 760, 2400], [480, 1850, 2600], [320, 2250, 2900]];
+/** Consonants as short noise bursts: centre frequency, Hz, and length, s (с, ш, т, к, п/б, м/н — a soft hum). */
+const CONSONANTS: readonly (readonly [number, number])[] = [[6000, 0.05], [3000, 0.05], [4000, 0.018], [1800, 0.02], [900, 0.015], [300, 0.03]];
 let voice: VoiceId = 'mumble';
 export const currentVoice = (): VoiceId => voice;
 export function setVoice(v: VoiceId): void {
   voice = v;
+  hush();
 }
 
+/** A soft "vocal folds" source: harmonics falling off like a human voice (≈ −12 dB per octave). */
+let glottal: PeriodicWave | null = null;
+function glottalWave(a: AudioContext): PeriodicWave {
+  if (glottal) return glottal;
+  const n = 32;
+  const real = new Float32Array(n);
+  const imag = new Float32Array(n);
+  for (let k = 1; k < n; k++) imag[k] = 1 / (k * k ** 0.5);
+  glottal = a.createPeriodicWave(real, imag);
+  return glottal;
+}
+
+/** The browser's own voice for this language, if it has one. */
+function browserVoice(lang: string): SpeechSynthesisVoice | null {
+  if (typeof speechSynthesis === 'undefined') return null;
+  const all = speechSynthesis.getVoices();
+  return all.find((v) => v.lang.toLowerCase().startsWith(lang)) ?? null;
+}
+/** Can the "speech" voice speak this language here? (Otherwise it burbles.) */
+export const canSpeak = (lang: string): boolean => browserVoice(lang) !== null;
+
 /**
- * The Professor "speaking": a burble of syllables in the chosen voice. As many syllables as the line
- * has words (two per long word), at most ≈ 1.5 s; the voice goes up at the end of a question and
- * brightens on "!". Returns how long it lasts, s.
+ * The Professor "speaking" a line. "speech" — the browser reads it out (a lower, slower voice); the
+ * other voices burble: as many syllables as the line has words (two per long word), at most ≈ 1.6 s,
+ * the voice going up at the end of a question. Returns how long it lasts, s.
  */
-export function babble(text: string, v: VoiceId = voice): number {
-  if (v === 'none') return 0;
+export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
+  if (v === 'none' || !text.trim()) return 0;
+  if (v === 'speech') {
+    const sv = on && woke ? browserVoice(lang) : null;
+    if (sv) {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = sv;
+      u.lang = sv.lang;
+      u.pitch = 0.8;
+      u.rate = 1.02;
+      speechSynthesis.speak(u);
+      return Math.min(12, text.length * 0.065);
+    }
+    v = 'mumble';
+  }
   const a = audio();
-  if (!a || !text.trim()) return 0;
+  if (!a) return 0;
   const vc = VOICES[v];
   const words = text.split(/\s+/).filter(Boolean);
-  const syllables = Math.min(Math.floor(1.5 / vc.step), Math.max(3, words.reduce((n, w) => n + (w.length > 6 ? 2 : 1), 0)));
+  const count = Math.min(Math.floor(1.6 / vc.step), Math.max(3, words.reduce((n, w) => n + (w.length > 6 ? 2 : 1), 0)));
   const question = /\?\s*$/.test(text);
   const exclaim = /!\s*$/.test(text);
-  const t0 = a.currentTime + 0.02;
   const out = a.createGain();
   out.gain.value = vc.volume;
   out.connect(a.destination);
-  for (let i = 0; i < syllables; i++) {
-    const t = t0 + i * vc.step + (Math.random() - 0.5) * vc.step * 0.15;
-    const last = i === syllables - 1;
-    let f = vc.low + Math.random() * (vc.high - vc.low) * (exclaim ? 1.15 : 1);
+  let t = a.currentTime + 0.03;
+  const start = t;
+  for (let i = 0; i < count; i++) {
+    const last = i === count - 1;
+    // A stressed syllable now and then: longer and a little higher.
+    const stressed = vc.human && (i % 3 === 1 || last);
+    const len = vc.step * (stressed ? 1.35 : 0.85 + Math.random() * 0.25);
+    // Over the line the pitch falls a little (as speech does), and rises at the end of a question.
+    const fall = vc.human ? 1 - 0.18 * (i / Math.max(1, count - 1)) : 1;
+    let f = (vc.low + Math.random() * (vc.high - vc.low) * (exclaim ? 1.15 : 1)) * fall * (stressed ? 1.08 : 1);
     if (vc.quantize) f = vc.low * vc.quantize[Math.floor(Math.random() * vc.quantize.length)]!;
-    if (last && question) f *= 1.35;
+    if (last && question) f *= 1.3;
+    if (vc.human) {
+      const [cf, cl] = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)]!;
+      noise(a, out, t, cl, cf, 0.35);
+      t += cl * 0.7;
+    }
     const o = a.createOscillator();
-    const g = a.createGain();
-    o.type = vc.wave;
+    if (vc.wave === 'glottal') o.setPeriodicWave(glottalWave(a));
+    else o.type = vc.wave;
     o.frequency.setValueAtTime(f, t);
-    o.frequency.linearRampToValueAtTime(f * (last && question ? 1.25 : vc.glide * (0.95 + Math.random() * 0.1)), t + vc.step * 0.8);
+    o.frequency.linearRampToValueAtTime(f * (last && question ? 1.22 : vc.glide), t + len * 0.9);
+    if (vc.human) {
+      // A tremble of the voice: a slow vibrato of a few hertz.
+      const lfo = a.createOscillator();
+      const depth = a.createGain();
+      lfo.frequency.value = 5 + Math.random() * 1.5;
+      depth.gain.value = f * 0.025;
+      lfo.connect(depth).connect(o.frequency);
+      lfo.start(t);
+      lfo.stop(t + len);
+    }
+    const g = a.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(1, t + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + vc.step * 0.88);
+    g.gain.exponentialRampToValueAtTime(1, t + (vc.human ? 0.03 : 0.012));
+    g.gain.setValueAtTime(1, t + len * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len * 0.95);
     o.connect(g);
-    if (vc.vowels) {
-      // Two formant filters in parallel give the syllable its vowel.
-      const [f1, f2] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
-      for (const [fq, q, gain] of [[f1, 5, 1], [f2, 7, 0.55]] as const) {
+    if (vc.human) {
+      // Three formant filters give the syllable its vowel; the mouth moves a little from one vowel to the next.
+      const [f1, f2, f3] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
+      for (const [fq, q, gain] of [[f1, 6, 1], [f2, 9, 0.6], [f3, 12, 0.25]] as const) {
         const bp = a.createBiquadFilter();
         bp.type = 'bandpass';
-        bp.frequency.value = fq;
+        bp.frequency.setValueAtTime(fq * 0.9, t);
+        bp.frequency.linearRampToValueAtTime(fq, t + len * 0.3);
         bp.Q.value = q;
         const fg = a.createGain();
-        fg.gain.value = gain * 2.2;
+        fg.gain.value = gain * 3;
         g.connect(bp).connect(fg).connect(out);
       }
     } else g.connect(out);
     o.start(t);
-    o.stop(t + vc.step);
+    o.stop(t + len);
+    t += len;
   }
-  return syllables * vc.step;
+  return t - start;
 }
