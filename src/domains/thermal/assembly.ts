@@ -110,14 +110,27 @@ export function placeVessel(v: VesselPlacement): Piece {
       dataRef: 'stillWater',
     }),
     // Outer walls exchange heat with the surroundings; the bottom too if it sits in a bath.
-    convectionLink({
-      id: `${v.id}->${outside.id}`,
-      a: v.id,
-      b: outside.id,
-      coefficient: CONVECTION[outside.convection].value,
-      area: squareMeters(g.outerSide + (outside.bottom ? g.contactArea : 0)),
-      dataRef: outside.convection,
-    }),
+    // A calorimeter's cup is wrapped in an air gap first (walls and bottom): conduction through still air, then the outside.
+    spec.jacket
+      ? wallLink({
+          id: `${v.id}->${outside.id}`,
+          a: v.id,
+          b: outside.id,
+          conductivity: MATERIALS.air.conductivity.value,
+          thickness: meters(spec.jacket.gap.value),
+          material: 'air',
+          coefficient: CONVECTION[outside.convection].value,
+          area: squareMeters(g.outerSide + g.contactArea),
+          dataRef: outside.convection,
+        })
+      : convectionLink({
+          id: `${v.id}->${outside.id}`,
+          a: v.id,
+          b: outside.id,
+          coefficient: CONVECTION[outside.convection].value,
+          area: squareMeters(g.outerSide + (outside.bottom ? g.contactArea : 0)),
+          dataRef: outside.convection,
+        }),
   ];
   if (lid) {
     // A lid is its own body: water surface → air gap → lid → room. It is cooler than the

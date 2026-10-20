@@ -115,6 +115,8 @@ export interface VesselSpec {
   readonly lid: 'none' | 'optional';
   /** Lid mass as a fraction of the vessel mass. */
   readonly lidMassFraction?: SourcedValue;
+  /** A calorimeter: the cup stands in an outer one with an air gap of this width, m — heat leaks out slowly. */
+  readonly jacket?: { readonly gap: SourcedValue };
 }
 
 export interface VesselItem extends EquipmentCard {

@@ -10,6 +10,17 @@ export const STEEL = {
   stateAtRoom: 'solid',
   phases: {
     solid: {
+      density: {
+        value: 7850,
+        unit: 'kg/m³',
+        conditions: 'carbon steel, room temperature',
+        verification: 'cross-checked',
+        tolerance: 0.03,
+        citations: [
+          { source: 'engineeringtoolbox-metal-densities', locator: 'Steel', conditions: 'not stated', value: 7850 },
+          { source: 'wikipedia-steel', locator: 'Properties: usually 7,750–8,050 kg/m³', conditions: 'depends on alloying', range: [7750, 8050] },
+        ],
+      },
       specificHeat: {
         value: 466,
         unit: 'J/(kg·K)',

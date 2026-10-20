@@ -482,6 +482,27 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-20',
   }),
+  'wikipedia-steel': source({
+    id: 'wikipedia-steel',
+    title: 'Wikipedia, Steel (Properties): density usually 7,750–8,050 kg/m³ depending on the alloying constituents',
+    url: 'https://en.wikipedia.org/wiki/Steel',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-20',
+  }),
+  'wikipedia-brass': source({
+    id: 'wikipedia-brass',
+    title: 'Wikipedia, Brass (Properties): density 8.4 to 8.73 g/cm³',
+    url: 'https://en.wikipedia.org/wiki/Brass',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-20',
+  }),
+  'engineeringtoolbox-metal-densities': source({
+    id: 'engineeringtoolbox-metal-densities',
+    title: 'The Engineering ToolBox, Metals and Alloys — Densities: Steel 7850 kg/m³; Cartridge brass (70 % Cu, 30 % Zn) 8530 kg/m³',
+    url: 'https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html',
+    license: 'facts-only',
+    retrieved: '2026-10-20',
+  }),
   'korad-ka3005d': source({
     id: 'korad-ka3005d',
     title: 'Korad KA3005D/KD3005D laboratory power supply (distributor listing): adjustable 0–30 V and 0–5 A, resolution 10 mV / 1 mA, overvoltage and overcurrent protection',

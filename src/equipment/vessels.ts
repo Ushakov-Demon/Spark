@@ -148,6 +148,44 @@ const VESSEL_LIST = {
       lid: 'none',
     },
   },
+  calorimeter: {
+    id: 'calorimeter',
+    look: 'calorimeter',
+    kind: 'vessel',
+    category: 'vessel.laboratory',
+    name: { uk: 'Калориметр', en: 'Calorimeter' },
+    phraseIn: { aluminium: { uk: 'у калориметрі', en: 'in a calorimeter' } },
+    description: {
+      novice: {
+        uk: 'Тонкий алюмінієвий стаканчик, вставлений у більший стакан. Між ними — шар повітря, тож теплота майже не тікає назовні. У ньому змішують воду й опускають нагріті тіла, щоб виміряти, скільки теплоти вони віддали.',
+        en: 'A thin aluminium cup set inside a bigger one with a layer of air between them, so heat hardly escapes. Water is mixed in it and heated bodies are dropped in to measure how much heat they gave.',
+      },
+      school: {
+        uk: 'Повітря проводить теплоту в тисячі разів гірше за метал, тому повітряний проміжок між стаканами — добрий теплоізолятор. Втрати є, але менші, ніж у звичайному стакані: тепловий баланс сходиться точніше. Гріють калориметр зсередини — кип’ятильником, а не на плиті.',
+        en: 'Air conducts heat thousands of times worse than metal, so the air gap between the cups is a good insulator. There are losses, but smaller than in an ordinary beaker: the heat balance comes out closer. A calorimeter is heated from inside — with an immersion heater, not on a hob.',
+      },
+    },
+    media: [],
+    spec: {
+      sizes: [0.25],
+      defaultSize: 0.25,
+      materials: ['aluminium'],
+      defaultMaterial: 'aluminium',
+      shape: {
+        type: 'cylinder',
+        heightToDiameter: { value: 1.2, unit: '', conditions: 'inner cup', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'school calorimeters vary', range: [1, 1.5] }], note: 'Estimate of a typical school calorimeter cup.' },
+      },
+      wallThickness: { value: 0.0005, unit: 'm', conditions: 'thin aluminium cup', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'school calorimeters vary', range: [0.0003, 0.001] }], note: 'Estimate; thin wall, so the cup itself takes little heat.' },
+      massModel: {
+        base: 0.02,
+        perLiter: 0.12,
+        data: { value: 0.05, unit: 'kg', conditions: '250 mL inner cup', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'school calorimeters vary', range: [0.03, 0.08] }], note: 'Estimate of the inner cup only (the outer one is insulated from it).' },
+      },
+      lid: 'optional',
+      lidMassFraction: { value: 0.3, unit: '', conditions: 'lid / inner cup', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'school calorimeters vary', range: [0.2, 0.5] }], note: 'Estimate.' },
+      jacket: { gap: { value: 0.01, unit: 'm', conditions: 'air gap between the cups', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'school calorimeters vary', range: [0.005, 0.02] }], note: 'Estimate; the outer cup and the insulating ring are not modelled as bodies.' } },
+    },
+  },
   'flask-conical': {
     id: 'flask-conical',
     look: 'flask-conical',

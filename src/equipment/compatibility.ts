@@ -32,6 +32,15 @@ export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string
       },
     };
   }
+  if (vessel.spec.jacket && spec.method !== 'immersion') {
+    return {
+      ok: false,
+      reason: {
+        uk: `${vessel.name.uk} не ставлять на плиту чи над вогнем: повітряний проміжок не пропускає теплоту. Його вміст гріють зсередини — кип’ятильником.`,
+        en: `A ${vessel.name.en.toLowerCase()} is not put on a hob or over a flame: its air gap keeps the heat out. Its contents are heated from inside — with an immersion heater.`,
+      },
+    };
+  }
   if ((spec.method === 'contact' || spec.method === 'induction') && !hasFlatBottom(vessel.spec.shape)) {
     return {
       ok: false,

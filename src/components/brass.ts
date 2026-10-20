@@ -10,6 +10,17 @@ export const BRASS = {
   stateAtRoom: 'solid',
   phases: {
     solid: {
+      density: {
+        value: 8530,
+        unit: 'kg/m³',
+        conditions: 'Cu ≈ 70 %, Zn ≈ 30 % (cartridge brass), room temperature',
+        verification: 'cross-checked',
+        tolerance: 0.03,
+        citations: [
+          { source: 'engineeringtoolbox-metal-densities', locator: 'Cartridge brass (70% Cu, 30% Zn)', conditions: '70/30', value: 8530 },
+          { source: 'wikipedia-brass', locator: 'Properties: 8.4 to 8.73 g/cm³', conditions: 'depends on the Cu/Zn ratio', range: [8400, 8730] },
+        ],
+      },
       specificHeat: {
         value: 377,
         unit: 'J/(kg·K)',

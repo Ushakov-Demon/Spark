@@ -20,7 +20,7 @@ export type DeviceKind =
   | 'ice-bath'
   | 'ice-salt-bath'
   | 'supply';
-export type VesselShape = 'pot' | 'turka' | 'beaker' | 'flask-conical' | 'flask-round' | 'test-tube';
+export type VesselShape = 'pot' | 'turka' | 'beaker' | 'calorimeter' | 'flask-conical' | 'flask-round' | 'test-tube';
 export type LiquidKind = 'water' | 'salt' | 'alcohol' | 'acid' | 'oil' | 'other';
 
 export interface SceneView {
@@ -156,6 +156,19 @@ function vesselGeom(shape: VesselShape, base: number): VesselGeom {
         inner: `M${l + 3},${t + 6} L${l + 3},${base - 7} Q${l + 3},${base - 3} ${l + 8},${base - 3} L${r - 8},${base - 3} Q${r - 3},${base - 3} ${r - 3},${base - 7} L${r - 3},${t} Z`,
         left: l, right: r, top: t, bottom: base, extras: grads,
         mouth: { l: l + 18, r: r - 18 },
+      };
+    }
+    case 'calorimeter': {
+      // The inner cup (cut away to show the water) inside an outer cup: two walls with air between.
+      const w = 100, h = 118, l = CX - w / 2, r = CX + w / 2, t = base - h;
+      const o = 16;
+      const jacket = `<path class="jacket" d="M${l - o},${t + 6} L${l - o},${base + 2} L${r + o},${base + 2} L${r + o},${t + 6}" /><path class="jacket-ring" d="M${l - o - 4},${t + 6} h${o + 6} M${r - 2},${t + 6} h${o + 6}"/>`;
+      return {
+        outer: `M${l},${t} L${l},${base - 8} Q${l},${base - 4} ${l + 6},${base - 4} L${r - 6},${base - 4} Q${r},${base - 4} ${r},${base - 8} L${r},${t} Z`,
+        inner: `M${l + 3},${t} L${l + 3},${base - 9} Q${l + 3},${base - 6} ${l + 8},${base - 6} L${r - 8},${base - 6} Q${r - 3},${base - 6} ${r - 3},${base - 9} L${r - 3},${t} Z`,
+        left: l, right: r, top: t, bottom: base - 4, extras: jacket,
+        lidPath: `M${l - o - 4},${t} h${w + 2 * o + 8} v-7 h-${w + 2 * o + 8} Z M${CX - 8},${t - 7} h16 v-6 h-16 Z`,
+        mouth: { l: l + 16, r: r - 16 },
       };
     }
     case 'flask-conical': {

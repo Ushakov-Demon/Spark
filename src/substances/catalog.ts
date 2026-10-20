@@ -130,8 +130,9 @@ const SHELF = [
   { id: 'table-salt', component: 'sodium-chloride', as: { name: { uk: 'Кухонна сіль', en: 'Table salt' }, genitive: { uk: 'кухонної солі', en: 'table salt' }, gender: 'f' } },
   { id: 'aluminium', component: 'aluminium' },
   { id: 'copper', component: 'copper' },
-  // Steel and brass wait for a sourced density.
   { id: 'iron', component: 'iron' },
+  { id: 'steel', component: 'steel' },
+  { id: 'brass', component: 'brass' },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];
 
 export type SubstanceId = (typeof SHELF)[number]['id'];

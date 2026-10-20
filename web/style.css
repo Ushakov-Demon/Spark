@@ -645,3 +645,7 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .paper-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 12px; }
 @media (max-width: 600px) { .paper { padding: 16px 14px 12px; } .paper-body { column-count: 1; } }
 @media (prefers-reduced-motion: reduce) { .paper-dialog[open] { animation: none; } }
+
+/* the calorimeter's outer cup and its insulating ring */
+.scene .jacket { fill: none; stroke: #9aa3ad; stroke-width: 4; stroke-dasharray: none; opacity: 0.9; }
+.scene .jacket-ring { stroke: #4a4f57; stroke-width: 5; stroke-linecap: round; }

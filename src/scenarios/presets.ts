@@ -138,7 +138,8 @@ export const PRESETS: readonly Preset[] = [
       uk: 'Опускаємо у воду 100 г алюмінію з окропу. А якби це був мідний брусок тієї самої маси — вода нагрілася б сильніше чи слабше?',
       en: 'We drop 100 g of aluminium from boiling water into water. And if it were a copper block of the same mass — would the water warm more or less?',
     },
-    params: { ...room, ...beaker, liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
+    // In a calorimeter with its lid on: the heat stays in, the comparison is about the metals.
+    params: { roomTemp: 20, lid: true, vessel: 'calorimeter', size: 0.25, material: 'aluminium', liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
     setup: [{ kind: 'add', substance: 'aluminium', mass: 0.1, temperature: 100 }],
     choices: [ch('al', 'Алюміній нагріє сильніше', 'Aluminium warms it more'), ch('cu', 'Мідь нагріє сильніше', 'Copper warms it more'), ch('same', 'Однаково — маса ж та сама', 'The same — the mass is the same')],
     formulas: ['thermal.heat-for-temperature-change', 'thermal.equilibrium-temperature'],

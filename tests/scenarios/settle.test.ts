@@ -60,3 +60,25 @@ describe('waiting for thermal equilibrium', () => {
     expect(b.map((l) => l.formula)).toEqual(['Q = c·m·Δt', 'Q = c·m·Δt', 'c₁m₁(t₁ − θ) = c₂m₂(θ − t₂)']);
   });
 });
+
+describe('the calorimeter', () => {
+  const inCal: LabParams = { ...cold, vessel: 'calorimeter', size: 0.25, material: 'aluminium', lid: true };
+  const keep = (p: LabParams) => {
+    const s = createExperimentSession<LabCommand>({ initial: labSetup(p).state, simulation, commands, sampleEvery: seconds(10) });
+    s.apply({ type: 'thermal.add', into: 'sample', substance: 'water', mass: kilograms(0.1), temperature: celsius(80) });
+    s.advance(600);
+    return C(sampleOf(s.state));
+  };
+
+  it('keeps the heat in much better than a beaker (air gap and lid)', () => {
+    const beaker = keep(cold);
+    const cal = keep(inCal);
+    expect(cal).toBeGreaterThan(beaker + 2);
+  });
+
+  it('is never put on a hob — heated from inside only', async () => {
+    const { canHeat, HEATERS, VESSELS } = await import('../../src/equipment/index.js');
+    expect(canHeat(HEATERS['electric-hotplate'], VESSELS.calorimeter, 'aluminium').ok).toBe(false);
+    expect(canHeat(HEATERS['immersion-heater' as never] ?? Object.values(HEATERS).find((h) => h.spec.method === 'immersion')!, VESSELS.calorimeter, 'aluminium').ok).toBe(true);
+  });
+});

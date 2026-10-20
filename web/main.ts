@@ -1050,7 +1050,7 @@ function showingWeighing() {
 }
 
 /** How metal blocks look in the vessel. */
-const METAL_COLOR: Partial<Record<string, string>> = { aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177' };
+const METAL_COLOR: Partial<Record<string, string>> = { aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a' };
 
 function render() {
   const u = t();
