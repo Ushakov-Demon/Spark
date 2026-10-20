@@ -66,6 +66,7 @@ import {
   addableTo,
   PRESETS,
   PRESET_GRADES,
+  guidedPlan,
   stepParams,
   type Preset,
   type ProtocolStep,
@@ -1227,14 +1228,17 @@ function renderGuide(): boolean {
     const added = session.result().log.some((e) => e.ok && e.command.type === 'thermal.add');
     const again = (q: 'mass' | 'volume') => done.some((x) => x.record.quantity === q);
     const what = s.kind === 'add' || s.kind === 'hang' ? tr(('label' in s && s.label) || SUBSTANCES[s.substance].name, locale).toLowerCase() : '';
-    // Salt is poured in and dissolves; a body is lowered in.
+    // Salt is poured in and dissolves; a body is lowered in; a liquid is poured in.
     const salt = s.kind === 'add' && SUBSTANCES[s.substance].category === 'solid.salt';
+    const liquid = s.kind === 'add' && !s.frozen && SUBSTANCES[s.substance].category.startsWith('liquid.');
+    const temp = s.kind === 'add' ? `${s.temperature} °C` : '';
+    const opKind = s.kind === 'operation' ? (OPERATIONS[s.action].uses === 'supply' ? 'current' : s.heater || OPERATIONS[s.action].uses === 'heater' ? 'heat' : s.cooler || OPERATIONS[s.action].uses === 'cooler' ? 'cool' : 'wait') : 'wait';
     const op = s.kind === 'operation' ? tr(s.label ?? OPERATIONS[s.action].label, locale) : '';
     // Time has passed since the last look at the marks (the ice melted): did the level change?
     const lastLevel = [...done].reverse().find((x) => x.record.quantity === 'volume');
     const waited = !!lastLevel && session.state.time > lastLevel.time + 1e-9 || history.length > 0 && !!lastLevel;
-    const say = s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
-    const btn = s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnWait(op);
+    const say = s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : liquid ? u.pour(what, temp) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
+    const btn = s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
     // Before the first step: the prediction, if the experiment asks for one.
     const q = k === 1 ? quizNow() : null;
     setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1">${btn}</button></div>`);
@@ -1454,7 +1458,8 @@ function render() {
     Array.isArray(fixes) ? fixes.map((f, i) => `<button type="button" data-fix="${i}">${tr(f.label, locale)}</button>`).join('') : `<span class="muted small">${u.computing}</span>`;
   if (headline) {
     msg.push(renderHtml(headline()));
-    if (presetAnswer) {
+    // A guided procedure answers in its own panel under the scene; once is enough.
+    if (presetAnswer && !preset?.guided) {
       msg.push(
         presetAnswer === 'computing'
           ? `<div class="answer"><h4>${u.answerTitle}</h4><p class="muted">${u.answerComputing}</p></div>`
@@ -2216,7 +2221,10 @@ function buildPresets() {
   }
 }
 
-function startPreset(p: Preset) {
+function startPreset(given: Preset) {
+  // Led step by step: what goes in first, the operation, the rest — no "Start" (see guidedPlan).
+  const p: Preset = { ...given, guided: true, plan: guidedPlan(given) };
+  delete (p as { setup?: unknown }).setup;
   preset = p;
   prediction = null;
   plan = [...(p.plan ?? [])];

@@ -149,7 +149,7 @@ export const PRESETS: readonly Preset[] = [
     grade: 8,
     topic: THERMAL,
     title: { uk: 'За скільки закипить літр води?', en: 'How long does a litre of water take to boil?' },
-    question: { uk: 'Спершу зроби прогноз: скільки хвилин знадобиться електроплиті на 2 кВт? Потім порівняй із дослідом і розрахунком «на папері».', en: 'Predict first: how many minutes will a 2 kW hob need? Then compare with the experiment and the paper calculation.' },
+    question: { uk: 'Спершу зроби прогноз праворуч, у «Мій прогноз»: скільки хвилин знадобиться електроплиті на 2 кВт? Потім порівняй із дослідом і розрахунком «на папері».', en: 'Predict first: how many minutes will a 2 kW hob need? Then compare with the experiment and the paper calculation.' },
     params: { ...room, ...pot, action: 'boil', substance: 'water', startTemp: 20, heater: hotplate },
     formulas: ['thermal.heat-for-temperature-change'],
     predict: true,
@@ -160,7 +160,7 @@ export const PRESETS: readonly Preset[] = [
     grade: 8,
     topic: THERMAL,
     title: { uk: 'Навіщо каструлі кришка?', en: 'Why does a pot need a lid?' },
-    question: { uk: 'Закип’яти воду з кришкою, а потім — без неї (зніми галочку в посуді). Що змінилося і чому?', en: 'Boil water with a lid, then without it (untick it under the vessel). What changed and why?' },
+    question: { uk: 'Закип’ятимо воду в каструлі з кришкою, а Професор подумки повторить те саме без кришки. Як гадаєш, де вода закипить швидше — і чому?', en: 'We boil water in a pot with a lid, and the Professor repeats it in his mind without one. Where do you think the water boils sooner — and why?' },
     params: { ...pot, roomTemp: 20, lid: true, action: 'boil', substance: 'water', startTemp: 20, heater: { id: 'gas-hob', rating: 1500, knob: 1 } },
     choices: [ch('lid', 'З кришкою закипить швидше', 'It boils sooner with a lid'), ch('no-lid', 'Без кришки швидше', 'Sooner without a lid'), ch('equal', 'Однаково', 'The same')],
     formulas: ['thermal.heat-for-temperature-change', 'thermal.latent-heat'],
@@ -241,7 +241,7 @@ export const PRESETS: readonly Preset[] = [
     grade: 8,
     topic: THERMAL,
     title: { uk: 'Що закипить швидше: спирт чи вода?', en: 'Which boils sooner: alcohol or water?' },
-    question: { uk: 'Закип’яти спирт, а потім так само воду. Чому спирт закипає набагато швидше? (Підказка: подивись на теплоємність і температуру кипіння.)', en: 'Boil alcohol, then water the same way. Why does alcohol boil much sooner? (Hint: look at the specific heat and the boiling point.)' },
+    question: { uk: 'Закип’ятимо спирт, а Професор подумки закип’ятить стільки ж води в тому самому стакані. Що закипить швидше? (Підказка: подивись на теплоємність і температуру кипіння.)', en: 'We boil alcohol, and the Professor boils the same amount of water in the same beaker in his mind. Which boils sooner? (Hint: look at the specific heat and the boiling point.)' },
     params: { ...room, ...beaker, action: 'boil', substance: 'ethanol', startTemp: 20, heater: hotplate },
     choices: [ch('alcohol', 'Спирт', 'Alcohol'), ch('water', 'Вода', 'Water'), ch('equal', 'Однаково', 'The same')],
     formulas: ['thermal.heat-for-temperature-change'],
@@ -365,3 +365,22 @@ export const PRESETS: readonly Preset[] = [
 
 /** Grades that have presets, in order; null (for everyone) last. */
 export const PRESET_GRADES: readonly (number | null)[] = [...new Set(PRESETS.map((p) => p.grade))].sort((a, b) => (a ?? 99) - (b ?? 99));
+
+/**
+ * Every ready-made experiment is led step by step, like a guided procedure: what goes into the
+ * vessel first, then the operation itself, then the rest of the plan — each a button on the page.
+ */
+export function guidedPlan(p: Preset): ProtocolStep[] {
+  if (p.guided) return [...(p.plan ?? [])];
+  const q = p.params;
+  const first: ProtocolStep = {
+    kind: 'operation',
+    action: q.action,
+    ...(q.target === undefined ? {} : { target: q.target }),
+    ...(q.heater ? { heater: q.heater } : {}),
+    ...(q.cooler ? { cooler: q.cooler } : {}),
+    ...(q.supply ? { supply: q.supply } : {}),
+    ...(q.duration === undefined ? {} : { duration: q.duration }),
+  };
+  return [...(p.setup ?? []), first, ...(p.plan ?? [])];
+}
