@@ -225,12 +225,13 @@ export const add: CommandHandler<AddCommand> = {
     const id = `${c.into}+${n}`;
     const density = c.frozen ? (sub.freezing?.solidDensity?.value ?? th.density) : th.density;
     const volume = c.mass / density;
-    // A frozen piece: a cube of that volume, all sides wetted. A liquid layer: it spreads over the surface.
+    // A frozen piece or a solid (a metal block): a cube of that volume, all sides wetted. A liquid layer: it spreads over the surface.
+    const solidPiece = c.frozen || sub.category.startsWith('solid.');
     const surface = Object.values(state.connections).find(
       (x) => x.a.entity === target.id && (x.params as { origin?: { surface?: boolean; area?: number } }).origin?.surface,
     ) as AnyConnection | undefined;
     const layerArea = (surface?.params as { origin?: { area?: number } } | undefined)?.origin?.area;
-    const area = c.frozen || layerArea === undefined ? 6 * Math.cbrt(volume) ** 2 : layerArea;
+    const area = solidPiece || layerArea === undefined ? 6 * Math.cbrt(volume) ** 2 : layerArea;
     const body = thermalBody({
       id,
       label: c.frozen && sub.solidName ? { uk: `${sub.solidName.uk} (додано)`, en: `${sub.solidName.en} (added)` } : { uk: `${sub.name.uk} (додано)`, en: `${sub.name.en} (added)` },

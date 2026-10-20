@@ -5,6 +5,7 @@ import { FREEZE } from './freeze.js';
 import { HEAT_TO } from './heat-to.js';
 import { MELT } from './melt.js';
 import { PASS_CURRENT } from './pass-current.js';
+import { SETTLE } from './settle.js';
 import type { Operation } from './types.js';
 
 export * from './types.js';
@@ -17,6 +18,7 @@ const LIST = {
   'cool-to': COOL_TO,
   freeze: FREEZE,
   melt: MELT,
+  settle: SETTLE,
   'pass-current': PASS_CURRENT,
 } as const satisfies Record<string, Operation>;
 

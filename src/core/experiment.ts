@@ -141,6 +141,11 @@ export function createExperimentSession<C extends Command>(input: SessionInput<C
         s = r.value.state;
         externalEnergy += r.value.externalEnergy;
         for (const t of r.value.trace) sink.record(t);
+        // Matter added or a state set by hand: keep the moment in the samples (a hot block's own start).
+        if (r.value.kind === 'matter' || r.value.kind === 'intervention') {
+          samples.push(s);
+          lastSampled = s;
+        }
         entry = { ...base, ok: true, kind: r.value.kind, externalEnergy: r.value.externalEnergy, trace: r.value.trace };
       } else {
         entry = { ...base, ok: false, error: r.error };

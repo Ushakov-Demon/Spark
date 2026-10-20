@@ -12,6 +12,12 @@ import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
 import { sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
 import { formatReading, weigh } from './weighing.js';
+import { createCommandRegistry } from '../core/commands.js';
+import { createExperimentSession } from '../core/experiment.js';
+import { kilograms, seconds } from '../core/units.js';
+import { isThermalBody } from '../domains/thermal/entities.js';
+import { LAB_COMMANDS, type LabCommand } from './lab-knowledge.js';
+import { labGoalReached, labSetup } from './thermal-lab.js';
 
 /**
  * Answers to the questions the ready-made experiments ask — built from what
@@ -72,7 +78,60 @@ function current(s: Step): { amps: number; charge: number; time: number } {
 }
 const ratio = (a: number, b: number, l: Locale) => sig(a / Math.max(b, 1e-12), 2, l);
 
+/** The temperature right after something was poured in: what the heat balance gives (from the log), or the step's start. */
+function mixedAt(s: Step): number {
+  for (const e of s.result.log) if (e.ok) for (const r of e.trace) if (r.kind === 'formula' && r.formula === 'thermal.equilibrium-temperature') return r.output;
+  return temp(s.result.initial);
+}
+/** The block put into the liquid in this step: substance, mass and the temperature it went in at. */
+function blockOf(s: Step): { substance: string; mass: number; temperature: number } | undefined {
+  const last = Object.values(s.result.final.entities).find((e) => isThermalBody(e) && e.id.startsWith('sample+'));
+  if (!last || !isThermalBody(last) || !last.params.substance) return undefined;
+  const first = [s.result.initial, ...s.result.samples].map((x) => x.entities[last.id]).find((e) => e && isThermalBody(e));
+  return first && isThermalBody(first) ? { substance: last.params.substance, mass: last.params.mass, temperature: first.state.temperature } : undefined;
+}
+/** The same setup "in the mind" with another block: the common temperature it would come to, K. */
+function settleWith(p: LabParams, block: { substance: string; mass: number; temperature: number }, simulation: Simulation): number {
+  const s = createExperimentSession<LabCommand>({ initial: labSetup(p).state, simulation, commands: createCommandRegistry<LabCommand>(LAB_COMMANDS as never), sampleEvery: seconds(60) });
+  s.apply({ type: 'thermal.add', into: 'sample', substance: block.substance, mass: kilograms(block.mass), temperature: block.temperature as never });
+  s.advance(3600, (x) => labGoalReached(p, x));
+  return temp(s.state);
+}
+
 export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> = {
+  'mix-hot-cold': ({ steps }) => {
+    const s = steps[0]!;
+    const ideal = mixedAt(s);
+    const real = temp(s.result.final);
+    const t = reachedAt(s);
+    return {
+      say: both((l) => (l === 'uk' ? `Рівновага — ${C(real, l)}!` : `Equilibrium at ${C(real, l)}!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `Щойно воду змішали, суміш мала ${C(ideal, l)} — саме стільки дає рівняння теплового балансу: θ = (m₁t₁ + m₂t₂) / (m₁ + m₂), бо скільки теплоти віддала гаряча вода, стільки отримала холодна. Але за ${D(t, l)} холодний скляний стакан і повітря забрали частину теплоти, і рівновага настала при ${C(real, l)}. Тому справжня суміш завжди трохи холодніша за розрахунок; щоб зменшити втрати, у лабораторії змішують у калориметрі.`
+          : `Right after mixing the water was at ${C(ideal, l)} — exactly what the heat balance gives: θ = (m₁t₁ + m₂t₂) / (m₁ + m₂), since the heat the hot water gave is the heat the cold water took. But within ${D(t, l)} the cold glass beaker and the air took some of the heat, and equilibrium came at ${C(real, l)}. That is why a real mixture is always a little colder than the calculation; to cut the losses, labs mix in a calorimeter.`,
+      ),
+      correct: real < ideal - 0.5 ? 'less' : real > ideal + 0.5 ? 'more' : 'fifty',
+    };
+  },
+  'which-metal': ({ steps, simulation }) => {
+    const s = steps[0]!;
+    const block = blockOf(s);
+    const real = temp(s.result.final);
+    const other = block ? settleWith(s.params, { ...block, substance: block.substance === 'copper' ? 'aluminium' : 'copper' }, simulation) : real;
+    const [al, cu] = block?.substance === 'copper' ? [other, real] : [real, other];
+    const cAl = COMPONENTS.aluminium.phases.solid!.specificHeat!.value;
+    const cCu = COMPONENTS.copper.phases.solid!.specificHeat!.value;
+    return {
+      say: both((l) => (l === 'uk' ? (al > cu ? 'Алюміній «тепліший»!' : 'Мідь «тепліша»!') : al > cu ? 'Aluminium holds more heat!' : 'Copper holds more heat!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `Алюмінієвий брусок нагрів воду до ${C(al, l)}, а мідний тієї самої маси нагрів би лише до ${C(cu, l)}. Справа в питомій теплоємності: в алюмінію c = ${sig(cAl, 3, l)} Дж/(кг·°C), у міді — ${sig(cCu, 3, l)}. Охолоджуючись на 1 °C, кілограм алюмінію віддає в ${ratio(cAl, cCu, l)} раза більше теплоти, ніж кілограм міді: маса та сама, а «запас тепла» різний.`
+          : `The aluminium block warmed the water to ${C(al, l)}, while a copper block of the same mass would warm it only to ${C(cu, l)}. It is the specific heat: aluminium has c = ${sig(cAl, 3, l)} J/(kg·°C), copper ${sig(cCu, 3, l)}. Cooling by 1 °C, a kilogram of aluminium gives ${ratio(cAl, cCu, l)} times as much heat as a kilogram of copper: the same mass, a different "store of heat".`,
+      ),
+      correct: al > cu + 0.3 ? 'al' : cu > al + 0.3 ? 'cu' : 'same',
+    };
+  },
   'weigh-the-water': ({ steps }) => {
     // What the kitchen scales show at the start, after freezing and after boiling.
     const [freeze, boil] = [steps[0]!, steps[1] ?? steps[0]!];

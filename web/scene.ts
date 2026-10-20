@@ -53,6 +53,8 @@ export interface SceneView {
   readonly running: boolean;
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
+  /** Solid pieces lying in the vessel (a metal block): colour and volume, m³. */
+  readonly pieces?: readonly { readonly color: string; readonly volume: number }[];
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
   readonly board?: { readonly empty: string; readonly front: string; readonly back: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers?: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
@@ -368,6 +370,7 @@ export function createScene(): Scene {
             <g id="sc-bubbles" class="bubbles">${Array.from({ length: 14 }, (_, i) => `<circle cx="${g.left + 16 + ((i * 37) % Math.max(20, g.right - g.left - 30))}" cy="${g.bottom - 8}" r="${2 + (i % 3)}" style="animation-delay:${(i * 0.17) % 1.6}s"/>`).join('')}</g>
           </g>
           <g id="sc-ice" class="ice"><rect x="${g.left - 10}" y="0" width="${g.right - g.left + 20}" height="0"/><path class="cracks" d="M${g.left + 20},0 l18,10 l14,-6 M${g.right - 40},0 l-12,9 l-16,-3"/></g>
+          <g id="sc-pieces" class="pieces"></g>
           <g id="sc-crystals" class="crystals">${Array.from({ length: 18 }, (_, i) => `<path d="M${g.left + 18 + ((i * 29) % Math.max(20, g.right - g.left - 34))},${g.bottom - 5 - (i % 3) * 3} l4,-5 l4,5 l-4,4 Z"/>`).join('')}</g>
         </g>
         ${glass ? `<path d="${g.outer}" style="${wallStyle}" stroke-width="2.5"/>` : ''}
@@ -419,6 +422,21 @@ export function createScene(): Scene {
         r.setAttribute('height', String(thick));
         ice.querySelector('path')!.setAttribute('transform', `translate(0 ${level + thick / 2})`);
         ice.style.opacity = thick > 0 ? '1' : '0';
+      }
+      // Blocks on the bottom, side by side; a 10 cm³ block is about 22 units wide.
+      const pk = (v.pieces ?? []).map((x) => `${x.color}:${x.volume.toExponential(2)}`).join('|');
+      const pg = $<SVGGElement>('sc-pieces');
+      if (pg && pg.dataset['k'] !== pk) {
+        pg.dataset['k'] = pk;
+        let x = g.left + 14;
+        pg.innerHTML = (v.pieces ?? [])
+          .map((p) => {
+            const side = Math.max(10, Math.min(60, 22 * Math.cbrt(p.volume / 1e-5)));
+            const r = `<rect x="${x}" y="${g.bottom - side * 0.7}" width="${side}" height="${side * 0.7}" rx="2" style="fill:${p.color};stroke:rgba(0,0,0,0.35)"/><path d="M${x + 3},${g.bottom - side * 0.7 + 3} h${side * 0.5}" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>`;
+            x += side + 6;
+            return r;
+          })
+          .join('');
       }
       $('sc-crystals')?.setAttribute('style', `opacity:${v.crystals > 0 ? Math.min(1, 0.35 + v.crystals) : 0}`);
       // A step that ended while the heater is still on keeps boiling on the drawing.

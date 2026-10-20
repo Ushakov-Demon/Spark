@@ -11,7 +11,7 @@ import type { MediaAsset } from '../equipment/types.js';
  * Temperatures in data are in °C (as in the sources); the thermal domain
  * converts them.
  */
-export type SubstanceCategory = 'liquid.water' | 'liquid.alcohol' | 'liquid.acid' | 'liquid.oil' | 'liquid.solution' | 'solid.salt';
+export type SubstanceCategory = 'liquid.water' | 'liquid.alcohol' | 'liquid.acid' | 'liquid.oil' | 'liquid.solution' | 'solid.salt' | 'solid.metal';
 
 export interface SubstanceItem {
   readonly id: string;

@@ -25,6 +25,9 @@ const CATEGORY: Partial<Record<ComponentGroup, SubstanceCategory>> = {
   acid: 'liquid.acid',
   oil: 'liquid.oil',
   salt: 'solid.salt',
+  // Metal blocks: put into a liquid (heated in boiling water) — they are never the sample itself.
+  metal: 'solid.metal',
+  alloy: 'solid.metal',
 };
 
 /** Molar mass as a sourced value: computed from the formula with standard atomic weights. */
@@ -125,6 +128,10 @@ const SHELF = [
   { id: 'acetic-acid', component: 'acetic-acid' },
   { id: 'sunflower-oil', component: 'sunflower-oil' },
   { id: 'table-salt', component: 'sodium-chloride', as: { name: { uk: 'Кухонна сіль', en: 'Table salt' }, genitive: { uk: 'кухонної солі', en: 'table salt' }, gender: 'f' } },
+  { id: 'aluminium', component: 'aluminium' },
+  { id: 'copper', component: 'copper' },
+  // Steel and brass wait for a sourced density.
+  { id: 'iron', component: 'iron' },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];
 
 export type SubstanceId = (typeof SHELF)[number]['id'];
@@ -140,4 +147,5 @@ export const SUBSTANCE_CATEGORIES: readonly { readonly id: SubstanceItem['catego
   { id: 'liquid.acid', name: { uk: 'Кислоти', en: 'Acids' } },
   { id: 'liquid.oil', name: { uk: 'Олії', en: 'Oils' } },
   { id: 'solid.salt', name: { uk: 'Солі', en: 'Salts' } },
+  { id: 'solid.metal', name: { uk: 'Метали й сплави', en: 'Metals and alloys' } },
 ];

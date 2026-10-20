@@ -1,4 +1,6 @@
+import type { ExperimentLogEntry } from '../core/experiment.js';
 import type { SystemState } from '../core/state.js';
+import { tr } from '../knowledge/i18n.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';
@@ -39,7 +41,7 @@ const phaseOf = (b: ThermalBody): Phase => {
 const boiled = (b: ThermalBody) => b.state.boiledOff ?? 0;
 
 /** The board for a step: `states` are the step's states in time order (the recorded samples and now); `weighed` — the scales used in it, latest last. */
-export function boardLines(p: LabParams, states: readonly SystemState[], locale: Locale, weighed: readonly ScaleId[] = [], finished = false): BoardLine[] {
+export function boardLines(p: LabParams, states: readonly SystemState[], locale: Locale, weighed: readonly ScaleId[] = [], finished = false, log: readonly ExperimentLogEntry<{ type: string }>[] = []): BoardLine[] {
   const uk = locale === 'uk';
   const sub = SUBSTANCES[p.substance];
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
@@ -51,6 +53,9 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
 
   // Split the step into phases: runs of states where the sample is all solid, all liquid or both.
   const bodies = states.map(sampleOf);
+  // A step in which liquid was poured into the sample (its mass grew) is mixing, not heat flow: left out of Δt.
+  // (Evaporation only takes mass away; a block put in is a body of its own.)
+  const jumpless = (j: number) => (bodyMass(bodies[j]!) > bodyMass(bodies[j - 1]!) + 1e-7 ? 0 : C(bodies[j]!.state.temperature) - C(bodies[j - 1]!.state.temperature));
   let start = 0;
   let k = 0;
   for (let i = 1; i <= bodies.length; i++) {
@@ -77,7 +82,9 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
       }
     } else {
       const c = ph === 'solid' ? (b.state.mixture ? COMPONENTS.water.phases.solid?.specificHeat?.value : sub.freezing?.solidSpecificHeat.value) : sub.liquid.specificHeat.value;
-      const dT = C(b.state.temperature) - C(a.state.temperature);
+      // Heat flow only: a jump at the moment something was poured in (mixing) is not warming.
+      let dT = 0;
+      for (let j = Math.max(1, start); j < i; j++) dT += jumpless(j);
       const m = bodyMass(b);
       if (c && Math.abs(dT) >= 0.05) {
         const what = ph === 'solid' ? iceName : name;
@@ -90,6 +97,68 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
       }
     }
     start = i;
+  }
+
+  // Hot water poured into cold: it mixes at once — the temperature of the mixture (same liquid: c cancels).
+  // Written first: the pouring came before the heat flow that follows it.
+  const mixes: BoardLine[] = [];
+  log.forEach((e, i) => {
+    if (!e.ok) return;
+    for (const r of e.trace) {
+      if (r.kind !== 'formula' || r.formula !== 'thermal.equilibrium-temperature') continue;
+      const parts = r.args[0] as readonly { mass: number; temperature: number }[];
+      if (parts.length !== 2) continue;
+      const [a, b] = parts as [{ mass: number; temperature: number }, { mass: number; temperature: number }];
+      mixes.push({
+        id: `mix:${i}`,
+        title: uk ? 'змішування: температура суміші' : 'mixing: the temperature of the mixture',
+        formula: 'θ = (m₁t₁ + m₂t₂) / (m₁ + m₂)',
+        numbers: `(${n(a.mass)}·${n(C(a.temperature))} + ${n(b.mass)}·${n(C(b.temperature))}) / (${n(a.mass)} + ${n(b.mass)}) ≈ ${n(C(r.output))} °C`,
+      });
+    }
+  });
+
+  out.unshift(...mixes);
+
+  // Pieces put into the liquid (a metal block): each gives or takes Q = c·m·Δt; at the end — the heat balance.
+  const lastState = states[states.length - 1]!;
+  const sampleBody = sampleOf(lastState);
+  const pieces = Object.values(lastState.entities).filter((e): e is ThermalBody => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`) && !('phase' in e.params && e.params.phase));
+  let given = 0;
+  let taken = 0;
+  for (const piece of pieces) {
+    const from = states.find((s) => s.entities[piece.id]);
+    const p0 = from?.entities[piece.id];
+    if (!p0 || !isThermalBody(p0)) continue;
+    const dT = C(piece.state.temperature) - C(p0.state.temperature);
+    const c = piece.params.specificHeat;
+    const m = bodyMass(piece);
+    const name = piece.params.substance && piece.params.substance in SUBSTANCES ? tr(SUBSTANCES[piece.params.substance as keyof typeof SUBSTANCES].name, locale) : tr(piece.label ?? { uk: 'тіло', en: 'body' }, locale);
+    const q = c * m * Math.abs(dT);
+    if (dT < 0) given += q;
+    else taken += q;
+    if (Math.abs(dT) < 0.05) continue;
+    out.push({
+      id: `piece:${piece.id}`,
+      title: `${name} — ${dT < 0 ? (uk ? 'охолодження' : 'cooling') : uk ? 'нагрівання' : 'warming'}`,
+      formula: 'Q = c·m·Δt',
+      ...(finished ? { numbers: `${n(c)} · ${n(m)} · ${n(Math.abs(dT), 3)} ≈ ${kJ(q)}` } : {}),
+    });
+  }
+  if (finished && pieces.length && phaseOf(sampleBody) === 'liquid' && phaseOf(bodies[0]!) === 'liquid') {
+    // The liquid's own share, from the start of the step to the end (no phase change in it).
+    const dT = C(sampleBody.state.temperature) - C(bodies[0]!.state.temperature);
+    const q = sub.liquid.specificHeat.value * bodyMass(sampleBody) * Math.abs(dT);
+    if (dT < 0) given += q;
+    else taken += q;
+    if (given > 0 && taken > 0) {
+      out.push({
+        id: 'balance',
+        title: uk ? 'тепловий баланс: скільки віддали — стільки й отримали (різниця — посуд і повітря)' : 'heat balance: what was given was taken (the rest went into the vessel and the air)',
+        formula: 'c₁m₁(t₁ − θ) = c₂m₂(θ − t₂)',
+        numbers: `${kJ(given)} ≈ ${kJ(taken)}`,
+      });
+    }
   }
 
   // Boiling: the water that left as steam took L for every kilogram.

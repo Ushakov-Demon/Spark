@@ -321,7 +321,9 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         const mass = qs.find((q) => q.unit === 'г' || q.unit === 'g' || q.unit === '') ?? qs.find((q) => q.unit === 'кг' || q.unit === 'kg');
         const grams = mass ? (mass.unit === 'кг' || mass.unit === 'kg' ? mass.value * 1000 : mass.value) : 10;
         const tq = qs.find((q) => q.unit === '°c' || q.unit === '°' || q.unit === 'c');
-        const err = api.add(f.id as SubstanceId, grams, tq?.value ?? (frozen ? -18 : 20), frozen);
+        // A metal block comes out of boiling water unless told otherwise.
+        const metal = SUBSTANCES[f.id as SubstanceId]?.category === 'solid.metal';
+        const err = api.add(f.id as SubstanceId, grams, tq?.value ?? (metal ? 100 : frozen ? -18 : 20), frozen);
         return err ? [`✗ ${err}`] : [`✓ ${T(f.name)}, ${grams} ${uk() ? 'г' : 'g'}`];
       },
     },

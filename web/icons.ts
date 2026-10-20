@@ -11,6 +11,8 @@ const P: Readonly<Record<string, string>> = {
   freeze: '<path d="M12 2v20M4 6l16 12M20 6L4 18"/><path d="M9 3l3 2 3-2M9 21l3-2 3 2M3 9l2.5 1L5 13M21 9l-2.5 1 .5 3"/>',
   melt: '<rect x="5" y="4" width="11" height="10" rx="2"/><path d="M8 7l3 3"/><path d="M18 14c0 2-1.2 3-2.5 3S13 16 13 14c0-1.5 2.5-4 2.5-4S18 12.5 18 14z"/><path d="M4 20h16"/>',
   current: '<path d="M13 2L5 13h6l-2 9 9-12h-6z"/>',
+  // scales of a balance: two pans level
+  balance: '<path d="M12 3v17M7 20h10M4 7h16"/><path d="M4 7l-2.5 6a2.5 2.5 0 0 0 5 0zM20 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>',
   // vessels
   pot: '<path d="M4 8h16v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><path d="M1.5 10H4M20 10h2.5"/><path d="M8 5h8"/>',
   turka: '<path d="M7 6h8l1.5 13a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19z"/><path d="M15.5 9l7-4"/>',

@@ -1,6 +1,6 @@
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
-import type { ProtocolStep } from './protocol.js';
+import type { AddStep, ProtocolStep } from './protocol.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -17,6 +17,8 @@ export interface Preset {
   /** The question to think about before pressing "Start". */
   readonly question: LocalizedText;
   readonly params: LabParams;
+  /** Put into the vessel before the start (hot water poured into cold, a block from boiling water). */
+  readonly setup?: readonly AddStep[];
   /** Further steps after the first one (the first is `params` itself). */
   readonly plan?: readonly ProtocolStep[];
   /** Formula ids from the catalogs — for "where it is in the programme". */
@@ -110,6 +112,38 @@ export const PRESETS: readonly Preset[] = [
     formulas: ['thermal.latent-heat'],
     quoteHas: 'плавлен',
     expect: 'impossible',
+  },
+  {
+    id: 'mix-hot-cold',
+    grade: 8,
+    topic: THERMAL,
+    title: { uk: 'Змішуємо гарячу й холодну воду', en: 'Mixing hot and cold water' },
+    question: {
+      uk: 'До 100 мл води при 20 °C долили 100 мл гарячої води при 80 °C. Якою буде температура суміші, коли все прийде до рівноваги?',
+      en: 'To 100 mL of water at 20 °C we add 100 mL of hot water at 80 °C. What will the temperature of the mixture be once everything comes to equilibrium?',
+    },
+    params: { ...room, ...beaker, liters: 0.1, action: 'settle', substance: 'water', startTemp: 20 },
+    setup: [{ kind: 'add', substance: 'water', mass: 0.1, temperature: 80 }],
+    choices: [ch('fifty', 'Рівно 50 °C', 'Exactly 50 °C'), ch('less', 'Трохи менше за 50 °C', 'A little below 50 °C'), ch('more', 'Більше за 50 °C', 'Above 50 °C')],
+    formulas: ['thermal.equilibrium-temperature'],
+    quoteHas: 'змішування',
+    expect: 'reached',
+  },
+  {
+    id: 'which-metal',
+    grade: 8,
+    topic: THERMAL,
+    title: { uk: 'Алюміній чи мідь: хто нагріє воду сильніше?', en: 'Aluminium or copper: which warms the water more?' },
+    question: {
+      uk: 'Опускаємо у воду 100 г алюмінію з окропу. А якби це був мідний брусок тієї самої маси — вода нагрілася б сильніше чи слабше?',
+      en: 'We drop 100 g of aluminium from boiling water into water. And if it were a copper block of the same mass — would the water warm more or less?',
+    },
+    params: { ...room, ...beaker, liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
+    setup: [{ kind: 'add', substance: 'aluminium', mass: 0.1, temperature: 100 }],
+    choices: [ch('al', 'Алюміній нагріє сильніше', 'Aluminium warms it more'), ch('cu', 'Мідь нагріє сильніше', 'Copper warms it more'), ch('same', 'Однаково — маса ж та сама', 'The same — the mass is the same')],
+    formulas: ['thermal.heat-for-temperature-change', 'thermal.equilibrium-temperature'],
+    quoteHas: 'баланс',
+    expect: 'reached',
   },
   {
     id: 'alcohol-vs-water',

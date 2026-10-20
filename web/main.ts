@@ -730,7 +730,9 @@ function buildAdd() {
   sel.onchange = () => {
     addSub = sel.value as SubstanceId;
     if (!canFreezeHere(SUBSTANCES[addSub])) addFrozen = false;
-    addTemp = addFrozen ? -18 : 20;
+    // A metal block comes out of boiling water; other portions at room temperature (or from the freezer).
+    addTemp = SUBSTANCES[addSub].category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
+    if (SUBSTANCES[addSub].category === 'solid.metal') addGrams = 100;
     buildAdd();
   };
   const state = el('div', { className: 'chips' });
@@ -872,6 +874,8 @@ function sceneView(): SceneView {
     : !running && stepElapsed() === 0
       ? labImpossibility(params)
         ? { mood: 'thinking', says: u.prof.impossible }
+        : OPERATIONS[params.action].needsAdded && !session.result().log.some((e) => e.ok && e.kind === 'matter')
+        ? { mood: 'thinking', says: tr(OPERATIONS[params.action].needsAdded!, locale) }
         : { mood: 'neutral', says: u.prof.idle }
       : current && current.amps > 0.005
         ? current.toxicGas && current.amps > 0.05
@@ -881,6 +885,8 @@ function sceneView(): SceneView {
           ? { mood: 'thinking', says: u.prof.noCurrent }
           : boilingNow
             ? { mood: 'surprised', says: u.prof.boiling }
+            : OPERATIONS[params.action].says
+            ? { mood: 'thinking', says: tr(OPERATIONS[params.action].says!, locale) }
             : s > 0 && s < 1
               ? OPERATIONS[params.action].direction === 'cooling'
                 ? { mood: 'neutral', says: u.prof.freezing }
@@ -909,6 +915,13 @@ function sceneView(): SceneView {
     running,
     decimal: locale === 'uk' ? ',' : '.',
     professor,
+    pieces: Object.values(session.state.entities).flatMap((e) => {
+      if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`)) return [];
+      const id = 'substance' in e.params ? (e.params.substance as SubstanceId | undefined) : undefined;
+      const sub = id ? SUBSTANCES[id] : undefined;
+      if (!sub || sub.category !== 'solid.metal') return [];
+      return [{ color: METAL_COLOR[sub.id] ?? '#9aa1a8', volume: bodyMass(e) / sub.liquid.density.value }];
+    }),
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
@@ -1023,7 +1036,7 @@ function boardNow(): ReturnType<typeof boardLines> {
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
-  const lines = boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished);
+  const lines = boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished, r.log);
   boardCache = { at: now, key, lines };
   return lines;
 }
@@ -1035,6 +1048,9 @@ function showingWeighing() {
   const last = l[l.length - 1];
   return last?.ok && last.command.type === 'lab.weigh' ? (weighingsOf([last])[0] ?? null) : null;
 }
+
+/** How metal blocks look in the vessel. */
+const METAL_COLOR: Partial<Record<string, string>> = { aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177' };
 
 function render() {
   const u = t();
@@ -1065,7 +1081,10 @@ function render() {
     if (mix && s < 1 && mix.water - mix.ice > 1e-9) parts.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
     if (mix && mix.crystals > 1e-6) parts.push(u.crystals(formatQuantity(mix.crystals, 'kg', { locale, level: 'school' })));
     for (const e of Object.values(session.state.entities)) {
-      if (isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`) && e.label) parts.push(u.addedState(tr(e.label, locale), Math.round((e.state.solidFraction ?? 0) * 100)));
+      if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`) || !e.label) continue;
+      // A block (no melting in the lab): its temperature; a piece of ice: how much of it is still solid.
+      if (!('phase' in e.params && e.params.phase)) parts.push(`${tr(e.label, locale)}: ${C(e.state.temperature)}`);
+      else parts.push(u.addedState(tr(e.label, locale), Math.round((e.state.solidFraction ?? 0) * 100)));
     }
     const lost = (b.state.boiledOff ?? 0) + (b.state.evaporated ?? 0);
     if (lost > 1e-4) parts.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
@@ -1802,6 +1821,19 @@ function startPreset(p: Preset) {
   buildShelf();
   buildExpect();
   newSession();
+  presetSetup();
+}
+/** What a ready-made experiment puts into the vessel before the start (hot water, a block from boiling water). */
+function presetSetup() {
+  for (const s of preset?.setup ?? []) {
+    const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: s.substance, mass: s.mass as never, temperature: celsius(s.temperature), ...(s.frozen ? { frozen: true } : {}) });
+    if (entry.ok) stepAdds.push({ what: SUBSTANCES[s.substance].name, mass: s.mass });
+  }
+  if (preset?.setup?.length) {
+    boardEpoch++;
+    buildAdd();
+    render();
+  }
 }
 $('#presets-open').onclick = () => {
   buildPresets();
@@ -2240,6 +2272,7 @@ function resetExperiment() {
   // Starting over: a ready-made experiment starts over too, with its whole plan.
   if (preset) plan = [...(preset.plan ?? [])];
   newSession();
+  presetSetup();
 }
 $('#switch').onclick = () => {
   if (!params.heater) return;

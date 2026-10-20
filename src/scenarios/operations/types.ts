@@ -89,4 +89,8 @@ export interface Operation {
   impossibleHeadline?(sample: ThermalBody, subject: string, locale: Locale): string | undefined;
   /** Added to "it gave N J to its surroundings" (", most of it latent heat"). */
   readonly heatGivenNote?: LocalizedText;
+  /** What the Professor says while it runs (otherwise a heating / cooling line by `direction`). */
+  readonly says?: LocalizedText;
+  /** It needs something put into the liquid first (a hot block for equilibrium): the hint until then. */
+  readonly needsAdded?: LocalizedText;
 }

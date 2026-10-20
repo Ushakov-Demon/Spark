@@ -25,9 +25,11 @@ describe('ready-made experiments', () => {
 
   it.each(PRESETS.map((p) => [p.id, p] as const))('%s ends as expected in the model', (_id, p) => {
     const first: ProtocolStep = { kind: 'operation', action: p.params.action, ...(p.params.target === undefined ? {} : { target: p.params.target }), ...(p.params.heater ? { heater: p.params.heater } : {}), ...(p.params.cooler ? { cooler: p.params.cooler } : {}), ...(p.params.supply ? { supply: p.params.supply } : {}), ...(p.params.duration === undefined ? {} : { duration: p.params.duration }) };
-    const out = runProtocol({ base: p.params, steps: [first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
-    expect(out[0]!.status?.kind, `${p.id}: first step`).toBe(p.expect);
-    for (const o of out.slice(1)) {
+    const out = runProtocol({ base: p.params, steps: [...(p.setup ?? []), first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const firstOp = out.findIndex((o) => o.step.kind === 'operation');
+    for (const o of out.slice(0, firstOp)) expect(o.entry?.ok, `${p.id}: setup`).toBe(true);
+    expect(out[firstOp]!.status?.kind, `${p.id}: first step`).toBe(p.expect);
+    for (const o of out.slice(firstOp + 1)) {
       if (o.step.kind === 'add' || o.step.kind === 'weigh') expect(o.entry?.ok, `${p.id}: ${o.step.kind}`).toBe(true);
       else expect(o.status?.kind, `${p.id}: plan step`).toBe('reached');
     }
@@ -51,7 +53,7 @@ describe('choices of the ready-made experiments', () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const c of p.choices!) expect(c.label.uk.length && c.label.en.length).toBeTruthy();
     const first: ProtocolStep = { kind: 'operation', action: p.params.action, ...(p.params.target === undefined ? {} : { target: p.params.target }), ...(p.params.heater ? { heater: p.params.heater } : {}), ...(p.params.cooler ? { cooler: p.params.cooler } : {}), ...(p.params.supply ? { supply: p.params.supply } : {}), ...(p.params.duration === undefined ? {} : { duration: p.params.duration }) };
-    const out = runProtocol({ base: p.params, steps: [first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const out = runProtocol({ base: p.params, steps: [...(p.setup ?? []), first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     const a = PRESET_ANSWERS[p.id]!({ steps, simulation });
     expect(ids, `${p.id}: ${a.correct}`).toContain(a.correct);
