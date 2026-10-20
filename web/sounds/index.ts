@@ -133,6 +133,18 @@ export function setVoice(v: VoiceId): void {
   hush();
 }
 
+/** The line being burbled now: faded out when the next one starts. */
+let speaking: GainNode | null = null;
+function quiet(a: AudioContext): void {
+  if (!speaking) return;
+  const g = speaking;
+  speaking = null;
+  g.gain.cancelScheduledValues(a.currentTime);
+  g.gain.setValueAtTime(g.gain.value, a.currentTime);
+  g.gain.linearRampToValueAtTime(0, a.currentTime + 0.04);
+  window.setTimeout(() => g.disconnect(), 120);
+}
+
 /** Half a second of white noise, made once: breath for a hoarse voice. */
 let breathBuf: AudioBuffer | null = null;
 function breathBuffer(a: AudioContext): AudioBuffer {
@@ -188,6 +200,8 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
   const a = audio();
   if (!a) return 0;
   const vc = VOICES[v];
+  // One line at a time: a new one cuts the one still playing (two at once sound like double speed).
+  quiet(a);
   const words = text.split(/\s+/).filter(Boolean);
   const count = Math.min(Math.floor(1.6 / vc.step), Math.max(3, words.reduce((n, w) => n + (w.length > 6 ? 2 : 1), 0)));
   const question = /\?\s*$/.test(text);
@@ -195,6 +209,7 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
   const out = a.createGain();
   out.gain.value = vc.volume;
   out.connect(a.destination);
+  speaking = out;
   let t = a.currentTime + 0.03;
   const start = t;
   for (let i = 0; i < count; i++) {

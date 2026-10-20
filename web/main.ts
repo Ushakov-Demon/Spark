@@ -1171,8 +1171,9 @@ function splash(id: SubstanceId, mass: number, frozen: boolean) {
   window.setTimeout(() => plop(size), 430);
 }
 
-/** The Professor's last line: a new one is spoken. */
+/** The Professor's last line: a new one is spoken (after a short pause, in case it changes again). */
 let lastSaid = '';
+let sayTimer = 0;
 
 /** "New experiment": the board is wiped with a sponge, then all is set up again from the start. */
 const renewButton = () => `<button type="button" class="renew" data-renew="1">${t().renew}</button>`;
@@ -1431,8 +1432,13 @@ function render() {
   const view = sceneView();
   scene.render(view);
   // A new line of the Professor: he burbles it (the same line again stays quiet).
-  if (view.professor.says !== lastSaid) hush();
-  if (view.professor.says && view.professor.says !== lastSaid && !scene.reading) scene.talk(babble(view.professor.says, currentVoice(), locale));
+  // Lines that change several times in a moment (the board filling up): only the last one is spoken.
+  if (view.professor.says !== lastSaid) {
+    hush();
+    window.clearTimeout(sayTimer);
+    const line = view.professor.says;
+    if (line && !scene.reading) sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), 140);
+  }
   lastSaid = view.professor.says;
   if (!renderGuide()) {
     const q = quizNow();
