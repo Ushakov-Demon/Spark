@@ -155,3 +155,15 @@ export const SUBSTANCE_CATEGORIES: readonly { readonly id: SubstanceItem['catego
   { id: 'solid.metal', name: { uk: 'Метали й сплави', en: 'Metals and alloys' } },
   { id: 'solid.material', name: { uk: 'Інші тверді тіла', en: 'Other solids' } },
 ];
+
+/**
+ * Families of the shelf, as the experimenter looks for things: liquids, solutions,
+ * salts and minerals, metals, other solids. Each groups some categories.
+ */
+export const SUBSTANCE_FAMILIES: readonly { readonly id: string; readonly name: { uk: string; en: string }; readonly categories: readonly SubstanceItem['category'][] }[] = [
+  { id: 'liquids', name: { uk: 'Рідини', en: 'Liquids' }, categories: ['liquid.water', 'liquid.alcohol', 'liquid.acid', 'liquid.oil'] },
+  { id: 'solutions', name: { uk: 'Розчини', en: 'Solutions' }, categories: ['liquid.solution'] },
+  { id: 'salts', name: { uk: 'Солі й мінерали', en: 'Salts and minerals' }, categories: ['solid.salt'] },
+  { id: 'metals', name: { uk: 'Метали й сплави', en: 'Metals and alloys' }, categories: ['solid.metal'] },
+  { id: 'solids', name: { uk: 'Інші тверді тіла', en: 'Other solids' }, categories: ['solid.material'] },
+];

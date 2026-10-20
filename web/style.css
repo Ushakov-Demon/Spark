@@ -661,3 +661,6 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .add-grid .hang-buttons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
 .add-grid .hang-buttons button { flex: 1 1 140px; }
 .scene .cyl-foot { fill: rgba(210,232,255,0.5); stroke: #8fb8dd; stroke-width: 2; }
+
+#add.flash { animation: add-flash 1.4s ease-out; }
+@keyframes add-flash { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }

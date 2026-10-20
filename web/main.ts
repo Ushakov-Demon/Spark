@@ -84,12 +84,12 @@ import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
 import { cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, electrolysisGases, isSupply } from '../src/domains/electrical/index.js';
 import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
 import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
-import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
+import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { createScene, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './icons.js';
-import { bottleSvg } from './pictures.js';
+import { blockSvg, bottleSvg } from './pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
 import { referenceHtml, type RefTarget } from './reference.js';
@@ -732,6 +732,27 @@ let addGrams = 30;
 let addTemp = -18;
 let addError = '';
 
+/** Pick what to add, with sensible amounts: a metal block from boiling water, a small wooden block, a pinch of salt… */
+function chooseAdd(id: SubstanceId) {
+  addSub = id;
+  const sub = SUBSTANCES[id];
+  if (!canFreezeHere(sub)) addFrozen = false;
+  addTemp = sub.category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
+  addGrams = sub.category === 'solid.metal' ? 100 : sub.category === 'solid.material' ? 10 : sub.category === 'solid.salt' ? 10 : 30;
+}
+/** A solid picked on the shelf: get it ready in the "add" panel and show the panel. */
+function prepareAdd(id: SubstanceId) {
+  chooseAdd(id);
+  addFrozen = false;
+  buildAdd();
+  const box = $<HTMLDetailsElement>('#add');
+  box.open = true;
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  box.classList.remove('flash');
+  void box.offsetWidth;
+  box.classList.add('flash');
+}
+
 /** Can it be frozen within the temperatures the page offers (down to −30 °C)? Ethanol (−114 °C) cannot. */
 const canFreezeHere = (s: SubstanceItem) => s.freezing !== undefined && s.freezing.point.value > -30;
 
@@ -783,18 +804,13 @@ function buildAdd() {
   // Only what the engine can really put into these contents (a dry run of the add command).
   const addable = new Set(addableTo(session.state, commands).map((x) => x.id));
   if (!addable.has(addSub)) addSub = ([...addable][0] as SubstanceId | undefined) ?? addSub;
-  for (const c of SUBSTANCE_CATEGORIES) {
-    const g = el('optgroup', { label: tr(c.name, locale) });
-    for (const x of Object.values(SUBSTANCES).filter((y) => y.category === c.id && addable.has(y.id))) g.append(el('option', { value: x.id, selected: x.id === addSub }, tr(x.name, locale)));
+  for (const f of SUBSTANCE_FAMILIES) {
+    const g = el('optgroup', { label: tr(f.name, locale) });
+    for (const x of Object.values(SUBSTANCES).filter((y) => f.categories.includes(y.category) && addable.has(y.id))) g.append(el('option', { value: x.id, selected: x.id === addSub }, tr(x.name, locale)));
     if (g.children.length) sel.append(g);
   }
   sel.onchange = () => {
-    addSub = sel.value as SubstanceId;
-    if (!canFreezeHere(SUBSTANCES[addSub])) addFrozen = false;
-    // A metal block comes out of boiling water; other portions at room temperature (or from the freezer).
-    addTemp = SUBSTANCES[addSub].category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
-    if (SUBSTANCES[addSub].category === 'solid.metal') addGrams = 100;
-    if (SUBSTANCES[addSub].category === 'solid.material') addGrams = 10;
+    chooseAdd(sel.value as SubstanceId);
     buildAdd();
   };
   const state = el('div', { className: 'chips' });
@@ -1635,21 +1651,34 @@ function buildShelf() {
     u.substance,
     tr(sub.name, locale),
     ...cardGroups(
-      SUBSTANCE_CATEGORIES.filter((c) => c.id.startsWith('liquid.')).map((c) => ({
-        label: tr(c.name, locale),
+      // Everything in the catalog, by family. A liquid is poured into the vessel as the sample (before
+      // the start, and only what the chosen action can do something with); a solid — a block, salt —
+      // is put into the liquid or hung on the dynamometer: picking it gets it ready in the "add" panel.
+      SUBSTANCE_FAMILIES.map((f) => ({
+        label: tr(f.name, locale),
         cards: Object.values(SUBSTANCES)
-          .filter((x) => x.category === c.id && accepted.has(x.id) && matches(x.name))
-          .filter(() => !started)
+          .filter((x) => f.categories.includes(x.category) && matches(x.name))
+          .filter((x) => (x.category.startsWith('liquid.') ? !started && accepted.has(x.id) : true))
           .map((x) =>
-            card({
-              name: x.name,
-              pic: bottleSvg(liquidKindOf(x), formulaOf(x)),
-              ref: `substance:${x.id}`,
-              note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
-              ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
-              selected: x.id === params.substance,
-              onPick: () => pick({ ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x) }, rebuild),
-            }),
+            x.category.startsWith('liquid.')
+              ? card({
+                  name: x.name,
+                  pic: bottleSvg(liquidKindOf(x), formulaOf(x)),
+                  ref: `substance:${x.id}`,
+                  note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
+                  ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
+                  selected: x.id === params.substance,
+                  onPick: () => pick({ ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x) }, rebuild),
+                })
+              : card({
+                  name: x.name,
+                  pic: x.category === 'solid.salt' ? bottleSvg('salt', formulaOf(x), true) : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x)),
+                  ref: `substance:${x.id}`,
+                  note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${x.category === 'solid.salt' ? u.dissolves : u.putIn}`,
+                  ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),
+                  selected: x.id === addSub && $<HTMLDetailsElement>('#add').open,
+                  onPick: () => prepareAdd(x.id as SubstanceId),
+                }),
           ),
       })),
       [

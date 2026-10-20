@@ -25,3 +25,15 @@ export function bottleSvg(kind: LiquidKind, formula: string, solid = false): str
     <path d="M26 30c-4 3-6 8-6 14" class="shine"/>
   </svg>`;
 }
+
+/** A solid body for the shelf: a block of its colour with a highlight, its formula or symbol on a tag. */
+export function blockSvg(color: string, label: string): string {
+  const tag = label.length > 7 ? label.slice(0, 7) : label;
+  return `<svg class="thumb" viewBox="0 0 80 96" aria-hidden="true">
+    <path d="M14 46l26-12 26 12-26 12z" style="fill:${color};filter:brightness(1.15)" class="block-top"/>
+    <path d="M14 46v26l26 12V58z" style="fill:${color};filter:brightness(0.9)" class="block-side"/>
+    <path d="M66 46v26L40 84V58z" style="fill:${color};filter:brightness(0.75)" class="block-side"/>
+    <path d="M20 47l18 -8" class="shine"/>
+    ${tag ? `<rect x="22" y="12" width="36" height="14" rx="3" class="label"/><text x="40" y="22" class="label-text">${tag}</text>` : ''}
+  </svg>`;
+}
