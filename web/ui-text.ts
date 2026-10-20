@@ -79,6 +79,7 @@ export interface UiText {
     tap: readonly string[];
     coffee: readonly string[];
   };
+  byTheWay: { say: string; loading: string; more: string; close: string; title: string };
   reference: string;
   lockedDuringExperiment: string;
   presetsButton: string;
@@ -285,6 +286,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       tap: ['Тік-так…', 'Наука чекає!'],
       coffee: ['Так… час на каву.', 'Ммм… Що за наука без кави?', 'До речі, каву варять у турці — спробуй закип’ятити в ній воду!'],
     },
+    byTheWay: { say: 'До речі!.. Згадав одну історію. Ось, почитай.', loading: 'Шукаю газету…', more: '📰 Ще одну', close: 'Закрити', title: 'Газета Професора' },
     reference: 'Довідка',
     lockedDuringExperiment: 'Під час досліду речовину й посуд не міняють — щоб почати інший дослід, натисни «Спочатку».',
     presetsButton: 'Досліди за класами',
@@ -489,6 +491,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       tap: ['Tick-tock…', 'Science is waiting!'],
       coffee: ['Right… coffee time.', 'Mmm… What is science without coffee?', 'By the way, coffee is made in a cezve — try boiling water in one!'],
     },
+    byTheWay: { say: 'By the way!.. I remembered something. Here, read this.', loading: 'Looking for a newspaper…', more: '📰 One more', close: 'Close', title: 'The Professor’s newspaper' },
     reference: 'Reference',
     lockedDuringExperiment: 'The substance and the vessel stay during an experiment — press “Start over” for another one.',
     presetsButton: 'Experiments by grade',

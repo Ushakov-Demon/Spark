@@ -87,6 +87,7 @@ import { createScene, liquidColor, vesselPreview, type DeviceKind, type LiquidKi
 import { icon } from './icons.js';
 import { bottleSvg } from './pictures.js';
 import { createConsole } from './console.js';
+import { fetchArticle, paperHtml } from './newspaper.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -395,13 +396,13 @@ function sendPower(v: number) {
 // ?idle=3 in the address: start after 3 s (to see the scenes without waiting).
 const IDLE_START = (Number(new URLSearchParams(location.search).get('idle')) || 25) * 1000;
 interface IdleAct {
-  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap' | 'coffee';
+  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap' | 'coffee' | 'bytheway';
   readonly mood: SceneView['professor']['mood'];
   readonly length: number; // ms, matches the CSS animation
   readonly lines: readonly string[];
   readonly started: number;
 }
-const ACTS: readonly { name: IdleAct['name']; mood: IdleAct['mood']; length: number }[] = [
+const ACTS: readonly { name: Exclude<IdleAct['name'], 'bytheway'>; mood: IdleAct['mood']; length: number }[] = [
   { name: 'pace', mood: 'thinking', length: 9000 },
   { name: 'glasses', mood: 'thinking', length: 9000 },
   { name: 'yawn', mood: 'neutral', length: 6000 },
@@ -415,6 +416,53 @@ let nextActAt = lastActivity + IDLE_START;
 let idleAct: IdleAct | null = null;
 let lastActName = '';
 let idleLine = -1;
+/** Idle scenes since the last newspaper: after two, the Professor remembers something to read. */
+let boredScenes = 0;
+
+// ---------- "By the way!.." — the Professor's newspaper ----------
+const paper = $<HTMLDialogElement>('#paper');
+let paperToken = 0;
+/** He exclaims, the newspaper opens when its article has come (from Wikipedia, or a story offline). */
+function byTheWay(now = performance.now()) {
+  const u = t();
+  boredScenes = 0;
+  idleAct = { name: 'bytheway', mood: 'surprised', length: 2600, lines: [u.byTheWay.say], started: now };
+  idleLine = 0;
+  const token = ++paperToken;
+  const shown = Date.now();
+  void fetchArticle(locale, LAB_KNOWLEDGE.laws, level).then((a) => {
+    if (token !== paperToken) return;
+    // Let the "By the way!" be read first.
+    window.setTimeout(() => {
+      if (token !== paperToken) return;
+      showPaper(paperHtml(a, locale));
+    }, Math.max(0, 1500 - (Date.now() - shown)));
+  });
+  render();
+}
+function showPaper(html: string) {
+  const u = t().byTheWay;
+  paper.setAttribute('aria-label', u.title);
+  $('#paper-body').innerHTML = html;
+  $('#paper-more').textContent = u.more;
+  $('#paper-close').textContent = u.close;
+  if (!paper.open) paper.showModal();
+}
+$('#paper-close').onclick = () => paper.close();
+$('#paper-more').onclick = () => {
+  $('#paper-body').innerHTML = `<p class="paper-loading">${t().byTheWay.loading}</p>`;
+  const token = ++paperToken;
+  void fetchArticle(locale, LAB_KNOWLEDGE.laws, level).then((a) => token === paperToken && paper.open && showPaper(paperHtml(a, locale)));
+};
+// A click on the dimmed page around the paper closes it.
+paper.addEventListener('click', (e) => {
+  if (e.target === paper) paper.close();
+});
+paper.addEventListener('close', () => {
+  paperToken++;
+  lastActivity = performance.now();
+  nextActAt = lastActivity + IDLE_START;
+});
 const touched = () => {
   lastActivity = performance.now();
   nextActAt = lastActivity + IDLE_START;
@@ -444,7 +492,12 @@ function idleTick(now: number): boolean {
     return true;
   }
   // New scenes only when nothing is going on.
-  if (running || document.hidden || now < nextActAt || scene.reading) return false;
+  if (running || document.hidden || now < nextActAt || scene.reading || paper.open) return false;
+  if (boredScenes >= 2) {
+    byTheWay(now);
+    return true;
+  }
+  boredScenes++;
   const pool = ACTS.filter((a) => a.name !== lastActName);
   const a = pool[Math.floor(Math.random() * pool.length)]!;
   lastActName = a.name;
@@ -2053,6 +2106,7 @@ const labConsole = createConsole({
   },
   startPreset: (p) => startPreset(p),
   scenes: () => ACTS.map((a) => a.name),
+  news: () => byTheWay(),
   weigh: (sc) => weighNow(sc ?? scale),
   save: (name) => {
     const note = saveRecording(name);

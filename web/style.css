@@ -618,3 +618,26 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .main.side-folded .fold-strip { display: block; }
 @media (max-width: 1280px) { .main.side-folded .fold-strip { writing-mode: horizontal-tb; } }
 @media (max-width: 900px) { .app.shelf-folded { grid-template-columns: 1fr; } .shelf.folded > .fold-strip { writing-mode: horizontal-tb; width: 100%; } }
+
+/* ---------- "By the way!.." — an old newspaper page ---------- */
+.paper-dialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 40px); padding: 0; border: 0; background: transparent; overflow: visible; }
+.paper-dialog::backdrop { background: rgba(20, 16, 10, 0.55); }
+.paper-dialog[open] { animation: paper-in 0.45s ease-out; }
+@keyframes paper-in { from { opacity: 0; transform: rotate(-3deg) scale(0.92); } to { opacity: 1; transform: rotate(-0.6deg) scale(1); } }
+.paper { box-sizing: border-box; max-height: calc(100vh - 110px); overflow: auto; padding: 22px 26px 16px; color: #2b2418; background: radial-gradient(circle at 20% 15%, rgba(255,255,255,0.35), transparent 40%), radial-gradient(circle at 80% 90%, rgba(120,90,40,0.18), transparent 45%), #efe4c8; border: 1px solid #c9b88f; box-shadow: 0 18px 40px rgba(0,0,0,0.45), inset 0 0 60px rgba(120,90,40,0.25); font-family: Georgia, 'Times New Roman', serif; transform: rotate(-0.6deg); }
+.paper-mast { border-bottom: 3px double #2b2418; margin-bottom: 10px; text-align: center; }
+.paper-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid #2b2418; padding-bottom: 4px; }
+.paper-name { margin: 6px 0 6px; font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 700; letter-spacing: 0.04em; font-variant: small-caps; }
+.paper-kicker { margin: 4px 0 2px; font-size: 0.82rem; font-style: italic; text-align: center; }
+.paper-title { margin: 0 0 10px; font-size: clamp(1.3rem, 3.6vw, 1.9rem); line-height: 1.15; text-align: center; text-transform: uppercase; letter-spacing: 0.02em; }
+.paper-body { column-count: 2; column-gap: 22px; column-rule: 1px solid rgba(43,36,24,0.35); font-size: 0.98rem; line-height: 1.45; text-align: justify; hyphens: auto; }
+.paper-body p { margin: 0 0 0.6em; }
+.paper-body > p:first-of-type::first-letter { float: left; font-size: 3.1em; line-height: 0.85; padding: 4px 6px 0 0; font-weight: 700; }
+.paper-fig { margin: 0 0 8px; break-inside: avoid; }
+.paper-fig img { width: 100%; max-height: 220px; object-fit: cover; filter: grayscale(1) sepia(0.55) contrast(1.05); border: 1px solid #8c7a55; }
+.paper-source { margin-top: 10px; padding-top: 6px; border-top: 1px solid rgba(43,36,24,0.4); font-size: 0.74rem; font-style: italic; }
+.paper-source a { color: inherit; }
+.paper-loading { text-align: center; font-style: italic; padding: 30px; }
+.paper-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 12px; }
+@media (max-width: 600px) { .paper { padding: 16px 14px 12px; } .paper-body { column-count: 1; } }
+@media (prefers-reduced-motion: reduce) { .paper-dialog[open] { animation: none; } }

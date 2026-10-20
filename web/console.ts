@@ -39,6 +39,8 @@ export interface ConsoleApi {
   startPreset(p: Preset): void;
   /** The Professor's idle scenes by name, and playing one now. */
   scenes(): readonly string[];
+  /** "By the way!..": the Professor's newspaper at once. */
+  news(): void;
   /** Weigh the vessel on these scales (none — the ones chosen on the page); returns what the Professor says. */
   weigh(scale?: ScaleId): string;
   /** Save the experiment so far as a recording; returns a note. */
@@ -458,6 +460,15 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         const n = quantities(args)[0];
         if (!n) return [T(this.usage)];
         return api.replay(n.value) ? ['▶'] : notFound(String(n.value));
+      },
+    },
+    {
+      names: ['news', 'paper', 'btw', 'кстати', 'дореч', 'газета'],
+      usage: L('news', 'news'),
+      about: L('«До речі!..» — газета Професора: цікавий факт або історична довідка', '"By the way!.." — the Professor\'s newspaper: a curious fact or a page of history'),
+      run() {
+        api.news();
+        return [uk() ? '📰 Професор шукає газету…' : '📰 The Professor is looking for a newspaper…'];
       },
     },
     {
