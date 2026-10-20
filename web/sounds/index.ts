@@ -109,9 +109,13 @@ interface Voice {
   readonly quantize?: readonly number[]; // pitch ratios (a robot sings notes)
   /** Hoarseness, 0…1: breath noise through the vowels and an uneven rattle of the voice. */
   readonly rasp?: number;
+  /** Formants moved up (×): "helium" — sound is faster in it, so the mouth's resonances rise too. */
+  readonly formantShift?: number;
+  /** How clearly the vowels come out, 0…1: lower — broader formants and more of the plain voice. */
+  readonly clarity?: number;
 }
 const VOICES: Readonly<Record<Exclude<VoiceId, 'none' | 'speech'>, Voice>> = {
-  mumble: { wave: 'glottal', low: 150, high: 195, step: 0.13, human: true, glide: 0.97, volume: 0.55, rasp: 0.55 },
+  mumble: { wave: 'glottal', low: 330, high: 430, step: 0.12, human: true, glide: 0.97, volume: 0.5, rasp: 0.45, formantShift: 1.5, clarity: 0.45 },
   gruff: { wave: 'glottal', low: 88, high: 112, step: 0.15, human: true, glide: 0.96, volume: 0.65, rasp: 0.35 },
   chirp: { wave: 'triangle', low: 420, high: 720, step: 0.062, human: false, glide: 1.25, volume: 0.2 },
   robot: { wave: 'square', low: 220, high: 220, step: 0.075, human: false, glide: 1, volume: 0.09, quantize: [1, 1.26, 1.5, 2] },
@@ -256,15 +260,28 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
     if (vc.human) {
       // Three formant filters give the syllable its vowel; the mouth moves a little from one vowel to the next.
       const [f1, f2, f3] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
-      for (const [fq, q, gain] of [[f1, 6, 1], [f2, 9, 0.6], [f3, 12, 0.25]] as const) {
+      const shift = vc.formantShift ?? 1;
+      const clarity = vc.clarity ?? 1;
+      for (const [fq0, q, gain] of [[f1, 6, 1], [f2, 9, 0.6], [f3, 12, 0.25]] as const) {
+        const fq = fq0 * shift;
         const bp = a.createBiquadFilter();
         bp.type = 'bandpass';
         bp.frequency.setValueAtTime(fq * 0.9, t);
         bp.frequency.linearRampToValueAtTime(fq, t + len * 0.3);
-        bp.Q.value = q;
+        // Less clear: broader formants — the vowels blur into a murmur.
+        bp.Q.value = q * (0.3 + 0.7 * clarity);
         const fg = a.createGain();
         fg.gain.value = gain * 3;
         g.connect(bp).connect(fg).connect(out);
+      }
+      if ((vc.clarity ?? 1) < 1) {
+        // A little of the voice past the "mouth": muffles the vowels further.
+        const dry = a.createBiquadFilter();
+        dry.type = 'lowpass';
+        dry.frequency.value = 1800 * (vc.formantShift ?? 1);
+        const dg = a.createGain();
+        dg.gain.value = 0.5 * (1 - (vc.clarity ?? 1));
+        g.connect(dry).connect(dg).connect(out);
       }
     } else g.connect(out);
     o.start(t);
