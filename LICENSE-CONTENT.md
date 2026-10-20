@@ -13,8 +13,12 @@ as long as you credit «Spark contributors» and share your adaptations under th
 license of its source; every value lists its source in the code
 (`src/knowledge/sources.ts`). We use only facts and short attributed quotes.
 
+**Fonts.** The blackboard is written in [Caveat](https://github.com/googlefonts/caveat)
+(© 2014 The Caveat Project Authors), under the [SIL Open Font License 1.1](web/fonts/caveat/OFL.txt);
+the files in `web/fonts/caveat/` are unmodified subsets from Google Fonts.
+
 ---
 
 **Код** — ліцензія MIT. **Навчальні тексти Spark** — CC BY-SA 4.0: можна вільно
 поширювати й адаптувати (зокрема перекладати) з зазначенням авторства «Spark contributors»
-і за тією самою ліцензією. **Дані з інших джерел** зберігають ліцензію джерела.
+і за тією самою ліцензією. **Дані з інших джерел** зберігають ліцензію джерела. **Шрифт дошки** Caveat — SIL Open Font License 1.1.

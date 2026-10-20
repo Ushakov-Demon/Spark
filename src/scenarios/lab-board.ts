@@ -1,14 +1,14 @@
 import type { SystemState } from '../core/state.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
-import { bodyMass, type ThermalBody } from '../domains/thermal/entities.js';
+import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';
 import { sig } from '../explain/format.js';
 import type { Locale } from '../knowledge/i18n.js';
 import { COMPONENTS } from '../components/index.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { formatReading, weigh } from './weighing.js';
 import type { ScaleId } from '../equipment/scales.js';
-import { sampleOf, type LabParams } from './thermal-lab.js';
+import { SAMPLE_ID, sampleOf, type LabParams } from './thermal-lab.js';
 
 /**
  * The blackboard over the lab table: the formulas of what is going on in the
@@ -110,6 +110,25 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     out.push({ id: 'ohm', title: uk ? 'струм у рідині' : 'current in the liquid', formula: 'I = U/R', ...(finished ? { numbers: `${n(I * R, 3)} ${uk ? 'В' : 'V'} / ${n(R, 3)} ${uk ? 'Ом' : 'Ω'} ≈ ${amps}` } : {}) });
     if (t > 0) out.push({ id: 'joule', title: uk ? 'теплота від струму' : 'heat from the current', formula: 'Q = I²·R·t', ...(finished ? { numbers: `${n(I, 3)}² · ${n(R, 3)} · ${n(t, 3)} ≈ ${kJ(I * I * R * t)}` } : {}) });
   }
+  // The heater: how much it gave (E = P·t) and how much of it the substance got (efficiency) — at the end of the step.
+  const first = states[0]!;
+  const last = states[states.length - 1]!;
+  const t = last.time - first.time;
+  const heaters = Object.values(last.entities).filter((e) => isHeater(e) || isBurner(e));
+  const E = heaters.reduce((sum, e) => {
+    const e0 = first.entities[e.id];
+    return e0 && (isHeater(e0) || isBurner(e0)) ? sum + (e as typeof e0).state.energyDelivered - e0.state.energyDelivered : sum;
+  }, 0);
+  if (finished && E > 1 && t > 0) {
+    out.push({ id: 'heater', title: uk ? 'нагрівач віддав' : 'the heater gave', formula: 'E = P·t', numbers: `${n(E / t)} · ${n(t)} ≈ ${kJ(E)}` });
+    // What the substance itself got: the change of the energy stored in the sample and what was added to it.
+    const useful = Object.values(last.entities).reduce((sum, e) => {
+      const e0 = first.entities[e.id];
+      return isThermalBody(e) && e0 && isThermalBody(e0) && (e.id === SAMPLE_ID || e.id.startsWith(`${SAMPLE_ID}+`)) ? sum + bodyEnergy(e) - bodyEnergy(e0) : sum;
+    }, 0);
+    if (useful > 0) out.push({ id: 'efficiency', title: uk ? 'ККД: скільки дісталося речовині' : 'efficiency: what the substance got', formula: 'η = Q/E', numbers: `${kJ(useful)} / ${kJ(E)} ≈ ${Math.round((useful / E) * 100)} %` });
+  }
+
   // The latest weighing: what the scales show is the vessel plus what is in it.
   const scale = weighed[weighed.length - 1];
   if (scale) {

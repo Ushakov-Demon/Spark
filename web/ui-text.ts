@@ -31,6 +31,8 @@ export interface UiText {
     less(d: string): string;
   };
   boardEmpty: string;
+  chartShow: string;
+  chartHide: string;
   boardFront: string;
   boardBack: string;
   quiz: {
@@ -159,6 +161,8 @@ export interface UiText {
   continueStep: string;
   sideFold: string;
   sideUnfold: string;
+  shelfFold: string;
+  shelfUnfold: string;
   offerTitle: string;
   offerStop: string;
   offerAfterStall: string;
@@ -234,6 +238,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       less: (d) => `Це на ${d} менше, ніж минулого разу. Куди поділися ці грами?`,
     },
     boardEmpty: 'Тут з’являтимуться формули досліду',
+    chartShow: '📈 Показати графік',
+    chartHide: '📈 Сховати графік',
     boardFront: '👀 Подивитися на дошку',
     boardBack: '↩ Повернутися до досліду',
     quiz: {
@@ -359,8 +365,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     experiment: '2. Дослід',
     start: '▶ Старт',
     continueStep: '▶ Продовжити',
-    sideFold: 'Згорнути ⇥',
+    sideFold: 'Згорнути',
     sideUnfold: '⇤ Протокол',
+    shelfFold: 'Згорнути',
+    shelfUnfold: 'Установка ⇥',
     offerTitle: 'Так мети не досягти. Можна зупинити дослід або змінити умови:',
     offerStop: '⏹ Зупинити дослід',
     offerAfterStall: 'Що допоможе (перевірено розрахунком):',
@@ -434,6 +442,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       less: (d) => `That is ${d} less than last time. Where did those grams go?`,
     },
     boardEmpty: 'The formulas of the experiment will appear here',
+    chartShow: '📈 Show the chart',
+    chartHide: '📈 Hide the chart',
     boardFront: '👀 Look at the board',
     boardBack: '↩ Back to the experiment',
     quiz: {
@@ -559,8 +569,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     experiment: '2. Experiment',
     start: '▶ Start',
     continueStep: '▶ Continue',
-    sideFold: 'Fold ⇥',
+    sideFold: 'Fold',
     sideUnfold: '⇤ Protocol',
+    shelfFold: 'Fold',
+    shelfUnfold: 'Setup ⇥',
     offerTitle: 'The goal cannot be reached like this. Stop the experiment or change the conditions:',
     offerStop: '⏹ Stop the experiment',
     offerAfterStall: 'What helps (checked by calculation):',

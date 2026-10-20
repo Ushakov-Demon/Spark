@@ -63,18 +63,16 @@ button.wide { width: 100%; }
 .main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; min-width: 0; align-items: start; }
 .side { display: grid; gap: 8px; min-width: 0; align-content: start; }
 .side-body { display: grid; gap: 14px; min-width: 0; }
-.side-toggle { justify-self: end; min-height: 32px; padding: 4px 10px; font-size: 0.85rem; color: var(--muted); }
 /* Folded: the kitchen and the report take the whole width, a slim button stays. */
 .main.side-folded { grid-template-columns: minmax(0, 1fr) auto; }
 .main.side-folded .side-body { display: none; }
-.main.side-folded .side-toggle { writing-mode: vertical-rl; padding: 12px 6px; }
 .offer { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: var(--warn-bg); border-left: 5px solid var(--source); }
 .offer p { margin: 0 0 8px; padding: 0; background: none; }
 .offer .fixes { display: flex; flex-wrap: wrap; gap: 6px; }
 .offer .fixes button { min-height: 34px; padding: 4px 12px; border-radius: 999px; }
 .offer .fixes .stop { border-color: var(--source); color: var(--source); }
 .report-card { grid-column: 1 / -1; }
-@media (max-width: 1280px) { .main, .main.side-folded { grid-template-columns: minmax(0, 1fr); } .side-body { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; } .main.side-folded .side-toggle { writing-mode: horizontal-tb; } }
+@media (max-width: 1280px) { .main, .main.side-folded { grid-template-columns: minmax(0, 1fr); } .side-body { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; }  }
 @media (max-width: 900px) { .app { grid-template-columns: 1fr; } .main { order: -1; } }
 
 /* ---------- shelf (left) ---------- */
@@ -232,7 +230,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 
 /* ---------- scene (the table with the experiment) ---------- */
 .scene { position: relative; margin: 4px 0 10px; border-radius: 14px; overflow: hidden; background: var(--scene-wall); }
-.scene-svg { width: 100%; aspect-ratio: 640 / 308; max-height: 360px; display: block; }
+.scene-svg { width: 100%; aspect-ratio: 640 / 408; max-height: 480px; display: block; }
 /* The Professor stands at the left edge of the table, in front of it. */
 .scene-prof { position: absolute; left: 1%; bottom: 2%; width: 15%; max-width: 120px; min-width: 64px; }
 .scene-prof .prof svg { display: block; width: 100%; height: auto; }
@@ -551,13 +549,16 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 }
 
 /* ---------- the blackboard ---------- */
+/* Caveat (SIL OFL 1.1, see web/fonts/caveat/OFL.txt): handwriting with Cyrillic, so the board looks like chalk everywhere. */
+@font-face { font-family: 'Spark Chalk'; font-style: normal; font-weight: 500; font-display: swap; src: url('./fonts/caveat/caveat-cyrillic.woff2') format('woff2'); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: 'Spark Chalk'; font-style: normal; font-weight: 500; font-display: swap; src: url('./fonts/caveat/caveat-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 /* The wall of the drawing is see-through: the stage paints it, the board hangs on it, the table and devices are in front. */
 .scene-stage { position: relative; background: var(--scene-wall); }
 .scene .wall { fill: transparent; }
 .scene-svg { position: relative; z-index: 1; pointer-events: none; } /* the drawing takes no clicks: the board's button behind it stays reachable */
 .scene-prof { z-index: 2; }
 /* From near the top down to the table top (86 % of the drawing), almost the whole width. */
-.scene .board { position: absolute; z-index: 0; left: 2.5%; right: 2.5%; top: 3%; bottom: 14%; overflow: hidden; box-sizing: border-box; padding: 10px 16px 12px; border: 8px solid #8a5a2e; border-bottom-width: 10px; border-radius: 6px; background: radial-gradient(ellipse at 30% 20%, #3b5a47, #2a4434); color: #f1efe4; box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 0 28px rgba(0,0,0,0.35); font-family: 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', cursive; font-size: clamp(12px, 1.7vw, 21px); line-height: 1.25; transition: box-shadow 0.25s, transform 0.25s; }
+.scene .board { position: absolute; z-index: 0; left: 2.5%; right: 2.5%; top: 3%; bottom: 10.3%; overflow: hidden; box-sizing: border-box; padding: 10px 16px 12px; border: 8px solid #8a5a2e; border-bottom-width: 10px; border-radius: 6px; background: radial-gradient(ellipse at 30% 20%, #3b5a47, #2a4434); color: #f1efe4; box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 0 28px rgba(0,0,0,0.35); font-family: 'Spark Chalk', 'Segoe Print', 'Bradley Hand', cursive; font-weight: 500; font-size: clamp(14px, 2vw, 25px); line-height: 1.25; transition: box-shadow 0.25s, transform 0.25s; }
 .scene .board[hidden] { display: none; }
 /* Reading the board: what is on the table shrinks and moves to the table's right end; the Professor steps back and turns side-on. */
 .scene-svg .items { transform-origin: 632px 318px; transition: transform 0.7s ease-in-out; }
@@ -565,7 +566,12 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .scene-prof { transition: transform 0.7s ease-in-out; }
 .scene .prof-side { display: none; }
 .scene.reading .scene-prof { transform: translateX(-5%); animation: none !important; }
-.scene.reading .scene-prof * { animation: none !important; }
+/* Reading: the head goes slowly along the lines, a nod when new numbers are written. */
+.prof-side .p-read { transform-box: view-box; transform-origin: 110px 152px; animation: read-scan 8s ease-in-out infinite; }
+.scene-prof.nod .prof-side .p-read { animation: read-nod 0.5s ease-in-out 3; }
+@keyframes read-scan { 0%, 100% { transform: rotate(-4deg); } 40% { transform: rotate(3deg); } 55% { transform: rotate(3deg); } 70% { transform: rotate(-4deg) translateY(1px); } }
+@keyframes read-nod { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(7deg); } }
+@media (prefers-reduced-motion: reduce) { .prof-side .p-read, .scene-prof.nod .prof-side .p-read { animation: none; } }
 .scene.reading .prof { display: none; }
 .scene.reading .prof-side { display: block; }
 .scene .prof-side svg { display: block; width: 100%; height: auto; }
@@ -587,3 +593,28 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 @media (max-width: 700px) {
   .scene .board { border-width: 5px; padding: 6px 8px; font-size: 11px; }
 }
+
+/* ---------- the chart folds while the experiment runs ---------- */
+.chart-head { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.chart-toggle { min-height: 30px; padding: 3px 12px; font-size: 0.85rem; }
+.chart-box.collapsed .chart-body { display: none; }
+.look-down { font-size: 1.6rem; line-height: 1; opacity: 0; pointer-events: none; }
+.look-down.on { animation: look-down 0.8s ease-in-out 6; }
+@keyframes look-down { 0%, 100% { opacity: 0; transform: translateY(-4px); } 50% { opacity: 1; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .look-down.on { animation: none; opacity: 1; } }
+
+/* ---------- folding side panels: the button sits in the panel's own header row ---------- */
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panel-head .shelf-title, .panel-head .side-title { margin-bottom: 0; }
+.panel-head { margin-bottom: 8px; }
+.fold-btn { min-height: 0; width: 28px; height: 28px; padding: 0; font-size: 1rem; line-height: 1; color: var(--muted); border-radius: 8px; flex: none; }
+/* Folded: a narrow strip, flush with the other columns' tops, that opens the panel again. */
+.fold-strip { display: none; writing-mode: vertical-rl; padding: 14px 8px; min-height: 0; font-weight: 600; color: var(--muted); }
+.app.shelf-folded { grid-template-columns: auto minmax(0, 1fr); }
+.shelf.folded { padding: 0; border: 0; background: none; overflow: visible; }
+.shelf.folded > :not(.fold-strip) { display: none; }
+.shelf.folded > .fold-strip { display: block; border: 1px solid var(--line); background: var(--card); border-radius: 14px; }
+.main.side-folded .side-body { display: none; }
+.main.side-folded .fold-strip { display: block; }
+@media (max-width: 1280px) { .main.side-folded .fold-strip { writing-mode: horizontal-tb; } }
+@media (max-width: 900px) { .app.shelf-folded { grid-template-columns: 1fr; } .shelf.folded > .fold-strip { writing-mode: horizontal-tb; width: 100%; } }

@@ -9,7 +9,7 @@ import { getSource } from '../knowledge/sources.js';
 import type { FormulaSpec, LawSpec } from '../knowledge/types.js';
 import { h, list, note, p, type Block } from './blocks.js';
 import type { DataUsage, DomainKnowledge } from './domain.js';
-import { formatQuantity, formatTime, sig, unitLabel, type ExplainContext } from './format.js';
+import { formatDuration, formatQuantity, formatTime, sig, unitLabel, type ExplainContext } from './format.js';
 import { REPORT_MESSAGES } from './messages.js';
 
 export interface ReportInput<C extends Command> {
@@ -57,7 +57,8 @@ export function buildReport<C extends Command>(input: ReportInput<C>): Block[] {
     out.push(h(2, m.yourActions));
     const items: string[] = [];
     for (const e of result.log) {
-      let line = `${formatTime(e.time, locale)} — ${domain.describeCommand(e, ctx, result.final)}`;
+      // Time from the start of this run (a protocol step starts later in the model's clock).
+      let line = `${formatDuration(e.time - result.initial.time, locale)} — ${domain.describeCommand(e, ctx, result.final)}`;
       if (!e.ok) line += ` — ${m.failed(t(e.error))}`;
       else if (atLeast(level, 'school')) {
         for (const r of e.trace) if (r.kind === 'formula') line += `\n    ${describeApplication(r, formulas, result.final, ctx)}`;

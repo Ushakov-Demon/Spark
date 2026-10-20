@@ -475,9 +475,28 @@ function frame(now: number) {
   requestAnimationFrame(frame);
 }
 
+// ---------- the chart: folded while the experiment runs, unfolded with a pointing hand at the end ----------
+let chartOpen = false;
+function setChart(open: boolean, point = false) {
+  chartOpen = open;
+  const box = $('#chart-box');
+  box.classList.toggle('collapsed', !open);
+  $('#chart-toggle').setAttribute('aria-expanded', String(open));
+  $('#chart-toggle').textContent = open ? t().chartHide : t().chartShow;
+  // "Look down: the results are here" — a blinking hand for a few seconds.
+  const hand = $('#look-down');
+  hand.classList.remove('on');
+  if (point) {
+    void hand.offsetWidth;
+    hand.classList.add('on');
+  }
+}
+$('#chart-toggle').onclick = () => setChart(!chartOpen);
+
 function stop() {
   running = false;
   finished = true;
+  setChart(true, true);
   if (replaying) window.setTimeout(nextReplayStep, 1500);
   // The end of a run is news: give the reader time before the Professor gets bored.
   lastActivity = performance.now();
@@ -1027,6 +1046,7 @@ function render() {
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
+  $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
   scaleSel.setAttribute('aria-label', u.weigh.scales);
   const scaleOpts = SCALE_IDS.map((id) => `<option value="${id}"${id === scale ? ' selected' : ''}>${tr(SCALES[id].name, locale)}</option>`).join('');
@@ -1664,6 +1684,7 @@ function nextPlanStep() {
     $<HTMLSelectElement>('#speed').value = String(speed);
     stepChanged();
     running = true;
+    setChart(false);
     lastFrame = 0;
     break;
   }
@@ -1797,6 +1818,7 @@ function beginReplayStep(rec: Recording, index: number, from: SystemState | null
   session = step.session;
   replaying = { rec, index, step };
   running = true;
+  setChart(false);
   lastFrame = 0;
   buildShelf();
   render();
@@ -1931,17 +1953,35 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ---------- side panel: fold / unfold ----------
+// Both side panels fold from a button in their own header row into a narrow strip that opens them again.
 function renderSide() {
+  const u = t();
   const folded = store.get('side') === 'folded';
   $('.main').classList.toggle('side-folded', folded);
   const b = $<HTMLButtonElement>('#side-toggle');
-  b.textContent = folded ? t().sideUnfold : t().sideFold;
+  b.textContent = '⇥';
+  b.title = u.sideFold;
+  b.setAttribute('aria-label', u.sideFold);
   b.setAttribute('aria-expanded', String(!folded));
+  $('#side-open').textContent = u.sideUnfold;
+  const shelfFolded = store.get('shelf') === 'folded';
+  $('.app').classList.toggle('shelf-folded', shelfFolded);
+  $('#shelf').classList.toggle('folded', shelfFolded);
+  const f = $<HTMLButtonElement>('#shelf-fold');
+  f.textContent = '⇤';
+  f.title = u.shelfFold;
+  f.setAttribute('aria-label', u.shelfFold);
+  f.setAttribute('aria-expanded', String(!shelfFolded));
+  $('#shelf-open').textContent = u.shelfUnfold;
 }
-$('#side-toggle').onclick = () => {
-  store.set('side', store.get('side') === 'folded' ? 'open' : 'folded');
+const flip = (key: string) => () => {
+  store.set(key, store.get(key) === 'folded' ? 'open' : 'folded');
   renderSide();
 };
+$('#side-toggle').onclick = flip('side');
+$('#side-open').onclick = flip('side');
+$('#shelf-fold').onclick = flip('shelf');
+$('#shelf-open').onclick = flip('shelf');
 
 // ---------- console ----------
 const labConsole = createConsole({
@@ -2121,10 +2161,12 @@ function toggleStart() {
     closeStep();
     beginStep(configureStep(session.state, params));
     running = true;
+    setChart(false);
     lastFrame = 0;
     return render();
   }
   running = !running;
+  if (running) setChart(false);
   lastFrame = 0;
   render();
 }
@@ -2161,6 +2203,7 @@ buildPresets();
 buildShelf();
 buildExpect();
 newSession();
+setChart(false);
 renderRecords();
 buildAdd();
 requestAnimationFrame(frame);

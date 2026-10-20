@@ -164,7 +164,8 @@ export function professorSideSvg(mood: Mood = 'neutral', size = 220): string {
   <g class="p-hand-r"><path d="M106,184 q-12,26 -26,50" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M106,184 q-12,26 -26,50" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="78" cy="238" r="8" fill="${skin}"/></g>
   <!-- neck and the head tipped up to the board -->
   <rect x="102" y="146" width="16" height="22" fill="${skin}"/>
-  <g class="p-head" transform="rotate(-10 108 120)">
+  <!-- the outer group is what moves while he reads (scans the lines, nods); the inner keeps the tilt -->
+  <g class="p-read"><g class="p-head" transform="rotate(-10 108 120)">
     <ellipse cx="108" cy="102" rx="36" ry="46" fill="${skin}"/>
     <path d="M139,99 q26,14 2,25" fill="${skin}" stroke="#c9906a" stroke-width="3" stroke-linejoin="round"/>
     <ellipse cx="100" cy="106" rx="7" ry="10" fill="${skin}" stroke="#d9a982" stroke-width="2"/>
@@ -176,6 +177,6 @@ export function professorSideSvg(mood: Mood = 'neutral', size = 220): string {
     <path d="M120,123 q12,-9 26,-2 q-12,9 -26,2 z" fill="${hair}"/>
     <path d="M129,133 q5,2 9,-1" stroke="#7a3b2e" stroke-width="3" fill="none" stroke-linecap="round"/>
     ${sooty ? '' : '<ellipse cx="126" cy="90" rx="4" ry="2" fill="#fff" opacity="0.85" transform="rotate(-25 126 90)"/>'}
-  </g>
+  </g></g>
 </svg>`;
 }

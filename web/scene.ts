@@ -72,6 +72,12 @@ const NS = 'http://www.w3.org/2000/svg';
 const W = 640;
 const H = 360;
 const TABLE = 318;
+/**
+ * Top of the visible drawing. The stage is tall — a high wall for the blackboard — and the things on
+ * the table keep their size: more wall, not a bigger kitchen. (The page's CSS sizes follow: aspect
+ * 640 / 408, the table line at 89.7 % of the height.)
+ */
+const VIEW_TOP = -48;
 const CX = 330;
 
 const METAL: Readonly<Record<string, { fill: string; edge: string }>> = {
@@ -299,7 +305,7 @@ export function createScene(): Scene {
   root.className = 'scene';
   // The blackboard hangs on the wall behind everything on the table (the drawing's wall is see-through);
   // a button pulls it to the front to read it all, and back.
-  root.innerHTML = `<div class="scene-stage"><button type="button" class="board-toggle"></button><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 52 ${W} ${H - 52}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
+  root.innerHTML = `<div class="scene-stage"><button type="button" class="board-toggle"></button><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 ${VIEW_TOP} ${W} ${H - VIEW_TOP}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
   const svg = root.querySelector('svg')!;
   const says = root.querySelector<HTMLElement>('#sc-says')!;
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
@@ -479,7 +485,15 @@ export function createScene(): Scene {
         // The numbers come when the formula has done its work — written in chalk too.
         const num = l.numbers ? `= ${l.numbers}` : '';
         if (nu!.textContent !== num) {
-          if (num && !nu!.textContent) nu!.classList.add('chalk-in');
+          if (num && !nu!.textContent) {
+            nu!.classList.add('chalk-in');
+            // The Professor, reading the board, nods at the numbers.
+            if (root.classList.contains('reading')) {
+              profBox.classList.remove('nod');
+              void profBox.offsetWidth;
+              profBox.classList.add('nod');
+            }
+          }
           nu!.textContent = num;
         }
       });

@@ -23,7 +23,8 @@
 
     <div class="app">
       <aside id="shelf" class="shelf" aria-labelledby="setup-title">
-        <h2 id="setup-title" class="shelf-title"></h2>
+        <div class="panel-head"><h2 id="setup-title" class="shelf-title"></h2><button id="shelf-fold" class="fold-btn" type="button" aria-controls="shelf"></button></div>
+        <button id="shelf-open" class="fold-strip" type="button" aria-controls="shelf"></button>
         <input id="search" class="search" type="search" autocomplete="off" />
         <div id="setup"></div>
       </aside>
@@ -56,18 +57,23 @@
               <div id="r-power" class="readout"></div>
             </div>
           </div>
-          <div id="chart" class="chart-wrap"></div>
-          <div id="legend" class="legend"></div>
+          <div id="chart-box" class="chart-box collapsed">
+            <div class="chart-head"><button id="chart-toggle" class="chart-toggle" type="button" aria-controls="chart-body" aria-expanded="false"></button><span id="look-down" class="look-down" aria-hidden="true">👇</span></div>
+            <div id="chart-body" class="chart-body">
+              <div id="chart" class="chart-wrap"></div>
+              <div id="legend" class="legend"></div>
+            </div>
+          </div>
           <div id="messages" class="messages"></div>
           <div id="offer"></div>
           <div id="energy" class="energy"></div>
         </section>
 
         <aside id="side" class="side">
-          <button id="side-toggle" class="side-toggle" type="button" aria-controls="side-body" aria-expanded="true"></button>
+          <button id="side-open" class="fold-strip card" type="button" aria-controls="side-body"></button>
           <div id="side-body" class="side-body">
           <section class="card">
-            <h3 id="protocol-title" class="side-title"></h3>
+            <div class="panel-head"><h3 id="protocol-title" class="side-title"></h3><button id="side-toggle" class="fold-btn" type="button" aria-controls="side-body" aria-expanded="true"></button></div>
             <ol id="protocol" class="protocol"></ol>
             <p id="protocol-hint" class="muted small"></p>
             <div id="records" class="records"></div>
