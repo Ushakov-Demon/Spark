@@ -1223,7 +1223,7 @@ function render() {
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
-  $<HTMLButtonElement>('#level').textContent = u.measure.level;
+  $<HTMLButtonElement>('#read-level').textContent = u.measure.level;
   newsButton.textContent = u.byTheWay.button;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
@@ -2483,7 +2483,7 @@ function toggleStart() {
 }
 $('#reset').onclick = () => resetExperiment();
 $('#weigh').onclick = () => void weighNow(scale);
-$('#level').onclick = () => void measureNow({ type: 'lab.read-level', vessel: params.vessel, size: params.size });
+$('#read-level').onclick = () => void measureNow({ type: 'lab.read-level', vessel: params.vessel, size: params.size });
 $<HTMLSelectElement>('#scale').onchange = (e) => {
   scale = (e.target as HTMLSelectElement).value as ScaleId;
   store.set('scale', scale);
