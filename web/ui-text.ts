@@ -19,6 +19,15 @@ export interface UiText {
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
+  presetsButton: string;
+  presetsTitle: string;
+  grade(n: number): string;
+  forEveryone: string;
+  presetStart: string;
+  inProgramme: string;
+  planNext(step: string): string;
+  planAdd(what: string, mass: string): string;
+  planDone: string;
   prof: {
     idle: string;
     impossible: string;
@@ -154,6 +163,15 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
+    presetsButton: 'Досліди за класами',
+    presetsTitle: 'Готові досліди',
+    grade: (n) => `${n} клас`,
+    forEveryone: 'Для всіх',
+    presetStart: '▶ Почати',
+    inProgramme: 'У програмі',
+    planNext: (s) => `Далі за планом: ${s}`,
+    planAdd: (w, m) => `досипати ${m} ${w}`,
+    planDone: 'План виконано! Можна експериментувати далі самостійно.',
     prof: {
       idle: 'Обери, що робимо, і тисни «Старт». Або спершу спробуй передбачити результат!',
       impossible: 'Хм… Так мети не досягти. Глянь підказку під графіком — я дещо придумав.',
@@ -287,6 +305,15 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
+    presetsButton: 'Experiments by grade',
+    presetsTitle: 'Ready-made experiments',
+    grade: (n) => `Grade ${n}`,
+    forEveryone: 'For everyone',
+    presetStart: '▶ Start',
+    inProgramme: 'In the programme',
+    planNext: (s) => `Next in the plan: ${s}`,
+    planAdd: (w, m) => `add ${m} of ${w}`,
+    planDone: 'Plan complete! Go on experimenting on your own.',
     prof: {
       idle: 'Choose what we do and press “Start”. Or try to predict the result first!',
       impossible: 'Hmm… The goal can’t be reached like this. See the hint under the chart — I have an idea.',

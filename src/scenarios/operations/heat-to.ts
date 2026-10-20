@@ -4,6 +4,7 @@ import type { Operation } from './types.js';
 export const HEAT_TO: Operation = {
   id: 'heat-to',
   label: { uk: 'Нагріти до…', en: 'Heat to…' },
+  icon: 'heat-up',
   uses: 'heater',
   direction: 'heating',
   target: { default: 60, min: -30, max: 300 },

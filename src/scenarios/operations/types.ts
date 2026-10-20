@@ -40,6 +40,8 @@ export interface Operation {
   readonly id: string;
   /** Button text: "Закип’ятити". */
   readonly label: LocalizedText;
+  /** Icon name for the button (see web/icons.ts). */
+  readonly icon?: string;
   /** A heater, a cooler, either (melting also works in a warm room), or a power supply. */
   readonly uses: 'heater' | 'cooler' | 'either' | 'supply';
   /** Which way the temperature goes — for "the highest/lowest it can reach" and progress banners. */

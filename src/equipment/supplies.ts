@@ -7,7 +7,7 @@ import type { ElectrodesSpec, SupplyItem } from './types.js';
 const LIST = {
   'battery-9v': {
     id: 'battery-9v',
-    look: 'supply',
+    look: 'battery',
     kind: 'supply',
     category: 'device.power.household',
     name: { uk: 'Батарейка 9 В («крона»)', en: '9 V battery' },
@@ -38,7 +38,7 @@ const LIST = {
   },
   'usb-charger': {
     id: 'usb-charger',
-    look: 'supply',
+    look: 'usb',
     kind: 'supply',
     category: 'device.power.household',
     name: { uk: 'USB-заряджання (5 В)', en: 'USB charger (5 V)' },

@@ -4,6 +4,7 @@ import type { Operation } from './types.js';
 export const COOL_TO: Operation = {
   id: 'cool-to',
   label: { uk: 'Охолодити до…', en: 'Cool to…' },
+  icon: 'cool-down',
   uses: 'cooler',
   direction: 'cooling',
   target: { default: 5, min: -30, max: 300 },

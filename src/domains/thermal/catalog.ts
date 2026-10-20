@@ -103,6 +103,7 @@ export const THERMAL_FORMULAS: readonly FormulaSpec[] = [
     },
     curriculum: [
       { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Розрахунок кількості теплоти при пароутворенні /конденсації.' },
+      { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Плавлення. Тверднення Розрахунок кількості теплоти при плавленні/твердненні тіл.' },
       { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Розрахунок кількості теплоти при плавленні/твердненні тіл.' },
       { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Розрахунок кількості теплоти при пароутворенні/конденсації.' },
     ],

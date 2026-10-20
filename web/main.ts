@@ -41,6 +41,11 @@ import {
   type LabParams,
   type LabStatus,
   configureStep,
+  PRESETS,
+  PRESET_GRADES,
+  stepParams,
+  type Preset,
+  type ProtocolStep,
   LAB_KNOWLEDGE,
   type LabCommand,
   sampleOf,
@@ -58,7 +63,8 @@ import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplie
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
-import { createScene, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
+import { createScene, liquidColor, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
+import { icon } from './icons.js';
 import { UI } from './ui-text.js';
 
 // ---------- persistent preferences (per browser, optional) ----------
@@ -151,6 +157,9 @@ let stepAdds: Added[] = [];
 let pendingAdds: Added[] = [];
 /** The current step's record, frozen at the moment it finished. */
 let doneRecord: Omit<StepRecord, 'adds'> | null = null;
+/** A ready-made experiment in progress: its question and the steps still to do. */
+let preset: Preset | null = null;
+let plan: ProtocolStep[] = [];
 /** Changes that would make the goal reachable (offered with buttons). */
 let fixes: LabFix[] | 'computing' = [];
 let warnings: readonly LocalizedText[] = [];
@@ -538,6 +547,13 @@ const scene = createScene();
 let lastBoiled = 0;
 let boilingNow = false;
 
+/** How a shelf liquid looks: by the family of its component (a recipe of water + salt looks like brine). */
+function liquidKindOf(sub: SubstanceItem): LiquidKind {
+  if (sub.recipe) return 'salt';
+  const group = sub.component ? COMPONENTS[sub.component as keyof typeof COMPONENTS]?.group : undefined;
+  return group === 'water' || group === 'salt' || group === 'alcohol' || group === 'acid' || group === 'oil' ? group : 'other';
+}
+
 /** What the scene should show right now: read from the state, nothing computed here. */
 function sceneView(): SceneView {
   const u = t();
@@ -545,8 +561,9 @@ function sceneView(): SceneView {
   const sub = substance();
   const sup = Object.values(session.state.entities).find(isSupply);
   const heaterEntity = session.state.entities[entityId(LAB_HEATER_ID)];
+  // Any power source is drawn as a supply with electrodes; its own look is for the shelf icon.
   const device: DeviceKind = (params.supply
-    ? SUPPLIES[params.supply.id].look
+    ? 'supply'
     : params.heater
       ? HEATERS[params.heater.id].look
       : params.cooler
@@ -562,13 +579,19 @@ function sceneView(): SceneView {
   else boilingNow = false;
   lastBoiled = boiled;
   const electrolysis = b ? cellReading(b).electrolysis : undefined;
-  const group = sub.component ? COMPONENTS[sub.component as keyof typeof COMPONENTS]?.group : 'salt';
-  const liquid: LiquidKind = sub.recipe || mix ? 'salt' : group === 'water' ? 'water' : group === 'alcohol' ? 'alcohol' : group === 'acid' ? 'acid' : group === 'oil' ? 'oil' : 'other';
+  const liquid: LiquidKind = mix ? 'salt' : liquidKindOf(sub);
   const s = b?.state.solidFraction ?? 0;
   const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: electrolysis?.anode.component === 'chlorine' } : undefined;
   // The Professor: what is going on, in one line.
   const st = doneRecord?.status;
-  const professor: SceneView['professor'] = st
+  const nextLabel = plan.length ? planLabel(plan) : '';
+  const professor: SceneView['professor'] = preset && !running && stepElapsed() === 0 && !history.length && !st
+    ? { mood: 'thinking', says: tr(preset.question, locale) }
+    : st && nextLabel
+    ? { mood: st.kind === 'reached' ? 'happy' : 'thinking', says: u.planNext(nextLabel) }
+    : st && preset && !plan.length && st.kind === 'reached' && history.length
+    ? { mood: 'happy', says: u.planDone }
+    : st
     ? st.kind === 'reached'
       ? { mood: 'happy', says: u.prof.reached }
       : st.kind === 'decomposes'
@@ -717,6 +740,8 @@ function render() {
     Array.isArray(fixes) ? fixes.map((f, i) => `<button type="button" data-fix="${i}">${tr(f.label, locale)}</button>`).join('') : `<span class="muted small">${u.computing}</span>`;
   if (headline) {
     msg.push(renderHtml(headline()));
+    // A ready-made experiment goes on along its plan.
+    if (plan.length) offer.push(`<div class="offer plan"><p>${u.planNext(planLabel(plan))}</p><div class="fixes"><button type="button" class="primary" data-plan="1">▶ ${planLabel(plan)}</button></div></div>`);
     // The goal was not reached: offer what would reach it — the experiment continues from where it is.
     if (fixes === 'computing' || fixes.length) offer.push(`<div class="offer"><p>${doneRecord?.status.kind === 'stalls' ? u.offerAfterStall : u.offerAfterImpossible}</p><div class="fixes">${fixButtons()}</div></div>`);
   } else {
@@ -809,6 +834,7 @@ function renderProtocol() {
   });
   const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
   rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}<span class="outcome">${now}</span>${adds(pendingAdds)}</li>`);
+  for (const s of plan) rows.push(`<li class="planned"><span class="what">${s.kind === 'add' ? u.added(tr(SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })) : tr(OPERATIONS[s.action].label, locale)}</span></li>`);
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
   $('#protocol-hint').textContent = finished ? u.protocolNext : u.protocolHint;
@@ -826,6 +852,9 @@ function buildShelf() {
   root.innerHTML = '';
   $<HTMLInputElement>('#search').placeholder = locale === 'uk' ? 'Пошук: речовина, посуд, прилад…' : 'Search: substance, vessel, device…';
   const rebuild = () => {
+    // Another substance or vessel: a new, free experiment (a ready-made one's plan no longer fits).
+    preset = null;
+    plan = [];
     buildShelf();
     newSession();
   };
@@ -864,11 +893,15 @@ function buildShelf() {
     return el('label', { className: 'mini-field' }, el('span', {}, label), i);
   };
   /** One selectable card; `detail` is shown under the selected one. */
-  const item = (o: { name: LocalizedText; note?: string | undefined; badge?: string; selected: boolean; problem?: string; onPick: () => void; detail?: () => HTMLElement[] }) => {
+  const item = (o: { name: LocalizedText; note?: string | undefined; badge?: string; selected: boolean; problem?: string; onPick: () => void; detail?: () => HTMLElement[]; look?: string | undefined; swatch?: string }) => {
     const li = el('li');
     const b = el('button', { type: 'button', className: `item${o.selected ? ' selected' : ''}${o.problem ? ' incompatible' : ''}` });
     b.setAttribute('aria-pressed', String(o.selected));
-    b.append(el('span', { className: 'item-name' }, tr(o.name, locale), ...(o.badge ? [el('span', { className: 'badge' }, o.badge)] : [])));
+    // A picture first: a drop of the liquid or the device's icon.
+    const pic = el('span', { className: 'item-pic' });
+    if (o.swatch) pic.append(el('span', { className: 'swatch', style: `--c:${o.swatch}` } as Record<string, unknown>));
+    else pic.innerHTML = icon(o.look);
+    b.append(pic, el('span', { className: 'item-name' }, tr(o.name, locale), ...(o.badge ? [el('span', { className: 'badge' }, o.badge)] : [])));
     if (o.problem || o.note) b.append(el('span', { className: 'item-note' }, o.problem ? `⚠ ${o.problem}` : o.note!));
     if (o.problem) b.title = o.problem;
     b.onclick = o.onPick;
@@ -897,7 +930,8 @@ function buildShelf() {
   // 1. What we do.
   const actionBox = el('div', { className: 'actions' });
   for (const a of LAB_ACTIONS) {
-    const b = el('button', { type: 'button', className: `chip${a === params.action ? ' selected' : ''}` }, tr(OPERATIONS[a].label, locale));
+    const b = el('button', { type: 'button', className: `tile${a === params.action ? ' selected' : ''}` });
+    b.innerHTML = `${icon(OPERATIONS[a].icon, 'ic big')}<span>${tr(OPERATIONS[a].label, locale)}</span>`;
     b.setAttribute('aria-pressed', String(a === params.action));
     b.onclick = () => setAction(a);
     actionBox.append(b);
@@ -927,6 +961,7 @@ function buildShelf() {
           .map((x) =>
             item({
               name: x.name,
+              swatch: liquidColor(liquidKindOf(x)),
               note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
               ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
               selected: x.id === params.substance,
@@ -959,6 +994,7 @@ function buildShelf() {
           .map((x) =>
             item({
               name: x.name,
+              look: x.look,
               note: `${x.spec.materials.map((m) => u.materials[m] ?? m).join(', ')} · ${volume(x.spec.sizes[0]!)}–${volume(x.spec.sizes.at(-1)!)}`,
               selected: x.id === params.vessel,
               onPick: () => {
@@ -1006,7 +1042,7 @@ function buildShelf() {
   // 4. Heater or cooler, depending on the action.
   const uses = actionUses(params.action);
   const roomItem = (selected: boolean, onPick: () => void) =>
-    !matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? null : item({ name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, note: `${params.roomTemp} °C`, selected, onPick });
+    !matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? null : item({ name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, look: 'room', note: `${params.roomTemp} °C`, selected, onPick });
   if (uses === 'supply') {
     const groups = childrenOf('device.power').map((c) => ({
       label: tr(c.name, locale),
@@ -1015,6 +1051,7 @@ function buildShelf() {
         .map((x) =>
           item({
             name: x.name,
+            look: x.look,
             note: `${x.spec.voltage.min === x.spec.voltage.max ? `${x.spec.voltage.max} ${u.volts}` : `${x.spec.voltage.min}–${x.spec.voltage.max} ${u.volts}`} · ≤ ${sig(x.spec.currentLimit.value, 3, locale)} ${u.amps}`,
             ...([x.spec.currentLimit, x.spec.internalResistance].some((d) => d?.verification === 'estimate') ? { badge: u.estimateBadge } : {}),
             selected: x.id === params.supply?.id,
@@ -1037,6 +1074,7 @@ function buildShelf() {
           const compat = canHeat(x, v, params.material, params.size);
           return item({
             name: x.name,
+            look: x.look,
             note: x.spec.ratings.map((r) => formatQuantity(r, 'W', { locale, level: 'school' })).join(' / '),
             ...(x.spec.ratingData.verification === 'estimate' ? { badge: u.estimateBadge } : {}),
             ...(compat.ok ? {} : { problem: tr(compat.reason, locale) }),
@@ -1080,6 +1118,7 @@ function buildShelf() {
           .map((x) =>
             item({
               name: x.name,
+              look: x.look,
               note: x.spec.setpoint.max > x.spec.setpoint.min ? `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C` : `${x.spec.setpoint.default} °C`,
               selected: x.id === params.cooler?.id,
               onPick: () => {
@@ -1149,6 +1188,7 @@ function buildHeader() {
     buildShelf();
     buildExpect();
     buildAdd();
+    buildPresets();
     render();
     if ($('#report').innerHTML) explain();
   };
@@ -1177,6 +1217,103 @@ function explain() {
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+/** "Add salt, then pass a current": the next steps of the plan up to and including an operation. */
+function planLabel(steps: readonly ProtocolStep[]): string {
+  const u = t();
+  const parts: string[] = [];
+  for (const s of steps) {
+    if (s.kind === 'add') {
+      const what = SUBSTANCES[s.substance];
+      parts.push(u.planAdd(tr(what.genitive ?? what.name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })));
+      continue;
+    }
+    parts.push(tr(OPERATIONS[s.action].label, locale).replace('…', '').toLowerCase());
+    break;
+  }
+  return parts.join(locale === 'uk' ? ', потім ' : ', then ');
+}
+
+/** Do the next plan steps: additions at once, then the operation runs as a new protocol step. */
+function nextPlanStep() {
+  while (plan.length) {
+    const s = plan.shift()!;
+    if (s.kind === 'add') {
+      const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: s.substance, mass: s.mass as never, temperature: celsius(s.temperature), ...(s.frozen ? { frozen: true } : {}) });
+      if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: SUBSTANCES[s.substance].name, mass: s.mass });
+      continue;
+    }
+    params = stepParams(params, s);
+    if (params.heater) lastHeater = params.heater;
+    if (params.cooler) lastCooler = params.cooler;
+    if (params.supply) lastSupply = params.supply;
+    speed = OPERATIONS[s.action].speed;
+    $<HTMLSelectElement>('#speed').value = String(speed);
+    stepChanged();
+    running = true;
+    lastFrame = 0;
+    break;
+  }
+  render();
+}
+
+// ---------- ready-made experiments ----------
+let presetGrade: number | null = PRESET_GRADES[0] ?? null;
+function buildPresets() {
+  const u = t();
+  $('#presets-open').innerHTML = `${icon('beaker')}<span>${u.presetsButton}</span>`;
+  $('#presets-title').textContent = u.presetsTitle;
+  const tabs = $('#presets-tabs');
+  tabs.innerHTML = '';
+  for (const g of PRESET_GRADES) {
+    const b = el('button', { type: 'button', className: `chip${g === presetGrade ? ' selected' : ''}` }, g === null ? u.forEveryone : u.grade(g));
+    b.onclick = () => {
+      presetGrade = g;
+      buildPresets();
+    };
+    tabs.append(b);
+  }
+  const list = $('#presets-list');
+  list.innerHTML = '';
+  const formulas = new Map(LAB_KNOWLEDGE.formulas.map((f) => [f.id, f]));
+  let topic = '';
+  for (const p of PRESETS.filter((x) => x.grade === presetGrade)) {
+    if (tr(p.topic, locale) !== topic) {
+      topic = tr(p.topic, locale);
+      list.append(el('h3', { className: 'presets-topic' }, topic));
+    }
+    // Where it is in the programme: the formulas' curriculum quotes (newest programme first).
+    const quotes = [...new Set(p.formulas.flatMap((id) => (formulas.get(id)?.curriculum ?? []).filter((c) => c.program === 'ua-nus-2023-holovko' && (!p.quoteHas || c.quote.includes(p.quoteHas))).map((c) => c.quote)))];
+    const card = el('article', { className: 'preset' });
+    card.innerHTML = `<div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic big')}</div>
+      <div><h4>${tr(p.title, locale)}</h4><p>${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small">${u.inProgramme} (${u.grade(p.grade)}): «${quotes.join(' ')}»</p>` : ''}</div>`;
+    const go = el('button', { type: 'button', className: 'primary' }, u.presetStart);
+    go.onclick = () => startPreset(p);
+    card.append(go);
+    list.append(card);
+  }
+}
+
+function startPreset(p: Preset) {
+  preset = p;
+  plan = [...(p.plan ?? [])];
+  params = p.params;
+  if (params.heater) lastHeater = params.heater;
+  if (params.cooler) lastCooler = params.cooler;
+  if (params.supply) lastSupply = params.supply;
+  expectKind = p.predict ? 'prediction' : 'none';
+  speed = OPERATIONS[p.params.action].speed;
+  $<HTMLSelectElement>('#speed').value = String(speed);
+  $<HTMLDialogElement>('#presets').close();
+  buildShelf();
+  buildExpect();
+  newSession();
+}
+$('#presets-open').onclick = () => {
+  buildPresets();
+  $<HTMLDialogElement>('#presets').showModal();
+};
+$('#presets-close').onclick = () => $<HTMLDialogElement>('#presets').close();
+
 /** Apply an offered change: the vessel moves on with its contents and the experiment goes on at once. */
 function applyFix(f: LabFix) {
   params = f.params;
@@ -1204,9 +1341,10 @@ $('#side-toggle').onclick = () => {
 
 // ---------- wiring ----------
 $('#offer').addEventListener('click', (e) => {
-  const target = (e.target as HTMLElement).closest<HTMLElement>('[data-fix], [data-stop]');
+  const target = (e.target as HTMLElement).closest<HTMLElement>('[data-fix], [data-stop], [data-plan]');
   if (!target) return;
   if (target.dataset['stop']) return stop();
+  if (target.dataset['plan']) return nextPlanStep();
   const f = Array.isArray(fixes) ? fixes[Number(target.dataset['fix'])] : undefined;
   if (f) applyFix(f);
 });
@@ -1226,7 +1364,11 @@ $('#start').onclick = () => {
   lastFrame = 0;
   render();
 };
-$('#reset').onclick = () => newSession();
+$('#reset').onclick = () => {
+  // Starting over: a ready-made experiment starts over too, with its whole plan.
+  if (preset) plan = [...(preset.plan ?? [])];
+  newSession();
+};
 $('#switch').onclick = () => {
   if (!params.heater) return;
   const v = params.heater.knob > 0 ? 0 : 1;
@@ -1245,6 +1387,7 @@ $<HTMLInputElement>('#search').addEventListener('input', (e) => {
 });
 
 buildHeader();
+buildPresets();
 buildShelf();
 buildExpect();
 newSession();

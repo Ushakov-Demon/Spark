@@ -7,6 +7,7 @@ import type { Operation } from './types.js';
 export const EVAPORATE: Operation = {
   id: 'evaporate',
   label: { uk: 'Випарити досуха', en: 'Boil dry' },
+  icon: 'evaporate',
   uses: 'heater',
   direction: 'heating',
   speed: 60,

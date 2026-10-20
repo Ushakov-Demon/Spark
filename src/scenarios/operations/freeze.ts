@@ -6,6 +6,7 @@ import type { Operation } from './types.js';
 export const FREEZE: Operation = {
   id: 'freeze',
   label: { uk: 'Заморозити', en: 'Freeze' },
+  icon: 'freeze',
   uses: 'cooler',
   direction: 'cooling',
   speed: 600,

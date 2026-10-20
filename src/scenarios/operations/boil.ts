@@ -5,6 +5,7 @@ import type { Operation } from './types.js';
 export const BOIL: Operation = {
   id: 'boil',
   label: { uk: 'Закип’ятити', en: 'Boil' },
+  icon: 'boil',
   uses: 'heater',
   direction: 'heating',
   speed: 60,

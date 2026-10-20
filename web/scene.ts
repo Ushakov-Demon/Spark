@@ -89,6 +89,9 @@ const LIQUID: Readonly<Record<LiquidKind, string>> = {
   other: 'rgba(200, 210, 220, 0.5)',
 };
 
+/** Colour of a liquid on the drawing (also its swatch on the shelf). */
+export const liquidColor = (kind: LiquidKind): string => LIQUID[kind];
+
 interface VesselGeom {
   /** Outline of the vessel wall. */
   readonly outer: string;

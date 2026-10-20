@@ -14,6 +14,7 @@
         <h1 id="title">Spark</h1>
         <p id="subtitle" class="muted"></p>
       </div>
+      <button id="presets-open" class="presets-open" type="button"></button>
       <div class="prefs">
         <label><span id="lbl-language"></span><select id="language"></select></label>
         <label><span id="lbl-level"></span><select id="level"></select></label>
@@ -80,6 +81,15 @@
         </section>
       </main>
     </div>
+
+    <dialog id="presets" class="presets">
+      <div class="presets-head">
+        <h2 id="presets-title"></h2>
+        <button id="presets-close" type="button" aria-label="×">✕</button>
+      </div>
+      <div id="presets-tabs" class="chips"></div>
+      <div id="presets-list" class="presets-list"></div>
+    </dialog>
 
     <footer><p id="footer" class="muted small"></p></footer>
     <script type="module" src="./main.ts"></script>

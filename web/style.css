@@ -104,8 +104,18 @@ button.wide { width: 100%; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; min-height: 30px; font-size: 0.85rem; background: var(--card); }
 .chip.selected { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; }
-.actions .chip { border-radius: 10px; text-align: left; min-height: 38px; }
+.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px; }
+/* Action tiles: a picture and a word, like cards in a game. */
+.tile { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 74px; padding: 8px 4px; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(180deg, var(--card), var(--bg)); font-size: 0.8rem; line-height: 1.15; text-align: center; transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s; }
+.tile:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); border-color: var(--accent); }
+.tile.selected { background: var(--accent); color: var(--accent-text); border-color: transparent; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35); }
+.ic { width: 20px; height: 20px; flex: none; }
+.ic.big { width: 30px; height: 30px; }
+.item { grid-template-columns: 28px 1fr; column-gap: 8px; align-items: center; }
+.item-pic { grid-row: span 2; display: grid; place-items: center; color: var(--muted); }
+.item.selected .item-pic { color: var(--accent); }
+.item-name, .item-note { grid-column: 2; }
+.swatch { width: 18px; height: 22px; background: var(--c); border: 1.5px solid rgba(0, 0, 0, 0.25); border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; transform: rotate(180deg); }
 .mini-field { display: grid; gap: 3px; font-size: 0.85rem; }
 .mini-field > span { color: var(--muted); }
 .setup-line { margin: -6px 0 0; font-size: 1rem; }
@@ -295,3 +305,30 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .scene .thermo .merc { fill: #e23b3b; transition: y 0.4s, height 0.4s; }
 .scene .thermo-text { font: 700 13px system-ui, sans-serif; fill: var(--text); }
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } }
+
+/* ---------- ready-made experiments ---------- */
+.presets-open { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; border-color: var(--accent); color: var(--accent); font-weight: 600; white-space: nowrap; }
+.presets-open:hover { background: var(--accent); color: var(--accent-text); }
+.presets { width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; background: var(--card); color: var(--text); }
+.presets::backdrop { background: rgba(10, 20, 35, 0.45); }
+.presets-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.presets-head h2 { margin: 0; }
+.presets-list { display: grid; gap: 10px; margin-top: 12px; }
+.presets-topic { margin: 10px 0 0; font-size: 0.95rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.preset { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--card), var(--bg)); }
+.preset h4 { margin: 0 0 4px; font-size: 1rem; }
+.preset p { margin: 0 0 4px; font-size: 0.9rem; }
+.preset-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--bg); color: var(--accent); }
+@media (max-width: 600px) { .preset { grid-template-columns: 36px 1fr; } .preset > button { grid-column: 1 / -1; } }
+.protocol li.planned { opacity: 0.55; border: 1px dashed var(--line); }
+.protocol li.planned::before { background: transparent; border: 1px dashed var(--muted); }
+.offer.plan { background: var(--ok-bg); border-left-color: #22a35a; }
+@media (max-width: 700px) {
+  /* Phones: the title and the menu button on their own lines; the Professor's line sits at the top of the scene. */
+  .brand { flex-basis: 100%; }
+  .presets-open { flex: 1 1 auto; justify-content: center; }
+  .scene-prof { position: static; }
+  .scene-prof .prof { position: absolute; left: 1%; bottom: 2%; width: 17%; min-width: 56px; }
+  .scene .bubble { top: 6px; right: 6px; left: auto; bottom: auto; margin: 0; width: 62%; }
+  .scene .bubble::after { display: none; }
+}

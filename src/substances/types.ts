@@ -20,6 +20,8 @@ export interface SubstanceItem {
   readonly recipe?: string;
   readonly category: SubstanceCategory;
   readonly name: LocalizedText;
+  /** The name after an amount: "7 г кухонної солі". */
+  readonly genitive?: LocalizedText;
   /** Grammatical gender of the name in Ukrainian — verbs in sentences agree with it. */
   readonly gender: 'f' | 'm' | 'n';
   /** Name of the solid form, if it has a special one ("лід"). */

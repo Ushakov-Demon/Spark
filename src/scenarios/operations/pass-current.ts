@@ -18,6 +18,7 @@ const supplyOf = (s: SystemState) => Object.values(s.entities).find(isSupply);
 export const PASS_CURRENT: Operation = {
   id: 'pass-current',
   label: { uk: 'Пропустити струм', en: 'Pass a current' },
+  icon: 'current',
   uses: 'supply',
   direction: 'heating',
   duration: { default: 10, min: 1, max: 600 },

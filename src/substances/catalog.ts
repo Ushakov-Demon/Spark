@@ -15,6 +15,7 @@ import type { SubstanceCategory, SubstanceItem } from './types.js';
 /** The product on the shelf may have its own name: the component is "water", the bottle says "distilled water". */
 interface ShelfName {
   readonly name: LocalizedText;
+  readonly genitive?: LocalizedText;
   readonly gender: Component['gender'];
 }
 
@@ -47,6 +48,7 @@ function fromComponent(c: Component, id: string = c.id, shelfName?: ShelfName): 
     component: c.id,
     category,
     name: shelfName?.name ?? c.name,
+    ...((shelfName?.genitive ?? c.genitive) ? { genitive: (shelfName?.genitive ?? c.genitive)! } : {}),
     gender: shelfName?.gender ?? c.gender,
     ...(solid?.name ? { solidName: solid.name } : {}),
     description: c.description,
@@ -114,7 +116,7 @@ function fromRecipe(r: Recipe): SubstanceItem {
 
 /** What is on the shelf, in UI order: a component id, a recipe id, or a shelf name for a component. */
 const SHELF = [
-  { id: 'water', component: 'water', as: { name: { uk: 'Дистильована вода', en: 'Distilled water' }, gender: 'f' } },
+  { id: 'water', component: 'water', as: { name: { uk: 'Дистильована вода', en: 'Distilled water' }, genitive: { uk: 'дистильованої води', en: 'distilled water' }, gender: 'f' } },
   { id: 'sea-water', recipe: 'sea-water' },
   { id: 'salt-water-10', recipe: 'salt-water-10' },
   { id: 'salt-water-20', recipe: 'salt-water-20' },
@@ -122,7 +124,7 @@ const SHELF = [
   { id: 'glycerol', component: 'glycerol' },
   { id: 'acetic-acid', component: 'acetic-acid' },
   { id: 'sunflower-oil', component: 'sunflower-oil' },
-  { id: 'table-salt', component: 'sodium-chloride', as: { name: { uk: 'Кухонна сіль', en: 'Table salt' }, gender: 'f' } },
+  { id: 'table-salt', component: 'sodium-chloride', as: { name: { uk: 'Кухонна сіль', en: 'Table salt' }, genitive: { uk: 'кухонної солі', en: 'table salt' }, gender: 'f' } },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];
 
 export type SubstanceId = (typeof SHELF)[number]['id'];

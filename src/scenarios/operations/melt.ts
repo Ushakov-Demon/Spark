@@ -5,6 +5,7 @@ import type { Operation } from './types.js';
 export const MELT: Operation = {
   id: 'melt',
   label: { uk: 'Розплавити', en: 'Melt' },
+  icon: 'melt',
   uses: 'either',
   direction: 'heating',
   speed: 600,
