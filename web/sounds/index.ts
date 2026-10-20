@@ -107,10 +107,12 @@ interface Voice {
   readonly glide: number; // pitch change within a syllable (×)
   readonly volume: number;
   readonly quantize?: readonly number[]; // pitch ratios (a robot sings notes)
+  /** Hoarseness, 0…1: breath noise through the vowels and an uneven rattle of the voice. */
+  readonly rasp?: number;
 }
 const VOICES: Readonly<Record<Exclude<VoiceId, 'none' | 'speech'>, Voice>> = {
-  mumble: { wave: 'glottal', low: 135, high: 175, step: 0.13, human: true, glide: 0.97, volume: 0.55 },
-  gruff: { wave: 'glottal', low: 88, high: 112, step: 0.15, human: true, glide: 0.96, volume: 0.65 },
+  mumble: { wave: 'glottal', low: 150, high: 195, step: 0.13, human: true, glide: 0.97, volume: 0.55, rasp: 0.55 },
+  gruff: { wave: 'glottal', low: 88, high: 112, step: 0.15, human: true, glide: 0.96, volume: 0.65, rasp: 0.35 },
   chirp: { wave: 'triangle', low: 420, high: 720, step: 0.062, human: false, glide: 1.25, volume: 0.2 },
   robot: { wave: 'square', low: 220, high: 220, step: 0.075, human: false, glide: 1, volume: 0.09, quantize: [1, 1.26, 1.5, 2] },
   whistle: { wave: 'sine', low: 950, high: 1500, step: 0.1, human: false, glide: 1.12, volume: 0.16 },
@@ -125,6 +127,16 @@ export const currentVoice = (): VoiceId => voice;
 export function setVoice(v: VoiceId): void {
   voice = v;
   hush();
+}
+
+/** Half a second of white noise, made once: breath for a hoarse voice. */
+let breathBuf: AudioBuffer | null = null;
+function breathBuffer(a: AudioContext): AudioBuffer {
+  if (breathBuf) return breathBuf;
+  breathBuf = a.createBuffer(1, Math.ceil(a.sampleRate * 1), a.sampleRate);
+  const d = breathBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.5;
+  return breathBuf;
 }
 
 /** A soft "vocal folds" source: harmonics falling off like a human voice (≈ −12 dB per octave). */
@@ -216,7 +228,31 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
     g.gain.exponentialRampToValueAtTime(1, t + (vc.human ? 0.03 : 0.012));
     g.gain.setValueAtTime(1, t + len * 0.6);
     g.gain.exponentialRampToValueAtTime(0.0001, t + len * 0.95);
-    o.connect(g);
+    if (vc.rasp) {
+      // Hoarse: the voice rattles unevenly (a fast irregular wobble of its loudness)…
+      const rattle = a.createGain();
+      rattle.gain.value = 1;
+      const shake = a.createOscillator();
+      shake.type = 'square';
+      shake.frequency.setValueAtTime(28 + Math.random() * 18, t);
+      shake.frequency.linearRampToValueAtTime(40 + Math.random() * 25, t + len);
+      const depth = a.createGain();
+      depth.gain.value = 0.35 * vc.rasp;
+      shake.connect(depth).connect(rattle.gain);
+      shake.start(t);
+      shake.stop(t + len);
+      o.connect(rattle).connect(g);
+      // …and breath goes through the vowel with it.
+      const breath = a.createBufferSource();
+      breath.buffer = breathBuffer(a);
+      const bg = a.createGain();
+      bg.gain.setValueAtTime(0.0001, t);
+      bg.gain.exponentialRampToValueAtTime(0.9 * vc.rasp, t + 0.04);
+      bg.gain.exponentialRampToValueAtTime(0.0001, t + len * 0.95);
+      breath.connect(bg).connect(g);
+      breath.start(t, Math.random() * 0.5);
+      breath.stop(t + len);
+    } else o.connect(g);
     if (vc.human) {
       // Three formant filters give the syllable its vowel; the mouth moves a little from one vowel to the next.
       const [f1, f2, f3] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
