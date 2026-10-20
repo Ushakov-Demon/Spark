@@ -146,6 +146,7 @@ const VESSEL_LIST = {
         },
       },
       lid: 'none',
+      graduation: { value: 2.5e-05, unit: 'm³', conditions: 'approximate marks of a 250 mL beaker', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.00001, 0.00005] }], note: 'Estimate: beaker marks are approximate (about ±5 %) and coarse; a measuring cylinder is for measuring.' },
     },
   },
   calorimeter: {
@@ -184,6 +185,40 @@ const VESSEL_LIST = {
       lid: 'optional',
       lidMassFraction: { value: 0.3, unit: '', conditions: 'lid / inner cup', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'school calorimeters vary', range: [0.2, 0.5] }], note: 'Estimate.' },
       jacket: { gap: { value: 0.01, unit: 'm', conditions: 'air gap between the cups', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'school calorimeters vary', range: [0.005, 0.02] }], note: 'Estimate; the outer cup and the insulating ring are not modelled as bodies.' } },
+    },
+  },
+  cylinder: {
+    id: 'cylinder',
+    look: 'cylinder',
+    kind: 'vessel',
+    category: 'vessel.laboratory',
+    name: { uk: 'Мірний циліндр (мензурка)', en: 'Measuring cylinder' },
+    phraseIn: { glass: { uk: 'у мірному циліндрі', en: 'in a measuring cylinder' } },
+    description: {
+      novice: {
+        uk: 'Висока вузька скляна посудина з поділками. Нею вимірюють об’єм рідини, а ще — об’єм тіла: кинь його у воду й подивись, на скільки піднявся рівень.',
+        en: 'A tall narrow glass vessel with marks. It measures the volume of a liquid — and of a body: drop it into the water and see how far the level rises.',
+      },
+      school: {
+        uk: 'Ціна поділки 1 мл. Рівень читають по нижньому краю меніска, тримаючи очі на його висоті. Об’єм тіла неправильної форми = V₂ − V₁. Мензурку не нагрівають.',
+        en: 'One division is 1 mL. Read the level at the bottom of the meniscus with your eyes at its height. The volume of an odd-shaped body is V₂ − V₁. A cylinder is never heated.',
+      },
+    },
+    media: [],
+    spec: {
+      sizes: [0.1],
+      defaultSize: 0.1,
+      materials: ['glass'],
+      defaultMaterial: 'glass',
+      shape: { type: 'cylinder', heightToDiameter: { value: 6.5, unit: '', conditions: '100 mL measuring cylinder (graduated part)', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [5, 8] }], note: 'Estimate: about 28 mm inside, 175 mm graduated.' } },
+      wallThickness: { value: 0.0015, unit: 'm', conditions: 'laboratory glass', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.001, 0.0025] }], note: 'Estimate.' },
+      massModel: { base: 0.07, perLiter: 0.6, data: { value: 0.13, unit: 'kg', conditions: '100 mL cylinder with its foot', verification: 'estimate', tolerance: 0.5, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.09, 0.18] }], note: 'Estimate.' } },
+      lid: 'none',
+      graduation: { value: 0.000001, unit: 'm³', conditions: '100 mL, class B (ISO 4788)', verification: 'cross-checked', tolerance: 0.01, citations: [
+        { source: 'dwk-mbl-cylinder-100', locator: 'graduation interval 1 mL', conditions: 'class B, 100 mL', value: 0.000001 },
+        { source: 'jangar-cylinder-100', locator: 'subdivision 1 mL', conditions: '100 mL', value: 0.000001 },
+      ] },
+      measuringOnly: true,
     },
   },
   'flask-conical': {

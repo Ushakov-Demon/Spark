@@ -10,6 +10,18 @@ export const WOOD = {
   stateAtRoom: 'solid',
   phases: {
     solid: {
+      density: {
+        value: 510,
+        unit: 'kg/m³',
+        conditions: 'pine (Scots), dry',
+        verification: 'cross-checked',
+        tolerance: 0.05,
+        citations: [
+          { source: 'engineeringtoolbox-wood-density', locator: 'Pine, Scots', conditions: 'not stated', value: 510 },
+          { source: 'wikipedia-wood', locator: 'Table: pines at 12 % moisture (Eastern white 350 … Longleaf 590)', conditions: '12 % moisture', range: [350, 590] },
+        ],
+        note: 'Wood varies a lot by species and moisture (balsa ≈ 150, oak ≈ 750); pine is taken here.',
+      },
       specificHeat: {
         value: 1700,
         unit: 'J/(kg·K)',

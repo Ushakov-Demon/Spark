@@ -3,7 +3,7 @@ import { sampleAt, traceTick } from '../core/experiment.js';
 import type { EntityId } from '../core/ids.js';
 import type { SystemState } from '../core/state.js';
 import { getCurriculum } from '../knowledge/curricula.js';
-import { tr, type Locale } from '../knowledge/i18n.js';
+import { lifeYears, tr, type Locale } from '../knowledge/i18n.js';
 import { atLeast, LEVEL_INFO, textFor, type Level } from '../knowledge/levels.js';
 import { getSource } from '../knowledge/sources.js';
 import type { FormulaSpec, LawSpec } from '../knowledge/types.js';
@@ -137,7 +137,7 @@ function explainLaw<C extends Command>(
       out.push(p(history.story.novice ? t(history.story.novice) : `${who}: ${names} (${history.when}).`));
     } else {
       if (atLeast(level, 'advanced')) {
-        const people = history.people.map((x) => `${t(x.name)} (${x.born}–${x.died})`).join(', ');
+        const people = history.people.map((x) => `${t(x.name)} (${lifeYears(x.born, x.died, locale)})`).join(', ');
         out.push(p(`${who}: ${people}. ${m.when}: ${history.when}.${history.work ? ` ${m.work}: ${history.work}.` : ''}`));
       }
       out.push(p(t(textFor(history.story, level))));

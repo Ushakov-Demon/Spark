@@ -32,6 +32,15 @@ export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string
       },
     };
   }
+  if (vessel.spec.measuringOnly) {
+    return {
+      ok: false,
+      reason: {
+        uk: `${vessel.name.uk} не нагрівають: це посудина для вимірювання об’єму, від нагрівання поділки «попливуть», а скло може тріснути.`,
+        en: `A ${vessel.name.en.toLowerCase()} is not heated: it is for measuring volume; heat would spoil its marks and may crack the glass.`,
+      },
+    };
+  }
   if (vessel.spec.jacket && spec.method !== 'immersion') {
     return {
       ok: false,

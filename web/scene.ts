@@ -20,7 +20,7 @@ export type DeviceKind =
   | 'ice-bath'
   | 'ice-salt-bath'
   | 'supply';
-export type VesselShape = 'pot' | 'turka' | 'beaker' | 'calorimeter' | 'flask-conical' | 'flask-round' | 'test-tube';
+export type VesselShape = 'pot' | 'turka' | 'beaker' | 'calorimeter' | 'cylinder' | 'flask-conical' | 'flask-round' | 'test-tube';
 export type LiquidKind = 'water' | 'salt' | 'alcohol' | 'acid' | 'oil' | 'other';
 
 export interface SceneView {
@@ -54,7 +54,11 @@ export interface SceneView {
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
   /** Solid pieces lying in the vessel (a metal block): colour and volume, m³. */
-  readonly pieces?: readonly { readonly color: string; readonly volume: number }[];
+  readonly pieces?: readonly { readonly color: string; readonly volume: number; readonly share: number }[];
+  /** A body hanging on the dynamometer, in the air above the vessel or lowered into the liquid; what the dial shows. */
+  readonly hang?: { readonly display: string; readonly into: 'air' | 'liquid'; readonly color: string; readonly volume: number; readonly share: number };
+  /** The level was just read by the marks: a line at the level and the reading. */
+  readonly levelMark?: string;
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
   readonly board?: { readonly empty: string; readonly front: string; readonly back: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers?: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
@@ -156,6 +160,21 @@ function vesselGeom(shape: VesselShape, base: number): VesselGeom {
         inner: `M${l + 3},${t + 6} L${l + 3},${base - 7} Q${l + 3},${base - 3} ${l + 8},${base - 3} L${r - 8},${base - 3} Q${r - 3},${base - 3} ${r - 3},${base - 7} L${r - 3},${t} Z`,
         left: l, right: r, top: t, bottom: base, extras: grads,
         mouth: { l: l + 18, r: r - 18 },
+      };
+    }
+    case 'cylinder': {
+      // A measuring cylinder: tall and narrow, marks every 10 mL (long ones every 50), a spout and a foot.
+      const w = 46, h = 214, l = CX - w / 2, r = CX + w / 2, t = base - h - 8;
+      const marks = Array.from({ length: 10 }, (_, i) => {
+        const y = base - 12 - ((i + 1) / 10) * (h - 16);
+        return `<path class="grad" d="M${l + 4},${y} h${i % 5 === 4 ? 16 : 9}"/>`;
+      }).join('');
+      return {
+        outer: `M${l - 5},${t - 3} Q${l},${t} ${l},${t + 6} L${l},${base - 10} L${r},${base - 10} L${r},${t} Z`,
+        inner: `M${l + 3},${t + 4} L${l + 3},${base - 13} L${r - 3},${base - 13} L${r - 3},${t} Z`,
+        left: l, right: r, top: t, bottom: base - 13,
+        extras: `${marks}<path class="cyl-foot" d="M${l - 22},${base} L${l - 14},${base - 10} L${r + 14},${base - 10} L${r + 22},${base} Z"/>`,
+        mouth: { l: l + 8, r: r - 8 },
       };
     }
     case 'calorimeter': {
@@ -299,6 +318,45 @@ export function vesselPreview(shape: VesselShape, material: string, liquid: Liqu
   </svg>`;
 }
 
+/** Bodies in the liquid: sinking ones on the bottom, floating ones at the surface with their share under it. */
+function blocksSvg(pieces: readonly { color: string; volume: number; share: number }[], g: VesselGeom, level: number): string {
+  if (!pieces.length) return '';
+  let sides = pieces.map((p) => Math.max(10, Math.min(60, 22 * Math.cbrt(p.volume / 1e-5))));
+  const room = g.right - g.left - 12;
+  const total = sides.reduce((a, b) => a + b, 0) + 5 * (sides.length - 1);
+  if (total > room) sides = sides.map((x) => (x * room) / total);
+  let x = g.left + 6 + Math.max(0, (room - Math.min(room, total)) / 2);
+  return pieces
+    .map((p, i) => {
+      const w = sides[i]!;
+      const h = w * 0.7;
+      const y = p.share < 1 ? level - (1 - p.share) * h : g.bottom - h;
+      const r = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" style="fill:${p.color};stroke:rgba(0,0,0,0.35)"/><path d="M${x + 3},${y + 3} h${w * 0.5}" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>`;
+      x += w + 5;
+      return r;
+    })
+    .join('');
+}
+
+/** A spring dynamometer hanging over the vessel; its body in the air above it or lowered into the liquid. */
+function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number }, g: VesselGeom, level: number): string {
+  const x = (g.left + g.right) / 2;
+  const w = Math.max(12, Math.min(44, 22 * Math.cbrt(h.volume / 1e-5), g.right - g.left - 10));
+  const bh = w * 0.7;
+  // In the liquid the body hangs under the surface (or floats on it); in the air, above the rim.
+  const bodyTop = h.into === 'air' ? g.top - bh - 26 : h.share < 1 ? level - (1 - h.share) * bh : Math.min(g.bottom - bh - 4, level + 10);
+  // The dial never leaves the picture (its top edge is at VIEW_TOP).
+  const top = Math.max(VIEW_TOP + 4, Math.min(g.top - 150, bodyTop - 140));
+  const caseH = 92;
+  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - 6},${top + 12 + i * 7} h${i % 5 === 0 ? 8 : 5}"/>`).join('');
+  return `<rect class="dyn-case" x="${x - 12}" y="${top}" width="24" height="${caseH}" rx="5"/>
+    <g class="dyn-ticks">${ticks}</g>
+    <path class="dyn-pointer" d="M${x + 3},${top + 40} h9"/>
+    <path class="dyn-hook" d="M${x},${top + caseH} V${bodyTop}"/>
+    <rect x="${x - w / 2}" y="${bodyTop}" width="${w}" height="${bh}" rx="2" style="fill:${h.color};stroke:rgba(0,0,0,0.35)"/>
+    <text class="dyn-text" x="${x + 18}" y="${top + 44}">${h.display}</text>`;
+}
+
 /** Electronic scales on the table to the right, with the vessel (a small copy) on them and an LCD. */
 function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string): string {
   const x0 = 506;
@@ -405,6 +463,8 @@ export function createScene(): Scene {
         <text id="sc-temp" class="thermo-text" x="${tx}" y="${g.top - 18}" text-anchor="middle"></text>
       </g>
       <g id="sc-scale" class="scales"></g>
+      <g id="sc-dyn" class="dyn"></g>
+      <g id="sc-mark" class="level-mark"></g>
       </g>`;
   }
 
@@ -436,20 +496,26 @@ export function createScene(): Scene {
         ice.querySelector('path')!.setAttribute('transform', `translate(0 ${level + thick / 2})`);
         ice.style.opacity = thick > 0 ? '1' : '0';
       }
-      // Blocks on the bottom, side by side; a 10 cm³ block is about 22 units wide.
-      const pk = (v.pieces ?? []).map((x) => `${x.color}:${x.volume.toExponential(2)}`).join('|');
+      // Bodies in the liquid, side by side: on the bottom if they sink, at the surface if they float
+      // (the share under water as by Archimedes). A 10 cm³ block is about 22 units wide; narrow vessels squeeze them.
+      const pk = `${(v.pieces ?? []).map((x) => `${x.color}:${x.volume.toExponential(2)}:${x.share.toFixed(2)}`).join('|')}@${Math.round(level)}`;
       const pg = $<SVGGElement>('sc-pieces');
       if (pg && pg.dataset['k'] !== pk) {
         pg.dataset['k'] = pk;
-        let x = g.left + 14;
-        pg.innerHTML = (v.pieces ?? [])
-          .map((p) => {
-            const side = Math.max(10, Math.min(60, 22 * Math.cbrt(p.volume / 1e-5)));
-            const r = `<rect x="${x}" y="${g.bottom - side * 0.7}" width="${side}" height="${side * 0.7}" rx="2" style="fill:${p.color};stroke:rgba(0,0,0,0.35)"/><path d="M${x + 3},${g.bottom - side * 0.7 + 3} h${side * 0.5}" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>`;
-            x += side + 6;
-            return r;
-          })
-          .join('');
+        pg.innerHTML = blocksSvg(v.pieces ?? [], g, level);
+      }
+      // The dynamometer with its body, and the level mark.
+      const hk = v.hang ? `${v.hang.display}|${v.hang.into}|${v.hang.color}|${v.hang.volume}|${Math.round(level)}` : '';
+      const dyn = $<SVGGElement>('sc-dyn');
+      if (dyn && dyn.dataset['k'] !== hk) {
+        dyn.dataset['k'] = hk;
+        dyn.innerHTML = v.hang ? dynamometerSvg(v.hang, g, level) : '';
+      }
+      const mk = v.levelMark ? `${v.levelMark}|${Math.round(level)}` : '';
+      const mark = $<SVGGElement>('sc-mark');
+      if (mark && mark.dataset['k'] !== mk) {
+        mark.dataset['k'] = mk;
+        mark.innerHTML = v.levelMark ? `<path class="level-line" d="M${g.left - 6},${level} H${g.right + 10}"/><path class="level-arrow" d="M${g.right + 22},${level} l-9,-5 v10 z"/><text class="level-text" x="${g.right + 26}" y="${level + 4}">${v.levelMark}</text>` : '';
       }
       $('sc-crystals')?.setAttribute('style', `opacity:${v.crystals > 0 ? Math.min(1, 0.35 + v.crystals) : 0}`);
       // A step that ended while the heater is still on keeps boiling on the drawing.

@@ -10,7 +10,7 @@
  * Spark's texts with sourced dates.
  */
 import { COMPONENTS } from '../src/components/index.js';
-import { tr, type Locale } from '../src/knowledge/i18n.js';
+import { lifeYears, tr, type Locale } from '../src/knowledge/i18n.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { getSource } from '../src/knowledge/sources.js';
 import type { LawSpec } from '../src/knowledge/types.js';
@@ -116,7 +116,7 @@ async function labTopic(lang: Locale, ids: readonly string[]): Promise<Article |
 /** Without the internet: a story from the history of one of the lab's laws (Spark's own sourced text). */
 export function offlineArticle(laws: readonly LawSpec[], lang: Locale, level: Level): Article {
   const law = pick(laws.filter((l) => l.history.people.length)) ?? laws[0]!;
-  const people = law.history.people.map((p) => `${tr(p.name, lang)} (${p.born}–${p.died})`).join(', ');
+  const people = law.history.people.map((p) => `${tr(p.name, lang)} (${lifeYears(p.born, p.died, lang)})`).join(', ');
   const sources = [...new Set(law.history.citations.map((c) => getSource(c.source)?.title).filter(Boolean))].join('; ');
   return {
     kicker: lang === 'uk' ? `З історії науки · ${law.history.when}` : `From the history of science · ${law.history.when}`,

@@ -30,6 +30,17 @@ export interface UiText {
     more(d: string): string;
     less(d: string): string;
   };
+  measure: {
+    level: string;
+    levelSay(shown: string, rise: string | null): string;
+    hangAir: string;
+    hangLiquid: string;
+    hangSay(what: string, into: 'air' | 'liquid', shown: string, buoy: string | null, floats: boolean): string;
+    planLevel: string;
+    planHang(what: string, into: 'air' | 'liquid'): string;
+    rowLevel(shown: string): string;
+    rowHang(shown: string, into: 'air' | 'liquid'): string;
+  };
   boardEmpty: string;
   chartShow: string;
   chartHide: string;
@@ -238,6 +249,18 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       more: (d) => `Це на ${d} більше, ніж минулого разу.`,
       less: (d) => `Це на ${d} менше, ніж минулого разу. Куди поділися ці грами?`,
     },
+    measure: {
+      level: '📏 Об’єм',
+      levelSay: (s, rise) => `Рідина стоїть на позначці ${s}.${rise ? ` Рівень піднявся на ${rise} — стільки місця займає занурена частина тіла.` : ''}`,
+      hangAir: '🧷 Динамометр: у повітрі',
+      hangLiquid: '🧷 Динамометр: у рідині',
+      hangSay: (w, into, s, buoy, floats) =>
+        floats ? `${w} у рідині плаває — пружина динамометра не натягнута: ${s}.` : into === 'air' ? `${w} у повітрі: динамометр показує ${s} — це вага тіла, P = m·g.` : `${w} у рідині: ${s}.${buoy ? ` Рідина виштовхує тіло із силою ${buoy} — це архімедова сила.` : ''}`,
+      planLevel: 'подивитися на поділки',
+      planHang: (w, into) => `підвісити ${w} на динамометр ${into === 'air' ? 'у повітрі' : 'у рідині'}`,
+      rowLevel: (s) => `📏 ${s}`,
+      rowHang: (s, into) => `🧷 ${s} (${into === 'air' ? 'у повітрі' : 'у рідині'})`,
+    },
     boardEmpty: 'Тут з’являтимуться формули досліду',
     chartShow: '📈 Показати графік',
     chartHide: '📈 Сховати графік',
@@ -442,6 +465,18 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       overload: (max) => `Oops! The scales are overloaded: they hold only ${max}. Take other ones.`,
       more: (d) => `That is ${d} more than last time.`,
       less: (d) => `That is ${d} less than last time. Where did those grams go?`,
+    },
+    measure: {
+      level: '📏 Volume',
+      levelSay: (s, rise) => `The liquid stands at the ${s} mark.${rise ? ` The level rose by ${rise} — that is the room the submerged part of the body takes.` : ''}`,
+      hangAir: '🧷 Dynamometer: in the air',
+      hangLiquid: '🧷 Dynamometer: in the liquid',
+      hangSay: (w, into, s, buoy, floats) =>
+        floats ? `${w} floats in the liquid — the dynamometer’s spring is slack: ${s}.` : into === 'air' ? `${w} in the air: the dynamometer shows ${s} — that is its weight, P = m·g.` : `${w} in the liquid: ${s}.${buoy ? ` The liquid pushes it up with ${buoy} — the buoyant force.` : ''}`,
+      planLevel: 'read the marks',
+      planHang: (w, into) => `hang ${w} on the dynamometer ${into === 'air' ? 'in the air' : 'in the liquid'}`,
+      rowLevel: (s) => `📏 ${s}`,
+      rowHang: (s, into) => `🧷 ${s} (${into === 'air' ? 'in the air' : 'in the liquid'})`,
     },
     boardEmpty: 'The formulas of the experiment will appear here',
     chartShow: '📈 Show the chart',

@@ -1,3 +1,4 @@
+import type { MeasurementRecord } from '../core/trace.js';
 import { COMPONENTS, NACL_SOLUTE } from '../components/index.js';
 import type { Command } from '../core/commands.js';
 import type { ExperimentResult } from '../core/experiment.js';
@@ -12,6 +13,7 @@ import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
 import { sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
 import { formatReading, weigh } from './weighing.js';
+import { formatMeasured } from './measuring.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -29,6 +31,8 @@ export interface PresetRun {
   /** Operation steps in order (additions are part of the state between them). */
   readonly steps: readonly { readonly params: LabParams; readonly result: ExperimentResult<Command>; readonly status: LabStatus }[];
   readonly simulation: Simulation;
+  /** Everything measured during the experiment, in order (scales, marks, dynamometer). */
+  readonly readings?: readonly { readonly command: { readonly type: string } & Record<string, unknown>; readonly record: MeasurementRecord }[];
 }
 export interface PresetAnswer {
   /** The Professor's short line. */
@@ -98,7 +102,72 @@ function settleWith(p: LabParams, block: { substance: string; mass: number; temp
   return temp(s.state);
 }
 
+type Reading = NonNullable<PresetRun['readings']>[number];
+const of = (run: PresetRun, q: MeasurementRecord['quantity']): Reading[] => (run.readings ?? []).filter((r) => r.record.quantity === q && r.record.value !== null);
+const mL = (m3: number, l: Locale) => `${sig(m3 * 1e6, 3, l)} ${l === 'uk' ? 'мл' : 'mL'}`;
+const g = (kg: number, l: Locale) => `${sig(kg * 1000, 4, l)} ${l === 'uk' ? 'г' : 'g'}`;
+/** A force as the dynamometer shows it: to its 0.1 N division. */
+const N = (n: number, l: Locale) => formatMeasured('force', n, 0.1, l);
+const ICE = COMPONENTS.water.phases.solid!.density!.value;
+const WATER = COMPONENTS.water.phases.liquid!.density!.value;
+/** Densities of the metals a guess can be about, kg/m³ (from the component models). */
+const METALS = { aluminium: COMPONENTS.aluminium, iron: COMPONENTS.iron, copper: COMPONENTS.copper, brass: COMPONENTS.brass } as const;
+
 export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> = {
+  'ice-level': (run) => {
+    const v = of(run, 'volume');
+    const [a, b] = [v[0]?.record, v[v.length - 1]?.record];
+    const div = a?.inputs?.['division'] ?? 1e-6;
+    const d = a && b ? b.value! - a.value! : 0;
+    const under = Math.round((ICE / WATER) * 100);
+    return {
+      say: both((l) => (l === 'uk' ? 'Рівень не зрушив ні на поділку!' : 'The level did not move by a mark!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `До таяння вода стояла на позначці ${a ? mL(a.value!, l) : '—'}, після — ${b ? mL(b.value!, l) : '—'}. Поки лід плавав, під водою була ≈ ${under} % кубика: плаваюче тіло витісняє стільки рідини, скільки важить само (закон Архімеда). Розтанувши, лід став водою тієї самої маси — і зайняв рівно те місце, яке витісняв. Тому рівень не змінюється; так само не підіймає рівень океану морський лід, що тане, — на відміну від льодовиків на суші.`
+          : `Before melting the water stood at ${a ? mL(a.value!, l) : '—'}, after at ${b ? mL(b.value!, l) : '—'}. While the ice floated, ≈ ${under} % of the cube was under water: a floating body pushes aside its own weight of liquid (Archimedes). Melted, the ice became water of the same mass — and took exactly the room it had pushed aside. So the level stays; melting sea ice does not raise the ocean either — unlike glaciers on land.`,
+      ),
+      ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
+    };
+  },
+  'mystery-metal': (run) => {
+    const m = of(run, 'mass');
+    const v = of(run, 'volume');
+    const dm = m.length >= 2 ? m[m.length - 1]!.record.value! - m[0]!.record.value! : 0;
+    const dv = v.length >= 2 ? v[v.length - 1]!.record.value! - v[0]!.record.value! : 0;
+    const rho = dv > 0 ? dm / dv : 0;
+    const guess = (Object.keys(METALS) as (keyof typeof METALS)[]).reduce((best, k) => (Math.abs(METALS[k].phases.solid!.density!.value - rho) < Math.abs(METALS[best].phases.solid!.density!.value - rho) ? k : best), 'aluminium' as keyof typeof METALS);
+    const real = Object.values(run.steps[run.steps.length - 1]!.result.final.entities).find((e) => isThermalBody(e) && e.id.startsWith('sample+'));
+    const realId = real && isThermalBody(real) ? String(real.params.substance) : '';
+    const name = (id: string, l: Locale) => (id in METALS ? METALS[id as keyof typeof METALS].name[l] : id);
+    return {
+      say: both((l) => (l === 'uk' ? `Це ${name(realId, l).toLowerCase()}!` : `It is ${name(realId, l).toLowerCase()}!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `Маса бруска: m = m₂ − m₁ = ${g(dm, l)}. Об’єм — на скільки піднялася вода: V = ${mL(dv, l)} = ${sig(dv * 1e6, 3, l)} см³. Отже, ρ = m/V ≈ ${sig(rho / 1000, 3, l)} г/см³ = ${sig(rho, 3, l)} кг/м³. Найближча густина в таблиці — ${name(guess, l).toLowerCase()} (${sig(METALS[guess].phases.solid!.density!.value, 4, l)} кг/м³). Брусок справді з металу «${name(realId, l).toLowerCase()}». Мензурка показує об’єм з точністю до 1 мл, тож для схожих металів (мідь і латунь) потрібен більший брусок або точніший прилад.`
+          : `The block’s mass: m = m₂ − m₁ = ${g(dm, l)}. Its volume is how far the water rose: V = ${mL(dv, l)} = ${sig(dv * 1e6, 3, l)} cm³. So ρ = m/V ≈ ${sig(rho / 1000, 3, l)} g/cm³ = ${sig(rho, 3, l)} kg/m³. The nearest density in the table is ${name(guess, l).toLowerCase()} (${sig(METALS[guess].phases.solid!.density!.value, 4, l)} kg/m³). The block is indeed ${name(realId, l).toLowerCase()}. The cylinder reads the volume to 1 mL, so telling similar metals apart (copper and brass) needs a bigger block or a finer instrument.`,
+      ),
+      ...(dv > 0 && dm > 0 ? { correct: guess } : {}),
+    };
+  },
+  'archimedes-salt': (run) => {
+    const f = of(run, 'force');
+    const air = f.find((r) => r.command['into'] === 'air')?.record;
+    const inLiquid = f.filter((r) => r.command['into'] === 'liquid').map((r) => r.record);
+    const [fresh, salty] = [inLiquid[0], inLiquid[inLiquid.length - 1]];
+    const F1 = air && fresh ? air.value! - fresh.value! : 0;
+    const F2 = air && salty ? air.value! - salty.value! : 0;
+    const rho2 = salty?.inputs?.['rhoLiquid'] ?? WATER;
+    return {
+      say: both((l) => (l === 'uk' ? 'Солона вода виштовхує сильніше!' : 'Salt water pushes harder!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `У повітрі динамометр показав ${air ? N(air.value!, l) : '—'}, у прісній воді — ${fresh ? N(fresh.value!, l) : '—'}: архімедова сила F₁ = P − P′ = ${N(F1, l)}. Коли у воді розчинили сіль, рідина стала густішою (≈ ${sig(rho2, 4, l)} кг/м³ замість ${sig(WATER, 3, l)}), і динамометр показав ${salty ? N(salty.value!, l) : '—'}: F₂ = ${N(F2, l)}. Архімедова сила F = ρ·g·V тим більша, що густіша рідина, — тому в морі плавати легше, ніж у річці.`
+          : `In the air the dynamometer read ${air ? N(air.value!, l) : '—'}, in fresh water ${fresh ? N(fresh.value!, l) : '—'}: the buoyant force F₁ = P − P′ = ${N(F1, l)}. With salt dissolved, the liquid got denser (≈ ${sig(rho2, 4, l)} kg/m³ instead of ${sig(WATER, 3, l)}), and the dynamometer read ${salty ? N(salty.value!, l) : '—'}: F₂ = ${N(F2, l)}. The buoyant force F = ρ·g·V is larger in a denser liquid — that is why swimming in the sea is easier than in a river.`,
+      ),
+      ...(air && fresh && salty ? { correct: F2 > F1 + 0.05 ? 'salt' : F1 > F2 + 0.05 ? 'fresh' : 'same' } : {}),
+    };
+  },
   'mix-hot-cold': ({ steps }) => {
     const s = steps[0]!;
     const ideal = mixedAt(s);

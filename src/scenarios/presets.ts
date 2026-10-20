@@ -1,6 +1,6 @@
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
-import type { AddStep, ProtocolStep } from './protocol.js';
+import type { ProtocolStep } from './protocol.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -18,7 +18,7 @@ export interface Preset {
   readonly question: LocalizedText;
   readonly params: LabParams;
   /** Put into the vessel before the start (hot water poured into cold, a block from boiling water). */
-  readonly setup?: readonly AddStep[];
+  readonly setup?: readonly Exclude<ProtocolStep, { kind: 'operation' }>[];
   /** Further steps after the first one (the first is `params` itself). */
   readonly plan?: readonly ProtocolStep[];
   /** Formula ids from the catalogs — for "where it is in the programme". */
@@ -45,6 +45,7 @@ const ch = (id: string, uk: string, en: string): Choice => ({ id, label: { uk, e
 const THERMAL: LocalizedText = { uk: 'Теплові явища', en: 'Thermal phenomena' };
 const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
 const FUN: LocalizedText = { uk: 'Цікаві досліди', en: 'Curious experiments' };
+const MECH: LocalizedText = { uk: 'Механічні явища: густина й плавання', en: 'Mechanics: density and floating' };
 
 const room = { roomTemp: 20, lid: false } as const;
 const hotplate = { id: 'electric-hotplate', rating: 2000, knob: 1 } as const;
@@ -53,6 +54,66 @@ const beaker = { vessel: 'beaker', size: 0.25, material: 'glass', liters: 0.2 } 
 const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 
 export const PRESETS: readonly Preset[] = [
+  // ---------------------------------------------------------------- 7 grade, mechanics
+  {
+    id: 'ice-level',
+    grade: 7,
+    topic: MECH,
+    title: { uk: 'Чи зміниться рівень води, коли лід розтане?', en: 'Will the water level change when the ice melts?' },
+    question: {
+      uk: 'У мензурці з водою плаває кубик льоду, а рівень уже записано. Дочекайся, поки лід розтане (натисни «Старт»), і подивись на поділки знову. Як зміниться рівень води?',
+      en: 'An ice cube floats in a measuring cylinder of water; the level is already noted. Wait for the ice to melt (press “Start”) and read the marks again. How will the water level change?',
+    },
+    params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.07, action: 'settle', substance: 'water', startTemp: 20 },
+    setup: [{ kind: 'add', substance: 'water', mass: 0.01, temperature: -5, frozen: true }, { kind: 'level' }],
+    plan: [{ kind: 'level' }],
+    choices: [ch('up', 'Підніметься', 'It will rise'), ch('down', 'Опуститься', 'It will drop'), ch('same', 'Не зміниться', 'It will stay the same')],
+    formulas: ['mechanics.submerged-share'],
+    quoteHas: 'плавання',
+    expect: 'reached',
+  },
+  {
+    id: 'mystery-metal',
+    grade: 7,
+    topic: MECH,
+    title: { uk: 'Що це за метал?', en: 'Which metal is it?' },
+    question: {
+      uk: 'Мензурку з 50 мл води зважили й записали рівень, а потім опустили в неї брусок із невідомого металу. Зваж її ще раз і подивись на поділки: яка густина металу, ρ = m/V, — і що це за метал?',
+      en: 'A measuring cylinder with 50 mL of water was weighed and its level noted; then a block of an unknown metal went in. Weigh it again and read the marks: what is the density, ρ = m/V — and which metal is it?',
+    },
+    params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'water', startTemp: 20 },
+    setup: [
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'level' },
+      { kind: 'add', substance: 'iron', mass: 0.157, temperature: 20, label: { uk: 'Невідомий метал', en: 'Unknown metal' } },
+    ],
+    plan: [{ kind: 'weigh', scale: 'lab-balance' }, { kind: 'level' }],
+    choices: [ch('aluminium', 'Алюміній', 'Aluminium'), ch('iron', 'Залізо', 'Iron'), ch('copper', 'Мідь', 'Copper'), ch('brass', 'Латунь', 'Brass')],
+    formulas: ['mechanics.density'],
+    quoteHas: 'густини',
+    expect: 'reached',
+  },
+  {
+    id: 'archimedes-salt',
+    grade: 7,
+    topic: MECH,
+    title: { uk: 'Де архімедова сила більша?', en: 'Where is the buoyant force larger?' },
+    question: {
+      uk: 'Брусок алюмінію (250 г) у повітрі тягне динамометр із силою ≈ 2,5 Н. Опустимо його у воду, а потім — у ту саму воду, розчинивши в ній сіль. Де архімедова сила буде більшою?',
+      en: 'An aluminium block (250 g) pulls the dynamometer with ≈ 2.5 N in the air. We lower it into water, then into the same water with salt dissolved in it. Where will the buoyant force be larger?',
+    },
+    params: { ...room, ...beaker, liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
+    setup: [{ kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'air' }],
+    plan: [
+      { kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'liquid' },
+      { kind: 'add', substance: 'table-salt', mass: 0.04, temperature: 20 },
+      { kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'liquid' },
+    ],
+    choices: [ch('fresh', 'У прісній воді', 'In fresh water'), ch('salt', 'У солоній воді', 'In salt water'), ch('same', 'Однаково', 'The same')],
+    formulas: ['mechanics.buoyant-force', 'mechanics.weight'],
+    quoteHas: 'Архімеда',
+    expect: 'reached',
+  },
   // ---------------------------------------------------------------- 8 grade, heat
   {
     id: 'boil-a-litre',

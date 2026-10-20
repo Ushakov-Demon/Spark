@@ -47,12 +47,14 @@ export interface MeasurementRecord {
   readonly kind: 'measurement';
   /** Equipment id of the instrument. */
   readonly instrument: string;
-  readonly quantity: 'mass';
-  /** SI units (kg); null — out of range (overloaded scales). */
+  readonly quantity: 'mass' | 'volume' | 'force';
+  /** SI units (kg, m³, N) as the instrument shows it; null — out of range (overloaded, overflowing). */
   readonly value: number | null;
   /** The exact model value, for checks and debriefs. */
   readonly exact: number;
   readonly entities: readonly EntityId[];
+  /** Numbers behind the reading, SI (a hung body's mass and volume, the liquid's density…) — for explanations. */
+  readonly inputs?: Readonly<Record<string, number>>;
 }
 
 export type TraceRecord = FormulaApplication | NumericsRecord | TransferRecord | MeasurementRecord;

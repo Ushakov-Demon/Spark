@@ -649,3 +649,15 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 /* the calorimeter's outer cup and its insulating ring */
 .scene .jacket { fill: none; stroke: #9aa3ad; stroke-width: 4; stroke-dasharray: none; opacity: 0.9; }
 .scene .jacket-ring { stroke: #4a4f57; stroke-width: 5; stroke-linecap: round; }
+
+/* ---------- dynamometer and the level mark ---------- */
+.scene .dyn-case { fill: #e9edf1; stroke: #6c7580; stroke-width: 2; }
+.scene .dyn-ticks path { stroke: #4b535c; stroke-width: 1.2; }
+.scene .dyn-pointer { stroke: #d33; stroke-width: 3; stroke-linecap: round; }
+.scene .dyn-hook { stroke: #555; stroke-width: 1.6; fill: none; }
+.scene .dyn-text, .scene .level-text { font: 700 13px system-ui, sans-serif; fill: #1f2a36; paint-order: stroke; stroke: rgba(255,255,255,0.9); stroke-width: 3px; }
+.scene .level-line { stroke: #d33; stroke-width: 1.6; stroke-dasharray: 5 3; }
+.scene .level-arrow { fill: #d33; }
+.add-grid .hang-buttons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.add-grid .hang-buttons button { flex: 1 1 140px; }
+.scene .cyl-foot { fill: rgba(210,232,255,0.5); stroke: #8fb8dd; stroke-width: 2; }

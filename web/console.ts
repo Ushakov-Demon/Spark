@@ -8,7 +8,7 @@ import { COOLERS, type CoolerId } from '../src/equipment/coolers.js';
 import { HEATERS, type HeaterId } from '../src/equipment/heaters.js';
 import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
 import type { VesselId } from '../src/equipment/vessels.js';
-import { SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
+import { MASS_SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { sig } from '../src/explain/format.js';
 import { tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { LAB_ACTIONS, OPERATIONS, PRESETS, substancesFor, vesselsFor, type LabAction, type LabParams, type Preset } from '../src/scenarios/index.js';
@@ -43,6 +43,10 @@ export interface ConsoleApi {
   news(): void;
   /** Weigh the vessel on these scales (none — the ones chosen on the page); returns what the Professor says. */
   weigh(scale?: ScaleId): string;
+  /** Read the level by the vessel's marks; returns what the Professor says. */
+  level(): string;
+  /** Hang a body on the dynamometer in the air or in the liquid. */
+  hang(substance: SubstanceId, grams: number, into: 'air' | 'liquid'): string;
   /** Save the experiment so far as a recording; returns a note. */
   save(name: string): string;
   records(): readonly string[];
@@ -333,10 +337,31 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       about: L('поставити посуд на ваги: weigh lab', 'put the vessel on the scales: weigh lab'),
       run(args) {
         if (!args.length) return [api.weigh()];
-        const f = find(SCALE_IDS, (id) => [id, SCALES[id].name.uk, SCALES[id].name.en], words(args));
+        const f = find(MASS_SCALE_IDS, (id) => [id, SCALES[id].name.uk, SCALES[id].name.en], words(args));
         if (!f) return notFound(words(args));
         if (Array.isArray(f)) return ambiguous(f.map((id) => ({ name: SCALES[id].name })));
         return [api.weigh(f)];
+      },
+    },
+    {
+      names: ['level', 'volume', 'об’єм', 'рівень'],
+      usage: L('level', 'level'),
+      about: L('подивитися на поділки: об’єм рідини (мірний циліндр)', 'read the marks: the volume of the liquid (measuring cylinder)'),
+      run: () => [api.level()],
+    },
+    {
+      names: ['hang', 'dynamometer', 'динамометр', 'підвісити'],
+      usage: L('hang <body> <mass g> [air | water]', 'hang <body> <mass g> [air | water]'),
+      about: L('підвісити тіло на динамометр: hang aluminium 100 g water', 'hang a body on the dynamometer: hang aluminium 100 g water'),
+      run(args) {
+        const liquid = args.some((a) => /^(water|liquid|вод|рідин|у)/.test(norm(a)));
+        const text = args.filter((a) => !/^(water|liquid|air|вод|рідин|повітр|у|в)$/.test(norm(a)) && !/^(water|liquid|air|вод|рідин|повітр)/.test(norm(a)));
+        const solids = Object.values(SUBSTANCES).filter((s) => s.category.startsWith('solid.') && s.category !== 'solid.salt');
+        const f = find(solids, names, words(text));
+        if (!f) return notFound(words(text));
+        if (Array.isArray(f)) return ambiguous(f);
+        const q = quantities(text).find((x) => x.unit === 'г' || x.unit === 'g' || x.unit === '');
+        return [api.hang(f.id as SubstanceId, q?.value ?? 100, liquid ? 'liquid' : 'air')];
       },
     },
     {

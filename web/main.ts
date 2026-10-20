@@ -29,6 +29,10 @@ import {
   formatReading,
   weigh,
   weighingsOf,
+  readingsOf,
+  formatMeasured,
+  pieceShare,
+  stepCommand,
   OPERATIONS,
   LAB_COOLER_ID,
   LAB_HEATER_ID,
@@ -79,7 +83,7 @@ import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
 import { cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, electrolysisGases, isSupply } from '../src/domains/electrical/index.js';
 import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
-import { SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
+import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
@@ -273,9 +277,60 @@ function weighNow(scale: ScaleId): string {
   render();
   return weighSay();
 }
+/** Read the marks or hang a body on the dynamometer now; the reading goes to the log. */
+function measureNow(command: LabCommand): string {
+  const entry = session.apply(command);
+  if (!entry.ok) {
+    lastMeasure = null;
+    measureError = tr(entry.error, locale);
+    render();
+    return measureError;
+  }
+  measureError = '';
+  lastMeasure = { at: session.state.time, step: session };
+  boardEpoch++;
+  render();
+  return measureSay();
+}
+let lastMeasure: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
+let measureError = '';
+/** The latest level reading or dynamometer reading while nothing has happened since. */
+function showingMeasure() {
+  if (!lastMeasure || lastMeasure.step !== session || running || session.state.time !== lastMeasure.at) return null;
+  const l = session.result().log;
+  const last = l[l.length - 1];
+  if (!last?.ok || (last.command.type !== 'lab.read-level' && last.command.type !== 'lab.hang')) return null;
+  return readingsOf([last])[0] ?? null;
+}
+/** Everything measured in this experiment, in order. */
+function allReadings() {
+  return [...history.map((h) => h.result.log), session.result().log].flatMap((l) => readingsOf(l));
+}
+const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
+/** What the Professor says about the latest level or dynamometer reading. */
+function measureSay(): string {
+  const u = t().measure;
+  const m = showingMeasure();
+  if (!m) return '';
+  const all = allReadings();
+  const i = all.findIndex((x) => x.record === m.record);
+  const r = m.record;
+  if (m.command.type === 'lab.read-level') {
+    const div = r.inputs?.['division'] ?? 1e-6;
+    const prev = [...all.slice(0, i)].reverse().find((x) => x.record.quantity === 'volume' && x.record.value !== null);
+    const rise = prev && r.value !== null && r.value - prev.record.value! > div / 2 ? formatMeasured('volume', r.value - prev.record.value!, div, locale) : null;
+    return u.levelSay(formatMeasured('volume', r.value, div, locale), rise);
+  }
+  const c = m.command as Extract<LabCommand, { type: 'lab.hang' }>;
+  const what = nameOfBody(c.substance);
+  const air = c.into === 'liquid' ? [...all.slice(0, i)].reverse().find((x) => x.command.type === 'lab.hang' && (x.command as typeof c).into === 'air' && (x.command as typeof c).substance === c.substance && (x.command as typeof c).mass === c.mass) : undefined;
+  const buoy = air && air.record.value !== null && r.value !== null ? formatMeasured('force', air.record.value - r.value, 0.1, locale) : null;
+  return u.hangSay(what, c.into, formatMeasured('force', r.value, 0.1, locale), buoy, c.into === 'liquid' && (r.inputs?.['share'] ?? 1) < 1);
+}
+
 /** The latest weighing, while nothing has happened since (the scales stay on the drawing). */
 let lastWeigh: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
-let scale: ScaleId = (SCALE_IDS as string[]).includes(store.get('scale') ?? '') ? (store.get('scale') as ScaleId) : 'kitchen-scale';
+let scale: ScaleId = (MASS_SCALE_IDS as string[]).includes(store.get('scale') ?? '') ? (store.get('scale') as ScaleId) : 'kitchen-scale';
 
 /** Every weighing of this experiment, in order. */
 function allWeighings() {
@@ -575,16 +630,22 @@ function stop() {
     lastWeigh = { at: session.state.time, step: session };
   }
   // A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind).
-  const answerOf = preset ? PRESET_ANSWERS[preset.id] : undefined;
-  if (answerOf && !plan.length) {
-    presetAnswer = 'computing';
-    const steps = [...history, doneRecord].map((h) => ({ params: h.params, result: h.result as never, status: h.status }));
-    window.setTimeout(() => {
-      presetAnswer = answerOf({ steps, simulation });
-      render();
-    }, 30);
-  }
+  if (!plan.length) answerPreset();
   setHeadline();
+}
+
+/** A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind). */
+function answerPreset() {
+  const answerOf = preset ? PRESET_ANSWERS[preset.id] : undefined;
+  if (!answerOf || !doneRecord) return;
+  presetAnswer = 'computing';
+  const done = { ...doneRecord, result: { ...doneRecord.result, log: session.result().log } };
+  const steps = [...history, done].map((h) => ({ params: h.params, result: h.result as never, status: h.status }));
+  const readings = allReadings() as never;
+  window.setTimeout(() => {
+    presetAnswer = answerOf({ steps, simulation, readings });
+    render();
+  }, 30);
 }
 
 /** No progress for 30 simulated minutes — the outcome will not change, explain it. */
@@ -733,6 +794,7 @@ function buildAdd() {
     // A metal block comes out of boiling water; other portions at room temperature (or from the freezer).
     addTemp = SUBSTANCES[addSub].category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
     if (SUBSTANCES[addSub].category === 'solid.metal') addGrams = 100;
+    if (SUBSTANCES[addSub].category === 'solid.material') addGrams = 10;
     buildAdd();
   };
   const state = el('div', { className: 'chips' });
@@ -762,6 +824,14 @@ function buildAdd() {
     buildAdd();
     render();
   };
+  // A solid body can also be hung on the dynamometer — in the air, or lowered into the liquid.
+  const hangs = sub.category.startsWith('solid.') && sub.category !== 'solid.salt'
+    ? (['air', 'liquid'] as const).map((into) => {
+        const b = el('button', { type: 'button' }, into === 'air' ? u.measure.hangAir : u.measure.hangLiquid);
+        b.onclick = () => void measureNow({ type: 'lab.hang', substance: addSub, mass: addGrams / 1000, into });
+        return b;
+      })
+    : [];
   box.append(
     el('div', { className: 'add-grid' },
       el('label', { className: 'mini-field' }, el('span', {}, u.substance), sel),
@@ -769,6 +839,7 @@ function buildAdd() {
       el('label', { className: 'mini-field' }, el('span', {}, u.addAmount), num(addGrams, 1, 5000, 1, (v) => (addGrams = v))),
       el('label', { className: 'mini-field' }, el('span', {}, u.addTemp), num(addTemp, -30, 300, 1, (v) => (addTemp = v))),
       button,
+      ...(hangs.length ? [el('div', { className: 'hang-buttons' }, ...hangs)] : []),
     ),
   );
   if (addError) box.append(el('p', { className: 'add-error' }, `⚠ ${addError}`));
@@ -846,6 +917,7 @@ function sceneView(): SceneView {
   const st = doneRecord?.status;
   const nextLabel = plan.length ? planLabel(plan) : '';
   const weighShown = showingWeighing();
+  const measured = showingMeasure();
   const quiz = quizNow();
   const reply = quizReply(quiz);
   const verdict = predictionVerdict();
@@ -855,6 +927,10 @@ function sceneView(): SceneView {
     ? { mood: quiz!.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.right === false ? 'thinking' : 'happy', says: reply }
     : verdict && presetAnswer && presetAnswer !== 'computing'
     ? { mood: verdict === predictionVerdictRight() ? 'happy' : 'surprised', says: `${tr(presetAnswer.say, locale)} ${verdict}` }
+    : measureError && !running
+    ? { mood: 'thinking', says: measureError }
+    : measured
+    ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
     ? { mood: weighShown.reading === null ? 'surprised' : 'happy', says: weighSay() }
     : presetAnswer && presetAnswer !== 'computing' && tr(presetAnswer.say, locale)
@@ -919,9 +995,17 @@ function sceneView(): SceneView {
       if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`)) return [];
       const id = 'substance' in e.params ? (e.params.substance as SubstanceId | undefined) : undefined;
       const sub = id ? SUBSTANCES[id] : undefined;
-      if (!sub || sub.category !== 'solid.metal') return [];
-      return [{ color: METAL_COLOR[sub.id] ?? '#9aa1a8', volume: bodyMass(e) / sub.liquid.density.value }];
+      if (!sub) return [];
+      // Solid bodies and ice cubes are drawn; a liquid layer (oil) is part of the liquid.
+      const ice = (e.state.solidFraction ?? 0) > 0.5;
+      if (!sub.category.startsWith('solid.') && !ice) return [];
+      const density = ice ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
+      return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: bodyMass(e) / density, share: pieceShare(session.state, e) }];
     }),
+    ...(measured?.command.type === 'lab.hang'
+      ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1 } }
+      : {}),
+    ...(measured?.command.type === 'lab.read-level' ? { levelMark: formatMeasured('volume', measured.record.value, measured.record.inputs?.['division'] ?? 1e-6, locale) } : {}),
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
@@ -1049,8 +1133,8 @@ function showingWeighing() {
   return last?.ok && last.command.type === 'lab.weigh' ? (weighingsOf([last])[0] ?? null) : null;
 }
 
-/** How metal blocks look in the vessel. */
-const METAL_COLOR: Partial<Record<string, string>> = { aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a' };
+/** How solid bodies look in the vessel. */
+const BODY_COLOR: Partial<Record<string, string>> = { aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
 
 function render() {
   const u = t();
@@ -1123,11 +1207,12 @@ function render() {
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
+  $<HTMLButtonElement>('#level').textContent = u.measure.level;
   newsButton.textContent = u.byTheWay.button;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
   scaleSel.setAttribute('aria-label', u.weigh.scales);
-  const scaleOpts = SCALE_IDS.map((id) => `<option value="${id}"${id === scale ? ' selected' : ''}>${tr(SCALES[id].name, locale)}</option>`).join('');
+  const scaleOpts = MASS_SCALE_IDS.map((id) => `<option value="${id}"${id === scale ? ' selected' : ''}>${tr(SCALES[id].name, locale)}</option>`).join('');
   if (scaleSel.dataset['html'] !== scaleOpts) {
     scaleSel.innerHTML = scaleOpts;
     scaleSel.dataset['html'] = scaleOpts;
@@ -1265,9 +1350,16 @@ function renderProtocol() {
     st.kind === 'reached' && OPERATIONS[p.action].duration ? `✓ ${D(st.at)}` : st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
   // Weighings before the step ran, and after it (in the pause before the next one).
   const weighed = (log: ExperimentResult<LabCommand>['log'], start: number, before: boolean) =>
-    weighingsOf(log)
+    readingsOf(log)
       .filter((w) => (w.time <= start + 1e-9) === before)
-      .map((w) => `<span class="weighed">${u.weigh.row(formatReading(w.scale, w.reading, locale))}</span>`)
+      .map(({ command: c, record: r }) => {
+        const text =
+          c.type === 'lab.weigh' ? u.weigh.row(formatReading(c.scale, r.value, locale))
+          : c.type === 'lab.read-level' ? u.measure.rowLevel(formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale))
+          : c.type === 'lab.hang' ? u.measure.rowHang(formatMeasured('force', r.value, 0.1, locale), c.into)
+          : '';
+        return `<span class="weighed">${text}</span>`;
+      })
       .join('');
   const rows = history.map((h) => {
     const ok = h.status.kind === 'reached' || h.status.kind === 'will-reach';
@@ -1278,7 +1370,15 @@ function renderProtocol() {
   const curLog = session.result().log;
   const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
   rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false)}${adds(pendingAdds)}</li>`);
-  for (const s of plan) rows.push(`<li class="planned"><span class="what">${s.kind === 'add' ? u.added(tr(SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })) : s.kind === 'weigh' ? u.weigh.button : tr(OPERATIONS[s.action].label, locale)}</span></li>`);
+  for (const s of plan) {
+    const label =
+      s.kind === 'add' ? u.added(tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' }))
+      : s.kind === 'weigh' ? u.weigh.button
+      : s.kind === 'level' ? u.measure.level
+      : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid)
+      : tr(OPERATIONS[s.action].label, locale);
+    rows.push(`<li class="planned"><span class="what">${label}</span></li>`);
+  }
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
   $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : finished ? u.protocolNext : u.protocolHint;
@@ -1725,13 +1825,14 @@ function planLabel(steps: readonly ProtocolStep[]): string {
   const u = t();
   const parts: string[] = [];
   for (const s of steps) {
-    if (s.kind === 'weigh') {
-      parts.push(locale === 'uk' ? 'зважити' : 'weigh');
-      continue;
+    if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang') {
+      parts.push(s.kind === 'weigh' ? (locale === 'uk' ? 'зважити' : 'weigh') : s.kind === 'level' ? u.measure.planLevel : u.measure.planHang(nameOfBody(s.substance).toLowerCase(), s.into));
+      // A measurement is a stop of its own: the reading first.
+      break;
     }
     if (s.kind === 'add') {
       const what = SUBSTANCES[s.substance];
-      parts.push(u.planAdd(tr(what.genitive ?? what.name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })));
+      parts.push(u.planAdd(tr(s.label ?? what.genitive ?? what.name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })));
       continue;
     }
     parts.push(tr(OPERATIONS[s.action].label, locale).replace('…', '').toLowerCase());
@@ -1745,13 +1846,17 @@ function nextPlanStep() {
   while (plan.length) {
     const s = plan.shift()!;
     if (s.kind === 'add') {
-      const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: s.substance, mass: s.mass as never, temperature: celsius(s.temperature), ...(s.frozen ? { frozen: true } : {}) });
-      if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: SUBSTANCES[s.substance].name, mass: s.mass });
+      const entry = session.apply(stepCommand(s, params));
+      if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: s.label ?? SUBSTANCES[s.substance].name, mass: s.mass });
+      boardEpoch++;
       continue;
     }
-    if (s.kind === 'weigh') {
-      // Stop at the scales: the reading (and the Professor's question) first, the next step on the next press.
-      weighNow(s.scale);
+    if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang') {
+      // Stop at the instrument: the reading (and the Professor's question) first, the next step on the next press.
+      if (s.kind === 'weigh') weighNow(s.scale);
+      else measureNow(stepCommand(s, params));
+      // The plan ended with a measurement: the question can be answered now.
+      if (!plan.length) answerPreset();
       break;
     }
     params = stepParams(params, s);
@@ -1826,8 +1931,8 @@ function startPreset(p: Preset) {
 /** What a ready-made experiment puts into the vessel before the start (hot water, a block from boiling water). */
 function presetSetup() {
   for (const s of preset?.setup ?? []) {
-    const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: s.substance, mass: s.mass as never, temperature: celsius(s.temperature), ...(s.frozen ? { frozen: true } : {}) });
-    if (entry.ok) stepAdds.push({ what: SUBSTANCES[s.substance].name, mass: s.mass });
+    const entry = session.apply(stepCommand(s, params));
+    if (entry.ok && s.kind === 'add') stepAdds.push({ what: s.label ?? SUBSTANCES[s.substance].name, mass: s.mass });
   }
   if (preset?.setup?.length) {
     boardEpoch++;
@@ -2146,6 +2251,8 @@ const labConsole = createConsole({
   scenes: () => ACTS.map((a) => a.name),
   news: () => byTheWay(),
   weigh: (sc) => weighNow(sc ?? scale),
+  level: () => measureNow({ type: 'lab.read-level', vessel: params.vessel, size: params.size }),
+  hang: (id, grams, into) => measureNow({ type: 'lab.hang', substance: id, mass: grams / 1000, into }),
   save: (name) => {
     const note = saveRecording(name);
     renderRecords();
@@ -2264,6 +2371,7 @@ function toggleStart() {
 }
 $('#reset').onclick = () => resetExperiment();
 $('#weigh').onclick = () => void weighNow(scale);
+$('#level').onclick = () => void measureNow({ type: 'lab.read-level', vessel: params.vessel, size: params.size });
 $<HTMLSelectElement>('#scale').onchange = (e) => {
   scale = (e.target as HTMLSelectElement).value as ScaleId;
   store.set('scale', scale);

@@ -19,7 +19,7 @@ import { LAB_ROOM_ID, labGoalReached, labProgress, noProgress, labSetup, labStat
  * added) carries over. Each step runs as its own experiment, so every step gets
  * its own headline, energy split and debrief.
  */
-export type ProtocolStep = OperationStep | AddStep | WeighStep;
+export type ProtocolStep = OperationStep | AddStep | WeighStep | LevelStep | HangStep;
 
 export interface OperationStep {
   readonly kind: 'operation';
@@ -40,12 +40,41 @@ export interface AddStep {
   readonly mass: number; // kg
   readonly temperature: number; // °C
   readonly frozen?: boolean;
+  /** Its name in the protocol ("an unknown metal"), instead of the substance's. */
+  readonly label?: LocalizedText;
 }
 
 /** Put the vessel on the scales and read them (changes nothing; the reading goes to the log). */
 export interface WeighStep {
   readonly kind: 'weigh';
   readonly scale: ScaleId;
+}
+
+/** Read the level of the liquid by the vessel's marks. */
+export interface LevelStep {
+  readonly kind: 'level';
+}
+
+/** Hang a body on the dynamometer, in the air or lowered into the liquid. */
+export interface HangStep {
+  readonly kind: 'hang';
+  readonly substance: SubstanceId;
+  readonly mass: number; // kg
+  readonly into: 'air' | 'liquid';
+}
+
+/** The lab command of a step that is not an operation: put something in, or measure. */
+export function stepCommand(step: Exclude<ProtocolStep, OperationStep>, base: LabParams): LabCommand {
+  switch (step.kind) {
+    case 'weigh':
+      return { type: 'lab.weigh', scale: step.scale };
+    case 'level':
+      return { type: 'lab.read-level', vessel: base.vessel, size: base.size };
+    case 'hang':
+      return { type: 'lab.hang', substance: step.substance, mass: step.mass, into: step.into };
+    case 'add':
+      return { type: 'thermal.add', into: SAMPLE_ID, substance: step.substance, mass: kilograms(step.mass), temperature: celsius(step.temperature), ...(step.frozen ? { frozen: true } : {}), ...(step.label ? { label: step.label } : {}) };
+  }
 }
 
 /** The lab parameters of one operation step: the same vessel and sample, this step's action and device. */
@@ -126,14 +155,10 @@ export function runProtocol(input: ProtocolInput): StepOutcome[] {
   const out: StepOutcome[] = [];
   let state: SystemState | undefined;
   for (const step of input.steps) {
-    if (step.kind === 'add' || step.kind === 'weigh') {
+    if (step.kind !== 'operation') {
       if (!state) state = labSetup(input.base).state;
       const session = createExperimentSession<LabCommand>({ initial: state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
-      const entry = session.apply(
-        step.kind === 'weigh'
-          ? { type: 'lab.weigh', scale: step.scale }
-          : { type: 'thermal.add', into: SAMPLE_ID, substance: step.substance, mass: kilograms(step.mass), temperature: celsius(step.temperature), ...(step.frozen ? { frozen: true } : {}) },
-      );
+      const entry = session.apply(stepCommand(step, input.base));
       const result = session.result();
       out.push({ step, result, entry, warnings: [] });
       state = result.final;

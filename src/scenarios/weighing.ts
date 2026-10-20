@@ -49,6 +49,7 @@ export const weighCommand: CommandHandler<WeighCommand> = {
   type: 'lab.weigh',
   apply(state, c) {
     if (!(c.scale in SCALES)) return err({ uk: `Невідомі ваги «${c.scale}»`, en: `Unknown scales "${c.scale}"` });
+    if (SCALES[c.scale].spec.quantity === 'force') return err({ uk: 'Динамометр не зважує посуд: на нього підвішують тіло.', en: 'A dynamometer does not weigh the vessel: a body is hung on it.' });
     if (!state.entities[entityId(LAB_VESSEL_ID)]) return err({ uk: 'Немає посуду, щоб зважити', en: 'There is no vessel to weigh' });
     const w = weigh(state, c.scale);
     const bodies = Object.values(state.entities).filter(isThermalBody).map((e) => e.id as EntityId);

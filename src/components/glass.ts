@@ -10,6 +10,17 @@ export const GLASS = {
   stateAtRoom: 'solid',
   phases: {
     solid: {
+      density: {
+        value: 2520,
+        unit: 'kg/m³',
+        conditions: 'soda-lime glass, 20 °C',
+        verification: 'cross-checked',
+        tolerance: 0.03,
+        citations: [
+          { source: 'wikipedia-soda-lime-glass', locator: 'Typical compositions and properties: density at 20 °C (container glass)', conditions: '20 °C', value: 2520 },
+          { source: 'engineeringtoolbox-solids-density', locator: 'Glass, common', conditions: 'not stated', range: [2400, 2800] },
+        ],
+      },
       specificHeat: {
         value: 840,
         unit: 'J/(kg·K)',

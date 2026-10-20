@@ -1,3 +1,4 @@
+import type { LocalizedText } from '../../knowledge/i18n.js';
 import type { CommandHandler } from '../../core/commands.js';
 import type { AnyEntity } from '../../core/entity.js';
 import { entityId } from '../../core/ids.js';
@@ -56,6 +57,8 @@ export interface AddCommand {
   readonly temperature: Kelvin;
   /** Add it frozen (an ice cube); needs freezing data and a temperature below the melting point. */
   readonly frozen?: boolean;
+  /** What to call the piece instead of its substance ("an unknown metal" in a guessing experiment). */
+  readonly label?: LocalizedText;
 }
 
 export type ThermalCommand = SetHeaterCommand | PourCommand | SetTemperatureCommand | AddCommand;
@@ -234,7 +237,7 @@ export const add: CommandHandler<AddCommand> = {
     const area = solidPiece || layerArea === undefined ? 6 * Math.cbrt(volume) ** 2 : layerArea;
     const body = thermalBody({
       id,
-      label: c.frozen && sub.solidName ? { uk: `${sub.solidName.uk} (додано)`, en: `${sub.solidName.en} (added)` } : { uk: `${sub.name.uk} (додано)`, en: `${sub.name.en} (added)` },
+      label: c.label ?? (c.frozen && sub.solidName ? { uk: `${sub.solidName.uk} (додано)`, en: `${sub.solidName.en} (added)` } : { uk: `${sub.name.uk} (додано)`, en: `${sub.name.en} (added)` }),
       mass: c.mass,
       specificHeat: specificHeat(th.specificHeat),
       substance: sub.id,

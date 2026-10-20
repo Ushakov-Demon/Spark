@@ -15,7 +15,7 @@ describe('the blackboard', () => {
   s.advance(120); // and let it boil a little
   s.apply({ type: 'lab.weigh', scale: 'kitchen-scale' });
   const r = s.result(false);
-  const lines = boardLines(ice, [...r.samples, r.final], 'uk', ['kitchen-scale'], true);
+  const lines = boardLines(ice, [...r.samples, r.final], 'uk', ['kitchen-scale'], true, r.log);
 
   it('writes each phase in the order it happened, then boiling and the weighing', () => {
     expect(lines.map((l) => l.formula)).toEqual(['Q = c·m·Δt', 'Q = λ·m', 'Q = c·m·Δt', 'Q = L·m', 'E = P·t', 'η = Q/E', 'm = m₁ + m₂']);
@@ -38,7 +38,7 @@ describe('the blackboard', () => {
   });
 
   it('every line is in both languages without broken numbers', () => {
-    const en = boardLines(ice, [...r.samples, r.final], 'en', ['kitchen-scale'], true);
+    const en = boardLines(ice, [...r.samples, r.final], 'en', ['kitchen-scale'], true, r.log);
     expect(en.length).toBe(lines.length);
     for (const l of [...lines, ...en]) expect(l.numbers).not.toMatch(/NaN|Infinity|undefined/);
   });

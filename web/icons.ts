@@ -17,6 +17,7 @@ const P: Readonly<Record<string, string>> = {
   pot: '<path d="M4 8h16v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><path d="M1.5 10H4M20 10h2.5"/><path d="M8 5h8"/>',
   turka: '<path d="M7 6h8l1.5 13a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19z"/><path d="M15.5 9l7-4"/>',
   beaker: '<path d="M5 3h12M6 3v15a3 3 0 0 0 3 3h5a3 3 0 0 0 3-3V3"/><path d="M6 12h11M9 7h2M9 15h2"/>',
+  cylinder: '<path d="M9 2.5h7M10 3v16h5V3"/><path d="M7 21h11l-1.5-2h-8z"/><path d="M10 8h2M10 12h3M10 16h2"/>',
   calorimeter: '<path d="M7 5v13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5"/><path d="M3.5 7v13.5h17V7"/><path d="M2 5h20"/><path d="M7 12h10"/>',
   'flask-conical': '<path d="M9 3h6M10 3v6l-6 10a1.5 1.5 0 0 0 1.3 2.2h13.4A1.5 1.5 0 0 0 20 19l-6-10V3"/><path d="M6.5 15h11"/>',
   'flask-round': '<path d="M10 3h4M10.5 3v6.5a6 6 0 1 0 3 0V3"/><path d="M7 15h10"/>',

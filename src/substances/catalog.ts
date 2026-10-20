@@ -28,6 +28,8 @@ const CATEGORY: Partial<Record<ComponentGroup, SubstanceCategory>> = {
   // Metal blocks: put into a liquid (heated in boiling water) — they are never the sample itself.
   metal: 'solid.metal',
   alloy: 'solid.metal',
+  // Other solid bodies: a wooden block floats, a glass ball sinks.
+  material: 'solid.material',
 };
 
 /** Molar mass as a sourced value: computed from the formula with standard atomic weights. */
@@ -133,6 +135,8 @@ const SHELF = [
   { id: 'iron', component: 'iron' },
   { id: 'steel', component: 'steel' },
   { id: 'brass', component: 'brass' },
+  { id: 'wood', component: 'wood', as: { name: { uk: 'Дерев’яний брусок (сосна)', en: 'Wooden block (pine)' }, gender: 'm' } },
+  { id: 'glass', component: 'glass', as: { name: { uk: 'Скляна кулька', en: 'Glass marble' }, gender: 'f' } },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];
 
 export type SubstanceId = (typeof SHELF)[number]['id'];
@@ -149,4 +153,5 @@ export const SUBSTANCE_CATEGORIES: readonly { readonly id: SubstanceItem['catego
   { id: 'liquid.oil', name: { uk: 'Олії', en: 'Oils' } },
   { id: 'solid.salt', name: { uk: 'Солі', en: 'Salts' } },
   { id: 'solid.metal', name: { uk: 'Метали й сплави', en: 'Metals and alloys' } },
+  { id: 'solid.material', name: { uk: 'Інші тверді тіла', en: 'Other solids' } },
 ];

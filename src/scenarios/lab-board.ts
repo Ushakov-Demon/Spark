@@ -9,6 +9,8 @@ import type { Locale } from '../knowledge/i18n.js';
 import { COMPONENTS } from '../components/index.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { formatReading, weigh } from './weighing.js';
+import { formatMeasured } from './measuring.js';
+import type { MeasurementRecord } from '../core/trace.js';
 import type { ScaleId } from '../equipment/scales.js';
 import { SAMPLE_ID, sampleOf, type LabParams } from './thermal-lab.js';
 
@@ -198,8 +200,11 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     if (useful > 0) out.push({ id: 'efficiency', title: uk ? 'ККД: скільки дісталося речовині' : 'efficiency: what the substance got', formula: 'η = Q/E', numbers: `${kJ(useful)} / ${kJ(E)} ≈ ${Math.round((useful / E) * 100)} %` });
   }
 
+  out.push(...measuredLines(log, locale));
+
   // The latest weighing: what the scales show is the vessel plus what is in it.
-  const scale = weighed[weighed.length - 1];
+  // Only while it is the latest thing done: after that the contents may have changed.
+  const scale = log[log.length - 1]?.command.type === 'lab.weigh' ? weighed[weighed.length - 1] : undefined;
   if (scale) {
     const w = weigh(states[states.length - 1]!, scale);
     if (w.reading !== null && w.tare !== null) {
@@ -207,5 +212,76 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
       out.push({ id: 'weigh', title: uk ? 'зважування: посуд + вміст' : 'weighing: vessel + contents', formula: 'm = m₁ + m₂', numbers: `${g(w.tare)} + ${g(w.reading - w.tare)} = ${g(w.reading)}` });
     }
   }
+  return out;
+}
+
+/**
+ * What the instruments told, as formulas: the volume of a body from the marks (V = V₂ − V₁),
+ * its mass from the scales (m = m₂ − m₁) and so its density; its weight on the dynamometer,
+ * and the buoyant force two ways — from the readings (P − P′) and from Archimedes (ρ·g·V).
+ */
+function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], locale: Locale): BoardLine[] {
+  const uk = locale === 'uk';
+  const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
+  const out: BoardLine[] = [];
+  let lastV: { v: number; div: number } | null = null;
+  let lastM: { m: number; scale: string } | null = null;
+  let addedSince = { v: false, m: false };
+  let body: { m?: number; v?: number } = {};
+  const airByBody = new Map<string, number>();
+  log.forEach((e, i) => {
+    if (!e.ok) return;
+    const c = e.command as { type: string } & Record<string, unknown>;
+    if (c.type === 'thermal.add') {
+      const sub = SUBSTANCES[c['substance'] as keyof typeof SUBSTANCES];
+      if (sub?.category.startsWith('solid.') || c['frozen']) addedSince = { v: true, m: true };
+      return;
+    }
+    const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement');
+    if (!r || r.value === null) return;
+    if (r.quantity === 'volume') {
+      const div = r.inputs?.['division'] ?? 1e-6;
+      if (lastV && addedSince.v) {
+        const dv = r.value - lastV.v;
+        body = { ...body, v: dv };
+        out.push({ id: `vol:${i}`, title: uk ? 'об’єм тіла — на скільки піднялася рідина' : 'the volume of the body — how far the liquid rose', formula: 'V = V₂ − V₁', numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', dv, div, locale)}` });
+      }
+      lastV = { v: r.value, div };
+      addedSince = { ...addedSince, v: false };
+    } else if (r.quantity === 'mass') {
+      const scale = r.instrument;
+      if (lastM && addedSince.m && lastM.scale === scale) {
+        const dm = r.value - lastM.m;
+        body = { ...body, m: dm };
+        out.push({ id: `mass:${i}`, title: uk ? 'маса тіла — на скільки збільшилися покази терезів' : 'the mass of the body — how much the reading grew', formula: 'm = m₂ − m₁', numbers: `${formatReading(scale as ScaleId, r.value, locale)} − ${formatReading(scale as ScaleId, lastM.m, locale)} = ${formatReading(scale as ScaleId, dm, locale)}` });
+      }
+      lastM = { m: r.value, scale };
+      addedSince = { ...addedSince, m: false };
+    } else if (r.quantity === 'force') {
+      const key = `${String(c['substance'])}:${String(c['mass'])}`;
+      const g = r.inputs?.['g'] ?? 9.80665;
+      const N = (x: number) => formatMeasured('force', x, 0.01, locale);
+      if (c['into'] === 'air') {
+        airByBody.set(key, r.value);
+        out.push({ id: `P:${i}`, title: uk ? 'вага тіла у повітрі' : 'the weight of the body in the air', formula: 'P = m·g', numbers: `${n(Number(c['mass']))} · ${n(g, 3)} ≈ ${N(Number(c['mass']) * g)} (${uk ? 'динамометр' : 'dynamometer'}: ${formatMeasured('force', r.value, 0.1, locale)})` });
+      } else {
+        const air = airByBody.get(key);
+        if ((r.inputs?.['share'] ?? 1) < 1) {
+          out.push({ id: `float:${i}`, title: uk ? 'тіло плаває: архімедова сила зрівнялася з вагою' : 'the body floats: the buoyant force equals its weight', formula: 'F_A = P', numbers: `ρ_т < ρ_р: ${n(Number(c['mass']) / (r.inputs?.['volume'] ?? 1))} < ${n(r.inputs?.['rhoLiquid'] ?? 1000)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+          return;
+        }
+        if (air !== undefined) out.push({ id: `FA:${i}`, title: uk ? 'архімедова сила — за показами динамометра' : 'the buoyant force — from the dynamometer', formula: 'F_A = P − P′', numbers: `${formatMeasured('force', air, 0.1, locale)} − ${formatMeasured('force', r.value, 0.1, locale)} = ${formatMeasured('force', air - r.value, 0.1, locale)}` });
+        const rho = r.inputs?.['rhoLiquid'];
+        const V = r.inputs?.['volume'];
+        if (rho && V) out.push({ id: `FAr:${i}`, title: uk ? 'архімедова сила — за законом Архімеда' : 'the buoyant force — by Archimedes', formula: 'F_A = ρ·g·V', numbers: `${n(rho)} · ${n(g, 3)} · ${n(V)} ≈ ${N(rho * g * V)}` });
+      }
+    }
+    // Both the mass and the volume of the body are known: its density.
+    if (body.m !== undefined && body.v !== undefined && body.v > 0) {
+      const rho = body.m / body.v;
+      out.push({ id: `rho:${i}`, title: uk ? 'густина речовини тіла' : 'the density of the body', formula: 'ρ = m / V', numbers: `${n(body.m * 1000)} ${uk ? 'г' : 'g'} / ${n(body.v * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(rho / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(rho)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+      body = {};
+    }
+  });
   return out;
 }

@@ -115,6 +115,10 @@ export interface VesselSpec {
   readonly lid: 'none' | 'optional';
   /** Lid mass as a fraction of the vessel mass. */
   readonly lidMassFraction?: SourcedValue;
+  /** Volume marks: one division, m³ (a measuring cylinder 1 mL; a beaker's marks are rough). */
+  readonly graduation?: SourcedValue;
+  /** Only for measuring (a measuring cylinder): never put on a heater. */
+  readonly measuringOnly?: boolean;
   /** A calorimeter: the cup stands in an outer one with an air gap of this width, m — heat leaks out slowly. */
   readonly jacket?: { readonly gap: SourcedValue };
 }
@@ -181,7 +185,9 @@ export interface ElectrodesSpec {
 
 /** Electronic scales: what they can hold and how finely they show it. */
 export interface ScaleSpec {
-  /** The most they weigh, kg; above it they show an overload. */
+  /** What it measures: mass (kg, scales) or force (N, a dynamometer). Default mass. */
+  readonly quantity?: 'mass' | 'force';
+  /** The most they weigh, kg (N for a dynamometer); above it they show an overload. */
   readonly capacity: SourcedValue;
   /** Scale division (readability), kg: the reading is rounded to it. */
   readonly resolution: SourcedValue;
