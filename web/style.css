@@ -393,3 +393,74 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 
 .car-track .tile { font-size: 0.76rem; hyphens: auto; overflow-wrap: anywhere; padding: 8px 3px; }
 .car-track .tile span { display: block; max-width: 100%; }
+
+/* ---------- the Professor gets bored: idle scenes ---------- */
+.prof-svg g, .prof-svg rect, .prof-svg path, .prof-svg ellipse { transform-box: view-box; }
+.p-head { transform-origin: 100px 160px; }
+.p-hand-l { transform-origin: 54px 210px; }
+.p-hand-r { transform-origin: 146px 210px; }
+.p-leg-l { transform-origin: 86px 268px; }
+.p-leg-r { transform-origin: 114px 270px; }
+.p-glasses, .p-zzz, .p-chalk-fly { transform-origin: 100px 100px; }
+
+/* Pacing back and forth: the figure walks, turns, walks back (the speech bubble travels with him). */
+.scene-prof.act-pace { animation: pace-move 9s ease-in-out; }
+.scene-prof.act-pace .prof { animation: pace-flip 9s steps(1, end); }
+.scene-prof.act-pace .p-leg-l { animation: step 0.45s ease-in-out infinite alternate; }
+.scene-prof.act-pace .p-leg-r { animation: step 0.45s ease-in-out infinite alternate-reverse; }
+.scene-prof.act-pace .p-head { animation: bob 0.45s ease-in-out infinite alternate; }
+@keyframes pace-move { 0% { transform: translateX(0); } 45% { transform: translateX(110%); } 55% { transform: translateX(110%); } 100% { transform: translateX(0); } }
+@keyframes pace-flip { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+@keyframes step { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+
+/* Glasses: pushed up onto the forehead, pockets searched, they drop back onto the nose. */
+.scene-prof.act-glasses .p-glasses { animation: glasses-up 9s ease-in-out; }
+.scene-prof.act-glasses .p-hand-r { animation: pat-right 9s ease-in-out; }
+.scene-prof.act-glasses .p-hand-l { animation: pat-left 9s ease-in-out; }
+.scene-prof.act-glasses .p-head { animation: look-around 9s ease-in-out; }
+@keyframes glasses-up { 0% { transform: translateY(0); } 8%, 74% { transform: translateY(-30px); } 80% { transform: translateY(2px); } 84%, 100% { transform: translateY(0); } }
+@keyframes pat-right { 0%, 24% { transform: none; } 28%, 36%, 44% { transform: translate(-28px, -50px); } 32%, 40% { transform: translate(-28px, -44px); } 50%, 58% { transform: translate(-40px, -14px); } 54% { transform: translate(-40px, -8px); } 64%, 100% { transform: none; } }
+@keyframes pat-left { 0%, 30% { transform: none; } 38%, 46% { transform: translate(30px, -16px); } 42% { transform: translate(30px, -10px); } 54%, 100% { transform: none; } }
+@keyframes look-around { 0%, 24% { transform: none; } 32% { transform: rotate(-8deg); } 46% { transform: rotate(8deg); } 60%, 100% { transform: none; } }
+
+/* Stretch and yawn. */
+.scene-prof.act-yawn .p-hand-l { animation: stretch-l 6s ease-in-out; }
+.scene-prof.act-yawn .p-hand-r { animation: stretch-r 6s ease-in-out; }
+.scene-prof.act-yawn .p-mouth { animation: hide-mid 6s; }
+.scene-prof.act-yawn .p-yawn { animation: show-mid 6s; }
+.scene-prof.act-yawn .p-eyes { animation: hide-mid 6s; }
+.scene-prof.act-yawn .p-sleep-eyes { animation: show-mid 6s; }
+@keyframes stretch-l { 0% { transform: none; } 25%, 65% { transform: rotate(150deg); } 80%, 100% { transform: none; } }
+@keyframes stretch-r { 0% { transform: none; } 25%, 65% { transform: rotate(-150deg); } 80%, 100% { transform: none; } }
+@keyframes hide-mid { 0%, 18% { opacity: 1; } 22%, 70% { opacity: 0; } 74%, 100% { opacity: 1; } }
+@keyframes show-mid { 0%, 18% { opacity: 0; } 22%, 70% { opacity: 1; } 74%, 100% { opacity: 0; } }
+
+/* Dozing off standing up — and waking with a start. */
+.scene-prof.act-sleep .p-eyes { animation: hide-sleep 10s; }
+.scene-prof.act-sleep .p-sleep-eyes { animation: show-sleep 10s; }
+.scene-prof.act-sleep .p-zzz { animation: zzz 10s ease-in-out; }
+.scene-prof.act-sleep .p-head { animation: nod 10s ease-in-out; }
+.scene-prof.act-sleep .prof { animation: start-up 10s ease-out; }
+@keyframes hide-sleep { 0%, 8% { opacity: 1; } 12%, 80% { opacity: 0; } 82%, 100% { opacity: 1; } }
+@keyframes show-sleep { 0%, 8% { opacity: 0; } 12%, 80% { opacity: 1; } 82%, 100% { opacity: 0; } }
+@keyframes zzz { 0%, 14% { opacity: 0; transform: translate(0, 6px); } 30%, 70% { opacity: 1; transform: translate(0, 0); } 79% { opacity: 1; transform: translate(4px, -10px); } 81%, 100% { opacity: 0; } }
+@keyframes nod { 0%, 12% { transform: none; } 25% { transform: rotate(6deg) translateY(4px); } 32% { transform: rotate(2deg); } 48% { transform: rotate(8deg) translateY(6px); } 56% { transform: rotate(3deg); } 72% { transform: rotate(10deg) translateY(8px); } 80% { transform: rotate(-4deg); } 86%, 100% { transform: none; } }
+@keyframes start-up { 0%, 79% { transform: none; } 81% { transform: translateY(-10px); } 85%, 100% { transform: none; } }
+
+/* Tossing a piece of chalk and catching it, while an idea comes. */
+.scene-prof.act-chalk .p-chalk { animation: hide-toss 7s; }
+.scene-prof.act-chalk .p-chalk-fly { animation: toss 7s ease-in-out; }
+.scene-prof.act-chalk .p-hand-r { animation: flick 7s ease-in-out; }
+.scene-prof.act-chalk .p-head { animation: watch 7s ease-in-out; }
+@keyframes hide-toss { 0%, 6% { opacity: 1; } 8%, 92% { opacity: 0; } 94%, 100% { opacity: 1; } }
+@keyframes toss { 0%, 6% { opacity: 0; transform: none; } 8% { opacity: 1; transform: translate(6px, 16px); } 22% { transform: translate(-6px, -120px) rotate(400deg); } 36% { transform: translate(6px, 16px) rotate(720deg); } 50% { transform: translate(-6px, -140px) rotate(1080deg); } 64% { transform: translate(6px, 16px) rotate(1440deg); } 92% { opacity: 1; transform: translate(6px, 16px) rotate(1440deg); } 94%, 100% { opacity: 0; } }
+@keyframes flick { 0%, 6% { transform: none; } 8%, 36% { transform: rotate(-20deg); } 12%, 40% { transform: rotate(4deg); } 64%, 100% { transform: none; } }
+@keyframes watch { 0%, 8% { transform: none; } 18%, 46% { transform: rotate(-5deg) translateY(-2px); } 30%, 60% { transform: rotate(3deg); } 70%, 100% { transform: none; } }
+
+/* Tapping a foot and glancing at the wrist. */
+.scene-prof.act-tap .p-leg-r { animation: tap 0.4s ease-in-out 8; }
+.scene-prof.act-tap .p-hand-l { animation: wrist 6s ease-in-out; }
+@keyframes tap { 0%, 100% { transform: none; } 50% { transform: rotate(-14deg); } }
+@keyframes wrist { 0%, 30% { transform: none; } 40%, 70% { transform: rotate(-95deg); } 80%, 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .scene-prof, .scene-prof * { animation: none !important; } }

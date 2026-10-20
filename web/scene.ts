@@ -53,7 +53,8 @@ export interface SceneView {
   readonly running: boolean;
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
-  readonly professor: { readonly mood: Mood; readonly says: string };
+  /** `act` — an idle scene the Professor plays when nobody does anything ("pace", "glasses"…). */
+  readonly professor: { readonly mood: Mood; readonly says: string; readonly act?: string };
 }
 
 export interface Scene {
@@ -280,6 +281,8 @@ export function createScene(): Scene {
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
   let key = '';
   let mood: Mood | null = null;
+  let act = '';
+  const profBox = root.querySelector<HTMLElement>('.scene-prof')!;
   let geom: VesselGeom | null = null;
   const $ = <T extends Element>(id: string) => svg.querySelector<T>(`#${id}`);
 
@@ -417,6 +420,16 @@ export function createScene(): Scene {
       if (v.professor.mood !== mood) {
         mood = v.professor.mood;
         prof.innerHTML = professorSvg(mood, 110);
+      }
+      // An idle scene: one CSS class on the figure; a new scene restarts its animation.
+      const nextAct = v.professor.act ?? '';
+      if (nextAct !== act) {
+        if (act) profBox.classList.remove(`act-${act}`);
+        act = nextAct;
+        if (act) {
+          void profBox.offsetWidth;
+          profBox.classList.add(`act-${act}`);
+        }
       }
       if (says.textContent !== v.professor.says) says.textContent = v.professor.says;
       says.hidden = !v.professor.says;

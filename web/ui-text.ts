@@ -19,6 +19,15 @@ export interface UiText {
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
+  /** What the bored Professor says during his idle scenes, line by line. */
+  idle: {
+    pace: readonly string[];
+    glasses: readonly string[];
+    yawn: readonly string[];
+    sleep: readonly string[];
+    chalk: (idea: string) => readonly string[];
+    tap: readonly string[];
+  };
   reference: string;
   lockedDuringExperiment: string;
   presetsButton: string;
@@ -165,6 +174,14 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
+    idle: {
+      pace: ['Хм… хм…', 'Що б його таке дослідити?..', 'Може, щось заморозити? Або закип’ятити?'],
+      glasses: ['Так… А де ж мої окуляри?', 'Невже знову загубив?.. Кишеня… друга кишеня…', 'А, ось вони! На носі ж були.'],
+      yawn: ['Аааах…', 'Може, закип’ятимо щось?'],
+      sleep: ['Хррр… z-z-z…', 'Хррр…', 'Е-е?! Я не сплю! Я думаю!'],
+      chalk: (idea) => ['Цікаво…', `…${idea.charAt(0).toLowerCase()}${idea.slice(1)}`, 'Спробуємо? Глянь «Досліди за класами».'],
+      tap: ['Тік-так…', 'Наука чекає!'],
+    },
     reference: 'Довідка',
     lockedDuringExperiment: 'Під час досліду речовину й посуд не міняють — щоб почати інший дослід, натисни «Спочатку».',
     presetsButton: 'Досліди за класами',
@@ -309,6 +326,14 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
+    idle: {
+      pace: ['Hmm… hmm…', 'What shall we investigate?..', 'Freeze something, perhaps? Or boil it?'],
+      glasses: ['Now… where are my glasses?', 'Lost them again?.. This pocket… that pocket…', 'Ah, there they are! On my nose all along.'],
+      yawn: ['Aaah…', 'Shall we boil something?'],
+      sleep: ['Zzz…', 'Snore…', 'Eh?! I’m not asleep! I’m thinking!'],
+      chalk: (idea) => ['I wonder…', `…${idea.charAt(0).toLowerCase()}${idea.slice(1)}`, 'Shall we try? See “Experiments by grade”.'],
+      tap: ['Tick-tock…', 'Science is waiting!'],
+    },
     reference: 'Reference',
     lockedDuringExperiment: 'The substance and the vessel stay during an experiment — press “Start over” for another one.',
     presetsButton: 'Experiments by grade',

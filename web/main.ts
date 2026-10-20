@@ -320,6 +320,78 @@ function sendPower(v: number) {
   render();
 }
 
+// ---------- the Professor gets bored ----------
+/**
+ * When nobody touches anything for a while (and no experiment is running), the
+ * Professor plays a little scene: paces, loses his glasses, yawns, dozes off,
+ * tosses chalk, taps his foot. Any action of the user ends it at once.
+ */
+// ?idle=3 in the address: start after 3 s (to see the scenes without waiting).
+const IDLE_START = (Number(new URLSearchParams(location.search).get('idle')) || 25) * 1000;
+interface IdleAct {
+  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap';
+  readonly mood: SceneView['professor']['mood'];
+  readonly length: number; // ms, matches the CSS animation
+  readonly lines: readonly string[];
+  readonly started: number;
+}
+const ACTS: readonly { name: IdleAct['name']; mood: IdleAct['mood']; length: number }[] = [
+  { name: 'pace', mood: 'thinking', length: 9000 },
+  { name: 'glasses', mood: 'thinking', length: 9000 },
+  { name: 'yawn', mood: 'neutral', length: 6000 },
+  { name: 'sleep', mood: 'neutral', length: 10_000 },
+  { name: 'chalk', mood: 'thinking', length: 7000 },
+  { name: 'tap', mood: 'neutral', length: 6000 },
+];
+let lastActivity = performance.now();
+let nextActAt = lastActivity + IDLE_START;
+let idleAct: IdleAct | null = null;
+let lastActName = '';
+let idleLine = -1;
+const touched = () => {
+  lastActivity = performance.now();
+  nextActAt = lastActivity + IDLE_START;
+  if (idleAct) {
+    idleAct = null;
+    idleLine = -1;
+    render();
+  }
+};
+for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) window.addEventListener(ev, touched, { passive: true, capture: true });
+
+/** Start, advance or end an idle scene; true when the picture or the line changed. */
+function idleTick(now: number): boolean {
+  if (running || document.hidden) {
+    if (!idleAct) return false;
+    idleAct = null;
+    return true;
+  }
+  if (idleAct) {
+    const t = now - idleAct.started;
+    if (t >= idleAct.length) {
+      idleAct = null;
+      idleLine = -1;
+      // A pause between scenes, a little different every time.
+      nextActAt = now + IDLE_START + Math.random() * IDLE_START * 0.8;
+      return true;
+    }
+    const line = Math.min(idleAct.lines.length - 1, Math.floor((t / idleAct.length) * idleAct.lines.length));
+    if (line === idleLine) return false;
+    idleLine = line;
+    return true;
+  }
+  if (now < nextActAt) return false;
+  const pool = ACTS.filter((a) => a.name !== lastActName);
+  const a = pool[Math.floor(Math.random() * pool.length)]!;
+  lastActName = a.name;
+  const u = t();
+  const idea = PRESETS[Math.floor(Math.random() * PRESETS.length)]!;
+  const lines = a.name === 'chalk' ? u.idle.chalk(tr(idea.title, locale)) : u.idle[a.name];
+  idleAct = { ...a, lines, started: now };
+  idleLine = 0;
+  return true;
+}
+
 // ---------- main loop ----------
 function frame(now: number) {
   const realDt = Math.min(0.1, (now - (lastFrame || now)) / 1000);
@@ -333,7 +405,7 @@ function frame(now: number) {
     if (reached) stop();
     else if (stalled()) stop();
     render();
-  }
+  } else if (idleTick(now)) render();
   requestAnimationFrame(frame);
 }
 
@@ -599,7 +671,9 @@ function sceneView(): SceneView {
   // The Professor: what is going on, in one line.
   const st = doneRecord?.status;
   const nextLabel = plan.length ? planLabel(plan) : '';
-  const professor: SceneView['professor'] = preset && !running && stepElapsed() === 0 && !history.length && !st
+  const professor: SceneView['professor'] = idleAct
+    ? { mood: idleAct.mood, says: idleAct.lines[Math.max(0, idleLine)] ?? '', act: idleAct.name }
+    : preset && !running && stepElapsed() === 0 && !history.length && !st
     ? { mood: 'thinking', says: tr(preset.question, locale) }
     : st && nextLabel
     ? { mood: st.kind === 'reached' ? 'happy' : 'thinking', says: u.planNext(nextLabel) }

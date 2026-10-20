@@ -77,16 +77,18 @@ export function professorSvg(mood: Mood = 'neutral', size = 220): string {
        <path d="M164,152 h28" stroke="#4aa8ff" stroke-width="6"/>`
     : `<path d="M150,214 q10,24 6,46" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M150,214 q10,24 6,46" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
        <circle cx="156" cy="262" r="8" fill="${skin}"/>
-       <rect x="160" y="256" width="12" height="4" rx="1.5" fill="#fff" stroke="#bbb" transform="rotate(-20 160 256)"/>`;
+       <rect class="p-chalk" x="160" y="256" width="12" height="4" rx="1.5" fill="#fff" stroke="#bbb" transform="rotate(-20 160 256)"/>`;
   const thinkingHand = mood === 'thinking'
     ? `<path d="M50,214 q-10,-20 30,-62" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M50,214 q-10,-20 30,-62" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="84" cy="146" r="8" fill="${skin}"/>`
     : `<path d="M50,214 q-12,24 -6,46" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M50,214 q-12,24 -6,46" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="44" cy="262" r="8" fill="${skin}"/>`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="${size}" height="${(size * 3) / 2}" role="img" aria-label="Professor (${mood})">
+  // Parts are grouped (legs, hands, head, eyes, glasses, mouth) so the idle scenes can move them;
+  // closed eyes, a yawning mouth, "z-z-z" and a flying piece of chalk wait hidden until needed.
+  return `<svg class="prof-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="${size}" height="${(size * 3) / 2}" role="img" aria-label="Professor (${mood})">
   ${smoke}
   <!-- legs and shoes -->
-  <rect x="78" y="268" width="16" height="26" fill="#3d4652"/><rect x="106" y="268" width="16" height="26" fill="#3d4652"/>
-  <ellipse cx="84" cy="295" rx="14" ry="5" fill="#2a2a2a"/><ellipse cx="118" cy="295" rx="14" ry="5" fill="#2a2a2a"/>
+  <g class="p-leg-l"><rect x="78" y="268" width="16" height="26" fill="#3d4652"/><ellipse cx="84" cy="295" rx="14" ry="5" fill="#2a2a2a"/></g>
+  <g class="p-leg-r"><rect x="106" y="268" width="16" height="26" fill="#3d4652"/><ellipse cx="118" cy="295" rx="14" ry="5" fill="#2a2a2a"/></g>
   <!-- lab coat, put on a bit crooked: left shoulder higher -->
   <path d="M58,170 q42,-24 86,4 l14,104 h-116 z" fill="${coat}" stroke="#9aa0a6" stroke-width="2"/>
   <path d="M92,166 l8,22 8,-20" fill="#7aa7d9"/>
@@ -100,20 +102,26 @@ export function professorSvg(mood: Mood = 'neutral', size = 220): string {
   <rect x="112" y="196" width="20" height="16" rx="2" fill="none" stroke="#9aa0a6" stroke-width="2"/>
   <path d="M117,197 v-8 M123,197 v-10" stroke="#2f6fcf" stroke-width="3" stroke-linecap="round"/>
   ${sooty ? '<g fill="#555" opacity="0.6"><circle cx="80" cy="210" r="7"/><circle cx="126" cy="250" r="9"/><circle cx="70" cy="258" r="5"/></g>' : ''}
-  ${thinkingHand}
-  ${hand}
+  <g class="p-hand-l">${thinkingHand}</g>
+  <g class="p-hand-r">${hand}</g>
+  <rect class="p-chalk-fly" opacity="0" x="150" y="240" width="12" height="4" rx="1.5" fill="#fff" stroke="#bbb"/>
   <!-- neck and head -->
   <rect x="92" y="148" width="16" height="16" fill="${skin}"/>
+  <g class="p-head">
   <ellipse cx="62" cy="104" rx="7" ry="10" fill="${skin}"/><ellipse cx="138" cy="106" rx="7" ry="10" fill="${skin}"/>
   <ellipse cx="100" cy="104" rx="40" ry="48" fill="${skin}"/>
   ${tufts}
   <path d="${brows[mood]}" stroke="${hair}" stroke-width="5" stroke-linecap="round" fill="none"/>
-  <g fill="#222">${eyes[mood]}</g>
-  ${glasses}
+  <g class="p-eyes" fill="#222">${eyes[mood]}</g>
+  <path class="p-sleep-eyes" opacity="0" d="M80,99 q6,4 12,0 M108,101 q6,4 12,0" stroke="#222" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <g class="p-glasses">${glasses}</g>
   <!-- nose and a bushy moustache -->
   <path d="M100,104 q-6,12 2,14" stroke="#c9906a" stroke-width="3" fill="none" stroke-linecap="round"/>
   <path d="M84,124 q8,-8 16,-2 q8,-6 16,2 q-8,4 -16,0 q-8,4 -16,0 z" fill="${hair}"/>
-  ${mouths[mood]}
+  <g class="p-mouth">${mouths[mood]}</g>
+  <ellipse class="p-yawn" opacity="0" cx="100" cy="134" rx="8" ry="11" fill="#7a3b2e"/>
   ${sooty ? '<g fill="#3a3a3a" opacity="0.45"><circle cx="76" cy="116" r="8"/><circle cx="124" cy="80" r="6"/></g>' : ''}
+  </g>
+  <g class="p-zzz" opacity="0" fill="#5b8cff" font-family="Georgia, serif" font-weight="700"><text x="140" y="70" font-size="16">z</text><text x="152" y="52" font-size="20">z</text><text x="166" y="30" font-size="25">Z</text></g>
 </svg>`;
 }
