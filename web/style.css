@@ -473,14 +473,14 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .answer p { margin: 0 0 4px; line-height: 1.5; }
 .messages .answer p { background: none; padding: 0; border-radius: 0; }
 
-/* Coffee break: the mug appears, rises to the moustache, a sip, a happy squint. */
-.p-mug { transform-origin: 40px 260px; }
-.scene-prof.act-coffee .p-mug { animation: mug 9s ease-in-out; }
+/* Coffee break: the hanging arm is swapped for one bent at the elbow, holding the mug at the moustache; two sips. */
+.p-coffee { transform-origin: 76px 250px; }
+.scene-prof.act-coffee .p-coffee { animation: coffee-arm 9s ease-in-out; }
+.scene-prof.act-coffee .p-hand-l { animation: coffee-swap 9s; }
 .scene-prof.act-coffee .p-mug-steam path { animation: steam 1.6s ease-out infinite; }
-.scene-prof.act-coffee .p-hand-l { animation: mug-hand 9s ease-in-out; }
 .scene-prof.act-coffee .p-eyes { animation: sip-eyes 9s; }
 .scene-prof.act-coffee .p-sleep-eyes { animation: sip-squint 9s; }
-@keyframes mug { 0% { opacity: 0; transform: none; } 6% { opacity: 1; transform: none; } 22%, 34% { opacity: 1; transform: translate(50px, -122px) rotate(-22deg); } 44%, 54% { opacity: 1; transform: translate(40px, -100px) rotate(0deg); } 62%, 72% { opacity: 1; transform: translate(50px, -122px) rotate(-26deg); } 84% { opacity: 1; transform: none; } 94%, 100% { opacity: 0; transform: none; } }
-@keyframes mug-hand { 0%, 6% { transform: none; } 22%, 34% { transform: rotate(-128deg); } 44%, 54% { transform: rotate(-108deg); } 62%, 72% { transform: rotate(-128deg); } 84%, 100% { transform: none; } }
+@keyframes coffee-arm { 0%, 5% { opacity: 0; transform: rotate(14deg); } 10% { opacity: 1; transform: rotate(6deg); } 22%, 34% { opacity: 1; transform: rotate(-3deg); } 44%, 54% { opacity: 1; transform: rotate(5deg); } 62%, 72% { opacity: 1; transform: rotate(-4deg); } 84% { opacity: 1; transform: rotate(10deg); } 88%, 100% { opacity: 0; transform: rotate(14deg); } }
+@keyframes coffee-swap { 0%, 5% { opacity: 1; } 8%, 86% { opacity: 0; } 89%, 100% { opacity: 1; } }
 @keyframes sip-eyes { 0%, 24% { opacity: 1; } 26%, 34% { opacity: 0; } 36%, 63% { opacity: 1; } 65%, 72% { opacity: 0; } 74%, 100% { opacity: 1; } }
 @keyframes sip-squint { 0%, 24% { opacity: 0; } 26%, 34% { opacity: 1; } 36%, 63% { opacity: 0; } 65%, 72% { opacity: 1; } 74%, 100% { opacity: 0; } }

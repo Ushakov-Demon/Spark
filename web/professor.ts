@@ -102,7 +102,6 @@ export function professorSvg(mood: Mood = 'neutral', size = 220): string {
   <rect x="112" y="196" width="20" height="16" rx="2" fill="none" stroke="#9aa0a6" stroke-width="2"/>
   <path d="M117,197 v-8 M123,197 v-10" stroke="#2f6fcf" stroke-width="3" stroke-linecap="round"/>
   ${sooty ? '<g fill="#555" opacity="0.6"><circle cx="80" cy="210" r="7"/><circle cx="126" cy="250" r="9"/><circle cx="70" cy="258" r="5"/></g>' : ''}
-  <g class="p-hand-l">${thinkingHand}</g>
   <g class="p-hand-r">${hand}</g>
   <rect class="p-chalk-fly" opacity="0" x="150" y="240" width="12" height="4" rx="1.5" fill="#fff" stroke="#bbb"/>
   <!-- neck and head -->
@@ -122,12 +121,19 @@ export function professorSvg(mood: Mood = 'neutral', size = 220): string {
   <ellipse class="p-yawn" opacity="0" cx="100" cy="134" rx="8" ry="11" fill="#7a3b2e"/>
   ${sooty ? '<g fill="#3a3a3a" opacity="0.45"><circle cx="76" cy="116" r="8"/><circle cx="124" cy="80" r="6"/></g>' : ''}
   </g>
-  <g class="p-mug" opacity="0">
-    <path d="M30,250 h22 v20 a5,5 0 0 1 -5,5 h-12 a5,5 0 0 1 -5,-5 z" fill="#c0392b" stroke="#7b241c" stroke-width="2"/>
-    <path d="M52,254 q9,0 9,7 q0,7 -9,7" fill="none" stroke="#7b241c" stroke-width="3"/>
-    <path d="M33,253 h16" stroke="#5d3a1a" stroke-width="3"/>
-    <g class="p-mug-steam" fill="none" stroke="#b9c2cb" stroke-width="2.5" stroke-linecap="round"><path d="M37,246 q-4,-6 0,-12 q4,-6 0,-12"/><path d="M45,246 q4,-6 0,-12 q-4,-6 0,-12"/></g>
+  <!-- coffee break: an arm bent at the elbow brings the mug to the moustache (body → mug → hand) -->
+  <g class="p-coffee" opacity="0">
+    <path d="M54,212 Q56,252 76,250 Q92,230 92,172" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/>
+    <path d="M54,212 Q56,252 76,250 Q92,230 92,172" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
+    <g class="p-mug">
+      <path d="M101,141 h24 v22 a5,5 0 0 1 -5,5 h-14 a5,5 0 0 1 -5,-5 z" fill="#c0392b" stroke="#7b241c" stroke-width="2"/>
+      <path d="M101,146 q-9,0 -9,8 q0,8 9,8" fill="none" stroke="#7b241c" stroke-width="3"/>
+      <path d="M104,144 h18" stroke="#5d3a1a" stroke-width="3"/>
+      <g class="p-mug-steam" fill="none" stroke="#b9c2cb" stroke-width="2.5" stroke-linecap="round"><path d="M108,136 q-4,-6 0,-12 q4,-6 0,-12"/><path d="M117,136 q4,-6 0,-12 q-4,-6 0,-12"/></g>
+    </g>
+    <circle cx="93" cy="160" r="8" fill="${skin}"/>
   </g>
+  <g class="p-hand-l">${thinkingHand}</g>
   <g class="p-zzz" opacity="0" fill="#5b8cff" font-family="Georgia, serif" font-weight="700"><text x="140" y="70" font-size="16">z</text><text x="152" y="52" font-size="20">z</text><text x="166" y="30" font-size="25">Z</text></g>
 </svg>`;
 }
