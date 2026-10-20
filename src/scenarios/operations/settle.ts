@@ -1,4 +1,4 @@
-import { isThermalBody } from '../../domains/thermal/entities.js';
+import { isThermalBody, type ThermalBody } from '../../domains/thermal/entities.js';
 import { formatQuantity } from '../../explain/format.js';
 import { K } from './helpers.js';
 import type { Operation } from './types.js';
@@ -27,9 +27,14 @@ export const SETTLE: Operation = {
   startTemp: () => 20,
   reached(sample, p, _sub, state) {
     // Every piece put into the liquid (a block, a lump of ice) has come to the liquid's temperature…
-    const pieces = Object.values(state.entities).filter((e) => isThermalBody(e) && e.id.startsWith(`${sample.id}+`));
+    // A melted ice cube is just more of the same water: it has mixed in, there is nothing left to wait for.
+    const mixedIn = (e: ThermalBody) =>
+      (e.state.solidFraction ?? 0) <= 0 && !!e.params.phase && (e.params.substance === sample.params.substance || (!!sample.state.mixture && e.params.substance === 'water'));
+    const pieces = Object.values(state.entities).filter((e): e is ThermalBody => isThermalBody(e) && e.id.startsWith(`${sample.id}+`) && !mixedIn(e));
     if (!pieces.every((e) => isThermalBody(e) && Math.abs(e.state.temperature - sample.state.temperature) < CLOSE)) return false;
-    // …and so have the vessel's walls (hot water poured into a cold glass warms the glass too). A wall
+    // A body was put in (a block, ice): it was what we waited for. Only plain mixing waits for the walls.
+    if (Object.keys(state.entities).some((id) => id.startsWith(`${sample.id}+`))) return true;
+    // …and, for plain mixing, so have the vessel's walls (hot water poured into a cold glass warms the glass too). A wall
     // stays a little colder than the liquid while the room cools them both: once the gap is under a tenth of the way to the room (glass settles at ≈ 5 %, steel ≈ 2.5 %), the walls have caught up.
     const vessel = state.entities['vessel' as never];
     if (!vessel || !isThermalBody(vessel)) return true;

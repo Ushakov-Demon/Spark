@@ -82,3 +82,20 @@ describe('the calorimeter', () => {
     expect(canHeat(HEATERS['immersion-heater' as never] ?? Object.values(HEATERS).find((h) => h.spec.method === 'immersion')!, VESSELS.calorimeter, 'aluminium').ok).toBe(true);
   });
 });
+
+describe('waiting while ice melts', () => {
+  it('ends soon after the last of the ice is gone — the meltwater has simply mixed in', () => {
+    const p: LabParams = { ...cold, vessel: 'cylinder', size: 0.1, liters: 0.07 };
+    const s = createExperimentSession<LabCommand>({ initial: labSetup(p).state, simulation, commands, sampleEvery: seconds(10) });
+    s.apply({ type: 'thermal.add', into: 'sample', substance: 'water', mass: kilograms(0.01), temperature: celsius(-5), frozen: true });
+    let meltedAt = -1;
+    while (s.state.time < 3600) {
+      const ice = s.state.entities['sample+1' as never] as unknown as { state: { solidFraction?: number } };
+      if (meltedAt < 0 && (ice.state.solidFraction ?? 0) <= 0) meltedAt = s.state.time;
+      if (labGoalReached(p, s.state)) break;
+      s.advance(2);
+    }
+    expect(meltedAt).toBeGreaterThan(0);
+    expect(s.state.time - meltedAt).toBeLessThanOrEqual(30);
+  });
+});
