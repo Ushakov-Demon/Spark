@@ -46,7 +46,7 @@ export interface UiText {
   guide: {
     step(k: number, n: number): string;
     weigh(again: boolean): string;
-    level(again: boolean): string;
+    level(again: boolean, waited?: boolean): string;
     add(what: string): string;
     dissolve(what: string): string;
     hang(what: string, into: 'air' | 'liquid'): string;
@@ -55,14 +55,19 @@ export interface UiText {
     btnAdd(what: string): string;
     btnHang(into: 'air' | 'liquid'): string;
     dropped: string;
+    floats: string;
     dissolved: string;
     btnDissolve(what: string): string;
+    wait(what: string): string;
+    btnWait(what: string): string;
+    running: string;
     tableTitle(rho: string): string;
     tableName: string;
     tableDensity: string;
     pick: string;
   };
   instruments: string;
+  sound: { on: string; off: string };
   dissolves: string;
   boardEmpty: string;
   chartShow: string;
@@ -290,7 +295,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     guide: {
       step: (k, n) => `Крок ${k} з ${n}`,
       weigh: (again) => (again ? 'Зваж мензурку ще раз — тепер разом із бруском.' : 'Зваж мензурку з водою на лабораторних терезах і запиши масу.'),
-      level: (again) => (again ? 'Подивись на поділки знову: на скільки піднялася вода?' : 'Подивись на поділки: скільки води в мензурці? Очі — на рівні меніска.'),
+      level: (again, waited) => (waited ? 'Подивись на поділки ще раз: чи змінився рівень?' : again ? 'Подивись на поділки знову: на скільки піднялася вода?' : 'Подивись на поділки: скільки води в мензурці? Очі — на рівні меніска.'),
       add: (w) => `Обережно опусти ${w} у мензурку — по стінці, щоб не розбити скло й не розплескати воду.`,
       dissolve: (w) => `Насип у воду ${w} і розмішай, поки не розчиниться.`,
       hang: (w, into) => (into === 'air' ? `Підвісь ${w} на динамометр у повітрі.` : `Опусти ${w} на динамометрі в рідину — повністю, але не торкаючись дна.`),
@@ -299,14 +304,19 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnAdd: (w) => `⬇ Опустити: ${w}`,
       btnHang: (into) => (into === 'air' ? '🧷 Підвісити в повітрі' : '🧷 Занурити в рідину'),
       dropped: 'Бульк! Брусок ліг на дно — і вода в мензурці піднялася.',
-      dissolved: 'Сіль розчинилася: вода стала солоною — і густішою.',
+      floats: 'Бульк! Кубик плаває — і вода в мензурці піднялася.',
+      dissolved: 'Сіль розчиняється — вода стає солоною і густішою.',
       btnDissolve: (w) => `🥄 Розчинити: ${w}`,
+      wait: (w) => `${w} — а ти стеж за тим, що відбувається в посуді.`,
+      btnWait: (w) => `⏳ ${w}`,
+      running: '⏳ Іде дослід… Стеж за мензуркою.',
       tableTitle: (rho) => `Твоя густина: ρ ≈ ${rho}. Знайди в таблиці речовину з такою густиною:`,
       tableName: 'Речовина',
       tableDensity: 'Густина, кг/м³',
       pick: 'Це він!',
     },
     instruments: 'Вимірювальні прилади',
+    sound: { on: 'Звук увімкнено — вимкнути', off: 'Звук вимкнено — увімкнути' },
     dissolves: 'розчиняється у воді',
     boardEmpty: 'Тут з’являтимуться формули досліду',
     chartShow: '📈 Показати графік',
@@ -531,7 +541,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     guide: {
       step: (k, n) => `Step ${k} of ${n}`,
       weigh: (again) => (again ? 'Weigh the cylinder again — now with the block in it.' : 'Weigh the cylinder with water on the laboratory balance and note the mass.'),
-      level: (again) => (again ? 'Read the marks again: how far did the water rise?' : 'Read the marks: how much water is in the cylinder? Eyes level with the meniscus.'),
+      level: (again, waited) => (waited ? 'Read the marks once more: did the level change?' : again ? 'Read the marks again: how far did the water rise?' : 'Read the marks: how much water is in the cylinder? Eyes level with the meniscus.'),
       add: (w) => `Gently lower ${w} into the cylinder — along the wall, so the glass does not break and the water does not splash.`,
       dissolve: (w) => `Pour ${w} into the water and stir until it dissolves.`,
       hang: (w, into) => (into === 'air' ? `Hang ${w} on the dynamometer in the air.` : `Lower ${w} on the dynamometer into the liquid — fully, without touching the bottom.`),
@@ -540,14 +550,19 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnAdd: (w) => `⬇ Lower in: ${w}`,
       btnHang: (into) => (into === 'air' ? '🧷 Hang in the air' : '🧷 Lower into the liquid'),
       dropped: 'Plop! The block lies on the bottom — and the water in the cylinder rose.',
-      dissolved: 'The salt dissolved: the water is salty now — and denser.',
+      floats: 'Plop! The cube floats — and the water in the cylinder rose.',
+      dissolved: 'The salt is dissolving — the water turns salty and denser.',
       btnDissolve: (w) => `🥄 Dissolve: ${w}`,
+      wait: (w) => `${w} — and watch what happens in the vessel.`,
+      btnWait: (w) => `⏳ ${w}`,
+      running: '⏳ The experiment is running… Watch the cylinder.',
       tableTitle: (rho) => `Your density: ρ ≈ ${rho}. Find the substance with this density in the table:`,
       tableName: 'Substance',
       tableDensity: 'Density, kg/m³',
       pick: 'This one!',
     },
     instruments: 'Measuring instruments',
+    sound: { on: 'Sound on — turn off', off: 'Sound off — turn on' },
     dissolves: 'dissolves in water',
     boardEmpty: 'The formulas of the experiment will appear here',
     chartShow: '📈 Show the chart',

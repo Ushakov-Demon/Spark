@@ -116,8 +116,9 @@ const METALS = { aluminium: COMPONENTS.aluminium, iron: COMPONENTS.iron, copper:
 
 export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> = {
   'ice-level': (run) => {
-    const v = of(run, 'volume');
-    const [a, b] = [v[0]?.record, v[v.length - 1]?.record];
+    // V₁ — water alone, V₂ — with the cube floating, V₃ — when it has melted.
+    const v = of(run, 'volume').map((x) => x.record);
+    const [w, a, b] = v.length >= 3 ? [v[0], v[1], v[v.length - 1]] : [undefined, v[0], v[v.length - 1]];
     const div = a?.inputs?.['division'] ?? 1e-6;
     const d = a && b ? b.value! - a.value! : 0;
     const under = Math.round((ICE / WATER) * 100);
@@ -125,8 +126,8 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       say: both((l) => (l === 'uk' ? 'Рівень не зрушив ні на поділку!' : 'The level did not move by a mark!')),
       text: both((l) =>
         l === 'uk'
-          ? `До таяння вода стояла на позначці ${a ? mL(a.value!, l) : '—'}, після — ${b ? mL(b.value!, l) : '—'}. Поки лід плавав, під водою була ≈ ${under} % кубика: плаваюче тіло витісняє стільки рідини, скільки важить само (закон Архімеда). Розтанувши, лід став водою тієї самої маси — і зайняв рівно те місце, яке витісняв. Тому рівень не змінюється; так само не підіймає рівень океану морський лід, що тане, — на відміну від льодовиків на суші.`
-          : `Before melting the water stood at ${a ? mL(a.value!, l) : '—'}, after at ${b ? mL(b.value!, l) : '—'}. While the ice floated, ≈ ${under} % of the cube was under water: a floating body pushes aside its own weight of liquid (Archimedes). Melted, the ice became water of the same mass — and took exactly the room it had pushed aside. So the level stays; melting sea ice does not raise the ocean either — unlike glaciers on land.`,
+          ? `${w ? `Без льоду вода стояла на позначці ${mL(w.value!, l)}. ` : ''}З кубиком — ${a ? mL(a.value!, l) : '—'}: плаваючий лід витіснив стільки води, скільки важить сам, — під водою була ≈ ${under} % кубика (закон Архімеда). Коли лід розтанув — ${b ? mL(b.value!, l) : '—'}. Розтанувши, лід став водою тієї самої маси — і зайняв рівно те місце, яке витісняв. Тому рівень не змінюється; так само не підіймає рівень океану морський лід, що тане, — на відміну від льодовиків на суші.`
+          : `${w ? `Without ice the water stood at ${mL(w.value!, l)}. ` : ''}With the cube — ${a ? mL(a.value!, l) : '—'}: floating ice pushed aside its own weight of water — ≈ ${under} % of the cube was under it (Archimedes). Once the ice melted — ${b ? mL(b.value!, l) : '—'}. Melted, the ice became water of the same mass — and took exactly the room it had pushed aside. So the level stays; melting sea ice does not raise the ocean either — unlike glaciers on land.`,
       ),
       ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
     };

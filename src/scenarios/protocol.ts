@@ -31,6 +31,9 @@ export interface OperationStep {
   readonly supply?: LabParams['supply'];
   /** Minutes, for timed operations (pass a current). */
   readonly duration?: number;
+  /** In a guided procedure: what the step is called ("wait for the ice to melt") and how fast it runs. */
+  readonly label?: LocalizedText;
+  readonly speed?: number;
 }
 
 /** Put a portion of a substance into the vessel (salt into water, an ice cube into tea). */

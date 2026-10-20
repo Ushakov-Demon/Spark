@@ -44,7 +44,8 @@ export function liquidDensity(state: SystemState): number | null {
 export function pieceDensity(piece: ThermalBody): number {
   const sub = substanceOf(piece);
   if (!sub) return WATER_DENSITY;
-  const frozen = (piece.state.solidFraction ?? 0) > 0.5;
+  // While any of it is still solid (a melting cube), the solid part is what floats.
+  const frozen = (piece.state.solidFraction ?? 0) > 0;
   return frozen ? (sub.freezing?.solidDensity?.value ?? ICE_DENSITY) : sub.liquid.density.value;
 }
 
@@ -53,7 +54,7 @@ export function pieceShare(state: SystemState, piece: ThermalBody): number {
   const rl = liquidDensity(state);
   const sub = substanceOf(piece);
   // A liquid layer (oil) is liquid, not a floating body; with nothing liquid around, everything rests.
-  if (rl === null || (sub && !sub.category.startsWith('solid.') && (piece.state.solidFraction ?? 0) <= 0.5)) return 1;
+  if (rl === null || (sub && !sub.category.startsWith('solid.') && (piece.state.solidFraction ?? 0) <= 0)) return 1;
   return submergedShare(pieceDensity(piece), rl);
 }
 

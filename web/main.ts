@@ -92,6 +92,7 @@ import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
+import { fizz, plop, setSound, soundOn } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -505,6 +506,20 @@ function showPaper(html: string) {
   if (!paper.open) paper.showModal();
 }
 $('#paper-close').onclick = () => paper.close();
+// Sound: on unless turned off (remembered).
+setSound(store.get('sound') !== 'off');
+const renderSound = () => {
+  const b = $<HTMLButtonElement>('#sound');
+  b.textContent = soundOn() ? '🔊' : '🔇';
+  b.title = soundOn() ? t().sound.on : t().sound.off;
+  b.setAttribute('aria-label', b.title);
+  b.setAttribute('aria-pressed', String(soundOn()));
+};
+$('#sound').onclick = () => {
+  setSound(!soundOn());
+  store.set('sound', soundOn() ? 'on' : 'off');
+  renderSound();
+};
 // The newspaper on the table: read it any time (he also brings it himself when bored).
 const newsButton = el('button', { type: 'button', className: 'news-button' });
 newsButton.onclick = () => byTheWay(performance.now(), true);
@@ -787,6 +802,7 @@ function addPortion(id: SubstanceId, grams: number, tempC: number, frozen: boole
   const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: id, mass: (grams / 1000) as never, temperature: celsius(tempC), ...(frozen ? { frozen: true } : {}) });
   if (!entry.ok) return tr(entry.error, locale);
   (finished ? pendingAdds : stepAdds).push({ what: sub.name, mass: grams / 1000 });
+  splash(id, grams / 1000, frozen);
   boardEpoch++;
   headline = null;
   checkpoint = null;
@@ -948,7 +964,7 @@ function sceneView(): SceneView {
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
     : showingDrop()
-    ? { mood: 'surprised', says: showingDrop() === 'salt' ? u.guide.dissolved : u.guide.dropped }
+    ? { mood: 'surprised', says: showingDrop() === 'salt' ? u.guide.dissolved : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
     : measured
     ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
@@ -1017,15 +1033,18 @@ function sceneView(): SceneView {
       const sub = id ? SUBSTANCES[id] : undefined;
       if (!sub) return [];
       // Solid bodies and ice cubes are drawn; a liquid layer (oil) is part of the liquid.
-      const ice = (e.state.solidFraction ?? 0) > 0.5;
+      // A melting cube is the ice left in it: it shrinks and fades as it melts, not "just gone".
+      const s = e.state.solidFraction ?? 0;
+      const ice = s > 0 && !sub.category.startsWith('solid.');
       if (!sub.category.startsWith('solid.') && !ice) return [];
       const density = ice ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
-      return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: bodyMass(e) / density, share: pieceShare(session.state, e), ...(!ice && sub.bodyShape === 'ball' ? { ball: true } : {}) }];
+      return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: (bodyMass(e) * (ice ? s : 1)) / density, share: pieceShare(session.state, e), ...(ice ? { melting: Math.min(1, s * 4) } : {}), ...(!ice && sub.bodyShape === 'ball' ? { ball: true } : {}) }];
     }),
     ...(measured?.command.type === 'lab.hang'
       ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1, ...(SUBSTANCES[measured.command.substance as SubstanceId]?.bodyShape === 'ball' ? { ball: true } : {}) } }
       : {}),
     ...(measured?.command.type === 'lab.read-level' ? { levelMark: formatMeasured('volume', measured.record.value, measured.record.inputs?.['division'] ?? 1e-6, locale) } : {}),
+    dissolve: dissolveKey,
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
@@ -1109,17 +1128,38 @@ function quizReply(q: Quiz | null): string | null {
   if (!q || picked.key !== q.key || !picked.ids.length) return null;
   return q.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.reply ?? null;
 }
+/**
+ * Something went into the liquid: a body falls in — "plop" as it hits the water; salt is poured —
+ * it sinks and dissolves in a little cloud, with a fizz. (Liquids poured in just mix.)
+ */
+let dissolveKey = 0;
+function splash(id: SubstanceId, mass: number, frozen: boolean) {
+  const sub = SUBSTANCES[id];
+  if (sub.category === 'solid.salt') {
+    dissolveKey++;
+    fizz();
+    return;
+  }
+  if (!sub.category.startsWith('solid.') && !frozen) return;
+  // A body of 10 cm³ is the "1"; it hits the water about when its fall ends.
+  const size = Math.cbrt(mass / (frozen ? (sub.freezing?.solidDensity?.value ?? 917) : sub.liquid.density.value) / 1e-5);
+  window.setTimeout(() => plop(size), 430);
+}
+
 /** The steps of a guided procedure: how many in all (set when the preset starts). */
 let planTotal = 0;
 /** The latest thing put into the vessel during a guided procedure (the Professor comments on it). */
 let lastDrop: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
-/** What was just put in, while nothing has happened since: a body that sank, or salt that dissolved. */
-function showingDrop(): 'body' | 'salt' | null {
+/** What was just put in, while nothing has happened since: a body that sank or floats, or salt that dissolved. */
+function showingDrop(): 'body' | 'float' | 'salt' | null {
   if (!lastDrop || lastDrop.step !== session || running || session.state.time !== lastDrop.at) return null;
   const l = session.result().log;
   const c = l[l.length - 1]?.command;
   if (c?.type !== 'thermal.add') return null;
-  return SUBSTANCES[c.substance as SubstanceId]?.category === 'solid.salt' ? 'salt' : 'body';
+  if (SUBSTANCES[c.substance as SubstanceId]?.category === 'solid.salt') return 'salt';
+  const pieces = Object.values(session.state.entities).filter((e) => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`));
+  const last = pieces[pieces.length - 1];
+  return last && isThermalBody(last) && pieceShare(session.state, last) < 1 ? 'float' : 'body';
 }
 /** The density measured so far: the change of the scales over the change of the level (both around the drop). */
 function measuredDensity(): number | null {
@@ -1135,6 +1175,10 @@ function measuredDensity(): number | null {
 function renderGuide(): boolean {
   if (!preset?.guided) return false;
   const u = t().guide;
+  if (running) {
+    setHtml('#quiz', `<div class="guide"><span class="guide-step">${u.step(planTotal - plan.length, planTotal)}</span><p>${u.running}</p></div>`);
+    return true;
+  }
   if (plan.length) {
     const s = plan[0]!;
     const k = planTotal - plan.length + 1;
@@ -1144,8 +1188,12 @@ function renderGuide(): boolean {
     const what = s.kind === 'add' || s.kind === 'hang' ? tr(('label' in s && s.label) || SUBSTANCES[s.substance].name, locale).toLowerCase() : '';
     // Salt is poured in and dissolves; a body is lowered in.
     const salt = s.kind === 'add' && SUBSTANCES[s.substance].category === 'solid.salt';
-    const say = s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added) : s.kind === 'add' ? (salt ? u.dissolve(what) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : '';
-    const btn = s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : '';
+    const op = s.kind === 'operation' ? tr(s.label ?? OPERATIONS[s.action].label, locale) : '';
+    // Time has passed since the last look at the marks (the ice melted): did the level change?
+    const lastLevel = [...done].reverse().find((x) => x.record.quantity === 'volume');
+    const waited = !!lastLevel && session.state.time > lastLevel.time + 1e-9 || history.length > 0 && !!lastLevel;
+    const say = s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
+    const btn = s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnWait(op);
     // Before the first step: the prediction, if the experiment asks for one.
     const q = k === 1 ? quizNow() : null;
     setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1">${btn}</button></div>`);
@@ -1300,10 +1348,10 @@ function render() {
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   // A guided procedure is led by its steps, not by "Start".
   startBtn.hidden = !!preset?.guided;
-  $('#speed').closest<HTMLElement>('label')!.hidden = !!preset?.guided;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
   $<HTMLButtonElement>('#read-level').textContent = u.measure.level;
+  renderSound();
   newsButton.textContent = u.byTheWay.button;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
@@ -2039,6 +2087,7 @@ function nextPlanStep() {
     const s = plan.shift()!;
     if (s.kind === 'add') {
       const entry = session.apply(stepCommand(s, params));
+      if (entry.ok) splash(s.substance, s.mass, !!s.frozen);
       if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: s.label ?? SUBSTANCES[s.substance].name, mass: s.mass });
       boardEpoch++;
       // In a guided procedure dropping the body is a step of its own: watch it go in.
@@ -2062,7 +2111,7 @@ function nextPlanStep() {
     if (params.heater) lastHeater = params.heater;
     if (params.cooler) lastCooler = params.cooler;
     if (params.supply) lastSupply = params.supply;
-    speed = OPERATIONS[s.action].speed;
+    speed = s.speed ?? OPERATIONS[s.action].speed;
     $<HTMLSelectElement>('#speed').value = String(speed);
     stepChanged();
     running = true;

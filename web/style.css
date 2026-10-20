@@ -696,3 +696,11 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 @media (prefers-reduced-motion: reduce) { .scene .dropping { animation: none; } }
 .guide .verdict { font-weight: 600; }
 .guide .answer-text { color: var(--text); }
+
+/* salt dissolving: grains sink and vanish, a faint cloud spreads and clears */
+.scene .dissolving-salt .grain { fill: #fff; opacity: 0; animation: grain-sink 1.9s ease-in forwards; }
+.scene .dissolving-salt .cloud { fill: rgba(255, 255, 255, 0.35); opacity: 0; transform-box: fill-box; transform-origin: center; animation: salt-cloud 2.6s ease-out forwards; }
+@keyframes grain-sink { 0% { opacity: 0.95; transform: none; } 70% { opacity: 0.7; } 100% { opacity: 0; transform: translateY(var(--fall)) scale(0.4); } }
+@keyframes salt-cloud { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
+@media (prefers-reduced-motion: reduce) { .scene .dissolving-salt * { animation: none; opacity: 0; } }
+.sound-toggle { min-height: 34px; padding: 4px 10px; font-size: 1.05rem; line-height: 1; }

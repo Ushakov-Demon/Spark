@@ -224,7 +224,7 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
   const uk = locale === 'uk';
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
   const out: BoardLine[] = [];
-  let lastV: { v: number; div: number } | null = null;
+  let lastV: { v: number; div: number; at: number } | null = null;
   let lastM: { m: number; scale: string } | null = null;
   let addedSince = { v: false, m: false };
   let body: { m?: number; v?: number } = {};
@@ -248,9 +248,13 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       if (lastV && addedSince.v) {
         const dv = r.value - lastV.v;
         body = { ...body, v: dv };
-        out.push({ id: `vol:${i}`, title: uk ? 'об’єм тіла — на скільки піднялася рідина' : 'the volume of the body — how far the liquid rose', formula: 'V = V₂ − V₁', numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', dv, div, locale)}` });
+        out.push({ id: `vol:${i}`, title: uk ? 'на скільки піднялася рідина — об’єм витісненої води' : 'how far the liquid rose — the volume of water pushed aside', formula: 'V = V₂ − V₁', numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', dv, div, locale)}` });
       }
-      lastV = { v: r.value, div };
+      // Read again with nothing put in since — after melting, warming…: did the level change?
+      if (lastV && !addedSince.v && e.time > lastV.at + 1e-9) {
+        out.push({ id: `dV:${i}`, title: uk ? 'як змінився рівень' : 'how the level changed', formula: `ΔV = V${sub(count.volume)} − V${sub(count.volume - 1)}`, numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', r.value - lastV.v, div, locale)}` });
+      }
+      lastV = { v: r.value, div, at: e.time };
       addedSince = { ...addedSince, v: false };
     } else if (r.quantity === 'mass') {
       const scale = r.instrument;

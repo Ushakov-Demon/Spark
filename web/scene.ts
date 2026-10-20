@@ -50,7 +50,9 @@ export interface SceneView {
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
   /** Solid pieces lying in the vessel (a metal block): colour and volume, m³. */
-  readonly pieces?: readonly { readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean }[];
+  readonly pieces?: readonly { readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean; readonly melting?: number }[];
+  /** Bumped when salt is poured in: grains sink and dissolve in a little cloud. */
+  readonly dissolve?: number;
   /** A body hanging on the dynamometer, in the air above the vessel or lowered into the liquid; what the dial shows. */
   readonly hang?: { readonly display: string; readonly into: 'air' | 'liquid'; readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean };
   /** The level was just read by the marks: a line at the level and the reading. */
@@ -150,6 +152,7 @@ export function createScene(): Scene {
           </g>
           <g id="sc-ice" class="ice"><rect x="${g.left - 10}" y="0" width="${g.right - g.left + 20}" height="0"/><path class="cracks" d="M${g.left + 20},0 l18,10 l14,-6 M${g.right - 40},0 l-12,9 l-16,-3"/></g>
           <g id="sc-pieces" class="pieces"></g>
+          <g id="sc-dissolve" class="dissolving-salt"></g>
           <g id="sc-crystals" class="crystals">${Array.from({ length: 18 }, (_, i) => `<path d="M${g.left + 18 + ((i * 29) % Math.max(20, g.right - g.left - 34))},${g.bottom - 5 - (i % 3) * 3} l4,-5 l4,5 l-4,4 Z"/>`).join('')}</g>
         </g>
         ${glass ? `<path d="${g.outer}" style="${wallStyle}" stroke-width="2.5"/>` : ''}
@@ -242,6 +245,21 @@ export function createScene(): Scene {
         const n = v.pieces?.length ?? 0;
         pg.innerHTML = blocksSvg(v.pieces ?? [], g, level, n > piecesShown ? n - 1 : -1);
         piecesShown = n;
+      }
+      // Salt poured in: grains sink and vanish in a spreading cloud (the solution forms).
+      const dk = String(v.dissolve ?? 0);
+      const dg = $<SVGGElement>('sc-dissolve');
+      if (dg && dg.dataset['k'] !== dk) {
+        const first = dg.dataset['k'] === undefined;
+        dg.dataset['k'] = dk;
+        if (!first && (v.dissolve ?? 0) > 0) {
+          const w = g.right - g.left;
+          const grains = Array.from({ length: 18 }, (_, i) => {
+            const x = g.left + 8 + ((i * 37) % Math.max(10, w - 16));
+            return `<rect class="grain" x="${x}" y="${level + 2}" width="3" height="3" style="--fall:${Math.round((g.bottom - level) * (0.45 + ((i * 7) % 5) / 10))}px;animation-delay:${(i % 6) * 0.08}s"/>`;
+          }).join('');
+          dg.innerHTML = `<ellipse class="cloud" cx="${(g.left + g.right) / 2}" cy="${(level + g.bottom) / 2}" rx="${w / 3}" ry="${(g.bottom - level) / 4}"/>${grains}`;
+        }
       }
       // The dynamometer with its body, and the level mark.
       const hk = v.hang ? `${v.hang.display}|${v.hang.into}|${v.hang.color}|${v.hang.volume}|${Math.round(level)}` : '';

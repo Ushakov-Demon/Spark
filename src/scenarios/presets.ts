@@ -76,12 +76,19 @@ export const PRESETS: readonly Preset[] = [
     topic: MECH,
     title: { uk: 'Чи зміниться рівень води, коли лід розтане?', en: 'Will the water level change when the ice melts?' },
     question: {
-      uk: 'У мензурці з водою плаває кубик льоду, а рівень уже записано. Дочекайся, поки лід розтане (натисни «Старт»), і подивись на поділки знову. Як зміниться рівень води?',
-      en: 'An ice cube floats in a measuring cylinder of water; the level is already noted. Wait for the ice to melt (press “Start”) and read the marks again. How will the water level change?',
+      uk: 'Опустимо в мензурку з водою кубик льоду — він плаватиме. Запишемо рівень, дочекаємося, поки лід розтане, і подивимося на поділки знову. Як зміниться рівень води, коли лід розтане?',
+      en: 'We drop an ice cube into a measuring cylinder of water — it will float. We note the level, wait for the ice to melt and read the marks again. How will the water level change when the ice melts?',
     },
     params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.07, action: 'settle', substance: 'water', startTemp: 20 },
-    setup: [{ kind: 'add', substance: 'water', mass: 0.01, temperature: -5, frozen: true }, { kind: 'level' }],
-    plan: [{ kind: 'level' }],
+    guided: true,
+    plan: [
+      { kind: 'level' },
+      { kind: 'add', substance: 'water', mass: 0.01, temperature: -5, frozen: true, label: { uk: 'Кубик льоду', en: 'Ice cube' } },
+      { kind: 'level' },
+      // Slow enough to watch the cube shrink (the speed can still be raised).
+      { kind: 'operation', action: 'settle', speed: 10, label: { uk: 'Чекати, поки лід розтане', en: 'Wait for the ice to melt' } },
+      { kind: 'level' },
+    ],
     choices: [ch('up', 'Підніметься', 'It will rise'), ch('down', 'Опуститься', 'It will drop'), ch('same', 'Не зміниться', 'It will stay the same')],
     formulas: ['mechanics.submerged-share'],
     quoteHas: 'плавання',
