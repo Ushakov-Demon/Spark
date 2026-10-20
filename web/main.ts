@@ -1146,6 +1146,18 @@ function splash(id: SubstanceId, mass: number, frozen: boolean) {
   window.setTimeout(() => plop(size), 430);
 }
 
+/** "New experiment": the board is wiped with a sponge, then all is set up again from the start. */
+const renewButton = () => `<button type="button" class="renew" data-renew="1">${t().renew}</button>`;
+function renew() {
+  running = false;
+  scene.read(false);
+  scene.wipe(() => {
+    resetExperiment();
+    boardCache = null;
+    render();
+  });
+}
+
 /** The steps of a guided procedure: how many in all (set when the preset starts). */
 let planTotal = 0;
 /** The latest thing put into the vessel during a guided procedure (the Professor comments on it). */
@@ -1203,7 +1215,7 @@ function renderGuide(): boolean {
   if (preset.choiceTable !== 'density') {
     if (!presetAnswer) return (setHtml('#quiz', ''), true);
     const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>`;
-    setHtml('#quiz', `<div class="guide"><span class="guide-step">${t().answerTitle}</span>${text}</div>`);
+    setHtml('#quiz', `<div class="guide"><span class="guide-step">${t().answerTitle}</span>${text}${renewButton()}</div>`);
     return true;
   }
   if (preset.choiceTable === 'density' && preset.choices) {
@@ -1220,7 +1232,7 @@ function renderGuide(): boolean {
     const rhoText = rho === null ? '—' : `${sig(rho / 1000, 3, locale)} ${locale === 'uk' ? 'г/см³' : 'g/cm³'} = ${sig(rho, 3, locale)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'}`;
     const verdict = predictionVerdict();
     const answer = verdict && presetAnswer && presetAnswer !== 'computing' ? `<p class="verdict">${verdict}</p><p class="answer-text">${tr(presetAnswer.text, locale)}</p>` : '';
-    setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`);
+    setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table>${chosen ? renewButton() : ''}</div>`);
     return true;
   }
   return false;
@@ -1388,7 +1400,12 @@ function render() {
 
   renderProtocol();
   scene.render(sceneView());
-  if (!renderGuide()) renderQuiz(quizNow());
+  if (!renderGuide()) {
+    const q = quizNow();
+    // The experiment is over (nothing left in its plan, no question on screen): offer a new one.
+    if (!q && finished && !plan.length && !running) setHtml('#quiz', `<div class="renew-bar">${renewButton()}</div>`);
+    else renderQuiz(q);
+  }
 
   // Messages: impossibility before the start, headline after, warnings.
   const msg: string[] = [];
@@ -2580,6 +2597,7 @@ setConsole(store.get('console') === 'open');
 
 // ---------- wiring ----------
 $('#quiz').addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest('button[data-renew]')) return renew();
   const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
   if (step) return nextPlanStep();
   if (preset?.guided && !plan.length) {

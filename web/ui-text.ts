@@ -67,6 +67,7 @@ export interface UiText {
     pick: string;
   };
   instruments: string;
+  renew: string;
   sound: { on: string; off: string };
   dissolves: string;
   boardEmpty: string;
@@ -316,6 +317,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       pick: 'Це він!',
     },
     instruments: 'Вимірювальні прилади',
+    renew: '🔄 Новий дослід',
     sound: { on: 'Звук увімкнено — вимкнути', off: 'Звук вимкнено — увімкнути' },
     dissolves: 'розчиняється у воді',
     boardEmpty: 'Тут з’являтимуться формули досліду',
@@ -562,6 +564,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       pick: 'This one!',
     },
     instruments: 'Measuring instruments',
+    renew: '🔄 New experiment',
     sound: { on: 'Sound on — turn off', off: 'Sound off — turn on' },
     dissolves: 'dissolves in water',
     boardEmpty: 'The formulas of the experiment will appear here',

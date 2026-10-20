@@ -704,3 +704,13 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 @keyframes salt-cloud { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
 @media (prefers-reduced-motion: reduce) { .scene .dissolving-salt * { animation: none; opacity: 0; } }
 .sound-toggle { min-height: 34px; padding: 4px 10px; font-size: 1.05rem; line-height: 1; }
+
+/* ---------- "New experiment": a sponge wipes the board ---------- */
+.renew-bar { margin-top: 10px; display: flex; justify-content: center; }
+.guide .renew, .renew-bar .renew { justify-self: start; margin-top: 4px; }
+.board-sponge { position: absolute; z-index: 2; top: 0; bottom: 0; left: -22%; width: 20%; opacity: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(241, 239, 228, 0.18) 40%, rgba(241, 239, 228, 0.28) 55%, transparent); border-radius: 30px; }
+.board.wiping .board-sponge { animation: sponge 0.9s ease-in-out; }
+.board.wiping .board-lines { animation: chalk-off 0.9s ease-in forwards; }
+@keyframes sponge { 0% { left: -22%; opacity: 1; } 100% { left: 102%; opacity: 1; } }
+@keyframes chalk-off { 0% { clip-path: inset(0 0 0 0); opacity: 1; } 100% { clip-path: inset(0 0 0 100%); opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { .board.wiping .board-sponge, .board.wiping .board-lines { animation: none; } }
