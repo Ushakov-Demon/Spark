@@ -1404,6 +1404,8 @@ function renderProtocol() {
 }
 
 // ---------- shelf (left panel) ----------
+/** The family of substances open on the shelf (its name in the current language). */
+let openFamily = store.get('family') ?? '';
 const openSections = new Set<string>((store.get('open') ?? 'action,substance,vessel,device,conditions').split(','));
 let query = '';
 
@@ -1477,6 +1479,30 @@ function buildShelf() {
     ...(i.safety ? [el('p', { className: 'safety' }, `⚠ ${u.safety}: ${tr(textFor(i.safety, level), locale)}`)] : []),
   ];
   /** Cards in groups; the selected card's settings follow the cards. */
+  /**
+   * The substances: one family open at a time (the sample's, or the one opened last), the others
+   * folded into a header with their count; inside, a carousel of cards two at a time. While searching,
+   * every family with a match is open.
+   */
+  const familyShelf = (groups: readonly { label: string; cards: HTMLElement[] }[], detail?: HTMLElement[]) => {
+    const out: HTMLElement[] = [];
+    const shown = groups.filter((g) => g.cards.length);
+    if (!shown.some((g) => g.label === openFamily)) openFamily = shown.find((g) => g.cards.some((c) => c.querySelector('.selected')))?.label ?? shown[0]?.label ?? '';
+    for (const g of shown) {
+      const open = query ? true : g.label === openFamily;
+      const head = el('button', { type: 'button', className: `family-head${open ? ' open' : ''}` }, el('span', {}, g.label), el('span', { className: 'family-count' }, String(g.cards.length)));
+      head.setAttribute('aria-expanded', String(open));
+      head.onclick = () => {
+        openFamily = open && !query ? '' : g.label;
+        store.set('family', openFamily);
+        buildShelf();
+      };
+      out.push(head);
+      if (open) out.push(...carousel(g.cards, 2, Math.max(0, g.cards.findIndex((c) => c.querySelector('.selected')))));
+    }
+    if (detail?.length) out.push(el('div', { className: 'item-detail' }, ...detail));
+    return out;
+  };
   const cardGroups = (groups: readonly { label: string; cards: HTMLElement[] }[], detail?: HTMLElement[]) => {
     const out: HTMLElement[] = [];
     for (const g of groups) {
@@ -1498,35 +1524,46 @@ function buildShelf() {
     after();
   };
 
+  /**
+   * A carousel: `perPage` items at a time, arrows and page dots; it opens on the page with item `start`.
+   * Long lists stay short on screen — actions, and the substances of a family.
+   */
+  const carousel = (items: readonly HTMLElement[], perPage: number, start: number): HTMLElement[] => {
+    const track = el('ul', { className: 'car-track' });
+    track.style.setProperty('--per', String(perPage));
+    track.append(...items);
+    const prev = el('button', { type: 'button', className: 'car-btn' }, '‹');
+    const next = el('button', { type: 'button', className: 'car-btn' }, '›');
+    prev.setAttribute('aria-label', locale === 'uk' ? 'Попередні' : 'Previous');
+    next.setAttribute('aria-label', locale === 'uk' ? 'Наступні' : 'Next');
+    const pages = Math.ceil(items.length / perPage);
+    const dots = el('div', { className: 'car-dots' }, ...Array.from({ length: pages > 1 ? pages : 0 }, () => el('span')));
+    const sync = () => {
+      const page = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+      [...dots.children].forEach((d, i) => d.classList.toggle('on', i === page));
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+    };
+    prev.onclick = () => track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' });
+    next.onclick = () => track.scrollBy({ left: track.clientWidth, behavior: 'smooth' });
+    track.addEventListener('scroll', sync, { passive: true });
+    requestAnimationFrame(() => {
+      track.scrollLeft = Math.floor(Math.max(0, start) / perPage) * track.clientWidth;
+      sync();
+    });
+    return [el('div', { className: 'carousel' }, prev, track, next), dots];
+  };
+
   // 1. What we do: a carousel of tiles, three at a time.
   const actions = LAB_ACTIONS.filter((a) => !started || (OPERATIONS[a].accepts?.(sub) ?? true));
-  const track = el('div', { className: 'car-track' });
-  for (const a of actions) {
+  const tiles = actions.map((a) => {
     const b = el('button', { type: 'button', className: `tile${a === params.action ? ' selected' : ''}` });
     b.innerHTML = `${icon(OPERATIONS[a].icon, 'ic big')}<span>${tr(OPERATIONS[a].label, locale)}</span>`;
     b.setAttribute('aria-pressed', String(a === params.action));
     b.onclick = () => setAction(a);
-    track.append(b);
-  }
-  const prev = el('button', { type: 'button', className: 'car-btn' }, '‹');
-  const next = el('button', { type: 'button', className: 'car-btn' }, '›');
-  prev.setAttribute('aria-label', locale === 'uk' ? 'Попередні' : 'Previous');
-  next.setAttribute('aria-label', locale === 'uk' ? 'Наступні' : 'Next');
-  const dots = el('div', { className: 'car-dots' }, ...Array.from({ length: Math.ceil(actions.length / 3) }, () => el('span')));
-  const sync = () => {
-    const page = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
-    [...dots.children].forEach((d, i) => d.classList.toggle('on', i === page));
-    prev.disabled = track.scrollLeft <= 2;
-    next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
-  };
-  prev.onclick = () => track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' });
-  next.onclick = () => track.scrollBy({ left: track.clientWidth, behavior: 'smooth' });
-  track.addEventListener('scroll', sync, { passive: true });
-  requestAnimationFrame(() => {
-    track.scrollLeft = Math.floor(Math.max(0, actions.indexOf(params.action)) / 3) * track.clientWidth;
-    sync();
+    return el('li', { className: 'car-li' }, b);
   });
-  const actionContent: HTMLElement[] = [el('div', { className: 'carousel' }, prev, track, next), dots];
+  const actionContent: HTMLElement[] = carousel(tiles, 3, actions.indexOf(params.action));
   const op = OPERATIONS[params.action];
   if (op.target) {
     actionContent.push(number(u.target, params.target ?? op.target.default, op.target.min, op.target.max, 1, (x) => (params = { ...params, target: x }), stepChanged));
@@ -1650,7 +1687,7 @@ function buildShelf() {
     'substance',
     u.substance,
     tr(sub.name, locale),
-    ...cardGroups(
+    ...familyShelf(
       // Everything in the catalog, by family. A liquid is poured into the vessel as the sample (before
       // the start, and only what the chosen action can do something with); a solid — a block, salt —
       // is put into the liquid or hung on the dynamometer: picking it gets it ready in the "add" panel.

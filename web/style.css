@@ -333,7 +333,10 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 
 /* ---------- shelf: carousel of actions ---------- */
 .carousel { display: grid; grid-template-columns: 22px minmax(0, 1fr) 22px; align-items: center; gap: 4px; padding: 4px 0; }
-.car-track { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 12px) / 3); gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 4px 1px; }
+.car-track { --per: 3; list-style: none; margin: 0; display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - (var(--per) - 1) * 6px) / var(--per)); gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 4px 1px; }
+.car-track > li { scroll-snap-align: start; min-width: 0; display: flex; }
+.car-track > li > .tile, .car-track > li > .card-item { width: 100%; }
+.car-track > .card-li { position: relative; }
 .car-track::-webkit-scrollbar { display: none; }
 .car-track > .tile { scroll-snap-align: start; }
 .car-btn { min-height: 74px; padding: 0; border-radius: 10px; font-size: 1.4rem; line-height: 1; color: var(--muted); }
@@ -664,3 +667,11 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 
 #add.flash { animation: add-flash 1.4s ease-out; }
 @keyframes add-flash { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+/* ---------- families of substances: one open at a time ---------- */
+.family-head { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 6px; padding: 7px 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); text-align: left; }
+.family-head::before { content: '▸'; margin-right: 8px; }
+.family-head.open { color: var(--text); border-color: var(--accent); }
+.family-head.open::before { content: '▾'; }
+.family-head > span:first-child { flex: 1; }
+.family-count { font-weight: 500; font-size: 0.75rem; padding: 1px 8px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); }
