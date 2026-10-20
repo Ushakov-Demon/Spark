@@ -423,10 +423,11 @@ let boredScenes = 0;
 const paper = $<HTMLDialogElement>('#paper');
 let paperToken = 0;
 /** He exclaims, the newspaper opens when its article has come (from Wikipedia, or a story offline). */
-function byTheWay(now = performance.now()) {
+function byTheWay(now = performance.now(), asked = false) {
   const u = t();
   boredScenes = 0;
-  idleAct = { name: 'bytheway', mood: 'surprised', length: 2600, lines: [u.byTheWay.say], started: now };
+  // Asked for it (the button): "a fresh newspaper!"; remembered by himself: "by the way!.."
+  idleAct = { name: 'bytheway', mood: asked ? 'happy' : 'surprised', length: 2600, lines: [asked ? u.byTheWay.fresh : u.byTheWay.say], started: now };
   idleLine = 0;
   const token = ++paperToken;
   const shown = Date.now();
@@ -449,6 +450,9 @@ function showPaper(html: string) {
   if (!paper.open) paper.showModal();
 }
 $('#paper-close').onclick = () => paper.close();
+// The newspaper on the table: read it any time (he also brings it himself when bored).
+const newsButton = el('button', { type: 'button', className: 'news-button' });
+newsButton.onclick = () => byTheWay(performance.now(), true);
 $('#paper-more').onclick = () => {
   $('#paper-body').innerHTML = `<p class="paper-loading">${t().byTheWay.loading}</p>`;
   const token = ++paperToken;
@@ -796,6 +800,7 @@ function phaseNote(): { text: string; pct: number } | null {
 // ---------- rendering ----------
 const chart = createChart();
 const scene = createScene();
+scene.element.querySelector('.table-buttons')!.prepend(newsButton);
 /** Bulk boiling in the last frames (boiled-off mass grew) — for the bubbles and the Professor. */
 let lastBoiled = 0;
 let boilingNow = false;
@@ -1099,6 +1104,7 @@ function render() {
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
+  newsButton.textContent = u.byTheWay.button;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
   scaleSel.setAttribute('aria-label', u.weigh.scales);

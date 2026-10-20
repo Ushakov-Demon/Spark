@@ -305,7 +305,7 @@ export function createScene(): Scene {
   root.className = 'scene';
   // The blackboard hangs on the wall behind everything on the table (the drawing's wall is see-through);
   // a button pulls it to the front to read it all, and back.
-  root.innerHTML = `<div class="scene-stage"><button type="button" class="board-toggle"></button><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 ${VIEW_TOP} ${W} ${H - VIEW_TOP}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
+  root.innerHTML = `<div class="scene-stage"><div class="table-buttons"><button type="button" class="board-toggle"></button></div><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 ${VIEW_TOP} ${W} ${H - VIEW_TOP}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
   const svg = root.querySelector('svg')!;
   const says = root.querySelector<HTMLElement>('#sc-says')!;
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
