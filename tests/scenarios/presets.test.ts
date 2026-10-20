@@ -44,3 +44,27 @@ describe('ready-made experiments', () => {
     if (process.env['SHOW_ANSWERS']) console.log(`\n[${p.id}] ${a.say.uk}\n${a.text.uk}`);
   }, 60_000);
 });
+
+describe('choices of the ready-made experiments', () => {
+  it.each(PRESETS.filter((p) => p.choices).map((p) => [p.id, p] as const))('%s: the run picks one of its choices', (_id, p) => {
+    const ids = p.choices!.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const c of p.choices!) expect(c.label.uk.length && c.label.en.length).toBeTruthy();
+    const first: ProtocolStep = { kind: 'operation', action: p.params.action, ...(p.params.target === undefined ? {} : { target: p.params.target }), ...(p.params.heater ? { heater: p.params.heater } : {}), ...(p.params.cooler ? { cooler: p.params.cooler } : {}), ...(p.params.supply ? { supply: p.params.supply } : {}), ...(p.params.duration === undefined ? {} : { duration: p.params.duration }) };
+    const out = runProtocol({ base: p.params, steps: [first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
+    const a = PRESET_ANSWERS[p.id]!({ steps, simulation });
+    expect(ids, `${p.id}: ${a.correct}`).toContain(a.correct);
+    if (process.env['SHOW_ANSWERS']) console.log(`[${p.id}] correct: ${a.correct}`);
+  }, 60_000);
+});
+
+describe('prediction choices', () => {
+  // Which one is right only the run tells, so all of them are shown: no more than four.
+  it('a preset offers two to four choices', () => {
+    for (const p of PRESETS.filter((x) => x.choices)) {
+      expect(p.choices!.length, p.id).toBeGreaterThanOrEqual(2);
+      expect(p.choices!.length, p.id).toBeLessThanOrEqual(4);
+    }
+  });
+});

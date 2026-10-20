@@ -29,6 +29,8 @@ export interface PresetAnswer {
   readonly say: LocalizedText;
   /** The answer itself, a few sentences. */
   readonly text: LocalizedText;
+  /** Which of the preset's choices this run proved right (absent — the run cannot tell). */
+  readonly correct?: string;
 }
 
 type Step = PresetRun['steps'][number];
@@ -79,7 +81,11 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const g = (kg: number | null, l: Locale) => formatReading('kitchen-scale', kg, l);
     const dFreeze = (a.reading ?? 0) - (b.reading ?? 0);
     const dBoil = (b.reading ?? 0) - (c.reading ?? 0);
+    // Without the water that evaporated while it cooled, did freezing change the mass?
+    const toAir = (st: SystemState) => (sampleOf(st).state.evaporated ?? 0) + (sampleOf(st).state.boiledOff ?? 0);
+    const change = b.exact.total - a.exact.total + (toAir(freeze.result.final) - toAir(freeze.result.initial));
     return {
+      correct: change > 1e-6 ? 'heavier' : change < -1e-6 ? 'lighter' : 'same',
       say: both((l) => (l === 'uk' ? 'Маса нікуди не зникає — вона йде парою!' : 'Mass does not vanish — it leaves as vapour!')),
       text: both((l) =>
         l === 'uk'
@@ -107,6 +113,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const other = timeToGoal({ ...s.params, lid: !s.params.lid }, simulation);
     const [withLid, without] = s.params.lid ? [t, other] : [other, t];
     return {
+      correct: withLid < without * 0.97 ? 'lid' : without < withLid * 0.97 ? 'no-lid' : 'equal',
       say: both((l) => (l === 'uk' ? 'Кришка береже теплоту!' : 'A lid keeps the heat in!')),
       text: both((l) =>
         l === 'uk'
@@ -119,6 +126,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const s = steps[0]!;
     const p = plateau(s);
     return {
+      ...(p > 60 ? { correct: 'latent' } : {}),
       say: both((l) => (l === 'uk' ? 'Помітив, що температура стояла на нулі?' : 'Did you notice the temperature stuck at zero?')),
       text: both((l) =>
         l === 'uk'
@@ -135,6 +143,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const freeze = Math.max(0, total - cool);
     const degrees = Math.round((LF_KJ * 1000) / CW);
     return {
+      correct: freeze > cool * 1.1 ? 'freezing' : cool > freeze * 1.1 ? 'cooling' : 'equal',
       say: both((l) => (l === 'uk' ? (freeze > cool ? 'Замерзати — довше, ніж холонути!' : 'Ось і лід!') : freeze > cool ? 'Freezing takes longer than cooling!' : 'There is the ice!')),
       text: both((l) =>
         l === 'uk'
@@ -151,6 +160,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const te = NACL_SOLUTE.eutectic.t;
     const sp = steps[0]!.params.cooler?.setpoint ?? 0;
     return {
+      correct: firstSolid >= 0.999 ? 'yes' : firstSolid > 0.01 ? 'partly' : 'no',
       say: both((l) => (l === 'uk' ? 'Ось чому солять дороги!' : 'That is why roads are salted!')),
       text: both((l) => {
         const uk = l === 'uk';
@@ -179,6 +189,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const less = Math.round((1 - COMPONENTS.ethanol.phases.liquid!.specificHeat!.value / CW) * 100);
     const tb = COMPONENTS.ethanol.boiling!.point.value;
     return {
+      correct: t < tw * 0.95 ? 'alcohol' : tw < t * 0.95 ? 'water' : 'equal',
       say: both((l) => (l === 'uk' ? 'Спирт — швидший!' : 'Alcohol wins!')),
       text: both((l) =>
         l === 'uk'
@@ -192,6 +203,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const salt = mix?.salt ?? 0;
     const crystals = mix?.crystals ?? 0;
     return {
+      correct: salt > 0 && crystals / salt > 0.95 ? 'all' : crystals > 0 ? 'some' : 'none',
       say: both((l) => (l === 'uk' ? 'Уся сіль повернулася!' : 'All the salt came back!')),
       text: both((l) =>
         l === 'uk'
@@ -204,6 +216,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const before = current(steps[0]!).amps;
     const after = current(steps[steps.length - 1]!).amps;
     return {
+      correct: before >= 0.01 ? 'well' : before > 0 ? 'barely' : 'never',
       say: both((l) => (l === 'uk' ? 'Струм несуть йони солі!' : 'The salt ions carry the current!')),
       text: both((l) =>
         l === 'uk'
@@ -245,6 +258,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
   'oil-does-not-boil': ({ steps }) => {
     const s = steps[steps.length - 1]!;
     return {
+      correct: s.status.kind === 'decomposes' ? 'smokes' : 'boils',
       say: both((l) => (l === 'uk' ? 'Олія не кипить — вона димить!' : 'Oil does not boil — it smokes!')),
       text: both((l) =>
         l === 'uk'
@@ -257,6 +271,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const s = steps[steps.length - 1]!;
     const tf = COMPONENTS.ethanol.melting!.point.value;
     return {
+      correct: (sampleOf(s.result.final).state.solidFraction ?? 0) > 0 ? 'yes' : 'no',
       say: both((l) => (l === 'uk' ? 'Спирт морозу не боїться!' : 'Alcohol does not mind the frost!')),
       text: both((l) =>
         l === 'uk'
@@ -272,6 +287,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     if (!a || !b || a === b) return { say: both(() => ''), text: both(() => '') };
     const i1 = current(a).amps, i2 = current(b).amps;
     return {
+      correct: i2 > i1 * 1.05 ? 'more' : i2 < i1 * 0.95 ? 'less' : 'same',
       say: both((l) => (l === 'uk' ? 'Гарячий розчин проводить краще!' : 'A hot solution conducts better!')),
       text: both((l) =>
         l === 'uk'

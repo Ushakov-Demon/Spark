@@ -23,11 +23,22 @@ export interface Preset {
   readonly formulas: readonly string[];
   /** Show only the programme quotes that contain this ("плавлен" — melting, not boiling). */
   readonly quoteHas?: string;
+  /**
+   * Possible answers to the question, to pick before the start (a prediction).
+   * Which one is right is not written here: the answer works it out from the run.
+   */
+  readonly choices?: readonly Choice[];
   /** Ask for a prediction (minutes) before the start. */
   readonly predict?: boolean;
   /** How the run ends in the model (checked by tests). */
   readonly expect: LabStatus['kind'];
 }
+
+export interface Choice {
+  readonly id: string;
+  readonly label: LocalizedText;
+}
+const ch = (id: string, uk: string, en: string): Choice => ({ id, label: { uk, en } });
 
 const THERMAL: LocalizedText = { uk: 'Теплові явища', en: 'Thermal phenomena' };
 const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
@@ -59,6 +70,7 @@ export const PRESETS: readonly Preset[] = [
     title: { uk: 'Навіщо каструлі кришка?', en: 'Why does a pot need a lid?' },
     question: { uk: 'Закип’яти воду з кришкою, а потім — без неї (зніми галочку в посуді). Що змінилося і чому?', en: 'Boil water with a lid, then without it (untick it under the vessel). What changed and why?' },
     params: { ...pot, roomTemp: 20, lid: true, action: 'boil', substance: 'water', startTemp: 20, heater: { id: 'gas-hob', rating: 1500, knob: 1 } },
+    choices: [ch('lid', 'З кришкою закипить швидше', 'It boils sooner with a lid'), ch('no-lid', 'Без кришки швидше', 'Sooner without a lid'), ch('equal', 'Однаково', 'The same')],
     formulas: ['thermal.heat-for-temperature-change', 'thermal.latent-heat'],
     quoteHas: 'пароутвор',
     expect: 'reached',
@@ -70,6 +82,7 @@ export const PRESETS: readonly Preset[] = [
     title: { uk: 'Як тане лід?', en: 'How does ice melt?' },
     question: { uk: 'Поклади лід у теплу кімнату й стеж за термометром. Чому, поки лід тане, температура стоїть на 0 °C?', en: 'Put ice in a warm room and watch the thermometer. Why does the temperature stay at 0 °C while the ice melts?' },
     params: { ...room, ...beaker, action: 'melt', substance: 'water', startTemp: -10 },
+    choices: [ch('latent', 'Теплота йде на те, щоб розтопити лід', 'The heat goes into melting the ice'), ch('thermometer', 'Термометр не встигає за водою', 'The thermometer lags behind'), ch('insulates', 'Лід не пропускає тепло', 'Ice does not let heat through')],
     formulas: ['thermal.latent-heat'],
     quoteHas: 'плавлен',
     expect: 'reached',
@@ -81,6 +94,7 @@ export const PRESETS: readonly Preset[] = [
     title: { uk: 'Скільки замерзає вода в морозилці?', en: 'How long does water take to freeze?' },
     question: { uk: 'Як гадаєш, що триває довше: охолодити воду до 0 °C чи потім перетворити її на лід?', en: 'What do you think takes longer: cooling water to 0 °C or then turning it into ice?' },
     params: { ...room, ...beaker, action: 'freeze', substance: 'water', startTemp: 20, cooler: { id: 'freezer', setpoint: -18 } },
+    choices: [ch('cooling', 'Охолодити до 0 °C', 'Cooling to 0 °C'), ch('freezing', 'Перетворити на лід', 'Turning it into ice'), ch('equal', 'Приблизно однаково', 'About the same')],
     formulas: ['thermal.latent-heat', 'thermal.heat-for-temperature-change'],
     quoteHas: 'плавлен',
     expect: 'reached',
@@ -92,6 +106,7 @@ export const PRESETS: readonly Preset[] = [
     title: { uk: 'Чому взимку дороги посипають сіллю?', en: 'Why are roads salted in winter?' },
     question: { uk: 'Постав морську воду в морозилку на −18 °C. Чи замерзне вона так само, як прісна?', en: 'Put sea water into a −18 °C freezer. Will it freeze like fresh water?' },
     params: { ...room, ...beaker, action: 'freeze', substance: 'sea-water', startTemp: 20, cooler: { id: 'freezer', setpoint: -18 } },
+    choices: [ch('yes', 'Так, як прісна', 'Yes, like fresh water'), ch('partly', 'Замерзне лише частина', 'Only part of it freezes'), ch('no', 'Зовсім не замерзне', 'It will not freeze at all')],
     formulas: ['thermal.latent-heat'],
     quoteHas: 'плавлен',
     expect: 'impossible',
@@ -103,6 +118,7 @@ export const PRESETS: readonly Preset[] = [
     title: { uk: 'Що закипить швидше: спирт чи вода?', en: 'Which boils sooner: alcohol or water?' },
     question: { uk: 'Закип’яти спирт, а потім так само воду. Чому спирт закипає набагато швидше? (Підказка: подивись на теплоємність і температуру кипіння.)', en: 'Boil alcohol, then water the same way. Why does alcohol boil much sooner? (Hint: look at the specific heat and the boiling point.)' },
     params: { ...room, ...beaker, action: 'boil', substance: 'ethanol', startTemp: 20, heater: hotplate },
+    choices: [ch('alcohol', 'Спирт', 'Alcohol'), ch('water', 'Вода', 'Water'), ch('equal', 'Однаково', 'The same')],
     formulas: ['thermal.heat-for-temperature-change'],
     predict: true,
     expect: 'reached',
@@ -118,6 +134,7 @@ export const PRESETS: readonly Preset[] = [
       { kind: 'add', substance: 'table-salt', mass: 0.018, temperature: 20 },
       { kind: 'operation', action: 'evaporate', heater: hotplate },
     ],
+    choices: [ch('all', 'Уся сіль', 'All the salt'), ch('some', 'Лише частина', 'Only part of it'), ch('none', 'Нічого — вона випарується з водою', 'None — it evaporates with the water')],
     formulas: ['thermal.latent-heat'],
     quoteHas: 'пароутвор',
     expect: 'reached',
@@ -134,6 +151,7 @@ export const PRESETS: readonly Preset[] = [
       { kind: 'add', substance: 'table-salt', mass: 0.007, temperature: 20 },
       { kind: 'operation', action: 'pass-current', supply: bench(0.4), duration: 5 },
     ],
+    choices: [ch('well', 'Так, добре проводить', 'Yes, it conducts well'), ch('barely', 'Ледь-ледь', 'Barely'), ch('never', 'Зовсім не проводить', 'Not at all')],
     formulas: ['electrical.cell-resistance', 'electrical.cell-current'],
     expect: 'reached',
   },
@@ -165,6 +183,7 @@ export const PRESETS: readonly Preset[] = [
     title: { uk: 'Чи кипить олія?', en: 'Does oil boil?' },
     question: { uk: 'Вода кипить при 100 °C. А олія? Нагрій її й подивись, що станеться раніше.', en: 'Water boils at 100 °C. And oil? Heat it and see what happens first.' },
     params: { ...room, vessel: 'pot', size: 1, material: 'steel', liters: 0.3, action: 'boil', substance: 'sunflower-oil', startTemp: 20, heater: hotplate },
+    choices: [ch('boils', 'Закипить, як вода', 'It boils, like water'), ch('smokes', 'Почне диміти раніше, ніж закипить', 'It starts to smoke before it boils')],
     formulas: ['thermal.heat-for-temperature-change'],
     expect: 'decomposes',
   },
@@ -175,6 +194,7 @@ export const PRESETS: readonly Preset[] = [
     title: { uk: 'Чи замерзне спирт у морозилці?', en: 'Will alcohol freeze in a freezer?' },
     question: { uk: 'Вода в морозилці стає льодом. А спирт? Перевір і поміркуй, чому так.', en: 'Water turns to ice in a freezer. And alcohol? Check it and think why.' },
     params: { ...room, ...beaker, action: 'freeze', substance: 'ethanol', startTemp: 20, cooler: { id: 'freezer', setpoint: -18 } },
+    choices: [ch('yes', 'Так, замерзне', 'Yes, it freezes'), ch('no', 'Ні, лишиться рідким', 'No, it stays liquid')],
     formulas: ['thermal.latent-heat'],
     quoteHas: 'плавлен',
     expect: 'impossible',
@@ -194,6 +214,7 @@ export const PRESETS: readonly Preset[] = [
       { kind: 'operation', action: 'boil', heater: hotplate },
       { kind: 'weigh', scale: 'kitchen-scale' },
     ],
+    choices: [ch('heavier', 'Лід буде важчим', 'Ice will be heavier'), ch('lighter', 'Лід буде легшим', 'Ice will be lighter'), ch('same', 'Маса не зміниться', 'The mass stays the same')],
     formulas: ['thermal.latent-heat'],
     quoteHas: 'плавлен',
     expect: 'reached',
@@ -211,6 +232,7 @@ export const PRESETS: readonly Preset[] = [
       { kind: 'operation', action: 'heat-to', target: 70, heater: { id: 'bunsen-burner', rating: 1200, knob: 1 } },
       { kind: 'operation', action: 'pass-current', supply: bench(0.4), duration: 5 },
     ],
+    choices: [ch('more', 'Так, більшим', 'Yes, larger'), ch('less', 'Ні, меншим', 'No, smaller'), ch('same', 'Таким самим', 'The same')],
     formulas: ['electrical.cell-current', 'thermal.heat-for-temperature-change'],
     expect: 'reached',
   },

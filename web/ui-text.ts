@@ -30,6 +30,21 @@ export interface UiText {
     more(d: string): string;
     less(d: string): string;
   };
+  quiz: {
+    title: string;
+    predictTitle: string;
+    noted: string;
+    right(choice: string): string;
+    wrong(choice: string, real: string): string;
+    weighAir(d: string): string;
+    weighScales(div: string, d: string): string;
+    weighShrink: string;
+    weighHeat: string;
+    weighIce: string;
+    weighPot(tare: string): string;
+    weighQuestion: string;
+    labels: { air: string; scales: string; shrink: string; heat: string; ice: string; pot: string };
+  };
   rec: {
     save: string;
     namePlaceholder: string;
@@ -215,6 +230,21 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       more: (d) => `Це на ${d} більше, ніж минулого разу.`,
       less: (d) => `Це на ${d} менше, ніж минулого разу. Куди поділися ці грами?`,
     },
+    quiz: {
+      title: 'Як гадаєш?',
+      predictTitle: 'Твій прогноз:',
+      noted: 'Записав твій прогноз! Тепер натисни «Старт» — і перевіримо.',
+      right: (c) => `Твій прогноз «${c}» справдився!`,
+      wrong: (c, r) => `Твій прогноз: «${c}». А вийшло — «${r}». Саме для цього й роблять досліди!`,
+      weighAir: (d) => `Так! Ці ${d} випарувалися: вода стала парою, і пара пішла в повітря кімнати. Речовина не зникла — вона просто вийшла з каструлі.`,
+      weighScales: (div, d) => `Ні, ваги точні до ${div}, а різниця — ${d}. Спробуй ще!`,
+      weighShrink: 'Об’єм справді змінюється (лід навіть займає більше місця, ніж вода), але маса від цього не міняється. Спробуй ще!',
+      weighHeat: 'Теплота — це енергія, а не речовина: нагрівання само не забирає з каструлі ні грама. Спробуй ще!',
+      weighIce: 'Лід займає більше місця, ніж вода, але важить стільки ж: речовини в ньому не поменшало. Спробуй ще!',
+      weighPot: (tare) => `Посуд як важив ${tare}, так і важить — зміна вся у вмісті. Спробуй ще!`,
+      weighQuestion: 'Куди поділися ці грами?',
+      labels: { air: 'Перетворилися на пару й пішли в повітря', scales: 'Ваги помилилися', shrink: 'Вода стиснулася й полегшала', heat: 'Перетворилися на теплоту', ice: 'Лід легший за воду', pot: 'Полегшала сама каструля' },
+    },
     rec: {
       save: '💾 Зберегти дослід',
       namePlaceholder: 'Назва запису',
@@ -396,6 +426,21 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       overload: (max) => `Oops! The scales are overloaded: they hold only ${max}. Take other ones.`,
       more: (d) => `That is ${d} more than last time.`,
       less: (d) => `That is ${d} less than last time. Where did those grams go?`,
+    },
+    quiz: {
+      title: 'What do you think?',
+      predictTitle: 'Your prediction:',
+      noted: 'Noted your prediction! Now press “Start” — and we will check.',
+      right: (c) => `Your prediction “${c}” came true!`,
+      wrong: (c, r) => `Your prediction: “${c}”. What happened: “${r}”. That is exactly why we do experiments!`,
+      weighAir: (d) => `Yes! Those ${d} evaporated: the water turned to vapour and the vapour went into the room air. The matter did not vanish — it just left the pot.`,
+      weighScales: (div, d) => `No, the scales are accurate to ${div}, and the difference is ${d}. Try again!`,
+      weighShrink: 'The volume does change (ice even takes more room than water), but that does not change the mass. Try again!',
+      weighHeat: 'Heat is energy, not matter: heating by itself takes not a gram out of the pot. Try again!',
+      weighIce: 'Ice takes more room than water but weighs the same: there is no less matter in it. Try again!',
+      weighPot: (tare) => `The vessel weighed ${tare} and still does — the whole change is in the contents. Try again!`,
+      weighQuestion: 'Where did those grams go?',
+      labels: { air: 'They turned to vapour and went into the air', scales: 'The scales got it wrong', shrink: 'The water shrank and got lighter', heat: 'They turned into heat', ice: 'Ice is lighter than water', pot: 'The pot itself got lighter' },
     },
     rec: {
       save: '💾 Save the experiment',

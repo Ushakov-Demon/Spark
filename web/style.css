@@ -534,3 +534,18 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .protocol .weighed { display: block; font-size: 0.82rem; color: var(--accent); }
 .scene .vessel, .scene .thermo { transition: opacity 0.3s; }
 .scene.weighing .vessel, .scene.weighing .thermo, .scene.weighing .gas-bubbles, .scene.weighing .steam { opacity: 0; }
+
+/* ---------- questions with choices ---------- */
+.quiz-wrap:empty { display: none; }
+.quiz { margin-top: 10px; display: grid; gap: 6px; }
+.quiz-title { font-weight: 600; font-size: 0.9rem; }
+.quiz-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.quiz-options button { min-height: 34px; padding: 5px 12px; border-radius: 999px; font-size: 0.86rem; }
+.quiz-options button.picked { background: var(--accent); color: #fff; border-color: var(--accent); }
+.quiz-options button.right { background: #e3f6e8; border-color: #3c9d5d; color: #1d5e33; opacity: 1; }
+.quiz-options button.wrong { background: #fbe9e9; border-color: #d27a7a; color: #8a2f2f; }
+.answer .verdict { font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  .quiz-options button.right { background: #17361f; border-color: #3c9d5d; color: #9fe0b2; }
+  .quiz-options button.wrong { background: #3a1c1c; border-color: #b05a5a; color: #f0b0b0; }
+}

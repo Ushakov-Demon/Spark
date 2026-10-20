@@ -23,6 +23,8 @@ import {
   actionUses,
   LAB_ACTIONS,
   LAB_COMMANDS,
+  labCourse,
+  stepPlace,
   formatReading,
   weigh,
   weighingsOf,
@@ -264,7 +266,6 @@ function weighNow(scale: ScaleId): string {
   const entry = session.apply({ type: 'lab.weigh', scale });
   if (!entry.ok) return tr(entry.error, locale);
   lastWeigh = { at: session.state.time, step: session };
-  headline = null;
   render();
   return weighSay();
 }
@@ -492,6 +493,7 @@ function stop() {
   // Weighings left at the end of a plan: the Professor puts the vessel on the scales right away.
   if (preset && plan.length && plan.every((s) => s.kind === 'weigh')) {
     for (const s of plan.splice(0)) if (s.kind === 'weigh') session.apply({ type: 'lab.weigh', scale: s.scale });
+    lastWeigh = { at: session.state.time, step: session };
   }
   // A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind).
   const answerOf = preset ? PRESET_ANSWERS[preset.id] : undefined;
@@ -761,8 +763,15 @@ function sceneView(): SceneView {
   const st = doneRecord?.status;
   const nextLabel = plan.length ? planLabel(plan) : '';
   const weighShown = showingWeighing();
+  const quiz = quizNow();
+  const reply = quizReply(quiz);
+  const verdict = predictionVerdict();
   const professor: SceneView['professor'] = idleAct
     ? { mood: idleAct.mood, says: idleAct.lines[Math.max(0, idleLine)] ?? '', act: idleAct.name }
+    : reply
+    ? { mood: quiz!.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.right === false ? 'thinking' : 'happy', says: reply }
+    : verdict && presetAnswer && presetAnswer !== 'computing'
+    ? { mood: verdict === predictionVerdictRight() ? 'happy' : 'surprised', says: `${tr(presetAnswer.say, locale)} ${verdict}` }
     : weighShown
     ? { mood: weighShown.reading === null ? 'surprised' : 'happy', says: weighSay() }
     : presetAnswer && presetAnswer !== 'computing' && tr(presetAnswer.say, locale)
@@ -821,6 +830,106 @@ function sceneView(): SceneView {
     professor,
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
+}
+
+// ---------- questions with choices ----------
+interface QuizOption {
+  readonly id: string;
+  readonly text: string;
+  /** For a question the page can judge at once; a prediction is judged by the run. */
+  readonly right?: boolean;
+  readonly reply: string;
+}
+interface Quiz {
+  readonly key: string;
+  readonly title: string;
+  readonly options: readonly QuizOption[];
+  /** A prediction: one choice, changeable until the start. */
+  readonly predict: boolean;
+}
+/** What was picked in the question on screen (key), in order. */
+let picked: { key: string; ids: string[] } = { key: '', ids: [] };
+/** The prediction for a ready-made experiment, judged when its answer comes. */
+let prediction: { readonly preset: string; readonly choice: string } | null = null;
+
+/** The question the Professor is asking now, with its choices — or none. */
+function quizNow(): Quiz | null {
+  const u = t().quiz;
+  if (preset?.choices && !running && stepElapsed() === 0 && !history.length && !doneRecord) {
+    // Which choice is right only the run will tell, so a prediction offers all of them (at most four), shuffled.
+    const key = `p:${preset.id}`;
+    return { key, title: u.predictTitle, predict: true, options: pickChoices(preset.choices.map((c) => ({ id: c.id, text: tr(c.label, locale), reply: u.noted })), key) };
+  }
+  // "Where did those grams go?" — after a weighing that shows less than the one before.
+  const w = showingWeighing();
+  if (!w || w.reading === null) return null;
+  const all = allWeighings();
+  const prev = [...all.slice(0, -1)].reverse().find((x) => x.reading !== null && x.scale === w.scale);
+  const d = prev ? prev.reading! - w.reading : 0;
+  if (!prev || d <= SCALES[w.scale].spec.resolution.value / 2) return null;
+  const g = formatReading(w.scale, d, locale);
+  const key = `w:${all.length}:${w.time}`;
+  const tare = weigh(session.state, w.scale).tare;
+  // The model has one way for matter to leave the vessel: evaporating and boiling off into the air.
+  const pool: QuizOption[] = [
+    { id: 'air', text: u.labels.air, right: true, reply: u.weighAir(g) },
+    { id: 'heat', text: u.labels.heat, right: false, reply: u.weighHeat },
+    { id: 'scales', text: u.labels.scales, right: false, reply: u.weighScales(formatReading(w.scale, SCALES[w.scale].spec.resolution.value, locale), g) },
+    { id: 'shrink', text: u.labels.shrink, right: false, reply: u.weighShrink },
+    { id: 'ice', text: u.labels.ice, right: false, reply: u.weighIce },
+    ...(tare === null ? [] : [{ id: 'pot', text: u.labels.pot, right: false, reply: u.weighPot(formatReading(w.scale, tare, locale)) }]),
+  ];
+  return { key, title: u.weighQuestion, predict: false, options: pickChoices(pool, key) };
+}
+
+/** A small seeded random generator: the same question keeps the same choices on every frame. */
+function seeded(key: string): () => number {
+  let h = 2166136261;
+  for (const c of key) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => {
+    h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((h ^= h >>> 16) >>> 0) / 4294967296;
+  };
+}
+/** Up to four choices in a random order; the right one (if known) is always among them. */
+function pickChoices(pool: readonly QuizOption[], key: string, n = 4): QuizOption[] {
+  const rnd = seeded(key);
+  const shuffle = <T,>(a: T[]) => {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [a[i], a[j]] = [a[j]!, a[i]!];
+    }
+    return a;
+  };
+  const right = pool.filter((o) => o.right);
+  const others = shuffle(pool.filter((o) => !o.right)).slice(0, Math.max(0, n - right.length));
+  return shuffle([...right, ...others]);
+}
+/** The Professor's reply to the latest choice in the question on screen. */
+function quizReply(q: Quiz | null): string | null {
+  if (!q || picked.key !== q.key || !picked.ids.length) return null;
+  return q.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.reply ?? null;
+}
+function renderQuiz(q: Quiz | null) {
+  if (!q) return setHtml('#quiz', '');
+  const mine = picked.key === q.key ? picked.ids : [];
+  const solved = !q.predict && q.options.some((o) => o.right && mine.includes(o.id));
+  const buttons = q.options
+    .map((o) => {
+      const was = mine.includes(o.id);
+      const cls = q.predict ? (was && mine[mine.length - 1] === o.id ? 'picked' : '') : was ? (o.right ? 'right' : 'wrong') : '';
+      const off = !q.predict && (solved || was);
+      return `<button type="button" class="${cls}" data-choice="${o.id}"${off ? ' disabled' : ''}>${cls === 'right' ? '✓ ' : cls === 'wrong' ? '✗ ' : ''}${o.text}</button>`;
+    })
+    .join('');
+  setHtml('#quiz', `<div class="quiz" data-key="${q.key}"><span class="quiz-title">${q.title}</span><div class="quiz-options">${buttons}</div></div>`);
+}
+const predictionVerdictRight = () => (prediction && presetAnswer && presetAnswer !== 'computing' && prediction.choice === presetAnswer.correct ? predictionVerdict() : null);
+/** The verdict on a prediction, once the run has answered the question. */
+function predictionVerdict(): string {
+  if (!prediction || !preset || prediction.preset !== preset.id || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return '';
+  const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? { uk: id, en: id }, locale);
+  return prediction.choice === presetAnswer.correct ? t().quiz.right(label(prediction.choice)) : t().quiz.wrong(label(prediction.choice), label(presetAnswer.correct));
 }
 
 /** The latest weighing while nothing has happened since: the vessel still stands on the scales. */
@@ -933,6 +1042,7 @@ function render() {
 
   renderProtocol();
   scene.render(sceneView());
+  renderQuiz(quizNow());
 
   // Messages: impossibility before the start, headline after, warnings.
   const msg: string[] = [];
@@ -945,7 +1055,7 @@ function render() {
       msg.push(
         presetAnswer === 'computing'
           ? `<div class="answer"><h4>${u.answerTitle}</h4><p class="muted">${u.answerComputing}</p></div>`
-          : `<div class="answer"><h4>${u.answerTitle}</h4>${preset ? `<p class="q">${tr(preset.question, locale)}</p>` : ''}<p>${tr(presetAnswer.text, locale)}</p></div>`,
+          : `<div class="answer"><h4>${u.answerTitle}</h4>${preset ? `<p class="q">${tr(preset.question, locale)}</p>` : ''}<p>${tr(presetAnswer.text, locale)}</p>${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}</div>`,
       );
     }
     // A ready-made experiment goes on along its plan.
@@ -1464,15 +1574,31 @@ function buildHeader() {
 }
 
 function explain() {
-  const result = doneRecord?.result ?? session.result(labGoalReached(stepP, session.state));
-  if (result.final.time === result.initial.time) return;
   running = false;
+  // Every step with all that was done in it (weighed, salted, the knob turned); the last one in detail.
+  const steps = stepsSoFar();
+  const ran = steps.filter((x) => x.result.final.time > x.result.initial.time);
+  const last = ran[ran.length - 1];
+  if (!last) return;
+  const result = last.result;
   if (!headline) setHeadline();
-  const title = locale === 'uk' ? 'Що відбулося і чому' : 'What happened and why';
+  const uk = locale === 'uk';
+  const ctx = { locale, level };
+  const title = uk ? 'Що відбулося і чому' : 'What happened and why';
   const notes: Block[] = (substance().modelNotes ?? []).map((n) => ({ kind: 'note', tone: 'info', text: tr(n, locale) }));
-  $('#report').innerHTML = renderHtml(
-    buildReport({ title, level, locale, country: 'UA', result, simulation, domain: LAB_KNOWLEDGE, focusTime: (result.initial.time + result.final.time) / 2, summary: [...headline!(), ...notes] }),
-  );
+  const course = steps.length > 1 || result.log.length ? labCourse(steps, ctx) : [];
+  const n = steps.indexOf(last) + 1;
+  const lastTitle: Block[] = steps.length > 1 ? [{ kind: 'heading', depth: 2, text: uk ? `Крок ${n} докладно` : `Step ${n} in detail` }] : [];
+  // The earlier steps, each with its own explanation, folded.
+  const earlier: Block[] = ran.slice(0, -1).map((x) => ({
+    kind: 'details',
+    summary: `${uk ? 'Крок' : 'Step'} ${steps.indexOf(x) + 1}. ${tr(OPERATIONS[x.params.action].label, locale).replace('…', '')} — ${uk ? 'розібрати докладно' : 'explain in detail'}`,
+    blocks: buildReport({ title: stepPlace(x.params, locale), level, locale, country: 'UA', result: x.result, simulation, domain: LAB_KNOWLEDGE, focusTime: (x.result.initial.time + x.result.final.time) / 2, summary: labSummary(x.params, x.result, x.status, ctx) }),
+  }));
+  $('#report').innerHTML = renderHtml([
+    ...buildReport({ title, level, locale, country: 'UA', result, simulation, domain: LAB_KNOWLEDGE, focusTime: (result.initial.time + result.final.time) / 2, summary: [...headline!(), ...notes, ...course, ...lastTitle] }),
+    ...(earlier.length ? [{ kind: 'heading', depth: 2, text: uk ? 'Попередні кроки' : 'Earlier steps' } as Block, ...earlier] : []),
+  ]);
   render();
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1507,8 +1633,9 @@ function nextPlanStep() {
       continue;
     }
     if (s.kind === 'weigh') {
+      // Stop at the scales: the reading (and the Professor's question) first, the next step on the next press.
       weighNow(s.scale);
-      continue;
+      break;
     }
     params = stepParams(params, s);
     if (params.heater) lastHeater = params.heater;
@@ -1563,6 +1690,7 @@ function buildPresets() {
 
 function startPreset(p: Preset) {
   preset = p;
+  prediction = null;
   plan = [...(p.plan ?? [])];
   params = p.params;
   if (params.heater) lastHeater = params.heater;
@@ -1944,6 +2072,18 @@ window.addEventListener('resize', layoutConsole);
 setConsole(store.get('console') === 'open');
 
 // ---------- wiring ----------
+$('#quiz').addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-choice]');
+  const q = quizNow();
+  if (!b || !q) return;
+  const id = b.dataset['choice']!;
+  if (picked.key !== q.key) picked = { key: q.key, ids: [] };
+  if (q.predict) {
+    picked.ids = [id];
+    prediction = { preset: preset!.id, choice: id };
+  } else if (!picked.ids.includes(id)) picked.ids.push(id);
+  render();
+});
 $('#offer').addEventListener('click', (e) => {
   const target = (e.target as HTMLElement).closest<HTMLElement>('[data-fix], [data-stop], [data-plan]');
   if (!target) return;
