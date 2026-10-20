@@ -88,8 +88,8 @@ import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } 
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { createScene, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
-import { icon } from './icons.js';
-import { ballSvg, blockSvg, bottleSvg } from './pictures.js';
+import { icon } from './graphics/icons/index.js';
+import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
 import { referenceHtml, type RefTarget } from './reference.js';

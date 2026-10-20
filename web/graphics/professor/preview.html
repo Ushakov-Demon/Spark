@@ -19,7 +19,7 @@
     <p>Чернетка персонажа: розкуйовджене волосся, крейда на окулярах, халат застебнутий не на той ґудзик.</p>
     <div id="grid" class="grid"></div>
     <script type="module">
-      import { MOODS, professorSvg } from './professor.ts';
+      import { MOODS, professorSvg } from './index.ts';
       const names = { neutral: 'спокійний', thinking: 'думає', happy: 'радіє (вийшло!)', surprised: 'здивований', sooty: 'після вибуху' };
       document.getElementById('grid').innerHTML = MOODS.map((m) => `<div class="card">${professorSvg(m, 200)}<span>${names[m]}</span></div>`).join('');
     </script>

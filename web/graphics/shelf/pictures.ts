@@ -2,7 +2,8 @@
  * Pictures of substances for the shelf: a reagent bottle (or a jar for a solid)
  * with the liquid's colour and the formula on its label.
  */
-import { liquidColor, type LiquidKind } from './scene.js';
+import { liquidColor } from '../scene/colors.js';
+import type { LiquidKind } from '../scene/types.js';
 
 export function bottleSvg(kind: LiquidKind, formula: string, solid = false): string {
   const c = liquidColor(kind);

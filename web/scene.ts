@@ -5,23 +5,19 @@
  * bubbles, steam, flame, glowing hotplate, thermometer, gas at the electrodes —
  * so CSS animations run smoothly. It shows the state, it computes nothing.
  */
-import { professorSideSvg, professorSvg, type Mood } from './professor.js';
+import { professorSideSvg, professorSvg, type Mood } from './graphics/professor/index.js';
+import { blocksSvg } from './graphics/scene/bodies.js';
+import { isGlass, LIQUID, METAL } from './graphics/scene/colors.js';
+import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
+import { deviceSvg } from './graphics/scene/devices.js';
+import { dynamometerSvg, scalesSvg } from './graphics/scene/instruments.js';
+import { baseFor, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
+import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 
-export type DeviceKind =
-  | 'none'
-  | 'hotplate'
-  | 'induction'
-  | 'gas'
-  | 'bunsen'
-  | 'spirit'
-  | 'immersion'
-  | 'fridge'
-  | 'freezer'
-  | 'ice-bath'
-  | 'ice-salt-bath'
-  | 'supply';
-export type VesselShape = 'pot' | 'turka' | 'beaker' | 'calorimeter' | 'cylinder' | 'flask-conical' | 'flask-round' | 'test-tube';
-export type LiquidKind = 'water' | 'salt' | 'alcohol' | 'acid' | 'oil' | 'other';
+// The drawings live in graphics/; the scene puts them together and moves the live parts.
+export type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
+export { liquidColor } from './graphics/scene/colors.js';
+export { vesselPreview } from './graphics/scene/vessels.js';
 
 export interface SceneView {
   readonly device: DeviceKind;
@@ -67,6 +63,8 @@ export interface SceneView {
   readonly professor: { readonly mood: Mood; readonly says: string; readonly act?: string };
 }
 
+const NS = 'http://www.w3.org/2000/svg';
+
 export interface Scene {
   readonly element: HTMLElement;
   /** Is the Professor reading the blackboard (the table moved aside)? */
@@ -74,308 +72,6 @@ export interface Scene {
   render(view: SceneView): void;
 }
 
-const NS = 'http://www.w3.org/2000/svg';
-const W = 640;
-const H = 360;
-const TABLE = 318;
-/**
- * Top of the visible drawing. The stage is tall — a high wall for the blackboard — and the things on
- * the table keep their size: more wall, not a bigger kitchen. (The page's CSS sizes follow: aspect
- * 640 / 408, the table line at 89.7 % of the height.)
- */
-const VIEW_TOP = -48;
-const CX = 330;
-
-const METAL: Readonly<Record<string, { fill: string; edge: string }>> = {
-  steel: { fill: '#b9c2cb', edge: '#7d8893' },
-  'stainless-steel': { fill: '#c4ccd4', edge: '#808b96' },
-  aluminium: { fill: '#d7dce1', edge: '#9aa3ac' },
-  copper: { fill: '#c97a43', edge: '#8f4f24' },
-  brass: { fill: '#d4af37', edge: '#9a7b1d' },
-  'cast-iron': { fill: '#4b4f55', edge: '#2c2f33' },
-  iron: { fill: '#5d6268', edge: '#363a3f' },
-  enamel: { fill: '#eef1f4', edge: '#9aa3ac' },
-  ceramic: { fill: '#f0e6d8', edge: '#b9a68c' },
-};
-const isGlass = (m: string) => m === 'glass' || m === 'borosilicate-glass';
-
-const LIQUID: Readonly<Record<LiquidKind, string>> = {
-  water: 'rgba(96, 170, 240, 0.55)',
-  salt: 'rgba(120, 178, 205, 0.62)',
-  alcohol: 'rgba(205, 228, 255, 0.4)',
-  acid: 'rgba(238, 238, 214, 0.5)',
-  oil: 'rgba(233, 188, 52, 0.78)',
-  other: 'rgba(200, 210, 220, 0.5)',
-};
-
-/** Colour of a liquid on the drawing (also its swatch on the shelf). */
-export const liquidColor = (kind: LiquidKind): string => LIQUID[kind];
-
-interface VesselGeom {
-  /** Outline of the vessel wall. */
-  readonly outer: string;
-  /** Inside of the vessel (liquid lives here). */
-  readonly inner: string;
-  readonly left: number;
-  readonly right: number;
-  readonly top: number;
-  readonly bottom: number;
-  /** Extras drawn with the vessel: handles, spout, graduations, clamp. */
-  readonly extras: string;
-  readonly lidPath?: string;
-  /** Room for electrodes / immersion element: x range inside, near the top. */
-  readonly mouth: { readonly l: number; readonly r: number };
-}
-
-/** Vessel geometry standing with its bottom at `base`. */
-function vesselGeom(shape: VesselShape, base: number): VesselGeom {
-  switch (shape) {
-    case 'pot': {
-      const w = 190, h = 112, l = CX - w / 2, r = CX + w / 2, t = base - h;
-      return {
-        outer: `M${l},${t} L${l},${base - 10} Q${l},${base} ${l + 12},${base} L${r - 12},${base} Q${r},${base} ${r},${base - 10} L${r},${t} Z`,
-        inner: `M${l + 5},${t} L${l + 5},${base - 12} Q${l + 5},${base - 5} ${l + 14},${base - 5} L${r - 14},${base - 5} Q${r - 5},${base - 5} ${r - 5},${base - 12} L${r - 5},${t} Z`,
-        left: l, right: r, top: t, bottom: base,
-        extras: `<path class="handle" d="M${l},${t + 18} h-22 a7,7 0 0 0 0,14 h22"/><path class="handle" d="M${r},${t + 18} h22 a7,7 0 0 1 0,14 h-22"/>`,
-        lidPath: `M${l - 6},${t} Q${CX},${t - 26} ${r + 6},${t} Z M${CX - 12},${t - 13} h24 v-8 h-24 Z`,
-        mouth: { l: l + 30, r: r - 30 },
-      };
-    }
-    case 'turka': {
-      const wb = 86, wt = 62, h = 104, t = base - h;
-      const lb = CX - wb / 2, rb = CX + wb / 2, lt = CX - wt / 2, rt = CX + wt / 2;
-      return {
-        outer: `M${lt - 6},${t} L${lb},${base - 6} Q${lb + 2},${base} ${lb + 8},${base} L${rb - 8},${base} Q${rb - 2},${base} ${rb},${base - 6} L${rt},${t} Z`,
-        inner: `M${lt - 1},${t} L${lb + 5},${base - 8} L${rb - 5},${base - 8} L${rt},${t} Z`,
-        left: lb, right: rb, top: t, bottom: base,
-        extras: `<path class="handle long" d="M${rt + 4},${t + 22} L${rt + 120},${t - 6}"/>`,
-        mouth: { l: lt + 6, r: rt - 6 },
-      };
-    }
-    case 'beaker': {
-      const w = 108, h = 136, l = CX - w / 2, r = CX + w / 2, t = base - h;
-      const grads = [0.25, 0.5, 0.75].map((f) => `<path class="grad" d="M${l + 8},${base - 6 - f * (h - 14)} h16"/>`).join('');
-      return {
-        outer: `M${l - 8},${t - 4} Q${l},${t} ${l},${t + 8} L${l},${base - 6} Q${l},${base} ${l + 6},${base} L${r - 6},${base} Q${r},${base} ${r},${base - 6} L${r},${t} Z`,
-        inner: `M${l + 3},${t + 6} L${l + 3},${base - 7} Q${l + 3},${base - 3} ${l + 8},${base - 3} L${r - 8},${base - 3} Q${r - 3},${base - 3} ${r - 3},${base - 7} L${r - 3},${t} Z`,
-        left: l, right: r, top: t, bottom: base, extras: grads,
-        mouth: { l: l + 18, r: r - 18 },
-      };
-    }
-    case 'cylinder': {
-      // A measuring cylinder: tall and narrow, marks every 10 mL (long ones every 50), a spout and a foot.
-      const w = 46, h = 214, l = CX - w / 2, r = CX + w / 2, t = base - h - 8;
-      const marks = Array.from({ length: 10 }, (_, i) => {
-        const y = base - 12 - ((i + 1) / 10) * (h - 16);
-        return `<path class="grad" d="M${l + 4},${y} h${i % 5 === 4 ? 16 : 9}"/>`;
-      }).join('');
-      return {
-        outer: `M${l - 5},${t - 3} Q${l},${t} ${l},${t + 6} L${l},${base - 10} L${r},${base - 10} L${r},${t} Z`,
-        inner: `M${l + 3},${t + 4} L${l + 3},${base - 13} L${r - 3},${base - 13} L${r - 3},${t} Z`,
-        left: l, right: r, top: t, bottom: base - 13,
-        extras: `${marks}<path class="cyl-foot" d="M${l - 22},${base} L${l - 14},${base - 10} L${r + 14},${base - 10} L${r + 22},${base} Z"/>`,
-        mouth: { l: l + 8, r: r - 8 },
-      };
-    }
-    case 'calorimeter': {
-      // The inner cup (cut away to show the water) inside an outer cup: two walls with air between.
-      const w = 100, h = 118, l = CX - w / 2, r = CX + w / 2, t = base - h;
-      const o = 16;
-      const jacket = `<path class="jacket" d="M${l - o},${t + 6} L${l - o},${base + 2} L${r + o},${base + 2} L${r + o},${t + 6}" /><path class="jacket-ring" d="M${l - o - 4},${t + 6} h${o + 6} M${r - 2},${t + 6} h${o + 6}"/>`;
-      return {
-        outer: `M${l},${t} L${l},${base - 8} Q${l},${base - 4} ${l + 6},${base - 4} L${r - 6},${base - 4} Q${r},${base - 4} ${r},${base - 8} L${r},${t} Z`,
-        inner: `M${l + 3},${t} L${l + 3},${base - 9} Q${l + 3},${base - 6} ${l + 8},${base - 6} L${r - 8},${base - 6} Q${r - 3},${base - 6} ${r - 3},${base - 9} L${r - 3},${t} Z`,
-        left: l, right: r, top: t, bottom: base - 4, extras: jacket,
-        lidPath: `M${l - o - 4},${t} h${w + 2 * o + 8} v-7 h-${w + 2 * o + 8} Z M${CX - 8},${t - 7} h16 v-6 h-16 Z`,
-        mouth: { l: l + 16, r: r - 16 },
-      };
-    }
-    case 'flask-conical': {
-      const wb = 136, wn = 32, hb = 108, hn = 46, t = base - hb - hn;
-      const lb = CX - wb / 2, rb = CX + wb / 2, ln = CX - wn / 2, rn = CX + wn / 2, shoulder = base - hb;
-      return {
-        outer: `M${ln},${t} L${ln},${shoulder} L${lb},${base - 6} Q${lb},${base} ${lb + 8},${base} L${rb - 8},${base} Q${rb},${base} ${rb},${base - 6} L${rn},${shoulder} L${rn},${t} Z`,
-        inner: `M${ln + 3},${t} L${ln + 3},${shoulder + 2} L${lb + 6},${base - 7} L${rb - 6},${base - 7} L${rn - 3},${shoulder + 2} L${rn - 3},${t} Z`,
-        left: lb, right: rb, top: t, bottom: base,
-        extras: `<path class="rim" d="M${ln - 5},${t} h${wn + 10}"/>`,
-        mouth: { l: ln + 5, r: rn - 5 },
-      };
-    }
-    case 'flask-round': {
-      const R = 62, wn = 28, hn = 56, cy = base - R, t = cy - R - hn + 8;
-      const ln = CX - wn / 2, rn = CX + wn / 2;
-      const join = Math.sqrt(R * R - (wn / 2) ** 2);
-      return {
-        outer: `M${ln},${t} L${ln},${cy - join} A${R},${R} 0 1 0 ${rn},${cy - join} L${rn},${t} Z`,
-        inner: `M${ln + 3},${t} L${ln + 3},${cy - join + 3} A${R - 4},${R - 4} 0 1 0 ${rn - 3},${cy - join + 3} L${rn - 3},${t} Z`,
-        left: CX - R, right: CX + R, top: t, bottom: base,
-        extras: `<path class="stand" d="M${CX + R + 60},${TABLE} V${t - 10} M${CX + R + 60},${t + 18} H${rn + 2}"/><rect class="clamp" x="${rn - 2}" y="${t + 12}" width="12" height="12" rx="2"/>`,
-        mouth: { l: ln + 4, r: rn - 4 },
-      };
-    }
-    case 'test-tube': {
-      const w = 34, h = 160, l = CX - w / 2, r = CX + w / 2, t = base - h;
-      return {
-        outer: `M${l},${t} L${l},${base - w / 2} A${w / 2},${w / 2} 0 0 0 ${r},${base - w / 2} L${r},${t} Z`,
-        inner: `M${l + 3},${t} L${l + 3},${base - w / 2} A${w / 2 - 3},${w / 2 - 3} 0 0 0 ${r - 3},${base - w / 2} L${r - 3},${t} Z`,
-        left: l, right: r, top: t, bottom: base,
-        extras: `<path class="stand" d="M${r + 70},${TABLE} V${t - 14} M${r + 70},${t + 20} H${r + 2}"/><rect class="clamp" x="${r - 4}" y="${t + 14}" width="12" height="12" rx="2"/><path class="rim" d="M${l - 4},${t} h${w + 8}"/>`,
-        mouth: { l: l + 6, r: r - 6 },
-      };
-    }
-  }
-}
-
-/** Where the vessel bottom sits for this device. */
-const baseFor = (d: DeviceKind, shape: VesselShape): number => {
-  if (shape === 'flask-round' || shape === 'test-tube') return d === 'bunsen' || d === 'spirit' ? 236 : TABLE - 30;
-  switch (d) {
-    case 'hotplate':
-    case 'induction':
-    case 'gas':
-      return TABLE - 34;
-    case 'bunsen':
-      return 240;
-    case 'spirit':
-      return 250;
-    default:
-      return TABLE;
-  }
-};
-
-/** Static drawing of a device; dynamic parts carry classes the frame updates. */
-function deviceSvg(d: DeviceKind, g: VesselGeom): string {
-  const plateW = Math.min(240, Math.max(150, g.right - g.left + 40));
-  switch (d) {
-    case 'hotplate':
-      return `<rect class="appliance" x="${CX - plateW / 2 - 20}" y="${TABLE - 26}" width="${plateW + 40}" height="26" rx="5"/>
-        <ellipse class="plate" id="sc-plate" cx="${CX}" cy="${TABLE - 30}" rx="${plateW / 2 - 6}" ry="7"/>
-        <circle class="lamp" id="sc-lamp" cx="${CX + plateW / 2 + 4}" cy="${TABLE - 13}" r="4"/>`;
-    case 'induction':
-      return `<rect class="glass-top" x="${CX - plateW / 2 - 20}" y="${TABLE - 30}" width="${plateW + 40}" height="30" rx="5"/>
-        <g id="sc-coil" class="coil">${[0.35, 0.6, 0.85].map((k) => `<ellipse cx="${CX}" cy="${TABLE - 26}" rx="${(plateW / 2) * k}" ry="${4 * k + 1}"/>`).join('')}</g>
-        <circle class="lamp" id="sc-lamp" cx="${CX + plateW / 2 + 4}" cy="${TABLE - 14}" r="4"/>`;
-    case 'gas':
-      return `<rect class="appliance" x="${CX - plateW / 2 - 20}" y="${TABLE - 18}" width="${plateW + 40}" height="18" rx="4"/>
-        <path class="grate" d="M${CX - plateW / 2},${TABLE - 34} H${CX + plateW / 2} M${CX - 40},${TABLE - 34} V${TABLE - 18} M${CX + 40},${TABLE - 34} V${TABLE - 18}"/>
-        <g id="sc-flame" class="flame ring">${[-36, -18, 0, 18, 36].map((x) => `<path d="M${CX + x - 5},${TABLE - 20} Q${CX + x},${TABLE - 40} ${CX + x + 5},${TABLE - 20} Z"/>`).join('')}</g>`;
-    case 'bunsen':
-      return `<path class="stand" d="M${CX - 70},${TABLE} L${CX - 54},240 M${CX + 70},${TABLE} L${CX + 54},240 M${CX - 62},240 H${CX + 62}"/>
-        <rect class="appliance" x="${CX - 24}" y="${TABLE - 10}" width="48" height="10" rx="3"/><rect class="tube" x="${CX - 6}" y="${TABLE - 62}" width="12" height="54"/>
-        <g id="sc-flame" class="flame cone"><path d="M${CX - 10},${TABLE - 62} Q${CX},${TABLE - 110} ${CX + 10},${TABLE - 62} Z"/><path class="inner" d="M${CX - 5},${TABLE - 62} Q${CX},${TABLE - 86} ${CX + 5},${TABLE - 62} Z"/></g>`;
-    case 'spirit':
-      return `<path class="stand" d="M${CX - 66},${TABLE} L${CX - 52},250 M${CX + 66},${TABLE} L${CX + 52},250 M${CX - 60},250 H${CX + 60}"/>
-        <path class="lamp-glass" d="M${CX - 30},${TABLE} Q${CX - 34},${TABLE - 36} ${CX - 10},${TABLE - 44} H${CX + 10} Q${CX + 34},${TABLE - 36} ${CX + 30},${TABLE} Z"/>
-        <rect class="tube" x="${CX - 5}" y="${TABLE - 54}" width="10" height="12"/>
-        <g id="sc-flame" class="flame candle"><path d="M${CX - 8},${TABLE - 54} Q${CX},${TABLE - 82} ${CX + 8},${TABLE - 54} Q${CX},${TABLE - 47} ${CX - 8},${TABLE - 54} Z"/></g>`;
-    case 'immersion':
-      return `<g id="sc-element" class="element"><path d="M${g.mouth.l + 10},${g.top - 30} V${g.bottom - 30} q0,-10 10,-10 h${Math.max(10, g.mouth.r - g.mouth.l - 40)} q10,0 10,10 V${g.top - 30}"/></g>
-        <path class="cable" d="M${g.mouth.l + 10},${g.top - 30} q-10,-24 -50,-28"/>`;
-    case 'fridge':
-    case 'freezer':
-      return `<rect class="cabinet" x="${CX - 150}" y="${Math.min(g.top - 50, 120)}" width="300" height="${TABLE - Math.min(g.top - 50, 120)}" rx="10"/>
-        <rect class="cabinet-in ${d}" x="${CX - 136}" y="${Math.min(g.top - 50, 120) + 12}" width="272" height="${TABLE - Math.min(g.top - 50, 120) - 18}" rx="6"/>
-        <text class="display" x="${CX + 120}" y="${Math.min(g.top - 50, 120) + 30}" id="sc-setpoint" text-anchor="end"></text>
-        ${d === 'freezer' ? `<g class="snow">${[[-110, 160], [100, 190], [-90, 250], [115, 270], [-120, 210]].map(([x, y]) => `<text x="${CX + x!}" y="${y}">❄</text>`).join('')}</g>` : ''}`;
-    case 'ice-bath':
-    case 'ice-salt-bath': {
-      const l = g.left - 34, r = g.right + 34, t = g.bottom - Math.min(80, (g.bottom - g.top) * 0.6);
-      return `<path class="basin" d="M${l},${t} L${l + 10},${TABLE} H${r - 10} L${r},${t} Z"/>
-        <path class="bath-water" d="M${l + 4},${t + 10} L${l + 12},${TABLE - 3} H${r - 12} L${r - 4},${t + 10} Z"/>
-        <g class="cubes">${[l + 18, l + 40, r - 40, r - 20].map((x, i) => `<rect x="${x - 9}" y="${t + 6 + (i % 2) * 18}" width="18" height="16" rx="3"/>`).join('')}</g>
-        ${d === 'ice-salt-bath' ? `<g class="salt-dots">${[0, 1, 2, 3, 4, 5].map((i) => `<circle cx="${l + 16 + i * ((r - l - 32) / 5)}" cy="${TABLE - 10 - (i % 2) * 8}" r="2"/>`).join('')}</g>` : ''}`;
-    }
-    case 'supply': {
-      const x = CX + 160, y = TABLE - 70, el = (px: number) => `<rect class="electrode" x="${px - 3}" y="${g.top - 24}" width="6" height="${g.bottom - g.top + 6}" rx="1.5"/>`;
-      const a = g.mouth.l + (g.mouth.r - g.mouth.l) * 0.25, c = g.mouth.l + (g.mouth.r - g.mouth.l) * 0.75;
-      return `<rect class="psu" x="${x}" y="${y}" width="120" height="70" rx="8"/>
-        <rect class="psu-screen" x="${x + 10}" y="${y + 6}" width="100" height="36" rx="3"/>
-        <text class="psu-text" id="sc-volts" x="${x + 102}" y="${y + 21}" text-anchor="end"></text><text class="psu-text amps" id="sc-amps" x="${x + 102}" y="${y + 37}" text-anchor="end"></text>
-        <circle class="jack plus" cx="${x + 30}" cy="${y + 55}" r="6"/><circle class="jack minus" cx="${x + 90}" cy="${y + 55}" r="6"/>
-        <path class="wire plus" d="M${x + 30},${y + 55} C${x - 10},${y + 60} ${a + 40},${g.top - 80} ${a},${g.top - 24}"/>
-        <path class="wire minus" d="M${x + 90},${y + 55} C${x + 80},${g.top - 90} ${c + 30},${g.top - 70} ${c},${g.top - 24}"/>
-        ${el(a)}${el(c)}`;
-    }
-    default:
-      return '';
-  }
-}
-
-/** A small picture of a vessel for the shelf: the same drawing as on the table, with some liquid in it. */
-export function vesselPreview(shape: VesselShape, material: string, liquid: LiquidKind = 'water', fill = 0.6): string {
-  const g = vesselGeom(shape, TABLE);
-  const glass = isGlass(material);
-  const metal = METAL[material] ?? METAL['steel']!;
-  const level = g.bottom - fill * (g.bottom - g.top);
-  const id = `vp-${shape}-${material}`.replace(/[^a-z0-9-]/gi, '');
-  const pad = shape === 'turka' ? 130 : shape === 'flask-round' || shape === 'test-tube' ? 90 : 34;
-  return `<svg class="thumb" viewBox="${g.left - 34} ${g.top - 16} ${g.right - g.left + 34 + pad} ${g.bottom - g.top + 22}" aria-hidden="true">
-    <defs><clipPath id="${id}"><path d="${g.inner}"/></clipPath></defs>
-    ${glass ? '' : `<path d="${g.outer}" style="fill:${metal.fill};stroke:${metal.edge}" stroke-width="3"/>`}
-    <g clip-path="url(#${id})"><rect x="${g.left - 10}" y="${level}" width="${g.right - g.left + 20}" height="${g.bottom - level + 10}" style="fill:${LIQUID[liquid]}"/></g>
-    ${glass ? `<path d="${g.outer}" style="fill:rgba(210,232,255,0.18);stroke:#8fb8dd" stroke-width="4"/>` : ''}
-    <g class="thumb-extras">${g.extras.replace(/class="stand"[^/]*\/>/, '')}</g>
-  </svg>`;
-}
-
-/** A ball with a highlight (a glass marble). */
-const ballAt = (cx: number, cy: number, r: number, color: string) =>
-  `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:${color};stroke:rgba(0,0,0,0.35)"/><path d="M${cx - r * 0.45},${cy - r * 0.35} q${r * 0.2},${-r * 0.35} ${r * 0.6},${-r * 0.35}" stroke="rgba(255,255,255,0.8)" stroke-width="2" fill="none" stroke-linecap="round"/>`;
-
-/** Bodies in the liquid: sinking ones on the bottom, floating ones at the surface with their share under it. */
-function blocksSvg(pieces: readonly { color: string; volume: number; share: number; ball?: boolean }[], g: VesselGeom, level: number): string {
-  if (!pieces.length) return '';
-  let sides = pieces.map((p) => Math.max(10, Math.min(60, 22 * Math.cbrt(p.volume / 1e-5))));
-  const room = g.right - g.left - 12;
-  const total = sides.reduce((a, b) => a + b, 0) + 5 * (sides.length - 1);
-  if (total > room) sides = sides.map((x) => (x * room) / total);
-  let x = g.left + 6 + Math.max(0, (room - Math.min(room, total)) / 2);
-  return pieces
-    .map((p, i) => {
-      const w = sides[i]!;
-      const h = p.ball ? w : w * 0.7;
-      const y = p.share < 1 ? level - (1 - p.share) * h : g.bottom - h;
-      const r = p.ball ? ballAt(x + w / 2, y + h / 2, w / 2, p.color) : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" style="fill:${p.color};stroke:rgba(0,0,0,0.35)"/><path d="M${x + 3},${y + 3} h${w * 0.5}" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>`;
-      x += w + 5;
-      return r;
-    })
-    .join('');
-}
-
-/** A spring dynamometer hanging over the vessel; its body in the air above it or lowered into the liquid. */
-function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number; ball?: boolean }, g: VesselGeom, level: number): string {
-  const x = (g.left + g.right) / 2;
-  const w = Math.max(12, Math.min(44, 22 * Math.cbrt(h.volume / 1e-5), g.right - g.left - 10));
-  const bh = h.ball ? w : w * 0.7;
-  // In the liquid the body hangs under the surface (or floats on it); in the air, above the rim.
-  const bodyTop = h.into === 'air' ? g.top - bh - 26 : h.share < 1 ? level - (1 - h.share) * bh : Math.min(g.bottom - bh - 4, level + 10);
-  // The dial never leaves the picture (its top edge is at VIEW_TOP).
-  const top = Math.max(VIEW_TOP + 4, Math.min(g.top - 150, bodyTop - 140));
-  const caseH = 92;
-  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - 6},${top + 12 + i * 7} h${i % 5 === 0 ? 8 : 5}"/>`).join('');
-  return `<rect class="dyn-case" x="${x - 12}" y="${top}" width="24" height="${caseH}" rx="5"/>
-    <g class="dyn-ticks">${ticks}</g>
-    <path class="dyn-pointer" d="M${x + 3},${top + 40} h9"/>
-    <path class="dyn-hook" d="M${x},${top + caseH} V${bodyTop}"/>
-    ${h.ball ? ballAt(x, bodyTop + bh / 2, w / 2, h.color) : `<rect x="${x - w / 2}" y="${bodyTop}" width="${w}" height="${bh}" rx="2" style="fill:${h.color};stroke:rgba(0,0,0,0.35)"/>`}
-    <text class="dyn-text" x="${x + 18}" y="${top + 44}">${h.display}</text>`;
-}
-
-/** Electronic scales on the table to the right, with the vessel (a small copy) on them and an LCD. */
-function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string): string {
-  const x0 = 506;
-  const w = 118;
-  const lab = look === 'lab-balance';
-  const top = lab ? 286 : 296;
-  const seat = lab ? top - 6 : top - 1;
-  const load = vessel.replace('<svg class="thumb"', `<svg class="scale-load" x="${x0 + 12}" y="${seat - 78}" width="${w - 24}" height="78" preserveAspectRatio="xMidYMax meet"`);
-  return `
-    <rect class="scale-body${lab ? ' lab' : ''}" x="${x0}" y="${top}" width="${w}" height="${TABLE - top}" rx="6"/>
-    ${lab ? `<rect class="scale-stem" x="${x0 + w / 2 - 4}" y="${seat}" width="8" height="${top - seat}"/><ellipse class="scale-pan" cx="${x0 + w / 2}" cy="${seat}" rx="40" ry="5"/>` : `<rect class="scale-plate" x="${x0 - 3}" y="${top - 3}" width="${w + 6}" height="5" rx="2"/>`}
-    ${load}
-    <rect class="scale-lcd" x="${x0 + 24}" y="${TABLE - (lab ? 24 : 18)}" width="${w - 48}" height="${lab ? 16 : 14}" rx="2"/>
-    <text id="sc-scale-text" class="scale-text" x="${x0 + w / 2}" y="${TABLE - (lab ? 12.5 : 7.5)}" text-anchor="middle"></text>`;
-}
 
 export function createScene(): Scene {
   const root = document.createElement('div');
