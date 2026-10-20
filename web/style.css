@@ -714,3 +714,9 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 @keyframes sponge { 0% { left: -22%; opacity: 1; } 100% { left: 102%; opacity: 1; } }
 @keyframes chalk-off { 0% { clip-path: inset(0 0 0 0); opacity: 1; } 100% { clip-path: inset(0 0 0 100%); opacity: 0.2; } }
 @media (prefers-reduced-motion: reduce) { .board.wiping .board-sponge, .board.wiping .board-lines { animation: none; } }
+
+/* the Professor talking: his mouth and moustache move while he burbles */
+.scene-prof.talking .p-mouth { transform-box: fill-box; transform-origin: center top; animation: talk 0.17s ease-in-out infinite alternate; }
+@keyframes talk { from { transform: scaleY(1); } to { transform: scaleY(1.9) translateY(1px); } }
+@media (prefers-reduced-motion: reduce) { .scene-prof.talking .p-mouth { animation: none; } }
+.voice-pick select { max-width: 11rem; }

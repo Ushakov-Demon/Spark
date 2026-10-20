@@ -43,6 +43,9 @@ export interface ConsoleApi {
   news(): void;
   /** Weigh the vessel on these scales (none — the ones chosen on the page); returns what the Professor says. */
   weigh(scale?: ScaleId): string;
+  voices(): readonly string[];
+  /** Choose the Professor's voice (he says a line in it); false if there is no such voice. */
+  voice(id: string): boolean;
   /** Read the level by the vessel's marks; returns what the Professor says. */
   level(): string;
   /** Hang a body on the dynamometer in the air or in the liquid. */
@@ -341,6 +344,15 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         if (!f) return notFound(words(args));
         if (Array.isArray(f)) return ambiguous(f.map((id) => ({ name: SCALES[id].name })));
         return [api.weigh(f)];
+      },
+    },
+    {
+      names: ['voice', 'голос'],
+      usage: L('voice [mumble | gruff | chirp | robot | whistle | none]', 'voice [mumble | gruff | chirp | robot | whistle | none]'),
+      about: L('голос Професора: voice chirp', 'the Professor’s voice: voice chirp'),
+      run(args) {
+        if (!args[0]) return list(uk() ? 'Голоси (voice <назва>):' : 'Voices (voice <name>):', api.voices());
+        return api.voice(norm(args[0])) ? ['✓'] : notFound(args[0]);
       },
     },
     {

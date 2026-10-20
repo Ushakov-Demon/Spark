@@ -92,7 +92,7 @@ import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
-import { fizz, plop, setSound, soundOn } from './sounds/index.js';
+import { babble, currentVoice, fizz, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -514,6 +514,29 @@ const renderSound = () => {
   b.title = soundOn() ? t().sound.on : t().sound.off;
   b.setAttribute('aria-label', b.title);
   b.setAttribute('aria-pressed', String(soundOn()));
+};
+// The Professor's voice: chosen in the header (remembered); a choice is heard at once.
+const savedVoice = store.get('voice');
+if (savedVoice && (VOICE_IDS as string[]).includes(savedVoice)) setVoice(savedVoice as VoiceId);
+const voiceSel = $<HTMLSelectElement>('#voice');
+const renderVoice = () => {
+  const u = t().voice;
+  $('#lbl-voice').textContent = u.label;
+  const opts = VOICE_IDS.map((v) => `<option value="${v}"${v === currentVoice() ? ' selected' : ''}>${u.names[v] ?? v}</option>`).join('');
+  if (voiceSel.dataset['html'] !== opts) {
+    voiceSel.innerHTML = opts;
+    voiceSel.dataset['html'] = opts;
+  }
+};
+voiceSel.onchange = () => {
+  setVoice(voiceSel.value as VoiceId);
+  store.set('voice', voiceSel.value);
+  if (!soundOn()) {
+    setSound(true);
+    store.set('sound', 'on');
+    renderSound();
+  }
+  scene.talk(babble(t().voice.sample));
 };
 $('#sound').onclick = () => {
   setSound(!soundOn());
@@ -1146,6 +1169,9 @@ function splash(id: SubstanceId, mass: number, frozen: boolean) {
   window.setTimeout(() => plop(size), 430);
 }
 
+/** The Professor's last line: a new one is spoken. */
+let lastSaid = '';
+
 /** "New experiment": the board is wiped with a sponge, then all is set up again from the start. */
 const renewButton = () => `<button type="button" class="renew" data-renew="1">${t().renew}</button>`;
 function renew() {
@@ -1364,6 +1390,7 @@ function render() {
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
   $<HTMLButtonElement>('#read-level').textContent = u.measure.level;
   renderSound();
+  renderVoice();
   newsButton.textContent = u.byTheWay.button;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
@@ -1399,7 +1426,11 @@ function render() {
   }
 
   renderProtocol();
-  scene.render(sceneView());
+  const view = sceneView();
+  scene.render(view);
+  // A new line of the Professor: he burbles it (the same line again stays quiet).
+  if (view.professor.says && view.professor.says !== lastSaid && !scene.reading) scene.talk(babble(view.professor.says));
+  lastSaid = view.professor.says;
   if (!renderGuide()) {
     const q = quizNow();
     // The experiment is over (nothing left in its plan, no question on screen): offer a new one.
@@ -2517,6 +2548,13 @@ const labConsole = createConsole({
   scenes: () => ACTS.map((a) => a.name),
   news: () => byTheWay(),
   weigh: (sc) => weighNow(sc ?? scale),
+  voices: () => VOICE_IDS.map((v) => `${v}${v === currentVoice() ? ' ◀' : ''} — ${t().voice.names[v]}`),
+  voice(v) {
+    if (!(VOICE_IDS as string[]).includes(v)) return false;
+    voiceSel.value = v;
+    voiceSel.onchange?.(new Event('change'));
+    return true;
+  },
   level: () => measureNow({ type: 'lab.read-level', vessel: params.vessel, size: params.size }),
   hang: (id, grams, into) => measureNow({ type: 'lab.hang', substance: id, mass: grams / 1000, into }),
   save: (name) => {

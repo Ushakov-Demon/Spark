@@ -75,6 +75,8 @@ export interface Scene {
   read(on: boolean): void;
   /** Wipe the board with a sponge; `done` runs when it is clean. */
   wipe(done: () => void): void;
+  /** The Professor's mouth moves for so many seconds (while he burbles a line). */
+  talk(seconds: number): void;
   render(view: SceneView): void;
 }
 
@@ -101,6 +103,7 @@ export function createScene(): Scene {
   /** Bodies drawn in the liquid so far: one more means one was just dropped in. */
   let piecesShown = 0;
   let scaleKey = '';
+  let talkTimer = 0;
   const board = root.querySelector<HTMLElement>('#sc-board')!;
   const boardLines = board.querySelector<HTMLElement>('.board-lines')!;
   const boardEmpty = board.querySelector<HTMLElement>('.board-empty')!;
@@ -189,6 +192,14 @@ export function createScene(): Scene {
     read(on) {
       root.classList.toggle('reading', on);
       setToggle();
+    },
+    talk(seconds) {
+      profBox.classList.remove('talking');
+      if (seconds <= 0) return;
+      void profBox.offsetWidth;
+      profBox.classList.add('talking');
+      window.clearTimeout(talkTimer);
+      talkTimer = window.setTimeout(() => profBox.classList.remove('talking'), seconds * 1000);
     },
     wipe(done) {
       board.classList.remove('wiping');
