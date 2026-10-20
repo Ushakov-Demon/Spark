@@ -12,3 +12,4 @@ export * from './lab-knowledge.js';
 export * from './presets.js';
 export * from './choices.js';
 export * from './preset-answers.js';
+export * from './recording.js';

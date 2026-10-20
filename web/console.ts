@@ -38,6 +38,11 @@ export interface ConsoleApi {
   startPreset(p: Preset): void;
   /** The Professor's idle scenes by name, and playing one now. */
   scenes(): readonly string[];
+  /** Save the experiment so far as a recording; returns a note. */
+  save(name: string): string;
+  records(): readonly string[];
+  /** Replay recording number n (1-based); false if there is none. */
+  replay(n: number): boolean;
   playScene(name: string): void;
 }
 
@@ -416,6 +421,28 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       run() {
         api.explain();
         return [uk() ? '✓ розбір нижче' : '✓ see the report below'];
+      },
+    },
+    {
+      names: ['save', 'record', 'зберегти'],
+      usage: L('save [name]', 'save [name]'),
+      about: L('зберегти дослід (усі кроки) як запис', 'save the experiment (all steps) as a recording'),
+      run: (args) => [api.save(args.join(' '))],
+    },
+    {
+      names: ['records', 'recordings', 'записи'],
+      usage: L('records', 'records'),
+      about: L('мої записи з номерами', 'my recordings with numbers'),
+      run: () => list(uk() ? 'Записи (replay <номер>):' : 'Recordings (replay <number>):', api.records().map((r, i) => `${i + 1}. ${r}`)),
+    },
+    {
+      names: ['replay', 'повтор'],
+      usage: L('replay <number>', 'replay <number>'),
+      about: L('повторити запис крок за кроком', 'replay a recording step by step'),
+      run(args) {
+        const n = quantities(args)[0];
+        if (!n) return [T(this.usage)];
+        return api.replay(n.value) ? ['▶'] : notFound(String(n.value));
       },
     },
     {

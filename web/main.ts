@@ -42,6 +42,11 @@ import {
   type LabParams,
   type LabStatus,
   configureStep,
+  recordingOf,
+  replayStep,
+  parseRecording,
+  type Recording,
+  type ReplayStep,
   PRESET_ANSWERS,
   type PresetAnswer,
   fitChoices,
@@ -213,6 +218,7 @@ function temperature(id: string): number | undefined {
 
 /** A new experiment: fresh setup, empty protocol. */
 function newSession() {
+  replaying = null;
   history = [];
   pendingAdds = [];
   points = { sample: [], vessel: [], source: [] };
@@ -249,7 +255,8 @@ const experimentStarted = (): boolean => session !== undefined && (history.lengt
 
 /** Close the current step (if it ran at all) and put it into the protocol. */
 function closeStep() {
-  if (doneRecord) return void history.push({ ...doneRecord, adds: stepAdds });
+  // The result as it was at the end, with the whole log (also what was done in the pause after it).
+  if (doneRecord) return void history.push({ ...doneRecord, result: { ...doneRecord.result, log: session.result().log }, adds: stepAdds });
   if (stepElapsed() <= 0 && !stepAdds.length) return;
   const result = session.result(labGoalReached(stepP, session.state));
   history.push({ params: stepP, result, status: labStatus(stepP, result, simulation, warnings), adds: stepAdds });
@@ -261,9 +268,15 @@ function closeStep() {
  * the next one starts with the same contents.
  */
 function stepChanged() {
+  replaying = null;
   buildShelf();
   if (!history.length && stepElapsed() === 0 && !stepAdds.length) return newSession();
   if (stepElapsed() === 0 && !stepAdds.length) return beginStep(configureStep(initialState, params));
+  // Nothing done in this step yet (the salt came in the pause before it): it is still being set up.
+  if (stepElapsed() === 0 && !session.result().log.length) {
+    pendingAdds = stepAdds;
+    return beginStep(configureStep(initialState, params));
+  }
   closeStep();
   beginStep(configureStep(session.state, params));
 }
@@ -405,10 +418,11 @@ function frame(now: number) {
     acc += realDt * speed;
     const steps = Math.floor(acc / DT);
     acc -= steps * DT;
-    const reached = session.advance(steps * DT, (s) => labGoalReached(stepP, s));
+    // A replay applies the recorded actions exactly on time and ends each step as it ended then.
+    const reached = replaying ? replaying.step.advance(steps * DT) : session.advance(steps * DT, (s) => labGoalReached(stepP, s));
     record();
     if (reached) stop();
-    else if (stalled()) stop();
+    else if (!replaying && stalled()) stop();
     idleTick(now);
     render();
   } else if (idleTick(now)) render();
@@ -418,6 +432,7 @@ function frame(now: number) {
 function stop() {
   running = false;
   finished = true;
+  if (replaying) window.setTimeout(nextReplayStep, 1500);
   // The end of a run is news: give the reader time before the Professor gets bored.
   lastActivity = performance.now();
   nextActAt = lastActivity + IDLE_START;
@@ -964,7 +979,10 @@ function renderProtocol() {
   for (const s of plan) rows.push(`<li class="planned"><span class="what">${s.kind === 'add' ? u.added(tr(SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })) : tr(OPERATIONS[s.action].label, locale)}</span></li>`);
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
-  $('#protocol-hint').textContent = finished ? u.protocolNext : u.protocolHint;
+  $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : finished ? u.protocolNext : u.protocolHint;
+  // The save button follows the experiment; the list is rebuilt only on its own events.
+  const saveBtn = document.querySelector<HTMLButtonElement>('.rec-save-btn');
+  if (saveBtn) saveBtn.disabled = !history.length && stepElapsed() <= 0 && !doneRecord;
 }
 
 // ---------- shelf (left panel) ----------
@@ -1353,6 +1371,7 @@ function buildHeader() {
     buildExpect();
     buildAdd();
     buildPresets();
+    renderRecords();
     render();
     if (refTarget) openRef(refTarget);
     if ($('#report').innerHTML) explain();
@@ -1492,6 +1511,156 @@ function applyFix(f: LabFix) {
   render();
 }
 
+// ---------- recordings: save, replay, share ----------
+let replaying: { readonly rec: Recording; index: number; step: ReplayStep } | null = null;
+let savingName: string | null = null;
+let recordsNote = '';
+const loadRecords = (): Recording[] => {
+  try {
+    const x = JSON.parse(store.get('recordings') ?? '[]') as unknown[];
+    return x.map((r) => parseRecording(JSON.stringify(r))).flatMap((r) => (r.ok ? [r.recording] : []));
+  } catch {
+    return [];
+  }
+};
+const saveRecords = (list: readonly Recording[]) => store.set('recordings', JSON.stringify(list));
+
+/** The steps of the experiment so far, the current one included (as it is now). */
+function stepsSoFar() {
+  const steps = history.map((h) => ({ params: h.params, result: h.result, status: h.status }));
+  if (doneRecord) steps.push({ params: doneRecord.params, result: { ...doneRecord.result, log: session.result().log }, status: doneRecord.status });
+  else if (stepElapsed() > 0 || stepAdds.length) {
+    const result = session.result(labGoalReached(stepP, session.state));
+    steps.push({ params: stepP, result, status: labStatus(stepP, result, simulation, warnings) });
+  }
+  return steps;
+}
+function saveRecording(name: string): string {
+  const steps = stepsSoFar();
+  if (!steps.length) return t().rec.empty;
+  const rec = recordingOf(name.trim() || labSubject(params, locale), steps);
+  saveRecords([rec, ...loadRecords()]);
+  return t().rec.saved(rec.name);
+}
+
+/** Replay a recording on the page: the first step from a fresh setup, then each from where the last ended. */
+function startReplay(rec: Recording) {
+  preset = null;
+  plan = [];
+  closeRef();
+  params = rec.steps[0]!.params;
+  history = [];
+  pendingAdds = [];
+  points = { sample: [], vessel: [], source: [] };
+  lastPointAt = -Infinity;
+  buildShelf();
+  beginReplayStep(rec, 0, null);
+}
+function beginReplayStep(rec: Recording, index: number, from: SystemState | null) {
+  const step = replayStep(rec.steps[index]!, from, simulation, commands, 10);
+  params = step.params;
+  if (params.heater) lastHeater = params.heater;
+  if (params.cooler) lastCooler = params.cooler;
+  if (params.supply) lastSupply = params.supply;
+  beginStep({ state: step.session.state, warnings: [] });
+  // beginStep made a new session; the replay's own one carries the recorded actions.
+  session = step.session;
+  replaying = { rec, index, step };
+  running = true;
+  lastFrame = 0;
+  buildShelf();
+  render();
+}
+function nextReplayStep() {
+  const r = replaying;
+  if (!r || running) return;
+  // What was done in the pause after this step (salt on the ice…).
+  const before = session.result().log.length;
+  r.step.finish();
+  for (const e of session.result().log.slice(before)) {
+    if (e.ok && e.command.type === 'thermal.add') pendingAdds.push({ what: SUBSTANCES[e.command.substance as SubstanceId].name, mass: e.command.mass });
+  }
+  if (r.index + 1 >= r.rec.steps.length) {
+    recordsNote = t().rec.replayDone(r.rec.name);
+    replaying = null;
+    renderRecords();
+    return render();
+  }
+  closeStep();
+  const from = session.state;
+  beginReplayStep(r.rec, r.index + 1, from);
+}
+
+function download(rec: Recording) {
+  const blob = new Blob([JSON.stringify(rec, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${rec.name.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'spark'}.spark.json`;
+  a.click();
+  window.setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function renderRecords() {
+  const u = t().rec;
+  const box = $('#records');
+  const list = loadRecords();
+  box.innerHTML = '';
+  if (savingName !== null) {
+    const input = el('input', { type: 'text', value: savingName, placeholder: u.namePlaceholder });
+    const ok = el('button', { type: 'button', className: 'primary' }, u.saveConfirm);
+    const no = el('button', { type: 'button' }, u.cancel);
+    const save = () => {
+      recordsNote = saveRecording(input.value);
+      savingName = null;
+      renderRecords();
+    };
+    ok.onclick = save;
+    input.onkeydown = (e) => e.key === 'Enter' && save();
+    no.onclick = () => {
+      savingName = null;
+      renderRecords();
+    };
+    box.append(el('div', { className: 'rec-save' }, input, ok, no));
+    window.setTimeout(() => input.select(), 0);
+  } else {
+    const b = el('button', { type: 'button', className: 'rec-save-btn' }, u.save);
+    b.disabled = !history.length && stepElapsed() <= 0 && !doneRecord;
+    b.onclick = () => {
+      savingName = labSubject(params, locale);
+      renderRecords();
+    };
+    box.append(b);
+  }
+  if (recordsNote) box.append(el('p', { className: 'muted small' }, recordsNote));
+  box.append(el('h4', { className: 'rec-title' }, u.title));
+  if (!list.length) box.append(el('p', { className: 'muted small' }, u.empty));
+  const ul = el('ul', { className: 'rec-list' });
+  for (const [i, r] of list.entries()) {
+    const ops = r.steps.map((s) => tr(OPERATIONS[s.params.action].label, locale).replace('…', '')).join(' → ');
+    const play = el('button', { type: 'button', className: 'primary' }, u.replay);
+    play.onclick = () => startReplay(r);
+    const file = el('button', { type: 'button' }, u.download);
+    file.onclick = () => download(r);
+    const del = el('button', { type: 'button', title: locale === 'uk' ? 'Видалити' : 'Delete' }, u.remove);
+    del.onclick = () => {
+      saveRecords(list.filter((_, j) => j !== i));
+      renderRecords();
+    };
+    ul.append(el('li', {}, el('div', { className: 'rec-name' }, r.name), el('div', { className: 'muted small' }, `${u.steps(r.steps.length)}: ${ops}`), el('div', { className: 'rec-buttons' }, play, file, del)));
+  }
+  box.append(ul);
+  const imp = el('input', { type: 'file', accept: '.json,application/json', className: 'rec-file' });
+  imp.onchange = async () => {
+    const f = imp.files?.[0];
+    if (!f) return;
+    const r = parseRecording(await f.text());
+    recordsNote = r.ok ? u.saved(r.recording.name) : u.importBad(r.reason);
+    if (r.ok) saveRecords([r.recording, ...list]);
+    renderRecords();
+  };
+  box.append(el('label', { className: 'rec-import' }, el('span', {}, u.import), imp));
+}
+
 // ---------- reference card ----------
 let refTarget: RefTarget | null = null;
 function openRef(target: RefTarget) {
@@ -1611,6 +1780,17 @@ const labConsole = createConsole({
   },
   startPreset: (p) => startPreset(p),
   scenes: () => ACTS.map((a) => a.name),
+  save: (name) => {
+    const note = saveRecording(name);
+    renderRecords();
+    return note;
+  },
+  records: () => loadRecords().map((r) => `${r.name} — ${t().rec.steps(r.steps.length)}`),
+  replay(n) {
+    const r = loadRecords()[n - 1];
+    if (r) startReplay(r);
+    return !!r;
+  },
   playScene(name) {
     const a = ACTS.find((x) => x.name === name);
     if (!a) return;
@@ -1730,5 +1910,6 @@ buildPresets();
 buildShelf();
 buildExpect();
 newSession();
+renderRecords();
 buildAdd();
 requestAnimationFrame(frame);

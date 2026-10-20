@@ -19,6 +19,23 @@ export interface UiText {
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
+  rec: {
+    save: string;
+    namePlaceholder: string;
+    saveConfirm: string;
+    cancel: string;
+    title: string;
+    empty: string;
+    replay: string;
+    download: string;
+    remove: string;
+    import: string;
+    importBad(reason: string): string;
+    saved(name: string): string;
+    steps(n: number): string;
+    replaying(name: string, i: number, n: number): string;
+    replayDone(name: string): string;
+  };
   answerTitle: string;
   answerComputing: string;
   /** What the bored Professor says during his idle scenes, line by line. */
@@ -177,6 +194,23 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
+    rec: {
+      save: '💾 Зберегти дослід',
+      namePlaceholder: 'Назва запису',
+      saveConfirm: 'Зберегти',
+      cancel: 'Скасувати',
+      title: 'Мої записи',
+      empty: 'Записів поки немає. Проведи дослід — і збережи його: потім його можна повторити крок за кроком.',
+      replay: '▶ Повторити',
+      download: '⬇ Файл',
+      remove: '🗑',
+      import: '⬆ Завантажити запис',
+      importBad: (r) => `Це не запис Spark (${r}).`,
+      saved: (n) => `Збережено: «${n}»`,
+      steps: (n) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'крок' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'кроки' : 'кроків'}`,
+      replaying: (n, i, k) => `▶ Повтор «${n}»: крок ${i} з ${k}`,
+      replayDone: (n) => `Повтор «${n}» завершено — усе як того разу!`,
+    },
     answerTitle: 'Відповідь на питання досліду',
     answerComputing: 'Професор зводить результати…',
     idle: {
@@ -332,6 +366,23 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
+    rec: {
+      save: '💾 Save the experiment',
+      namePlaceholder: 'Recording name',
+      saveConfirm: 'Save',
+      cancel: 'Cancel',
+      title: 'My recordings',
+      empty: 'No recordings yet. Do an experiment and save it: you can replay it step by step later.',
+      replay: '▶ Replay',
+      download: '⬇ File',
+      remove: '🗑',
+      import: '⬆ Load a recording',
+      importBad: (r) => `This is not a Spark recording (${r}).`,
+      saved: (n) => `Saved: “${n}”`,
+      steps: (n) => `${n} step${n === 1 ? '' : 's'}`,
+      replaying: (n, i, k) => `▶ Replaying “${n}”: step ${i} of ${k}`,
+      replayDone: (n) => `Replay of “${n}” done — just like last time!`,
+    },
     answerTitle: 'The answer to the experiment’s question',
     answerComputing: 'The Professor is putting the results together…',
     idle: {
