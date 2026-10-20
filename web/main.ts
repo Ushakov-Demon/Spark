@@ -444,7 +444,7 @@ function idleTick(now: number): boolean {
     return true;
   }
   // New scenes only when nothing is going on.
-  if (running || document.hidden || now < nextActAt) return false;
+  if (running || document.hidden || now < nextActAt || scene.reading) return false;
   const pool = ACTS.filter((a) => a.name !== lastActName);
   const a = pool[Math.floor(Math.random() * pool.length)]!;
   lastActName = a.name;

@@ -5,7 +5,7 @@
  * bubbles, steam, flame, glowing hotplate, thermometer, gas at the electrodes —
  * so CSS animations run smoothly. It shows the state, it computes nothing.
  */
-import { professorSvg, type Mood } from './professor.js';
+import { professorSideSvg, professorSvg, type Mood } from './professor.js';
 
 export type DeviceKind =
   | 'none'
@@ -63,6 +63,8 @@ export interface SceneView {
 
 export interface Scene {
   readonly element: HTMLElement;
+  /** Is the Professor reading the blackboard (the table moved aside)? */
+  readonly reading: boolean;
   render(view: SceneView): void;
 }
 
@@ -297,10 +299,11 @@ export function createScene(): Scene {
   root.className = 'scene';
   // The blackboard hangs on the wall behind everything on the table (the drawing's wall is see-through);
   // a button pulls it to the front to read it all, and back.
-  root.innerHTML = `<div class="scene-stage"><button type="button" class="board-toggle"></button><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 52 ${W} ${H - 52}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div></div></div>`;
+  root.innerHTML = `<div class="scene-stage"><button type="button" class="board-toggle"></button><div class="board" id="sc-board" aria-live="polite"><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 52 ${W} ${H - 52}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
   const svg = root.querySelector('svg')!;
   const says = root.querySelector<HTMLElement>('#sc-says')!;
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
+  const profSide = root.querySelector<HTMLElement>('#sc-prof-side')!;
   let key = '';
   let mood: Mood | null = null;
   let act = '';
@@ -316,13 +319,14 @@ export function createScene(): Scene {
   const boardToggle = root.querySelector<HTMLButtonElement>('.board-toggle')!;
   let boardLabels = { front: '', back: '' };
   const setToggle = () => {
-    const front = board.classList.contains('front');
-    boardToggle.textContent = front ? boardLabels.back : boardLabels.front;
-    boardToggle.setAttribute('aria-pressed', String(front));
+    const reading = root.classList.contains('reading');
+    boardToggle.textContent = reading ? boardLabels.back : boardLabels.front;
+    boardToggle.setAttribute('aria-pressed', String(reading));
   };
+  // Reading the board: the things on the table shrink and move to its right end, the Professor
+  // steps back to the left, turns side-on and reads.
   boardToggle.onclick = () => {
-    board.classList.toggle('front');
-    boardToggle.classList.toggle('front', board.classList.contains('front'));
+    root.classList.toggle('reading');
     setToggle();
   };
   const $ = <T extends Element>(id: string) => svg.querySelector<T>(`#${id}`);
@@ -347,6 +351,7 @@ export function createScene(): Scene {
       <rect class="wall" x="-800" y="-200" width="${W + 1600}" height="${TABLE + 200}"/>
       <rect class="table" x="-800" y="${TABLE}" width="${W + 1600}" height="${H - TABLE + 200}"/>
       <path class="table-edge" d="M-800,${TABLE} H${W + 800}"/>
+      <g class="items">
       ${front ? '' : deviceSvg(v.device, g)}
       <g class="vessel ${glass ? 'glass' : 'metal'}">
         ${glass ? '' : `<path d="${g.outer}" style="${wallStyle}" stroke-width="2"/>`}
@@ -377,11 +382,15 @@ export function createScene(): Scene {
         <circle class="merc" cx="${tx}" cy="${g.bottom + 2}" r="6.5"/>
         <text id="sc-temp" class="thermo-text" x="${tx}" y="${g.top - 18}" text-anchor="middle"></text>
       </g>
-      <g id="sc-scale" class="scales"></g>`;
+      <g id="sc-scale" class="scales"></g>
+      </g>`;
   }
 
   return {
     element: root,
+    get reading() {
+      return root.classList.contains('reading');
+    },
     render(v) {
       const k = [v.device, v.vessel, v.material, v.lid].join('|');
       if (k !== key) {
@@ -506,6 +515,7 @@ export function createScene(): Scene {
       if (v.professor.mood !== mood) {
         mood = v.professor.mood;
         prof.innerHTML = professorSvg(mood, 110);
+        profSide.innerHTML = professorSideSvg(mood, 110);
       }
       // An idle scene: one CSS class on the figure; a new scene restarts its animation.
       const nextAct = v.professor.act ?? '';

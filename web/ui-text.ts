@@ -234,8 +234,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       less: (d) => `Це на ${d} менше, ніж минулого разу. Куди поділися ці грами?`,
     },
     boardEmpty: 'Тут з’являтимуться формули досліду',
-    boardFront: '⤢ Висунути дошку',
-    boardBack: '⤡ Повернути дошку',
+    boardFront: '👀 Подивитися на дошку',
+    boardBack: '↩ Повернутися до досліду',
     quiz: {
       title: 'Як гадаєш?',
       predictTitle: 'Твій прогноз:',
@@ -434,8 +434,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       less: (d) => `That is ${d} less than last time. Where did those grams go?`,
     },
     boardEmpty: 'The formulas of the experiment will appear here',
-    boardFront: '⤢ Pull the board forward',
-    boardBack: '⤡ Put the board back',
+    boardFront: '👀 Look at the board',
+    boardBack: '↩ Back to the experiment',
     quiz: {
       title: 'What do you think?',
       predictTitle: 'Your prediction:',
