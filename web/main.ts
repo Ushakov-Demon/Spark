@@ -1561,7 +1561,7 @@ function buildShelf() {
     return [el('div', { className: 'carousel' }, prev, track, next), dots];
   };
 
-  // 1. What we do: a carousel of tiles, three at a time.
+  // 1. What we do: a carousel of tiles, two at a time (like every card on the shelf).
   const actions = LAB_ACTIONS.filter((a) => !started || (OPERATIONS[a].accepts?.(sub) ?? true));
   const tiles = actions.map((a) => {
     const b = el('button', { type: 'button', className: `tile${a === params.action ? ' selected' : ''}` });
@@ -1570,7 +1570,7 @@ function buildShelf() {
     b.onclick = () => setAction(a);
     return el('li', { className: 'car-li' }, b);
   });
-  const actionContent: HTMLElement[] = carousel(tiles, 3, actions.indexOf(params.action));
+  const actionContent: HTMLElement[] = carousel(tiles, 2, actions.indexOf(params.action));
   const op = OPERATIONS[params.action];
   if (op.target) {
     actionContent.push(number(u.target, params.target ?? op.target.default, op.target.min, op.target.max, 1, (x) => (params = { ...params, target: x }), stepChanged));
