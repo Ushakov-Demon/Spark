@@ -170,6 +170,12 @@ function equipmentHtml(item: EquipmentItem, c: Ctx, cites: Cites): string {
       add(uk ? 'Температура' : 'Temperature', `${s.setpoint.min === s.setpoint.max ? `${s.setpoint.default} °C` : `${s.setpoint.min}…${s.setpoint.max} °C`}${cites.mark(s.setpoint.data)}`);
       break;
     }
+    case 'scale': {
+      const s = item.spec;
+      add(uk ? 'Найбільше навантаження' : 'Capacity', value(s.capacity, c, cites));
+      add(uk ? 'Ціна поділки' : 'Division', value(s.resolution, c, cites));
+      break;
+    }
     case 'supply': {
       const s = item.spec;
       add(uk ? 'Напруга' : 'Voltage', `${s.voltage.min === s.voltage.max ? `${s.voltage.max} ${uk ? 'В' : 'V'}` : `${s.voltage.min}–${s.voltage.max} ${uk ? 'В' : 'V'}`}${cites.mark(s.voltage.data)}`);

@@ -43,6 +43,7 @@ export interface UiText {
   };
   /** On a solid's shelf card: it goes into the liquid. */
   putIn: string;
+  instruments: string;
   dissolves: string;
   boardEmpty: string;
   chartShow: string;
@@ -265,6 +266,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       rowHang: (s, into) => `🧷 ${s} (${into === 'air' ? 'у повітрі' : 'у рідині'})`,
     },
     putIn: 'кладуть у рідину',
+    instruments: 'Вимірювальні прилади',
     dissolves: 'розчиняється у воді',
     boardEmpty: 'Тут з’являтимуться формули досліду',
     chartShow: '📈 Показати графік',
@@ -484,6 +486,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       rowHang: (s, into) => `🧷 ${s} (${into === 'air' ? 'in the air' : 'in the liquid'})`,
     },
     putIn: 'goes into a liquid',
+    instruments: 'Measuring instruments',
     dissolves: 'dissolves in water',
     boardEmpty: 'The formulas of the experiment will appear here',
     chartShow: '📈 Show the chart',

@@ -1404,9 +1404,15 @@ function renderProtocol() {
 }
 
 // ---------- shelf (left panel) ----------
-/** The family of substances open on the shelf (its name in the current language). */
-let openFamily = store.get('family') ?? '';
-const openSections = new Set<string>((store.get('open') ?? 'action,substance,vessel,device,conditions').split(','));
+/** Which group is open in each shelf section (substances, devices, vessels, instruments) — by its label. */
+const openFamilies: Record<string, string> = (() => {
+  try {
+    return JSON.parse(store.get('families') ?? '{}') as Record<string, string>;
+  } catch {
+    return {};
+  }
+})();
+const openSections = new Set<string>((store.get('open') ?? 'action,substance,vessel,device,instruments,conditions').split(','));
 let query = '';
 
 function buildShelf() {
@@ -1484,17 +1490,18 @@ function buildShelf() {
    * folded into a header with their count; inside, a carousel of cards two at a time. While searching,
    * every family with a match is open.
    */
-  const familyShelf = (groups: readonly { label: string; cards: HTMLElement[] }[], detail?: HTMLElement[]) => {
+  const familyShelf = (key: string, groups: readonly { label: string; cards: HTMLElement[] }[], detail?: HTMLElement[]) => {
     const out: HTMLElement[] = [];
     const shown = groups.filter((g) => g.cards.length);
-    if (!shown.some((g) => g.label === openFamily)) openFamily = shown.find((g) => g.cards.some((c) => c.querySelector('.selected')))?.label ?? shown[0]?.label ?? '';
+    // Open: the group last opened here, else the one with the chosen card, else the first.
+    if (openFamilies[key] !== '' && !shown.some((g) => g.label === openFamilies[key])) openFamilies[key] = shown.find((g) => g.cards.some((c) => c.querySelector('.selected')))?.label ?? shown[0]?.label ?? '';
     for (const g of shown) {
-      const open = query ? true : g.label === openFamily;
+      const open = query ? true : g.label === openFamilies[key];
       const head = el('button', { type: 'button', className: `family-head${open ? ' open' : ''}` }, el('span', {}, g.label), el('span', { className: 'family-count' }, String(g.cards.length)));
       head.setAttribute('aria-expanded', String(open));
       head.onclick = () => {
-        openFamily = open && !query ? '' : g.label;
-        store.set('family', openFamily);
+        openFamilies[key] = open && !query ? '' : g.label;
+        store.set('families', JSON.stringify(openFamilies));
         buildShelf();
       };
       out.push(head);
@@ -1598,7 +1605,7 @@ function buildShelf() {
           }),
         ),
     }));
-    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...cardGroups(groups));
+    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...familyShelf('device', groups));
   } else if (uses === 'heater' || uses === 'either') {
     const h = params.heater ? HEATERS[params.heater.id] : undefined;
     const groups = childrenOf('device.heater').map((c) => ({
@@ -1638,7 +1645,7 @@ function buildShelf() {
           pick({ ...params, heater: lastHeater }, stepChanged);
         })]
       : [];
-    section('device', uses === 'either' ? u.meltWith : u.device, h ? tr(h.name, locale) : u.justRoom, ...cardGroups(groups, detail));
+    section('device', uses === 'either' ? u.meltWith : u.device, h ? tr(h.name, locale) : u.justRoom, ...familyShelf('device', groups, detail));
   } else {
     const cool = params.cooler ? COOLERS[params.cooler.id] : undefined;
     const groups = [
@@ -1675,7 +1682,7 @@ function buildShelf() {
           params = { ...params, cooler: lastCooler };
         }, stepChanged)]
       : [];
-    section('device', u.coolWhere, cool ? tr(cool.name, locale) : u.justRoom, ...cardGroups(groups, detail));
+    section('device', u.coolWhere, cool ? tr(cool.name, locale) : u.justRoom, ...familyShelf('device', groups, detail));
   }
 
   // 3. Substance — only what the chosen operation can be done with.
@@ -1688,6 +1695,7 @@ function buildShelf() {
     u.substance,
     tr(sub.name, locale),
     ...familyShelf(
+      'substance',
       // Everything in the catalog, by family. A liquid is poured into the vessel as the sample (before
       // the start, and only what the chosen action can do something with); a solid — a block, salt —
       // is put into the liquid or hung on the dynamometer: picking it gets it ready in the "add" panel.
@@ -1737,7 +1745,8 @@ function buildShelf() {
     'vessel',
     u.vessel,
     `${tr(v.name, locale)}, ${volume(params.size)}`,
-    ...cardGroups(
+    ...familyShelf(
+      'vessel',
       childrenOf('vessel').map((c) => ({
         label: tr(c.name, locale),
         cards: fits
@@ -1785,7 +1794,44 @@ function buildShelf() {
     ),
   );
 
-  // 5. Conditions.
+  // 5. Measuring instruments: the scales to weigh on, and the dynamometer (a body is hung on it in the "add" panel).
+  section(
+    'instruments',
+    u.instruments,
+    tr(SCALES[scale].name, locale),
+    ...familyShelf(
+      'instruments',
+      childrenOf('device.measuring').map((c) => ({
+        label: tr(c.name, locale),
+        cards: SCALE_IDS.filter((id) => SCALES[id].category === c.id && matches(SCALES[id].name)).map((id) => {
+          const x = SCALES[id];
+          const force = x.spec.quantity === 'force';
+          const unit = force ? 'force' : 'mass';
+          return card({
+            name: x.name,
+            pic: devPic(x.look),
+            ref: `equipment:${id}`,
+            note: `${force ? `${num(x.spec.capacity.value)} ${locale === 'uk' ? 'Н' : 'N'}` : formatReading(id, x.spec.capacity.value, locale)} · ${locale === 'uk' ? 'поділка' : 'division'} ${formatMeasured(unit, x.spec.resolution.value, x.spec.resolution.value, locale)}`,
+            selected: !force && id === scale,
+            onPick: () => {
+              if (force) {
+                // A body is hung on it: the "add" panel has the body and the buttons.
+                const solid = SUBSTANCES[addSub].category.startsWith('solid.') && SUBSTANCES[addSub].category !== 'solid.salt';
+                prepareAdd(solid ? addSub : 'aluminium');
+                return;
+              }
+              scale = id;
+              store.set('scale', id);
+              buildShelf();
+              render();
+            },
+          });
+        }),
+      })),
+    ),
+  );
+
+  // 6. Conditions.
   if (!query) section('conditions', locale === 'uk' ? 'Умови' : 'Conditions', `${params.roomTemp} °C`, number(u.room, params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x })));
 
   shelf.scrollTop = scroll;

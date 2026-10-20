@@ -11,6 +11,10 @@ const P: Readonly<Record<string, string>> = {
   freeze: '<path d="M12 2v20M4 6l16 12M20 6L4 18"/><path d="M9 3l3 2 3-2M9 21l3-2 3 2M3 9l2.5 1L5 13M21 9l-2.5 1 .5 3"/>',
   melt: '<rect x="5" y="4" width="11" height="10" rx="2"/><path d="M8 7l3 3"/><path d="M18 14c0 2-1.2 3-2.5 3S13 16 13 14c0-1.5 2.5-4 2.5-4S18 12.5 18 14z"/><path d="M4 20h16"/>',
   current: '<path d="M13 2L5 13h6l-2 9 9-12h-6z"/>',
+  // measuring instruments
+  'kitchen-scale': '<rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5 11h14"/><rect x="8.5" y="15" width="7" height="3" rx="0.5"/>',
+  'lab-balance': '<rect x="3" y="14" width="18" height="7" rx="1.5"/><path d="M12 14v-3M7 11h10"/><rect x="7.5" y="16" width="9" height="3" rx="0.5"/><path d="M6 6h12l-1 3H7z"/>',
+  dynamometer: '<path d="M12 1.5v2"/><rect x="8.5" y="3.5" width="7" height="11" rx="1.5"/><path d="M10.5 6.5h2M10.5 9h3M10.5 11.5h2"/><path d="M12 14.5v3"/><path d="M10 17.5h4l1 4h-6z"/>',
   // scales of a balance: two pans level
   balance: '<path d="M12 3v17M7 20h10M4 7h16"/><path d="M4 7l-2.5 6a2.5 2.5 0 0 0 5 0zM20 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>',
   // vessels
