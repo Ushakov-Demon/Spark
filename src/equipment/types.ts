@@ -175,5 +175,20 @@ export interface ElectrodesSpec {
   readonly gap: number; // m
 }
 
-export type EquipmentItem = HeaterItem | VesselItem | CoolerItem | SupplyItem;
+// ---------------------------------------------------------------- measuring instruments
+
+/** Electronic scales: what they can hold and how finely they show it. */
+export interface ScaleSpec {
+  /** The most they weigh, kg; above it they show an overload. */
+  readonly capacity: SourcedValue;
+  /** Scale division (readability), kg: the reading is rounded to it. */
+  readonly resolution: SourcedValue;
+}
+
+export interface ScaleItem extends EquipmentCard {
+  readonly kind: 'scale';
+  readonly spec: ScaleSpec;
+}
+
+export type EquipmentItem = HeaterItem | VesselItem | CoolerItem | SupplyItem | ScaleItem;
 export type EquipmentKind = EquipmentItem['kind'];

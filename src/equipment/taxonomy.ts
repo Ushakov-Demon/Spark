@@ -20,6 +20,8 @@ export const CATEGORIES: readonly Category[] = [
   c('device.power.household', 'device.power', 'Побутові джерела струму', 'Household power sources'),
   c('device.power.laboratory', 'device.power', 'Лабораторні джерела струму', 'Laboratory power supplies'),
   c('device.measuring', 'device', 'Вимірювальні прилади', 'Measuring instruments'),
+  c('device.measuring.household', 'device.measuring', 'Побутові вимірювальні прилади', 'Household measuring instruments'),
+  c('device.measuring.laboratory', 'device.measuring', 'Лабораторні вимірювальні прилади', 'Laboratory measuring instruments'),
   c('vessel', null, 'Посуд', 'Vessels'),
   c('vessel.household', 'vessel', 'Побутовий посуд', 'Household vessels'),
   c('vessel.laboratory', 'vessel', 'Лабораторний посуд', 'Laboratory glassware'),

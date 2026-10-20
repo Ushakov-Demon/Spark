@@ -16,9 +16,10 @@ export interface Command<T extends string = string> {
  * - control:      operating the setup (switch, power knob) — physics stays honest by itself;
  * - matter:       adding/removing substance — brings its own energy, accounted in `externalEnergy`;
  * - intervention: "god mode" edit of state (set temperature) — energy appears from outside,
- *                 recorded so the energy balance still closes.
+ *                 recorded so the energy balance still closes;
+ * - measurement:  reading an instrument (weighing) — changes nothing, the reading goes to the trace.
  */
-export type CommandKind = 'control' | 'matter' | 'intervention';
+export type CommandKind = 'control' | 'matter' | 'intervention' | 'measurement';
 
 export interface CommandEffect {
   readonly state: SystemState;

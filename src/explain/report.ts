@@ -221,7 +221,7 @@ function describeRecord(r: TraceRecord, formulas: ReadonlyMap<string, FormulaSpe
       ? [m.numerics(r.method, formatTime(r.dt, ctx.locale), r.substeps, formatQuantity(r.dt / r.substeps, 's', ctx))]
       : [m.timeStep(formatTime(r.dt, ctx.locale))];
   }
-  if (r.kind === 'transfer') return []; // shown in the energy balance / debrief instead
+  if (r.kind === 'transfer' || r.kind === 'measurement') return []; // shown in the energy balance / debrief and the protocol instead
   return [describeApplication(r, formulas, s, ctx)];
 }
 

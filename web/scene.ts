@@ -53,6 +53,8 @@ export interface SceneView {
   readonly running: boolean;
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
+  /** The vessel was just weighed: the scales on the table and what their display shows. */
+  readonly scale?: { readonly look: 'kitchen-scale' | 'lab-balance'; readonly display: string };
   /** `act` — an idle scene the Professor plays when nobody does anything ("pace", "glasses"…). */
   readonly professor: { readonly mood: Mood; readonly says: string; readonly act?: string };
 }
@@ -272,6 +274,22 @@ export function vesselPreview(shape: VesselShape, material: string, liquid: Liqu
   </svg>`;
 }
 
+/** Electronic scales on the table to the right, with the vessel (a small copy) on them and an LCD. */
+function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string): string {
+  const x0 = 506;
+  const w = 118;
+  const lab = look === 'lab-balance';
+  const top = lab ? 286 : 296;
+  const seat = lab ? top - 6 : top - 1;
+  const load = vessel.replace('<svg class="thumb"', `<svg class="scale-load" x="${x0 + 12}" y="${seat - 78}" width="${w - 24}" height="78" preserveAspectRatio="xMidYMax meet"`);
+  return `
+    <rect class="scale-body${lab ? ' lab' : ''}" x="${x0}" y="${top}" width="${w}" height="${TABLE - top}" rx="6"/>
+    ${lab ? `<rect class="scale-stem" x="${x0 + w / 2 - 4}" y="${seat}" width="8" height="${top - seat}"/><ellipse class="scale-pan" cx="${x0 + w / 2}" cy="${seat}" rx="40" ry="5"/>` : `<rect class="scale-plate" x="${x0 - 3}" y="${top - 3}" width="${w + 6}" height="5" rx="2"/>`}
+    ${load}
+    <rect class="scale-lcd" x="${x0 + 24}" y="${TABLE - (lab ? 24 : 18)}" width="${w - 48}" height="${lab ? 16 : 14}" rx="2"/>
+    <text id="sc-scale-text" class="scale-text" x="${x0 + w / 2}" y="${TABLE - (lab ? 12.5 : 7.5)}" text-anchor="middle"></text>`;
+}
+
 export function createScene(): Scene {
   const root = document.createElement('div');
   root.className = 'scene';
@@ -284,6 +302,7 @@ export function createScene(): Scene {
   let act = '';
   const profBox = root.querySelector<HTMLElement>('.scene-prof')!;
   let geom: VesselGeom | null = null;
+  let scaleKey = '';
   const $ = <T extends Element>(id: string) => svg.querySelector<T>(`#${id}`);
 
   function build(v: SceneView) {
@@ -296,6 +315,7 @@ export function createScene(): Scene {
     const front = v.device === 'immersion' || v.device === 'supply';
     // Thermometer to the left of the vessel.
     const tx = g.left - 46;
+    scaleKey = '';
     svg.innerHTML = `
       <defs>
         <clipPath id="sc-in"><path d="${g.inner}"/></clipPath>
@@ -334,7 +354,8 @@ export function createScene(): Scene {
         <rect id="sc-merc" class="merc" x="${tx - 2.5}" y="${g.bottom}" width="5" height="0"/>
         <circle class="merc" cx="${tx}" cy="${g.bottom + 2}" r="6.5"/>
         <text id="sc-temp" class="thermo-text" x="${tx}" y="${g.top - 18}" text-anchor="middle"></text>
-      </g>`;
+      </g>
+      <g id="sc-scale" class="scales"></g>`;
   }
 
   return {
@@ -407,6 +428,18 @@ export function createScene(): Scene {
       }
       const cloud = $<SVGEllipseElement>('sc-cloud');
       if (cloud) cloud.style.opacity = v.current?.toxicGas && (v.current.amps ?? 0) > 0.05 ? String(Math.min(0.45, 0.1 + v.current.amps / 10)) : '0';
+      // Scales: appear when the vessel was weighed, with a small copy of it on the platform.
+      const sc = $<SVGGElement>('sc-scale');
+      const scKey = v.scale ? [v.scale.look, v.vessel, v.material, v.liquid, Math.round(v.fill * 20), v.solid >= 1].join('|') : '';
+      if (sc && scKey !== scaleKey) {
+        scaleKey = scKey;
+        sc.innerHTML = v.scale ? scalesSvg(v.scale.look, vesselPreview(v.vessel, v.material, v.solid >= 1 ? 'other' : v.liquid, Math.min(1, v.fill))) : '';
+      }
+      sc?.classList.toggle('on', !!v.scale);
+      // The vessel moved onto the scales: it is not on the device meanwhile.
+      root.classList.toggle('weighing', !!v.scale);
+      const scText = $('sc-scale-text');
+      if (scText && v.scale) scText.textContent = v.scale.display;
       // Thermometer: −30 … 120 °C scale (stretches for hotter things).
       const top = v.temperature > 120 ? Math.max(300, v.temperature) : 120;
       const k4 = Math.max(0, Math.min(1, (v.temperature + 30) / (top + 30)));

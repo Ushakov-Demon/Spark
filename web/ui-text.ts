@@ -19,6 +19,17 @@ export interface UiText {
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
+  weigh: {
+    button: string;
+    scales: string;
+    /** In the protocol: "⚖ 1 234 г". */
+    row(shown: string): string;
+    /** The Professor after a weighing. */
+    say(shown: string, tare: string | null, contents: string | null, change: string | null, same: boolean): string;
+    overload(max: string): string;
+    more(d: string): string;
+    less(d: string): string;
+  };
   rec: {
     save: string;
     namePlaceholder: string;
@@ -194,6 +205,16 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
+    weigh: {
+      button: '⚖ Зважити',
+      scales: 'Ваги',
+      row: (s) => `⚖ ${s}`,
+      say: (s, tare, contents, change, same) =>
+        `На вагах ${s}.${tare && contents ? ` Посуд важить ${tare}, отже вмісту — ${contents}.` : ''}${same ? ' Рівно стільки ж, як минулого разу!' : change ? ` ${change}` : ''}`,
+      overload: (max) => `Ой! Ваги показують перевантаження: вони тримають лише ${max}. Візьми інші.`,
+      more: (d) => `Це на ${d} більше, ніж минулого разу.`,
+      less: (d) => `Це на ${d} менше, ніж минулого разу. Куди поділися ці грами?`,
+    },
     rec: {
       save: '💾 Зберегти дослід',
       namePlaceholder: 'Назва запису',
@@ -366,6 +387,16 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
+    weigh: {
+      button: '⚖ Weigh',
+      scales: 'Scales',
+      row: (s) => `⚖ ${s}`,
+      say: (s, tare, contents, change, same) =>
+        `The scales show ${s}.${tare && contents ? ` The vessel weighs ${tare}, so the contents are ${contents}.` : ''}${same ? ' Exactly as much as last time!' : change ? ` ${change}` : ''}`,
+      overload: (max) => `Oops! The scales are overloaded: they hold only ${max}. Take other ones.`,
+      more: (d) => `That is ${d} more than last time.`,
+      less: (d) => `That is ${d} less than last time. Where did those grams go?`,
+    },
     rec: {
       save: '💾 Save the experiment',
       namePlaceholder: 'Recording name',

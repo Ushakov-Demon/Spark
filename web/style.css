@@ -517,3 +517,20 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .rec-buttons button { min-height: 30px; padding: 3px 10px; font-size: 0.82rem; }
 .rec-import { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: var(--accent); font-size: 0.85rem; }
 .rec-import input { display: none; }
+
+/* ---------- scales ---------- */
+.scales { opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.scales.on { opacity: 1; }
+.scale-body { fill: #eef1f4; stroke: #9aa5b1; stroke-width: 1.5; }
+.scale-body.lab { fill: #d9dee4; }
+.scale-plate { fill: rgba(220, 235, 245, 0.9); stroke: #8fa3b5; stroke-width: 1; }
+.scale-stem { fill: #8b96a2; }
+.scale-pan { fill: #c9d1d9; stroke: #7d8894; stroke-width: 1.5; }
+.scale-lcd { fill: #b9d6a8; stroke: #5d7350; stroke-width: 1; }
+.scale-text { font: 600 10px ui-monospace, Menlo, Consolas, monospace; fill: #1f2d1a; }
+.buttons .weigh { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.buttons .weigh button { white-space: nowrap; }
+.buttons .weigh select { max-width: 13rem; }
+.protocol .weighed { display: block; font-size: 0.82rem; color: var(--accent); }
+.scene .vessel, .scene .thermo { transition: opacity 0.3s; }
+.scene.weighing .vessel, .scene.weighing .thermo, .scene.weighing .gas-bubbles, .scene.weighing .steam { opacity: 0; }

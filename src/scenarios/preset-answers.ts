@@ -11,6 +11,7 @@ import { formatDuration, formatQuantity, sig } from '../explain/format.js';
 import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
 import { sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
+import { formatReading, weigh } from './weighing.js';
 
 /**
  * Answers to the questions the ready-made experiments ask — built from what
@@ -70,6 +71,23 @@ function current(s: Step): { amps: number; charge: number; time: number } {
 const ratio = (a: number, b: number, l: Locale) => sig(a / Math.max(b, 1e-12), 2, l);
 
 export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> = {
+  'weigh-the-water': ({ steps }) => {
+    // What the kitchen scales show at the start, after freezing and after boiling.
+    const [freeze, boil] = [steps[0]!, steps[1] ?? steps[0]!];
+    const at = (st: SystemState) => weigh(st, 'kitchen-scale');
+    const [a, b, c] = [at(freeze.result.initial), at(freeze.result.final), at(boil.result.final)];
+    const g = (kg: number | null, l: Locale) => formatReading('kitchen-scale', kg, l);
+    const dFreeze = (a.reading ?? 0) - (b.reading ?? 0);
+    const dBoil = (b.reading ?? 0) - (c.reading ?? 0);
+    return {
+      say: both((l) => (l === 'uk' ? 'Маса нікуди не зникає — вона йде парою!' : 'Mass does not vanish — it leaves as vapour!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `На початку ваги показали ${g(a.reading, l)}, після замерзання — ${g(b.reading, l)}: вода стала льодом, але не стала ні важчою, ні легшою${dFreeze > 0 ? ` (${g(dFreeze, l)} встигли випаруватися, поки вода холонула)` : ''}. Лід лише займає більше місця, бо він менш густий. Після кипіння — ${g(c.reading, l)}: на ${g(dBoil, l)} менше. Ця вода не зникла — вона пішла в повітря парою.`
+          : `At the start the scales showed ${g(a.reading, l)}, after freezing ${g(b.reading, l)}: the water turned to ice but became neither heavier nor lighter${dFreeze > 0 ? ` (${g(dFreeze, l)} evaporated while it was cooling)` : ''}. Ice only takes more room, because it is less dense. After boiling: ${g(c.reading, l)}, ${g(dBoil, l)} less. That water did not vanish — it went into the air as vapour.`,
+      ),
+    };
+  },
   'boil-a-litre': ({ steps }) => {
     const s = steps[0]!;
     const t = reachedAt(s);

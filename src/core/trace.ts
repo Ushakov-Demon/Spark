@@ -38,7 +38,24 @@ export interface TransferRecord {
   readonly amount: number;
 }
 
-export type TraceRecord = FormulaApplication | NumericsRecord | TransferRecord;
+/**
+ * An instrument was read (the scales showed 1 234 g). The reading is what the
+ * instrument shows — rounded to its scale division — so a log or a recording
+ * keeps what the experimenter saw.
+ */
+export interface MeasurementRecord {
+  readonly kind: 'measurement';
+  /** Equipment id of the instrument. */
+  readonly instrument: string;
+  readonly quantity: 'mass';
+  /** SI units (kg); null — out of range (overloaded scales). */
+  readonly value: number | null;
+  /** The exact model value, for checks and debriefs. */
+  readonly exact: number;
+  readonly entities: readonly EntityId[];
+}
+
+export type TraceRecord = FormulaApplication | NumericsRecord | TransferRecord | MeasurementRecord;
 
 export interface TraceSink {
   record(r: TraceRecord): void;

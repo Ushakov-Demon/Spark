@@ -1,11 +1,12 @@
 import { COOLERS } from './coolers.js';
 import { SUPPLIES } from './supplies.js';
+import { SCALES } from './scales.js';
 import { HEATERS } from './heaters.js';
 import { isUnder } from './taxonomy.js';
 import type { CategoryId, CoolerItem, EquipmentItem, HeaterItem, VesselItem } from './types.js';
 import { VESSELS } from './vessels.js';
 
-export const EQUIPMENT: readonly EquipmentItem[] = [...Object.values(HEATERS), ...Object.values(COOLERS), ...Object.values(SUPPLIES), ...Object.values(VESSELS)];
+export const EQUIPMENT: readonly EquipmentItem[] = [...Object.values(HEATERS), ...Object.values(COOLERS), ...Object.values(SUPPLIES), ...Object.values(SCALES), ...Object.values(VESSELS)];
 
 const byId = new Map(EQUIPMENT.map((i) => [i.id, i]));
 

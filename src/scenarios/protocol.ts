@@ -6,7 +6,8 @@ import type { SystemState } from '../core/state.js';
 import { celsius, kilograms, type Seconds } from '../core/units.js';
 import { isBurner, isHeater, isThermalBody } from '../domains/thermal/entities.js';
 import { isSupply } from '../domains/electrical/entities.js';
-import type { ThermalCommand } from '../domains/thermal/commands.js';
+import type { ScaleId } from '../equipment/scales.js';
+import type { LabCommand } from './lab-knowledge.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SubstanceId } from '../substances/catalog.js';
 import { LAB_ROOM_ID, labGoalReached, labProgress, noProgress, labSetup, labStatus, SAMPLE_ID, type LabAction, type LabParams, type LabStatus } from './thermal-lab.js';
@@ -18,7 +19,7 @@ import { LAB_ROOM_ID, labGoalReached, labProgress, noProgress, labSetup, labStat
  * added) carries over. Each step runs as its own experiment, so every step gets
  * its own headline, energy split and debrief.
  */
-export type ProtocolStep = OperationStep | AddStep;
+export type ProtocolStep = OperationStep | AddStep | WeighStep;
 
 export interface OperationStep {
   readonly kind: 'operation';
@@ -39,6 +40,12 @@ export interface AddStep {
   readonly mass: number; // kg
   readonly temperature: number; // °C
   readonly frozen?: boolean;
+}
+
+/** Put the vessel on the scales and read them (changes nothing; the reading goes to the log). */
+export interface WeighStep {
+  readonly kind: 'weigh';
+  readonly scale: ScaleId;
 }
 
 /** The lab parameters of one operation step: the same vessel and sample, this step's action and device. */
@@ -96,10 +103,10 @@ export interface StepOutcome {
   readonly step: ProtocolStep;
   /** For operation steps: the lab parameters it ran with. */
   readonly params?: LabParams;
-  readonly result: ExperimentResult<ThermalCommand>;
+  readonly result: ExperimentResult<LabCommand>;
   readonly status?: LabStatus;
-  /** For add steps: what the command said. */
-  readonly entry?: ExperimentLogEntry<ThermalCommand>;
+  /** For add and weigh steps: what the command said (a weighing carries its reading). */
+  readonly entry?: ExperimentLogEntry<LabCommand>;
   readonly warnings: readonly LocalizedText[];
 }
 
@@ -108,7 +115,7 @@ export interface ProtocolInput {
   readonly base: LabParams;
   readonly steps: readonly ProtocolStep[];
   readonly simulation: Simulation;
-  readonly commands: CommandRegistry<ThermalCommand>;
+  readonly commands: CommandRegistry<LabCommand>;
   readonly sampleEvery: Seconds;
   /** Longest a single step may run, s (default 24 h). */
   readonly maxStepSeconds?: number;
@@ -119,10 +126,14 @@ export function runProtocol(input: ProtocolInput): StepOutcome[] {
   const out: StepOutcome[] = [];
   let state: SystemState | undefined;
   for (const step of input.steps) {
-    if (step.kind === 'add') {
+    if (step.kind === 'add' || step.kind === 'weigh') {
       if (!state) state = labSetup(input.base).state;
-      const session = createExperimentSession<ThermalCommand>({ initial: state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
-      const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: step.substance, mass: kilograms(step.mass), temperature: celsius(step.temperature), ...(step.frozen ? { frozen: true } : {}) });
+      const session = createExperimentSession<LabCommand>({ initial: state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
+      const entry = session.apply(
+        step.kind === 'weigh'
+          ? { type: 'lab.weigh', scale: step.scale }
+          : { type: 'thermal.add', into: SAMPLE_ID, substance: step.substance, mass: kilograms(step.mass), temperature: celsius(step.temperature), ...(step.frozen ? { frozen: true } : {}) },
+      );
       const result = session.result();
       out.push({ step, result, entry, warnings: [] });
       state = result.final;
@@ -130,7 +141,7 @@ export function runProtocol(input: ProtocolInput): StepOutcome[] {
     }
     const p = stepParams(input.base, step);
     const placed = state ? configureStep(state, p) : labSetup(p);
-    const session = createExperimentSession<ThermalCommand>({ initial: placed.state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
+    const session = createExperimentSession<LabCommand>({ initial: placed.state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
     runStep(session, p, input.maxStepSeconds ?? 24 * 3600);
     const result = session.result(labGoalReached(p, session.state));
     out.push({ step, params: p, result, status: labStatus(p, result, input.simulation, placed.warnings), warnings: placed.warnings });
@@ -140,7 +151,7 @@ export function runProtocol(input: ProtocolInput): StepOutcome[] {
 }
 
 /** Advance until the goal, a steady state (no change for 30 min) or the time limit. */
-function runStep(session: ReturnType<typeof createExperimentSession<ThermalCommand>>, p: LabParams, maxSeconds: number): void {
+function runStep(session: ReturnType<typeof createExperimentSession<LabCommand>>, p: LabParams, maxSeconds: number): void {
   const start = session.state.time;
   let checkpoint = labProgress(session.state);
   while (session.state.time - start < maxSeconds) {

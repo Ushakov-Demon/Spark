@@ -6,8 +6,17 @@ import { THERMAL_KNOWLEDGE, type ThermalCommand } from '../domains/thermal/index
 import type { DomainKnowledge } from '../explain/domain.js';
 import { formatQuantity, type ExplainContext } from '../explain/format.js';
 
-/** Everything the lab can do to an experiment. */
-export type LabCommand = ThermalCommand | ElectricalCommand;
+import { ELECTRICAL_COMMANDS } from '../domains/electrical/commands.js';
+import { THERMAL_COMMANDS } from '../domains/thermal/commands.js';
+import { SCALES } from '../equipment/scales.js';
+import { tr } from '../knowledge/i18n.js';
+import { formatReading, WEIGH_COMMANDS, weighingsOf, type WeighCommand } from './weighing.js';
+
+/** Everything the lab can do to an experiment: heat, pass a current, weigh. */
+export type LabCommand = ThermalCommand | ElectricalCommand | WeighCommand;
+
+/** The handlers of all lab commands, for a command registry. */
+export const LAB_COMMANDS = [...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS, ...WEIGH_COMMANDS] as const;
 
 const isElectrical = (c: Command): c is ElectricalCommand => c.type.startsWith('electrical.');
 
@@ -22,6 +31,11 @@ export const LAB_KNOWLEDGE: DomainKnowledge<LabCommand> = {
   timeline: (result, ctx) => THERMAL_KNOWLEDGE.timeline(result as ExperimentResult<ThermalCommand>, ctx),
   describeCommand(entry: ExperimentLogEntry<LabCommand>, ctx: ExplainContext, state: SystemState) {
     const c = entry.command;
+    if (c.type === 'lab.weigh') {
+      const w = weighingsOf([entry])[0];
+      const shown = formatReading(c.scale, w?.reading ?? null, ctx.locale);
+      return ctx.locale === 'uk' ? `Зважили (${tr(SCALES[c.scale].name, ctx.locale)}): ${shown}` : `Weighed (${tr(SCALES[c.scale].name, ctx.locale)}): ${shown}`;
+    }
     if (!isElectrical(c)) return THERMAL_KNOWLEDGE.describeCommand(entry as ExperimentLogEntry<ThermalCommand>, ctx, state);
     const uk = ctx.locale === 'uk';
     if (c.on === false) return uk ? 'Джерело струму вимкнули' : 'The power source was switched off';

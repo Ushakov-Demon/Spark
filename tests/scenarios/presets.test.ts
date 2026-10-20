@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createSimulation, seconds } from '../../src/core/index.js';
 import { createElectricalSolver, ELECTRICAL_COMMANDS } from '../../src/domains/electrical/index.js';
 import { createThermalSolver, THERMAL_COMMANDS } from '../../src/domains/thermal/index.js';
-import { LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESETS, runProtocol, type LabCommand, type ProtocolStep } from '../../src/scenarios/index.js';
+import { LAB_COMMANDS, LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESETS, runProtocol, type LabCommand, type ProtocolStep } from '../../src/scenarios/index.js';
 
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: seconds(2) });
-const commands = createCommandRegistry<LabCommand>([...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS] as never);
+const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS as never);
 
 describe('ready-made experiments', () => {
   it('ids are unique; every preset names known formulas with curriculum quotes', () => {
@@ -28,7 +28,7 @@ describe('ready-made experiments', () => {
     const out = runProtocol({ base: p.params, steps: [first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
     expect(out[0]!.status?.kind, `${p.id}: first step`).toBe(p.expect);
     for (const o of out.slice(1)) {
-      if (o.step.kind === 'add') expect(o.entry?.ok, `${p.id}: add`).toBe(true);
+      if (o.step.kind === 'add' || o.step.kind === 'weigh') expect(o.entry?.ok, `${p.id}: ${o.step.kind}`).toBe(true);
       else expect(o.status?.kind, `${p.id}: plan step`).toBe('reached');
     }
     // The question gets an answer built from this run, in both languages, with numbers in it.

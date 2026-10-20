@@ -180,6 +180,25 @@ export const PRESETS: readonly Preset[] = [
     expect: 'impossible',
   },
   {
+    id: 'weigh-the-water',
+    grade: null,
+    topic: FUN,
+    title: { uk: 'Чи важчає лід? Зважуємо воду', en: 'Is ice heavier? Weighing the water' },
+    question: {
+      uk: 'Спершу зваж каструлю з літром води (кнопка «⚖ Зважити»), потім заморозь її, знову зваж, закип’яти — і зваж утретє. Чи зміниться маса, коли вода стане льодом? А коли закипить?',
+      en: 'First weigh the pot with a litre of water (the "⚖ Weigh" button), then freeze it, weigh it again, bring it to the boil — and weigh it a third time. Will the mass change when the water turns to ice? And when it boils?',
+    },
+    params: { ...room, ...pot, action: 'freeze', substance: 'water', startTemp: 20, cooler: { id: 'freezer', setpoint: -18 } },
+    plan: [
+      { kind: 'weigh', scale: 'kitchen-scale' },
+      { kind: 'operation', action: 'boil', heater: hotplate },
+      { kind: 'weigh', scale: 'kitchen-scale' },
+    ],
+    formulas: ['thermal.latent-heat'],
+    quoteHas: 'плавлен',
+    expect: 'reached',
+  },
+  {
     id: 'grand-chain',
     grade: null,
     topic: FUN,

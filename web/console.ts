@@ -8,6 +8,7 @@ import { COOLERS, type CoolerId } from '../src/equipment/coolers.js';
 import { HEATERS, type HeaterId } from '../src/equipment/heaters.js';
 import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
 import type { VesselId } from '../src/equipment/vessels.js';
+import { SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { sig } from '../src/explain/format.js';
 import { tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { LAB_ACTIONS, OPERATIONS, PRESETS, substancesFor, vesselsFor, type LabAction, type LabParams, type Preset } from '../src/scenarios/index.js';
@@ -38,6 +39,8 @@ export interface ConsoleApi {
   startPreset(p: Preset): void;
   /** The Professor's idle scenes by name, and playing one now. */
   scenes(): readonly string[];
+  /** Weigh the vessel on these scales (none — the ones chosen on the page); returns what the Professor says. */
+  weigh(scale?: ScaleId): string;
   /** Save the experiment so far as a recording; returns a note. */
   save(name: string): string;
   records(): readonly string[];
@@ -318,6 +321,18 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         const tq = qs.find((q) => q.unit === '°c' || q.unit === '°' || q.unit === 'c');
         const err = api.add(f.id as SubstanceId, grams, tq?.value ?? (frozen ? -18 : 20), frozen);
         return err ? [`✗ ${err}`] : [`✓ ${T(f.name)}, ${grams} ${uk() ? 'г' : 'g'}`];
+      },
+    },
+    {
+      names: ['weigh', 'scales', 'зважити', 'ваги'],
+      usage: L('weigh [kitchen | lab]', 'weigh [kitchen | lab]'),
+      about: L('поставити посуд на ваги: weigh lab', 'put the vessel on the scales: weigh lab'),
+      run(args) {
+        if (!args.length) return [api.weigh()];
+        const f = find(SCALE_IDS, (id) => [id, SCALES[id].name.uk, SCALES[id].name.en], words(args));
+        if (!f) return notFound(words(args));
+        if (Array.isArray(f)) return ambiguous(f.map((id) => ({ name: SCALES[id].name })));
+        return [api.weigh(f)];
       },
     },
     {

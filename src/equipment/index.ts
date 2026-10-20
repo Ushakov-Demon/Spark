@@ -7,3 +7,4 @@ export * from './geometry.js';
 export * from './catalog.js';
 export * from './coolers.js';
 export * from './supplies.js';
+export * from './scales.js';

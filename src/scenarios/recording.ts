@@ -126,9 +126,11 @@ export function replayRecording(rec: Recording, simulation: Simulation, commands
   for (const step of rec.steps) {
     const r = replayStep(step, state, simulation, commands, 60);
     r.advance(maxStepSeconds);
-    const result = r.session.result(step.until === 'goal' && labGoalReached(step.params, r.session.state));
-    out.push({ params: step.params, result, status: labStatus(step.params, result, simulation, []) });
+    const reached = step.until === 'goal' && labGoalReached(step.params, r.session.state);
+    // How the step ended is judged at its end; its log also keeps what was done in the pause after it.
+    const status = labStatus(step.params, r.session.result(reached), simulation, []);
     r.finish();
+    out.push({ params: step.params, result: r.session.result(reached), status });
     state = r.session.state;
   }
   return out;

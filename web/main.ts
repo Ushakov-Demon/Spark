@@ -22,6 +22,10 @@ import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels
 import {
   actionUses,
   LAB_ACTIONS,
+  LAB_COMMANDS,
+  formatReading,
+  weigh,
+  weighingsOf,
   OPERATIONS,
   LAB_COOLER_ID,
   LAB_HEATER_ID,
@@ -72,6 +76,7 @@ import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
 import { cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, electrolysisGases, isSupply } from '../src/domains/electrical/index.js';
 import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
+import { SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { SUBSTANCE_CATEGORIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
@@ -132,7 +137,7 @@ const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** di
 const DT = seconds(0.5);
 // The electrical solver runs first: it sets the Joule heat the thermal solver then spreads.
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: DT });
-const commands = createCommandRegistry<LabCommand>([...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS]);
+const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS);
 
 let params: LabParams = {
   action: 'boil',
@@ -254,6 +259,40 @@ const stepElapsed = () => session.state.time - initialState.time;
 const experimentStarted = (): boolean => session !== undefined && (history.length > 0 || stepElapsed() > 0);
 
 /** Close the current step (if it ran at all) and put it into the protocol. */
+/** Put the vessel on the scales now (the button and the console); the reading goes to the log. */
+function weighNow(scale: ScaleId): string {
+  const entry = session.apply({ type: 'lab.weigh', scale });
+  if (!entry.ok) return tr(entry.error, locale);
+  lastWeigh = { at: session.state.time, step: session };
+  headline = null;
+  render();
+  return weighSay();
+}
+/** The latest weighing, while nothing has happened since (the scales stay on the drawing). */
+let lastWeigh: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
+let scale: ScaleId = (SCALE_IDS as string[]).includes(store.get('scale') ?? '') ? (store.get('scale') as ScaleId) : 'kitchen-scale';
+
+/** Every weighing of this experiment, in order. */
+function allWeighings() {
+  return [...history.map((h) => h.result.log), session.result().log].flatMap((l) => weighingsOf(l));
+}
+const grams = (kg: number, sc: ScaleId) => formatReading(sc, kg, locale);
+/** What the Professor says about the latest weighing: the reading, the tare, the change since last time. */
+function weighSay(): string {
+  const u = t().weigh;
+  const all = allWeighings();
+  const w = all[all.length - 1];
+  if (!w) return '';
+  if (w.reading === null) return u.overload(grams(SCALES[w.scale].spec.capacity.value, w.scale));
+  const now = weigh(session.state, w.scale);
+  const prev = [...all.slice(0, -1)].reverse().find((x) => x.reading !== null && x.scale === w.scale);
+  const d = prev ? w.reading - prev.reading! : 0;
+  const tiny = SCALES[w.scale].spec.resolution.value / 2;
+  const change = prev && Math.abs(d) > tiny ? (d > 0 ? u.more(grams(d, w.scale)) : u.less(grams(-d, w.scale))) : null;
+  const tare = now.tare;
+  return u.say(grams(w.reading, w.scale), tare === null ? null : grams(tare, w.scale), tare === null ? null : grams(w.reading - tare, w.scale), change, !!prev && !change);
+}
+
 function closeStep() {
   // The result as it was at the end, with the whole log (also what was done in the pause after it).
   if (doneRecord) return void history.push({ ...doneRecord, result: { ...doneRecord.result, log: session.result().log }, adds: stepAdds });
@@ -270,12 +309,15 @@ function closeStep() {
 function stepChanged() {
   replaying = null;
   buildShelf();
-  if (!history.length && stepElapsed() === 0 && !stepAdds.length) return newSession();
-  if (stepElapsed() === 0 && !stepAdds.length) return beginStep(configureStep(initialState, params));
-  // Nothing done in this step yet (the salt came in the pause before it): it is still being set up.
-  if (stepElapsed() === 0 && !session.result().log.length) {
+  const done = session.result().log;
+  if (!history.length && stepElapsed() === 0 && !stepAdds.length && !done.length) return newSession();
+  // No time passed in this step: it is still being set up. Set it up anew and do again what was
+  // done in it (salt added, the vessel weighed) — the same state gives the same result.
+  if (stepElapsed() === 0) {
     pendingAdds = stepAdds;
-    return beginStep(configureStep(initialState, params));
+    beginStep(configureStep(initialState, params));
+    for (const e of done) if (e.ok) session.apply(e.command);
+    return render();
   }
   closeStep();
   beginStep(configureStep(session.state, params));
@@ -447,6 +489,10 @@ function stop() {
       render();
     }, 30);
   } else if (doneRecord.status.kind === 'reached') fixes = [];
+  // Weighings left at the end of a plan: the Professor puts the vessel on the scales right away.
+  if (preset && plan.length && plan.every((s) => s.kind === 'weigh')) {
+    for (const s of plan.splice(0)) if (s.kind === 'weigh') session.apply({ type: 'lab.weigh', scale: s.scale });
+  }
   // A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind).
   const answerOf = preset ? PRESET_ANSWERS[preset.id] : undefined;
   if (answerOf && !plan.length) {
@@ -714,8 +760,11 @@ function sceneView(): SceneView {
   // The Professor: what is going on, in one line.
   const st = doneRecord?.status;
   const nextLabel = plan.length ? planLabel(plan) : '';
+  const weighShown = showingWeighing();
   const professor: SceneView['professor'] = idleAct
     ? { mood: idleAct.mood, says: idleAct.lines[Math.max(0, idleLine)] ?? '', act: idleAct.name }
+    : weighShown
+    ? { mood: weighShown.reading === null ? 'surprised' : 'happy', says: weighSay() }
     : presetAnswer && presetAnswer !== 'computing' && tr(presetAnswer.say, locale)
     ? { mood: 'happy', says: tr(presetAnswer.say, locale) }
     : preset && !running && stepElapsed() === 0 && !history.length && !st
@@ -770,7 +819,16 @@ function sceneView(): SceneView {
     running,
     decimal: locale === 'uk' ? ',' : '.',
     professor,
+    ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
+}
+
+/** The latest weighing while nothing has happened since: the vessel still stands on the scales. */
+function showingWeighing() {
+  if (!lastWeigh || lastWeigh.step !== session || running || session.state.time !== lastWeigh.at) return null;
+  const l = session.result().log;
+  const last = l[l.length - 1];
+  return last?.ok && last.command.type === 'lab.weigh' ? (weighingsOf([last])[0] ?? null) : null;
 }
 
 function render() {
@@ -840,6 +898,14 @@ function render() {
   const startBtn = $<HTMLButtonElement>('#start');
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
+  $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
+  const scaleSel = $<HTMLSelectElement>('#scale');
+  scaleSel.setAttribute('aria-label', u.weigh.scales);
+  const scaleOpts = SCALE_IDS.map((id) => `<option value="${id}"${id === scale ? ' selected' : ''}>${tr(SCALES[id].name, locale)}</option>`).join('');
+  if (scaleSel.dataset['html'] !== scaleOpts) {
+    scaleSel.innerHTML = scaleOpts;
+    scaleSel.dataset['html'] = scaleOpts;
+  }
   $('#console-toggle').title = locale === 'uk' ? 'Консоль команд' : 'Command console';
   $('#console-grip').setAttribute('aria-label', locale === 'uk' ? 'Потягни, щоб змінити висоту консолі' : 'Drag to resize the console');
   $('#lbl-speed').textContent = u.speed;
@@ -970,13 +1036,22 @@ function renderProtocol() {
   const adds = (a: readonly Added[]) => a.map((x) => `<span class="added">${u.added(tr(x.what, locale).toLowerCase(), formatQuantity(x.mass, 'kg', { locale, level: 'school' }))}</span>`).join('');
   const outcome = (st: LabStatus, r: ExperimentResult<LabCommand>, p: LabParams) =>
     st.kind === 'reached' && OPERATIONS[p.action].duration ? `✓ ${D(st.at)}` : st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
+  // Weighings before the step ran, and after it (in the pause before the next one).
+  const weighed = (log: ExperimentResult<LabCommand>['log'], start: number, before: boolean) =>
+    weighingsOf(log)
+      .filter((w) => (w.time <= start + 1e-9) === before)
+      .map((w) => `<span class="weighed">${u.weigh.row(formatReading(w.scale, w.reading, locale))}</span>`)
+      .join('');
   const rows = history.map((h) => {
     const ok = h.status.kind === 'reached' || h.status.kind === 'will-reach';
-    return `<li class="${ok ? 'done' : 'failed'}"><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}<span class="outcome">${outcome(h.status, h.result, h.params)}</span></li>`;
+    const t0 = h.result.initial.time;
+    const ran = h.result.final.time > t0;
+    return `<li class="${ok ? 'done' : 'failed'}"><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}${weighed(h.result.log, t0, true)}<span class="outcome">${outcome(h.status, h.result, h.params)}</span>${ran ? weighed(h.result.log, t0, false) : ''}</li>`;
   });
+  const curLog = session.result().log;
   const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
-  rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}<span class="outcome">${now}</span>${adds(pendingAdds)}</li>`);
-  for (const s of plan) rows.push(`<li class="planned"><span class="what">${s.kind === 'add' ? u.added(tr(SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })) : tr(OPERATIONS[s.action].label, locale)}</span></li>`);
+  rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false)}${adds(pendingAdds)}</li>`);
+  for (const s of plan) rows.push(`<li class="planned"><span class="what">${s.kind === 'add' ? u.added(tr(SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })) : s.kind === 'weigh' ? u.weigh.button : tr(OPERATIONS[s.action].label, locale)}</span></li>`);
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
   $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : finished ? u.protocolNext : u.protocolHint;
@@ -1407,6 +1482,10 @@ function planLabel(steps: readonly ProtocolStep[]): string {
   const u = t();
   const parts: string[] = [];
   for (const s of steps) {
+    if (s.kind === 'weigh') {
+      parts.push(locale === 'uk' ? 'зважити' : 'weigh');
+      continue;
+    }
     if (s.kind === 'add') {
       const what = SUBSTANCES[s.substance];
       parts.push(u.planAdd(tr(what.genitive ?? what.name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })));
@@ -1425,6 +1504,10 @@ function nextPlanStep() {
     if (s.kind === 'add') {
       const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: s.substance, mass: s.mass as never, temperature: celsius(s.temperature), ...(s.frozen ? { frozen: true } : {}) });
       if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: SUBSTANCES[s.substance].name, mass: s.mass });
+      continue;
+    }
+    if (s.kind === 'weigh') {
+      weighNow(s.scale);
       continue;
     }
     params = stepParams(params, s);
@@ -1577,6 +1660,9 @@ function nextReplayStep() {
   // What was done in the pause after this step (salt on the ice…).
   const before = session.result().log.length;
   r.step.finish();
+  const fin = session.result().log;
+  const lastE = fin[fin.length - 1];
+  if (fin.length > before && lastE?.ok && lastE.command.type === 'lab.weigh') lastWeigh = { at: session.state.time, step: session };
   for (const e of session.result().log.slice(before)) {
     if (e.ok && e.command.type === 'thermal.add') pendingAdds.push({ what: SUBSTANCES[e.command.substance as SubstanceId].name, mass: e.command.mass });
   }
@@ -1780,6 +1866,7 @@ const labConsole = createConsole({
   },
   startPreset: (p) => startPreset(p),
   scenes: () => ACTS.map((a) => a.name),
+  weigh: (sc) => weighNow(sc ?? scale),
   save: (name) => {
     const note = saveRecording(name);
     renderRecords();
@@ -1883,6 +1970,11 @@ function toggleStart() {
   render();
 }
 $('#reset').onclick = () => resetExperiment();
+$('#weigh').onclick = () => void weighNow(scale);
+$<HTMLSelectElement>('#scale').onchange = (e) => {
+  scale = (e.target as HTMLSelectElement).value as ScaleId;
+  store.set('scale', scale);
+};
 function resetExperiment() {
   // Starting over: a ready-made experiment starts over too, with its whole plan.
   if (preset) plan = [...(preset.plan ?? [])];
