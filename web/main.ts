@@ -42,6 +42,8 @@ import {
   type LabParams,
   type LabStatus,
   configureStep,
+  PRESET_ANSWERS,
+  type PresetAnswer,
   fitChoices,
   substancesFor,
   vesselsFor,
@@ -168,6 +170,8 @@ let doneRecord: Omit<StepRecord, 'adds'> | null = null;
 /** A ready-made experiment in progress: its question and the steps still to do. */
 let preset: Preset | null = null;
 let plan: ProtocolStep[] = [];
+/** The answer to a ready-made experiment's question, once its plan is done. */
+let presetAnswer: PresetAnswer | 'computing' | null = null;
 /** Changes that would make the goal reachable (offered with buttons). */
 let fixes: LabFix[] | 'computing' = [];
 let warnings: readonly LocalizedText[] = [];
@@ -229,6 +233,7 @@ function beginStep(placed: { readonly state: SystemState; readonly warnings: rea
   stepAdds = pendingAdds;
   pendingAdds = [];
   doneRecord = null;
+  presetAnswer = null;
   fixes = labFixes(params);
   if (document.querySelector('#add summary')) buildAdd();
   acc = 0;
@@ -329,7 +334,7 @@ function sendPower(v: number) {
 // ?idle=3 in the address: start after 3 s (to see the scenes without waiting).
 const IDLE_START = (Number(new URLSearchParams(location.search).get('idle')) || 25) * 1000;
 interface IdleAct {
-  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap';
+  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap' | 'coffee';
   readonly mood: SceneView['professor']['mood'];
   readonly length: number; // ms, matches the CSS animation
   readonly lines: readonly string[];
@@ -342,6 +347,7 @@ const ACTS: readonly { name: IdleAct['name']; mood: IdleAct['mood']; length: num
   { name: 'sleep', mood: 'neutral', length: 10_000 },
   { name: 'chalk', mood: 'thinking', length: 7000 },
   { name: 'tap', mood: 'neutral', length: 6000 },
+  { name: 'coffee', mood: 'neutral', length: 9000 },
 ];
 let lastActivity = performance.now();
 let nextActAt = lastActivity + IDLE_START;
@@ -412,6 +418,9 @@ function frame(now: number) {
 function stop() {
   running = false;
   finished = true;
+  // The end of a run is news: give the reader time before the Professor gets bored.
+  lastActivity = performance.now();
+  nextActAt = lastActivity + IDLE_START;
   const result = session.result(labGoalReached(stepP, session.state));
   doneRecord = { params: stepP, result, status: labStatus(stepP, result, simulation, warnings) };
   // Heating that stalls: find what helps by re-running in the mind (after the headline is on screen).
@@ -423,6 +432,16 @@ function stop() {
       render();
     }, 30);
   } else if (doneRecord.status.kind === 'reached') fixes = [];
+  // A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind).
+  const answerOf = preset ? PRESET_ANSWERS[preset.id] : undefined;
+  if (answerOf && !plan.length) {
+    presetAnswer = 'computing';
+    const steps = [...history, doneRecord].map((h) => ({ params: h.params, result: h.result as never, status: h.status }));
+    window.setTimeout(() => {
+      presetAnswer = answerOf({ steps, simulation });
+      render();
+    }, 30);
+  }
   setHeadline();
 }
 
@@ -457,8 +476,10 @@ function setHeadline() {
       if ($('#report').innerHTML) explain();
     }, 30);
   }
+  // In a ready-made experiment, ending the way it is meant to (sea water freezing only partly) is not a failure.
+  const expected = preset && !history.length && status.kind === preset.expect && status.kind !== 'reached';
   headline = () => [
-    ...labSummary(p, result, status, ctx()),
+    ...labSummary(p, result, status, ctx()).map((b) => (expected && b.kind === 'summary' && b.tone === 'failure' ? { ...b, tone: 'neutral' as const } : b)),
     ...(actionUses(p.action) !== 'cooler' || expectation
       ? labDebrief({
           params: p,
@@ -673,6 +694,8 @@ function sceneView(): SceneView {
   const nextLabel = plan.length ? planLabel(plan) : '';
   const professor: SceneView['professor'] = idleAct
     ? { mood: idleAct.mood, says: idleAct.lines[Math.max(0, idleLine)] ?? '', act: idleAct.name }
+    : presetAnswer && presetAnswer !== 'computing' && tr(presetAnswer.say, locale)
+    ? { mood: 'happy', says: tr(presetAnswer.say, locale) }
     : preset && !running && stepElapsed() === 0 && !history.length && !st
     ? { mood: 'thinking', says: tr(preset.question, locale) }
     : st && nextLabel
@@ -828,6 +851,13 @@ function render() {
     Array.isArray(fixes) ? fixes.map((f, i) => `<button type="button" data-fix="${i}">${tr(f.label, locale)}</button>`).join('') : `<span class="muted small">${u.computing}</span>`;
   if (headline) {
     msg.push(renderHtml(headline()));
+    if (presetAnswer) {
+      msg.push(
+        presetAnswer === 'computing'
+          ? `<div class="answer"><h4>${u.answerTitle}</h4><p class="muted">${u.answerComputing}</p></div>`
+          : `<div class="answer"><h4>${u.answerTitle}</h4>${preset ? `<p class="q">${tr(preset.question, locale)}</p>` : ''}<p>${tr(presetAnswer.text, locale)}</p></div>`,
+      );
+    }
     // A ready-made experiment goes on along its plan.
     if (plan.length) offer.push(`<div class="offer plan"><p>${u.planNext(planLabel(plan))}</p><div class="fixes"><button type="button" class="primary" data-plan="1">▶ ${planLabel(plan)}</button></div></div>`);
     // The goal was not reached: offer what would reach it — the experiment continues from where it is.

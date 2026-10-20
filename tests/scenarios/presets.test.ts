@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createSimulation, seconds } from '../../src/core/index.js';
 import { createElectricalSolver, ELECTRICAL_COMMANDS } from '../../src/domains/electrical/index.js';
 import { createThermalSolver, THERMAL_COMMANDS } from '../../src/domains/thermal/index.js';
-import { LAB_KNOWLEDGE, labSetup, PRESETS, runProtocol, type LabCommand, type ProtocolStep } from '../../src/scenarios/index.js';
+import { LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESETS, runProtocol, type LabCommand, type ProtocolStep } from '../../src/scenarios/index.js';
 
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: seconds(2) });
 const commands = createCommandRegistry<LabCommand>([...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS] as never);
@@ -31,5 +31,16 @@ describe('ready-made experiments', () => {
       if (o.step.kind === 'add') expect(o.entry?.ok, `${p.id}: add`).toBe(true);
       else expect(o.status?.kind, `${p.id}: plan step`).toBe('reached');
     }
+    // The question gets an answer built from this run, in both languages, with numbers in it.
+    const answer = PRESET_ANSWERS[p.id];
+    expect(answer, `${p.id}: has an answer`).toBeDefined();
+    const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
+    const a = answer!({ steps, simulation });
+    for (const l of ['uk', 'en'] as const) {
+      expect(a.text[l].length, `${p.id} ${l}`).toBeGreaterThan(60);
+      expect(a.text[l], `${p.id} ${l}`).toMatch(/\d/);
+      expect(a.text[l], `${p.id} ${l}`).not.toMatch(/NaN|Infinity|undefined/);
+    }
+    if (process.env['SHOW_ANSWERS']) console.log(`\n[${p.id}] ${a.say.uk}\n${a.text.uk}`);
   }, 60_000);
 });
