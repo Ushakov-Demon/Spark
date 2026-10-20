@@ -73,6 +73,7 @@ import { createKnob } from './knob.js';
 import { createScene, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './icons.js';
 import { bottleSvg } from './pictures.js';
+import { createConsole } from './console.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -286,7 +287,15 @@ let knobTimer: number | undefined;
 const knobTurns = (): 'heater' | 'supply' | null =>
   params.supply ? (SUPPLIES[params.supply.id].spec.control === 'knob' ? 'supply' : null) : params.heater ? 'heater' : null;
 const knob = createKnob(
-  (v) => {
+  (v) => knobChanged(v),
+  (v) =>
+    knobTurns() === 'supply'
+      ? formatQuantity(supplyVoltage(SUPPLIES[params.supply!.id], v), 'V', { locale, level: 'school' })
+      : v === 0
+        ? t().off
+        : formatQuantity(currentPower(v), 'W', { locale, level: 'school' }),
+);
+function knobChanged(v: number) {
     const what = knobTurns();
     if (!what) return;
     if (what === 'supply') {
@@ -301,14 +310,7 @@ const knob = createKnob(
     if (stepElapsed() === 0 && !history.length) return newSession();
     knobTimer = window.setTimeout(() => (what === 'supply' ? sendVoltage(v) : sendPower(v)), running ? 150 : 0);
     render();
-  },
-  (v) =>
-    knobTurns() === 'supply'
-      ? formatQuantity(supplyVoltage(SUPPLIES[params.supply!.id], v), 'V', { locale, level: 'school' })
-      : v === 0
-        ? t().off
-        : formatQuantity(currentPower(v), 'W', { locale, level: 'school' }),
-);
+}
 
 function sendVoltage(v: number) {
   session.apply({ type: 'electrical.supply.set', entity: LAB_SUPPLY_ID, voltage: supplyVoltage(SUPPLIES[params.supply!.id], v) });
@@ -551,6 +553,23 @@ function usedVolume(): number {
   return v;
 }
 
+/** Put a portion into the vessel now (the "add" panel and the console both use it); returns an error or null. */
+function addPortion(id: SubstanceId, grams: number, tempC: number, frozen: boolean): string | null {
+  const u = t();
+  const sub = SUBSTANCES[id];
+  const density = frozen ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
+  const free = params.size - usedVolume();
+  if (((grams / 1000) / density) * 1000 > free + 1e-9) return u.addDoesNotFit(free < 1 ? `${Math.round(free * 1000)} ${u.ml}` : `${sig(free, 3, locale)} ${u.liters}`);
+  const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: id, mass: (grams / 1000) as never, temperature: celsius(tempC), ...(frozen ? { frozen: true } : {}) });
+  if (!entry.ok) return tr(entry.error, locale);
+  (finished ? pendingAdds : stepAdds).push({ what: sub.name, mass: grams / 1000 });
+  headline = null;
+  checkpoint = null;
+  buildAdd();
+  render();
+  return null;
+}
+
 function buildAdd() {
   const u = t();
   const box = $<HTMLDetailsElement>('#add');
@@ -596,17 +615,7 @@ function buildAdd() {
   };
   const button = el('button', { type: 'button', className: 'primary' }, u.addButton);
   button.onclick = () => {
-    const density = addFrozen ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
-    const free = params.size - usedVolume();
-    if (((addGrams / 1000) / density) * 1000 > free + 1e-9) {
-      addError = u.addDoesNotFit(free < 1 ? `${Math.round(free * 1000)} ${u.ml}` : `${sig(free, 3, locale)} ${u.liters}`);
-      return buildAdd();
-    }
-    const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: addSub, mass: (addGrams / 1000) as never, temperature: celsius(addTemp), ...(addFrozen ? { frozen: true } : {}) });
-    addError = entry.ok ? '' : tr(entry.error, locale);
-    if (entry.ok) (finished ? pendingAdds : stepAdds).push({ what: sub.name, mass: addGrams / 1000 });
-    headline = null;
-    checkpoint = null;
+    addError = addPortion(addSub, addGrams, addTemp, addFrozen) ?? '';
     buildAdd();
     render();
   };
@@ -818,6 +827,7 @@ function render() {
   const startBtn = $<HTMLButtonElement>('#start');
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   $<HTMLButtonElement>('#reset').textContent = u.reset;
+  $('#console-toggle').textContent = locale === 'uk' ? '›_ Консоль' : '›_ Console';
   $('#lbl-speed').textContent = u.speed;
 
   // Knob, switch or nothing (cooling has no knob: the cooler holds its setpoint).
@@ -1532,6 +1542,86 @@ $('#side-toggle').onclick = () => {
   renderSide();
 };
 
+// ---------- console ----------
+const labConsole = createConsole({
+  locale: () => locale,
+  params: () => params,
+  started: () => experimentStarted(),
+  setAction: (a) => setAction(a),
+  choose(next, kind) {
+    if (next.heater) lastHeater = next.heater;
+    if (next.cooler) lastCooler = next.cooler;
+    if (next.supply) lastSupply = next.supply;
+    if (kind === 'experiment') {
+      // Another substance, vessel or conditions: a new, free experiment.
+      preset = null;
+      plan = [];
+      params = fitChoices(next);
+      buildShelf();
+      newSession();
+      return;
+    }
+    params = experimentStarted() ? next : fitChoices(next);
+    stepChanged();
+  },
+  setSpeed(x) {
+    speed = x;
+    $<HTMLSelectElement>('#speed').value = String(x);
+  },
+  setKnob(x) {
+    if (!knobTurns()) return false;
+    knob.value = x;
+    knobChanged(x);
+    return true;
+  },
+  toggleStart: () => toggleStart(),
+  isRunning: () => running,
+  reset: () => resetExperiment(),
+  add: (id, grams, tempC, frozen) => addPortion(id, grams, tempC, frozen),
+  addable: () => addableTo(session.state, commands),
+  predict(minutes) {
+    expectKind = 'prediction';
+    expectMinutes = minutes;
+    buildExpect();
+  },
+  status() {
+    const u = t();
+    const b = sample();
+    const lines = [`${u.time}: ${formatDuration(Math.floor(session.state.time), locale)}`];
+    if (b) {
+      lines.push(`${tr(b.state.mixture && b.label ? b.label : substance().name, locale)}: ${formatQuantity(b.state.temperature, 'K', { locale, level: 'school' })}`);
+      const s = b.state.solidFraction ?? 0;
+      if (s > 0) lines.push(u.solidShare(Math.round(s * 100)));
+      const mix = b.state.mixture;
+      if (mix && mix.water - mix.ice > 1e-9) lines.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
+      if (mix && mix.crystals > 1e-6) lines.push(u.crystals(formatQuantity(mix.crystals, 'kg', { locale, level: 'school' })));
+      const lost = (b.state.boiledOff ?? 0) + (b.state.evaporated ?? 0);
+      if (lost > 1e-4) lines.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
+    }
+    const sup = Object.values(session.state.entities).find(isSupply);
+    if (sup) lines.push(`${u.current}: ${formatQuantity(sup.state.current, 'A', { locale, level: 'school' })}${sup.state.resistance !== null ? ` · ${formatQuantity(sup.state.resistance, 'Ω', { locale, level: 'school' })}` : ''}`);
+    lines.push(`${u.setup}: ${labSubject(params, locale, session.state)}`);
+    lines.push(running ? (locale === 'uk' ? '▶ іде' : '▶ running') : finished ? (locale === 'uk' ? '■ крок завершено' : '■ step done') : locale === 'uk' ? '⏸ стоїть' : '⏸ paused');
+    return lines;
+  },
+  explain: () => explain(),
+  openRef(key) {
+    const target = refFor(key);
+    if (target) openRef(target);
+    return !!target;
+  },
+  startPreset: (p) => startPreset(p),
+});
+$('#console-wrap').append(labConsole);
+$('#console-toggle').onclick = () => {
+  const wrap = $('#console-wrap');
+  wrap.hidden = !wrap.hidden;
+  $('#console-toggle').setAttribute('aria-expanded', String(!wrap.hidden));
+  store.set('console', wrap.hidden ? 'closed' : 'open');
+  if (!wrap.hidden) wrap.querySelector('input')?.focus();
+};
+if (store.get('console') === 'open') $('#console-wrap').hidden = false;
+
 // ---------- wiring ----------
 $('#offer').addEventListener('click', (e) => {
   const target = (e.target as HTMLElement).closest<HTMLElement>('[data-fix], [data-stop], [data-plan]');
@@ -1544,7 +1634,8 @@ $('#offer').addEventListener('click', (e) => {
 $('#knob-wrap').append(knob.element);
 $('#chart').append(chart.element);
 $('#scene').append(scene.element);
-$('#start').onclick = () => {
+$('#start').onclick = () => toggleStart();
+function toggleStart() {
   // A finished step: the next one continues with the same contents (the user may have changed nothing).
   if (finished) {
     closeStep();
@@ -1556,12 +1647,13 @@ $('#start').onclick = () => {
   running = !running;
   lastFrame = 0;
   render();
-};
-$('#reset').onclick = () => {
+}
+$('#reset').onclick = () => resetExperiment();
+function resetExperiment() {
   // Starting over: a ready-made experiment starts over too, with its whole plan.
   if (preset) plan = [...(preset.plan ?? [])];
   newSession();
-};
+}
 $('#switch').onclick = () => {
   if (!params.heater) return;
   const v = params.heater.knob > 0 ? 0 : 1;

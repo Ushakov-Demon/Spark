@@ -484,3 +484,15 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 @keyframes coffee-swap { 0%, 5% { opacity: 1; } 8%, 86% { opacity: 0; } 89%, 100% { opacity: 1; } }
 @keyframes sip-eyes { 0%, 24% { opacity: 1; } 26%, 34% { opacity: 0; } 36%, 63% { opacity: 1; } 65%, 72% { opacity: 0; } 74%, 100% { opacity: 1; } }
 @keyframes sip-squint { 0%, 24% { opacity: 0; } 26%, 34% { opacity: 1; } 36%, 63% { opacity: 0; } 65%, 72% { opacity: 1; } 74%, 100% { opacity: 0; } }
+
+/* ---------- the lab console ---------- */
+.console-toggle { font: 600 0.85rem ui-monospace, Menlo, Consolas, monospace; }
+.console { margin: 6px 0 10px; border-radius: 12px; background: #0f1720; color: #d7e3ef; font: 0.85rem/1.45 ui-monospace, Menlo, Consolas, monospace; overflow: hidden; border: 1px solid #22303e; }
+.console-out { max-height: 220px; overflow: auto; padding: 10px 12px 4px; white-space: pre-wrap; }
+.console-out .cmd { color: #7fb8ff; }
+.console-out .err { color: #ff8a7a; }
+.console-out .muted { color: #8a9aab; }
+.console-in { display: flex; align-items: center; gap: 8px; padding: 6px 12px 10px; }
+.console-in span { color: #6dff8c; font-weight: 700; }
+.console-in input { flex: 1; background: transparent; border: 0; color: #e8f1fa; font: inherit; min-height: 30px; padding: 0; outline: none; }
+.console-in input::placeholder { color: #5a6b7c; }
