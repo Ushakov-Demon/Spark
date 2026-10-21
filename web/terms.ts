@@ -37,9 +37,10 @@ function termOf(word: string, byStem: Map<string, string>): string | undefined {
 }
 
 /** Wrap the first mention of each term inside `root` (skipping what is already wrapped, inputs, formulas). */
-export function annotate(root: Element, l: Locale): void {
+export function annotate(root: Element, l: Locale, skip?: string): void {
   const { re, byStem } = patternFor(l);
   const seen = new Set<string>(Array.from(root.querySelectorAll<HTMLElement>('.term')).map((e) => e.dataset['term']!));
+  if (skip) seen.add(skip);
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (n) => {
       const p = n.parentElement;
@@ -76,6 +77,8 @@ export function annotate(root: Element, l: Locale): void {
   }
 }
 
+const ALL_TERMS: Record<Locale, string> = { uk: 'Відкрити в глосарії →', en: 'Open in the glossary →' };
+
 /** The footnote card: one for the page, placed next to the term; hover, focus or tap shows it. */
 export function installFootnotes(locale: () => Locale): void {
   const card = document.createElement('div');
@@ -88,7 +91,7 @@ export function installFootnotes(locale: () => Locale): void {
     const t = termById(el.dataset['term'] ?? '');
     if (!t) return;
     current = el;
-    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p>`;
+    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p><a href="#glossary/${t.id}" class="term-more">${ALL_TERMS[locale()]}</a>`;
     card.hidden = false;
     const r = el.getBoundingClientRect();
     const w = Math.min(320, window.innerWidth - 24);
@@ -119,4 +122,5 @@ export function installFootnotes(locale: () => Locale): void {
   });
   document.addEventListener('keydown', (e) => e.key === 'Escape' && hide());
   window.addEventListener('scroll', hide, { passive: true });
+  window.addEventListener('hashchange', hide);
 }

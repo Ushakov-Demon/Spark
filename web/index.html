@@ -20,6 +20,7 @@
         <label><span id="lbl-level"></span><select id="level"></select></label>
         <button id="sound" class="sound-toggle" type="button"></button>
         <label class="voice-pick"><span id="lbl-voice"></span><select id="voice"></select></label>
+        <a id="library-open" class="library-open" href="#glossary"></a>
         <button id="bug-open" class="bug-btn" type="button"></button>
         <button id="about-open" class="about-btn" type="button"></button>
       </div>
@@ -96,6 +97,8 @@
       </main>
     </div>
 
+    <section id="library" class="library" hidden></section>
+
     <aside id="ref" class="ref" aria-hidden="true" aria-labelledby="ref-body">
       <button id="ref-close" class="ref-close" type="button" aria-label="×">✕</button>
       <div id="ref-body" class="ref-body report"></div>
@@ -139,6 +142,7 @@
     <footer>
       <p id="safety" class="safety-line"></p>
       <p class="footer-row"><span id="made-by"></span><button id="about-open-2" class="link" type="button"></button><button id="bug-open-2" class="link" type="button"></button></p>
+      <p id="library-links" class="footer-row library-links"></p>
       <p id="footer" class="muted small"></p>
     </footer>
     <script type="module" src="./main.ts"></script>

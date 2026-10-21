@@ -96,6 +96,7 @@ import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
+import { filterLibrary, LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute } from './library.js';
 import { createScene, incandescent, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
@@ -1429,6 +1430,17 @@ function showingWeighing() {
 
 /** How solid bodies look in the vessel. */
 const BODY_COLOR: Partial<Record<string, string>> = { 'table-salt': 'rgba(246, 246, 242, 0.97)', sugar: '#fbfbf8', 'baking-soda': '#f4f4f0', 'copper-sulfate': '#2f7fd6', chalk: '#f1eee6', 'iron-ii-hydroxide': '#7f9a63', graphite: '#3a3d42', porcelain: '#f6f3ec', brick: '#b5553a', 'stearic-acid': '#f3efe4', tin: '#c8ccd0', aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
+const formulaOf = (x: SubstanceItem) =>
+  x.recipe ? RECIPES[x.recipe as RecipeId].parts.map((p) => COMPONENTS[p.component].formula ?? '').join('+') : (x.component && COMPONENTS[x.component as keyof typeof COMPONENTS]?.formula) || '';
+/** The shelf's picture of a substance: a bottle of a liquid or a powder, a block or a ball of a solid. */
+const shelfPic = (x: SubstanceItem): string =>
+  x.category.startsWith('liquid.')
+    ? bottleSvg(liquidKindOf(x), formulaOf(x))
+    : dissolves(x) || x.category === 'solid.salt'
+      ? bottleSvg('salt', formulaOf(x), true)
+      : x.bodyShape === 'ball'
+        ? ballSvg(BODY_COLOR[x.id] ?? '#9aa1a8')
+        : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x));
 
 function render() {
   const u = t();
@@ -2038,8 +2050,6 @@ function buildShelf() {
   /** A solid this action can take as the sample itself (salt heated dry, tin melted in a crucible). */
   const asSample = (x: SubstanceItem) => !started && accepted.has(x.id) && isDrySample(x);
   const small = params.size < 0.1;
-  const formulaOf = (x: SubstanceItem) =>
-    x.recipe ? RECIPES[x.recipe as RecipeId].parts.map((p) => COMPONENTS[p.component].formula ?? '').join('+') : (x.component && COMPONENTS[x.component as keyof typeof COMPONENTS]?.formula) || '';
   section(
     'substance',
     u.substance,
@@ -2060,7 +2070,7 @@ function buildShelf() {
             x.category.startsWith('liquid.')
               ? card({
                   name: x.name,
-                  pic: bottleSvg(liquidKindOf(x), formulaOf(x)),
+                  pic: shelfPic(x),
                   ref: `substance:${x.id}`,
                   note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
                   ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
@@ -2070,7 +2080,7 @@ function buildShelf() {
                 })
               : card({
                   name: x.name,
-                  pic: dissolves(x) || x.category === 'solid.salt' ? bottleSvg('salt', formulaOf(x), true) : x.bodyShape === 'ball' ? ballSvg(BODY_COLOR[x.id] ?? '#9aa1a8') : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x)),
+                  pic: shelfPic(x),
                   ref: `substance:${x.id}`,
                   note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${dissolves(x) ? u.dissolves : u.putIn}`,
                   ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),
@@ -2235,6 +2245,9 @@ function buildInfo() {
   $('#bug-open').textContent = `🐞 ${a.bug}`;
   $('#about-open-2').textContent = a.about;
   $('#bug-open-2').textContent = a.bug;
+  const lib = LIBRARY_UI[locale];
+  $('#library-open').textContent = `📚 ${lib.open}`;
+  $('#library-links').innerHTML = LIBRARY_PAGES.map((p) => `<a href="#${p}">${lib.tabs[p]}</a>`).join('');
   $('#safety').textContent = `⚠ ${SAFETY_LINE[locale]}`;
   $('#made-by').innerHTML = `${a.madeBy} <a href="${DEVELOPER.url}" target="_blank" rel="noopener">${DEVELOPER.name}</a>`;
   $('#about-close').setAttribute('aria-label', a.close);
@@ -2314,6 +2327,7 @@ function buildHeader() {
     renderRecords();
     render();
     if (refTarget) openRef(refTarget);
+    renderLibrary(false);
     if ($('#report').innerHTML) explain();
   };
   const lv = $<HTMLSelectElement>('#level');
@@ -2324,6 +2338,7 @@ function buildHeader() {
     store.set('level', level);
     buildShelf();
     if (refTarget) openRef(refTarget);
+    renderLibrary(false);
     if ($('#report').innerHTML) explain();
   };
 }
@@ -2499,6 +2514,8 @@ function startPreset(given: Preset) {
   speed = OPERATIONS[p.params.action].speed;
   $<HTMLSelectElement>('#speed').value = String(speed);
   $<HTMLDialogElement>('#presets').close();
+  // Chosen from the library page: back to the lab.
+  if (libraryRoute(location.hash)) location.hash = '';
   buildShelf();
   buildExpect();
   newSession();
@@ -3030,8 +3047,44 @@ installFootnotes(() => locale);
   schedule();
 }
 
+// ---------- the library: a page of its own (#glossary, #substances, #equipment) ----------
+let libraryShown = '';
+/** Shows the library page the address names (or the lab), and scrolls to the item in it: #glossary/cathode. */
+function renderLibrary(toTop = true) {
+  const route = libraryRoute(location.hash);
+  const lib = $('#library');
+  document.body.classList.toggle('in-library', !!route);
+  lib.hidden = !route;
+  document.title = route ? `${LIBRARY_UI[locale].tabs[route.page]} · Spark` : 'Spark';
+  if (!route) {
+    libraryShown = '';
+    return;
+  }
+  const key = `${route.page}|${locale}|${level}`;
+  if (key !== libraryShown) {
+    const query = libraryShown.startsWith(`${route.page}|`) ? (lib.querySelector<HTMLInputElement>('.lib-search')?.value ?? '') : '';
+    libraryShown = key;
+    lib.innerHTML = libraryHtml(route.page, { locale, level, picOf: shelfPic });
+    // Terms inside the definitions are footnotes too — except the term being defined.
+    lib.querySelectorAll('.lib-desc').forEach((el) => annotate(el, locale, el.closest<HTMLElement>('[data-term-id]')?.dataset['termId']));
+    const search = lib.querySelector<HTMLInputElement>('.lib-search')!;
+    search.value = query;
+    search.oninput = () => filterLibrary(lib, search.value);
+    filterLibrary(lib, query);
+  }
+  const item = route.item;
+  const target = item ? (document.getElementById(item.startsWith('letter-') ? item : `term-${item}`) ?? document.getElementById(`item-${item}`)) : null;
+  lib.querySelectorAll('.lib-flash').forEach((e) => e.classList.remove('lib-flash'));
+  if (target) {
+    target.scrollIntoView({ block: 'start' });
+    if (!item!.startsWith('letter-')) target.classList.add('lib-flash');
+  } else if (toTop) window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', () => renderLibrary());
+
 buildHeader();
 buildInfo();
+renderLibrary();
 buildPresets();
 buildShelf();
 buildExpect();
