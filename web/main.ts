@@ -90,6 +90,7 @@ import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipmen
 import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
+import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { createScene, incandescent, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
@@ -2162,6 +2163,76 @@ function setAction(a: LabAction) {
   stepChanged();
 }
 
+// ---------- about the project, "found a mistake?" ----------
+function buildInfo() {
+  const a = ABOUT_UI[locale];
+  const b = BUG_TEXT[locale];
+  $('#about-open').textContent = `ⓘ ${a.about}`;
+  $('#bug-open').textContent = `🐞 ${a.bug}`;
+  $('#about-open-2').textContent = a.about;
+  $('#bug-open-2').textContent = a.bug;
+  $('#safety').textContent = `⚠ ${SAFETY_LINE[locale]}`;
+  $('#made-by').innerHTML = `${a.madeBy} <a href="${DEVELOPER.url}" target="_blank" rel="noopener">${DEVELOPER.name}</a>`;
+  $('#about-close').setAttribute('aria-label', a.close);
+  $('#bug-close').setAttribute('aria-label', a.close);
+  $('#about-body').innerHTML = aboutHtml(locale);
+  $('#bug-title').textContent = b.title;
+  $('#bug-intro').textContent = b.intro;
+  $<HTMLTextAreaElement>('#bug-text').placeholder = b.placeholder;
+  $('#bug-attach-label').textContent = b.attach;
+  $('#bug-send').textContent = b.send;
+  $('#bug-copy').textContent = b.copy;
+  $('#bug-note').textContent = b.note;
+}
+/** The experiment as plain text for a report: setup, protocol, settings — nothing personal. */
+function bugContext(): string {
+  const text = (sel: string) => (document.querySelector<HTMLElement>(sel)?.innerText ?? '').trim();
+  return [
+    `Spark · ${new Date().toISOString().slice(0, 10)} · ${locale} · ${level}`,
+    `${text('#exp-title')}: ${text('#setup-line')}`,
+    preset ? `preset: ${preset.id}` : 'free play',
+    `params: ${JSON.stringify(params)}`,
+    text('#protocol').replace(/\n+/g, ' / '),
+    text('#messages').replace(/\n+/g, ' / ').slice(0, 600),
+    navigator.userAgent,
+  ].filter(Boolean).join('\n');
+}
+function openBug() {
+  $('#bug-error').textContent = '';
+  $('#bug-context').textContent = $<HTMLInputElement>('#bug-attach').checked ? bugContext() : '';
+  $<HTMLDialogElement>('#bug').showModal();
+}
+function bugReportNow(): ReturnType<typeof bugReport> | null {
+  const what = $<HTMLTextAreaElement>('#bug-text').value;
+  if (!what.trim()) {
+    $('#bug-error').textContent = BUG_TEXT[locale].empty;
+    return null;
+  }
+  return bugReport(what, $<HTMLInputElement>('#bug-attach').checked ? bugContext() : null);
+}
+$('#about-open').onclick = $('#about-open-2').onclick = () => $<HTMLDialogElement>('#about').showModal();
+$('#about-close').onclick = () => $<HTMLDialogElement>('#about').close();
+$('#bug-open').onclick = $('#bug-open-2').onclick = openBug;
+$('#bug-close').onclick = () => $<HTMLDialogElement>('#bug').close();
+$<HTMLInputElement>('#bug-attach').onchange = () => ($('#bug-context').textContent = $<HTMLInputElement>('#bug-attach').checked ? bugContext() : '');
+$('#bug-send').onclick = () => {
+  const r = bugReportNow();
+  if (r) window.open(bugUrl(r), '_blank', 'noopener');
+};
+$('#bug-copy').onclick = async () => {
+  const r = bugReportNow();
+  if (!r) return;
+  try {
+    await navigator.clipboard.writeText(`${r.title}\n\n${r.body}`);
+    $('#bug-copy').textContent = BUG_TEXT[locale].copied;
+    window.setTimeout(() => ($('#bug-copy').textContent = BUG_TEXT[locale].copy), 2000);
+  } catch {
+    $('#bug-error').textContent = `${r.title}\n\n${r.body}`;
+  }
+};
+// A link straight to the page: …/#about
+if (location.hash === '#about') window.setTimeout(() => $<HTMLDialogElement>('#about').showModal(), 0);
+
 function buildHeader() {
   const lang = $<HTMLSelectElement>('#language');
   lang.innerHTML = '';
@@ -2171,6 +2242,7 @@ function buildHeader() {
     locale = lang.value as Locale;
     store.set('locale', locale);
     buildHeader();
+    buildInfo();
     buildShelf();
     buildExpect();
     buildAdd();
@@ -2862,6 +2934,7 @@ $<HTMLInputElement>('#search').addEventListener('input', (e) => {
 }
 
 buildHeader();
+buildInfo();
 buildPresets();
 buildShelf();
 buildExpect();

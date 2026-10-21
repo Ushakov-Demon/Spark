@@ -20,6 +20,8 @@
         <label><span id="lbl-level"></span><select id="level"></select></label>
         <button id="sound" class="sound-toggle" type="button"></button>
         <label class="voice-pick"><span id="lbl-voice"></span><select id="voice"></select></label>
+        <button id="bug-open" class="bug-btn" type="button"></button>
+        <button id="about-open" class="about-btn" type="button"></button>
       </div>
     </header>
 
@@ -104,6 +106,22 @@
       <div class="paper-buttons"><button id="paper-more" type="button"></button><button id="paper-close" type="button" class="primary" autofocus></button></div>
     </dialog>
 
+    <dialog id="about" class="info-dialog">
+      <div class="info-head"><button id="about-close" class="info-close" type="button" aria-label="×">✕</button></div>
+      <div id="about-body"></div>
+    </dialog>
+
+    <dialog id="bug" class="info-dialog bug-dialog">
+      <div class="info-head"><h2 id="bug-title"></h2><button id="bug-close" class="info-close" type="button" aria-label="×">✕</button></div>
+      <p id="bug-intro"></p>
+      <textarea id="bug-text" rows="5"></textarea>
+      <label class="bug-attach"><input id="bug-attach" type="checkbox" checked /> <span id="bug-attach-label"></span></label>
+      <pre id="bug-context" class="bug-context"></pre>
+      <p id="bug-error" class="bug-error" role="alert"></p>
+      <div class="bug-buttons"><button id="bug-send" class="primary" type="button"></button><button id="bug-copy" type="button"></button></div>
+      <p id="bug-note" class="muted small"></p>
+    </dialog>
+
     <dialog id="presets" class="presets">
       <div class="presets-head">
         <h2 id="presets-title"></h2>
@@ -118,7 +136,11 @@
     </div>
     <button id="console-toggle" class="console-fab" type="button" aria-controls="console-wrap" aria-expanded="false">&gt;_</button>
 
-    <footer><p id="footer" class="muted small"></p></footer>
+    <footer>
+      <p id="safety" class="safety-line"></p>
+      <p class="footer-row"><span id="made-by"></span><button id="about-open-2" class="link" type="button"></button><button id="bug-open-2" class="link" type="button"></button></p>
+      <p id="footer" class="muted small"></p>
+    </footer>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

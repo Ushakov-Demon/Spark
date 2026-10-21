@@ -740,3 +740,27 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
   .kitchen-head.stuck { padding-top: 8px; padding-bottom: 8px; }
   .kitchen-head.stuck > div:first-child, .kitchen-head.stuck .weigh { display: none; }
 }
+
+/* "About the project" and "Found a mistake?". */
+.about-btn, .bug-btn { padding: 6px 10px; font-size: 0.85rem; white-space: nowrap; }
+.info-dialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 1px solid var(--line); border-radius: 16px; padding: 16px 22px 22px; background: var(--card); color: var(--text); }
+.info-dialog::backdrop { background: rgba(15, 20, 30, 0.55); }
+.info-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; position: sticky; top: -16px; background: var(--card); padding-top: 4px; }
+.info-head h2 { margin: 0; font-size: 1.25rem; }
+.info-close { margin-left: auto; }
+.about h2 { margin: 0 0 6px; font-size: 1.35rem; }
+.about h3 { margin: 18px 0 6px; font-size: 1.05rem; }
+.about p, .about li { line-height: 1.55; }
+.about-lead { font-size: 1.05rem; }
+.about-warning { margin: 12px 0; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #d97706; background: var(--warn-bg); }
+.bug-dialog textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg, transparent); color: inherit; resize: vertical; }
+.bug-attach { display: flex; gap: 8px; align-items: center; margin: 10px 0 6px; font-size: 0.92rem; }
+.bug-context { max-height: 160px; overflow: auto; font-size: 0.78rem; padding: 8px 10px; border-radius: 8px; background: var(--warn-bg); white-space: pre-wrap; margin: 0; }
+.bug-context:empty { display: none; }
+.bug-error { color: #dc2626; min-height: 1em; margin: 6px 0; }
+.bug-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+footer .safety-line { font-weight: 600; color: #b45309; margin: 0 0 4px; }
+footer .footer-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 0 0 4px; font-size: 0.9rem; }
+footer .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
+/* Room under the footer for the console button in the corner. */
+footer { padding-bottom: 72px; }
