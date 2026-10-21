@@ -27,6 +27,11 @@ export interface Preset {
   /** Show only the programme quotes that contain this ("плавлен" — melting, not boiling). */
   readonly quoteHas?: string;
   /**
+   * Programmes it belongs to beyond what its formulas say (a required practical of another
+   * country's course): the programme, the grade if it has one, and the exact wording.
+   */
+  readonly programs?: readonly PresetProgram[];
+  /**
    * A measuring procedure, led step by step from the very start (no "Start"): each plan step is a
    * button; the readings go onto the board one by one.
    */
@@ -44,6 +49,18 @@ export interface Preset {
   readonly predict?: boolean;
   /** How the run ends in the model (checked by tests). */
   readonly expect: LabStatus['kind'];
+}
+
+export interface PresetProgram {
+  /** Id in CURRICULA. */
+  readonly program: string;
+  readonly grade?: number;
+  /** The item in the programme ("Required practical 3"), for the chip. */
+  readonly item?: string;
+  /** same — this very experiment is in the programme; related — the same idea on another substance. */
+  readonly match: 'same' | 'related';
+  /** Exact wording from the programme, in its original language. */
+  readonly quote: string;
 }
 
 export interface Choice {
@@ -222,6 +239,7 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('cooling', 'Охолодити до 0 °C', 'Cooling to 0 °C'), ch('freezing', 'Перетворити на лід', 'Turning it into ice'), ch('equal', 'Приблизно однаково', 'About the same')],
     formulas: ['thermal.latent-heat', 'thermal.heat-for-temperature-change'],
     quoteHas: 'плавлен',
+    programs: [{ program: 'oxfordaqa-igcse-sciences', item: 'Physics RP 3', match: 'related', quote: 'Cooling curves (P). Investigating the cooling curve of stearic acid.' }],
     expect: 'reached',
   },
   {
@@ -331,6 +349,7 @@ export const PRESETS: readonly Preset[] = [
     question: { uk: 'Пропусти струм через солону воду й подивись на бульбашки біля електродів. Скільки мілілітрів водню виділиться за 10 хвилин?', en: 'Pass a current through salt water and watch the bubbles at the electrodes. How many millilitres of hydrogen form in 10 minutes?' },
     params: { ...room, ...beaker, action: 'pass-current', substance: 'salt-water-10', startTemp: 20, supply: bench(0.4), duration: 10 },
     formulas: ['electrical.faraday-moles'],
+    programs: [{ program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'related', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
     expect: 'reached',
   },
   // ---------------------------------------------------------------- for everyone

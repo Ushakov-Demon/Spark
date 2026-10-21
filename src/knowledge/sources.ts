@@ -784,6 +784,14 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-21',
   }),
+  'oxfordaqa-igcse-practical-handbook': source({
+    id: 'oxfordaqa-igcse-practical-handbook',
+    title: 'Oxford AQA, International GCSE Sciences Practical Handbook v2.0 (19.03.2018): required practicals for Biology 9201, Chemistry 9202, Physics 9203, Combined Science 9204',
+    url: 'https://www.oxfordaqa.com/oaqaresources/science/teaching/international-gcse-practical-handbook-v2.0-19.03.2018.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-21',
+    caveats: 'Only the titles and aims of the required practicals are quoted.',
+  }),
   spark: source({
     id: 'spark',
     title: 'Spark team (original text)',

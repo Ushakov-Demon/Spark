@@ -168,4 +168,6 @@ export interface Curriculum {
   readonly source: SourceId;
   /** Age at which grade 1 usually starts — lets the UI relate grades to levels. */
   readonly firstGradeAge: number;
+  /** A short label for chips and filters: «НУШ · Фізика». */
+  readonly short?: LocalizedText;
 }

@@ -74,3 +74,18 @@ describe('prediction choices', () => {
     }
   });
 });
+
+describe('programmes of the ready-made experiments', () => {
+  it('every graded experiment names at least one programme it belongs to, all of them known', async () => {
+    const { presetPrograms } = await import('../../src/scenarios/index.js');
+    const { getCurriculum } = await import('../../src/knowledge/curricula.js');
+    for (const p of PRESETS) {
+      const list = presetPrograms(p);
+      if (p.grade !== null) expect(list.length, p.id).toBeGreaterThan(0);
+      for (const x of list) {
+        expect(getCurriculum(x.program), `${p.id}: ${x.program}`).toBeDefined();
+        expect(x.quote.length, p.id).toBeGreaterThan(5);
+      }
+    }
+  });
+});

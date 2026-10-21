@@ -21,6 +21,7 @@ import {
 import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels.js';
+import { getCurriculum } from '../src/knowledge/curricula.js';
 import {
   actionUses,
   LAB_ACTIONS,
@@ -72,6 +73,7 @@ import {
   guidedPlan,
   freshParams,
   stepParams,
+  presetPrograms,
   type Preset,
   type ProtocolStep,
   LAB_KNOWLEDGE,
@@ -2392,6 +2394,7 @@ function nextPlanStep() {
 }
 
 // ---------- ready-made experiments ----------
+const escAttr = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 let presetGrade: number | null = PRESET_GRADES[0] ?? null;
 function buildPresets() {
   const u = t();
@@ -2418,9 +2421,17 @@ function buildPresets() {
     }
     // Where it is in the programme: the formulas' curriculum quotes (newest programme first).
     const quotes = [...new Set(p.formulas.flatMap((id) => (formulas.get(id)?.curriculum ?? []).filter((c) => c.program === 'ua-nus-2023-holovko' && (!p.quoteHas || c.quote.includes(p.quoteHas))).map((c) => c.quote)))];
+    // Which programmes it is in: a chip each (the exact wording on hover); "≈" — the same idea, another substance.
+    const programs = presetPrograms(p)
+      .map((x) => {
+        const c = getCurriculum(x.program)!;
+        const label = `${tr(c.short ?? c.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}${x.item ? ` · ${x.item}` : ''}${x.match === 'related' ? ' ≈' : ''}`;
+        return `<span class="program-chip" title="${escAttr(x.quote)}" data-program="${x.program}">${label}</span>`;
+      })
+      .join('');
     const card = el('article', { className: 'preset' });
     card.innerHTML = `<div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic big')}</div>
-      <div><h4>${tr(p.title, locale)}</h4><p>${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small">${u.inProgramme} (${u.grade(p.grade)}): «${quotes.join(' ')}»</p>` : ''}</div>`;
+      <div><h4>${tr(p.title, locale)}</h4><p>${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small">${u.inProgramme} (${u.grade(p.grade)}): «${quotes.join(' ')}»</p>` : ''}${programs ? `<p class="programs"><span class="muted small">${u.programs}:</span> ${programs}</p>` : ''}</div>`;
     const go = el('button', { type: 'button', className: 'primary' }, u.presetStart);
     go.onclick = () => startPreset(p);
     card.append(go);

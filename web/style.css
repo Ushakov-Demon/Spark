@@ -766,3 +766,7 @@ footer .footer-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items:
 footer .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
 /* Room under the footer for the console button in the corner. */
 footer { padding-bottom: 72px; }
+
+/* Programmes an experiment belongs to (chips; the exact wording on hover). */
+.preset .programs { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 4px 0 0; }
+.program-chip { font-size: 0.74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: help; white-space: nowrap; }
