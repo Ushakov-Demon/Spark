@@ -52,11 +52,11 @@ describe('adding a substance during the experiment', () => {
     expect((link.params as { origin: { area: number } }).origin.area).toBeCloseTo((surface.params as { origin: { area: number } }).origin.area, 12);
   });
 
-  it('refuses mixtures we have no data for, and impossible ice', () => {
+  it('alcohol mixes into water (one solution), impossible ice is refused', () => {
     const s0 = labSetup(P).state;
     const a = commands.apply(s0, { type: 'thermal.add', into: SAMPLE_ID, substance: 'ethanol', mass: kilograms(0.05), temperature: celsius(20) });
-    expect(a.ok).toBe(false);
-    if (!a.ok) expect(a.error.uk).toContain('розчин');
+    expect(a.ok).toBe(true);
+    if (a.ok) expect((a.value.state.entities[SAMPLE_ID as never] as { state: { mixture?: { solutes: { component: string }[] } } }).state.mixture?.solutes.map((x) => x.component)).toEqual(['ethanol']);
     const b = commands.apply(s0, { type: 'thermal.add', into: SAMPLE_ID, substance: 'water', mass: kilograms(0.05), temperature: celsius(5), frozen: true });
     expect(b.ok).toBe(false);
   });

@@ -36,7 +36,8 @@ export const ACETIC_ACID = {
     point: sv(117.9, '°C', '1 atm', 'cross-checked', 0.005, [cite('wikidata', 'Q47512 P2102', '101.325 kPa', 117.9), cite('nist-acetic-acid', 'Tboil 391.2 ± 0.6 K', 'average', 118.05)]),
     latentHeat: sv(394_700, 'J/kg', 'at the boiling point', 'single-source', 0.02, [cite('nist-acetic-acid', 'ΔvapH 23.7 kJ/mol at 391.1 K ÷ 0.060052 kg/mol', '391.1 K', 394_660)], 'Unusually low: in the vapour acetic acid molecules pair up (dimers). At lower temperatures NIST lists 39–41 kJ/mol.'),
   },
-  inWater: { solubility: 'miscible', ions: ['H⁺', 'CH₃COO⁻'] },
+  // A weak acid: in water only about 1 % of it splits into ions — one particle per molecule.
+  inWater: { solubility: 'miscible', ions: ['H⁺', 'CH₃COO⁻'], particles: 1 },
   electrical: { conducts: 'ions-in-solution' },
   hazards: {
     flammable: true,

@@ -174,7 +174,8 @@ export const add: CommandHandler<AddCommand> = {
       const energy = merged.energy;
       const d = decodeMixture(energy, water, merged.input);
       const targetMix = 'mixture' in target.state ? target.state.mixture : undefined;
-      const evaporation = target.params.evaporation ?? substanceThermal(SUBSTANCES.water).evaporation;
+      // The solution's own evaporation is water's (other volatile components evaporate by Raoult's law in the solver).
+      const evaporation = substanceThermal(SUBSTANCES.water).evaporation;
       const base = mixtureBody({
         id: target.id,
         // Its name from what is in it: brine stays "salt solution"; sugar, copper sulfate — "розчин мідного купоросу"; several — "розчин".

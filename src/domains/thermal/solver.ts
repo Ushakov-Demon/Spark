@@ -23,7 +23,7 @@ import {
 import { isSupplyLink, isThermalLink, radiationExcess, radiationSlope, type SupplyLink, type ThermalLink } from './links.js';
 import { decodeEnthalpy, specificHeatAt, type PhaseParams } from './phase.js';
 import { latentAt, massTransferCoefficient, saturationDensity, saturationPressure, type EvaporationParams } from './evaporation.js';
-import { decodeMixture, equilibriumAt, MIXTURE_CONSTANTS, solutesOf, type SoluteInput, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
+import { decodeMixture, equilibriumAt, liquidVolatiles, MIXTURE_CONSTANTS, solutesOf, vapourComposition, type SoluteInput, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
 
 /**
  * Lumped thermal network solver.
@@ -300,7 +300,26 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           if (air.finite || isDry(n) || !n.evaporation) continue;
           const f = vaporFlux(n, edge, air);
           if (n.mix) {
-            // Only water evaporates from brine; the salt stays.
+            // A volatile solute (alcohol) evaporates too, by its share (Raoult): x·saturated density, into air without it.
+            if (edge.link.params.origin?.type === 'convection') {
+              const hm = massTransferCoefficient(edge.link.params.origin.coefficient);
+              const area = edge.link.params.origin.area * (1 - n.solidFraction);
+              for (const p of liquidVolatiles(n.mix)) {
+                if (p.v.key === 'water') continue;
+                const rho = (p.v.pressure(n.temperature) * p.v.molarMass) / (8.314462618 * n.temperature);
+                const dm = Math.min(p.mass, hm * area * p.x * rho * h);
+                if (!(dm > 1e-15)) continue;
+                const carried = dm * (p.v.c * (n.temperature - ZERO_CELSIUS_IN_KELVIN) + p.v.latent);
+                n.energy -= carried;
+                setMixture(n, n.mix.water, n.mix.solutes.map((x) => ({ component: x.component, mass: x.component === p.v.key ? x.mass - dm : x.mass })).filter((x) => x.mass > 1e-12));
+                air.reservoirHeat += carried;
+                n.evaporated += dm;
+                edge.vaporEnergy += carried;
+                edge.vaporMass += dm;
+                if (trace) given[edge.a]! += carried;
+              }
+            }
+            // Water evaporates from the solution; what is dissolved and not volatile stays.
             const liquidWater = n.mix.water - n.mix.ice;
             const dm = Math.min(liquidWater, f.mass * h);
             if (!(dm > 0)) continue;
@@ -437,16 +456,32 @@ function stepMixture(n: Node, onCarried?: (energy: number) => void): void {
   const tb = mixtureBoilingPoint(n.mix!);
   if (n.temperature > tb) {
     const atBoil = mixtureEnthalpy(equilibriumAt(n.mix!.water, solutesOf(n.mix!), tb), tb);
-    const lv = n.evaporation ? latentAt(n.evaporation, tb) : 2_256_000;
-    const liquidWater = n.mix!.water - n.mix!.ice;
-    const dm = Math.max(0, Math.min(liquidWater, (n.energy - atBoil) / lv));
-    if (dm > 0) {
-      const carried = dm * (MIXTURE_CONSTANTS.CW * (tb - ZERO_CELSIUS_IN_KELVIN) + lv);
+    // Raoult: the vapour takes each volatile component by its share (alcohol goes first); the excess
+    // energy pays their latent heats, their own heat leaves with them.
+    const vapour = vapourComposition(n.mix!, tb);
+    const perMole = vapour.reduce((a, p) => a + p.y * p.v.molarMass * (p.v.key === 'water' && n.evaporation ? latentAt(n.evaporation, tb) : p.v.latent), 0);
+    const moles = perMole > 0 ? Math.max(0, (n.energy - atBoil) / perMole) : 0;
+    if (moles > 0) {
+      let carried = 0;
+      let water = n.mix!.water;
+      const solutes = n.mix!.solutes.map((s) => ({ component: s.component, mass: s.mass }));
+      let boiled = 0;
+      for (const p of vapour) {
+        const dm = Math.min(p.mass, moles * p.y * p.v.molarMass);
+        const L = p.v.key === 'water' && n.evaporation ? latentAt(n.evaporation, tb) : p.v.latent;
+        carried += dm * (p.v.c * (tb - ZERO_CELSIUS_IN_KELVIN) + L);
+        boiled += dm;
+        if (p.v.key === 'water') water -= dm;
+        else {
+          const s = solutes.find((x) => x.component === p.v.key);
+          if (s) s.mass -= dm;
+        }
+      }
       n.energy -= carried;
-      n.boiled += dm;
+      n.boiled += boiled;
       n.vapor += carried;
       onCarried?.(carried);
-      setMixture(n, n.mix!.water - dm, solutesOf(n.mix!));
+      setMixture(n, water, solutes.filter((s) => s.mass > 1e-12));
     }
   }
 }

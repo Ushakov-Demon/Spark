@@ -45,6 +45,7 @@ describe('the shelf shows only what can work together', () => {
     const water = ids(addableTo(labSetup(base).state, commands));
     expect(water).toContain('table-salt');
     expect(water).toContain('sea-water');
-    expect(water).not.toContain('ethanol'); // mixing alcohol into water is not modelled
+    expect(water).toContain('ethanol'); // alcohol mixes into water (Raoult's law for both)
+    expect(water).not.toContain('aluminium-pot' as never);
   });
 });

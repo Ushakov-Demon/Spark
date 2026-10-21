@@ -35,7 +35,11 @@ export const ETHANOL = {
     pressure: { kind: 'antoine', A: 8.04494, B: 1554.3, C: 222.65 },
     data: sv(760, 'mmHg', 'Antoine equation; value at 78.4 °C', 'single-source', 0.01, [cite('wikipedia-ethanol-data', 'Antoine constants; 760 mmHg at 78.4 °C', '°C, mmHg', 760)], 'The equation gives 762 mmHg at 78.4 °C.'),
   },
-  inWater: { solubility: 'miscible' },
+  inWater: {
+    solubility: 'miscible',
+    // Alcohol and water are far from ideal: the alcohol "wants" out of the water — the mixture boils lower than Raoult's ideal law says.
+    activityWithWater: { self: 1.6798, water: 0.9227, data: sv(1.6798, '', 'van Laar A₁₂ (ethanol) with A₂₁ = 0.9227 (water)', 'single-source', 0.01, [cite('wikipedia-van-laar', 'Table: ethanol(1)–water(2), A₁₂ = 1.6798, A₂₁ = 0.9227 (from Perry’s Chemical Engineers’ Handbook)', 'atmospheric pressure', 1.6798)], 'Fitted to measured vapour–liquid equilibrium; the azeotrope (≈ 96 % alcohol) is near the edge of what it describes.') },
+  },
   electrical: { conducts: 'insulator' },
   hazards: { flammable: true },
   description: {

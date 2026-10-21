@@ -1,7 +1,7 @@
 import { ZERO_CELSIUS_IN_KELVIN } from '../../core/units.js';
 import { molarMassOf } from '../../components/elements.js';
 import { COMPONENTS, type Component, type ComponentId, type SoluteModel } from '../../components/index.js';
-import { saturationPressure } from './evaporation.js';
+import { saturationPressure, type VaporPressureModel } from './evaporation.js';
 
 /**
  * Water with anything in it, as one body with a changing composition: a solution is not a model
@@ -83,9 +83,6 @@ export function soluteBehaviour(id: string): Behaviour | undefined {
   const c = COMPONENTS[id as ComponentId];
   const w = c?.inWater;
   if (!c || !w || w.solubility === 'immiscible') return undefined;
-  // A liquid that boils below ≈ 150 °C (alcohol, vinegar) would evaporate with the water: only water's own
-  // evaporation is computed yet, so such solutions are not offered rather than computed wrong.
-  if (c.stateAtRoom === 'liquid' && c.boiling && c.boiling.point.value < 150) return undefined;
   const main = c.stateAtRoom === 'liquid' ? c.phases.liquid : c.phases.solid;
   const molarMass = c.composition ? molarMassOf(c.composition) : undefined;
   if (!main?.specificHeat || !main.density || !molarMass) return undefined;
@@ -265,18 +262,97 @@ export function waterMoleFraction(m: MixtureAmounts): number {
   return nw <= 0 ? 0 : nw / (nw + ns);
 }
 
-/** Boiling point of the liquid part, K (Raoult's law), or Infinity if there is no liquid water. */
+/**
+ * A component that evaporates (water, alcohol, vinegar): its vapour pressure — its own equation if it
+ * has one, else the Clausius–Clapeyron law from its boiling point and latent heat — and latent heat.
+ */
+export interface Volatile {
+  readonly key: string;
+  readonly molarMass: number;
+  pressure(T: number): number;
+  readonly latent: number;
+  /** Heat capacity of the liquid, J/(kg·K) (what leaves with the vapour). */
+  readonly c: number;
+}
+const volatiles = new Map<string, Volatile | null>();
+const R = 8.314462618;
+export function volatileOf(component: string): Volatile | undefined {
+  if (volatiles.has(component)) return volatiles.get(component) ?? undefined;
+  const c = COMPONENTS[component as ComponentId];
+  let v: Volatile | null = null;
+  if (c && c.stateAtRoom === 'liquid' && c.boiling?.latentHeat && c.composition) {
+    const M = molarMassOf(c.composition);
+    const L = c.boiling.latentHeat.value;
+    const Tb = T0 + c.boiling.point.value;
+    const model: VaporPressureModel | undefined = c.vapour?.pressure;
+    v = {
+      key: component,
+      molarMass: M,
+      pressure: model ? (T) => saturationPressure(model, T) : (T) => P_ATM * Math.exp(((-L * M) / R) * (1 / T - 1 / Tb)),
+      latent: L,
+      c: c.phases.liquid?.specificHeat?.value ?? CW,
+    };
+  }
+  volatiles.set(component, v);
+  return v ?? undefined;
+}
+
+/** Water as a volatile component. */
+const WATER_VOLATILE: Volatile = { key: 'water', molarMass: M_WATER, pressure: (T) => saturationPressure({ kind: 'buck' }, T), latent: WATER.boiling!.latentHeat!.value, c: CW };
+
+/**
+ * The liquid's volatile components with their mole fractions (all dissolved particles counted): Raoult's
+ * law gives each its partial vapour pressure x·p(T).
+ */
+export function liquidVolatiles(m: MixtureAmounts): { readonly v: Volatile; readonly x: number; readonly mass: number }[] {
+  const nw = Math.max(0, m.water - m.ice) / M_WATER;
+  let n = nw;
+  const parts: { v: Volatile; moles: number; mass: number }[] = nw > 0 ? [{ v: WATER_VOLATILE, moles: nw, mass: m.water - m.ice }] : [];
+  for (const s of m.solutes) {
+    const b = soluteBehaviour(s.component);
+    if (!b) continue;
+    const dissolved = s.mass - s.crystals;
+    n += (dissolved / b.molarMass) * b.particles;
+    const v = volatileOf(s.component);
+    if (v && dissolved > 0) parts.push({ v, moles: dissolved / b.molarMass, mass: dissolved });
+  }
+  if (!(n > 0)) return [];
+  // A measured non-ideal pair with water (alcohol): van Laar activity coefficients for the two of them.
+  const gamma = new Map<string, number>();
+  for (const p of parts) {
+    const a = p.v.key === 'water' ? undefined : COMPONENTS[p.v.key as ComponentId]?.inWater?.activityWithWater;
+    if (!a || !(nw > 0)) continue;
+    const x1 = p.moles / (p.moles + nw);
+    const x2 = 1 - x1;
+    const d = a.self * x1 + a.water * x2;
+    gamma.set(p.v.key, Math.exp(a.self * ((a.water * x2) / d) ** 2));
+    gamma.set('water', Math.exp(a.water * ((a.self * x1) / d) ** 2));
+  }
+  return parts.map((p) => ({ v: p.v, x: (p.moles / n) * (gamma.get(p.v.key) ?? 1), mass: p.mass }));
+}
+
+/** Total vapour pressure over the liquid at T, Pa (Raoult's law, ideal mixing). */
+export const vapourPressure = (m: MixtureAmounts, T: number): number => liquidVolatiles(m).reduce((a, p) => a + p.x * p.v.pressure(T), 0);
+
+/** Boiling point of the liquid part, K (where the vapour pressure reaches 1 atm), or Infinity if nothing in it boils. */
 export function mixtureBoilingPoint(m: MixtureAmounts): number {
-  const x = waterMoleFraction(m);
-  if (!(x > 0)) return Infinity;
-  let lo = T0 + 90;
-  let hi = T0 + 150;
+  if (!liquidVolatiles(m).length) return Infinity;
+  let lo = T0 - 50;
+  let hi = T0 + 400;
+  if (vapourPressure(m, hi) < P_ATM) return Infinity;
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
-    if (x * saturationPressure({ kind: 'buck' }, mid) < P_ATM) lo = mid;
+    if (vapourPressure(m, mid) < P_ATM) lo = mid;
     else hi = mid;
   }
   return (lo + hi) / 2;
+}
+
+/** What boils off at T: each volatile component's share of the vapour, by moles (y = x·p / Σ x·p). */
+export function vapourComposition(m: MixtureAmounts, T: number): { readonly v: Volatile; readonly y: number; readonly mass: number }[] {
+  const parts = liquidVolatiles(m);
+  const total = parts.reduce((a, p) => a + p.x * p.v.pressure(T), 0);
+  return total > 0 ? parts.map((p) => ({ v: p.v, y: (p.x * p.v.pressure(T)) / total, mass: p.mass })) : [];
 }
 
 /** Concentration of the liquid part (mass fraction of everything dissolved). */

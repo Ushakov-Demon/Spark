@@ -813,6 +813,13 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-21',
   }),
+  'wikipedia-van-laar': source({
+    id: 'wikipedia-van-laar',
+    title: 'Wikipedia, Van Laar equation: ln γ₁ = A₁₂(A₂₁x₂/(A₁₂x₁ + A₂₁x₂))²; ethanol–water A₁₂ = 1.6798, A₂₁ = 0.9227 (Perry’s)',
+    url: 'https://en.wikipedia.org/wiki/Van_Laar_equation',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-21',
+  }),
   spark: source({
     id: 'spark',
     title: 'Spark team (original text)',

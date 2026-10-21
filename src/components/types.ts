@@ -113,6 +113,11 @@ export interface InWater {
   readonly conductivityTable?: { readonly w: readonly number[]; readonly kappa: readonly number[]; readonly data: SourcedValue };
   /** What a current does to its solution with inert electrodes (copper sulfate: copper at the cathode, oxygen at the anode). */
   readonly electrolysis?: Electrolysis;
+  /**
+   * How far its mixtures with water are from ideal (measured, for a volatile liquid): van Laar coefficients,
+   * ln γ of this component and of water at infinite dilution. Raoult's law then uses x·γ·p.
+   */
+  readonly activityWithWater?: { readonly self: number; readonly water: number; readonly data: SourcedValue };
   /** The colour its solution takes, as rgb (copper sulfate: blue); absent — colourless. */
   readonly tint?: readonly [number, number, number];
   /** Particles per formula unit in solution, if not the number of `ions` (sugar: 1). */
