@@ -54,3 +54,20 @@ describe('the blackboard', () => {
     expect(now[1]!.title).toBe('плавлення');
   });
 });
+
+describe('the blackboard: a solution weighed', () => {
+  const p: LabParams = { action: 'settle', substance: 'water', liters: 45 / SUBSTANCES.water.liquid.density.value, startTemp: 20, vessel: 'beaker', size: 0.25, material: 'glass', lid: false, roomTemp: 20 };
+  const s = createExperimentSession<LabCommand>({ initial: labSetup(p).state, simulation, commands, sampleEvery: seconds(10) });
+  s.apply({ type: 'lab.weigh', scale: 'lab-balance' });
+  s.apply({ type: 'thermal.add', into: 'sample', substance: 'table-salt', mass: 0.005, temperature: 293.15 } as never);
+  s.apply({ type: 'lab.weigh', scale: 'lab-balance' });
+  const r = s.result(false);
+  const lines = boardLines(p, [r.final], 'uk', ['lab-balance', 'lab-balance'], true, r.log);
+
+  it('writes the mass fraction of the dissolved salt: of the whole solution, not of the water', () => {
+    const w = lines.find((l) => l.id === 'fraction:sodium-chloride')!;
+    expect(w.formula).toBe('w = m(речовини) / m(розчину)');
+    expect(w.numbers).toBe('5,00 г / 50,00 г ≈ 10 %');
+    expect(lines.find((l) => l.id.startsWith('mass:'))!.title).toMatch(/^маса доданої речовини/);
+  });
+});

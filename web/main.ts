@@ -1360,6 +1360,13 @@ function renderGuide(): boolean {
   }
   // Measured out: the answer to the question (and the verdict on the prediction), here under the scene.
   if (preset.choiceTable !== 'density') {
+    // The question asked at the end: the conclusion is picked from the choices, then judged against the run.
+    if (preset.choicesAt === 'end' && preset.choices && prediction?.preset !== preset.id) {
+      const q = t().quiz;
+      const buttons = preset.choices.map((c) => `<button type="button" data-choice="${c.id}">${tr(c.label, locale)}</button>`).join('');
+      setHtml('#quiz', `<div class="quiz"><span class="quiz-title">${q.conclude}</span><div class="quiz-options">${buttons}</div></div>`);
+      return true;
+    }
     if (!presetAnswer) return (setHtml('#quiz', ''), true);
     const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>`;
     setHtml('#quiz', `<div class="guide"><span class="guide-step">${t().answerTitle}</span>${text}${renewButton()}</div>`);
@@ -1407,7 +1414,7 @@ function predictionVerdict(): string {
   const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? { uk: id, en: id }, locale);
   const q = t().quiz;
   // Chosen at the end it is the conclusion of the experiment, not a prediction.
-  if (preset.choicesAt === 'end') return prediction.choice === presetAnswer.correct ? q.concludedRight(label(prediction.choice)) : q.concludedWrong(label(prediction.choice), label(presetAnswer.correct));
+  if (preset.choicesAt === 'end') return prediction.choice === presetAnswer.correct ? q.concludedRight(label(prediction.choice)) : (preset.choiceTable === 'density' ? q.concludedWrong : q.concludedOther)(label(prediction.choice), label(presetAnswer.correct));
   return prediction.choice === presetAnswer.correct ? q.right(label(prediction.choice)) : q.wrong(label(prediction.choice), label(presetAnswer.correct));
 }
 

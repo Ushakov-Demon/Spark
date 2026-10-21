@@ -77,6 +77,7 @@ export const DENSITY_TABLE: readonly Choice[] = Object.values(SUBSTANCES)
 const THERMAL: LocalizedText = { uk: 'Теплові явища', en: 'Thermal phenomena' };
 const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
 const FUN: LocalizedText = { uk: 'Цікаві досліди', en: 'Curious experiments' };
+const SOLUTIONS: LocalizedText = { uk: 'Розчини', en: 'Solutions' };
 const MECH: LocalizedText = { uk: 'Механічні явища: густина й плавання', en: 'Mechanics: density and floating' };
 
 const room = { roomTemp: 20, lid: false } as const;
@@ -159,6 +160,30 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('fresh', 'У прісній воді', 'In fresh water'), ch('salt', 'У солоній воді', 'In salt water'), ch('same', 'Однаково', 'The same')],
     formulas: ['mechanics.buoyant-force', 'mechanics.weight'],
     quoteHas: 'Архімеда',
+    expect: 'reached',
+  },
+  // ---------------------------------------------------------------- 9 grade, solutions
+  {
+    id: 'mass-fraction',
+    grade: 9,
+    topic: SOLUTIONS,
+    title: { uk: 'Приготуй розчин із масовою часткою солі 10 %', en: 'Make a solution with 10 % salt by mass' },
+    question: {
+      uk: 'Приготуймо 50 г розчину кухонної солі, у якому сіль становить 10 % маси. У стакані вже 45 г води. Зважимо його, досиплемо 5 г солі, дочекаємося, поки розчиниться, і зважимо знову. Яка масова частка солі вийшла в розчині?',
+      en: 'Let us make 50 g of a table-salt solution in which salt is 10 % of the mass. The beaker already holds 45 g of water. We weigh it, add 5 g of salt, let it dissolve and weigh again. What mass fraction of salt does the solution have?',
+    },
+    params: { ...room, ...beaker, liters: 45 / SUBSTANCES.water.liquid.density.value, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    plan: [
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'add', substance: 'table-salt', mass: 0.005, temperature: 20 },
+      { kind: 'weigh', scale: 'lab-balance' },
+    ],
+    // 11 % is the usual slip: 5 g of salt over the 45 g of water instead of over the whole 50 g of solution.
+    choices: [ch('5', '5 %', '5 %'), ch('10', '10 %', '10 %'), ch('11', '≈ 11 %', '≈ 11 %'), ch('50', '50 %', '50 %')],
+    choicesAt: 'end',
+    formulas: [],
+    programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Виготовлення розчинів із заданою масовою часткою розчиненої речовини.' }],
     expect: 'reached',
   },
   // ---------------------------------------------------------------- 8 grade, heat

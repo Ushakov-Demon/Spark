@@ -19,6 +19,7 @@ import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
 import { isThermalBody } from '../domains/thermal/entities.js';
+import { solubilityAt } from '../domains/thermal/mixture.js';
 import { LAB_COMMANDS, type LabCommand } from './lab-knowledge.js';
 import { labGoalReached, labSetup } from './thermal-lab.js';
 
@@ -155,6 +156,27 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
           : `The block’s mass: m = m₂ − m₁ = ${g(dm, l)}. Its volume is how far the water rose: V = ${mL(dv, l)} = ${sig(dv * 1e6, 3, l)} cm³. So ρ = m/V ≈ ${sig(rho / 1000, 3, l)} g/cm³ = ${sig(rho, 3, l)} kg/m³. The nearest density in the table is ${name(guess, l).toLowerCase()} (${sig(rhoOf(guess), 4, l)} kg/m³). The block is indeed ${name(realId, l).toLowerCase()}. The cylinder reads the volume to 1 mL, so telling similar metals apart (copper and brass) needs a bigger block or a finer instrument.`,
       ),
       ...(dv > 0 && dm > 0 ? { correct: guess } : {}),
+    };
+  },
+  'mass-fraction': (run) => {
+    const m = of(run, 'mass');
+    const salt = m.length >= 2 ? m[m.length - 1]!.record.value! - m[0]!.record.value! : 0;
+    // The water poured in; of the salt, as much as 20 °C water dissolves (all of it here: 5 g against ≈ 16 g).
+    const p = run.steps[0]!.params;
+    const water = (p.liters / 1000) * SUBSTANCES[p.substance].liquid.density.value;
+    const dissolved = Math.min(salt, (solubilityAt('sodium-chloride', p.startTemp) / 100) * water);
+    const w = water + dissolved > 0 ? (dissolved / (water + dissolved)) * 100 : 0;
+    const options = [5, 10, 100 / 9, 50];
+    const nearest = options.reduce((best, x) => (Math.abs(x - w) < Math.abs(best - w) ? x : best), options[0]!);
+    const pct = (x: number, l: Locale) => `${sig(x, 3, l)} %`;
+    return {
+      say: both((l) => (l === 'uk' ? `Рівно ${pct(w, l)}!` : `Exactly ${pct(w, l)}!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `Терези показали, що досипали m(солі) = m₂ − m₁ = ${g(salt, l)}. Уся сіль розчинилася, тож маса розчину — це вода й сіль разом: m(розчину) = ${g(water, l)} + ${g(dissolved, l)} = ${g(water + dissolved, l)}. Масова частка w = m(солі) / m(розчину) = ${g(dissolved, l)} / ${g(water + dissolved, l)} ≈ ${pct(w, l)}. Поширена помилка — ділити на масу води: ${g(dissolved, l)} / ${g(water, l)} ≈ ${pct((dissolved / water) * 100, l)}. Але частка рахується від усього розчину. Щоб отримати розчин масою m із часткою w, беруть w·m речовини й (1 − w)·m води.`
+          : `The scales showed the salt added: m(salt) = m₂ − m₁ = ${g(salt, l)}. All the salt dissolved, so the solution is the water and the salt together: m(solution) = ${g(water, l)} + ${g(dissolved, l)} = ${g(water + dissolved, l)}. The mass fraction w = m(salt) / m(solution) = ${g(dissolved, l)} / ${g(water + dissolved, l)} ≈ ${pct(w, l)}. A common slip is dividing by the water: ${g(dissolved, l)} / ${g(water, l)} ≈ ${pct((dissolved / water) * 100, l)}. But the fraction is taken of the whole solution. To make a solution of mass m with a fraction w, take w·m of the substance and (1 − w)·m of water.`,
+      ),
+      ...(salt > 0 && dissolved > 0 ? { correct: nearest === 100 / 9 ? '11' : String(nearest) } : {}),
     };
   },
   'archimedes-salt': (run) => {

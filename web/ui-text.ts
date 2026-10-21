@@ -92,8 +92,13 @@ export interface UiText {
     noted: string;
     right(choice: string): string;
     wrong(choice: string, real: string): string;
+    /** The question asked at the end of a guided procedure. */
+    conclude: string;
     concludedRight(choice: string): string;
+    /** A wrong pick from the density table. */
     concludedWrong(choice: string, real: string): string;
+    /** A wrong pick of the other end questions. */
+    concludedOther(choice: string, real: string): string;
     weighAir(d: string): string;
     weighScales(div: string, d: string): string;
     weighShrink: string;
@@ -358,8 +363,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       predictTitle: 'Твій прогноз:',
       noted: 'Записав твій прогноз! Тепер натисни «Старт» — і перевіримо.',
       right: (c) => `Твій прогноз «${c}» справдився!`,
+      conclude: 'Що вийшло? Обери відповідь:',
       concludedRight: (c) => `Твоя відповідь «${c}» — правильно!`,
       concludedWrong: (c, r) => `Ти обрав «${c}», але виміряна густина найближча до «${r}». Порівняй ще раз із таблицею.`,
+      concludedOther: (c, r) => `Ти обрав «${c}», а дослід показав «${r}». Подивись на розрахунок нижче.`,
       wrong: (c, r) => `Твій прогноз: «${c}». А вийшло — «${r}». Саме для цього й роблять досліди!`,
       weighAir: (d) => `Так! Ці ${d} випарувалися: вода стала парою, і пара пішла в повітря кімнати. Речовина не зникла — вона просто вийшла з каструлі.`,
       weighScales: (div, d) => `Ні, ваги точні до ${div}, а різниця — ${d}. Спробуй ще!`,
@@ -621,8 +628,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       predictTitle: 'Your prediction:',
       noted: 'Noted your prediction! Now press “Start” — and we will check.',
       right: (c) => `Your prediction “${c}” came true!`,
+      conclude: 'What came out? Pick an answer:',
       concludedRight: (c) => `Your answer “${c}” is right!`,
       concludedWrong: (c, r) => `You chose “${c}”, but the measured density is nearest to “${r}”. Compare with the table again.`,
+      concludedOther: (c, r) => `You chose “${c}”, and the experiment showed “${r}”. See the calculation below.`,
       wrong: (c, r) => `Your prediction: “${c}”. What happened: “${r}”. That is exactly why we do experiments!`,
       weighAir: (d) => `Yes! Those ${d} evaporated: the water turned to vapour and the vapour went into the room air. The matter did not vanish — it just left the pot.`,
       weighScales: (div, d) => `No, the scales are accurate to ${div}, and the difference is ${d}. Try again!`,

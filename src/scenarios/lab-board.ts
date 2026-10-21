@@ -5,9 +5,10 @@ import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';
 import { mixtureHeatCapacity } from '../domains/thermal/mixture.js';
+import { inWaterFamily } from '../domains/thermal/dissolve.js';
 import { sig } from '../explain/format.js';
 import type { Locale } from '../knowledge/i18n.js';
-import { COMPONENTS } from '../components/index.js';
+import { COMPONENTS, type ComponentId } from '../components/index.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { liquidHeat } from '../substances/types.js';
 import { formatReading, weigh } from './weighing.js';
@@ -221,9 +222,34 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     if (w.reading !== null && w.tare !== null) {
       const g = (kg: number) => formatReading(scale, kg, locale);
       out.push({ id: 'weigh', title: uk ? 'зважування: посуд + вміст' : 'weighing: vessel + contents', formula: 'm = m₁ + m₂', numbers: `${g(w.tare)} + ${g(w.reading - w.tare)} = ${g(w.reading)}` });
+      out.push(...massFractionLines(states[states.length - 1]!, scale, locale));
     }
   }
   return out;
+}
+
+/**
+ * A solution just weighed: the mass fraction of each dissolved substance, w = m(substance) / m(solution).
+ * The solution is the water and what is dissolved in it — crystals on the bottom are not part of it.
+ */
+function massFractionLines(state: SystemState, scale: ScaleId, locale: Locale): BoardLine[] {
+  const b = sampleOf(state);
+  const mix = 'mixture' in b.state ? b.state.mixture : undefined;
+  if (!mix || !mix.solutes.length) return [];
+  const uk = locale === 'uk';
+  const dissolved = mix.solutes.map((x) => ({ component: x.component, mass: x.mass - x.crystals })).filter((x) => x.mass > 1e-7);
+  const solution = mix.water - mix.ice + dissolved.reduce((a, x) => a + x.mass, 0);
+  const g = (kg: number) => formatReading(scale, kg, locale);
+  return dissolved.map((x) => {
+    const c = COMPONENTS[x.component as ComponentId];
+    const what = c ? (uk ? (c.genitive?.uk ?? c.name.uk) : c.name.en).toLowerCase() : x.component;
+    return {
+      id: `fraction:${x.component}`,
+      title: uk ? `масова частка ${what} в розчині` : `the mass fraction of ${what} in the solution`,
+      formula: uk ? 'w = m(речовини) / m(розчину)' : 'w = m(substance) / m(solution)',
+      numbers: `${g(x.mass)} / ${g(solution)} ≈ ${sig((x.mass / solution) * 100, 3, locale)} %`,
+    };
+  });
 }
 
 /**
@@ -238,6 +264,8 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
   let lastV: { v: number; div: number; at: number } | null = null;
   let lastM: { m: number; scale: string } | null = null;
   let addedSince = { v: false, m: false };
+  // Salt or sugar poured in dissolves: what the scales add is a substance, not a body.
+  let dissolvedAdded = false;
   let body: { m?: number; v?: number } = {};
   const airByBody = new Map<string, number>();
   const count = { volume: 0, mass: 0 };
@@ -248,6 +276,7 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
     if (c.type === 'thermal.add') {
       const sub = SUBSTANCES[c['substance'] as keyof typeof SUBSTANCES];
       if (sub?.category.startsWith('solid.') || c['frozen']) addedSince = { v: true, m: true };
+      dissolvedAdded = !!sub && sub.category.startsWith('solid.') && !c['frozen'] && inWaterFamily(sub);
       return;
     }
     const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement');
@@ -269,11 +298,11 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       addedSince = { ...addedSince, v: false };
     } else if (r.quantity === 'mass') {
       const scale = r.instrument;
-      out.push({ id: `recM:${i}`, title: uk ? (addedSince.m ? 'покази терезів разом із тілом' : 'покази терезів') : addedSince.m ? 'the scales with the body' : 'the scales', formula: `m${sub(++count.mass)} = ${formatReading(scale as ScaleId, r.value, locale)}` });
+      out.push({ id: `recM:${i}`, title: uk ? (addedSince.m ? (dissolvedAdded ? 'покази терезів разом із доданою речовиною' : 'покази терезів разом із тілом') : 'покази терезів') : addedSince.m ? (dissolvedAdded ? 'the scales with the substance added' : 'the scales with the body') : 'the scales', formula: `m${sub(++count.mass)} = ${formatReading(scale as ScaleId, r.value, locale)}` });
       if (lastM && addedSince.m && lastM.scale === scale) {
         const dm = r.value - lastM.m;
         body = { ...body, m: dm };
-        out.push({ id: `mass:${i}`, title: uk ? 'маса тіла — на скільки збільшилися покази терезів' : 'the mass of the body — how much the reading grew', formula: 'm = m₂ − m₁', numbers: `${formatReading(scale as ScaleId, r.value, locale)} − ${formatReading(scale as ScaleId, lastM.m, locale)} = ${formatReading(scale as ScaleId, dm, locale)}` });
+        out.push({ id: `mass:${i}`, title: dissolvedAdded ? (uk ? 'маса доданої речовини — на скільки збільшилися покази терезів' : 'the mass of the substance added — how much the reading grew') : uk ? 'маса тіла — на скільки збільшилися покази терезів' : 'the mass of the body — how much the reading grew', formula: 'm = m₂ − m₁', numbers: `${formatReading(scale as ScaleId, r.value, locale)} − ${formatReading(scale as ScaleId, lastM.m, locale)} = ${formatReading(scale as ScaleId, dm, locale)}` });
       }
       lastM = { m: r.value, scale };
       addedSince = { ...addedSince, m: false };
