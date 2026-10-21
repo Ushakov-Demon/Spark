@@ -1,5 +1,5 @@
 import type { Component } from './types.js';
-import { cite, sv } from './sourced.js';
+import { cite, estimate, sv } from './sourced.js';
 
 /** Iron(II) hydroxide: what an iron anode in salt water turns into — a greenish sludge that browns in air. */
 export const IRON_II_HYDROXIDE = {
@@ -16,6 +16,7 @@ export const IRON_II_HYDROXIDE = {
   phases: {
     solid: {
       density: sv(3400, 'kg/m³', 'solid', 'single-source', 0.02, [cite('wikipedia-iron-ii-hydroxide', 'Infobox: density 3.4 g/cm³', 'solid', 3400)], 'Only the Wikipedia infobox checked so far.'),
+      specificHeat: estimate(900, 'J/(kg·K)', 'solid, room temperature', 700, 1100, 'No table checked yet: metal hydroxides hold ≈ 0.7–1.1 kJ/(kg·K). Matters only when the sludge is heated.'),
     },
   },
   inWater: { solubility: sv(0.000143, 'g/100 g water', '1.43·10⁻³ g/L', 'single-source', 0.05, [cite('wikipedia-iron-ii-hydroxide', 'Solubility 1.43·10⁻³ g/L (Ksp 8.0·10⁻¹⁶)', 'not stated', 0.000143)], 'Practically insoluble: it falls out as a sludge.') },

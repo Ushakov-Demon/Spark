@@ -792,6 +792,20 @@ export const SOURCES = {
     retrieved: '2026-10-21',
     caveats: 'Only the titles and aims of the required practicals are quoted.',
   }),
+  'wikipedia-stearic-acid': source({
+    id: 'wikipedia-stearic-acid',
+    title: 'Wikipedia, Stearic acid (chembox)',
+    url: 'https://en.wikipedia.org/wiki/Stearic_acid',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-21',
+  }),
+  'nist-stearic-acid': source({
+    id: 'nist-stearic-acid',
+    title: 'NIST Chemistry WebBook, Octadecanoic acid: phase change data (ΔfusH) and condensed phase heat capacity',
+    url: 'https://webbook.nist.gov/cgi/cbook.cgi?ID=C57114&Mask=4',
+    license: 'facts-only',
+    retrieved: '2026-10-21',
+  }),
   spark: source({
     id: 'spark',
     title: 'Spark team (original text)',

@@ -20,6 +20,7 @@ import { OXYGEN } from './oxygen.js';
 import { PORCELAIN } from './porcelain.js';
 import { SODIUM_BICARBONATE } from './sodium-bicarbonate.js';
 import { SODIUM_CHLORIDE } from './sodium-chloride.js';
+import { STEARIC_ACID } from './stearic-acid.js';
 import { STEEL } from './steel.js';
 import { SUCROSE } from './sucrose.js';
 import { SUNFLOWER_OIL } from './sunflower-oil.js';
@@ -60,6 +61,7 @@ const LIST = {
   glass: GLASS,
   brick: BRICK,
   porcelain: PORCELAIN,
+  'stearic-acid': STEARIC_ACID,
   graphite: GRAPHITE,
   'iron-ii-hydroxide': IRON_II_HYDROXIDE,
   wood: WOOD,

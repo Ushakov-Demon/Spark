@@ -1,5 +1,5 @@
 import type { Component } from './types.js';
-import { sv } from './sourced.js';
+import { cite, sv } from './sourced.js';
 
 /** Graphite: the electrodes of school electrolysis — they conduct but do not react. */
 export const GRAPHITE = {
@@ -16,6 +16,7 @@ export const GRAPHITE = {
   phases: {
     solid: {
       density: sv(2160, 'kg/m³', 'not stated', 'single-source', 0.04, [{ source: 'wikipedia-graphite', locator: 'Infobox: density 2.09–2.23 g/cm³', conditions: 'not stated', range: [2090, 2230] }], 'The middle of the range: graphites differ.'),
+      specificHeat: sv(710, 'J/(kg·K)', 'solid, 25 °C', 'single-source', 0.01, [cite('wikipedia-specific-heat', 'Graphite (carbon): 0.710 J/(g·K)', '25 °C', 710)], 'Only one table checked so far.'),
     },
   },
   electrical: {

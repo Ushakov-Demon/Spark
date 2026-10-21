@@ -10,6 +10,8 @@ export const FREEZE: Operation = {
   uses: 'cooler',
   direction: 'cooling',
   speed: 600,
+  // A melt sets too (tin, stearic acid): a solid that was melted can be the sample.
+  solids: true,
   accepts: (sub) => sub.freezing !== undefined,
   startTemp: () => 20,
   reached: (b) => (b.state.solidFraction ?? 0) >= 1,

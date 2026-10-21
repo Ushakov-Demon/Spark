@@ -14,6 +14,7 @@ export const CALCIUM_CARBONATE = {
   phases: {
     solid: {
       density: sv(2711, 'kg/m³', 'calcite', 'cross-checked', 0.01, [cite('wikipedia-calcium-carbonate', 'Chembox: density 2.711 g/cm³ (calcite)', '—', 2711), cite('wikidata', 'Q23767 P2054', '20 °C', 2700)]),
+      specificHeat: sv(880, 'J/(kg·K)', 'marble (calcium carbonate rock)', 'single-source', 0.05, [cite('wikipedia-specific-heat', 'Marble, mica: 0.880 J/(g·K)', 'not stated', 880)], 'Taken for marble, which is calcium carbonate like chalk; a table of CaCO₃ itself is not checked yet.'),
     },
   },
   inWater: {

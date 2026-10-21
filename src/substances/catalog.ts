@@ -26,6 +26,9 @@ const CATEGORY: Partial<Record<ComponentGroup, SubstanceCategory>> = {
   acid: 'liquid.acid',
   oil: 'liquid.oil',
   salt: 'solid.salt',
+  // Chalk, iron(II) hydroxide: on the shelf with the salts ("Солі й мінерали").
+  mineral: 'solid.salt',
+  sugar: 'solid.material',
   // Metal blocks: put into a liquid (heated in boiling water), or melted themselves in a crucible.
   metal: 'solid.metal',
   alloy: 'solid.metal',
@@ -145,6 +148,15 @@ const SHELF = [
   { id: 'steel', component: 'steel' },
   { id: 'brass', component: 'brass' },
   { id: 'tin', component: 'tin' },
+  { id: 'stearic-acid', component: 'stearic-acid' },
+  { id: 'sugar', component: 'sucrose' },
+  { id: 'baking-soda', component: 'sodium-bicarbonate' },
+  { id: 'copper-sulfate', component: 'copper-sulfate' },
+  { id: 'chalk', component: 'calcium-carbonate' },
+  { id: 'iron-ii-hydroxide', component: 'iron-ii-hydroxide' },
+  { id: 'graphite', component: 'graphite' },
+  { id: 'porcelain', component: 'porcelain' },
+  { id: 'brick', component: 'brick' },
   { id: 'wood', component: 'wood', as: { name: { uk: 'Дерев’яний брусок (сосна)', en: 'Wooden block (pine)' }, gender: 'm' } },
   { id: 'glass', component: 'glass', as: { name: { uk: 'Скляна кулька', en: 'Glass marble' }, gender: 'f', bodyShape: 'ball' } },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];

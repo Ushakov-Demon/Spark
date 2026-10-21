@@ -1,5 +1,5 @@
 import type { Component } from './types.js';
-import { cite, sv } from './sourced.js';
+import { cite, estimate, sv } from './sourced.js';
 
 /** Blue crystals of copper(II) sulfate pentahydrate (CuSO₄·5H₂O). */
 export const COPPER_SULFATE = {
@@ -15,6 +15,7 @@ export const COPPER_SULFATE = {
   phases: {
     solid: {
       density: sv(2286, 'kg/m³', 'pentahydrate', 'single-source', 0.01, [cite('wikipedia-copper-sulfate', 'Chembox: density 2.286 g/cm³ (pentahydrate)', '—', 2286)], 'Second source not checked yet.'),
+      specificHeat: estimate(1100, 'J/(kg·K)', 'pentahydrate, room temperature', 950, 1300, 'No table checked yet: hydrated salts hold ≈ 1.0–1.3 kJ/(kg·K) (their water of crystallisation counts). Matters only when heated dry.'),
     },
   },
   decomposes: {

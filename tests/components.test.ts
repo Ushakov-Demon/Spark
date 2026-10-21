@@ -129,3 +129,13 @@ describe('recipes and the shelf are built from components', () => {
     expect(SUBSTANCES.water.boiling!.latentHeat).toBe(COMPONENTS.water.boiling!.latentHeat);
   });
 });
+
+describe('everything in the library is on the shelf (sandbox)', () => {
+  it('every solid or liquid component is a shelf substance; gases only appear as products', () => {
+    const onShelf = new Set(Object.values(SUBSTANCES).map((s) => s.component).filter(Boolean));
+    for (const c of all) {
+      if (c.stateAtRoom === 'gas') continue;
+      expect(onShelf.has(c.id), `${c.id} is not on the shelf`).toBe(true);
+    }
+  });
+});

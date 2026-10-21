@@ -10,6 +10,7 @@ export const BRICK = {
   stateAtRoom: 'solid',
   phases: {
     solid: {
+      density: { value: 1700, unit: 'kg/m³', conditions: 'building brick, outer leaf', verification: 'single-source', tolerance: 0.15, citations: [{ source: 'wikipedia-thermal-conductivity', locator: 'Brick, outer leaf (UK 2016, 1700 kg/m³)', conditions: '293–298 K', value: 1700 }], note: 'Bricks vary (≈ 1600–2000 kg/m³); the density the conductivity row is given for.' },
       specificHeat: {
         value: 840,
         unit: 'J/(kg·K)',
