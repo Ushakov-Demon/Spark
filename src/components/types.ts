@@ -109,6 +109,10 @@ export interface InWater {
   readonly ions?: readonly string[];
   /** Solubility by temperature, g per 100 g of water (the general solution model interpolates it). */
   readonly solubilityTable?: { readonly t: readonly number[]; readonly gPer100g: readonly number[]; readonly data: SourcedValue };
+  /** Measured conductivity of its solutions at 20 °C: mass fraction w (of this component) → κ, S/m. */
+  readonly conductivityTable?: { readonly w: readonly number[]; readonly kappa: readonly number[]; readonly data: SourcedValue };
+  /** What a current does to its solution with inert electrodes (copper sulfate: copper at the cathode, oxygen at the anode). */
+  readonly electrolysis?: Electrolysis;
   /** The colour its solution takes, as rgb (copper sulfate: blue); absent — colourless. */
   readonly tint?: readonly [number, number, number];
   /** Particles per formula unit in solution, if not the number of `ions` (sugar: 1). */

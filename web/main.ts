@@ -1045,7 +1045,7 @@ function sceneView(): SceneView {
   const s = b?.state.solidFraction ?? 0;
   // What the cell does now (a steel anode dissolves: no chlorine, no gas at it).
   const cellNow = sup && electrolysis ? cellReaction(electrolysis, sup.params.electrodes?.material) : undefined;
-  const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: cellNow?.anode.component === 'chlorine', electrodes: (sup.params.electrodes?.material === 'steel' ? 'steel' : 'graphite') as 'steel' | 'graphite', anodeGas: !cellNow?.anode.dissolves } : undefined;
+  const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: cellNow?.anode.component === 'chlorine', electrodes: (sup.params.electrodes?.material === 'steel' ? 'steel' : 'graphite') as 'steel' | 'graphite', anodeGas: !cellNow?.anode.dissolves, cathodeGas: cellNow ? COMPONENTS[cellNow.cathode.component]?.stateAtRoom === 'gas' : true, ...((sup.state.made?.['copper'] ?? 0) > 1e-5 ? { cathodeCoat: '#c46b3c' } : {}) } : undefined;
   // A sludge the current made (grams of every solid product, the anode's and a metal piece's).
   const sludgeGrams = sup ? Object.entries(sup.state.made ?? {}).reduce((a, [k, n]) => {
     const c = (k.includes('|') ? k.split('|')[1] : k) as ComponentId;

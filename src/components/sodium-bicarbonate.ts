@@ -26,6 +26,11 @@ export const SODIUM_BICARBONATE = {
   inWater: {
     solubility: sv(9.6, 'g/100 mL water', '20 °C', 'single-source', 0.01, [cite('wikipedia-sodium-bicarbonate', 'Chembox: 96 g/L at 20 °C', '20 °C', 9.6)], 'Wikidata has no solubility value for it; Second source not checked yet.'),
     ions: ['Na⁺', 'HCO₃⁻'],
+    conductivityTable: {
+      w: [0, 0.005, 0.01, 0.02, 0.05],
+      kappa: [0, 0.42, 0.82, 1.5, 3.14],
+      data: sv(0.82, 'S/m', '1 % NaHCO₃, 20 °C', 'single-source', 0.01, [cite('crc-electrical-conductivity', 'Sodium hydrogen carbonate row: 4.2, 8.2, 15.0, 31.4 mS/cm at 0.5–5 %', '20 °C', 0.82)], 'One table, up to 5 %; above it the model keeps the last value.'),
+    },
     solubilityTable: {
       t: [0, 10, 20, 30, 40, 60],
       gPer100g: [7, 8.1, 9.6, 11.1, 12.7, 16],

@@ -352,6 +352,19 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'related', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
     expect: 'reached',
   },
+  {
+    id: 'copper-sulfate-electrolysis',
+    grade: 8,
+    topic: ELECTRIC,
+    title: { uk: 'Що з’явиться на катоді?', en: 'What appears on the cathode?' },
+    question: { uk: 'Розчини мідний купорос у воді й пропусти струм через графітові електроди. Що з’явиться на катоді (електроді «−»)?', en: 'Dissolve copper sulfate in water and pass a current through graphite electrodes. What appears on the cathode (the “−” electrode)?' },
+    params: { ...room, ...beaker, liters: 0.15, action: 'pass-current', substance: 'water', startTemp: 20, supply: { id: 'bench-supply', knob: 0.2, electrodes: 'graphite' }, duration: 10 },
+    setup: [{ kind: 'add', substance: 'copper-sulfate', mass: 0.015, temperature: 20, label: { uk: 'Мідний купорос', en: 'Copper sulfate' } }],
+    choices: [ch('copper', 'Шар міді', 'A layer of copper'), ch('hydrogen', 'Бульбашки водню', 'Bubbles of hydrogen'), ch('chlorine', 'Хлор', 'Chlorine')],
+    formulas: ['electrical.faraday-moles'],
+    programs: [{ program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
+    expect: 'reached',
+  },
   // ---------------------------------------------------------------- for everyone
   {
     id: 'oil-does-not-boil',

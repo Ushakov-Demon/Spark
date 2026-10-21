@@ -407,6 +407,22 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'copper-sulfate-electrolysis': ({ steps }) => {
+    const s = steps[steps.length - 1]!;
+    const sup = (st: SystemState) => Object.values(st.entities).find(isSupply);
+    const made = (k: string) => (sup(s.result.final)?.state.made?.[k] ?? 0) - (sup(s.result.initial)?.state.made?.[k] ?? 0);
+    const cu = made('copper') * 0.063546 * 1000;
+    const o2 = (made('oxygen') * GAS_CONSTANT * temp(s.result.initial)) / 101_325;
+    return {
+      ...(cu > 0 ? { correct: 'copper' } : made('hydrogen') > 0 ? { correct: 'hydrogen' } : {}),
+      say: both((l) => (l === 'uk' ? 'Катод став мідним!' : 'The cathode turned copper-coloured!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `На катоді осіло ${sig(cu, 2, l)} г міді: йони Cu²⁺ забирають електрони й стають металом (Cu²⁺ + 2e⁻ → Cu). Водню там немає — мідь відновлюється легше за воду (0,34 В проти −0,83 В). На аноді виділилося ≈ ${sig(o2 * 1e6, 2, l)} мл кисню, а в розчині лишається сульфатна кислота. Так очищують мідь і вкривають предмети шаром металу — гальванотехніка.`
+          : `${sig(cu, 2, l)} g of copper settled on the cathode: Cu²⁺ ions take electrons and become metal (Cu²⁺ + 2e⁻ → Cu). No hydrogen there — copper is reduced more easily than water (0.34 V against −0.83 V). About ${sig(o2 * 1e6, 2, l)} mL of oxygen formed at the anode, and sulfuric acid stays in the solution. This is how copper is refined and objects are plated — electroplating.`,
+      ),
+    };
+  },
   electrolysis: ({ steps }) => {
     const s = steps[0]!;
     const { charge, time } = current(s);

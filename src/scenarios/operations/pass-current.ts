@@ -125,7 +125,13 @@ function electrolysisLines(supply: Supply, before: Supply | undefined, sample: T
         : `The anode (made of ${name(material, false)}) dissolved: ${g(metal, made(k))} of ${name(metal)} went into solution (${formula} → ${ion} + ${z}e⁻).${liquidAnode ? ` No ${name(liquidAnode.component, false)} formed: the metal is oxidised more easily (E° = ${V(E)} against ${V(liquidAnode.potential?.value ?? 0)}).` : ''}`,
     );
   }
-  const sludges = Object.keys(now).filter((k) => !k.includes('|') && !k.startsWith('-') && COMPONENTS[k as ComponentId]?.stateAtRoom === 'solid' && made(k) > 1e-9);
+  // A metal that settles on the cathode (copper from copper sulfate) is a coating, not a sludge.
+  const isMetal = (c: string) => COMPONENTS[c as ComponentId]?.group === 'metal';
+  for (const k of Object.keys(now).filter((x) => !x.includes('|') && !x.startsWith('-') && isMetal(x) && made(x) > 1e-9)) {
+    const ion = COMPONENTS[k as ComponentId]?.formula ?? '';
+    out.push(uk ? `На катоді осіла ${name(k, false)}: ${g(k, made(k))} (${ion}²⁺ + 2e⁻ → ${ion}) — катод вкрився шаром металу.` : `${name(k, false).replace(/^./, (x) => x.toUpperCase())} settled on the cathode: ${g(k, made(k))} (${ion}²⁺ + 2e⁻ → ${ion}) — the cathode is coated with metal.`);
+  }
+  const sludges = Object.keys(now).filter((k) => !k.includes('|') && !k.startsWith('-') && !isMetal(k) && COMPONENTS[k as ComponentId]?.stateAtRoom === 'solid' && made(k) > 1e-9);
   for (const c of sludges) out.push(sludgeLine(c, g(c, made(c)), locale));
   // Metal lying in the liquid: a bipolar electrode.
   const pieceIds = [...new Set(Object.keys(now).filter((k) => k.includes('|')).map((k) => k.split('|')[0]!))];

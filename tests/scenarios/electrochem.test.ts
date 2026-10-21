@@ -65,4 +65,18 @@ describe('electrolysis decided from the components', () => {
     expect(sup.state.delivered).toBeGreaterThan(0);
     expect(sup.state.chemical).toBeGreaterThan(0);
   });
+
+  it('copper sulfate with graphite: copper settles on the cathode (Faraday), oxygen at the anode, no hydrogen', () => {
+    const supply = { id: 'bench-supply', knob: 0.2, electrodes: 'graphite' } as const;
+    const base: LabParams = { substance: 'water', liters: 0.15, startTemp: 20, roomTemp: 20, lid: false, vessel: 'beaker', size: 0.25, material: 'glass', action: 'pass-current', duration: 10, supply };
+    const out = runProtocol({ simulation, commands, sampleEvery: seconds(10), base, steps: [
+      { kind: 'add', substance: 'copper-sulfate', mass: 0.015, temperature: 20 },
+      { kind: 'operation', action: 'pass-current', supply, duration: 10 },
+    ] });
+    const sup = Object.values(out[1]!.result.final.entities).find(isSupply)!;
+    const made = sup.state.made!;
+    expect(made['hydrogen']).toBeUndefined();
+    expect(made['copper']).toBeCloseTo(sup.state.charge / (2 * FARADAY), 8);
+    expect(made['oxygen']).toBeCloseTo(sup.state.charge / (4 * FARADAY), 8);
+  });
 });

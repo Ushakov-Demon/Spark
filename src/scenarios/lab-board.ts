@@ -4,6 +4,7 @@ import { tr } from '../knowledge/i18n.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';
+import { mixtureHeatCapacity } from '../domains/thermal/mixture.js';
 import { sig } from '../explain/format.js';
 import type { Locale } from '../knowledge/i18n.js';
 import { COMPONENTS } from '../components/index.js';
@@ -89,13 +90,16 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
         });
       }
     } else {
-      const c = ph === 'solid' ? (b.state.mixture ? COMPONENTS.water.phases.solid?.specificHeat?.value : sub.freezing?.solidSpecificHeat.value) : liquidHeat(sub).value;
+      // A solution warms as all its components together: its own specific heat (water and what is dissolved in it).
+      const mixC = b.state.mixture && b.state.mixture.solutes.length && bodyMass(b) > 0 ? mixtureHeatCapacity(b.state.mixture) / bodyMass(b) : undefined;
+      const c = ph === 'solid' ? (b.state.mixture ? COMPONENTS.water.phases.solid?.specificHeat?.value : sub.freezing?.solidSpecificHeat.value) : (mixC ?? liquidHeat(sub).value);
       // Heat flow only: a jump at the moment something was poured in (mixing) is not warming.
       let dT = 0;
       for (let j = Math.max(1, start); j < i; j++) dT += jumpless(j);
       const m = bodyMass(b);
       if (c && Math.abs(dT) >= 0.05) {
-        const what = ph === 'solid' ? iceName : name;
+        // A solution by its own name ("розчину мідного купоросу"), not the water it was made from.
+        const what = ph === 'solid' ? iceName : b.state.mixture?.solutes.length && b.label ? `${uk ? 'розчину' : 'the solution'}${b.label.uk.startsWith('Розчин ') ? (uk ? b.label.uk.slice(6) : '') : ''}` : name;
         out.push({
           id,
           title: dT > 0 ? (uk ? `нагрівання ${what}` : `warming the ${what}`) : uk ? `охолодження ${what}` : `cooling the ${what}`,
