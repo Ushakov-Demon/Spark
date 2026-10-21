@@ -1304,12 +1304,27 @@ function predictionVerdict(): string {
 let boardCache: { at: number; key: string; lines: ReturnType<typeof boardLines> } | null = null;
 /** Bumped by whatever changes the step without time passing (a weighing, salt added, a new step). */
 let boardEpoch = 0;
+/** The steps already done stay on the board: each new step adds its lines below theirs (a new experiment wipes it). */
+let pastCache: { key: string; lines: ReturnType<typeof boardLines> } | null = null;
+function pastBoard(): ReturnType<typeof boardLines> {
+  const key = `${locale}|${history.length}|${history[0]?.result.initial.time ?? ''}`;
+  if (pastCache?.key === key) return pastCache.lines;
+  const lines = history.flatMap((h, i) => boardLines(h.params, [...h.result.samples, h.result.final], locale, weighingsOf(h.result.log).map((w) => w.scale), true, h.result.log).map((l) => stepLine(l, h.params, i)));
+  pastCache = { key, lines };
+  return lines;
+}
+/** A line of step `i`: its own id; when the steps differ only in the lid, its title says which. */
+function stepLine(l: ReturnType<typeof boardLines>[number], p: LabParams, i: number): ReturnType<typeof boardLines>[number] {
+  const lids = new Set([...history.map((h) => !!h.params.lid), !!params.lid]);
+  const u = t();
+  return { ...l, id: `${i}:${l.id}`, title: lids.size > 1 ? `${l.title},${p.lid ? u.withLid : u.withoutLid}` : l.title };
+}
 function boardNow(): ReturnType<typeof boardLines> {
   const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}`;
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
-  const lines = boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished, r.log);
+  const lines = [...pastBoard(), ...boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished, r.log).map((l) => stepLine(l, stepP, history.length))];
   boardCache = { at: now, key, lines };
   return lines;
 }

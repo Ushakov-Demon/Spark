@@ -111,7 +111,7 @@ export function createScene(): Scene {
   const boardEmpty = board.querySelector<HTMLElement>('.board-empty')!;
   /** Lines on the board by id: a new one is written in chalk once, then only its numbers change. */
   const written = new Map<string, HTMLElement>();
-  const BOARD_ROWS = 8;
+  const BOARD_ROWS = 12;
   const boardToggle = root.querySelector<HTMLButtonElement>('.board-toggle')!;
   let boardLabels = { front: '', back: '' };
   const setToggle = () => {
