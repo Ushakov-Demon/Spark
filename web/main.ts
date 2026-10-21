@@ -1042,7 +1042,8 @@ function sceneView(): SceneView {
   const evaporating = Math.max(0, (T - 45) / 60);
   const vesselBody = session.state.entities[entityId(LAB_VESSEL_ID)];
   // Salt poured in dry is white grains; a metal its own colour; molten — shiny, glowing when red-hot.
-  const dry = isDrySample(sub)
+  // (Dry salt with water poured on it is brine now: a liquid again.)
+  const dry = isDrySample(sub) && !mix
     ? { solid: sub.category === 'solid.salt' ? 'rgba(246, 246, 242, 0.97)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), melt: incandescent(T) ?? (sub.category === 'solid.salt' ? 'rgba(235, 240, 245, 0.9)' : '#d9dde2') }
     : undefined;
   return {

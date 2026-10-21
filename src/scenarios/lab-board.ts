@@ -50,6 +50,8 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
   const uk = locale === 'uk';
   const sub = SUBSTANCES[p.substance];
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
+  // Δt to a tenth of a degree (as a thermometer reads): rounded to whole degrees the product would not match (864 · 0,1 · 30 ≠ 2 620).
+  const dt = (x: number) => sig(Math.round(Math.abs(x) * 10) / 10, 6, locale);
   const kJ = (j: number) => (Math.abs(j) >= 1e4 ? `${n(j / 1000)} ${uk ? 'кДж' : 'kJ'}` : `${n(j)} ${uk ? 'Дж' : 'J'}`);
   const out: BoardLine[] = [];
   if (!states.length) return out;
@@ -98,7 +100,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
           id,
           title: dT > 0 ? (uk ? `нагрівання ${what}` : `warming the ${what}`) : uk ? `охолодження ${what}` : `cooling the ${what}`,
           formula: 'Q = c·m·Δt',
-          ...(over ? { numbers: `${n(c)} · ${n(m)} · ${n(Math.abs(dT), 2)} ≈ ${kJ(c * m * Math.abs(dT))}` } : {}),
+          ...(over ? { numbers: `${n(c)} · ${n(m)} · ${dt(dT)} ≈ ${kJ(c * m * Math.abs(dT))}` } : {}),
         });
       }
     }
@@ -148,7 +150,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
       id: `piece:${piece.id}`,
       title: `${name} — ${dT < 0 ? (uk ? 'охолодження' : 'cooling') : uk ? 'нагрівання' : 'warming'}`,
       formula: 'Q = c·m·Δt',
-      ...(finished ? { numbers: `${n(c)} · ${n(m)} · ${n(Math.abs(dT), 3)} ≈ ${kJ(q)}` } : {}),
+      ...(finished ? { numbers: `${n(c)} · ${n(m)} · ${dt(dT)} ≈ ${kJ(q)}` } : {}),
     });
   }
   if (finished && pieces.length && phaseOf(sampleBody) === 'liquid' && phaseOf(bodies[0]!) === 'liquid') {

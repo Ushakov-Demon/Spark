@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createExperimentSession, createSimulation, seconds, squareMeters } from '../../src/core/index.js';
 import { createElectricalSolver } from '../../src/domains/electrical/index.js';
 import { createThermalSolver, radiationExcess } from '../../src/domains/thermal/index.js';
-import { LAB_COMMANDS, labGoalReached, labSetup, labStatus, sampleOf, stallFixes, type LabCommand, type LabParams } from '../../src/scenarios/index.js';
+import { LAB_COMMANDS, labGoalReached, labSetup, labStatus, runProtocol, sampleOf, stallFixes, type LabCommand, type LabParams } from '../../src/scenarios/index.js';
 import { SUBSTANCES } from '../../src/substances/index.js';
 
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: seconds(2) });
@@ -73,5 +73,22 @@ describe('heating dry solids', () => {
     expect(status.kind).toBe('stalls');
     const wall = r.final.entities['vessel' as never] as unknown as { state: { temperature: number } };
     expect(wall.state.temperature - 273.15).toBeLessThan(300);
+  });
+
+  it('water poured onto dry salt dissolves it: brine that conducts', () => {
+    const base: LabParams = { ...grams('table-salt', 100), vessel: 'pot', size: 1, material: 'steel', action: 'heat-to', target: 50, heater: { id: 'electric-hotplate', rating: 2000, knob: 1 } };
+    const out = runProtocol({ simulation, commands, sampleEvery: seconds(10), base, steps: [
+      { kind: 'operation', action: 'heat-to', target: 50, heater: { id: 'electric-hotplate', rating: 2000, knob: 1 } },
+      { kind: 'add', substance: 'water', mass: 0.1, temperature: 20 },
+      { kind: 'operation', action: 'pass-current', supply: { id: 'bench-supply', knob: 0.4 }, duration: 10 },
+    ] });
+    const mix = sampleOf(out[1]!.result.final).state.mixture!;
+    // ≈ 36 g dissolve in 100 g of water at room temperature; the rest stays as crystals.
+    expect(mix.salt - mix.crystals).toBeGreaterThan(0.034);
+    expect(mix.salt - mix.crystals).toBeLessThan(0.038);
+    // Heat balance of 100 g salt at ≈ 50 °C and 100 g water at 20 °C: ≈ 25 °C.
+    expect(sampleOf(out[1]!.result.final).state.temperature - 273.15).toBeCloseTo(25.3, 0);
+    const supply = Object.values(out[2]!.result.final.entities).find((e) => e.kind === 'electrical.supply') as unknown as { state: { current: number } };
+    expect(supply.state.current).toBeGreaterThan(1);
   });
 });

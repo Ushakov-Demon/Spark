@@ -10,7 +10,7 @@ import { equilibriumTemperature } from './formulas.js';
 import { ENERGY_REFERENCE_TEMPERATURE } from './solver.js';
 import { bodyEnergy, bodyMass, mixtureBody, thermalBody } from './entities.js';
 import { decodeMixture, equilibriumAt, mixtureEnthalpy } from './mixture.js';
-import { convectionLink } from './links.js';
+import { convectionLink, wallLink } from './links.js';
 import { CONVECTION } from './materials.js';
 import { decodeEnthalpy, specificEnthalpy } from './phase.js';
 import { substanceThermal } from './substance.js';
@@ -155,6 +155,38 @@ export const add: CommandHandler<AddCommand> = {
     // changes, and everything else (freezing, boiling, crystals) follows from it.
     const isWater = (s: SubstanceItem) => s.id === 'water' || s.mixture !== undefined;
     const targetMix = 'mixture' in target.state ? target.state.mixture : undefined;
+    // Water poured onto dry salt: the salt dissolves (as much as the water takes; the rest stays as crystals) — brine.
+    if (!c.frozen && isWater(sub) && (sub.mixture?.saltFraction ?? 0) < 1 && !targetMix && targetSub.mixture && targetSub.category.startsWith('solid.')) {
+      const w = sub.mixture?.saltFraction ?? 0;
+      const T = target.state.temperature;
+      const added = equilibriumAt(c.mass * (1 - w), c.mass * w, c.temperature);
+      const externalMix = mixtureEnthalpy(added, c.temperature);
+      // The dry salt at its temperature, in the terms of the water + salt model (its own reference differs: re-expressed, not heated).
+      const saltNow = mixtureEnthalpy(equilibriumAt(0, bodyMass(target), T), T);
+      const water = added.water;
+      const salt = bodyMass(target) + added.salt;
+      const energy = saltNow + externalMix;
+      const d = decodeMixture(energy, water, salt);
+      const evaporation = substanceThermal(SUBSTANCES.water).evaporation;
+      const base = mixtureBody({
+        id: target.id,
+        label: { uk: 'Розчин солі', en: 'Salt solution' },
+        water,
+        salt,
+        temperature: kelvin(d.temperature),
+        substance: 'water',
+        ...(evaporation ? { evaporation } : {}),
+      });
+      const next: ThermalBody = { ...base, transform: target.transform, state: { temperature: kelvin(d.temperature), mixture: d.amounts, solidFraction: water > 0 ? d.amounts.ice / water : 0 } };
+      // The wall now touches a liquid, not grains: still water instead of dry contact.
+      const connections = state.connections.map((x) => {
+        const o = (x.params as { origin?: { type?: string; dataRef?: string } }).origin;
+        if (x.b.entity !== target.id || o?.type !== 'wall' || o.dataRef !== 'dryContact') return x;
+        const w0 = o as unknown as { conductivity: number; thickness: number; material: string; area: number };
+        return wallLink({ id: x.id, a: x.a.entity, b: x.b.entity, conductivity: w0.conductivity as never, thickness: w0.thickness as never, material: w0.material, coefficient: CONVECTION.stillWater.value, area: w0.area as never, dataRef: 'stillWater' });
+      });
+      return ok({ state: { ...withEntities(state, [next]), connections }, kind: 'matter', externalEnergy: energy - bodyEnergy(target), trace: [] });
+    }
     if (!c.frozen && isWater(sub) && (targetMix || targetSub.id === 'water') && (targetMix || sub.mixture)) {
       const w = sub.mixture?.saltFraction ?? 0;
       const added = equilibriumAt(c.mass * (1 - w), c.mass * w, c.temperature);

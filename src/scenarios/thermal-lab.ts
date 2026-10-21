@@ -267,9 +267,12 @@ const HEATED_TO: Readonly<Record<Gender, string>> = { f: 'нагрілася д�
 function subject(p: LabParams, locale: Locale, now?: SystemState): { text: string; gender: Gender } {
   const sub = SUBSTANCES[p.substance];
   // Salt was added during the experiment: it is a solution now.
-  const salted = now !== undefined && !sub.mixture && sampleOf(now).state.mixture !== undefined;
+  // (Dry salt with water poured on it is salt water too.)
+  const salted = now !== undefined && (!sub.mixture || sub.category.startsWith('solid.')) && sampleOf(now).state.mixture !== undefined;
   const vessel = VESSELS[p.vessel];
-  const amount = sub.melt || sub.category.startsWith('solid.')
+  const amount = salted && sub.category.startsWith('solid.')
+    ? `${sig(bodyMass(sampleOf(now!)) * 1000, 3, locale)} ${locale === 'uk' ? 'г' : 'g'}` // the salt and the water poured on it
+    : sub.melt || sub.category.startsWith('solid.')
     ? `${sig(p.liters * sub.liquid.density.value, 3, locale)} ${locale === 'uk' ? 'г' : 'g'}`
     : p.liters < 1 ? `${Math.round(p.liters * 1000)} ${locale === 'uk' ? 'мл' : 'mL'}` : `${sig(p.liters, 3, locale)} ${locale === 'uk' ? 'л' : 'L'}`;
   let name = salted ? (locale === 'uk' ? 'Вода з сіллю' : 'Salt water') : tr(sub.name, locale);
