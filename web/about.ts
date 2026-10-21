@@ -5,7 +5,7 @@
  */
 import type { Locale } from '../src/knowledge/i18n.js';
 
-export const DEVELOPER = { name: 'Baza Developers', url: 'https://bazadevelopers.com/' } as const;
+export const DEVELOPER = { name: 'Baza Developers', url: 'https://bazadevelopers.com/', company: 'Baza Production' } as const;
 /** Where reports go: a new issue in the project's repository (the user needs a GitHub account). */
 export const REPORT_URL = 'https://github.com/Ushakov-Demon/Spark/issues/new';
 
@@ -45,6 +45,9 @@ export function aboutHtml(l: Locale): string {
       <h3>How it works</h3>
       <p>Every experiment is computed by a model of the phenomena themselves (today: heat flow, phase changes, dissolving, electric current) — not drawn from a script. Every number comes with its source (press “i” next to an item); values we could only estimate are marked “estimate”. The model is simplified — for example, a body has one temperature throughout — so results are approximate, though they follow the same laws as reality.</p>
 
+      <h3>Free, for everyone, for good</h3>
+      <p>Spark is a social project. Everything in it is free and will stay free: no paid features, materials or options, no limits, no advertising. Nobody here will ever ask a student for money.</p>
+
       <h3>Spark is growing</h3>
       <p>What is here now is a start: heat (heating, melting, boiling, heat balance), density and floating, electric current in liquids. Every new topic is built the same way — from sourced data and the laws behind it — and the lab keeps growing: chemistry and new branches of physics are next, along with new substances, instruments and ready-made experiments for more grades. The experiments you see are examples of what the lab can do, not its limits.</p>
 
@@ -61,7 +64,7 @@ export function aboutHtml(l: Locale): string {
       <p>Spark has no sign-up, no advertising and no analytics, and collects no personal data. Your settings (language, level, voice, sound) and saved experiments are kept only in your browser and disappear when you clear the site’s data. The newspaper loads articles from Wikipedia, Wikidata and Wikimedia, so your browser contacts their servers. The Professor’s voice uses your browser’s voices; some browsers process speech on their own servers. A mistake report is sent by you yourself and contains only what you see in it.</p>
 
       <h3>Developer</h3>
-      <p>Spark is developed by ${dev}. A non-commercial project.</p>
+      <p>Spark is developed by ${dev}, the technical department of the Slovak company ${esc(DEVELOPER.company)}. A non-commercial social project.</p>
     </article>`;
   }
   return `<article class="about">
@@ -83,6 +86,9 @@ export function aboutHtml(l: Locale): string {
     <h3>Як це працює</h3>
     <p>Кожен дослід рахує модель самих явищ (сьогодні це теплообмін, плавлення й кипіння, розчинення, електричний струм), а не заздалегідь написаний сценарій. Кожне число має джерело (натисни «i» біля предмета); те, що вдалося лише оцінити, позначено «оцінка». Модель спрощена — наприклад, у кожного тіла одна температура на все тіло, — тож результати наближені, хоча підкоряються тим самим законам, що й у житті.</p>
 
+    <h3>Безкоштовно, для всіх, назавжди</h3>
+    <p>Spark — соціальний проєкт. Усе в ньому безкоштовне й таким залишиться: жодних платних функцій, матеріалів чи можливостей, жодних обмежень і реклами. Ніхто тут ніколи не проситиме в учня грошей.</p>
+
     <h3>Spark росте</h3>
     <p>Те, що є зараз, — лише початок: теплові явища (нагрівання, плавлення, кипіння, тепловий баланс), густина й плавання, електричний струм у рідинах. Кожна нова тема будується так само — з даних із джерелами й законів, що за ними стоять, — і лабораторія росте далі: попереду хімія й нові розділи фізики, нові речовини, прилади й готові досліди для інших класів. Досліди, які ти бачиш, — приклади того, що вміє лабораторія, а не її межі.</p>
 
@@ -99,7 +105,7 @@ export function aboutHtml(l: Locale): string {
     <p>У Spark немає реєстрації, реклами й аналітики; персональних даних ми не збираємо. Налаштування (мова, рівень, голос, звук) і збережені досліди зберігаються лише у твоєму браузері й зникають, якщо очистити дані сайту. «Науковий вісник» завантажує статті з Вікіпедії, Wikidata та Wikimedia — для цього браузер звертається до їхніх серверів. Голос Професора — це голоси твого браузера; деякі браузери обробляють мовлення на своїх серверах. Повідомлення про помилку надсилаєш ти сам, і в ньому лише те, що ти бачиш.</p>
 
     <h3>Розробник</h3>
-    <p>Spark розробляє компанія ${dev}. Некомерційний проєкт.</p>
+    <p>Spark розробляє ${dev} — технічний відділ словацької компанії ${esc(DEVELOPER.company)}. Некомерційний соціальний проєкт.</p>
   </article>`;
 }
 
