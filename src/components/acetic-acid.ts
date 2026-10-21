@@ -10,6 +10,7 @@ export const ACETIC_ACID = {
   kind: 'compound',
   group: 'acid',
   name: { uk: 'Оцтова кислота', en: 'Acetic acid' },
+  genitive: { uk: 'оцтової кислоти', en: 'acetic acid' },
   gender: 'f',
   formula: 'CH₃COOH',
   composition: { C: 2, H: 4, O: 2 },

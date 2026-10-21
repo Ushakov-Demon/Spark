@@ -84,7 +84,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
         const m = Math.abs(dm);
         out.push({
           id,
-          title: dm > 0 ? (uk ? `кристалізація${over ? `: замерзло ${n(m * 1000)} г` : ''}` : `freezing${over ? `: ${n(m * 1000)} g froze` : ''}`) : uk ? `плавлення${over ? `: ${sub.melt ? 'розплавилося' : 'розтануло'} ${n(m * 1000)} г` : ''}` : `melting${over ? `: ${n(m * 1000)} g melted` : ''}`,
+          title: dm > 0 ? (uk ? `кристалізація${over ? `: ${sub.melt ? 'затверділо' : 'замерзло'} ${n(m * 1000)} г` : ''}` : `freezing${over ? `: ${n(m * 1000)} g froze` : ''}`) : uk ? `плавлення${over ? `: ${sub.melt ? 'розплавилося' : 'розтануло'} ${n(m * 1000)} г` : ''}` : `melting${over ? `: ${n(m * 1000)} g melted` : ''}`,
           formula: 'Q = λ·m',
           ...(over ? { numbers: `${n(lambda)} · ${n(m)} ≈ ${kJ(lambda * m)}` } : {}),
         });

@@ -48,6 +48,12 @@ export const FREEZE: Operation = {
     future: { uk: 'повністю замерзне', en: 'freeze completely' },
     negative: { uk: 'замерзне', en: 'freeze' },
   },
+  // A melt (tin, stearic acid) sets — it does not "freeze".
+  verbsMolten: {
+    past: { uk: { f: 'повністю затверділа', m: 'повністю затвердів', n: 'повністю затверділо' }, en: 'set completely' },
+    future: { uk: 'повністю затвердіє', en: 'set completely' },
+    negative: { uk: 'затвердіє', en: 'set' },
+  },
   // Brine above the eutectic: part of it freezes, a salty pocket stays liquid.
   impossibleHeadline(b, subject, locale) {
     const s = b.state.solidFraction ?? 0;

@@ -7,6 +7,7 @@ export const GLYCEROL = {
   kind: 'compound',
   group: 'alcohol',
   name: { uk: 'Гліцерин', en: 'Glycerol' },
+  genitive: { uk: 'гліцерину', en: 'glycerol' },
   gender: 'm',
   formula: 'C₃H₈O₃',
   composition: { C: 3, H: 8, O: 3 },

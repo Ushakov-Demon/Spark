@@ -347,8 +347,8 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
     const lost = -(split.shares.find((s) => s.entity === SAMPLE_ID)?.energy ?? 0);
     if (lost > 0) {
       return uk
-        ? `Для цього ${lowerFirst(tr(sub.name, locale))} віддала навколишньому ${formatQuantity(lost, 'J', { locale, level: 'school' })} теплоти${op.heatGivenNote ? op.heatGivenNote.uk : ''}.`
-        : `To do so it gave ${formatQuantity(lost, 'J', { locale, level: 'school' })} of heat to its surroundings${op.heatGivenNote ? op.heatGivenNote.en : ''}.`;
+        ? `Для цього ${lowerFirst(tr(sub.name, locale))} віддала навколишньому ${formatQuantity(lost, 'J', { locale, level: 'school' })} теплоти${op.heatGivenNote ? (sub.melt ? op.heatGivenNote.uk.replace('замерзання', 'кристалізації') : op.heatGivenNote.uk) : ''}.`
+        : `To do so it gave ${formatQuantity(lost, 'J', { locale, level: 'school' })} of heat to its surroundings${op.heatGivenNote ? (sub.melt ? op.heatGivenNote.en.replace('freezing', 'crystallisation') : op.heatGivenNote.en) : ''}.`;
     }
     return null;
   };

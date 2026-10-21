@@ -6,6 +6,7 @@ export const ETHANOL = {
   kind: 'compound',
   group: 'alcohol',
   name: { uk: 'Спирт (етанол)', en: 'Alcohol (ethanol)' },
+  genitive: { uk: 'спирту', en: 'alcohol' },
   gender: 'm',
   formula: 'C₂H₅OH',
   composition: { C: 2, H: 6, O: 1 },

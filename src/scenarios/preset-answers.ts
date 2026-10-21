@@ -54,6 +54,7 @@ const A = (amps: number, l: Locale) =>
 const Q = (v: number, unit: string, l: Locale) => formatQuantity(v, unit, { locale: l, level: 'school' });
 const reachedAt = (s: Step) => (s.status.kind === 'reached' || s.status.kind === 'decomposes' ? s.status.at : s.result.final.time - s.result.initial.time);
 const temp = (st: SystemState) => sampleOf(st).state.temperature;
+const bodyMassOf = (st: SystemState) => { const b = sampleOf(st); return 'mixture' in b.state && b.state.mixture ? b.state.mixture.water + b.state.mixture.salt : b.params.mass; };
 const LF_KJ = COMPONENTS.water.melting!.latentHeat!.value / 1000;
 const CW = COMPONENTS.water.phases.liquid!.specificHeat!.value;
 
@@ -283,6 +284,39 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         l === 'uk'
           ? `Поки олово плавилося, термометр приблизно ${D(p, l)} показував ${sig(tm, 4, l)} °C — температура стояла на місці, хоч спиртівка гріла весь час. Уся теплота йшла на руйнування кристалічної ґратки: ${sig(lf, 3, l)} кДж на кожен кілограм (питома теплота плавлення олова). На графіку нагрівання це «полиця»; лише коли розплавився останній шматочок, температура знову пішла вгору.`
           : `While the tin was melting, the thermometer showed ${sig(tm, 4, l)} °C for about ${D(p, l)} — the temperature stood still although the lamp kept heating. All the heat went into breaking the crystal lattice: ${sig(lf, 3, l)} kJ for every kilogram (the latent heat of fusion of tin). On the heating graph it is a flat “shelf”; only after the last bit melted did the temperature rise again.`,
+      ),
+    };
+  },
+  'stearic-cooling': ({ steps }) => {
+    const s = steps[steps.length - 1]!;
+    const p = plateau(s);
+    const tm = COMPONENTS['stearic-acid'].melting!.point.value;
+    return {
+      ...(p > 30 ? { correct: 'stays' } : {}),
+      say: both((l) => (l === 'uk' ? 'Бачиш «полицю» на графіку охолодження?' : 'See the flat “shelf” on the cooling curve?')),
+      text: both((l) =>
+        l === 'uk'
+          ? `Поки розплав твердне, термометр приблизно ${D(p, l)} показує ≈ ${sig(tm, 3, l)} °C: стеаринова кислота віддає повітрю приховану теплоту кристалізації, і її температура не падає. Лише коли все затверділо, вона знову холоне. За «полицею» на графіку охолодження визначають температуру плавлення речовини.`
+          : `While the melt sets, the thermometer shows ≈ ${sig(tm, 3, l)} °C for about ${D(p, l)}: stearic acid gives its latent heat of crystallisation to the air, so its temperature does not fall. Only when it has all set does it cool again. The “shelf” on a cooling curve tells the melting point of a substance.`,
+      ),
+    };
+  },
+  'specific-heat-water': ({ steps }) => {
+    const s = steps[0]!;
+    const t = reachedAt(s);
+    const P = 500;
+    const m = bodyMassOf(s.result.initial);
+    const dT = temp(s.result.final) - temp(s.result.initial);
+    const c = (P * t) / (m * dT);
+    const table = CW;
+    const extra = Math.round((c / table - 1) * 100);
+    return {
+      correct: Math.abs(c - table) / table < 0.01 ? 'table' : c > table ? 'more' : 'less',
+      say: both((l) => (l === 'uk' ? `Вийшло ≈ ${sig(c, 3, l)} Дж/(кг·°C)!` : `It came out ≈ ${sig(c, 3, l)} J/(kg·°C)!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `Кип’ятильник за ${D(t, l)} віддав E = P·t = ${sig(P * t / 1000, 3, l)} кДж, вода (${sig(m * 1000, 3, l)} г) нагрілася на ${sig(dT, 3, l)} °C. Тож c = P·t / (m·Δt) ≈ ${sig(c, 3, l)} Дж/(кг·°C) — на ${extra} % більше за табличні ${sig(table, 4, l)}. Чому більше: частина теплоти пішла не у воду, а на нагрівання склянки, кип’ятильника й повітря, а ми порахували так, ніби вся дісталася воді. Що менші втрати, то ближче до таблиці.`
+          : `In ${D(t, l)} the heater gave E = P·t = ${sig(P * t / 1000, 3, l)} kJ, and the water (${sig(m * 1000, 3, l)} g) warmed by ${sig(dT, 3, l)} °C. So c = P·t / (m·Δt) ≈ ${sig(c, 3, l)} J/(kg·°C) — ${extra} % more than the table's ${sig(table, 4, l)}. Why more: part of the heat went not into the water but into the glass, the heater and the air, yet we counted it as if all of it went into the water. The smaller the losses, the closer to the table.`,
       ),
     };
   },
