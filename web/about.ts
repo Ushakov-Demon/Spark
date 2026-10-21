@@ -28,7 +28,7 @@ export function aboutHtml(l: Locale): string {
   if (l === 'en') {
     return `<article class="about">
       <h2>Spark — a virtual science lab</h2>
-      <p class="about-lead">Heat and freeze, melt and dissolve, weigh, pass a current — and see what happens and why, with real numbers and formulas.</p>
+      <p class="about-lead">An experiment you can do here — and see what happens and why, with real numbers and formulas. For now you can heat and freeze, melt and dissolve, weigh, pass a current. This is only the beginning.</p>
       <div class="about-warning" role="note"><strong>⚠ ${esc(SAFETY_LINE.en)}</strong> Do not repeat them on your own: real experiments only under the supervision of a teacher, in a laboratory, with protective equipment and safety rules.</div>
 
       <h3>Who it is for</h3>
@@ -39,11 +39,14 @@ export function aboutHtml(l: Locale): string {
         <li>To make the natural sciences popular among young people.</li>
         <li>To help get over the fear of physics and chemistry (“it is hard”, “it is not for me”) — through easy, clear examples in a playful form.</li>
         <li>To help learn the school curriculum (the ready-made experiments follow the Ukrainian programme by grade) — and to go beyond it.</li>
-        <li>To let everyone use instruments and substances most schools and homes do not have: a muffle furnace, laboratory balances, a power supply, a calorimeter.</li>
+        <li>To let everyone use instruments and substances most schools and homes do not have — for example, a muffle furnace, laboratory balances, a power supply, a calorimeter.</li>
       </ul>
 
       <h3>How it works</h3>
-      <p>Every experiment is computed by a physical model: heat flows, phase changes, dissolving, electric current. Every number comes with its source (press “i” next to an item); values we could only estimate are marked “estimate”. The model is simplified — for example, a body has one temperature throughout — so results are approximate, though they follow the same laws as reality.</p>
+      <p>Every experiment is computed by a model of the phenomena themselves (today: heat flow, phase changes, dissolving, electric current) — not drawn from a script. Every number comes with its source (press “i” next to an item); values we could only estimate are marked “estimate”. The model is simplified — for example, a body has one temperature throughout — so results are approximate, though they follow the same laws as reality.</p>
+
+      <h3>Spark is growing</h3>
+      <p>What is here now is a start: heat (heating, melting, boiling, heat balance), density and floating, electric current in liquids. Every new topic is built the same way — from sourced data and the laws behind it — and the lab keeps growing: chemistry and new branches of physics are next, along with new substances, instruments and ready-made experiments for more grades. The experiments you see are examples of what the lab can do, not its limits.</p>
 
       <h3>Safety</h3>
       <p>Spark is a virtual laboratory. Many of its experiments are dangerous in reality: burns from boiling water, hot oil and molten metal, electric shock, poisonous gases (chlorine in electrolysis), fire. In the lab you can do what must never be done at home. <strong>Never use mains voltage (230 V)</strong>, never heat flammable liquids over an open flame, never point a heated test tube at anyone.</p>
@@ -63,7 +66,7 @@ export function aboutHtml(l: Locale): string {
   }
   return `<article class="about">
     <h2>Spark — віртуальна лабораторія природничих наук</h2>
-    <p class="about-lead">Нагрівай і заморожуй, плав і розчиняй, зважуй, пропускай струм — і дивись, що відбувається і чому, зі справжніми числами й формулами.</p>
+    <p class="about-lead">Тут можна поставити дослід і побачити, що відбувається і чому, — зі справжніми числами й формулами. Поки що можна нагрівати й заморожувати, плавити й розчиняти, зважувати, пропускати струм. Це лише початок.</p>
     <div class="about-warning" role="note"><strong>⚠ ${esc(SAFETY_LINE.uk)}</strong> Не повторюй їх самостійно: справжні досліди — лише під наглядом учителя, у лабораторії, із засобами захисту й за правилами техніки безпеки.</div>
 
     <h3>Для кого</h3>
@@ -74,11 +77,14 @@ export function aboutHtml(l: Locale): string {
       <li>Популяризувати природничі науки серед молоді.</li>
       <li>Допомогти подолати страх перед фізикою й хімією («це складно», «це не для мене») — на легких, зрозумілих прикладах в ігровій формі.</li>
       <li>Допомогти засвоїти шкільну програму (готові досліди відповідають програмі за класами) — і вийти за її межі.</li>
-      <li>Дати кожному змогу працювати з приладами й речовинами, яких немає в більшості шкіл і вдома: муфельна піч, лабораторні ваги, блок живлення, калориметр.</li>
+      <li>Дати кожному змогу працювати з приладами й речовинами, яких немає в більшості шкіл і вдома, — наприклад, з муфельною піччю, лабораторними вагами, блоком живлення, калориметром.</li>
     </ul>
 
     <h3>Як це працює</h3>
-    <p>Кожен дослід рахує фізична модель: теплообмін, плавлення й кипіння, розчинення, електричний струм. Кожне число має джерело (натисни «i» біля предмета); те, що вдалося лише оцінити, позначено «оцінка». Модель спрощена — наприклад, у кожного тіла одна температура на все тіло, — тож результати наближені, хоча підкоряються тим самим законам, що й у житті.</p>
+    <p>Кожен дослід рахує модель самих явищ (сьогодні це теплообмін, плавлення й кипіння, розчинення, електричний струм), а не заздалегідь написаний сценарій. Кожне число має джерело (натисни «i» біля предмета); те, що вдалося лише оцінити, позначено «оцінка». Модель спрощена — наприклад, у кожного тіла одна температура на все тіло, — тож результати наближені, хоча підкоряються тим самим законам, що й у житті.</p>
+
+    <h3>Spark росте</h3>
+    <p>Те, що є зараз, — лише початок: теплові явища (нагрівання, плавлення, кипіння, тепловий баланс), густина й плавання, електричний струм у рідинах. Кожна нова тема будується так само — з даних із джерелами й законів, що за ними стоять, — і лабораторія росте далі: попереду хімія й нові розділи фізики, нові речовини, прилади й готові досліди для інших класів. Досліди, які ти бачиш, — приклади того, що вміє лабораторія, а не її межі.</p>
 
     <h3>Безпека</h3>
     <p>Spark — віртуальна лабораторія. Багато її дослідів у реальності небезпечні: опіки окропом, розпеченою олією й розплавленим металом, ураження струмом, отруйні гази (хлор під час електролізу), пожежа. У лабораторії можна те, чого ніколи не можна робити вдома. <strong>Ніколи не використовуй мережеву напругу 230 В</strong>, не грій горючі рідини на відкритому вогні, не спрямовуй нагріту пробірку на людей.</p>
