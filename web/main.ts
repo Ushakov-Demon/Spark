@@ -1912,6 +1912,8 @@ function buildShelf() {
     'substance',
     u.substance,
     tr(sub.name, locale),
+    // What the substance is (and what is only an estimate about it), in words, first; then the cards with their numbers.
+    el('div', { className: 'item-detail item-about' }, ...describe(sub)),
     ...familyShelf(
       'substance',
       // Everything in the catalog, by family. A liquid is poured into the vessel as the sample (before
@@ -1945,7 +1947,6 @@ function buildShelf() {
           ),
       })),
       [
-        ...describe(sub),
         ...(started
           ? [el('p', { className: 'muted small' }, u.lockedDuringExperiment)]
           : [
