@@ -46,5 +46,5 @@ export const SUCROSE = {
     },
   },
   media: [],
-  modelNotes: [{ uk: 'Розчинення цукру рушій поки не розраховує: для цього потрібна крива розчинності, яку ще треба перевірити за джерелами.', en: 'The engine does not compute dissolving sugar yet: it needs a solubility curve still to be checked against sources.' }],
+  modelNotes: [{ uk: 'Теплоту розчинення ще не перевірено за джерелами, тому в моделі розчинення не змінює температуру.', en: 'The enthalpy of solution is not checked against sources yet, so in the model dissolving does not change the temperature.' }],
 } as const satisfies Component;

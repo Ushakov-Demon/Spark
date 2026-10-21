@@ -209,6 +209,32 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Вирощування кристалів.' }],
     expect: 'reached',
   },
+  {
+    id: 'heat-of-solution',
+    grade: 9,
+    topic: SOLUTIONS,
+    title: { uk: 'Грілка чи охолоджувач?', en: 'A heater or a cooler?' },
+    question: {
+      uk: 'У стакан зі 100 мл води кімнатної температури розчинимо 20 г амоній хлориду, а в інший такий самий стакан — 10 г натрій гідроксиду. Стежимо за термометром. Як зміниться температура розчинів?',
+      en: 'Into a beaker of 100 mL of water at room temperature we dissolve 20 g of ammonium chloride, and into another such beaker 10 g of sodium hydroxide. We watch the thermometer. How will the temperature of the solutions change?',
+    },
+    params: { ...room, ...beaker, liters: 0.1, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    plan: [
+      { kind: 'add', substance: 'ammonium-chloride', mass: 0.02, temperature: 20 },
+      { kind: 'operation', action: 'settle', speed: 10, label: { uk: 'Помішати й дивитися на термометр', en: 'Stir and watch the thermometer' } },
+      { kind: 'fresh', label: { uk: 'Взяти другий стакан зі 100 мл води', en: 'Take a second beaker with 100 mL of water' } },
+      { kind: 'add', substance: 'caustic-soda', mass: 0.01, temperature: 20 },
+      { kind: 'operation', action: 'settle', speed: 10, label: { uk: 'Помішати й дивитися на термометр', en: 'Stir and watch the thermometer' } },
+    ],
+    choices: [ch('both-cold', 'Обидва охолонуть', 'Both will cool down'), ch('cold-hot', 'Перший охолоне, другий нагріється', 'The first cools, the second warms up'), ch('both-hot', 'Обидва нагріються', 'Both will warm up'), ch('same', 'Не зміниться', 'It will not change')],
+    formulas: [],
+    programs: [
+      { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Дослідження виділення або поглинання теплоти розчину під час розчинення.' },
+      { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'related', quote: 'Моделювання: виготовлення хімічних обігрівачів або охолоджувачів для побутового застосування з використанням процесів розчинення / кристалізації.' },
+    ],
+    expect: 'reached',
+  },
   // ---------------------------------------------------------------- 8 grade, heat
   {
     id: 'boil-a-litre',

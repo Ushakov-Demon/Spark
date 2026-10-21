@@ -86,8 +86,9 @@ describe('heating dry solids', () => {
     // ≈ 36 g dissolve in 100 g of water at room temperature; the rest stays as crystals.
     expect(mix.salt - mix.crystals).toBeGreaterThan(0.034);
     expect(mix.salt - mix.crystals).toBeLessThan(0.038);
-    // Heat balance of 100 g salt at ≈ 50 °C and 100 g water at 20 °C: ≈ 25 °C.
-    expect(sampleOf(out[1]!.result.final).state.temperature - 273.15).toBeCloseTo(25.3, 0);
+    // Heat balance of 100 g salt at ≈ 50 °C and 100 g water at 20 °C: ≈ 25 °C — and the 36 g that dissolve take
+    // 3.88 kJ/mol (≈ 66 J/g, CRC) from it: ≈ 2.4 kJ out of ≈ 0.5 kJ/K, so ≈ 4.7 °C colder.
+    expect(sampleOf(out[1]!.result.final).state.temperature - 273.15).toBeCloseTo(20.5, 0);
     const supply = Object.values(out[2]!.result.final.entities).find((e) => e.kind === 'electrical.supply') as unknown as { state: { current: number } };
     expect(supply.state.current).toBeGreaterThan(1);
   });

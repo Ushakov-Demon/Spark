@@ -72,6 +72,8 @@ interface Behaviour {
   readonly c: number;
   /** Density as it is at room temperature, kg/m³ (for volumes of solutions without measured data). */
   readonly density: number;
+  /** Enthalpy of solution per kilogram dissolved, J/kg (0 — not counted). */
+  readonly hSolution: number;
 }
 
 const behaviours = new Map<string, Behaviour>();
@@ -108,6 +110,7 @@ export function soluteBehaviour(id: string): Behaviour | undefined {
     molarMass,
     c: main.specificHeat.value,
     density: main.density.value,
+    hSolution: w.enthalpyOfSolution ? (w.enthalpyOfSolution.value * 1000) / molarMass : 0,
   };
   behaviours.set(id, b);
   return b;
@@ -141,7 +144,11 @@ const measuredSingle = (solutes: readonly { component: string }[]): SoluteModel 
 export function mixtureEnthalpy(m: MixtureAmounts, temperature: number): number {
   const t = temperature - T0;
   let h = (m.water - m.ice) * CW * t + m.ice * (-LF + CI * t);
-  for (const s of m.solutes) h += s.mass * (soluteBehaviour(s.component)?.c ?? CW) * t;
+  for (const s of m.solutes) {
+    const b = soluteBehaviour(s.component);
+    // The dissolved part holds its enthalpy of solution as well: dissolving takes it from the solution (or gives it), crystallising gives it back.
+    h += s.mass * (b?.c ?? CW) * t + (s.mass - s.crystals) * (b?.hSolution ?? 0);
+  }
   return h;
 }
 

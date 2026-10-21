@@ -8,7 +8,7 @@ import { mixtureHeatCapacity } from '../domains/thermal/mixture.js';
 import { inWaterFamily } from '../domains/thermal/dissolve.js';
 import { sig } from '../explain/format.js';
 import type { Locale } from '../knowledge/i18n.js';
-import { COMPONENTS, type ComponentId } from '../components/index.js';
+import { COMPONENTS, molarMass, type ComponentId } from '../components/index.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { liquidHeat } from '../substances/types.js';
 import { formatReading, weigh } from './weighing.js';
@@ -213,6 +213,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
   }
 
   out.push(...measuredLines(log, locale));
+  out.push(...dissolvingHeatLines(log, states[states.length - 1]!, locale));
 
   // The latest weighing: what the scales show is the vessel plus what is in it.
   // Only while it is the latest thing done: after that the contents may have changed.
@@ -224,6 +225,41 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
       out.push({ id: 'weigh', title: uk ? 'зважування: посуд + вміст' : 'weighing: vessel + contents', formula: 'm = m₁ + m₂', numbers: `${g(w.tare)} + ${g(w.reading - w.tare)} = ${g(w.reading)}` });
       out.push(...massFractionLines(states[states.length - 1]!, scale, locale));
     }
+  }
+  return out;
+}
+
+/**
+ * A substance poured in dissolved: the heat it took in or gave off, Q = n·ΔH (the enthalpy of solution of
+ * its component, CRC), for what of it is dissolved now.
+ */
+function dissolvingHeatLines(log: readonly ExperimentLogEntry<{ type: string }>[], state: SystemState, locale: Locale): BoardLine[] {
+  const uk = locale === 'uk';
+  const b = sampleOf(state);
+  const mix = 'mixture' in b.state ? b.state.mixture : undefined;
+  if (!mix) return [];
+  const out: BoardLine[] = [];
+  const seen = new Set<string>();
+  for (const e of log) {
+    if (!e.ok || e.command.type !== 'thermal.add') continue;
+    const id = SUBSTANCES[(e.command as unknown as { substance: SubstanceId }).substance]?.component as ComponentId | undefined;
+    const c = id ? COMPONENTS[id] : undefined;
+    const h = c?.inWater?.enthalpyOfSolution;
+    const solute = mix.solutes.find((x) => x.component === id);
+    if (!c || !h || !solute || seen.has(id!)) continue;
+    seen.add(id!);
+    const M = molarMass(c);
+    const n = M ? (solute.mass - solute.crystals) / M : 0;
+    if (n <= 0) continue;
+    const q = n * Math.abs(h.value);
+    const what = (uk ? (c.genitive?.uk ?? c.name.uk) : c.name.en).toLowerCase();
+    const s = (x: number, d = 3) => sig(x, d, locale);
+    out.push({
+      id: `dissolve-heat:${id}`,
+      title: uk ? `розчинення ${what}: теплоту ${h.value > 0 ? 'поглинуто' : 'виділено'}` : `dissolving ${what}: heat ${h.value > 0 ? 'taken in' : 'given off'}`,
+      formula: 'Q = n·ΔH',
+      numbers: `${s(n)} ${uk ? 'моль' : 'mol'} · ${s(Math.abs(h.value), 4)} ${uk ? 'кДж/моль' : 'kJ/mol'} ≈ ${s(q, 2)} ${uk ? 'кДж' : 'kJ'}`,
+    });
   }
   return out;
 }

@@ -357,6 +357,20 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-11',
   }),
+  'wikipedia-ammonium-chloride': source({
+    id: 'wikipedia-ammonium-chloride',
+    title: 'Wikipedia, Ammonium chloride (chembox): M 53.49 g/mol, ρ 1.519 g/cm³, decomposes at 337.6 °C at 1 atm, solubility 294 g/L (0 °C), 383.0 g/L (25 °C), Cp 84.1 J/(mol·K), GHS H302, H319',
+    url: 'https://en.wikipedia.org/wiki/Ammonium_chloride',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-21',
+  }),
+  'wikipedia-sodium-hydroxide': source({
+    id: 'wikipedia-sodium-hydroxide',
+    title: 'Wikipedia, Sodium hydroxide (chembox): M 39.997 g/mol, ρ 2.13 g/cm³, mp 323 °C, bp 1388 °C, solubility 418 g/L (0 °C), 1000 g/L (25 °C), Cp 59.5 J/(mol·K), GHS Danger H290, H302, H314; dissolving is highly exothermic',
+    url: 'https://en.wikipedia.org/wiki/Sodium_hydroxide',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-21',
+  }),
   'wikipedia-acetic-acid': source({
     id: 'wikipedia-acetic-acid',
     title: 'Wikipedia, Acetic acid (chembox): ρ 1.049 g/cm³ (liquid), mp 289–290 K, bp 391–392 K, miscible with water, Cp 123.1 J/(K·mol), pKa 4.756, GHS danger',
@@ -405,6 +419,13 @@ export const SOURCES = {
     url: 'https://webbook.nist.gov/cgi/cbook.cgi?ID=C64197&Mask=6',
     license: 'facts-only',
     retrieved: '2026-10-11',
+  }),
+  'crc-enthalpy-of-solution': source({
+    id: 'crc-enthalpy-of-solution',
+    title: 'CRC Handbook, Enthalpy of Solution of Electrolytes (molar enthalpy of solution at infinite dilution, 25 °C, kJ/mol): NaCl 3.88, NH4Cl 14.78, NaOH −44.51, CH3COOH −1.51; ref. Parker, V. B., Thermal Properties of Uni-Univalent Electrolytes, NSRDS-NBS 2, 1965',
+    url: 'https://diverdi.colostate.edu/all_courses/CRC%20reference%20data/enthalpies%20of%20solution%20of%20electrolytes.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-21',
   }),
   'crc-electrical-conductivity': source({
     id: 'crc-electrical-conductivity',

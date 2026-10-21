@@ -147,7 +147,7 @@ export const SODIUM_CHLORIDE = {
     latentHeat: sv(520_000, 'J/kg', 'at the melting point', 'single-source', 0.02, [cite('wikipedia-sodium-chloride-data', 'ΔfusH 30.39 kJ/mol (0.52 kJ/g)', '—', 520_000)], 'Other tables give ≈ 28 kJ/mol (≈ 480 kJ/kg); not checked yet — the melt would take ≈ 8 % less heat.'),
   },
   boiling: { point: sv(1465, '°C', '1 atm', 'single-source', 0.01, [cite('wikidata', 'Q2314 P2102', '101.325 kPa', 1465)], 'Wikidata also lists 1413 °C without conditions.') },
-  inWater: { solubility: NACL_SOLUBILITY.data, model: NACL_SOLUTE, ions: ['Na⁺', 'Cl⁻'] },
+  inWater: { solubility: NACL_SOLUBILITY.data, model: NACL_SOLUTE, ions: ['Na⁺', 'Cl⁻'], enthalpyOfSolution: sv(3.88, 'kJ/mol', 'infinite dilution, 25 °C', 'single-source', 0.01, [cite('crc-enthalpy-of-solution', 'NaCl (c): 3.88 kJ/mol', '25 °C', 3.88)], 'At infinite dilution; the model uses it at any concentration — an approximation.') },
   electrical: { conducts: 'ions-in-solution' },
   magnetic: 'diamagnetic',
   description: {

@@ -51,5 +51,5 @@ export const SODIUM_BICARBONATE = {
   },
   safety: { school: { uk: 'Подразнює очі — не допускай потрапляння в очі.', en: 'Irritates the eyes — keep it out of your eyes.' } },
   media: [],
-  modelNotes: [{ uk: 'Хімічні реакції (сода + оцет) рушій поки не розраховує.', en: 'The engine does not compute chemical reactions (soda + vinegar) yet.' }],
+  modelNotes: [{ uk: 'Хімічні реакції (сода + оцет) рушій поки не розраховує.', en: 'The engine does not compute chemical reactions (soda + vinegar) yet.' }, { uk: 'Теплоту розчинення ще не перевірено за джерелами, тому в моделі розчинення не змінює температуру.', en: 'The enthalpy of solution is not checked against sources yet, so in the model dissolving does not change the temperature.' }],
 } as const satisfies Component;

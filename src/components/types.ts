@@ -122,6 +122,12 @@ export interface InWater {
   readonly tint?: readonly [number, number, number];
   /** Particles per formula unit in solution, if not the number of `ions` (sugar: 1). */
   readonly particles?: number;
+  /**
+   * Enthalpy of solution, kJ/mol (at infinite dilution, 25 °C): heat taken in (+, the solution cools — ammonium
+   * chloride) or given off (−, it warms — sodium hydroxide) when it dissolves; given back when it crystallises.
+   * Absent — not counted (no checked value yet).
+   */
+  readonly enthalpyOfSolution?: SourcedValue;
 }
 
 /** A liquid that other substances dissolve in (water): the constants of its colligative laws. */

@@ -64,4 +64,5 @@ export const COPPER_SULFATE = {
   },
   safety: { school: { uk: 'Шкідливий, якщо проковтнути, подразнює очі й шкіру. Працюй у рукавичках і мий руки.', en: 'Harmful if swallowed, irritates eyes and skin. Wear gloves and wash your hands.' } },
   media: [],
+  modelNotes: [{ uk: 'Теплоту розчинення ще не перевірено за джерелами, тому в моделі розчинення не змінює температуру.', en: 'The enthalpy of solution is not checked against sources yet, so in the model dissolving does not change the temperature.' }],
 } as const satisfies Component;

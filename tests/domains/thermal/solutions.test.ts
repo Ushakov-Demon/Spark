@@ -71,3 +71,35 @@ describe('volatile liquids in water: Raoult for every component, measured non-id
     expect(solutionFreezingPoint(alcohol(0.3), 0.7)).toBeCloseTo(-17.3, 0);
   });
 });
+
+describe('the enthalpy of solution', () => {
+  // Water at 20 °C and a dry portion at 20 °C, together: the energy each brings, then the temperature of the mix.
+  const dissolve = (component: string, kg: number) => {
+    const T = celsius(20);
+    const h = mixtureEnthalpy(equilibriumAt(0.1, [], T), T) + mixtureEnthalpy(equilibriumAt(0, [{ component, mass: kg }], T), T);
+    return decodeMixture(h, 0.1, [{ component, mass: kg }]);
+  };
+
+  it('ammonium chloride cools the water, sodium hydroxide heats it — by Q = n·ΔH over the heat capacity', () => {
+    // 20 g NH4Cl = 0.374 mol × 14.78 kJ/mol = 5.5 kJ out of ≈ 450 J/K: ≈ −12 °C.
+    expect(C(dissolve('ammonium-chloride', 0.02).temperature)).toBeCloseTo(7.7, 0);
+    // 10 g NaOH = 0.25 mol × 44.51 kJ/mol = 11.1 kJ out of ≈ 433 J/K: ≈ +26 °C.
+    expect(C(dissolve('sodium-hydroxide', 0.01).temperature)).toBeCloseTo(45.7, 0);
+    // Salt barely: 3.88 kJ/mol.
+    expect(C(dissolve('sodium-chloride', 0.02).temperature)).toBeCloseTo(17, 0);
+  });
+
+  it('crystallising gives the heat back: cooling a saturated solution releases ΔH for every crystal that forms', () => {
+    const solute = [{ component: 'ammonium-chloride', mass: 0.05 }];
+    const hot = equilibriumAt(0.1, solute, celsius(60));
+    const cold = equilibriumAt(0.1, solute, celsius(10));
+    // At 60 °C all 50 g dissolve (55.3 g/100 g), at 10 °C only ≈ 33 g (33.2 g/100 g).
+    expect(hot.crystals).toBe(0);
+    expect(cold.crystals * 1000).toBeCloseTo(50 - 33.2, 0);
+    // Heat given off between them = heat capacity × 50 K + the enthalpy of solution of the crystals that formed.
+    const capacity = 0.1 * 4181 + 0.05 * 1572;
+    const hSol = (14.78 * 1000) / 0.05349;
+    const given = mixtureEnthalpy(hot, celsius(60)) - mixtureEnthalpy(cold, celsius(10));
+    expect(given / 1000).toBeCloseTo((capacity * 50 + cold.crystals * hSol) / 1000, 0);
+  });
+});

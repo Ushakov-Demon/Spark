@@ -1,5 +1,5 @@
 import type { MeasurementRecord } from '../core/trace.js';
-import { COMPONENTS, NACL_SOLUTE } from '../components/index.js';
+import { COMPONENTS, molarMass as molarMassOf, NACL_SOLUTE } from '../components/index.js';
 import type { Command } from '../core/commands.js';
 import type { ExperimentResult } from '../core/experiment.js';
 import type { Simulation } from '../core/simulation.js';
@@ -56,6 +56,8 @@ const Q = (v: number, unit: string, l: Locale) => formatQuantity(v, unit, { loca
 const reachedAt = (s: Step) => (s.status.kind === 'reached' || s.status.kind === 'decomposes' ? s.status.at : s.result.final.time - s.result.initial.time);
 const temp = (st: SystemState) => sampleOf(st).state.temperature;
 const bodyMassOf = (st: SystemState) => { const b = sampleOf(st); return 'mixture' in b.state && b.state.mixture ? b.state.mixture.water + b.state.mixture.salt : b.params.mass; };
+const K0 = ZERO_CELSIUS_IN_KELVIN;
+const soluteMolarMass = (id: string) => molarMassOf(COMPONENTS[id as keyof typeof COMPONENTS]) ?? 1;
 const LF_KJ = COMPONENTS.water.melting!.latentHeat!.value / 1000;
 const CW = COMPONENTS.water.phases.liquid!.specificHeat!.value;
 
@@ -156,6 +158,41 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
           : `The block’s mass: m = m₂ − m₁ = ${g(dm, l)}. Its volume is how far the water rose: V = ${mL(dv, l)} = ${sig(dv * 1e6, 3, l)} cm³. So ρ = m/V ≈ ${sig(rho / 1000, 3, l)} g/cm³ = ${sig(rho, 3, l)} kg/m³. The nearest density in the table is ${name(guess, l).toLowerCase()} (${sig(rhoOf(guess), 4, l)} kg/m³). The block is indeed ${name(realId, l).toLowerCase()}. The cylinder reads the volume to 1 mL, so telling similar metals apart (copper and brass) needs a bigger block or a finer instrument.`,
       ),
       ...(dv > 0 && dm > 0 ? { correct: guess } : {}),
+    };
+  },
+  'heat-of-solution': ({ steps }) => {
+    // Each beaker: what dissolved in it and how far its temperature went from where it started (the coldest or hottest moment).
+    const beakers = steps.flatMap((st) => {
+      const states = [st.result.initial, ...st.result.samples, st.result.final];
+      const mix = sampleOf(st.result.final).state.mixture;
+      const solute = mix?.solutes[0];
+      if (!solute) return [];
+      const ts = states.map((x) => sampleOf(x).state.temperature);
+      const start = K0 + st.params.startTemp;
+      const extreme = ts.reduce((a, t) => (Math.abs(t - start) > Math.abs(a - start) ? t : a), start);
+      return [{ component: solute.component, mass: solute.mass, start, extreme, end: ts[ts.length - 1]! }];
+    });
+    const sign = (b: { start: number; extreme: number } | undefined) => (!b ? 0 : b.extreme < b.start - 0.5 ? -1 : b.extreme > b.start + 0.5 ? 1 : 0);
+    const [a, b] = [beakers[0], beakers[1]];
+    const correct = sign(a) < 0 && sign(b) < 0 ? 'both-cold' : sign(a) < 0 && sign(b) > 0 ? 'cold-hot' : sign(a) > 0 && sign(b) > 0 ? 'both-hot' : 'same';
+    const name = (id: string, l: Locale) => (COMPONENTS[id as keyof typeof COMPONENTS]?.genitive?.[l] ?? id);
+    const hs = (id: string) => COMPONENTS[id as keyof typeof COMPONENTS]?.inWater?.enthalpyOfSolution?.value ?? 0;
+    const line = (x: (typeof beakers)[number], l: Locale) => {
+      const moles = x.mass / soluteMolarMass(x.component);
+      const q = Math.abs(moles * hs(x.component));
+      const dt = x.extreme - x.start;
+      return l === 'uk'
+        ? `${sig(x.mass * 1000, 2, l)} г ${name(x.component, l)} — це ${sig(moles, 2, l)} моль; розчиняючись, вони ${hs(x.component) > 0 ? 'поглинули' : 'виділили'} ≈ ${sig(q, 2, l)} кДж (${hs(x.component) > 0 ? '+' : '−'}${sig(Math.abs(hs(x.component)), 4, l)} кДж/моль), і температура ${dt < 0 ? 'впала' : 'піднялася'} з ${C(x.start, l)} до ${C(x.extreme, l)}.`
+        : `${sig(x.mass * 1000, 2, l)} g of ${name(x.component, l)} is ${sig(moles, 2, l)} mol; dissolving, it ${hs(x.component) > 0 ? 'took in' : 'gave off'} ≈ ${sig(q, 2, l)} kJ (${hs(x.component) > 0 ? '+' : '−'}${sig(Math.abs(hs(x.component)), 4, l)} kJ/mol), and the temperature ${dt < 0 ? 'fell' : 'rose'} from ${C(x.start, l)} to ${C(x.extreme, l)}.`;
+    };
+    return {
+      ...(a && b ? { correct } : {}),
+      say: both((l) => (l === 'uk' ? 'Один розчин холоне, другий гріється!' : 'One solution cools, the other warms up!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `${beakers.map((x) => line(x, l)).join(' ')} Під час розчинення кристал руйнується — на це енергія витрачається, — а йони оточують молекули води — тут енергія виділяється. Що переважить, те й покаже термометр: амоній хлорид охолоджує розчин (на цьому працюють «холодні» пакети першої допомоги), натрій гідроксид — розігріває. Потім обидва стакани поволі набирають кімнатну температуру. Модель бере теплоту розчинення для дуже розбавленого розчину; у справжньому досліді цифри будуть трохи іншими. Натрій гідроксид — їдкий: у школі з ним працює лише вчитель.`
+          : `${beakers.map((x) => line(x, l)).join(' ')} When a substance dissolves, its crystal is broken up — that takes energy — and its ions are surrounded by water molecules — that gives energy off. Whichever wins shows on the thermometer: ammonium chloride cools the solution (first-aid cold packs work this way), sodium hydroxide heats it. Then both beakers slowly come to room temperature. The model uses the enthalpy of solution of a very dilute solution; in a real experiment the numbers differ a little. Sodium hydroxide is caustic: at school only the teacher handles it.`,
+      ),
     };
   },
   'grow-crystals': ({ steps }) => {
