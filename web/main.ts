@@ -1438,11 +1438,17 @@ function stepLine(l: ReturnType<typeof boardLines>[number], p: LabParams, i: num
   return { ...l, id: `${i}:${l.id}`, title: lids.size > 1 ? `${l.title},${p.lid ? u.withLid : u.withoutLid}` : l.title };
 }
 function boardNow(): ReturnType<typeof boardLines> {
-  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}`;
+  // The answer to the question asked at the end is not written before it is picked: those lines show the formula only.
+  const hidden = preset?.answerOnBoard && prediction?.preset !== preset.id ? preset.answerOnBoard : null;
+  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}`;
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
-  const lines = [...pastBoard(), ...boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished, r.log).map((l) => stepLine(l, stepP, history.length))];
+  const lines = [...pastBoard(), ...boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished, r.log).map((l) => stepLine(l, stepP, history.length))].map((l) => {
+    if (!hidden || !l.numbers || !hidden.some((h) => l.id.split(':').slice(1).join(':').startsWith(h))) return l;
+    const { numbers: _, ...rest } = l;
+    return rest;
+  });
   boardCache = { at: now, key, lines };
   return lines;
 }

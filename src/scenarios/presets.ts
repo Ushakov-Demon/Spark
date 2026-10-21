@@ -38,6 +38,11 @@ export interface Preset {
   readonly guided?: boolean;
   /** When the choices are offered: before the start (a prediction, default) or at the end (the conclusion). */
   readonly choicesAt?: 'start' | 'end';
+  /**
+   * Board lines (id starts) whose numbers are the answer to the question asked at the end: until the
+   * conclusion is picked, the board shows their formula only, then chalks the numbers in.
+   */
+  readonly answerOnBoard?: readonly string[];
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -182,6 +187,7 @@ export const PRESETS: readonly Preset[] = [
     // 11 % is the usual slip: 5 g of salt over the 45 g of water instead of over the whole 50 g of solution.
     choices: [ch('5', '5 %', '5 %'), ch('10', '10 %', '10 %'), ch('11', '≈ 11 %', '≈ 11 %'), ch('50', '50 %', '50 %')],
     choicesAt: 'end',
+    answerOnBoard: ['fraction:'],
     formulas: [],
     programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Виготовлення розчинів із заданою масовою часткою розчиненої речовини.' }],
     expect: 'reached',
