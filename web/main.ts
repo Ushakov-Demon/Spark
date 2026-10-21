@@ -840,7 +840,7 @@ function droppedDissolves(): string {
 
 /** Not all of it dissolved: how much did, how much lies on the bottom, and what would help — warming or more water. */
 /** What is dissolved and what lies on the bottom: "солоність 3,5 %" for brine, "цукру 16 %" and so on otherwise. */
-function solutionLines(mix: NonNullable<ThermalBody['state']['mixture']>): string[] {
+function solutionLines(mix: NonNullable<ThermalBody['state']['mixture']>, temperature?: number): string[] {
   const u = t();
   const kg = (m: number) => formatQuantity(m, 'kg', { locale, level: 'school' });
   const name = (c: string) => lowerFirst(tr(COMPONENTS[c as ComponentId]?.genitive ?? COMPONENTS[c as ComponentId]?.name ?? { uk: c, en: c }, locale));
@@ -849,6 +849,8 @@ function solutionLines(mix: NonNullable<ThermalBody['state']['mixture']>): strin
   if (mix.solutes.length === 1 && mix.solutes[0]!.component === 'sodium-chloride') out.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
   else for (const x of mix.solutes) if (x.mass - x.crystals > 1e-9 && liquid > 0) out.push(u.dissolvedShare(name(x.component), sig(((x.mass - x.crystals) / liquid) * 100, 3, locale)));
   for (const x of mix.solutes) if (x.crystals > 1e-6) out.push(u.crystals(kg(x.crystals), name(x.component)));
+  // More dissolved than the solubility allows: a supersaturated solution (it is waiting for a seed).
+  if (temperature !== undefined && mix.solutes.some((x) => x.crystals <= 0 && x.mass > ((solubilityAt(x.component, temperature - 273.15) / 100) * (mix.water - mix.ice)) * 1.01)) out.push(u.supersaturated);
   return out;
 }
 
@@ -1463,7 +1465,7 @@ function showingWeighing() {
 }
 
 /** How solid bodies look in the vessel. */
-const BODY_COLOR: Partial<Record<string, string>> = { 'table-salt': 'rgba(246, 246, 242, 0.97)', 'ammonium-chloride': '#f7f7f3', 'caustic-soda': '#f3f3ee', sugar: '#fbfbf8', 'baking-soda': '#f4f4f0', 'copper-sulfate': '#2f7fd6', chalk: '#f1eee6', 'iron-ii-hydroxide': '#7f9a63', graphite: '#3a3d42', porcelain: '#f6f3ec', brick: '#b5553a', 'stearic-acid': '#f3efe4', tin: '#c8ccd0', aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
+const BODY_COLOR: Partial<Record<string, string>> = { 'table-salt': 'rgba(246, 246, 242, 0.97)', 'ammonium-chloride': '#f7f7f3', 'caustic-soda': '#f3f3ee', 'sodium-acetate': '#f6f6f1', sugar: '#fbfbf8', 'baking-soda': '#f4f4f0', 'copper-sulfate': '#2f7fd6', chalk: '#f1eee6', 'iron-ii-hydroxide': '#7f9a63', graphite: '#3a3d42', porcelain: '#f6f3ec', brick: '#b5553a', 'stearic-acid': '#f3efe4', tin: '#c8ccd0', aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
 const formulaOf = (x: SubstanceItem) =>
   x.recipe ? RECIPES[x.recipe as RecipeId].parts.map((p) => COMPONENTS[p.component].formula ?? '').join('+') : (x.component && COMPONENTS[x.component as keyof typeof COMPONENTS]?.formula) || '';
 /** The colour of the crystals on the bottom: of the substance with most of them, as its shelf picture is drawn. */
@@ -1508,7 +1510,7 @@ function render() {
     const mix = b.state.mixture;
     if (mix && mix.water > 1e-9) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
     else if (!mix) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
-    if (mix && s < 1 && mix.water - mix.ice > 1e-9) parts.push(...solutionLines(mix));
+    if (mix && s < 1 && mix.water - mix.ice > 1e-9) parts.push(...solutionLines(mix, b.state.temperature));
     for (const e of Object.values(session.state.entities)) {
       if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`) || !e.label) continue;
       // A block (no melting in the lab): its temperature; a piece of ice: how much of it is still solid.
@@ -2864,7 +2866,7 @@ const labConsole = createConsole({
       const s = b.state.solidFraction ?? 0;
       if (s > 0) lines.push(u.solidShare(Math.round(s * 100)));
       const mix = b.state.mixture;
-      if (mix && mix.water - mix.ice > 1e-9) lines.push(...solutionLines(mix));
+      if (mix && mix.water - mix.ice > 1e-9) lines.push(...solutionLines(mix, b.state.temperature));
       const lost = (b.state.boiledOff ?? 0) + (b.state.evaporated ?? 0);
       if (lost > 1e-4) lines.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
     }

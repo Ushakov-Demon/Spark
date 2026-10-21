@@ -159,9 +159,24 @@ export function mixtureHeatCapacity(m: MixtureAmounts): number {
   return c;
 }
 
-/** Dissolved amounts for so much liquid water at t °C (the rest crystallises). */
-function dissolvedIn(liquidWater: number, solutes: readonly { component: string; mass: number }[], t: number): number[] {
+/**
+ * Components that stay dissolved beyond saturation: their solution is supersaturated and has no crystal of
+ * them to grow on (no seed). Only a component whose data says it supersaturates (sodium acetate) is held;
+ * the others crystallise as soon as the solution is saturated.
+ */
+export type Held = ReadonlySet<string>;
+
+/** Which components of a body are held now: those that supersaturate and have no crystals lying in it. */
+export function heldIn(m: { readonly solutes: readonly { readonly component: string; readonly crystals: number }[] } | undefined): Held {
+  const out = new Set<string>();
+  for (const s of m?.solutes ?? []) if (s.crystals <= 0 && COMPONENTS[s.component as ComponentId]?.inWater?.supersaturates) out.add(s.component);
+  return out;
+}
+
+/** Dissolved amounts for so much liquid water at t °C (the rest crystallises; a held component stays dissolved). */
+function dissolvedIn(liquidWater: number, solutes: readonly { component: string; mass: number }[], t: number, held?: Held): number[] {
   return solutes.map((s) => {
+    if (held?.has(s.component) && liquidWater > 0) return s.mass;
     const ws = soluteBehaviour(s.component)?.saturation(Math.max(t, 0)) ?? 0;
     if (!Number.isFinite(ws)) return s.mass;
     return Math.min(s.mass, liquidWater > 0 ? (ws / (1 - ws)) * liquidWater : 0);
@@ -169,11 +184,11 @@ function dissolvedIn(liquidWater: number, solutes: readonly { component: string;
 }
 
 /** Ice and crystals in equilibrium at temperature T for given totals. */
-export function equilibriumAt(water: number, input: SoluteInput, temperature: number): MixtureAmounts {
+export function equilibriumAt(water: number, input: SoluteInput, temperature: number, held?: Held): MixtureAmounts {
   const solutes = list(input);
   const t = temperature - T0;
   const done = (ice: number, liquid: number) => {
-    const dissolved = dissolvedIn(liquid, solutes, t);
+    const dissolved = dissolvedIn(liquid, solutes, t, held);
     return amountsOf(water, ice, solutes.map((s, i) => ({ component: s.component, mass: s.mass, crystals: Math.max(0, Math.min(s.mass, s.mass - dissolved[i]!)) })));
   };
   const measured = measuredSingle(solutes);
@@ -193,7 +208,7 @@ export function equilibriumAt(water: number, input: SoluteInput, temperature: nu
   // Blagden's law: liquid water m is in equilibrium with ice at t when the dissolved particles
   // lower its freezing point to t: m = K_f · Σ i·n_dissolved(m) / (−t).
   const g = (m: number) => {
-    const d = dissolvedIn(m, solutes, t);
+    const d = dissolvedIn(m, solutes, t, held);
     let particles = 0;
     solutes.forEach((s, i) => {
       const b = soluteBehaviour(s.component);
@@ -216,7 +231,7 @@ export function equilibriumAt(water: number, input: SoluteInput, temperature: nu
   return done(water - liquid, liquid);
 }
 
-const enthalpyAt = (water: number, input: SoluteInput, temperature: number) => mixtureEnthalpy(equilibriumAt(water, input, temperature), temperature);
+const enthalpyAt = (water: number, input: SoluteInput, temperature: number, held?: Held) => mixtureEnthalpy(equilibriumAt(water, input, temperature, held), temperature);
 
 /** Lowest temperature anything here can still be liquid at, K (the eutectic, or well below for alcohol). */
 function lowestLiquid(input: SoluteInput): number {
@@ -229,18 +244,18 @@ function lowestLiquid(input: SoluteInput): number {
  * pure ice at 0 °C, the eutectic): inside a jump the temperature stays put and the amounts are
  * interpolated — that is the plateau.
  */
-export function decodeMixture(h: number, water: number, input: SoluteInput): { temperature: number; amounts: MixtureAmounts } {
+export function decodeMixture(h: number, water: number, input: SoluteInput, held?: Held): { temperature: number; amounts: MixtureAmounts } {
   let lo = lowestLiquid(input) - 200;
   let hi = T0 + 1500;
-  if (h <= enthalpyAt(water, input, lo)) return { temperature: lo, amounts: equilibriumAt(water, input, lo) };
+  if (h <= enthalpyAt(water, input, lo, held)) return { temperature: lo, amounts: equilibriumAt(water, input, lo, held) };
   for (let i = 0; i < 80; i++) {
     const mid = (lo + hi) / 2;
-    if (enthalpyAt(water, input, mid) < h) lo = mid;
+    if (enthalpyAt(water, input, mid, held) < h) lo = mid;
     else hi = mid;
   }
   const eps = 1e-6;
-  const left = equilibriumAt(water, input, lo - eps);
-  const right = equilibriumAt(water, input, hi + eps);
+  const left = equilibriumAt(water, input, lo - eps, held);
+  const right = equilibriumAt(water, input, hi + eps, held);
   const hl = mixtureEnthalpy(left, lo);
   const hr = mixtureEnthalpy(right, hi);
   if (hr - hl > 1e-6 && h > hl && h < hr) {
@@ -252,7 +267,7 @@ export function decodeMixture(h: number, water: number, input: SoluteInput): { t
     };
   }
   const temperature = (lo + hi) / 2;
-  return { temperature, amounts: equilibriumAt(water, input, temperature) };
+  return { temperature, amounts: equilibriumAt(water, input, temperature, held) };
 }
 
 /** The solutes of a body as an input for the functions above (their totals). */

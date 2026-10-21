@@ -371,6 +371,13 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-21',
   }),
+  'wikipedia-sodium-acetate': source({
+    id: 'wikipedia-sodium-acetate',
+    title: 'Wikipedia, Sodium acetate (chembox and Uses): M 82.034 g/mol; ρ 1.528 (anhydrous), 1.45 g/cm³ (trihydrate); mp 324 °C (anhydrous), 58 °C (trihydrate); solubility 36.2 (0 °C), 46.4 (20 °C), 82 (50 °C) g/100 mL; Cp 100.83 (anhydrous), 229 J/(mol·K) (trihydrate); a hand warmer contains a supersaturated solution of sodium acetate which releases heat upon crystallization; pressing a metal disc forms a nucleation center',
+    url: 'https://en.wikipedia.org/wiki/Sodium_acetate',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-21',
+  }),
   'wikipedia-acetic-acid': source({
     id: 'wikipedia-acetic-acid',
     title: 'Wikipedia, Acetic acid (chembox): ρ 1.049 g/cm³ (liquid), mp 289–290 K, bp 391–392 K, miscible with water, Cp 123.1 J/(K·mol), pKa 4.756, GHS danger',

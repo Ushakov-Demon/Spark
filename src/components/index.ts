@@ -21,6 +21,7 @@ import { PORCELAIN } from './porcelain.js';
 import { SODIUM_BICARBONATE } from './sodium-bicarbonate.js';
 import { AMMONIUM_CHLORIDE } from './ammonium-chloride.js';
 import { SODIUM_HYDROXIDE } from './sodium-hydroxide.js';
+import { SODIUM_ACETATE } from './sodium-acetate.js';
 import { SODIUM_CHLORIDE } from './sodium-chloride.js';
 import { STEARIC_ACID } from './stearic-acid.js';
 import { STEEL } from './steel.js';
@@ -44,6 +45,7 @@ const LIST = {
   'sodium-bicarbonate': SODIUM_BICARBONATE,
   'ammonium-chloride': AMMONIUM_CHLORIDE,
   'sodium-hydroxide': SODIUM_HYDROXIDE,
+  'sodium-acetate': SODIUM_ACETATE,
   'copper-sulfate': COPPER_SULFATE,
   'calcium-carbonate': CALCIUM_CARBONATE,
   ethanol: ETHANOL,

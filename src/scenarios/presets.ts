@@ -235,6 +235,32 @@ export const PRESETS: readonly Preset[] = [
     ],
     expect: 'reached',
   },
+  {
+    id: 'supersaturated',
+    grade: 9,
+    topic: SOLUTIONS,
+    title: { uk: 'Грілка, що спрацьовує від кристалика', en: 'A warmer set off by a crystal' },
+    question: {
+      uk: 'У пробірці — 20 г натрій ацетату й 4 мл води: більшість кристалів не розчиняється. Нагріємо над спиртівкою до 70 °C, поки розчиниться все, і дамо охолонути в кімнаті. Потім кинемо в розчин крихітний кристалик натрій ацетату. Що станеться?',
+      en: 'A test tube holds 20 g of sodium acetate and 4 mL of water: most of the crystals do not dissolve. We heat it over a spirit lamp to 70 °C until all of it dissolves and let it cool in the room. Then we drop a tiny crystal of sodium acetate into the solution. What will happen?',
+    },
+    params: { ...room, vessel: 'test-tube', size: 0.02, material: 'glass', liters: 0.004, action: 'heat-to', target: 70, substance: 'water', startTemp: 20, heater: { id: 'spirit-lamp', rating: 100, knob: 1 } },
+    setup: [{ kind: 'add', substance: 'sodium-acetate', mass: 0.02, temperature: 20 }],
+    plan: [
+      { kind: 'operation', action: 'cool-to', target: 22, label: { uk: 'Охолонути в кімнаті до 22 °C', en: 'Cool in the room to 22 °C' } },
+      { kind: 'add', substance: 'sodium-acetate', mass: 0.0002, temperature: 20, label: { uk: 'Кристалик-затравка', en: 'A seed crystal' } },
+      { kind: 'operation', action: 'settle', label: { uk: 'Дивитися на термометр', en: 'Watch the thermometer' } },
+    ],
+    choices: [
+      ch('on-cooling', 'Кристали випадуть ще під час охолодження', 'Crystals come out while it cools'),
+      ch('warm', 'Лишиться рідким, а від кристалика закристалізується й нагріється', 'It stays liquid, and the crystal makes it crystallise and warm up'),
+      ch('cold', 'Лишиться рідким, а від кристалика закристалізується й охолоне', 'It stays liquid, and the crystal makes it crystallise and cool down'),
+      ch('nothing', 'Лишиться рідким навіть із кристаликом', 'It stays liquid even with the crystal'),
+    ],
+    formulas: [],
+    programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Виготовлення та дослідження пересичених розчинів.' }],
+    expect: 'reached',
+  },
   // ---------------------------------------------------------------- 8 grade, heat
   {
     id: 'boil-a-litre',

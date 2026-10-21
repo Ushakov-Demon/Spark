@@ -9,7 +9,7 @@ import { isBurner, isHeater, isThermalBody, type Burner, type Heater, type Therm
 import { equilibriumTemperature } from './formulas.js';
 import { ENERGY_REFERENCE_TEMPERATURE } from './solver.js';
 import { bodyEnergy, bodyMass, mixtureBody, thermalBody } from './entities.js';
-import { decodeMixture } from './mixture.js';
+import { decodeMixture, heldIn } from './mixture.js';
 import { bodyAsSolution, inWaterFamily, mergeParts, portionAsSolution } from './dissolve.js';
 import { convectionLink, wallLink } from './links.js';
 import { CONVECTION } from './materials.js';
@@ -172,8 +172,11 @@ export const add: CommandHandler<AddCommand> = {
       const merged = mergeParts(hostPart, addedPart);
       const water = merged.water;
       const energy = merged.energy;
-      const d = decodeMixture(energy, water, merged.input);
       const targetMix = 'mixture' in target.state ? target.state.mixture : undefined;
+      // A supersaturated solution stays so — unless a crystal of its solute goes in: that is the seed it crystallises on.
+      const held = new Set(heldIn(targetMix));
+      if (sub.component && sub.category.startsWith('solid.')) held.delete(sub.component);
+      const d = decodeMixture(energy, water, merged.input, held);
       // The solution's own evaporation is water's (other volatile components evaporate by Raoult's law in the solver).
       const evaporation = substanceThermal(SUBSTANCES.water).evaporation;
       const base = mixtureBody({

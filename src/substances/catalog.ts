@@ -153,6 +153,7 @@ const SHELF = [
   { id: 'baking-soda', component: 'sodium-bicarbonate' },
   { id: 'ammonium-chloride', component: 'ammonium-chloride' },
   { id: 'caustic-soda', component: 'sodium-hydroxide' },
+  { id: 'sodium-acetate', component: 'sodium-acetate' },
   { id: 'copper-sulfate', component: 'copper-sulfate' },
   { id: 'chalk', component: 'calcium-carbonate' },
   { id: 'iron-ii-hydroxide', component: 'iron-ii-hydroxide' },

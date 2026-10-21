@@ -23,7 +23,7 @@ import {
 import { isSupplyLink, isThermalLink, radiationExcess, radiationSlope, type SupplyLink, type ThermalLink } from './links.js';
 import { decodeEnthalpy, specificHeatAt, type PhaseParams } from './phase.js';
 import { latentAt, massTransferCoefficient, saturationDensity, saturationPressure, type EvaporationParams } from './evaporation.js';
-import { decodeMixture, equilibriumAt, liquidVolatiles, MIXTURE_CONSTANTS, solutesOf, vapourComposition, type SoluteInput, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
+import { decodeMixture, equilibriumAt, heldIn, liquidVolatiles, MIXTURE_CONSTANTS, solutesOf, vapourComposition, type SoluteInput, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
 
 /**
  * Lumped thermal network solver.
@@ -438,7 +438,8 @@ const burnerPower = (b: Burner): number => (b.params.driven ? (b.state.power ?? 
 
 /** Re-derive temperature and phases of a mixture node after its energy or totals changed. */
 function setMixture(n: Node, water: number, solutes: SoluteInput): void {
-  const d = decodeMixture(n.energy, Math.max(0, water), solutes);
+  // A supersaturating solute with no crystal in it yet stays dissolved (it was so a moment ago).
+  const d = decodeMixture(n.energy, Math.max(0, water), solutes, heldIn(n.mix));
   n.temperature = d.temperature;
   n.mix = d.amounts;
   n.mass = d.amounts.water + d.amounts.salt;
@@ -455,7 +456,7 @@ function stepMixture(n: Node, onCarried?: (energy: number) => void): void {
   n.melted += (before.ice - n.mix!.ice) * MIXTURE_CONSTANTS.LF;
   const tb = mixtureBoilingPoint(n.mix!);
   if (n.temperature > tb) {
-    const atBoil = mixtureEnthalpy(equilibriumAt(n.mix!.water, solutesOf(n.mix!), tb), tb);
+    const atBoil = mixtureEnthalpy(equilibriumAt(n.mix!.water, solutesOf(n.mix!), tb, heldIn(n.mix)), tb);
     // Raoult: the vapour takes each volatile component by its share (alcohol goes first); the excess
     // energy pays their latent heats, their own heat leaves with them.
     const vapour = vapourComposition(n.mix!, tb);

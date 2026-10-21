@@ -1,7 +1,7 @@
 import type { MediaAsset } from '../equipment/types.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LeveledText } from '../knowledge/levels.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { FactCitation, SourcedValue } from '../knowledge/types.js';
 import type { ElementSymbol } from './elements.js';
 
 /**
@@ -128,6 +128,12 @@ export interface InWater {
    * Absent — not counted (no checked value yet).
    */
   readonly enthalpyOfSolution?: SourcedValue;
+  /**
+   * Its solution stays supersaturated without a seed (sodium acetate): cooled below saturation it does not
+   * crystallise until a crystal of it is in the solution, then it crystallises at once, giving off its heat.
+   * Absent — it crystallises as soon as the solution is saturated.
+   */
+  readonly supersaturates?: { readonly citations: readonly FactCitation[] };
 }
 
 /** A liquid that other substances dissolve in (water): the constants of its colligative laws. */

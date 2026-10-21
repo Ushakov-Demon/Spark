@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { celsius } from '../../../src/core/units.js';
-import { decodeMixture, equilibriumAt, mixtureBoilingPoint, mixtureEnthalpy, solubilityAt, solutionFreezingPoint } from '../../../src/domains/thermal/mixture.js';
+import { decodeMixture, equilibriumAt, heldIn, mixtureBoilingPoint, mixtureEnthalpy, solubilityAt, solutionFreezingPoint } from '../../../src/domains/thermal/mixture.js';
 
 const C = (k: number) => k - 273.15;
 const sugar = (kg: number) => [{ component: 'sucrose', mass: kg }];
@@ -101,5 +101,27 @@ describe('the enthalpy of solution', () => {
     const hSol = (14.78 * 1000) / 0.05349;
     const given = mixtureEnthalpy(hot, celsius(60)) - mixtureEnthalpy(cold, celsius(10));
     expect(given / 1000).toBeCloseTo((capacity * 50 + cold.crystals * hSol) / 1000, 0);
+  });
+});
+
+describe('supersaturated solutions', () => {
+  const acetate = [{ component: 'sodium-acetate', mass: 0.02 }];
+  it('without a seed sodium acetate stays dissolved below saturation; with crystals it is in equilibrium', () => {
+    const T = celsius(22);
+    // 4 g of water hold ≈ 4.6 g of the trihydrate at 22 °C — not 20 g.
+    expect(equilibriumAt(0.004, acetate, T).crystals * 1000).toBeGreaterThan(15);
+    const held = heldIn({ solutes: [{ component: 'sodium-acetate', crystals: 0 }] });
+    expect(held.has('sodium-acetate')).toBe(true);
+    expect(equilibriumAt(0.004, acetate, T, held).crystals).toBe(0);
+    // A solute that does not supersaturate is never held (copper sulfate crystallises at once).
+    expect(heldIn({ solutes: [{ component: 'copper-sulfate', crystals: 0 }] }).size).toBe(0);
+  });
+
+  it('a seed releases the heat of crystallisation: the same energy, crystals allowed — it warms up', () => {
+    const T = celsius(22);
+    const h = mixtureEnthalpy(equilibriumAt(0.004, acetate, T, heldIn({ solutes: [{ component: 'sodium-acetate', crystals: 0 }] })), T);
+    const seeded = decodeMixture(h, 0.004, acetate);
+    expect(seeded.amounts.crystals).toBeGreaterThan(0.005);
+    expect(C(seeded.temperature)).toBeGreaterThan(40);
   });
 });

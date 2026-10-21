@@ -160,6 +160,37 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ...(dv > 0 && dm > 0 ? { correct: guess } : {}),
     };
   },
+  supersaturated: ({ steps }) => {
+    const acetate = (st: SystemState) => {
+      const m = sampleOf(st).state.mixture;
+      return { water: m?.water ?? 0, ...(m?.solutes.find((x) => x.component === 'sodium-acetate') ?? { mass: 0, crystals: 0 }) };
+    };
+    const temps = (st: (typeof steps)[number]) => [st.result.initial, ...st.result.samples, st.result.final].map((x) => sampleOf(x).state.temperature);
+    const s = (t: number) => solubilityAt('sodium-acetate', t);
+    // The step that cooled it (the one before the seed), and the one after the seed (the last).
+    const cool = steps.length >= 2 ? steps[steps.length - 2] : undefined;
+    const seeded = steps[steps.length - 1]!;
+    const cooled = cool ? acetate(cool.result.final) : undefined;
+    const tCool = cool ? sampleOf(cool.result.final).state.temperature : K0 + 22;
+    const satCool = cooled ? (s(tCool - K0) / 100) * cooled.water : 0;
+    const peak = Math.max(...temps(seeded));
+    const after = acetate(seeded.result.final);
+    const crystalsAtPeak = (() => {
+      const states = [seeded.result.initial, ...seeded.result.samples, seeded.result.final];
+      const hot = states.reduce((a, x) => (sampleOf(x).state.temperature > sampleOf(a).state.temperature ? x : a), states[0]!);
+      return acetate(hot).crystals;
+    })();
+    const correct = !cooled ? undefined : cooled.crystals > 1e-5 ? 'on-cooling' : after.crystals <= 1e-5 ? 'nothing' : peak > tCool + 1 ? 'warm' : 'cold';
+    return {
+      ...(correct ? { correct } : {}),
+      say: both((l) => (l === 'uk' ? `Кристали — і розчин нагрівся до ${C(peak, l)}!` : `Crystals — and the solution warmed up to ${C(peak, l)}!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `При 70 °C у 4 мл води розчинилися всі 20 г натрій ацетату. Охолонувши до ${C(tCool, l)}, вода могла б утримати лише ≈ ${sig(satCool * 1000, 2, l)} г, але кристали не випали: розчин став пересиченим — у ньому в ${sig((cooled?.mass ?? 0) / Math.max(satCool, 1e-9), 2, l)} раза більше речовини, ніж дозволяє розчинність. Кристалам потрібна «затравка» — готовий кристалик, на якому вони почнуть рости. Щойно його кинули, зайвий ацетат закристалізувався (≈ ${sig(crystalsAtPeak * 1000, 2, l)} г) і віддав теплоту розчинення (19,66 кДж/моль): температура стрибнула до ${C(peak, l)}. Так працює багаторазова грілка для рук: металева пластинка всередині створює центр кристалізації, а щоб «зарядити» грілку знову, її кип’ятять. Потім пробірка поволі вистигає до кімнатної температури. У моделі кристалізація миттєва й без затравки розчин не кристалізується сам.`
+          : `At 70 °C all 20 g of sodium acetate dissolved in 4 mL of water. Cooled to ${C(tCool, l)}, the water could hold only ≈ ${sig(satCool * 1000, 2, l)} g, yet no crystals came out: the solution became supersaturated — it holds ${sig((cooled?.mass ?? 0) / Math.max(satCool, 1e-9), 2, l)} times as much as the solubility allows. Crystals need a "seed" — a ready crystal to grow on. As soon as one was dropped in, the excess acetate crystallised (≈ ${sig(crystalsAtPeak * 1000, 2, l)} g) and gave off its heat of solution (19.66 kJ/mol): the temperature jumped to ${C(peak, l)}. That is how a reusable hand warmer works: a metal disc inside makes a nucleation centre, and to "recharge" the warmer it is boiled. Then the test tube slowly cools to room temperature. In the model crystallisation is instant, and without a seed the solution never crystallises by itself.`,
+      ),
+    };
+  },
   'heat-of-solution': ({ steps }) => {
     // Each beaker: what dissolved in it and how far its temperature went from where it started (the coldest or hottest moment).
     const beakers = steps.flatMap((st) => {

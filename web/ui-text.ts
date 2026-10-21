@@ -21,6 +21,7 @@ export interface UiText {
   salinity(pct: string): string;
   dissolvedShare(what: string, pct: string): string;
   crystals(mass: string, what?: string): string;
+  supersaturated: string;
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
@@ -294,6 +295,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     salinity: (p) => `солоність ${p} %`,
     dissolvedShare: (w, p) => `${w} ${p} %`,
     crystals: (m, w) => `на дні кристалів ${w ?? 'солі'} ${m}`,
+    supersaturated: 'пересичений',
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
@@ -559,6 +561,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     salinity: (p) => `salinity ${p} %`,
     dissolvedShare: (w, p) => `${w} ${p} %`,
     crystals: (m, w) => `${w ?? 'salt'} crystals on the bottom ${m}`,
+    supersaturated: 'supersaturated',
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
