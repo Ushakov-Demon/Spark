@@ -294,9 +294,6 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .scene .gas-bubbles { transition: opacity 0.4s; }
 .scene .gas-bubbles.on circle { animation: rise-gas 1.4s infinite ease-in; }
 @keyframes rise-gas { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.9; } 100% { transform: translateY(calc(-1 * var(--rise, 80px))); opacity: 0; } }
-.scene .steam path { fill: none; stroke: url(#sc-steam); stroke: rgba(255, 255, 255, 0.85); stroke-width: 6; stroke-linecap: round; opacity: 0; }
-@media (prefers-color-scheme: light) { .scene .steam path { stroke: rgba(150, 165, 180, 0.55); } }
-.scene .steam.on path { animation: steam 2.4s infinite ease-out; }
 @keyframes steam { 0% { transform: translateY(6px); opacity: 0; } 30% { opacity: 0.9; } 100% { transform: translateY(-40px); opacity: 0; } }
 .scene .toxic { fill: #b8d84a; transition: opacity 1s; filter: blur(6px); opacity: 0; }
 .scene .thermo rect:first-child, .scene .thermo circle:first-of-type { fill: #fff; stroke: #9aa3ac; stroke-width: 1.5; }
@@ -720,3 +717,11 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 @keyframes talk { from { transform: scaleY(1); } to { transform: scaleY(1.9) translateY(1px); } }
 @media (prefers-reduced-motion: reduce) { .scene-prof.talking .p-mouth { animation: none; } }
 .voice-pick select { max-width: 11rem; }
+
+/* ---------- steam and smoke: puffs that rise, swell and melt away ---------- */
+.scene .steam { transition: opacity 0.6s; }
+.scene .steam .puff { fill: rgba(250, 252, 255, 0.92); stroke: rgba(160, 175, 190, 0.35); stroke-width: 1; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.scene .steam.on .puff { animation: puff 2.4s infinite ease-out; }
+.scene .steam.smoke .puff { fill: rgba(95, 95, 100, 0.75); stroke: rgba(60, 60, 64, 0.4); }
+@keyframes puff { 0% { opacity: 0; transform: translate(0, 4px) scale(0.35); } 18% { opacity: 0.9; } 100% { opacity: 0; transform: translate(var(--dx), -78px) scale(2.3); } }
+@media (prefers-reduced-motion: reduce) { .scene .steam.on .puff { animation: none; opacity: 0.5; } }

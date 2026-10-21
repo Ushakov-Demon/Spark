@@ -151,3 +151,17 @@ export function vesselPreview(shape: VesselShape, material: string, liquid: Liqu
     <g class="thumb-extras">${g.extras.replace(/class="stand"[^/]*\/>/, '')}</g>
   </svg>`;
 }
+
+/**
+ * Steam as puffs of cloud: they rise, swell and melt away. From an open vessel they billow up across
+ * its mouth; under a lid they squeeze out at its edges and drift sideways.
+ */
+export function steamPuffs(g: VesselGeom, lid: boolean): string {
+  const top = g.top - (lid ? 4 : 6);
+  const spots = lid
+    ? [g.left - 2, g.left + 4, g.right - 4, g.right + 2].map((x, i) => ({ x, dx: i < 2 ? -18 : 18 }))
+    : Array.from({ length: 7 }, (_, i) => ({ x: g.mouth.l + ((g.mouth.r - g.mouth.l) * (i + 0.5)) / 7, dx: (i % 2 ? 1 : -1) * 8 }));
+  return spots
+    .map((p, i) => `<ellipse class="puff" cx="${p.x.toFixed(1)}" cy="${top}" rx="${lid ? 7 : 11}" ry="${lid ? 5 : 8}" style="--dx:${p.dx}px;animation-delay:${((i * 0.37) % 2.4).toFixed(2)}s"/>`)
+    .join('');
+}

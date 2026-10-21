@@ -33,6 +33,7 @@ describe('ready-made experiments', () => {
     for (const o of out.slice(0, firstOp)) expect(o.entry?.ok, `${p.id}: setup`).toBe(true);
     expect(out[firstOp]!.status?.kind, `${p.id}: first step`).toBe(p.expect);
     for (const o of out.slice(firstOp + 1)) {
+      if (o.step.kind === 'fresh') continue;
       if (o.step.kind !== 'operation') expect(o.entry?.ok, `${p.id}: ${o.step.kind}`).toBe(true);
       else expect(o.status?.kind, `${p.id}: plan step`).toBe('reached');
     }

@@ -160,8 +160,13 @@ export const PRESETS: readonly Preset[] = [
     grade: 8,
     topic: THERMAL,
     title: { uk: 'Навіщо каструлі кришка?', en: 'Why does a pot need a lid?' },
-    question: { uk: 'Закип’ятимо воду в каструлі з кришкою, а Професор подумки повторить те саме без кришки. Як гадаєш, де вода закипить швидше — і чому?', en: 'We boil water in a pot with a lid, and the Professor repeats it in his mind without one. Where do you think the water boils sooner — and why?' },
+    question: { uk: 'Закип’ятимо воду в каструлі з кришкою, а потім — таку саму каструлю з такою самою водою, але без кришки. Як гадаєш, де вода закипить швидше — і чому?', en: 'We boil water in a pot with a lid, then the same pot with the same water but without the lid. Where do you think the water boils sooner — and why?' },
     params: { ...pot, roomTemp: 20, lid: true, action: 'boil', substance: 'water', startTemp: 20, heater: { id: 'gas-hob', rating: 1500, knob: 1 } },
+    // Two real runs side by side: the second starts afresh (cold pot, fresh water) — only the lid differs.
+    plan: [
+      { kind: 'fresh', lid: false, label: { uk: 'Взяти таку саму каструлю з водою — без кришки', en: 'Take the same pot of water — without the lid' } },
+      { kind: 'operation', action: 'boil', heater: { id: 'gas-hob', rating: 1500, knob: 1 } },
+    ],
     choices: [ch('lid', 'З кришкою закипить швидше', 'It boils sooner with a lid'), ch('no-lid', 'Без кришки швидше', 'Sooner without a lid'), ch('equal', 'Однаково', 'The same')],
     formulas: ['thermal.heat-for-temperature-change', 'thermal.latent-heat'],
     quoteHas: 'пароутвор',

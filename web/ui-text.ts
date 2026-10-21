@@ -9,6 +9,8 @@ export interface UiText {
   coolWhere: string;
   meltWith: string;
   justRoom: string;
+  withLid: string;
+  withoutLid: string;
   setpoint: string;
   sampleTemp: string;
   phaseState: string;
@@ -61,6 +63,7 @@ export interface UiText {
     wait(what: string): string;
     btnWait(what: string): string;
     btnRun(what: string, kind: 'heat' | 'cool' | 'current' | 'wait'): string;
+    fresh(what: string): string;
     pour(what: string, temp: string): string;
     btnPour(what: string, temp: string): string;
     running: string;
@@ -264,6 +267,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     coolWhere: 'Де охолоджуємо',
     meltWith: 'Чим розплавляємо',
     justRoom: 'Просто в кімнаті',
+    withLid: ' з кришкою',
+    withoutLid: ' без кришки',
     setpoint: 'Температура охолоджувача, °C',
     sampleTemp: 'Речовина',
     phaseState: 'Стан',
@@ -315,6 +320,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       wait: (w) => `${w} — а ти стеж за тим, що відбувається в посуді.`,
       btnWait: (w) => `⏳ ${w}`,
       btnRun: (w, k) => `${k === 'heat' ? '🔥' : k === 'cool' ? '❄️' : k === 'current' ? '⚡' : '⏳'} ${w}`,
+      fresh: (w) => `Тепер для порівняння: ${w.charAt(0).toLowerCase()}${w.slice(1)}. Усе інше — так само, як першого разу.`,
       pour: (w, t) => `Обережно долий у посуд: ${w}, ${t} — і подивись, що станеться з температурою.`,
       btnPour: (w, t) => `🫗 Долити: ${w}, ${t}`,
       running: '⏳ Іде дослід… Стеж за тим, що відбувається в посуді.',
@@ -515,6 +521,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     coolWhere: 'Where we cool it',
     meltWith: 'How we melt it',
     justRoom: 'Just in the room',
+    withLid: ' with the lid',
+    withoutLid: ' without the lid',
     setpoint: 'Cooler temperature, °C',
     sampleTemp: 'Substance',
     phaseState: 'State',
@@ -567,6 +575,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnWait: (w) => `⏳ ${w}`,
       running: '⏳ The experiment is running… Watch what happens in the vessel.',
       btnRun: (w, k) => `${k === 'heat' ? '🔥' : k === 'cool' ? '❄️' : k === 'current' ? '⚡' : '⏳'} ${w}`,
+      fresh: (w) => `Now to compare: ${w.charAt(0).toLowerCase()}${w.slice(1)}. Everything else as the first time.`,
       pour: (w, t) => `Carefully pour into the vessel: ${w}, ${t} — and watch the temperature.`,
       btnPour: (w, t) => `🫗 Pour in: ${w}, ${t}`,
       tableTitle: (rho) => `Your density: ρ ≈ ${rho}. Find the substance with this density in the table:`,

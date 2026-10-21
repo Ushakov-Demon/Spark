@@ -19,7 +19,7 @@ import { LAB_ROOM_ID, labGoalReached, labProgress, noProgress, labSetup, labStat
  * added) carries over. Each step runs as its own experiment, so every step gets
  * its own headline, energy split and debrief.
  */
-export type ProtocolStep = OperationStep | AddStep | WeighStep | LevelStep | HangStep;
+export type ProtocolStep = OperationStep | AddStep | WeighStep | LevelStep | HangStep | FreshStep;
 
 export interface OperationStep {
   readonly kind: 'operation';
@@ -53,6 +53,16 @@ export interface WeighStep {
   readonly scale: ScaleId;
 }
 
+/**
+ * Start again with the same setup — a fresh, cold vessel and fresh contents — changed as said
+ * (without the lid): for a fair comparison of two runs side by side.
+ */
+export interface FreshStep {
+  readonly kind: 'fresh';
+  readonly lid?: boolean;
+  readonly label?: LocalizedText;
+}
+
 /** Read the level of the liquid by the vessel's marks. */
 export interface LevelStep {
   readonly kind: 'level';
@@ -67,7 +77,7 @@ export interface HangStep {
 }
 
 /** The lab command of a step that is not an operation: put something in, or measure. */
-export function stepCommand(step: Exclude<ProtocolStep, OperationStep>, base: LabParams): LabCommand {
+export function stepCommand(step: Exclude<ProtocolStep, OperationStep | FreshStep>, base: LabParams): LabCommand {
   switch (step.kind) {
     case 'weigh':
       return { type: 'lab.weigh', scale: step.scale };
@@ -157,17 +167,26 @@ export interface ProtocolInput {
 export function runProtocol(input: ProtocolInput): StepOutcome[] {
   const out: StepOutcome[] = [];
   let state: SystemState | undefined;
+  let base = input.base;
   for (const step of input.steps) {
-    if (step.kind !== 'operation') {
-      if (!state) state = labSetup(input.base).state;
+    if (step.kind === 'fresh') {
+      // The same setup again, from the start (cold vessel, fresh contents), changed as the step says.
+      base = { ...base, ...(step.lid === undefined ? {} : { lid: step.lid }) };
+      state = labSetup(base).state;
       const session = createExperimentSession<LabCommand>({ initial: state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
-      const entry = session.apply(stepCommand(step, input.base));
+      out.push({ step, result: session.result(), warnings: [] });
+      continue;
+    }
+    if (step.kind !== 'operation') {
+      if (!state) state = labSetup(base).state;
+      const session = createExperimentSession<LabCommand>({ initial: state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
+      const entry = session.apply(stepCommand(step, base));
       const result = session.result();
       out.push({ step, result, entry, warnings: [] });
       state = result.final;
       continue;
     }
-    const p = stepParams(input.base, step);
+    const p = stepParams(base, step);
     const placed = state ? configureStep(state, p) : labSetup(p);
     const session = createExperimentSession<LabCommand>({ initial: placed.state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
     runStep(session, p, input.maxStepSeconds ?? 24 * 3600);

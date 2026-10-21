@@ -242,10 +242,12 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     };
   },
   'lid-or-not': ({ steps, simulation }) => {
+    // Both runs were made: compare them; otherwise the other one is run in the mind.
+    const lidRun = steps.find((x) => x.params.lid);
+    const openRun = steps.find((x) => !x.params.lid);
     const s = steps[0]!;
-    const t = reachedAt(s);
-    const other = timeToGoal({ ...s.params, lid: !s.params.lid }, simulation);
-    const [withLid, without] = s.params.lid ? [t, other] : [other, t];
+    const withLid = lidRun ? reachedAt(lidRun) : timeToGoal({ ...s.params, lid: true }, simulation);
+    const without = openRun ? reachedAt(openRun) : timeToGoal({ ...s.params, lid: false }, simulation);
     return {
       correct: withLid < without * 0.97 ? 'lid' : without < withLid * 0.97 ? 'no-lid' : 'equal',
       say: both((l) => (l === 'uk' ? 'Кришка береже теплоту!' : 'A lid keeps the heat in!')),

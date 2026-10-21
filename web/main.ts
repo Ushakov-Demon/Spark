@@ -1048,6 +1048,8 @@ function sceneView(): SceneView {
     crystals: mix && mix.salt > 0 ? mix.crystals / mix.salt : 0,
     boiling: boilingNow,
     steam: s >= 1 ? 0 : boilingNow ? (params.lid ? 0.5 : 1) : Math.min(0.6, evaporating) * (params.lid ? 0.3 : 1),
+    // Oil past its smoke point smokes instead of steaming.
+    ...(sub.decomposes && T >= sub.decomposes.value - 2 ? { smoke: true } : {}),
     ...(current ? { current } : {}),
     ...(params.cooler ? { setpoint: params.cooler.setpoint } : {}),
     running,
@@ -1237,8 +1239,9 @@ function renderGuide(): boolean {
     // Time has passed since the last look at the marks (the ice melted): did the level change?
     const lastLevel = [...done].reverse().find((x) => x.record.quantity === 'volume');
     const waited = !!lastLevel && session.state.time > lastLevel.time + 1e-9 || history.length > 0 && !!lastLevel;
-    const say = s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : liquid ? u.pour(what, temp) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
-    const btn = s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
+    const fresh = s.kind === 'fresh' ? tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale) : '';
+    const say = s.kind === 'fresh' ? u.fresh(fresh) : s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : liquid ? u.pour(what, temp) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
+    const btn = s.kind === 'fresh' ? `🔄 ${fresh}` : s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
     // Before the first step: the prediction, if the experiment asks for one.
     const q = k === 1 ? quizNow() : null;
     setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1">${btn}</button></div>`);
@@ -1549,8 +1552,11 @@ function renderProtocol() {
   const D = (s: number) => formatDuration(s, locale);
   const place = (p: LabParams) =>
     p.supply ? `${tr(SUPPLIES[p.supply.id].name, locale)}, ${formatQuantity(supplyVoltage(SUPPLIES[p.supply.id], p.supply.knob), 'V', { locale, level: 'school' })}` : p.heater ? tr(HEATERS[p.heater.id].name, locale) : p.cooler ? `${tr(COOLERS[p.cooler.id].name, locale)}, ${p.cooler.setpoint} °C` : u.justRoom;
+  // When the steps differ only in the lid (the lid experiment), each row says which one it was.
+  const lids = new Set([...history.map((h) => !!h.params.lid), !!params.lid]);
+  const lidNote = (p: LabParams) => (lids.size > 1 ? (p.lid ? u.withLid : u.withoutLid) : '');
   const what = (p: LabParams) =>
-    `${tr(OPERATIONS[p.action].label, locale).replace('…', '')}${p.target !== undefined && OPERATIONS[p.action].target ? ` ${p.target} °C` : ''}${p.duration !== undefined && OPERATIONS[p.action].duration ? `, ${p.duration} ${locale === 'uk' ? 'хв' : 'min'}` : ''}`;
+    `${tr(OPERATIONS[p.action].label, locale).replace('…', '')}${lidNote(p)}${p.target !== undefined && OPERATIONS[p.action].target ? ` ${p.target} °C` : ''}${p.duration !== undefined && OPERATIONS[p.action].duration ? `, ${p.duration} ${locale === 'uk' ? 'хв' : 'min'}` : ''}`;
   const adds = (a: readonly Added[]) => a.map((x) => `<span class="added">${u.added(tr(x.what, locale).toLowerCase(), formatQuantity(x.mass, 'kg', { locale, level: 'school' }))}</span>`).join('');
   const outcome = (st: LabStatus, r: ExperimentResult<LabCommand>, p: LabParams) =>
     st.kind === 'reached' && OPERATIONS[p.action].duration ? `✓ ${D(st.at)}` : st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
@@ -1582,6 +1588,7 @@ function renderProtocol() {
       : s.kind === 'weigh' ? u.weigh.button
       : s.kind === 'level' ? u.measure.level
       : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid)
+      : s.kind === 'fresh' ? `🔄 ${tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale)}`
       : tr(OPERATIONS[s.action].label, locale);
     rows.push(`<li class="planned"><span class="what">${label}</span></li>`);
   }
@@ -2137,6 +2144,10 @@ function planLabel(steps: readonly ProtocolStep[]): string {
       parts.push(u.planAdd(tr(s.label ?? what.genitive ?? what.name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })));
       continue;
     }
+    if (s.kind === 'fresh') {
+      parts.push(tr(s.label ?? { uk: 'почати знову', en: 'start afresh' }, locale).toLowerCase());
+      break;
+    }
     parts.push(tr(OPERATIONS[s.action].label, locale).replace('…', '').toLowerCase());
     break;
   }
@@ -2167,6 +2178,17 @@ function nextPlanStep() {
       if (!plan.length && preset?.choicesAt !== 'end') answerPreset();
       // A guided procedure is measured out: the table moves aside — the whole board is there to read.
       if (!plan.length && preset?.guided) window.setTimeout(() => scene.read(true), 1400);
+      break;
+    }
+    if (s.kind === 'fresh') {
+      // A second run beside the first: the same setup from the start (cold vessel, fresh contents),
+      // changed as said; the first run stays in the protocol, the chart starts again.
+      params = { ...params, ...(s.lid === undefined ? {} : { lid: s.lid }) };
+      closeStep();
+      points = { sample: [], vessel: [], source: [] };
+      lastPointAt = -Infinity;
+      beginStep(labSetup(params));
+      buildShelf();
       break;
     }
     params = stepParams(params, s);
@@ -2245,6 +2267,7 @@ function startPreset(given: Preset) {
 /** What a ready-made experiment puts into the vessel before the start (hot water, a block from boiling water). */
 function presetSetup() {
   for (const s of preset?.setup ?? []) {
+    if (s.kind === 'fresh') continue;
     const entry = session.apply(stepCommand(s, params));
     if (entry.ok && s.kind === 'add') stepAdds.push({ what: s.label ?? SUBSTANCES[s.substance].name, mass: s.mass });
   }

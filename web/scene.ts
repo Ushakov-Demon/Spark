@@ -11,7 +11,7 @@ import { isGlass, LIQUID, METAL } from './graphics/scene/colors.js';
 import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
 import { deviceSvg } from './graphics/scene/devices.js';
 import { dynamometerSvg, scalesSvg } from './graphics/scene/instruments.js';
-import { baseFor, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
+import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 
 // The drawings live in graphics/; the scene puts them together and moves the live parts.
@@ -42,6 +42,8 @@ export interface SceneView {
   readonly boiling: boolean;
   /** Steam over the surface, 0…1. */
   readonly steam: number;
+  /** Smoke instead of steam (oil past its smoke point). */
+  readonly smoke?: boolean;
   /** Electrolysis: current, A, and the gases that form. */
   readonly current?: { readonly amps: number; readonly volts: number; readonly toxicGas: boolean };
   /** Setpoint of a cooler, °C (shown on its display). */
@@ -169,7 +171,7 @@ export function createScene(): Scene {
         const a = g.mouth.l + (g.mouth.r - g.mouth.l) * (i % 2 ? 0.75 : 0.25);
         return `<circle cx="${a + (i % 3) * 3 - 3}" cy="${g.bottom - 14}" r="${1.5 + (i % 2)}" style="animation-delay:${(i * 0.23) % 1.4}s"/>`;
       }).join('')}</g>
-      <g id="sc-steam" class="steam">${[-0.3, 0, 0.3].map((k, i) => `<path d="M${CX + k * (g.right - g.left)},${(v.lid && g.lidPath ? g.top - 20 : g.top) - 4} q-12,-20 0,-40 q12,-20 0,-40" style="animation-delay:${i * 0.6}s"/>`).join('')}</g>
+      <g id="sc-vapour" class="steam">${steamPuffs(g, v.lid && !!g.lidPath)}</g>
       <ellipse id="sc-cloud" class="toxic" cx="${CX}" cy="${g.top - 40}" rx="${(g.right - g.left) / 2 + 20}" ry="24"/>
       <g class="thermo">
         <rect x="${tx - 6}" y="${g.top - 10}" width="12" height="${g.bottom - g.top + 6}" rx="6"/>
@@ -301,10 +303,12 @@ export function createScene(): Scene {
       $('sc-crystals')?.setAttribute('style', `opacity:${v.crystals > 0 ? Math.min(1, 0.35 + v.crystals) : 0}`);
       // A step that ended while the heater is still on keeps boiling on the drawing.
       $('sc-bubbles')?.classList.toggle('on', v.boiling);
-      const steam = $<SVGGElement>('sc-steam');
+      // (Not "sc-steam": that id is the gradient in <defs> — the steam was never switched on.)
+      const steam = $<SVGGElement>('sc-vapour');
       if (steam) {
-        steam.style.opacity = String(Math.min(1, v.steam));
-        steam.classList.toggle('on', v.steam > 0.02 && (v.running || v.boiling));
+        steam.style.opacity = String(Math.min(1, v.steam + (v.smoke ? 0.6 : 0)));
+        steam.classList.toggle('smoke', !!v.smoke);
+        steam.classList.toggle('on', (v.steam > 0.02 || !!v.smoke) && (v.running || v.boiling));
       }
       // Devices.
       const lamp = $('sc-lamp');
