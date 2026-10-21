@@ -770,3 +770,10 @@ footer { padding-bottom: 72px; }
 /* Programmes an experiment belongs to (chips; the exact wording on hover). */
 .preset .programs { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 4px 0 0; }
 .program-chip { font-size: 0.74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: help; white-space: nowrap; }
+
+/* Footnotes on terms: a dotted underline; the card with the definition. */
+.term { text-decoration: underline dotted; text-decoration-thickness: 1.5px; text-underline-offset: 3px; text-decoration-color: var(--accent); cursor: help; }
+.term:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.term-card { position: fixed; z-index: 1000; padding: 10px 12px; border-radius: 10px; background: var(--card); color: var(--text); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); font-size: 0.88rem; line-height: 1.45; }
+.term-card strong { display: block; margin-bottom: 2px; }
+.term-card p { margin: 0; }

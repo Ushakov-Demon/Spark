@@ -81,6 +81,14 @@ export const SOURCES = {
     retrieved: '2026-10-11',
     caveats: 'НУШ: one of several recommended model programmes; schools choose one. Topic placement by grade may differ slightly between programmes.',
   }),
+  'ua-mnp-2023-hryhorovych-chemistry': source({
+    id: 'ua-mnp-2023-hryhorovych-chemistry',
+    title: 'Модельна навчальна програма «Хімія. 7–9 класи» (автор Григорович О. В.), рекомендовано наказом МОН України від 27.12.2023 № 1575',
+    url: 'https://mon.gov.ua/osvita-2/zagalna-serednya-osvita/navchalni-programi/modelni-navchalni-programi-dlya-5-9-klasiv-novoi-ukrainskoi-shkoli-zaprovadzhuyutsya-poetapno-z-2022-roku',
+    license: 'facts-only',
+    retrieved: '2026-10-21',
+    caveats: 'НУШ: one of several recommended model programmes; schools choose one. The list of investigations is indicative (the programme says so); some may be done virtually. Quotes checked against the PDF Khimiya.7-9.klas.Hryhorovych.29.12.2023.pdf; the MON page URL was not reachable by script (403) and is not verified.',
+  }),
   'ua-mon-2017-physics-7-9': source({
     id: 'ua-mon-2017-physics-7-9',
     title: 'Навчальна програма «Фізика. 7–9 класи» для загальноосвітніх навчальних закладів, МОН України (редакція 2017 р.)',

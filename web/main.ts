@@ -95,6 +95,7 @@ import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } 
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
+import { annotate, installFootnotes } from './terms.js';
 import { createScene, incandescent, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
@@ -3002,6 +3003,31 @@ $<HTMLInputElement>('#search').addEventListener('input', (e) => {
 {
   const head = document.querySelector<HTMLElement>('.kitchen-head');
   if (head) window.addEventListener('scroll', () => head.classList.toggle('stuck', head.getBoundingClientRect().top <= 0.5 && window.scrollY > 0), { passive: true });
+}
+
+// Footnotes on terms (катод, розчинність…): the first mention in each text block is underlined, a tap shows the definition.
+installFootnotes(() => locale);
+{
+  const roots = ['#messages', '#offer', '#quiz', '#report', '#ref-body', '#sc-says', '#about-body', '#paper-body'];
+  let queued = false;
+  const run = () => {
+    queued = false;
+    for (const sel of roots) {
+      const el = document.querySelector(sel);
+      if (el) annotate(el, locale);
+    }
+    // On the shelf only the descriptions (not card names or family headers).
+    document.querySelectorAll('#setup .item-detail').forEach((el) => annotate(el, locale));
+  };
+  const schedule = () => {
+    if (!queued) (queued = true), requestAnimationFrame(run);
+  };
+  const obs = new MutationObserver(schedule);
+  for (const sel of [...roots, '#setup']) {
+    const el = document.querySelector(sel);
+    if (el) obs.observe(el, { childList: true, subtree: true, characterData: true });
+  }
+  schedule();
 }
 
 buildHeader();

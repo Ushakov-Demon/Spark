@@ -13,6 +13,14 @@ export const CURRICULA = {
     firstGradeAge: 6,
     short: { uk: 'НУШ · Фізика', en: 'NUS (Ukraine) · Physics' },
   },
+  'ua-nus-2023-hryhorovych-chemistry': {
+    id: 'ua-nus-2023-hryhorovych-chemistry',
+    country: 'UA',
+    name: { uk: 'НУШ: модельна програма «Хімія. 7–9 класи» (Григорович, 2023)', en: 'Ukraine, New Ukrainian School: model programme Chemistry 7–9 (Hryhorovych, 2023)' },
+    source: 'ua-mnp-2023-hryhorovych-chemistry',
+    firstGradeAge: 6,
+    short: { uk: 'НУШ · Хімія', en: 'NUS (Ukraine) · Chemistry' },
+  },
   'ua-2017': {
     id: 'ua-2017',
     country: 'UA',
