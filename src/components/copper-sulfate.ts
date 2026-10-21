@@ -7,6 +7,7 @@ export const COPPER_SULFATE = {
   kind: 'compound',
   group: 'salt',
   name: { uk: 'Мідний купорос', en: 'Copper sulfate' },
+  genitive: { uk: 'мідного купоросу', en: 'copper sulfate' },
   gender: 'm',
   formula: 'CuSO₄·5H₂O',
   composition: { Cu: 1, S: 1, O: 9, H: 10 },
@@ -25,6 +26,13 @@ export const COPPER_SULFATE = {
   inWater: {
     solubility: sv(20.1, 'g CuSO₄/100 mL water', '20 °C', 'single-source', 0.01, [cite('wikipedia-copper-sulfate', 'Chembox: anhydrous 201 g/L at 20 °C', '20 °C', 20.1)], 'Given for the anhydrous salt, per volume of water. Second source not checked yet.'),
     ions: ['Cu²⁺', 'SO₄²⁻'],
+    // Cu²⁺ ions in water are blue.
+    tint: [40, 120, 225],
+    solubilityTable: {
+      t: [0, 10, 20, 30, 40, 60, 80, 100],
+      gPer100g: [23.1, 27.5, 32, 37.8, 44.6, 61.8, 83.8, 114],
+      data: sv(32, 'g CuSO₄·5H₂O/100 g water', '20 °C', 'single-source', 0.02, [cite('wikipedia-solubility-table', 'Copper(II) sulfate CuSO₄·5H₂O row, 0–100 °C', '20 °C', 32)], 'Grams of the blue crystals (with their water) per 100 g of water; the model treats the crystal water as part of the solute — an approximation.'),
+    },
   },
   electrical: { conducts: 'ions-in-solution' },
   magnetic: 'paramagnetic',

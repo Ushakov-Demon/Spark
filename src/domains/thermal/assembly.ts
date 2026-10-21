@@ -5,9 +5,9 @@ import { vesselGeometry } from '../../equipment/geometry.js';
 import type { CoolerItem, HeaterItem, VesselItem } from '../../equipment/types.js';
 import type { SubstanceItem } from '../../substances/types.js';
 import { substanceThermal } from './substance.js';
+import { equilibriumAt, solutionDensity } from './mixture.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import { burner, heater, mixtureBody, reservoir, thermalBody } from './entities.js';
-import { NACL_SOLUTE } from '../../components/index.js';
 import { convectionLink, supplyLink, thermalLink, wallLink } from './links.js';
 import { CONVECTION, MATERIALS, SURFACES, type MaterialName } from './materials.js';
 
@@ -78,7 +78,7 @@ export function placeVessel(v: VesselPlacement): Piece {
   const dry = substance?.melt !== undefined || (substance?.category.startsWith('solid.') ?? false);
   const w = dry ? undefined : substance?.mixture?.saltFraction;
   // Water + salt: total mass from the solution density, then split into the components.
-  const solutionMass = w === undefined ? 0 : (v.liters / 1000) * NACL_SOLUTE.solutionDensity(w);
+  const solutionMass = w === undefined ? 0 : (v.liters / 1000) * solutionDensity(equilibriumAt(1 - w, w, celsius(v.startTemp)));
   const entities: AnyEntity[] = [
     thermalBody({ id: v.id, label, mass: kilograms(mass), specificHeat: material.specificHeat.value, material: v.material, temperature: celsius(v.roomTemp) }),
     w !== undefined ? mixtureBody({

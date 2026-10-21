@@ -23,7 +23,7 @@ import {
 import { isSupplyLink, isThermalLink, radiationExcess, radiationSlope, type SupplyLink, type ThermalLink } from './links.js';
 import { decodeEnthalpy, specificHeatAt, type PhaseParams } from './phase.js';
 import { latentAt, massTransferCoefficient, saturationDensity, saturationPressure, type EvaporationParams } from './evaporation.js';
-import { decodeMixture, equilibriumAt, MIXTURE_CONSTANTS, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
+import { decodeMixture, equilibriumAt, MIXTURE_CONSTANTS, solutesOf, type SoluteInput, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
 
 /**
  * Lumped thermal network solver.
@@ -306,7 +306,7 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
             if (!(dm > 0)) continue;
             const carried = dm * (MIXTURE_CONSTANTS.CW * (n.temperature - ZERO_CELSIUS_IN_KELVIN) + latentAt(n.evaporation, n.temperature));
             n.energy -= carried;
-            setMixture(n, n.mix.water - dm, n.mix.salt);
+            setMixture(n, n.mix.water - dm, solutesOf(n.mix));
             air.reservoirHeat += carried;
             n.evaporated += dm;
             edge.vaporEnergy += carried;
@@ -418,8 +418,8 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
 const burnerPower = (b: Burner): number => (b.params.driven ? (b.state.power ?? 0) : b.params.power);
 
 /** Re-derive temperature and phases of a mixture node after its energy or totals changed. */
-function setMixture(n: Node, water: number, salt: number): void {
-  const d = decodeMixture(n.energy, Math.max(0, water), salt);
+function setMixture(n: Node, water: number, solutes: SoluteInput): void {
+  const d = decodeMixture(n.energy, Math.max(0, water), solutes);
   n.temperature = d.temperature;
   n.mix = d.amounts;
   n.mass = d.amounts.water + d.amounts.salt;
@@ -432,11 +432,11 @@ function setMixture(n: Node, water: number, salt: number): void {
  */
 function stepMixture(n: Node, onCarried?: (energy: number) => void): void {
   const before = n.mix!;
-  setMixture(n, before.water, before.salt);
+  setMixture(n, before.water, solutesOf(before));
   n.melted += (before.ice - n.mix!.ice) * MIXTURE_CONSTANTS.LF;
   const tb = mixtureBoilingPoint(n.mix!);
   if (n.temperature > tb) {
-    const atBoil = mixtureEnthalpy(equilibriumAt(n.mix!.water, n.mix!.salt, tb), tb);
+    const atBoil = mixtureEnthalpy(equilibriumAt(n.mix!.water, solutesOf(n.mix!), tb), tb);
     const lv = n.evaporation ? latentAt(n.evaporation, tb) : 2_256_000;
     const liquidWater = n.mix!.water - n.mix!.ice;
     const dm = Math.max(0, Math.min(liquidWater, (n.energy - atBoil) / lv));
@@ -446,7 +446,7 @@ function stepMixture(n: Node, onCarried?: (energy: number) => void): void {
       n.boiled += dm;
       n.vapor += carried;
       onCarried?.(carried);
-      setMixture(n, n.mix!.water - dm, n.mix!.salt);
+      setMixture(n, n.mix!.water - dm, solutesOf(n.mix!));
     }
   }
 }

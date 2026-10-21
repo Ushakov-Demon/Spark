@@ -10,7 +10,7 @@ import { equilibriumTemperature } from './formulas.js';
 import { ENERGY_REFERENCE_TEMPERATURE } from './solver.js';
 import { bodyEnergy, bodyMass, mixtureBody, thermalBody } from './entities.js';
 import { decodeMixture } from './mixture.js';
-import { bodyAsSolution, inSaltWater, portionAsSolution } from './dissolve.js';
+import { bodyAsSolution, inWaterFamily, mergeParts, portionAsSolution } from './dissolve.js';
 import { convectionLink, wallLink } from './links.js';
 import { CONVECTION } from './materials.js';
 import { decodeEnthalpy, specificEnthalpy } from './phase.js';
@@ -135,6 +135,15 @@ export const setTemperature: CommandHandler<SetTemperatureCommand> = {
 const mixesWithWater = (s: SubstanceItem): boolean =>
   s.recipe !== undefined || (s.component !== undefined && COMPONENTS[s.component as ComponentId]?.inWater?.solubility === 'miscible');
 
+/** "Розчин солі", "Розчин цукру", or "Розчин" for several things dissolved. */
+function solutionLabel(components: readonly string[]): LocalizedText {
+  if (components.length !== 1) return { uk: 'Розчин', en: 'Solution' };
+  if (components[0] === 'sodium-chloride') return { uk: 'Розчин солі', en: 'Salt solution' };
+  const c = COMPONENTS[components[0] as ComponentId];
+  const g = c?.genitive ?? c?.name;
+  return g ? { uk: `Розчин ${g.uk}`, en: `${g.en.charAt(0).toUpperCase()}${g.en.slice(1)} solution` } : { uk: 'Розчин', en: 'Solution' };
+}
+
 export const add: CommandHandler<AddCommand> = {
   type: 'thermal.add',
   apply(state, given) {
@@ -158,19 +167,20 @@ export const add: CommandHandler<AddCommand> = {
     // one water + salt body; the solute model decides what stays dissolved and what lies on the bottom as crystals.
     // (An ice cube put into pure water is not dissolving: it floats there as a piece and melts.)
     const hostPart = bodyAsSolution(target, targetSub);
-    const addedPart = c.frozen && !sub.category.startsWith('solid.') && !hostPart?.salt ? null : portionAsSolution(sub, c.mass, c.temperature);
-    if (hostPart && addedPart && (hostPart.salt > 0 || addedPart.salt > 0)) {
-      const water = hostPart.water + addedPart.water;
-      const salt = hostPart.salt + addedPart.salt;
-      const energy = hostPart.energy + addedPart.energy;
-      const d = decodeMixture(energy, water, salt);
+    const addedPart = c.frozen && !sub.category.startsWith('solid.') && !hostPart?.solutes.length ? null : portionAsSolution(sub, c.mass, c.temperature);
+    if (hostPart && addedPart && (hostPart.solutes.length > 0 || addedPart.solutes.length > 0)) {
+      const merged = mergeParts(hostPart, addedPart);
+      const water = merged.water;
+      const energy = merged.energy;
+      const d = decodeMixture(energy, water, merged.input);
       const targetMix = 'mixture' in target.state ? target.state.mixture : undefined;
       const evaporation = target.params.evaporation ?? substanceThermal(SUBSTANCES.water).evaporation;
       const base = mixtureBody({
         id: target.id,
-        label: targetMix ? (target.label ?? targetSub.name) : { uk: 'Розчин солі', en: 'Salt solution' },
+        // Its name from what is in it: brine stays "salt solution"; sugar, copper sulfate — "розчин мідного купоросу"; several — "розчин".
+        label: targetMix && merged.solutes.length === targetMix.solutes.length ? (target.label ?? targetSub.name) : solutionLabel(merged.solutes.map((x) => x.component)),
         water,
-        salt,
+        solutes: merged.input,
         temperature: kelvin(d.temperature),
         substance: targetSub.category.startsWith('solid.') ? 'water' : targetSub.id,
         ...(evaporation ? { evaporation } : {}),
@@ -197,27 +207,6 @@ export const add: CommandHandler<AddCommand> = {
       });
       // What came from outside: the portion's energy (and, for dry salt, the change of reference — the same state re-expressed).
       return ok({ state: { ...withEntities(state, [next]), connections }, kind: 'matter', externalEnergy: energy - bodyEnergy(target), trace: [] });
-    }
-
-    // Sugar, baking soda, copper sulfate dissolve in water too — but only the salt has a solution model yet.
-    // Rather than a lump lying undissolved (wrong), say so honestly.
-    const solubleUnmodelled = (s: SubstanceItem) => {
-      const w = s.component ? COMPONENTS[s.component as ComponentId]?.inWater : undefined;
-      return !!w && !w.model && typeof w.solubility === 'object' && w.solubility.value >= 0.1;
-    };
-    // Liquid water or brine (not ice, not dry salt).
-    const waterLike = (s: SubstanceItem, body: ThermalBody | undefined) => {
-      if (!body) return inSaltWater(s) && !s.category.startsWith('solid.');
-      const part = bodyAsSolution(body, s);
-      return part !== null && part.water > 0 && (body.state.solidFraction ?? 0) < 1;
-    };
-    const dissolving = solubleUnmodelled(sub) && waterLike(targetSub, target) ? sub : solubleUnmodelled(targetSub) && waterLike(sub, undefined) ? targetSub : undefined;
-    if (dissolving) {
-      const w = COMPONENTS[dissolving.component as ComponentId]!.inWater!.solubility as { value: number };
-      return err({
-        uk: `${dissolving.name.uk} розчиняється у воді (≈ ${Math.round(w.value)} г на 100 г води), але як змінюються властивості такого розчину, модель поки не вміє рахувати — тож поки що змішати їх не можна. Насухо цю речовину можна нагрівати, зважувати, вимірювати.`,
-        en: `${dissolving.name.en} dissolves in water (≈ ${Math.round(w.value)} g per 100 g of water), but the model cannot yet compute how such a solution behaves — so they cannot be mixed for now. Dry, it can be heated, weighed and measured.`,
-      });
     }
 
     // A metal block, a lump of salt: solid below its melting point (it is never "frozen" — it is solid at room temperature).

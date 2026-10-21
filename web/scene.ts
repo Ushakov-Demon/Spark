@@ -30,6 +30,8 @@ export interface SceneView {
   readonly material: string;
   readonly lid: boolean;
   readonly liquid: LiquidKind;
+  /** The colour a dissolved substance gives the liquid (blue copper sulfate), instead of its kind's colour. */
+  readonly tint?: string;
   /** Share of the vessel filled, 0…1. */
   readonly fill: number;
   /** Contents temperature, °C. */
@@ -258,7 +260,7 @@ export function createScene(): Scene {
       $('sc-liq-rect')?.setAttribute('y', String(level));
       $('sc-liq-rect')?.setAttribute('height', String(g.bottom - level + 2));
       const liq = $<SVGRectElement>('sc-liquid');
-      if (liq) liq.style.fill = v.dry ? (v.solid > 0 && v.solid >= 1 ? v.dry.solid : v.dry.melt) : v.solid >= 1 ? 'rgba(220, 240, 255, 0.92)' : LIQUID[v.liquid];
+      if (liq) liq.style.fill = v.tint && !v.dry && v.solid < 1 ? v.tint : v.dry ? (v.solid > 0 && v.solid >= 1 ? v.dry.solid : v.dry.melt) : v.solid >= 1 ? 'rgba(220, 240, 255, 0.92)' : LIQUID[v.liquid];
       // Ice is lighter than water: a growing layer floats on top. A metal or salt melting dry: the solid
       // left lies on the bottom under its melt.
       const ice = $<SVGGElement>('sc-ice');

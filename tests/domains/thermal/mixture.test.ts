@@ -13,7 +13,7 @@ describe('water–salt phase diagram', () => {
       expect(C(d.temperature)).toBeCloseTo(t, 4);
     }
     // Half melted ice at 0 °C.
-    const hSolid = mixtureEnthalpy({ water: 1, salt: 0, ice: 1, crystals: 0 }, celsius(0));
+    const hSolid = mixtureEnthalpy(equilibriumAt(1, 0, celsius(-1)), celsius(0));
     const d = decodeMixture(hSolid + 167_000, 1, 0);
     expect(C(d.temperature)).toBeCloseTo(0, 3);
     expect(d.amounts.ice).toBeCloseTo(0.5, 3);

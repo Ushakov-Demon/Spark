@@ -1,7 +1,7 @@
 import { COMPONENTS, molarMass, NACL_SOLUTE, type Component, type ComponentGroup, type ComponentId } from '../components/index.js';
 import { sv } from '../components/sourced.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
-import { mixtureBoilingPoint } from '../domains/thermal/mixture.js';
+import { equilibriumAt, mixtureBoilingPoint } from '../domains/thermal/mixture.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SourcedValue } from '../knowledge/types.js';
 import { RECIPES, type Recipe, type RecipeId } from '../recipes/index.js';
@@ -102,7 +102,7 @@ function fromRecipe(r: Recipe): SubstanceItem {
   void solubility;
   const wl = water.phases.liquid!;
   const ws = water.phases.solid!;
-  const tb = mixtureBoilingPoint({ water: 1 - w, salt: w, ice: 0, crystals: 0 }) - ZERO_CELSIUS_IN_KELVIN;
+  const tb = mixtureBoilingPoint(equilibriumAt(1 - w, w, ZERO_CELSIUS_IN_KELVIN + 100)) - ZERO_CELSIUS_IN_KELVIN;
   return {
     id: r.id,
     recipe: r.id,

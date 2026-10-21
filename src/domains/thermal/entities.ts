@@ -8,7 +8,7 @@ import { MATERIALS } from './materials.js';
 
 const MATERIALS_WATER_C = MATERIALS.water.specificHeat.value;
 import type { EvaporationParams } from './evaporation.js';
-import { equilibriumAt, mixtureEnthalpy, type MixtureAmounts } from './mixture.js';
+import { equilibriumAt, mixtureEnthalpy, type MixtureAmounts, type SoluteInput } from './mixture.js';
 import { joules, type Joules, type Kelvin, type Kilograms, type SpecificHeat, type Watts } from '../../core/units.js';
 
 /**
@@ -31,8 +31,8 @@ export interface ThermalBodyParams {
   readonly substance?: string;
   /** Evaporation from its free surface (liquids). */
   readonly evaporation?: EvaporationParams;
-  /** Composition model: 'nacl-water' — water + table salt with a changing composition (see mixture.ts). */
-  readonly mixture?: 'nacl-water';
+  /** Composition model: 'solution' — water with things in it, the composition changes (see mixture.ts). */
+  readonly mixture?: 'solution';
   /** Key in MATERIALS the values came from — lets explanations cite the data source. */
   readonly material?: string;
 }
@@ -133,11 +133,13 @@ function assertTemperature(t: Kelvin): void {
   if (!(t >= 0) || !Number.isFinite(t)) throw new RangeError(`Temperature must be ≥ 0 K, got ${t}`);
 }
 
-/** A body of water + salt; ice and crystals follow from the temperature. */
-export function mixtureBody(o: Common & { readonly water: number; readonly salt: number; readonly temperature: Kelvin; readonly substance?: string; readonly evaporation?: EvaporationParams }): ThermalBody {
-  if (!(o.water >= 0 && o.salt >= 0 && o.water + o.salt > 0)) throw new RangeError('A mixture needs some water or salt');
+/** A body of water with things in it (salt, sugar…); ice and crystals follow from the temperature. */
+export function mixtureBody(o: Common & { readonly water: number; readonly salt?: number; readonly solutes?: SoluteInput; readonly temperature: Kelvin; readonly substance?: string; readonly evaporation?: EvaporationParams }): ThermalBody {
+  const solutes: SoluteInput = o.solutes ?? o.salt ?? 0;
+  const total = typeof solutes === 'number' ? solutes : solutes.reduce((a, s) => a + s.mass, 0);
+  if (!(o.water >= 0 && total >= 0 && o.water + total > 0)) throw new RangeError('A mixture needs some water or a solute');
   assertTemperature(o.temperature);
-  const amounts = equilibriumAt(o.water, o.salt, o.temperature);
+  const amounts = equilibriumAt(o.water, solutes, o.temperature);
   return {
     id: entityId(o.id),
     kind: 'thermal.body',
@@ -145,9 +147,9 @@ export function mixtureBody(o: Common & { readonly water: number; readonly salt:
     transform: transform(o.position),
     ports: SURFACE,
     params: {
-      mass: kilograms(o.water + o.salt),
+      mass: kilograms(o.water + total),
       specificHeat: MATERIALS_WATER_C,
-      mixture: 'nacl-water',
+      mixture: 'solution',
       ...(o.substance === undefined ? {} : { substance: o.substance }),
       ...(o.evaporation === undefined ? {} : { evaporation: o.evaporation }),
     },

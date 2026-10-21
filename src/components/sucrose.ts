@@ -7,6 +7,7 @@ export const SUCROSE = {
   kind: 'compound',
   group: 'sugar',
   name: { uk: 'Цукор (сахароза)', en: 'Sugar (sucrose)' },
+  genitive: { uk: 'цукру', en: 'sugar' },
   gender: 'm',
   formula: 'C₁₂H₂₂O₁₁',
   composition: { C: 12, H: 22, O: 11 },
@@ -24,6 +25,13 @@ export const SUCROSE = {
   },
   inWater: {
     solubility: sv(200, 'g/100 g water', '20 °C', 'cross-checked', 0.01, [cite('wikidata', 'Q4027534 P2177', '68 °F, water', 200), cite('wikipedia-sucrose', 'Chembox: solubility 2.01 g/mL at 20 °C', '20 °C', 201)]),
+    solubilityTable: {
+      t: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+      gPer100g: [181.9, 190.6, 201.9, 216.7, 235.6, 259.6, 288.8, 323.7, 365.1, 414.9, 476.0],
+      data: sv(201.9, 'g/100 g water', '20 °C', 'single-source', 0.01, [cite('wikipedia-solubility-table', 'Sucrose row, 0–100 °C', '20 °C', 201.9)], 'One table; it agrees with the 200 g/100 g of Wikidata at 20 °C.'),
+    },
+    // Sugar does not split into ions: one particle per molecule (it does not conduct).
+    particles: 1,
   },
   electrical: { conducts: 'insulator' },
   hazards: {},

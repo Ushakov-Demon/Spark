@@ -8,7 +8,7 @@ import { COMPONENTS, NACL_SOLUTE } from '../components/index.js';
 import { G } from '../domains/mechanics/constants.js';
 import { buoyantForce, submergedShare, weight } from '../domains/mechanics/formulas.js';
 import { bodyMass, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';
-import { liquidConcentration } from '../domains/thermal/mixture.js';
+import { solutionDensity, soluteBehaviour } from '../domains/thermal/mixture.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
@@ -35,7 +35,7 @@ export function liquidDensity(state: SystemState): number | null {
   const b = state.entities[entityId(SAMPLE_ID)];
   if (!b || !isThermalBody(b)) return null;
   const mix = b.state.mixture;
-  if (mix) return mix.water - mix.ice > 1e-9 ? NACL_SOLUTE.solutionDensity(liquidConcentration(mix)) : null;
+  if (mix) return mix.water - mix.ice > 1e-9 ? solutionDensity(mix) : null;
   if ((b.state.solidFraction ?? 0) >= 1) return null;
   return substanceOf(b)?.liquid.density.value ?? WATER_DENSITY;
 }
@@ -72,8 +72,10 @@ export function levelVolume(state: SystemState): number {
   const mix = b.state.mixture;
   if (mix) {
     const solution = mix.water - mix.ice + mix.salt - mix.crystals;
-    const rs = rl ?? NACL_SOLUTE.solutionDensity(0);
-    v += solution / rs + mix.crystals / COMPONENTS['sodium-chloride'].phases.solid!.density!.value + (rl ? mix.ice / rl : mix.ice / ICE_DENSITY);
+    const rs = rl ?? WATER_DENSITY;
+    // Crystals on the bottom by their own density; ice floats (pushes aside its mass of liquid).
+    const crystals = mix.solutes.reduce((a, s) => a + s.crystals / (soluteBehaviour(s.component)?.density ?? WATER_DENSITY), 0);
+    v += solution / rs + crystals + (rl ? mix.ice / rl : mix.ice / ICE_DENSITY);
   } else {
     const sub = substanceOf(b);
     const m = bodyMass(b);

@@ -11,12 +11,13 @@ const water: LabParams = { substance: 'water', liters: 0.2, startTemp: 20, roomT
 const add = (substance: string, grams: number) => ({ type: 'thermal.add', into: SAMPLE_ID, substance, mass: grams / 1000, temperature: 293.15 }) as unknown as LabCommand;
 
 describe('new shelf substances behave honestly', () => {
-  it('sugar, baking soda, copper sulfate in water: refused with the reason, not a lump that does not dissolve', () => {
+  it('sugar, baking soda, copper sulfate in water dissolve by the same rule as salt — no lump left', () => {
     for (const id of ['sugar', 'baking-soda', 'copper-sulfate']) {
       const s = createExperimentSession<LabCommand>({ initial: labSetup(water).state, simulation, commands, sampleEvery: seconds(10) });
-      const e = s.apply(add(id, 10));
-      expect(e.ok, id).toBe(false);
-      if (!e.ok) expect(e.error.uk).toMatch(/розчиняється у воді/);
+      expect(s.apply(add(id, 10)).ok, id).toBe(true);
+      const mix = (s.state.entities[SAMPLE_ID as never] as { state: { mixture?: { solutes: { component: string; crystals: number }[] } } }).state.mixture!;
+      expect(mix.solutes.map((x) => x.component), id).toEqual([SUBSTANCES[id as 'sugar'].component]);
+      expect(mix.solutes[0]!.crystals, id).toBe(0);
     }
   });
 

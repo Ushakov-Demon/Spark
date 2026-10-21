@@ -105,6 +105,9 @@ export const WATER = {
     latentLow: { temperature: 37, value: sv(2_430_000, 'J/kg', 'water at 37 °C', 'single-source', 0.01, [cite('openstax-cp2e-latent', 'Table 14.2 footnote: Lv at 37.0 °C', '37 °C', 2_430_000)], 'Only OpenStax checked so far.') },
   },
   inWater: { solubility: 'miscible' },
+  solvent: {
+    cryoscopic: sv(1.86, 'K·kg/mol', 'water, freezing at 0 °C', 'single-source', 0.01, [cite('wikipedia-freezing-point-depression', 'Table: water, K_f = 1.86 K·kg/mol', '0 °C', 1.86)], 'Blagden’s law ΔT = K_f·b·i holds for dilute solutions only; for salt the measured freezing curve is used instead.'),
+  },
   electrical: {
     conducts: 'insulator',
     conductivity: sv(7.5e-5, 'S/m', 'distilled, exposed to air, room temperature', 'single-source', 0.35, [{ source: 'wikipedia-conductivity-electrolytic', locator: 'distilled water exposed to air: 0.5–1 µS/cm', conditions: 'room temperature', range: [5e-5, 1e-4] }], 'Depends on how much carbon dioxide from the air has dissolved; ultrapure water is about 15 times lower (0.055 µS/cm).'),

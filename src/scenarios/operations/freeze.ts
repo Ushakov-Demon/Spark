@@ -1,4 +1,4 @@
-import { NACL_SOLUTE } from '../../components/index.js';
+import { solutionEutectic } from '../../domains/thermal/mixture.js';
 import { tr } from '../../knowledge/i18n.js';
 import { both, capital, lower, T } from './helpers.js';
 import type { Operation } from './types.js';
@@ -21,7 +21,7 @@ export const FREEZE: Operation = {
     }
     const tf = sub.freezing.point.value;
     // A solution freezes gradually: completely only below the eutectic.
-    const te = NACL_SOLUTE.eutectic.t;
+    const te = sub.mixture ? solutionEutectic(sub.mixture.saltFraction) : -Infinity;
     if (sub.mixture && surroundingTemp >= te && surroundingTemp < tf) {
       return both((l) =>
         l === 'uk'
@@ -39,7 +39,7 @@ export const FREEZE: Operation = {
   needs({ sub, surroundingTemp }) {
     if (!sub.freezing) return undefined;
     // A solution freezes completely only below the eutectic; pure substances below their freezing point.
-    const below = sub.mixture ? NACL_SOLUTE.eutectic.t : sub.freezing.point.value;
+    const below = sub.mixture ? solutionEutectic(sub.mixture.saltFraction) : sub.freezing.point.value;
     return surroundingTemp >= below ? { colderThan: below } : undefined;
   },
   markers: ['freezing'],

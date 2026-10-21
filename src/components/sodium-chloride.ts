@@ -125,6 +125,7 @@ export const SODIUM_CHLORIDE = {
   kind: 'compound',
   group: 'salt',
   name: { uk: 'Хлорид натрію (кухонна сіль)', en: 'Sodium chloride (table salt)' },
+  genitive: { uk: 'кухонної солі', en: 'table salt' },
   gender: 'm',
   formula: 'NaCl',
   composition: { Na: 1, Cl: 1 },

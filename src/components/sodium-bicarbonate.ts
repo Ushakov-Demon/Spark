@@ -7,6 +7,7 @@ export const SODIUM_BICARBONATE = {
   kind: 'compound',
   group: 'salt',
   name: { uk: 'Харчова сода', en: 'Baking soda' },
+  genitive: { uk: 'харчової соди', en: 'baking soda' },
   gender: 'f',
   formula: 'NaHCO₃',
   composition: { Na: 1, H: 1, C: 1, O: 3 },
@@ -25,6 +26,11 @@ export const SODIUM_BICARBONATE = {
   inWater: {
     solubility: sv(9.6, 'g/100 mL water', '20 °C', 'single-source', 0.01, [cite('wikipedia-sodium-bicarbonate', 'Chembox: 96 g/L at 20 °C', '20 °C', 9.6)], 'Wikidata has no solubility value for it; Second source not checked yet.'),
     ions: ['Na⁺', 'HCO₃⁻'],
+    solubilityTable: {
+      t: [0, 10, 20, 30, 40, 60],
+      gPer100g: [7, 8.1, 9.6, 11.1, 12.7, 16],
+      data: sv(9.6, 'g/100 g water', '20 °C', 'single-source', 0.01, [cite('wikipedia-solubility-table', 'Sodium hydrogen carbonate row, 0–60 °C', '20 °C', 9.6)], 'The table stops at 60 °C: above it the model keeps the 60 °C value. In hot water baking soda slowly decomposes, giving off CO₂ — not modelled yet.'),
+    },
   },
   electrical: { conducts: 'ions-in-solution' },
   hazards: { irritant: true },

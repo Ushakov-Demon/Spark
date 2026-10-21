@@ -275,8 +275,11 @@ function subject(p: LabParams, locale: Locale, now?: SystemState): { text: strin
     : sub.melt || sub.category.startsWith('solid.')
     ? `${sig(p.liters * sub.liquid.density.value, 3, locale)} ${locale === 'uk' ? 'г' : 'g'}`
     : p.liters < 1 ? `${Math.round(p.liters * 1000)} ${locale === 'uk' ? 'мл' : 'mL'}` : `${sig(p.liters, 3, locale)} ${locale === 'uk' ? 'л' : 'L'}`;
-  let name = salted ? (locale === 'uk' ? 'Вода з сіллю' : 'Salt water') : tr(sub.name, locale);
-  let gender: Gender = salted ? 'f' : sub.gender;
+  // Something dissolved in it during the experiment: salt water stays "вода з сіллю"; otherwise the solution's own name.
+  const onlySalt = salted && sampleOf(now!).state.mixture!.solutes.every((x) => x.component === 'sodium-chloride');
+  const label = salted ? sampleOf(now!).label : undefined;
+  let name = salted ? (onlySalt ? (locale === 'uk' ? 'Вода з сіллю' : 'Salt water') : label ? tr(label, locale) : locale === 'uk' ? 'Розчин' : 'Solution') : tr(sub.name, locale);
+  let gender: Gender = salted ? (onlySalt ? 'f' : 'm') : sub.gender;
   // Melting ice names the ice ("Лід"); a metal or salt is a solid anyway — its own name.
   if (OPERATIONS[p.action].subjectIsSolid && !sub.melt) {
     if (sub.solidName) {

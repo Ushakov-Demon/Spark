@@ -107,6 +107,18 @@ export interface InWater {
   readonly model?: SoluteModel;
   /** Splits into ions in water (conducts current then). */
   readonly ions?: readonly string[];
+  /** Solubility by temperature, g per 100 g of water (the general solution model interpolates it). */
+  readonly solubilityTable?: { readonly t: readonly number[]; readonly gPer100g: readonly number[]; readonly data: SourcedValue };
+  /** The colour its solution takes, as rgb (copper sulfate: blue); absent — colourless. */
+  readonly tint?: readonly [number, number, number];
+  /** Particles per formula unit in solution, if not the number of `ions` (sugar: 1). */
+  readonly particles?: number;
+}
+
+/** A liquid that other substances dissolve in (water): the constants of its colligative laws. */
+export interface Solvent {
+  /** Cryoscopic constant K_f, K·kg/mol: how much one mole of particles per kg lowers the freezing point. */
+  readonly cryoscopic: SourcedValue;
 }
 
 export interface Hazards {
@@ -156,6 +168,8 @@ export interface Component {
     readonly latentLow?: { readonly temperature: number; readonly value: SourcedValue };
   };
   readonly inWater?: InWater;
+  /** As a solvent (water). */
+  readonly solvent?: Solvent;
   readonly electrical?: {
     /** Metals conduct; ionic substances only melted or dissolved; the rest are insulators. */
     readonly conducts: 'metal' | 'ions-in-solution' | 'insulator';

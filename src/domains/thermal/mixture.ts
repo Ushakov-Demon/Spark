@@ -1,93 +1,242 @@
 import { ZERO_CELSIUS_IN_KELVIN } from '../../core/units.js';
 import { molarMassOf } from '../../components/elements.js';
-import { SODIUM_CHLORIDE } from '../../components/sodium-chloride.js';
-import { WATER } from '../../components/water.js';
+import { COMPONENTS, type Component, type ComponentId, type SoluteModel } from '../../components/index.js';
 import { saturationPressure } from './evaporation.js';
 
 /**
- * Water + table salt (NaCl) as one body with a changing composition — the
- * binary phase diagram in a lumped model:
+ * Water with anything in it, as one body with a changing composition: a solution is not a model
+ * of its own but a list of components with their masses. Everything follows from the components'
+ * data and general laws:
  *
- *  - ice forms from pure water; the rest gets saltier and freezes colder
- *    (freezing curve), down to the eutectic −21.1 °C where everything is solid;
- *  - salt beyond solubility crystallises (solubility curve);
- *  - water boils when its vapour pressure, lowered by the dissolved salt
- *    (Raoult: p = x_water · p_sat), reaches 1 atm — so boiling brine gets hotter
- *    as it concentrates, and boiling it dry leaves salt crystals.
+ *  - how much of each dissolves — its own solubility in water at that temperature (the rest lies
+ *    as crystals); a liquid that mixes with water in any proportion never crystallises;
+ *  - where the water starts to freeze — the freezing-point depression by all dissolved particles
+ *    (Blagden's law, ΔT = K_f · Σ i·b); as ice forms the rest gets more concentrated and freezes
+ *    colder, down to where it is saturated (the eutectic) and everything sets;
+ *  - the boiling point — Raoult's law: the dissolved particles lower the vapour pressure of water;
+ *  - the heat — the sum of the components' own heat capacities and latent heats.
  *
- * Enthalpy is measured from liquid water and solid salt at 0 °C; the heat of
- * dissolution is ignored (small for NaCl).
+ * Where a component carries measured data for its solutions with water (salt: the freezing curve,
+ * the eutectic, densities, conductivity), those are used instead of the general law — measured pair
+ * data only where the general law is not good enough. With several solutes the general law is used.
  *
- * Every number comes from the component models (src/components/water.ts,
- * sodium-chloride.ts): heat capacities, latent heat, molar masses from the
- * formulas, and the salt's own solute model (solubility and freezing curves).
+ * Enthalpy is measured from liquid water and the solutes as they are at room temperature (solid
+ * salt, liquid alcohol) at 0 °C; the heat of dissolution is not counted (small for NaCl).
  */
-export interface MixtureAmounts {
-  /** All H₂O in the body (liquid + ice), kg. */
-  readonly water: number;
-  /** All NaCl (dissolved + crystals), kg. */
-  readonly salt: number;
-  readonly ice: number;
+
+/** One dissolved (or undissolved) component: its total mass and the part lying as crystals, kg. */
+export interface SoluteMass {
+  readonly component: string;
+  readonly mass: number;
   readonly crystals: number;
 }
 
-const SOLUTE = SODIUM_CHLORIDE.inWater.model;
+export interface MixtureAmounts {
+  /** All H₂O in the body (liquid + ice), kg. */
+  readonly water: number;
+  readonly ice: number;
+  /** What is in the water. */
+  readonly solutes: readonly SoluteMass[];
+  /** Sum over the solutes: all of them, kg (for readers that only need "how much is in the water"). */
+  readonly salt: number;
+  /** Sum over the solutes: the part lying as crystals, kg. */
+  readonly crystals: number;
+}
+
+/** What goes into a solution: a list of components and masses, or — shorthand — kilograms of table salt. */
+export type SoluteInput = number | readonly { readonly component: string; readonly mass: number }[];
+
+const NACL = 'sodium-chloride';
 const T0 = ZERO_CELSIUS_IN_KELVIN;
-const TE = T0 + SOLUTE.eutectic.t;
-const CW = WATER.phases.liquid.specificHeat.value;
-const CI = WATER.phases.solid.specificHeat.value;
-const CS = SODIUM_CHLORIDE.phases.solid.specificHeat.value;
-const LF = WATER.melting.latentHeat.value;
-const M_WATER = molarMassOf(WATER.composition);
-const M_SALT = molarMassOf(SODIUM_CHLORIDE.composition);
-const VANT_HOFF = SOLUTE.vantHoff.value;
+const WATER = COMPONENTS.water;
+const CW = WATER.phases.liquid!.specificHeat!.value;
+const CI = WATER.phases.solid!.specificHeat!.value;
+const LF = WATER.melting!.latentHeat!.value;
+const M_WATER = molarMassOf(WATER.composition!);
 const P_ATM = 101_325;
+
+/** Cryoscopic constant of water, K·kg/mol (Blagden's law). */
+export const WATER_KF = WATER.solvent?.cryoscopic.value ?? 1.86;
+
+/** How a component behaves in water: from its own data. */
+interface Behaviour {
+  readonly component: Component;
+  /** Measured solution data (salt), if any. */
+  readonly measured?: SoluteModel;
+  /** Saturated mass fraction (solute / solution) at t °C; Infinity — mixes in any proportion. */
+  saturation(t: number): number;
+  /** Particles per formula unit in solution (NaCl → 2). */
+  readonly particles: number;
+  readonly molarMass: number;
+  /** Heat capacity as it is at room temperature (solid salt, liquid alcohol), J/(kg·K). */
+  readonly c: number;
+  /** Density as it is at room temperature, kg/m³ (for volumes of solutions without measured data). */
+  readonly density: number;
+}
+
+const behaviours = new Map<string, Behaviour>();
+
+/** The component's behaviour in water, or undefined if it has no data for dissolving. */
+export function soluteBehaviour(id: string): Behaviour | undefined {
+  const cached = behaviours.get(id);
+  if (cached) return cached;
+  const c = COMPONENTS[id as ComponentId];
+  const w = c?.inWater;
+  if (!c || !w || w.solubility === 'immiscible') return undefined;
+  // A liquid that boils below ≈ 150 °C (alcohol, vinegar) would evaporate with the water: only water's own
+  // evaporation is computed yet, so such solutions are not offered rather than computed wrong.
+  if (c.stateAtRoom === 'liquid' && c.boiling && c.boiling.point.value < 150) return undefined;
+  const main = c.stateAtRoom === 'liquid' ? c.phases.liquid : c.phases.solid;
+  const molarMass = c.composition ? molarMassOf(c.composition) : undefined;
+  if (!main?.specificHeat || !main.density || !molarMass) return undefined;
+  const table = w.solubilityTable;
+  const saturation = w.model
+    ? w.model.saturationFraction
+    : w.solubility === 'miscible'
+      ? () => Infinity
+      : table
+        ? (t: number) => {
+            const g = interpolate(table.t, table.gPer100g, t);
+            return g / (100 + g);
+          }
+        : (() => {
+            const g = (w.solubility as { value: number }).value;
+            return () => g / (100 + g);
+          })();
+  const b: Behaviour = {
+    component: c,
+    ...(w.model ? { measured: w.model } : {}),
+    saturation,
+    particles: w.model?.vantHoff.value ?? w.particles ?? (w.ions?.length || 1),
+    molarMass,
+    c: main.specificHeat.value,
+    density: main.density.value,
+  };
+  behaviours.set(id, b);
+  return b;
+}
+
+function interpolate(xs: readonly number[], ys: readonly number[], x: number): number {
+  if (x <= xs[0]!) return ys[0]!;
+  for (let i = 1; i < xs.length; i++) {
+    if (x <= xs[i]!) return ys[i - 1]! + ((ys[i]! - ys[i - 1]!) * (x - xs[i - 1]!)) / (xs[i]! - xs[i - 1]!);
+  }
+  return ys[ys.length - 1]!;
+}
+
+const list = (s: SoluteInput): readonly { component: string; mass: number }[] => (typeof s === 'number' ? (s > 0 ? [{ component: NACL, mass: s }] : []) : s.filter((x) => x.mass > 0));
+
+/** Build amounts with their sums. */
+export function amountsOf(water: number, ice: number, solutes: readonly SoluteMass[]): MixtureAmounts {
+  let salt = 0;
+  let crystals = 0;
+  for (const s of solutes) {
+    salt += s.mass;
+    crystals += s.crystals;
+  }
+  return { water, ice, solutes, salt, crystals };
+}
+
+/** The only solute, if there is exactly one and it has measured data with water (salt). */
+const measuredSingle = (solutes: readonly { component: string }[]): SoluteModel | undefined =>
+  solutes.length === 1 ? soluteBehaviour(solutes[0]!.component)?.measured : undefined;
 
 export function mixtureEnthalpy(m: MixtureAmounts, temperature: number): number {
   const t = temperature - T0;
-  return (m.water - m.ice) * CW * t + m.ice * (-LF + CI * t) + m.salt * CS * t;
+  let h = (m.water - m.ice) * CW * t + m.ice * (-LF + CI * t);
+  for (const s of m.solutes) h += s.mass * (soluteBehaviour(s.component)?.c ?? CW) * t;
+  return h;
 }
 
 /** Heat capacity of the body right now, J/K (for the stability limit). */
-export const mixtureHeatCapacity = (m: MixtureAmounts): number => (m.water - m.ice) * CW + m.ice * CI + m.salt * CS;
-
-/** Ice and crystals in equilibrium at temperature T for given totals. */
-export function equilibriumAt(water: number, salt: number, temperature: number): MixtureAmounts {
-  if (temperature < TE) return { water, salt, ice: water, crystals: salt };
-  const t = temperature - T0;
-  let ice = 0;
-  if (t < 0) {
-    const wf = SOLUTE.fractionFreezingAt(t);
-    const liquidWater = wf > 0 ? (salt * (1 - wf)) / wf : 0;
-    if (liquidWater < water) ice = water - liquidWater;
-  }
-  const liquid = water - ice;
-  const ws = SOLUTE.saturationFraction(Math.max(t, 0));
-  let crystals = 0;
-  if (liquid <= 0) crystals = salt;
-  else if (salt / (liquid + salt) > ws) crystals = salt - (ws / (1 - ws)) * liquid;
-  return { water, salt, ice, crystals: Math.max(0, Math.min(salt, crystals)) };
+export function mixtureHeatCapacity(m: MixtureAmounts): number {
+  let c = (m.water - m.ice) * CW + m.ice * CI;
+  for (const s of m.solutes) c += s.mass * (soluteBehaviour(s.component)?.c ?? CW);
+  return c;
 }
 
-const enthalpyAt = (water: number, salt: number, temperature: number) => mixtureEnthalpy(equilibriumAt(water, salt, temperature), temperature);
+/** Dissolved amounts for so much liquid water at t °C (the rest crystallises). */
+function dissolvedIn(liquidWater: number, solutes: readonly { component: string; mass: number }[], t: number): number[] {
+  return solutes.map((s) => {
+    const ws = soluteBehaviour(s.component)?.saturation(Math.max(t, 0)) ?? 0;
+    if (!Number.isFinite(ws)) return s.mass;
+    return Math.min(s.mass, liquidWater > 0 ? (ws / (1 - ws)) * liquidWater : 0);
+  });
+}
+
+/** Ice and crystals in equilibrium at temperature T for given totals. */
+export function equilibriumAt(water: number, input: SoluteInput, temperature: number): MixtureAmounts {
+  const solutes = list(input);
+  const t = temperature - T0;
+  const done = (ice: number, liquid: number) => {
+    const dissolved = dissolvedIn(liquid, solutes, t);
+    return amountsOf(water, ice, solutes.map((s, i) => ({ component: s.component, mass: s.mass, crystals: Math.max(0, Math.min(s.mass, s.mass - dissolved[i]!)) })));
+  };
+  const measured = measuredSingle(solutes);
+  if (measured) {
+    // Measured curves (salt): the freezing curve and the eutectic, as before.
+    const salt = solutes[0]!.mass;
+    if (t < measured.eutectic.t) return amountsOf(water, water, [{ component: solutes[0]!.component, mass: salt, crystals: salt }]);
+    let ice = 0;
+    if (t < 0) {
+      const wf = measured.fractionFreezingAt(t);
+      const liquidWater = wf > 0 ? (salt * (1 - wf)) / wf : 0;
+      if (liquidWater < water) ice = water - liquidWater;
+    }
+    return done(ice, water - ice);
+  }
+  if (t >= 0 || water <= 0) return done(0, water);
+  // Blagden's law: liquid water m is in equilibrium with ice at t when the dissolved particles
+  // lower its freezing point to t: m = K_f · Σ i·n_dissolved(m) / (−t).
+  const g = (m: number) => {
+    const d = dissolvedIn(m, solutes, t);
+    let particles = 0;
+    solutes.forEach((s, i) => {
+      const b = soluteBehaviour(s.component);
+      if (b) particles += (b.particles * d[i]!) / b.molarMass;
+    });
+    return (WATER_KF * particles) / -t;
+  };
+  if (g(water) >= water) return done(0, water); // still above its freezing point
+  // g(m)/m falls as m grows: find where it is 1 (none — below the eutectic: everything sets).
+  let lo = 0;
+  let hi = water;
+  const ratio = (m: number) => g(m) / m;
+  if (!(ratio(water * 1e-9) >= 1)) return amountsOf(water, water, solutes.map((s) => ({ component: s.component, mass: s.mass, crystals: Number.isFinite(soluteBehaviour(s.component)?.saturation(0) ?? 0) ? s.mass : 0 })));
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (ratio(mid) >= 1) lo = mid;
+    else hi = mid;
+  }
+  const liquid = (lo + hi) / 2;
+  return done(water - liquid, liquid);
+}
+
+const enthalpyAt = (water: number, input: SoluteInput, temperature: number) => mixtureEnthalpy(equilibriumAt(water, input, temperature), temperature);
+
+/** Lowest temperature anything here can still be liquid at, K (the eutectic, or well below for alcohol). */
+function lowestLiquid(input: SoluteInput): number {
+  const measured = measuredSingle(list(input));
+  return T0 + (measured ? measured.eutectic.t : -120);
+}
 
 /**
- * Temperature and phases from total enthalpy H. H(T) only grows with T but has
- * jumps (melting of pure ice at 0 °C, the eutectic): inside a jump the
- * temperature stays put and the amounts are interpolated — that is the plateau.
+ * Temperature and phases from total enthalpy H. H(T) only grows with T but has jumps (melting of
+ * pure ice at 0 °C, the eutectic): inside a jump the temperature stays put and the amounts are
+ * interpolated — that is the plateau.
  */
-export function decodeMixture(h: number, water: number, salt: number): { temperature: number; amounts: MixtureAmounts } {
-  let lo = TE - 200;
+export function decodeMixture(h: number, water: number, input: SoluteInput): { temperature: number; amounts: MixtureAmounts } {
+  let lo = lowestLiquid(input) - 200;
   let hi = T0 + 1500;
-  if (h <= enthalpyAt(water, salt, lo)) return { temperature: lo, amounts: equilibriumAt(water, salt, lo) };
+  if (h <= enthalpyAt(water, input, lo)) return { temperature: lo, amounts: equilibriumAt(water, input, lo) };
   for (let i = 0; i < 80; i++) {
     const mid = (lo + hi) / 2;
-    if (enthalpyAt(water, salt, mid) < h) lo = mid;
+    if (enthalpyAt(water, input, mid) < h) lo = mid;
     else hi = mid;
   }
   const eps = 1e-6;
-  const left = equilibriumAt(water, salt, lo - eps);
-  const right = equilibriumAt(water, salt, hi + eps);
+  const left = equilibriumAt(water, input, lo - eps);
+  const right = equilibriumAt(water, input, hi + eps);
   const hl = mixtureEnthalpy(left, lo);
   const hr = mixtureEnthalpy(right, hi);
   if (hr - hl > 1e-6 && h > hl && h < hr) {
@@ -95,17 +244,24 @@ export function decodeMixture(h: number, water: number, salt: number): { tempera
     const f = (h - hl) / (hr - hl);
     return {
       temperature: (lo + hi) / 2,
-      amounts: { water, salt, ice: left.ice + f * (right.ice - left.ice), crystals: left.crystals + f * (right.crystals - left.crystals) },
+      amounts: amountsOf(water, left.ice + f * (right.ice - left.ice), left.solutes.map((s, i) => ({ ...s, crystals: s.crystals + f * (right.solutes[i]!.crystals - s.crystals) }))),
     };
   }
   const temperature = (lo + hi) / 2;
-  return { temperature, amounts: equilibriumAt(water, salt, temperature) };
+  return { temperature, amounts: equilibriumAt(water, input, temperature) };
 }
 
-/** Mole fraction of water in the liquid (dissolved salt counted as ions). */
+/** The solutes of a body as an input for the functions above (their totals). */
+export const solutesOf = (m: MixtureAmounts): SoluteInput => m.solutes.map((s) => ({ component: s.component, mass: s.mass }));
+
+/** Mole fraction of water in the liquid (dissolved solutes counted as particles: NaCl → 2). */
 export function waterMoleFraction(m: MixtureAmounts): number {
   const nw = (m.water - m.ice) / M_WATER;
-  const ns = ((m.salt - m.crystals) / M_SALT) * VANT_HOFF;
+  let ns = 0;
+  for (const s of m.solutes) {
+    const b = soluteBehaviour(s.component);
+    if (b) ns += ((s.mass - s.crystals) / b.molarMass) * b.particles;
+  }
   return nw <= 0 ? 0 : nw / (nw + ns);
 }
 
@@ -123,11 +279,68 @@ export function mixtureBoilingPoint(m: MixtureAmounts): number {
   return (lo + hi) / 2;
 }
 
-/** Concentration of the liquid part (mass fraction of dissolved salt). */
+/** Concentration of the liquid part (mass fraction of everything dissolved). */
 export function liquidConcentration(m: MixtureAmounts): number {
   const liquid = m.water - m.ice;
   const dissolved = m.salt - m.crystals;
   return liquid + dissolved > 0 ? dissolved / (liquid + dissolved) : 0;
 }
 
-export const MIXTURE_CONSTANTS = { CW, CI, CS, LF, T0, TE } as const;
+/**
+ * Density of the liquid part, kg/m³: measured for a single solute that has a table (salt), otherwise
+ * by adding up volumes (an approximation: real solutions are a little denser).
+ */
+export function solutionDensity(m: MixtureAmounts): number {
+  const measured = measuredSingle(m.solutes);
+  if (measured) return measured.solutionDensity(liquidConcentration(m));
+  const liquid = m.water - m.ice;
+  const rw = WATER.phases.liquid!.density!.value;
+  let mass = liquid;
+  let volume = liquid / rw;
+  for (const s of m.solutes) {
+    const b = soluteBehaviour(s.component);
+    const d = s.mass - s.crystals;
+    mass += d;
+    volume += d / (b?.density ?? rw);
+  }
+  return volume > 0 ? mass / volume : rw;
+}
+
+/** A solution's freezing point (ice starts to form), °C — measured for salt, Blagden's law otherwise. */
+export function solutionFreezingPoint(input: SoluteInput, water: number): number {
+  const solutes = list(input);
+  const measured = measuredSingle(solutes);
+  const total = solutes.reduce((a, s) => a + s.mass, 0);
+  if (measured) return measured.freezingPointOf(total / (total + water));
+  let particles = 0;
+  for (const s of solutes) {
+    const b = soluteBehaviour(s.component);
+    if (b) particles += (b.particles * s.mass) / b.molarMass;
+  }
+  return water > 0 ? -(WATER_KF * particles) / water : 0;
+}
+
+/** The eutectic of a solution: below it everything is solid, °C (measured for salt, else from the curves). */
+export function solutionEutectic(input: SoluteInput): number {
+  const solutes = list(input);
+  const measured = measuredSingle(solutes);
+  if (measured) return measured.eutectic.t;
+  // Saturated at 0 °C and frozen to it: t_e = −K_f · Σ i·S/M (S per kg of water).
+  let t = 0;
+  for (const s of solutes) {
+    const b = soluteBehaviour(s.component);
+    if (!b) continue;
+    const ws = b.saturation(0);
+    if (!Number.isFinite(ws)) return -120;
+    t -= (WATER_KF * b.particles * (ws / (1 - ws))) / b.molarMass;
+  }
+  return t;
+}
+
+export const MIXTURE_CONSTANTS = { CW, CI, LF, T0 } as const;
+
+/** Grams of a component that 100 g of water dissolves at t, °C (Infinity — mixes in any proportion). */
+export function solubilityAt(component: string, t: number): number {
+  const ws = soluteBehaviour(component)?.saturation(t) ?? 0;
+  return Number.isFinite(ws) ? (100 * ws) / (1 - ws) : Infinity;
+}

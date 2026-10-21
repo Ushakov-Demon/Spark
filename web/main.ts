@@ -1,6 +1,6 @@
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
-import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, solubilityPer100, THERMAL_COMMANDS } from '../src/domains/thermal/index.js';
+import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, solubilityAt, solubilityPer100, soluteBehaviour, solutionDensity, THERMAL_COMMANDS, type ThermalBody } from '../src/domains/thermal/index.js';
 import {
   childrenOf,
   COOLERS,
@@ -790,21 +790,62 @@ function chooseAdd(id: SubstanceId) {
   const sub = SUBSTANCES[id];
   if (!canFreezeHere(sub)) addFrozen = false;
   addTemp = sub.category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
-  addGrams = sub.category === 'solid.metal' ? 100 : sub.category === 'solid.material' ? 10 : sub.category === 'solid.salt' ? 10 : 30;
+  addGrams = sub.category === 'solid.metal' ? 100 : sub.category.startsWith('solid.') ? 10 : 30;
 }
 /** A guided procedure stands between its steps: nothing has run yet, the next step will set the device. */
 const waitingForPlan = () => !!preset?.guided && plan.some((s) => s.kind === 'operation') && !running && stepElapsed() === 0;
 
-/** Not all the salt dissolved: how much did, how much lies on the bottom, and what would help — warming or more water. */
+/** The colour dissolved substances give the water (copper sulfate: blue, the deeper the stronger). */
+function tintOf(mix: ThermalBody['state']['mixture']): string | undefined {
+  if (!mix) return undefined;
+  const liquid = mix.water - mix.ice + mix.salt - mix.crystals;
+  for (const x of mix.solutes) {
+    const tint = COMPONENTS[x.component as ComponentId]?.inWater?.tint;
+    if (!tint || !(liquid > 0)) continue;
+    const share = (x.mass - x.crystals) / liquid;
+    return `rgba(${tint[0]}, ${tint[1]}, ${tint[2]}, ${Math.min(0.85, 0.25 + share * 3).toFixed(2)})`;
+  }
+  return undefined;
+}
+
+/** A solid that dissolves in water (salt, sugar, copper sulfate) — asked from its component's data. */
+const dissolves = (s: SubstanceItem) => s.category.startsWith('solid.') && !!s.component && soluteBehaviour(s.component) !== undefined;
+
+/** "Цукор розчиняється…" — for whatever was just poured in. */
+function droppedDissolves(): string {
+  const l = session.result().log;
+  const c = l[l.length - 1]?.command as { substance?: string } | undefined;
+  const sub = c?.substance ? SUBSTANCES[c.substance as SubstanceId] : undefined;
+  return t().guide.dissolved(sub ? tr(sub.name, locale) : '', sub?.component === 'sodium-chloride');
+}
+
+/** Not all of it dissolved: how much did, how much lies on the bottom, and what would help — warming or more water. */
+/** What is dissolved and what lies on the bottom: "солоність 3,5 %" for brine, "цукру 16 %" and so on otherwise. */
+function solutionLines(mix: NonNullable<ThermalBody['state']['mixture']>): string[] {
+  const u = t();
+  const kg = (m: number) => formatQuantity(m, 'kg', { locale, level: 'school' });
+  const name = (c: string) => lowerFirst(tr(COMPONENTS[c as ComponentId]?.genitive ?? COMPONENTS[c as ComponentId]?.name ?? { uk: c, en: c }, locale));
+  const liquid = mix.water - mix.ice + mix.salt - mix.crystals;
+  const out: string[] = [];
+  if (mix.solutes.length === 1 && mix.solutes[0]!.component === 'sodium-chloride') out.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
+  else for (const x of mix.solutes) if (x.mass - x.crystals > 1e-9 && liquid > 0) out.push(u.dissolvedShare(name(x.component), sig(((x.mass - x.crystals) / liquid) * 100, 3, locale)));
+  for (const x of mix.solutes) if (x.crystals > 1e-6) out.push(u.crystals(kg(x.crystals), name(x.component)));
+  return out;
+}
+
 function saltLeftSay(): string {
   const mix = sampleOf(session.state).state.mixture!;
   const T = sampleOf(session.state).state.temperature - 273.15;
   const g = (kg: number) => sig(kg * 1000, 3, locale);
-  const now = solubilityPer100(T);
-  const hot = solubilityPer100(100);
-  const heatHelps = mix.salt <= (mix.water * hot) / 100;
-  return t().guide.saltLeft(g(mix.salt - mix.crystals), g(mix.crystals), sig(T, 3, locale), sig(now, 3, locale), heatHelps, sig(hot, 3, locale));
+  // The solute that lies on the bottom (the one just poured in, usually).
+  const left = [...mix.solutes].sort((a, b) => b.crystals - a.crystals)[0]!;
+  const now = solubilityAt(left.component, T);
+  const hot = solubilityAt(left.component, 100);
+  const heatHelps = left.mass <= (mix.water * hot) / 100;
+  const name = lowerFirst(tr(COMPONENTS[left.component as ComponentId]?.genitive ?? COMPONENTS[left.component as ComponentId]?.name ?? { uk: left.component, en: left.component }, locale));
+  return t().guide.saltLeft(g(left.mass - left.crystals), g(left.crystals), sig(T, 3, locale), sig(now, 3, locale), heatHelps, sig(hot, 3, locale), name);
 }
+const lowerFirst = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
 
 /** A solid picked on the shelf: get it ready in the "add" panel and show the panel. */
 /** How much of a dry sample (salt, a metal) to take at first, g. */
@@ -833,9 +874,10 @@ function usedVolume(): number {
     if (!isThermalBody(e) || !(e.id === SAMPLE_ID || e.id.startsWith(`${SAMPLE_ID}+`))) continue;
     const mix = e.state.mixture;
     if (mix) {
-      // Solution + ice + salt crystals, each with its own density.
+      // Solution + ice + crystals, each with its own density.
       const solution = mix.water - mix.ice + mix.salt - mix.crystals;
-      v += (solution / NACL_SOLUTE.solutionDensity(liquidConcentration(mix)) + mix.ice / COMPONENTS.water.phases.solid!.density!.value + mix.crystals / COMPONENTS['sodium-chloride'].phases.solid!.density!.value) * 1000;
+      const crystals = mix.solutes.reduce((a, x) => a + x.crystals / (soluteBehaviour(x.component)?.density ?? 1000), 0);
+      v += (solution / solutionDensity(mix) + mix.ice / COMPONENTS.water.phases.solid!.density!.value + crystals) * 1000;
       continue;
     }
     const sub = 'substance' in e.params && e.params.substance ? SUBSTANCES[e.params.substance as SubstanceId] : undefined;
@@ -914,7 +956,7 @@ function buildAdd() {
     render();
   };
   // A solid body can also be hung on the dynamometer — in the air, or lowered into the liquid.
-  const hangs = sub.category.startsWith('solid.') && sub.category !== 'solid.salt'
+  const hangs = sub.category.startsWith('solid.') && !dissolves(sub)
     ? (['air', 'liquid'] as const).map((into) => {
         const b = el('button', { type: 'button' }, into === 'air' ? u.measure.hangAir : u.measure.hangLiquid);
         b.onclick = () => void measureNow({ type: 'lab.hang', substance: addSub, mass: addGrams / 1000, into });
@@ -1026,7 +1068,7 @@ function sceneView(): SceneView {
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
     : showingDrop()
-    ? { mood: 'surprised', says: showingDrop() === 'salt' ? u.guide.dissolved : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
+    ? { mood: 'surprised', says: showingDrop() === 'salt' ? droppedDissolves() : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
     : measured
     ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
@@ -1073,7 +1115,7 @@ function sceneView(): SceneView {
   // Salt poured in dry is white grains; a metal its own colour; molten — shiny, glowing when red-hot.
   // (Dry salt with water poured on it is brine now: a liquid again.)
   const dry = isDrySample(sub) && !mix
-    ? { solid: sub.category === 'solid.salt' ? 'rgba(246, 246, 242, 0.97)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), melt: incandescent(T) ?? (sub.category === 'solid.salt' ? 'rgba(235, 240, 245, 0.9)' : '#d9dde2') }
+    ? { solid: BODY_COLOR[sub.id] ?? '#9aa1a8', melt: incandescent(T) ?? (sub.category === 'solid.salt' ? 'rgba(235, 240, 245, 0.9)' : '#d9dde2') }
     : undefined;
   return {
     device,
@@ -1084,6 +1126,7 @@ function sceneView(): SceneView {
     material: params.material,
     lid: params.lid,
     liquid,
+    ...(tintOf(mix) ? { tint: tintOf(mix)! } : {}),
     fill: Math.min(1, usedVolume() / params.size),
     temperature: T,
     solid: mix && mix.water <= 1e-9 ? 0 : s,
@@ -1209,7 +1252,7 @@ function quizReply(q: Quiz | null): string | null {
 let dissolveKey = 0;
 function splash(id: SubstanceId, mass: number, frozen: boolean) {
   const sub = SUBSTANCES[id];
-  if (sub.category === 'solid.salt') {
+  if (dissolves(sub)) {
     dissolveKey++;
     fizz();
     return;
@@ -1246,7 +1289,7 @@ function showingDrop(): 'body' | 'float' | 'salt' | 'salt-left' | null {
   const l = session.result().log;
   const c = l[l.length - 1]?.command;
   if (c?.type !== 'thermal.add') return null;
-  if (SUBSTANCES[c.substance as SubstanceId]?.category === 'solid.salt') return (sampleOf(session.state).state.mixture?.crystals ?? 0) > 1e-5 ? 'salt-left' : 'salt';
+  if (dissolves(SUBSTANCES[c.substance as SubstanceId])) return (sampleOf(session.state).state.mixture?.crystals ?? 0) > 1e-5 ? 'salt-left' : 'salt';
   const pieces = Object.values(session.state.entities).filter((e) => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`));
   const last = pieces[pieces.length - 1];
   return last && isThermalBody(last) && pieceShare(session.state, last) < 1 ? 'float' : 'body';
@@ -1277,7 +1320,7 @@ function renderGuide(): boolean {
     const again = (q: 'mass' | 'volume') => done.some((x) => x.record.quantity === q);
     const what = s.kind === 'add' || s.kind === 'hang' ? tr(('label' in s && s.label) || SUBSTANCES[s.substance].name, locale).toLowerCase() : '';
     // Salt is poured in and dissolves; a body is lowered in; a liquid is poured in.
-    const salt = s.kind === 'add' && SUBSTANCES[s.substance].category === 'solid.salt';
+    const salt = s.kind === 'add' && dissolves(SUBSTANCES[s.substance]);
     const liquid = s.kind === 'add' && !s.frozen && SUBSTANCES[s.substance].category.startsWith('liquid.');
     const temp = s.kind === 'add' ? `${s.temperature} °C` : '';
     const opKind = s.kind === 'operation' ? (OPERATIONS[s.action].uses === 'supply' ? 'current' : s.heater || OPERATIONS[s.action].uses === 'heater' || (s.cooler && COOLERS[s.cooler.id].spec.hot) ? 'heat' : s.cooler || OPERATIONS[s.action].uses === 'cooler' ? 'cool' : 'wait') : 'wait';
@@ -1384,7 +1427,7 @@ function showingWeighing() {
 }
 
 /** How solid bodies look in the vessel. */
-const BODY_COLOR: Partial<Record<string, string>> = { aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
+const BODY_COLOR: Partial<Record<string, string>> = { 'table-salt': 'rgba(246, 246, 242, 0.97)', sugar: '#fbfbf8', 'baking-soda': '#f4f4f0', 'copper-sulfate': '#2f7fd6', chalk: '#f1eee6', 'iron-ii-hydroxide': '#7f9a63', graphite: '#3a3d42', porcelain: '#f6f3ec', brick: '#b5553a', 'stearic-acid': '#f3efe4', tin: '#c8ccd0', aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
 
 function render() {
   const u = t();
@@ -1412,8 +1455,7 @@ function render() {
     const mix = b.state.mixture;
     if (mix && mix.water > 1e-9) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
     else if (!mix) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
-    if (mix && s < 1 && mix.water - mix.ice > 1e-9) parts.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
-    if (mix && mix.crystals > 1e-6) parts.push(u.crystals(formatQuantity(mix.crystals, 'kg', { locale, level: 'school' })));
+    if (mix && s < 1 && mix.water - mix.ice > 1e-9) parts.push(...solutionLines(mix));
     for (const e of Object.values(session.state.entities)) {
       if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`) || !e.label) continue;
       // A block (no melting in the lab): its temperature; a piece of ice: how much of it is still solid.
@@ -2027,9 +2069,9 @@ function buildShelf() {
                 })
               : card({
                   name: x.name,
-                  pic: x.category === 'solid.salt' ? bottleSvg('salt', formulaOf(x), true) : x.bodyShape === 'ball' ? ballSvg(BODY_COLOR[x.id] ?? '#9aa1a8') : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x)),
+                  pic: dissolves(x) || x.category === 'solid.salt' ? bottleSvg('salt', formulaOf(x), true) : x.bodyShape === 'ball' ? ballSvg(BODY_COLOR[x.id] ?? '#9aa1a8') : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x)),
                   ref: `substance:${x.id}`,
-                  note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${x.category === 'solid.salt' ? u.dissolves : u.putIn}`,
+                  note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${dissolves(x) ? u.dissolves : u.putIn}`,
                   ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),
                   // Heating or melting it dry: it becomes the sample itself; otherwise it is put into the liquid.
                   selected: asSample(x) ? x.id === params.substance : x.id === addSub && $<HTMLDetailsElement>('#add').open,
@@ -2128,7 +2170,7 @@ function buildShelf() {
             onPick: () => {
               if (force) {
                 // A body is hung on it: the "add" panel has the body and the buttons.
-                const solid = SUBSTANCES[addSub].category.startsWith('solid.') && SUBSTANCES[addSub].category !== 'solid.salt';
+                const solid = SUBSTANCES[addSub].category.startsWith('solid.') && !dissolves(SUBSTANCES[addSub]);
                 prepareAdd(solid ? addSub : 'aluminium');
                 return;
               }
@@ -2764,8 +2806,7 @@ const labConsole = createConsole({
       const s = b.state.solidFraction ?? 0;
       if (s > 0) lines.push(u.solidShare(Math.round(s * 100)));
       const mix = b.state.mixture;
-      if (mix && mix.water - mix.ice > 1e-9) lines.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
-      if (mix && mix.crystals > 1e-6) lines.push(u.crystals(formatQuantity(mix.crystals, 'kg', { locale, level: 'school' })));
+      if (mix && mix.water - mix.ice > 1e-9) lines.push(...solutionLines(mix));
       const lost = (b.state.boiledOff ?? 0) + (b.state.evaporated ?? 0);
       if (lost > 1e-4) lines.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
     }

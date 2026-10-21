@@ -19,7 +19,8 @@ export interface UiText {
   liquid: string;
   solidShare(pct: number): string;
   salinity(pct: string): string;
-  crystals(mass: string): string;
+  dissolvedShare(what: string, pct: string): string;
+  crystals(mass: string, what?: string): string;
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
@@ -60,8 +61,8 @@ export interface UiText {
     btnHang(into: 'air' | 'liquid'): string;
     dropped: string;
     floats: string;
-    dissolved: string;
-    saltLeft(dissolved: string, left: string, t: string, per100: string, heatHelps: boolean, hot: string): string;
+    dissolved(what: string, salty: boolean): string;
+    saltLeft(dissolved: string, left: string, t: string, per100: string, heatHelps: boolean, hot: string, what: string): string;
     btnDissolve(what: string): string;
     wait(what: string): string;
     btnWait(what: string): string;
@@ -284,7 +285,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     liquid: 'рідина',
     solidShare: (p) => `тверде ${p} %`,
     salinity: (p) => `солоність ${p} %`,
-    crystals: (m) => `кристалів солі ${m}`,
+    dissolvedShare: (w, p) => `${w} ${p} %`,
+    crystals: (m, w) => `на дні кристалів ${w ?? 'солі'} ${m}`,
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
@@ -324,8 +326,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnHang: (into) => (into === 'air' ? '🧷 Підвісити в повітрі' : '🧷 Занурити в рідину'),
       dropped: 'Бульк! Брусок ліг на дно — і вода в мензурці піднялася.',
       floats: 'Бульк! Кубик плаває — і вода в мензурці піднялася.',
-      dissolved: 'Сіль розчиняється — вода стає солоною і густішою.',
-      saltLeft: (d, l, t, s, heat, hot) => `Розчинилося ${d} г, а ${l} г лежить на дні: при ${t} °C 100 г води розчиняє лише ≈ ${s} г солі. ${heat ? 'Нагрій воду — при вищій температурі розчиниться решта.' : `Нагрівання тут мало допоможе (при 100 °C — ≈ ${hot} г на 100 г води): долий води.`}`,
+      dissolved: (w, salty) => `${w} розчиняється — вода стає ${salty ? 'солоною і ' : ''}густішою, а її частинки не видно навіть у мікроскоп.`,
+      saltLeft: (d, l, t, s, heat, hot, w) => `Розчинилося ${d} г, а ${l} г лежить на дні: при ${t} °C 100 г води розчиняє лише ≈ ${s} г ${w}. ${heat ? 'Нагрій воду — при вищій температурі розчиниться решта.' : `Нагрівання тут мало допоможе (при 100 °C — ≈ ${hot} г на 100 г води): долий води.`}`,
       btnDissolve: (w) => `🥄 Розчинити: ${w}`,
       wait: (w) => `${w} — а ти стеж за тим, що відбувається в посуді.`,
       btnWait: (w) => `⏳ ${w}`,
@@ -545,7 +547,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     liquid: 'liquid',
     solidShare: (p) => `solid ${p} %`,
     salinity: (p) => `salinity ${p} %`,
-    crystals: (m) => `salt crystals ${m}`,
+    dissolvedShare: (w, p) => `${w} ${p} %`,
+    crystals: (m, w) => `${w ?? 'salt'} crystals on the bottom ${m}`,
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',
@@ -585,8 +588,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnHang: (into) => (into === 'air' ? '🧷 Hang in the air' : '🧷 Lower into the liquid'),
       dropped: 'Plop! The block lies on the bottom — and the water in the cylinder rose.',
       floats: 'Plop! The cube floats — and the water in the cylinder rose.',
-      dissolved: 'The salt is dissolving — the water turns salty and denser.',
-      saltLeft: (d, l, t, s, heat, hot) => `${d} g dissolved, and ${l} g lies on the bottom: at ${t} °C, 100 g of water dissolves only ≈ ${s} g of salt. ${heat ? 'Warm the water — the rest dissolves when it is hotter.' : `Warming helps little here (≈ ${hot} g per 100 g of water at 100 °C): add more water.`}`,
+      dissolved: (w, salty) => `${w} is dissolving — the water turns ${salty ? 'salty and ' : ''}denser, and its particles cannot be seen even under a microscope.`,
+      saltLeft: (d, l, t, s, heat, hot, w) => `${d} g dissolved, and ${l} g lies on the bottom: at ${t} °C, 100 g of water dissolves only ≈ ${s} g of ${w}. ${heat ? 'Warm the water — the rest dissolves when it is hotter.' : `Warming helps little here (≈ ${hot} g per 100 g of water at 100 °C): add more water.`}`,
       btnDissolve: (w) => `🥄 Dissolve: ${w}`,
       wait: (w) => `${w} — and watch what happens in the vessel.`,
       btnWait: (w) => `⏳ ${w}`,

@@ -806,6 +806,13 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-21',
   }),
+  'wikipedia-freezing-point-depression': source({
+    id: 'wikipedia-freezing-point-depression',
+    title: 'Wikipedia, Freezing-point depression: ΔT = K_f·b·i; water K_f = 1.86 K·kg/mol; holds for dilute solutions',
+    url: 'https://en.wikipedia.org/wiki/Freezing-point_depression',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-21',
+  }),
   spark: source({
     id: 'spark',
     title: 'Spark team (original text)',

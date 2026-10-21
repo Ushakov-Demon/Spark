@@ -6,6 +6,7 @@ export const CALCIUM_CARBONATE = {
   kind: 'compound',
   group: 'mineral',
   name: { uk: 'Крейда (карбонат кальцію)', en: 'Chalk (calcium carbonate)' },
+  genitive: { uk: 'крейди', en: 'chalk' },
   gender: 'f',
   formula: 'CaCO₃',
   composition: { Ca: 1, C: 1, O: 3 },
