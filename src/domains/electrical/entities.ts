@@ -24,6 +24,8 @@ export interface SupplyParams {
   readonly device?: string;
   /** The liquid between the electrodes and the cell constant L / A, 1/m. */
   readonly cell: { readonly body: string; readonly constant: number };
+  /** What the electrodes are made of (a component id: graphite, steel) and their size, m. */
+  readonly electrodes?: { readonly material: string; readonly width: number; readonly height: number; readonly gap: number };
   /** The thermal source that carries the Joule heat into the liquid. */
   readonly heatSource: string;
 }
@@ -45,6 +47,11 @@ export interface SupplyState {
   readonly internal: number;
   /** How long the current has been switched on in this step, s (a protocol step restarts it). */
   readonly time: number;
+  /**
+   * What the current has made so far, mol, by component: gases, the anode metal gone into solution,
+   * a sludge; `+<id>` keys — the same for a metal body lying in the liquid (a bipolar electrode).
+   */
+  readonly made?: Readonly<Record<string, number>>;
 }
 
 export type Supply = Device<'electrical.supply', SupplyParams, SupplyState, 'plus' | 'minus'>;

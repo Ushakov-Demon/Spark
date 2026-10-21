@@ -1,5 +1,9 @@
 import { isSupply } from '../../domains/electrical/entities.js';
-import { electrolysisGases } from '../../domains/electrical/gases.js';
+import { cellReaction, GAS_CONSTANT, molesToMass, type Supply } from '../../domains/electrical/index.js';
+import { SUBSTANCES, type SubstanceId } from '../../substances/catalog.js';
+import type { ComponentId } from '../../components/index.js';
+import type { ThermalBody } from '../../domains/thermal/entities.js';
+import type { Locale } from '../../knowledge/i18n.js';
 import { cellReading } from '../../domains/electrical/conductivity.js';
 import { isThermalBody } from '../../domains/thermal/entities.js';
 import { COMPONENTS } from '../../components/index.js';
@@ -73,18 +77,100 @@ export const PASS_CURRENT: Operation = {
         );
       }
     }
-    const e = cellReading(sample).electrolysis;
-    if (e) {
-      const gases = electrolysisGases(e, charge, b0 && isThermalBody(b0) ? b0.state.temperature : 293.15);
-      const list = gases.map((g) => `${q(g.volume * 1e6, 'mL')} ${tr(COMPONENTS[g.component].genitive ?? COMPONENTS[g.component].name, locale).toLowerCase()}`).join(uk ? ' і ' : ' and ');
-      out.push(uk ? `На електродах виділилося приблизно ${list} (закон Фарадея).` : `About ${list} formed at the electrodes (Faraday's law).`);
-      if (e.note) out.push(tr(e.note, locale));
-      const anode = COMPONENTS[e.anode.component as keyof typeof COMPONENTS];
-      if (anode?.hazards?.irritant && anode.safety?.school) out.push(`⚠ ${tr(anode.safety.school, locale)}`);
-    }
+    out.push(...electrolysisLines(supply, s0 && isSupply(s0) ? s0 : undefined, sample, state, b0 && isThermalBody(b0) ? b0.state.temperature : 293.15, locale));
     if (supply.params.capacity !== undefined && supply.state.charge >= supply.params.capacity) {
       out.push(uk ? 'Батарейка розрядилася — струм припинився.' : 'The battery ran flat — the current stopped.');
     }
     return out;
   },
 };
+
+/**
+ * What the current made, from the cell's own record (Faraday at each electrode, step by step):
+ * gases, an anode that dissolved, a sludge, metal lying in the liquid that became an electrode itself.
+ */
+function electrolysisLines(supply: Supply, before: Supply | undefined, sample: ThermalBody, state: SystemState, T: number, locale: Locale): string[] {
+  const uk = locale === 'uk';
+  const out: string[] = [];
+  const now = supply.state.made ?? {};
+  const was = before?.state.made ?? {};
+  const made = (key: string) => (now[key] ?? 0) - (was[key] ?? 0);
+  // Only the first letter: «гідроксиду заліза(II)» keeps its numeral.
+  const name = (c: string, gen = true) => lowerFirst(tr((gen ? COMPONENTS[c as ComponentId]?.genitive : undefined) ?? COMPONENTS[c as ComponentId]?.name ?? { uk: c, en: c }, locale));
+  const V = (x: number) => `${sig(x, 3, locale).replace('-', '−')} ${uk ? 'В' : 'V'}`;
+  const mL = (moles: number) => formatQuantity(((moles * GAS_CONSTANT * T) / 101_325) * 1e6, 'mL', { locale, level: 'school' });
+  const g = (c: string, moles: number) => `${sig(molesToMass(c as ComponentId, moles) * 1000, 3, locale)} ${uk ? 'г' : 'g'}`;
+  const gases = (prefix: string) => (['hydrogen', 'chlorine', 'oxygen'] as const).filter((c) => made(prefix + c) > 1e-9);
+  // The electrodes.
+  const reading = cellReading(sample);
+  const reaction = reading.electrolysis ? cellReaction(reading.electrolysis, supply.params.electrodes?.material) : undefined;
+  const g0 = gases('');
+  if (g0.length) {
+    const list = g0.map((c) => `${mL(made(c))} ${name(c)}`).join(uk ? ' і ' : ' and ');
+    out.push(uk ? `На електродах виділилося приблизно ${list} (закон Фарадея).` : `About ${list} formed at the electrodes (Faraday's law).`);
+  }
+  const metals = Object.keys(now).filter((k) => k.startsWith('-') && made(k) > 1e-9);
+  for (const k of metals) {
+    const metal = k.slice(1);
+    const e = COMPONENTS[metal as ComponentId]?.electrical?.electrode;
+    const ion = e && 'ion' in e ? e.ion : '';
+    const liquidAnode = reading.electrolysis?.anode;
+    const material = supply.params.electrodes?.material ?? metal;
+    const formula = COMPONENTS[metal as ComponentId]?.formula ?? '';
+    const z = e && 'electrons' in e ? e.electrons : 2;
+    const E = e && 'potential' in e ? e.potential.value : 0;
+    out.push(
+      uk
+        ? `Анод розчинявся (він із матеріалу «${name(material, false)}»): у розчин перейшло ${g(metal, made(k))} ${name(metal)} (${formula} → ${ion} + ${z}e⁻).${liquidAnode ? ` ${name(liquidAnode.component, false).replace(/^./, (x) => x.toUpperCase())} не виділявся: метал окиснюється легше (E° = ${V(E)} проти ${V(liquidAnode.potential?.value ?? 0)}).` : ''}`
+        : `The anode (made of ${name(material, false)}) dissolved: ${g(metal, made(k))} of ${name(metal)} went into solution (${formula} → ${ion} + ${z}e⁻).${liquidAnode ? ` No ${name(liquidAnode.component, false)} formed: the metal is oxidised more easily (E° = ${V(E)} against ${V(liquidAnode.potential?.value ?? 0)}).` : ''}`,
+    );
+  }
+  const sludges = Object.keys(now).filter((k) => !k.includes('|') && !k.startsWith('-') && COMPONENTS[k as ComponentId]?.stateAtRoom === 'solid' && made(k) > 1e-9);
+  for (const c of sludges) out.push(sludgeLine(c, g(c, made(c)), locale));
+  // Metal lying in the liquid: a bipolar electrode.
+  const pieceIds = [...new Set(Object.keys(now).filter((k) => k.includes('|')).map((k) => k.split('|')[0]!))];
+  for (const id of pieceIds) {
+    const piece = state.entities[id as never] as ThermalBody | undefined;
+    const label = piece?.label ? tr(piece.label, locale) : id;
+    const lost = Object.keys(now).filter((k) => k.startsWith(`${id}|-`)).reduce((a, k) => a + molesToMass(k.split('|-')[1] as ComponentId, made(k)), 0);
+    const gas = Object.keys(now).filter((k) => k.startsWith(`${id}|`) && ['hydrogen', 'chlorine', 'oxygen'].includes(k.split('|')[1]!));
+    const sludge = Object.keys(now).filter((k) => k.startsWith(`${id}|`) && !k.includes('|-') && COMPONENTS[k.split('|')[1] as ComponentId]?.stateAtRoom === 'solid');
+    if (!(lost > 1e-9)) continue;
+    out.push(
+      uk
+        ? `Шматок «${label}» у розчині сам став електродом, хоча його ні до чого не під’єднували: бік, звернений до катода, розчинявся (втратив ${sig(lost * 1000, 3, locale)} г), а на боці, зверненому до анода, виділялося ${gas.map((k) => `${mL(made(k))} ${name(k.split('|')[1]!)}`).join(' і ')}.`
+        : `The piece “${label}” in the solution became an electrode itself, though wired to nothing: its side facing the cathode dissolved (lost ${sig(lost * 1000, 3, locale)} g), and ${gas.map((k) => `${mL(made(k))} of ${name(k.split('|')[1]!)}`).join(' and ')} formed on its side facing the anode.`,
+    );
+    for (const k of sludge) out.push(sludgeLine(k.split('|')[1]!, g(k.split('|')[1]!, made(k)), locale));
+  }
+  // Metal in the liquid that would react too, but the model has no data on how.
+  if (reaction && (supply.state.charge - (before?.state.charge ?? 0)) > 0) {
+    for (const e of Object.values(state.entities)) {
+      if (!e.id.startsWith(`${sample.id}+`) || pieceIds.includes(e.id)) continue;
+      const sub = 'params' in e && (e.params as { substance?: string }).substance ? SUBSTANCES[(e.params as { substance: string }).substance as SubstanceId] : undefined;
+      if (sub?.category !== 'solid.metal') continue;
+      const comp = sub.component ? COMPONENTS[sub.component as ComponentId] : undefined;
+      if (comp?.electrical?.electrode) continue;
+      const label = e.label ? tr(e.label, locale) : tr(sub.name, locale);
+      out.push(uk ? `Шматок «${label}» у розчині під струмом теж реагував би (метал у розчині стає електродом), але як саме — модель для цього металу поки не вміє рахувати.` : `The piece “${label}” in the solution would react under the current too (metal in a solution becomes an electrode), but the model cannot yet compute how for this metal.`);
+    }
+  }
+  if (reaction?.note && !metals.length) out.push(tr(reaction.note, locale));
+  if (made('chlorine') > 1e-9) {
+    const cl = COMPONENTS.chlorine;
+    if (cl.hazards?.irritant && cl.safety?.school) out.push(`⚠ ${tr(cl.safety.school, locale)}`);
+  }
+  return out;
+}
+
+/** "A greenish sludge of iron(II) hydroxide fell out: 1.2 g" — with what the component says about it. */
+function sludgeLine(c: string, mass: string, locale: Locale): string {
+  const comp = COMPONENTS[c as ComponentId];
+  const name = lowerFirst(tr(comp?.genitive ?? comp?.name ?? { uk: c, en: c }, locale));
+  const formula = comp?.formula ? ` ${comp.formula}` : '';
+  return locale === 'uk'
+    ? `Йони металу зустріли гідроксид-йони, які утворюються біля катода, — випав осад ${name}${formula}: ${mass}. ${comp ? tr(comp.description.novice ?? comp.description.school, locale) : ''}`
+    : `The metal ions met the hydroxide ions formed at the cathode — a sludge of ${name}${formula} fell out: ${mass}. ${comp ? tr(comp.description.novice ?? comp.description.school, locale) : ''}`;
+}
+
+const lowerFirst = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);

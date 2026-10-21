@@ -7,7 +7,7 @@ import type { SystemState } from '../core/state.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { cellReading } from '../domains/electrical/conductivity.js';
 import { isSupply } from '../domains/electrical/entities.js';
-import { electrolysisGases } from '../domains/electrical/gases.js';
+import { GAS_CONSTANT } from '../domains/electrical/gases.js';
 import { formatDuration, formatQuantity, sig } from '../explain/format.js';
 import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
@@ -410,9 +410,10 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
   electrolysis: ({ steps }) => {
     const s = steps[0]!;
     const { charge, time } = current(s);
-    const e = cellReading(sampleOf(s.result.final)).electrolysis;
-    const gases = e ? electrolysisGases(e, charge, temp(s.result.initial)) : [];
-    const h2 = gases[0]?.volume ?? 0;
+    // Hydrogen the cell made (Faraday, counted step by step by the electrical solver).
+    const sup = (st: SystemState) => Object.values(st.entities).find(isSupply);
+    const moles = (sup(s.result.final)?.state.made?.['hydrogen'] ?? 0) - (sup(s.result.initial)?.state.made?.['hydrogen'] ?? 0);
+    const h2 = (moles * GAS_CONSTANT * temp(s.result.initial)) / 101_325;
     return {
       say: both((l) => (l === 'uk' ? `≈ ${sig(h2 * 1e6, 2, l)} мл водню!` : `≈ ${sig(h2 * 1e6, 2, l)} mL of hydrogen!`)),
       text: both((l) =>

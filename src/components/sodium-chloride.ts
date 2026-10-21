@@ -1,6 +1,7 @@
 import type { SourcedValue } from '../knowledge/types.js';
 import type { Component, SoluteModel } from './types.js';
 import { cite, sv } from './sourced.js';
+import { WATER_TO_HYDROGEN } from './water.js';
 
 /**
  * Sodium chloride (table salt) and its solute model: how it behaves dissolved in
@@ -110,8 +111,8 @@ export const NACL_SOLUTE: SoluteModel = {
   conductivityTempCoeff: NACL_CONDUCTIVITY.tempCoeff,
   electrolysis: {
     voltage: sv(2.19, 'V', 'NaCl solution: chlorine + hydrogen', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', '1.36 V (Cl₂/Cl⁻) − (−0.8277 V) (2H₂O/H₂ + 2OH⁻)', '298.15 K, standard conditions', 2.1877)], 'Thermodynamic minimum from standard potentials; real cells need more because of overpotentials.'),
-    cathode: { component: 'hydrogen', electrons: 2 },
-    anode: { component: 'chlorine', electrons: 2 },
+    cathode: { component: 'hydrogen', electrons: 2, potential: WATER_TO_HYDROGEN },
+    anode: { component: 'chlorine', electrons: 2, potential: sv(1.36, 'V', 'Cl₂ + 2e⁻ ⇌ 2Cl⁻', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', 'Cl₂(g) + 2e⁻ ⇌ 2Cl⁻: 1.36 V', '298.15 K', 1.36)], 'Only one table checked. Oxygen (1.23 V) would come first by the numbers, but it needs a large overpotential, so a concentrated chloride gives chlorine at a graphite anode.') },
     note: {
       uk: 'Під струмом солона вода розкладається: на катоді виділяється водень, на аноді — хлор, а в розчині лишається натрієвий луг (NaOH): 2NaCl + 2H₂O → Cl₂ + H₂ + 2NaOH.',
       en: 'Under current salt water decomposes: hydrogen forms at the cathode, chlorine at the anode, and caustic soda (NaOH) stays in the solution: 2NaCl + 2H₂O → Cl₂ + H₂ + 2NaOH.',

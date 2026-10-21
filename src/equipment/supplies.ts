@@ -100,10 +100,15 @@ export type SupplyId = keyof typeof LIST;
 export const SUPPLIES: Readonly<Record<SupplyId, SupplyItem>> = LIST;
 
 /**
- * The electrodes of the lab: two steel plates, 2 × 5 cm dipped in the liquid,
- * 3 cm apart. Not a product but the experiment's geometry, so no source is needed.
+ * The electrodes of the lab: two plates, 2 × 5 cm dipped in the liquid, 3 cm apart. Not a product
+ * but the experiment's geometry, so no source is needed. Graphite, as in school electrolysis;
+ * steel ones can be chosen (a steel anode dissolves) — `ELECTRODE_MATERIALS`.
  */
-export const ELECTRODES: ElectrodesSpec = { material: 'steel', width: 0.02, height: 0.05, gap: 0.03 };
+export const ELECTRODES: ElectrodesSpec = { material: 'graphite', width: 0.02, height: 0.05, gap: 0.03 };
+/** What the electrodes can be made of (component ids). */
+export const ELECTRODE_MATERIALS = ['graphite', 'steel'] as const;
+export type ElectrodeMaterial = (typeof ELECTRODE_MATERIALS)[number];
+export const electrodesOf = (material: ElectrodeMaterial | undefined): ElectrodesSpec => (material ? { ...ELECTRODES, material } : ELECTRODES);
 /** Cell constant K = L / A, 1/m: the resistance of the liquid between the plates is K / κ. */
 export const cellConstant = (e: ElectrodesSpec): number => e.gap / (e.width * e.height);
 

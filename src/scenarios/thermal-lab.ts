@@ -13,7 +13,7 @@ import { formatDuration, formatQuantity, sig, type ExplainContext } from '../exp
 import { COOLERS, type CoolerId } from '../equipment/coolers.js';
 import { HEATERS, type HeaterId } from '../equipment/heaters.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
-import { ELECTRODES, SUPPLIES, type SupplyId } from '../equipment/supplies.js';
+import { electrodesOf, SUPPLIES, type ElectrodeMaterial, type SupplyId } from '../equipment/supplies.js';
 import { placeSupply } from '../domains/electrical/assembly.js';
 import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
@@ -48,7 +48,7 @@ export interface LabParams {
   /** Cold surroundings (cool-to, freeze; none = the room air). */
   readonly cooler?: { readonly id: CoolerId; readonly setpoint: number };
   /** Power supply with electrodes in the liquid (pass a current); knob 0…1 sets a lab supply's voltage. */
-  readonly supply?: { readonly id: SupplyId; readonly knob: number };
+  readonly supply?: { readonly id: SupplyId; readonly knob: number; readonly electrodes?: ElectrodeMaterial };
   /** How long the operation runs, minutes (for timed operations). */
   readonly duration?: number;
   readonly roomTemp: number; // °C
@@ -92,7 +92,7 @@ export function labSetup(p: LabParams): LabSetup {
     ...(surroundings ? { outside: surroundings, surfaceTo: cooler!.spec.method === 'air' ? LAB_COOLER_ID : LAB_ROOM_ID } : {}),
   });
   const supplyPiece = p.supply
-    ? placeSupply({ item: SUPPLIES[p.supply.id], id: LAB_SUPPLY_ID, knob: p.supply.knob, bodyId: SAMPLE_ID, electrodes: ELECTRODES })
+    ? placeSupply({ item: SUPPLIES[p.supply.id], id: LAB_SUPPLY_ID, knob: p.supply.knob, bodyId: SAMPLE_ID, electrodes: electrodesOf(p.supply.electrodes) })
     : undefined;
   const heater = p.heater
     ? placeHeater({

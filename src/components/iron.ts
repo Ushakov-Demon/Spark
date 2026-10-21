@@ -43,7 +43,7 @@ export const IRON = {
   },
   melting: { point: sv(1538, '°C', '1 atm', 'cross-checked', 0.001, [cite('wikipedia-iron', 'Infobox: melting point', '—', 1538), cite('wikidata', 'Q677 P2101', '—', 1538)]) },
   boiling: { point: sv(2861, '°C', '1 atm', 'cross-checked', 0.001, [cite('wikipedia-iron', 'Infobox: boiling point', '—', 2861), cite('wikidata', 'Q677 P2102', '—', 2861)]) },
-  electrical: { conducts: 'metal', resistivity: sv(96.1e-9, 'Ω·m', 'solid, 20 °C', 'single-source', 0.01, [cite('wikipedia-iron', 'Infobox: electrical resistivity at 20 °C, 96.1 nΩ·m', '20 °C', 96.1e-9)], 'Only the Wikipedia infobox checked so far.') },
+  electrical: { conducts: 'metal', resistivity: sv(96.1e-9, 'Ω·m', 'solid, 20 °C', 'single-source', 0.01, [cite('wikipedia-iron', 'Infobox: electrical resistivity at 20 °C, 96.1 nΩ·m', '20 °C', 96.1e-9)], 'Only the Wikipedia infobox checked so far.'), electrode: { ion: 'Fe²⁺', electrons: 2, potential: sv(-0.44, 'V', 'Fe²⁺ + 2e⁻ ⇌ Fe', 'single-source', 0.02, [cite('wikipedia-standard-electrode-potentials', 'Fe²⁺ + 2e⁻ ⇌ Fe(s): −0.44 V', '298.15 K', -0.44)], 'Only one table checked.'), hydroxide: 'iron-ii-hydroxide' } },
   magnetic: 'ferromagnetic',
   description: {
     novice: { uk: 'Метал, який притягується магнітом. Чисте залізо м’яке; майже все «залізо» навколо нас — це сталь і чавун, сплави заліза з вуглецем.', en: "A metal attracted by magnets. Pure iron is soft; almost all the “iron” around us is steel or cast iron — alloys of iron and carbon." },

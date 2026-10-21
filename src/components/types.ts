@@ -74,10 +74,31 @@ export interface SoluteModel {
 export interface Electrolysis {
   /** Below this voltage (on top of the ohmic drop) no current flows, V. */
   readonly voltage: SourcedValue;
-  readonly cathode: { readonly component: string; readonly electrons: number };
-  readonly anode: { readonly component: string; readonly electrons: number };
+  /** Product at each electrode, electrons per molecule, and the standard potential of that half-reaction, V (vs SHE). */
+  readonly cathode: { readonly component: string; readonly electrons: number; readonly potential?: SourcedValue };
+  /** (With an inert anode — graphite. A metal anode may dissolve instead: see `ElectrodeBehaviour`.) */
+  readonly anode: { readonly component: string; readonly electrons: number; readonly potential?: SourcedValue };
   readonly note?: LocalizedText;
 }
+
+/**
+ * How a material behaves as an electrode. Graphite (like platinum) does not react: the liquid
+ * itself is split. A metal can be oxidised: M → Mⁿ⁺ + n e⁻ — if that comes easier (a lower
+ * standard potential) than what the liquid would give at an inert anode, the anode dissolves.
+ */
+export type ElectrodeBehaviour =
+  | { readonly inert: true; readonly source: SourcedValue }
+  | {
+      /** The metal that goes into solution, if the material is an alloy (steel → iron). */
+      readonly metal?: string;
+      /** The ion it goes into solution as ("Fe²⁺"). */
+      readonly ion: string;
+      readonly electrons: number;
+      /** E° of Mⁿ⁺/M, V (vs SHE). */
+      readonly potential: SourcedValue;
+      /** With the hydroxide ions a cathode makes from water, the ions fall out as this (a component id). */
+      readonly hydroxide?: string;
+    };
 
 export interface InWater {
   /** 'miscible' — mixes in any proportion; otherwise grams per 100 g of water at `solubility.conditions`. */
@@ -143,6 +164,8 @@ export interface Component {
     readonly conductivity?: SourcedValue;
     /** What a current does to the pure liquid (water splits into hydrogen and oxygen). */
     readonly electrolysis?: Electrolysis;
+    /** As an electrode in a solution (graphite stays, iron dissolves). */
+    readonly electrode?: ElectrodeBehaviour;
   };
   readonly magnetic?: 'ferromagnetic' | 'paramagnetic' | 'diamagnetic';
   readonly hazards?: Hazards;

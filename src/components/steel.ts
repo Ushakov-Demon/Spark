@@ -1,4 +1,5 @@
 import type { Component } from './types.js';
+import { cite, sv } from './sourced.js';
 
 export const STEEL = {
   id: 'steel',
@@ -47,6 +48,7 @@ export const STEEL = {
       },
     },
   },
+  electrical: { conducts: 'metal', electrode: { metal: 'iron', ion: 'Fe²⁺', electrons: 2, potential: sv(-0.44, 'V', 'Fe²⁺ + 2e⁻ ⇌ Fe', 'single-source', 0.02, [cite('wikipedia-standard-electrode-potentials', 'Fe²⁺ + 2e⁻ ⇌ Fe(s): −0.44 V', '298.15 K', -0.44)], 'Iron’s value: steel is mostly iron; carbon and alloying elements change it little for this. Stainless steel is protected by a film of chromium oxide and dissolves far less — not modelled.'), hydroxide: 'iron-ii-hydroxide' } },
   magnetic: 'ferromagnetic',
   description: {
     novice: { uk: 'Сплав заліза з невеликою кількістю вуглецю — міцніший за чисте залізо. З нього роблять каструлі, інструменти, конструкції.', en: "An alloy of iron with a little carbon — stronger than pure iron. Used for pots, tools, structures." },

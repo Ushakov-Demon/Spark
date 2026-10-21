@@ -277,7 +277,9 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .scene .psu-text { fill: #6dff8c; font: 600 13px ui-monospace, monospace; }
 .scene .jack.plus { fill: #d33; } .scene .jack.minus { fill: #222; stroke: #666; }
 .scene .wire { fill: none; stroke-width: 3; } .scene .wire.plus { stroke: #d33; } .scene .wire.minus { stroke: #222; }
-.scene .electrode { fill: #8a939d; stroke: #5d656e; }
+.scene .electrode { fill: #b8c0c8; stroke: #7d8790; }
+.scene .electrode.graphite { fill: #3b3f45; stroke: #22262a; }
+.scene .sludge, .scene .cloudy { pointer-events: none; transition: opacity 0.6s; }
 .scene .vessel .inside { fill: rgba(0, 0, 0, 0.14); }
 .scene .vessel .handle { fill: none; stroke: #2b2f36; stroke-width: 5; stroke-linecap: round; }
 .scene .vessel .handle.long { stroke: #6b4a2b; stroke-width: 8; }

@@ -11,6 +11,8 @@ import { COPPER_SULFATE } from './copper-sulfate.js';
 import { ETHANOL } from './ethanol.js';
 import { GLASS } from './glass.js';
 import { GLYCEROL } from './glycerol.js';
+import { GRAPHITE } from './graphite.js';
+import { IRON_II_HYDROXIDE } from './iron-hydroxide.js';
 import { HYDROGEN } from './hydrogen.js';
 import { IRON } from './iron.js';
 import { NITROGEN } from './nitrogen.js';
@@ -58,6 +60,8 @@ const LIST = {
   glass: GLASS,
   brick: BRICK,
   porcelain: PORCELAIN,
+  graphite: GRAPHITE,
+  'iron-ii-hydroxide': IRON_II_HYDROXIDE,
   wood: WOOD,
 } as const satisfies Record<string, Component>;
 

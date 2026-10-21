@@ -10,6 +10,9 @@ const LATENT_VAPORISATION = sv(2_256_000, 'J/kg', 'at 100 °C, 1 atm', 'cross-ch
   cite('wikidata', 'Q283 molar enthalpy of vaporization 40.656 kJ/mol at 373.15 K ÷ 18.015 g/mol', '373.15 K', 2_256_800),
 ]);
 
+/** At a cathode in water: 2H₂O + 2e⁻ → H₂ + 2OH⁻ — what every metal anode in a water solution works against. */
+export const WATER_TO_HYDROGEN = sv(-0.8277, 'V', '2H₂O + 2e⁻ ⇌ H₂ + 2OH⁻', 'single-source', 0.001, [cite('wikipedia-standard-electrode-potentials', '2H₂O + 2e⁻ ⇌ H₂(g) + 2OH⁻: −0.8277 V', '298.15 K', -0.8277)], 'Standard value; in a neutral solution the real potential is about 0.4 V higher (Nernst), which the model leaves out.');
+
 export const WATER = {
   id: 'water',
   kind: 'compound',
@@ -110,8 +113,8 @@ export const WATER = {
         cite('wikipedia-electrolysis-of-water', 'minimum voltage about 1.23 V', '25 °C', 1.23),
         cite('wikipedia-standard-electrode-potentials', 'O₂ + 4H⁺ + 4e⁻ ⇌ 2H₂O: 1.229 V', '298.15 K', 1.229),
       ], 'Thermodynamic minimum; real cells need more (over 1.48 V for a useful current) because of overpotentials.'),
-      cathode: { component: 'hydrogen', electrons: 2 },
-      anode: { component: 'oxygen', electrons: 4 },
+      cathode: { component: 'hydrogen', electrons: 2, potential: WATER_TO_HYDROGEN },
+      anode: { component: 'oxygen', electrons: 4, potential: sv(0.401, 'V', 'O₂ + 2H₂O + 4e⁻ ⇌ 4OH⁻', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', 'O₂(g) + 2H₂O + 4e⁻ ⇌ 4OH⁻: 0.401 V', '298.15 K', 0.401)], 'The same reaction in the form for a neutral or alkaline solution; with 2H₂O/H₂ it gives the 1.229 V of water splitting.') },
     },
   },
   description: {

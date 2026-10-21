@@ -49,7 +49,9 @@ export interface SceneView {
   /** Smoke instead of steam (oil past its smoke point). */
   readonly smoke?: boolean;
   /** Electrolysis: current, A, and the gases that form. */
-  readonly current?: { readonly amps: number; readonly volts: number; readonly toxicGas: boolean };
+  readonly current?: { readonly amps: number; readonly volts: number; readonly toxicGas: boolean; readonly electrodes?: 'graphite' | 'steel'; readonly anodeGas?: boolean };
+  /** A sludge the current made (iron(II) hydroxide): its colour and how much, 0…1 — on the bottom, and the water turns cloudy. */
+  readonly sludge?: { readonly color: string; readonly amount: number };
   /** Setpoint of a cooler, °C (shown on its display). */
   readonly setpoint?: number;
   readonly running: boolean;
@@ -164,6 +166,8 @@ export function createScene(): Scene {
           <g id="sc-ice" class="ice"><rect x="${g.left - 10}" y="0" width="${g.right - g.left + 20}" height="0"/><path class="cracks" d="M${g.left + 20},0 l18,10 l14,-6 M${g.right - 40},0 l-12,9 l-16,-3"/></g>
           <g id="sc-pieces" class="pieces"></g>
           <g id="sc-dissolve" class="dissolving-salt"></g>
+          <rect id="sc-sludge" class="sludge" x="${g.left - 10}" y="${g.bottom}" width="${g.right - g.left + 20}" height="0"/>
+          <rect id="sc-cloudy" class="cloudy" x="${g.left - 10}" y="${g.top - 10}" width="${g.right - g.left + 20}" height="${g.bottom - g.top + 20}"/>
           <g id="sc-crystals" class="crystals">${Array.from({ length: 18 }, (_, i) => `<path d="M${g.left + 18 + ((i * 29) % Math.max(20, g.right - g.left - 34))},${g.bottom - 5 - (i % 3) * 3} l4,-5 l4,5 l-4,4 Z"/>`).join('')}</g>
         </g>
         ${glass ? `<path d="${g.outer}" style="${wallStyle}" stroke-width="2.5"/>` : ''}
@@ -174,7 +178,7 @@ export function createScene(): Scene {
       ${front ? deviceSvg(v.device, g) : ''}
       <g id="sc-gas" class="gas-bubbles">${Array.from({ length: 10 }, (_, i) => {
         const a = g.mouth.l + (g.mouth.r - g.mouth.l) * (i % 2 ? 0.75 : 0.25);
-        return `<circle cx="${a + (i % 3) * 3 - 3}" cy="${g.bottom - 14}" r="${1.5 + (i % 2)}" style="animation-delay:${(i * 0.23) % 1.4}s"/>`;
+        return `<circle ${i % 2 ? '' : 'class="at-anode" '}cx="${a + (i % 3) * 3 - 3}" cy="${g.bottom - 14}" r="${1.5 + (i % 2)}" style="animation-delay:${(i * 0.23) % 1.4}s"/>`;
       }).join('')}</g>
       <g id="sc-vapour" class="steam">${steamPuffs(g, v.lid && !!g.lidPath)}</g>
       <ellipse id="sc-cloud" class="toxic" cx="${CX}" cy="${g.top - 40}" rx="${(g.right - g.left) / 2 + 20}" ry="24"/>
@@ -360,6 +364,21 @@ export function createScene(): Scene {
       const volts = $('sc-volts'), amps = $('sc-amps');
       if (volts) volts.textContent = v.current ? `${v.current.volts.toFixed(1)} V` : '';
       if (amps) amps.textContent = v.current ? `${v.current.amps.toFixed(2)} A` : '';
+      // A steel anode dissolves instead of giving gas; graphite is dark, steel light.
+      svg.querySelectorAll<SVGElement>('.at-anode').forEach((c) => (c.style.display = v.current?.anodeGas === false ? 'none' : ''));
+      svg.querySelectorAll<SVGElement>('.electrode').forEach((x) => x.classList.toggle('graphite', v.current?.electrodes !== 'steel'));
+      const sludge = $<SVGRectElement>('sc-sludge');
+      if (sludge) {
+        const h = v.sludge ? 4 + v.sludge.amount * 22 : 0;
+        sludge.setAttribute('y', String(g.bottom - h + 2));
+        sludge.setAttribute('height', String(h));
+        sludge.style.fill = v.sludge?.color ?? 'transparent';
+      }
+      const cloudy = $<SVGRectElement>('sc-cloudy');
+      if (cloudy) {
+        cloudy.style.fill = v.sludge?.color ?? 'transparent';
+        cloudy.style.opacity = v.sludge ? String(Math.min(0.35, 0.08 + v.sludge.amount * 0.3)) : '0';
+      }
       const gas = $<SVGGElement>('sc-gas');
       if (gas) {
         const flowing = (v.current?.amps ?? 0) > 0.005 && v.running;

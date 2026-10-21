@@ -15,6 +15,8 @@ import {
   type HeaterId,
   type VesselId,
   EQUIPMENT,
+  ELECTRODE_MATERIALS,
+  type ElectrodeMaterial,
 } from '../src/equipment/index.js';
 import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
@@ -83,8 +85,8 @@ import {
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
 import type { SystemState } from '../src/core/state.js';
-import { COMPONENTS, NACL_SOLUTE } from '../src/components/index.js';
-import { cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, electrolysisGases, isSupply } from '../src/domains/electrical/index.js';
+import { COMPONENTS, NACL_SOLUTE, type ComponentId } from '../src/components/index.js';
+import { cellReaction, cellReading, createElectricalSolver, ELECTRICAL_COMMANDS, GAS_CONSTANT, isSupply, molesToMass } from '../src/domains/electrical/index.js';
 import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplies.js';
 import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
@@ -997,7 +999,14 @@ function sceneView(): SceneView {
   const electrolysis = b ? cellReading(b).electrolysis : undefined;
   const liquid: LiquidKind = mix ? 'salt' : liquidKindOf(sub);
   const s = b?.state.solidFraction ?? 0;
-  const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: electrolysis?.anode.component === 'chlorine' } : undefined;
+  // What the cell does now (a steel anode dissolves: no chlorine, no gas at it).
+  const cellNow = sup && electrolysis ? cellReaction(electrolysis, sup.params.electrodes?.material) : undefined;
+  const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: cellNow?.anode.component === 'chlorine', electrodes: (sup.params.electrodes?.material === 'steel' ? 'steel' : 'graphite') as 'steel' | 'graphite', anodeGas: !cellNow?.anode.dissolves } : undefined;
+  // A sludge the current made (grams of every solid product, the anode's and a metal piece's).
+  const sludgeGrams = sup ? Object.entries(sup.state.made ?? {}).reduce((a, [k, n]) => {
+    const c = (k.includes('|') ? k.split('|')[1] : k) as ComponentId;
+    return COMPONENTS[c]?.stateAtRoom === 'solid' && !c.startsWith('-') ? a + molesToMass(c, n) * 1000 : a;
+  }, 0) : 0;
   // The Professor: what is going on, in one line.
   const st = doneRecord?.status;
   const nextLabel = plan.length ? planLabel(plan) : '';
@@ -1085,6 +1094,7 @@ function sceneView(): SceneView {
     // Oil past its smoke point smokes instead of steaming.
     ...(sub.decomposes && T >= sub.decomposes.value - 2 ? { smoke: true } : {}),
     ...(current ? { current } : {}),
+    ...(sludgeGrams > 0.01 ? { sludge: { color: 'rgba(110, 138, 80, 0.92)', amount: Math.min(1, sludgeGrams / 2) } } : {}),
     ...(params.cooler ? { setpoint: params.cooler.setpoint } : {}),
     running,
     decimal: locale === 'uk' ? ',' : '.',
@@ -1412,11 +1422,13 @@ function render() {
     if (lost > 1e-4) parts.push(u.boiledOff(formatQuantity(lost, 'kg', { locale, level: 'school' })));
     // Gases of electrolysis so far (Faraday's law from the charge that passed).
     const supplyNow = Object.values(session.state.entities).find(isSupply);
-    const electrolysis = cellReading(b).electrolysis;
-    if (supplyNow && electrolysis && supplyNow.state.charge > 0) {
-      const gases = electrolysisGases(electrolysis, supplyNow.state.charge, celsius(params.roomTemp));
-      if (gases[0]!.volume > 5e-8) parts.push(u.gases(gases.map((g) => `${formatQuantity(g.volume * 1e6, 'mL', { locale, level: 'school' })} ${tr(COMPONENTS[g.component].genitive ?? COMPONENTS[g.component].name, locale).toLowerCase()}`).join(locale === 'uk' ? ' і ' : ' and ')));
-    }
+    // What the cell made so far (counted at each electrode — and at a metal piece in the liquid).
+    const made = supplyNow?.state.made ?? {};
+    const gasMoles = (c: string) => Object.entries(made).reduce((a, [k, n]) => (k === c || k.endsWith(`|${c}`) ? a + n : a), 0);
+    const gasList = (['hydrogen', 'chlorine', 'oxygen'] as const)
+      .map((c) => ({ c, v: (gasMoles(c) * GAS_CONSTANT * celsius(params.roomTemp)) / 101_325 }))
+      .filter((x) => x.v > 5e-8);
+    if (gasList.length) parts.push(u.gases(gasList.map((x) => `${formatQuantity(x.v * 1e6, 'mL', { locale, level: 'school' })} ${tr(COMPONENTS[x.c].genitive ?? COMPONENTS[x.c].name, locale).toLowerCase()}`).join(locale === 'uk' ? ' і ' : ' and ')));
     return parts.join(', ');
   })();
   $('#r-time').innerHTML = `<span>${u.time}</span><strong>${formatDuration(Math.floor(session.state.time), locale)}</strong>`;
@@ -1850,13 +1862,20 @@ function buildShelf() {
             ...([x.spec.currentLimit, x.spec.internalResistance].some((d) => d?.verification === 'estimate') ? { badge: u.estimateBadge } : {}),
             selected: x.id === params.supply?.id,
             onPick: () => {
-              lastSupply = { id: x.id as SupplyId, knob: lastSupply.knob };
+              lastSupply = { id: x.id as SupplyId, knob: lastSupply.knob, ...(lastSupply.electrodes ? { electrodes: lastSupply.electrodes } : {}) };
               pick({ ...params, supply: lastSupply }, stepChanged);
             },
           }),
         ),
     }));
-    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...familyShelf('device', groups));
+    // What the electrodes are made of: graphite does not react; a steel anode dissolves.
+    const electrodeChips = params.supply
+      ? [el('span', { className: 'muted small' }, u.electrodes), chips(ELECTRODE_MATERIALS.map((m) => [m, tr(COMPONENTS[m].name, locale)] as const), params.supply.electrodes ?? 'graphite', (m) => {
+          lastSupply = { ...params.supply!, electrodes: m as ElectrodeMaterial };
+          pick({ ...params, supply: lastSupply }, stepChanged);
+        })]
+      : [];
+    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...familyShelf('device', groups, electrodeChips));
   } else if (uses === 'heater' || uses === 'either') {
     const h = params.heater ? HEATERS[params.heater.id] : undefined;
     const groups = childrenOf('device.heater').map((c) => ({

@@ -25,6 +25,7 @@ export function placeSupply(o: { readonly item: SupplyItem; readonly id: string;
         ...(spec.capacity ? { capacity: spec.capacity.value * 3600 } : {}),
         device: o.item.id,
         cell: { body: o.bodyId, constant: cellConstant(o.electrodes) },
+        electrodes: { material: o.electrodes.material, width: o.electrodes.width, height: o.electrodes.height, gap: o.electrodes.gap },
         heatSource: heatId,
       }),
       burner({ id: heatId, label: { uk: 'Теплота струму', en: 'Heat of the current' }, power: watts(0), device: o.item.id, driven: true }),

@@ -7,6 +7,7 @@ export interface UiText {
   substance: string;
   amount: string;
   mass: string;
+  electrodes: string;
   coolWhere: string;
   meltWith: string;
   justRoom: string;
@@ -270,6 +271,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     substance: 'Речовина',
     amount: 'Кількість, л',
     mass: 'Маса, г',
+    electrodes: 'Електроди',
     coolWhere: 'Де охолоджуємо',
     meltWith: 'Чим розплавляємо',
     justRoom: 'Просто в кімнаті',
@@ -529,6 +531,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     substance: 'Substance',
     amount: 'Amount, L',
     mass: 'Mass, g',
+    electrodes: 'Electrodes',
     coolWhere: 'Where we cool it',
     meltWith: 'How we melt it',
     justRoom: 'Just in the room',
