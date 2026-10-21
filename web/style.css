@@ -296,7 +296,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .scene .ice rect { fill: rgba(205, 234, 252, 0.95); stroke: #6ea8d6; stroke-width: 1.5; }
 .scene .ice .cracks { fill: none; stroke: #8fc0e6; stroke-width: 1.2; }
 .scene .ice { transition: opacity 0.4s; }
-.scene .crystals path { fill: #fff; stroke: #c9d6e2; stroke-width: 0.8; }
+.scene .crystals path { fill: var(--crystal, #fff); stroke: var(--crystal-edge, #c9d6e2); stroke-width: 0.8; }
 .scene .crystals { transition: opacity 0.8s; }
 .scene .bubbles circle, .scene .gas-bubbles circle { fill: rgba(255, 255, 255, 0.75); opacity: 0; }
 .scene .bubbles.on circle { animation: rise 1.6s infinite ease-in; }

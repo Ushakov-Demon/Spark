@@ -1153,6 +1153,7 @@ function sceneView(): SceneView {
     temperature: T,
     solid: mix && mix.water <= 1e-9 ? 0 : s,
     crystals: mix && mix.salt > 0 ? mix.crystals / mix.salt : 0,
+    ...(crystalTintOf(mix) ? { crystalTint: crystalTintOf(mix)! } : {}),
     boiling: boilingNow,
     // A dry sample (salt, a metal) gives no steam; a hot one glows.
     steam: dry || s >= 1 ? 0 : boilingNow ? (params.lid ? 0.5 : 1) : Math.min(0.6, evaporating) * (params.lid ? 0.3 : 1),
@@ -1465,6 +1466,12 @@ function showingWeighing() {
 const BODY_COLOR: Partial<Record<string, string>> = { 'table-salt': 'rgba(246, 246, 242, 0.97)', sugar: '#fbfbf8', 'baking-soda': '#f4f4f0', 'copper-sulfate': '#2f7fd6', chalk: '#f1eee6', 'iron-ii-hydroxide': '#7f9a63', graphite: '#3a3d42', porcelain: '#f6f3ec', brick: '#b5553a', 'stearic-acid': '#f3efe4', tin: '#c8ccd0', aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
 const formulaOf = (x: SubstanceItem) =>
   x.recipe ? RECIPES[x.recipe as RecipeId].parts.map((p) => COMPONENTS[p.component].formula ?? '').join('+') : (x.component && COMPONENTS[x.component as keyof typeof COMPONENTS]?.formula) || '';
+/** The colour of the crystals on the bottom: of the substance with most of them, as its shelf picture is drawn. */
+function crystalTintOf(mix: { readonly solutes: readonly { readonly component: string; readonly crystals: number }[] } | undefined): string | undefined {
+  const most = mix?.solutes.filter((x) => x.crystals > 0).sort((a, b) => b.crystals - a.crystals)[0];
+  const item = most && Object.values(SUBSTANCES).find((x) => x.component === most.component);
+  return item ? BODY_COLOR[item.id] : undefined;
+}
 /** The shelf's picture of a substance: a bottle of a liquid or a powder, a block or a ball of a solid. */
 const shelfPic = (x: SubstanceItem): string =>
   x.category.startsWith('liquid.')

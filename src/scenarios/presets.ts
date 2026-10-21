@@ -192,6 +192,23 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Виготовлення розчинів із заданою масовою часткою розчиненої речовини.' }],
     expect: 'reached',
   },
+  {
+    id: 'grow-crystals',
+    grade: 9,
+    topic: SOLUTIONS,
+    title: { uk: 'Виростимо кристали мідного купоросу', en: 'Growing copper sulfate crystals' },
+    question: {
+      uk: 'У 100 мл води насиплемо 50 г мідного купоросу — при 20 °C стільки не розчиниться. Нагріємо до 60 °C, поки весь купорос розчиниться, а потім поставимо стакан у холодильник і охолодимо до 20 °C. Скільки купоросу випаде кристалами?',
+      en: 'We put 50 g of copper sulfate into 100 mL of water — at 20 °C that much will not dissolve. We heat it to 60 °C until all of it dissolves, then put the beaker in a fridge and cool it to 20 °C. How much copper sulfate comes out as crystals?',
+    },
+    params: { ...room, ...beaker, liters: 0.1, action: 'heat-to', target: 60, substance: 'water', startTemp: 20, heater: { ...hotplate, knob: 0.5 } },
+    setup: [{ kind: 'add', substance: 'copper-sulfate', mass: 0.05, temperature: 20 }],
+    plan: [{ kind: 'operation', action: 'cool-to', target: 20, cooler: { id: 'fridge', setpoint: 4 } }],
+    choices: [ch('none', 'Нічого — він лишиться розчиненим', 'None — it stays dissolved'), ch('part', 'Частина купоросу', 'Part of it'), ch('all', 'Увесь — 50 г', 'All of it — 50 g')],
+    formulas: [],
+    programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Вирощування кристалів.' }],
+    expect: 'reached',
+  },
   // ---------------------------------------------------------------- 8 grade, heat
   {
     id: 'boil-a-litre',

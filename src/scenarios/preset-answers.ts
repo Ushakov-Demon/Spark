@@ -158,6 +158,32 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ...(dv > 0 && dm > 0 ? { correct: guess } : {}),
     };
   },
+  'grow-crystals': ({ steps }) => {
+    const first = steps[0]!;
+    const last = steps[steps.length - 1]!;
+    const cuso4 = (st: SystemState) => {
+      const b = sampleOf(st);
+      const mix = 'mixture' in b.state ? b.state.mixture : undefined;
+      return { water: mix ? mix.water : 0, ...(mix?.solutes.find((x) => x.component === 'copper-sulfate') ?? { mass: 0, crystals: 0 }) };
+    };
+    const start = cuso4(first.result.initial);
+    const hot = cuso4(first.result.final);
+    const cold = cuso4(last.result.final);
+    const s = (t: number) => solubilityAt('copper-sulfate', t);
+    // Where the solution became saturated on the way down: crystals start to grow there.
+    const t0 = [...Array(81).keys()].map((i) => 80 - i).find((t) => (s(t) / 100) * cold.water < cold.mass) ?? 20;
+    const lost = start.water - cold.water;
+    const correct = cold.crystals < 1e-4 ? 'none' : cold.crystals > cold.mass - 1e-4 ? 'all' : 'part';
+    return {
+      correct,
+      say: both((l) => (l === 'uk' ? `Випало ≈ ${sig(cold.crystals * 1000, 3, l)} г кристалів!` : `≈ ${sig(cold.crystals * 1000, 3, l)} g of crystals came out!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `При 20 °C 100 г води розчиняє лише ≈ ${sig(s(20), 3, l)} г мідного купоросу, тому спочатку на дні лишилося ${g(start.crystals, l)}. При 60 °C розчинність ≈ ${sig(s(60), 3, l)} г — і ${hot.crystals < 1e-4 ? 'весь купорос розчинився' : `на дні лишилося ${g(hot.crystals, l)}`}. Коли розчин охолоняв, приблизно від ${sig(t0, 2, l)} °C він став насиченим, і зайвий купорос почав виходити кристалами. При 20 °C у розчині знову ≈ ${g(cold.mass - cold.crystals, l)}, а ${g(cold.crystals, l)} — сині кристали на дні.${lost > 5e-4 ? ` Кристалів трохи більше, ніж лежало спочатку: під час нагрівання ≈ ${sig(lost * 1000, 2, l)} г води випарувалося, а в меншій кількості води розчиняється менше купоросу.` : ''} Що повільніше охолоджувати, то більші кристали встигають вирости. Модель рахує, скільки кристалів випаде, але не їхній розмір і форму, а також не показує пересиченого розчину: у ній кристали з’являються одразу, щойно розчин стає насиченим.`
+          : `At 20 °C 100 g of water dissolves only ≈ ${sig(s(20), 3, l)} g of copper sulfate, so at first ${g(start.crystals, l)} stayed on the bottom. At 60 °C the solubility is ≈ ${sig(s(60), 3, l)} g — and ${hot.crystals < 1e-4 ? 'all of it dissolved' : `${g(hot.crystals, l)} stayed on the bottom`}. As the solution cooled, from about ${sig(t0, 2, l)} °C it became saturated, and the excess began to come out as crystals. At 20 °C the solution again holds ≈ ${g(cold.mass - cold.crystals, l)}, and ${g(cold.crystals, l)} are blue crystals on the bottom.${lost > 5e-4 ? ` A little more than lay there at first: ≈ ${sig(lost * 1000, 2, l)} g of water evaporated during the heating, and less water dissolves less copper sulfate.` : ''} The slower the cooling, the larger the crystals grow. The model counts how much crystallises, but not the crystals' size or shape, and it shows no supersaturated solution: in it crystals appear as soon as the solution is saturated.`,
+      ),
+    };
+  },
   'mass-fraction': (run) => {
     const m = of(run, 'mass');
     const salt = m.length >= 2 ? m[m.length - 1]!.record.value! - m[0]!.record.value! : 0;

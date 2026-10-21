@@ -40,6 +40,8 @@ export interface SceneView {
   readonly solid: number;
   /** Salt crystals on the bottom, 0…1 (relative amount). */
   readonly crystals: number;
+  /** The crystals' colour (blue copper sulfate); white salt or sugar by default. */
+  readonly crystalTint?: string;
   /** Bubbles in the whole volume (boiling). */
   readonly boiling: boolean;
   /** Steam over the surface, 0…1. */
@@ -320,7 +322,7 @@ export function createScene(): Scene {
         mark.dataset['k'] = mk;
         mark.innerHTML = v.levelMark ? `<path class="level-line" d="M${g.left - 6},${level} H${g.right + 10}"/><path class="level-arrow" d="M${g.right + 22},${level} l-9,-5 v10 z"/><text class="level-text" x="${g.right + 26}" y="${level + 4}">${v.levelMark}</text>` : '';
       }
-      $('sc-crystals')?.setAttribute('style', `opacity:${v.crystals > 0 ? Math.min(1, 0.35 + v.crystals) : 0}`);
+      $('sc-crystals')?.setAttribute('style', `opacity:${v.crystals > 0 ? Math.min(1, 0.35 + v.crystals) : 0}${v.crystalTint ? `;--crystal:${v.crystalTint};--crystal-edge:rgba(10,30,60,0.75)` : ''}`);
       // A step that ended while the heater is still on keeps boiling on the drawing.
       $('sc-bubbles')?.classList.toggle('on', v.boiling);
       // (Not "sc-steam": that id is the gradient in <defs> — the steam was never switched on.)
