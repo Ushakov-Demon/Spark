@@ -99,6 +99,10 @@ export const GLOSSARY: readonly Term[] = [
   t('oxidation', 'Окиснення', 'Oxidation', ['окисн', 'окисл'], ['oxidi', 'oxidat'],
     'Реакція, у якій речовина віддає електрони. Іржавіння заліза й розчинення металевого анода — окиснення; протилежне — відновлення.',
     'A reaction in which a substance gives up electrons. Iron rusting and a metal anode dissolving are oxidation; the opposite is reduction.'),
+  // ---------------------------------------------------------------- substances
+  t('stearic-acid', 'Стеаринова кислота', 'Stearic acid', ['стеарин'], ['stearic'],
+    'Жирна кислота C₁₈H₃₆O₂ — біла воскоподібна речовина, з неї роблять свічки й мило. Плавиться при 69,3 °C, а коли твердне, віддає ≈ 215 кДж/кг прихованої теплоти — тому її беруть для графіка охолодження з «полицею».',
+    'A fatty acid, C₁₈H₃₆O₂ — a white waxy substance used for candles and soap. It melts at 69.3 °C and gives off ≈ 215 kJ/kg of latent heat as it sets — which is why it is used for a cooling graph with a flat “shelf”.'),
   // ---------------------------------------------------------------- mechanics
   t('density', 'Густина', 'Density', ['густин'], ['density'],
     'Маса одиниці об’єму речовини: ρ = m/V. Тіло густіше за рідину тоне, рідше — спливає.',
