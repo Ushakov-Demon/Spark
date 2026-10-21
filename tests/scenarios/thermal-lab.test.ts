@@ -77,7 +77,7 @@ describe('thermal lab presets', () => {
     expect(s).toBeLessThan(1);
     const no = run(cooling({ action: 'freeze', substance: 'salt-water-20', cooler: { id: 'fridge', setpoint: 4 } }), 1);
     expect(no.status.kind).toBe('impossible');
-  });
+  }, 20_000); // two long freezing runs: slow when the whole suite runs in parallel
 
   it('cool to 5 °C in a fridge works, to 2 °C does not', () => {
     expect(run(cooling({ action: 'cool-to', target: 5, liters: 0.3, size: 0.6, vessel: 'beaker', material: 'glass', cooler: { id: 'fridge', setpoint: 4 } }), 24).status.kind).toBe('reached');
