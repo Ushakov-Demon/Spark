@@ -118,6 +118,9 @@ button.wide { width: 100%; }
 .mini-field > span { color: var(--muted); }
 .setup-line { margin: -6px 0 0; font-size: 1rem; }
 .kitchen-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 10px 16px; margin-bottom: 10px; }
+/* The experiment's title and its buttons ("Старт" first of all) stay in view while the page scrolls down to the Professor and below. */
+.kitchen-head { position: sticky; top: 0; z-index: 20; margin: -16px -16px 10px; padding: 12px 16px 10px; background: var(--card); border-radius: 14px 14px 0 0; }
+.kitchen-head.stuck { border-radius: 0 0 12px 12px; box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.35); }
 .kitchen-head .buttons { margin: 0; }
 .side-title { margin: 0 0 8px; font-size: 1rem; }
 .side .card { padding: 12px 14px; }
@@ -731,3 +734,9 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .scene .furnace { fill: #8a5a44; stroke: #5e3b2c; stroke-width: 3; }
 .scene .furnace-in { fill: #3b2d28; stroke: #2a1f1b; stroke-width: 2; transition: fill 0.8s; }
 .scene .clay-triangle { fill: none; stroke: #e9e2d6; stroke-width: 4; stroke-linecap: round; }
+
+/* On a phone the stuck bar keeps only what runs the experiment: Start, Restart, the speed. */
+@media (max-width: 700px) {
+  .kitchen-head.stuck { padding-top: 8px; padding-bottom: 8px; }
+  .kitchen-head.stuck > div:first-child, .kitchen-head.stuck .weigh { display: none; }
+}

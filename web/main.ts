@@ -2855,6 +2855,12 @@ $<HTMLInputElement>('#search').addEventListener('input', (e) => {
   buildShelf();
 });
 
+// A shadow under the experiment's bar once it sticks to the top of the screen.
+{
+  const head = document.querySelector<HTMLElement>('.kitchen-head');
+  if (head) window.addEventListener('scroll', () => head.classList.toggle('stuck', head.getBoundingClientRect().top <= 0.5 && window.scrollY > 0), { passive: true });
+}
+
 buildHeader();
 buildPresets();
 buildShelf();
