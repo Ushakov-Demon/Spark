@@ -190,6 +190,8 @@ let pendingAdds: Added[] = [];
 let doneRecord: Omit<StepRecord, 'adds'> | null = null;
 /** A ready-made experiment in progress: its question and the steps still to do. */
 let preset: Preset | null = null;
+/** The ready-made experiment as it was chosen: starting over begins it anew from this (its steps change params on the way). */
+let presetGiven: Preset | null = null;
 let plan: ProtocolStep[] = [];
 /** The answer to a ready-made experiment's question, once its plan is done. */
 let presetAnswer: PresetAnswer | 'computing' | null = null;
@@ -1707,6 +1709,9 @@ function buildShelf() {
     const shown = groups.filter((g) => g.cards.length);
     // Open: the group last opened here, else the one with the chosen card, else the first.
     if (openFamilies[key] !== '' && !shown.some((g) => g.label === openFamilies[key])) openFamilies[key] = shown.find((g) => g.cards.some((c) => c.querySelector('.selected')))?.label ?? shown[0]?.label ?? '';
+    // What is said about the chosen item (its description, settings) comes right under its family — not after all the others.
+    const home = shown.find((g) => g.cards.some((c) => c.querySelector('.selected')));
+    const info = detail?.length ? el('div', { className: 'item-detail' }, ...detail) : null;
     for (const g of shown) {
       const open = query ? true : g.label === openFamilies[key];
       const head = el('button', { type: 'button', className: `family-head${open ? ' open' : ''}` }, el('span', {}, g.label), el('span', { className: 'family-count' }, String(g.cards.length)));
@@ -1718,8 +1723,9 @@ function buildShelf() {
       };
       out.push(head);
       if (open) out.push(...carousel(g.cards, 2, Math.max(0, g.cards.findIndex((c) => c.querySelector('.selected')))));
+      if (info && g === home) out.push(info);
     }
-    if (detail?.length) out.push(el('div', { className: 'item-detail' }, ...detail));
+    if (info && !home) out.push(info);
     return out;
   };
   const cardGroups = (groups: readonly { label: string; cards: HTMLElement[] }[], detail?: HTMLElement[]) => {
@@ -2259,6 +2265,7 @@ function buildPresets() {
 }
 
 function startPreset(given: Preset) {
+  presetGiven = given;
   // Led step by step: what goes in first, the operation, the rest — no "Start" (see guidedPlan).
   const p: Preset = { ...given, guided: true, plan: guidedPlan(given) };
   delete (p as { setup?: unknown }).setup;
@@ -2739,7 +2746,8 @@ function toggleStart() {
   lastFrame = 0;
   render();
 }
-$('#reset').onclick = () => resetExperiment();
+// Starting over wipes the board with the sponge, like «Новий дослід».
+$('#reset').onclick = () => renew();
 $('#weigh').onclick = () => void weighNow(scale);
 $('#read-level').onclick = () => void measureNow({ type: 'lab.read-level', vessel: params.vessel, size: params.size });
 $<HTMLSelectElement>('#scale').onchange = (e) => {
@@ -2747,7 +2755,9 @@ $<HTMLSelectElement>('#scale').onchange = (e) => {
   store.set('scale', scale);
 };
 function resetExperiment() {
-  // Starting over: a ready-made experiment starts over too, with its whole plan.
+  // Starting over: a ready-made experiment starts over as it was chosen — the steps (a fresh pot without
+  // the lid, waiting for the ice to melt) changed params on the way.
+  if (preset && presetGiven && presetGiven.id === preset.id) return startPreset(presetGiven);
   if (preset) plan = [...(preset.plan ?? [])];
   planTotal = plan.length;
   prediction = null;
