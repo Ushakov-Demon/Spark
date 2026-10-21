@@ -587,6 +587,12 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .scene.reading .prof-side { display: block; }
 .scene .prof-side svg { display: block; width: 100%; height: auto; }
 .scene.reading .bubble { opacity: 0; pointer-events: none; }
+/* A clean board: first a mutter over the shoulder, then he turns round to the class, puzzled. */
+.scene.reading .scene-prof.act-empty-board-look .bubble, .scene.reading .scene-prof.act-empty-board .bubble { opacity: 1; pointer-events: auto; }
+.scene.reading .scene-prof.act-empty-board .prof { display: block; animation: turn-round 0.45s ease-out; }
+.scene.reading .scene-prof.act-empty-board .prof-side { display: none; }
+@keyframes turn-round { from { transform: scaleX(0.15); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .scene.reading .scene-prof.act-empty-board .prof { animation: none; } }
 @media (max-width: 700px) { .scene .prof-side { position: absolute; left: 1%; bottom: 2%; width: 17%; min-width: 56px; } }
 /* The toggle lives over everything, on the front edge of the table at the right (free on a phone too), so the writing starts at the very top of the board. */
 /* Buttons lying on the front edge of the table: the newspaper and the board. */

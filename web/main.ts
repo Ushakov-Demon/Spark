@@ -464,13 +464,13 @@ function sendPower(v: number) {
 // ?idle=3 in the address: start after 3 s (to see the scenes without waiting).
 const IDLE_START = (Number(new URLSearchParams(location.search).get('idle')) || 25) * 1000;
 interface IdleAct {
-  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap' | 'coffee' | 'bytheway';
+  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap' | 'coffee' | 'bytheway' | 'empty-board';
   readonly mood: SceneView['professor']['mood'];
   readonly length: number; // ms, matches the CSS animation
   readonly lines: readonly string[];
   readonly started: number;
 }
-const ACTS: readonly { name: Exclude<IdleAct['name'], 'bytheway'>; mood: IdleAct['mood']; length: number }[] = [
+const ACTS: readonly { name: Exclude<IdleAct['name'], 'bytheway' | 'empty-board'>; mood: IdleAct['mood']; length: number }[] = [
   { name: 'pace', mood: 'thinking', length: 9000 },
   { name: 'glasses', mood: 'thinking', length: 9000 },
   { name: 'yawn', mood: 'neutral', length: 6000 },
@@ -482,6 +482,10 @@ const ACTS: readonly { name: Exclude<IdleAct['name'], 'bytheway'>; mood: IdleAct
 let lastActivity = performance.now();
 let nextActAt = lastActivity + IDLE_START;
 let idleAct: IdleAct | null = null;
+/** Since when the Professor reads the board (ms), and whether he has already found it empty this time. */
+let readingSince: number | null = null;
+let emptyBoardSeen = false;
+const EMPTY_BOARD_AFTER = 3000;
 let lastActName = '';
 let idleLine = -1;
 /** Idle scenes since the last newspaper: after two, the Professor remembers something to read. */
@@ -601,6 +605,19 @@ function idleTick(now: number): boolean {
     if (line === idleLine) return false;
     idleLine = line;
     return true;
+  }
+  // Looking at a clean board for a while: the Professor mutters over his shoulder, then turns round, puzzled.
+  if (!scene.reading) {
+    readingSince = null;
+    emptyBoardSeen = false;
+  } else if (!running && !paper.open) {
+    readingSince ??= now;
+    if (!emptyBoardSeen && now - readingSince >= EMPTY_BOARD_AFTER && !boardNow().length) {
+      emptyBoardSeen = true;
+      idleAct = { name: 'empty-board', mood: 'surprised', length: 9000, lines: t().emptyBoard, started: now };
+      idleLine = 0;
+      return true;
+    }
   }
   // New scenes only when nothing is going on.
   if (running || document.hidden || now < nextActAt || scene.reading || paper.open) return false;
@@ -1062,7 +1079,10 @@ function sceneView(): SceneView {
   const reply = quizReply(quiz);
   const verdict = predictionVerdict();
   const professor: SceneView['professor'] = idleAct
-    ? { mood: idleAct.mood, says: idleAct.lines[Math.max(0, idleLine)] ?? '', act: idleAct.name }
+    ? idleAct.name === 'empty-board' && idleLine <= 0
+      ? // The first line still over the shoulder, reading; then he turns round.
+        { mood: 'thinking', says: idleAct.lines[0] ?? '', act: 'empty-board-look' }
+      : { mood: idleAct.mood, says: idleAct.lines[Math.max(0, idleLine)] ?? '', act: idleAct.name }
     : reply
     ? { mood: quiz!.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.right === false ? 'thinking' : 'happy', says: reply }
     : verdict && presetAnswer && presetAnswer !== 'computing'
