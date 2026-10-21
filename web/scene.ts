@@ -168,7 +168,7 @@ export function createScene(): Scene {
         </g>
         ${glass ? `<path d="${g.outer}" style="${wallStyle}" stroke-width="2.5"/>` : ''}
         <path id="sc-glow" class="glow" d="${g.outer}"/>
-        ${g.extras}
+        ${v.device === 'bunsen' || v.device === 'spirit' ? g.extras : g.extras.replace(/<path class="clay-triangle"[^>]*\/>/, '')}
         ${v.lid && g.lidPath ? `<path class="lid" d="${g.lidPath}" style="fill:${metal.fill};stroke:${metal.edge}"/>` : ''}
       </g>
       ${front ? deviceSvg(v.device, g) : ''}

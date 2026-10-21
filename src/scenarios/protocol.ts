@@ -7,6 +7,9 @@ import { celsius, kilograms, type Seconds } from '../core/units.js';
 import { isBurner, isHeater, isThermalBody } from '../domains/thermal/entities.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import type { ScaleId } from '../equipment/scales.js';
+import { canHeat } from '../equipment/compatibility.js';
+import { HEATERS } from '../equipment/heaters.js';
+import { VESSELS } from '../equipment/vessels.js';
 import type { LabCommand } from './lab-knowledge.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SubstanceId } from '../substances/catalog.js';
@@ -68,6 +71,12 @@ export interface FreshStep {
 /** The setup for a fresh run: the same, changed as the step says (a furnace replaces the heater and back). */
 export function freshParams(base: LabParams, step: FreshStep): LabParams {
   const next: LabParams = { ...base, ...(step.lid === undefined ? {} : { lid: step.lid }), ...(step.set ?? {}) };
+  // The new vessel does not go on the old heater (a crucible is not put on a hob): it stands on the table till the next step.
+  if (next.heater && !step.set?.heater && !canHeat(HEATERS[next.heater.id], VESSELS[next.vessel], next.material, next.size).ok) {
+    const { heater: _h, ...rest } = next;
+    void _h;
+    return rest;
+  }
   if (step.set?.cooler) {
     const { heater: _h, ...rest } = next;
     void _h;

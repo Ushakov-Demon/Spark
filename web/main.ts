@@ -787,6 +787,9 @@ function chooseAdd(id: SubstanceId) {
   addTemp = sub.category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
   addGrams = sub.category === 'solid.metal' ? 100 : sub.category === 'solid.material' ? 10 : sub.category === 'solid.salt' ? 10 : 30;
 }
+/** A guided procedure stands between its steps: nothing has run yet, the next step will set the device. */
+const waitingForPlan = () => !!preset?.guided && plan.some((s) => s.kind === 'operation') && !running && stepElapsed() === 0;
+
 /** Not all the salt dissolved: how much did, how much lies on the bottom, and what would help — warming or more water. */
 function saltLeftSay(): string {
   const mix = sampleOf(session.state).state.mixture!;
@@ -1031,7 +1034,7 @@ function sceneView(): SceneView {
         ? { mood: 'sooty', says: u.prof.smoke }
         : { mood: 'thinking', says: u.prof.failed }
     : !running && stepElapsed() === 0
-      ? labImpossibility(params)
+      ? labImpossibility(params) && !waitingForPlan()
         ? { mood: 'thinking', says: u.prof.impossible }
         : OPERATIONS[params.action].needsAdded && !session.result().log.some((e) => e.ok && e.kind === 'matter')
         ? { mood: 'thinking', says: tr(OPERATIONS[params.action].needsAdded!, locale) }
@@ -1523,7 +1526,8 @@ function render() {
     const phase = phaseNote();
     if (phase) msg.push(`<div class="phase"><p>${phase.text}</p><div class="progress"><span style="--p:${phase.pct}%"></span></div></div>`);
     for (const w of warnings) msg.push(`<p>⚠ ${tr(w, locale)}</p>`);
-    const impossible = labImpossibility(stepP);
+    // Between the steps of a guided procedure the setup only waits for the next one (a crucible on the table before the furnace).
+    const impossible = waitingForPlan() ? undefined : labImpossibility(stepP);
     if (impossible) {
       // No point going on as it is: say why, offer to stop or to change the conditions.
       const stop = running || stepElapsed() > 0 ? `<button type="button" class="stop" data-stop="1">${u.offerStop}</button>` : '';

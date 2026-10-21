@@ -677,7 +677,7 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 /* ---------- a guided procedure under the scene ---------- */
 .guide { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--bg); display: grid; gap: 6px; justify-items: start; }
 .guide p { margin: 0; }
-.guide-step { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+.guide-step { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em; color: var(--accent); } /* not upper case: «КРОК 3 З 3» reads as «3 3 3» */
 .guide.table { justify-items: stretch; }
 .density-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .density-table th, .density-table td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; }
