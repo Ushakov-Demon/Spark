@@ -2,6 +2,7 @@ import type { Command } from '../core/commands.js';
 import type { ExperimentResult } from '../core/experiment.js';
 import { createSimulation, type Simulation } from '../core/simulation.js';
 import { seconds } from '../core/units.js';
+import { liquidHeat } from '../substances/types.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { runExperiment } from '../core/experiment.js';
 import { energySplit } from '../domains/thermal/energy.js';
@@ -51,7 +52,7 @@ export function paperTime(p: LabParams): number | undefined {
   const power = canHeat(heater, VESSELS[p.vessel], p.material, p.size).ok ? powerAt(heater, p.heater.rating, p.heater.knob) : 0;
   if (!(power > 0)) return undefined;
   const m = (p.liters / 1000) * sub.liquid.density.value;
-  const c = sub.liquid.specificHeat.value;
+  const c = liquidHeat(sub).value;
   let q = 0;
   let t = p.startTemp;
   const tm = sub.freezing?.point.value;

@@ -90,6 +90,11 @@ export interface BurnerParams {
    * liquid) and kept in `state.power`; `params.power` is then unused.
    */
   readonly driven?: boolean;
+  /**
+   * A flame: its temperature, K. A body in it can never get hotter: the heat it takes falls
+   * as it nears the flame's temperature (what it does not take goes past it into the room).
+   */
+  readonly flame?: number;
 }
 export interface BurnerState {
   readonly energyDelivered: Joules;
@@ -227,7 +232,7 @@ export function reservoir(o: Common & { readonly temperature: Kelvin; readonly d
   };
 }
 
-export function burner(o: Common & { readonly power: Watts; readonly on?: boolean; readonly device?: string; readonly driven?: boolean }): Burner {
+export function burner(o: Common & { readonly power: Watts; readonly on?: boolean; readonly device?: string; readonly driven?: boolean; readonly flame?: number }): Burner {
   if (!(o.power >= 0)) throw new RangeError(`power must be ≥ 0, got ${o.power}`);
   return {
     id: entityId(o.id),
@@ -235,7 +240,7 @@ export function burner(o: Common & { readonly power: Watts; readonly on?: boolea
     ...withLabel(o.label),
     transform: transform(o.position),
     ports: SURFACE,
-    params: { power: o.power, on: o.on ?? true, ...(o.device === undefined ? {} : { device: o.device }), ...(o.driven ? { driven: true } : {}) },
+    params: { power: o.power, on: o.on ?? true, ...(o.device === undefined ? {} : { device: o.device }), ...(o.driven ? { driven: true } : {}), ...(o.flame ? { flame: o.flame } : {}) },
     state: { energyDelivered: joules(0), ...(o.driven ? { power: 0 } : {}) },
   };
 }

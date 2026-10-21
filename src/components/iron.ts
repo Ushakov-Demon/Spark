@@ -6,6 +6,7 @@ export const IRON = {
   kind: 'element',
   group: 'metal',
   name: { uk: 'Залізо', en: 'Iron' },
+  genitive: { uk: 'заліза', en: 'iron' },
   gender: 'n',
   formula: 'Fe',
   composition: { Fe: 1 },

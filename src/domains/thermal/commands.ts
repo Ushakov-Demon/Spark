@@ -188,7 +188,8 @@ export const add: CommandHandler<AddCommand> = {
       return ok({ state: withEntities(state, [next]), kind: 'matter', externalEnergy: externalMix, trace: [] });
     }
 
-    const solid = c.frozen ? 1 : 0;
+    // A metal block, a lump of salt: solid below its melting point (it is never "frozen" — it is solid at room temperature).
+    const solid = c.frozen || (sub.melt !== undefined && tm !== undefined && c.temperature < tm) ? 1 : 0;
     const hAdded = specificEnthalpy(c.temperature, solid, th.specificHeat, th.phase);
     const external = c.mass * hAdded;
 

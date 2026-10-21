@@ -6,6 +6,7 @@ export interface UiText {
   target: string;
   substance: string;
   amount: string;
+  mass: string;
   coolWhere: string;
   meltWith: string;
   justRoom: string;
@@ -148,6 +149,7 @@ export interface UiText {
     boiling: string;
     freezing: string;
     melting: string;
+    meltingDry: string;
     current: string;
     chlorine: string;
     noCurrent: string;
@@ -180,6 +182,8 @@ export interface UiText {
   addedState(name: string, solidPct: number): string;
   phaseFreezing(t: string, pct: number): string;
   phaseMelting(t: string, pct: number): string;
+  phaseMeltingDry(t: string, pct: number): string;
+  furnaceSetpoint: string;
   phaseBoiling(t: string, lost: string): string;
   expectNone: string;
   expectPrediction: string;
@@ -264,6 +268,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     target: 'Цільова температура, °C',
     substance: 'Речовина',
     amount: 'Кількість, л',
+    mass: 'Маса, г',
     coolWhere: 'Де охолоджуємо',
     meltWith: 'Чим розплавляємо',
     justRoom: 'Просто в кімнаті',
@@ -404,6 +409,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       boiling: 'Кипить! Бачиш бульбашки? Температура більше не росте — уся теплота йде на пару.',
       freezing: 'Лід росте! Поки вода замерзає, температура стоїть на місці.',
       melting: 'Тане! Уся теплота зараз іде на плавлення льоду.',
+      meltingDry: 'Плавиться! Температура стоїть, а вся теплота йде на плавлення.',
       current: 'Іде струм! Бачиш бульбашки на електродах? Це гази виділяються.',
       chlorine: 'Кхе-кхе! Це хлор… У справжній лабораторії тут потрібна витяжка!',
       noCurrent: 'Струму майже немає… Може, у воді чогось бракує? Спробуй досипати солі.',
@@ -436,6 +442,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     addedState: (n, p) => `${n}: ${p > 0 ? `тверде ${p} %` : 'розтануло'}`,
     phaseFreezing: (t, p) => `❄ Температура стоїть на ${t}: речовина замерзає й віддає приховану теплоту. Замерзло ${p} %.`,
     phaseMelting: (t, p) => `💧 Температура стоїть на ${t}: речовина тане й забирає приховану теплоту. Розтануло ${p} %.`,
+    phaseMeltingDry: (t, p) => `🔥 Температура стоїть на ${t}: речовина плавиться й забирає приховану теплоту. Розплавилося ${p} %.`,
+    furnaceSetpoint: 'Температура в печі, °C',
     phaseBoiling: (t, l) => `♨ Температура стоїть на ${t}: речовина кипить — уся теплота йде на пароутворення. Википіло ${l}.`,
     expectNone: 'Без прогнозу',
     expectPrediction: 'Мій прогноз',
@@ -518,6 +526,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     target: 'Target temperature, °C',
     substance: 'Substance',
     amount: 'Amount, L',
+    mass: 'Mass, g',
     coolWhere: 'Where we cool it',
     meltWith: 'How we melt it',
     justRoom: 'Just in the room',
@@ -658,6 +667,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       boiling: 'It’s boiling! See the bubbles? The temperature no longer rises — all the heat turns water into steam.',
       freezing: 'Ice is growing! While water freezes, the temperature stands still.',
       melting: 'Melting! All the heat goes into melting the ice now.',
+      meltingDry: 'It is melting! The temperature stands still, all the heat goes into melting.',
       current: 'Current is flowing! See the bubbles at the electrodes? Those are gases.',
       chlorine: 'Cough, cough! That’s chlorine… A real lab would need a fume hood here!',
       noCurrent: 'Almost no current… Maybe something is missing in the water? Try adding salt.',
@@ -690,6 +700,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     addedState: (n, p) => `${n}: ${p > 0 ? `solid ${p} %` : 'melted'}`,
     phaseFreezing: (t, p) => `❄ The temperature stays at ${t}: the substance is freezing and giving off latent heat. Frozen: ${p} %.`,
     phaseMelting: (t, p) => `💧 The temperature stays at ${t}: the substance is melting and taking in latent heat. Melted: ${p} %.`,
+    phaseMeltingDry: (t, p) => `🔥 The temperature stays at ${t}: the substance is melting and taking in latent heat. Melted: ${p} %.`,
+    furnaceSetpoint: 'Temperature in the furnace, °C',
     phaseBoiling: (t, l) => `♨ The temperature stays at ${t}: the substance is boiling — all the heat goes into vaporisation. Boiled off: ${l}.`,
     expectNone: 'No prediction',
     expectPrediction: 'My prediction',

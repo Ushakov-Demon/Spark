@@ -271,6 +271,37 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'melt-tin': ({ steps }) => {
+    const s = steps[0]!;
+    const p = plateau(s);
+    const tm = COMPONENTS.tin.melting!.point.value;
+    const lf = COMPONENTS.tin.melting!.latentHeat!.value / 1000;
+    return {
+      ...(p > 30 ? { correct: 'stays' } : {}),
+      say: both((l) => (l === 'uk' ? 'Бачив «полицю» на графіку?' : 'Did you see the flat “shelf” on the graph?')),
+      text: both((l) =>
+        l === 'uk'
+          ? `Поки олово плавилося, термометр приблизно ${D(p, l)} показував ${sig(tm, 4, l)} °C — температура стояла на місці, хоч спиртівка гріла весь час. Уся теплота йшла на руйнування кристалічної ґратки: ${sig(lf, 3, l)} кДж на кожен кілограм (питома теплота плавлення олова). На графіку нагрівання це «полиця»; лише коли розплавився останній шматочок, температура знову пішла вгору.`
+          : `While the tin was melting, the thermometer showed ${sig(tm, 4, l)} °C for about ${D(p, l)} — the temperature stood still although the lamp kept heating. All the heat went into breaking the crystal lattice: ${sig(lf, 3, l)} kJ for every kilogram (the latent heat of fusion of tin). On the heating graph it is a flat “shelf”; only after the last bit melted did the temperature rise again.`,
+      ),
+    };
+  },
+  'salt-in-pot': ({ steps }) => {
+    const first = steps[0]!;
+    const furnace = steps.find((x) => x.params.cooler);
+    const tm = COMPONENTS['sodium-chloride'].melting!.point.value;
+    const correct = first.status.kind === 'vessel-fails' ? 'pot-burns' : first.status.kind === 'stalls' ? 'too-cold' : first.status.kind === 'reached' ? 'melts' : undefined;
+    const top = first.status.kind === 'stalls' ? first.status.limit : temp(first.result.final);
+    return {
+      ...(correct ? { correct } : {}),
+      say: both((l) => (l === 'uk' ? 'На плиті сіль не розплавити!' : 'You cannot melt salt on a stove!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `На газовій плиті сіль нагрілася лише до ≈ ${C(top, l)} — далі втрати (повітря забирає теплоту, а розпечена каструля ще й випромінює її) зрівнялися з теплотою від полум’я. До ${sig(tm, 4, l)} °C так не дійти, а каструля вціліла — сталь плавиться значно вище.${furnace ? ` У муфельній печі при 900 °C та сама сіль у порцеляновому тиглі розплавилася за ${D(reachedAt(furnace), l)}.` : ''}`
+          : `On a gas stove the salt only got to ≈ ${C(top, l)} — then the losses (the air takes heat away, and the red-hot pot also radiates it) matched the heat from the flame. That is far from ${sig(tm, 4, l)} °C; the pot survived — steel melts much higher.${furnace ? ` In a muffle furnace at 900 °C the same salt in a porcelain crucible melted in ${D(reachedAt(furnace), l)}.` : ''}`,
+      ),
+    };
+  },
   'freeze-water': ({ steps }) => {
     const s = steps[0]!;
     const total = reachedAt(s);

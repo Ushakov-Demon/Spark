@@ -20,7 +20,7 @@ import {
   type ThermalEntity,
   type Thermostat,
 } from './entities.js';
-import { isSupplyLink, isThermalLink, type SupplyLink, type ThermalLink } from './links.js';
+import { isSupplyLink, isThermalLink, radiationExcess, radiationSlope, type SupplyLink, type ThermalLink } from './links.js';
 import { decodeEnthalpy, specificHeatAt, type PhaseParams } from './phase.js';
 import { latentAt, massTransferCoefficient, saturationDensity, saturationPressure, type EvaporationParams } from './evaporation.js';
 import { decodeMixture, equilibriumAt, MIXTURE_CONSTANTS, mixtureBoilingPoint, mixtureEnthalpy, mixtureHeatCapacity, waterMoleFraction, type MixtureAmounts } from './mixture.js';
@@ -86,6 +86,9 @@ interface Edge {
   vaporEnergy: number;
   vaporMass: number;
 }
+
+/** Up to this temperature a body in a flame takes its whole measured share (shares were measured heating water), K. */
+const FLAME_FULL_SHARE = ZERO_CELSIUS_IN_KELVIN + 100;
 
 /** Below this mass a body counts as boiled dry, kg. */
 const DRY_MASS = 1e-6;
@@ -165,14 +168,27 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
       const supplies: { link: SupplyLink; burner: Burner; target: number; power: number }[] = [];
       const burners: Burner[] = [];
       for (const e of Object.values(state.entities)) if (isBurner(e)) burners.push(e);
-      for (const c of state.connections) {
-        if (!isSupplyLink(c)) continue;
-        const b = state.entities[c.a.entity];
-        const target = index.get(c.b.entity);
-        if (!b || !isBurner(b) || target === undefined) continue;
-        const power = working(b) ? burnerPower(b) * c.params.share : 0;
-        nodes[target]!.supplied += power;
-        supplies.push({ link: c, burner: b, target, power });
+      // A flame gives a body less as it nears the flame's temperature (all of its share up to 100 °C, where
+      // the share was measured with water); what the body does not take goes on to the room.
+      const passing = new Map<string, number>();
+      const links = state.connections.filter(isSupplyLink);
+      for (const finite of [true, false]) {
+        for (const c of links) {
+          const b = state.entities[c.a.entity];
+          const target = index.get(c.b.entity);
+          if (!b || !isBurner(b) || target === undefined || nodes[target]!.finite !== finite) continue;
+          let power = working(b) ? burnerPower(b) * c.params.share : 0;
+          if (finite && b.params.flame) {
+            const f = Math.min(1, Math.max(0, (b.params.flame - nodes[target]!.temperature) / (b.params.flame - FLAME_FULL_SHARE)));
+            passing.set(b.id, (passing.get(b.id) ?? 0) + power * (1 - f));
+            power *= f;
+          } else if (!finite) {
+            power += passing.get(b.id) ?? 0;
+            passing.delete(b.id);
+          }
+          nodes[target]!.supplied += power;
+          supplies.push({ link: c, burner: b, target, power });
+        }
       }
 
       // 2. Edges. Dangling links are reported by validateState(), the solver just skips them.
@@ -181,11 +197,13 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
         if (!isThermalLink(c)) continue;
         const a = index.get(c.a.entity);
         const b = index.get(c.b.entity);
-        if (a === undefined || b === undefined || a === b || c.params.conductance === 0) continue;
+        if (a === undefined || b === undefined || a === b || (c.params.conductance === 0 && !c.params.radiation)) continue;
         const surface = c.params.origin?.type === 'convection' && c.params.origin.surface === true;
         edges.push({ a, b, g: c.params.conductance, link: c, moved: 0, surface, vaporEnergy: 0, vaporMass: 0 });
-        nodes[a]!.sumG += c.params.conductance;
-        nodes[b]!.sumG += c.params.conductance;
+        // Radiation grows as T³: its slope at the hotter end (with room to warm up during the step) bounds the sub-step.
+        const gRad = c.params.radiation ? radiationSlope(c.params.radiation, 1.2 * Math.max(nodes[a]!.temperature, nodes[b]!.temperature)) : 0;
+        nodes[a]!.sumG += c.params.conductance + gRad;
+        nodes[b]!.sumG += c.params.conductance + gRad;
         // Evaporation behaves like an extra (strongly temperature-dependent) conductance: include it in the stability limit.
         const ev = nodes[a]!.evaporation;
         if (surface && ev && c.params.origin?.type === 'convection') {
@@ -224,6 +242,8 @@ export function createThermalSolver(options: ThermalSolverOptions = {}): Solver 
           const { a, b, g } = edge;
           if (isDry(nodes[a]!) || isDry(nodes[b]!)) continue;
           let q = g * (nodes[a]!.temperature - nodes[b]!.temperature); // W, a → b
+          const rad = edge.link.params.radiation;
+          if (rad) q += radiationExcess(rad, nodes[a]!.temperature, nodes[b]!.temperature);
           // Under a lid: vapour condenses on it and drips back — no mass is lost, its latent heat is.
           if (edge.surface && nodes[b]!.finite) {
             const qv = vaporFlux(nodes[a]!, edge, nodes[b]!).energy;

@@ -11,6 +11,7 @@ export type DeviceKind =
   | 'freezer'
   | 'ice-bath'
   | 'ice-salt-bath'
-  | 'supply';
-export type VesselShape = 'pot' | 'turka' | 'beaker' | 'calorimeter' | 'cylinder' | 'flask-conical' | 'flask-round' | 'test-tube';
+  | 'supply'
+  | 'furnace';
+export type VesselShape = 'pot' | 'turka' | 'beaker' | 'calorimeter' | 'cylinder' | 'flask-conical' | 'flask-round' | 'test-tube' | 'crucible';
 export type LiquidKind = 'water' | 'salt' | 'alcohol' | 'acid' | 'oil' | 'other';

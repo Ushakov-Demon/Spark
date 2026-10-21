@@ -725,3 +725,9 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .scene .steam.smoke .puff { fill: rgba(95, 95, 100, 0.75); stroke: rgba(60, 60, 64, 0.4); }
 @keyframes puff { 0% { opacity: 0; transform: translate(0, 4px) scale(0.35); } 18% { opacity: 0.9; } 100% { opacity: 0; transform: translate(var(--dx), -78px) scale(2.3); } }
 @media (prefers-reduced-motion: reduce) { .scene .steam.on .puff { animation: none; opacity: 0.5; } }
+
+/* Red heat: the vessel wall glowing (crucible, a pot heated dry), the muffle furnace, the pipe-clay triangle. */
+.scene .glow { fill: transparent; stroke: none; opacity: 0; pointer-events: none; transition: opacity 0.6s, fill 0.6s; }
+.scene .furnace { fill: #8a5a44; stroke: #5e3b2c; stroke-width: 3; }
+.scene .furnace-in { fill: #3b2d28; stroke: #2a1f1b; stroke-width: 2; transition: fill 0.8s; }
+.scene .clay-triangle { fill: none; stroke: #e9e2d6; stroke-width: 4; stroke-linecap: round; }

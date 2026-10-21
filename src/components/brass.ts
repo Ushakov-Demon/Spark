@@ -5,6 +5,7 @@ export const BRASS = {
   kind: 'material',
   group: 'alloy',
   name: { uk: 'Латунь', en: 'Brass' },
+  genitive: { uk: 'латуні', en: 'brass' },
   gender: 'f',
   madeOf: [{ part: { uk: 'мідь', en: 'copper' }, fraction: 0.7 }, { part: { uk: 'цинк', en: 'zinc' }, fraction: 0.3 }],
   stateAtRoom: 'solid',

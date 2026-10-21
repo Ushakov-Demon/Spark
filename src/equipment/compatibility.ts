@@ -41,6 +41,15 @@ export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string
       },
     };
   }
+  if (vessel.spec.flameOnly && !(spec.method === 'flame' && heater.category === 'device.heater.laboratory')) {
+    return {
+      ok: false,
+      reason: {
+        uk: `${vessel.name.uk} не ставлять на плиту: його гріють у полум’ї лабораторного пальника чи спиртівки (на триніжку з порцеляновим трикутником) або в муфельній печі.`,
+        en: `A ${vessel.name.en.toLowerCase()} is not put on a hob: it is heated in the flame of a lab burner or spirit lamp (on a tripod with a pipe-clay triangle), or in a muffle furnace.`,
+      },
+    };
+  }
   if (vessel.spec.jacket && spec.method !== 'immersion') {
     return {
       ok: false,

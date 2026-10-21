@@ -55,6 +55,13 @@ export function deviceSvg(d: DeviceKind, g: VesselGeom): string {
         <path class="wire minus" d="M${x + 90},${y + 55} C${x + 80},${g.top - 90} ${c + 30},${g.top - 70} ${c},${g.top - 24}"/>
         ${el(a)}${el(c)}`;
     }
+    case 'furnace': {
+      // A muffle furnace: a firebrick box around the crucible, its inside glowing with the set temperature.
+      const l = CX - 120, r = CX + 120, t = Math.min(g.top - 46, 170);
+      return `<rect class="furnace" x="${l}" y="${t}" width="${r - l}" height="${TABLE - t}" rx="8"/>
+        <rect class="furnace-in" id="sc-furnace" x="${l + 16}" y="${t + 16}" width="${r - l - 32}" height="${TABLE - t - 30}" rx="4"/>
+        <text class="display" x="${r - 12}" y="${t + 12}" id="sc-setpoint" text-anchor="end"></text>`;
+    }
     default:
       return '';
   }

@@ -139,6 +139,40 @@ const LIST = {
       convection: 'stillWater',
     },
   },
+  'muffle-furnace': {
+    id: 'muffle-furnace',
+    look: 'furnace',
+    kind: 'cooler',
+    category: 'device.furnace.laboratory',
+    name: { uk: 'Муфельна піч', en: 'Muffle furnace' },
+    phrase: { uk: 'у муфельній печі', en: 'in a muffle furnace' },
+    description: {
+      novice: {
+        uk: 'Маленька електропіч із товстими стінками з вогнетривкої цегли. Усередині тримається задана температура — аж до 1100 °C.',
+        en: 'A small electric furnace with thick firebrick walls. Inside it keeps the set temperature — up to 1100 °C.',
+      },
+      school: {
+        uk: 'Розжарені стінки печі віддають теплоту тиглю переважно випромінюванням; терморегулятор тримає задану температуру. У такій печі плавлять сіль і алюміній.',
+        en: 'The glowing walls of the furnace give heat to the crucible mostly by radiation; a controller holds the set temperature. Salt and aluminium are melted in such a furnace.',
+      },
+    },
+    media: [],
+    spec: {
+      method: 'air',
+      hot: true,
+      setpoint: {
+        min: 100,
+        max: 1100,
+        default: 900,
+        data: {
+          value: 1100, unit: '°C', conditions: 'Nabertherm L 3/11, maximum', verification: 'single-source', tolerance: 0.01,
+          citations: [{ source: 'labfriend-nabertherm-l3', locator: 'Tmax 1100 °C, 3 L, 1.2 kW', conditions: '230 V', value: 1100 }],
+          note: 'The furnace is taken as already hot: its own warming up (about an hour) is not modelled.',
+        },
+      },
+      convection: 'stillAir',
+    },
+  },
 } as const satisfies Record<string, CoolerItem>;
 
 export type CoolerId = keyof typeof LIST;

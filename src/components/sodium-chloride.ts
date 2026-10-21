@@ -135,8 +135,15 @@ export const SODIUM_CHLORIDE = {
       /** 50.5 J/(K·mol) ÷ 0.05844 kg/mol. */
       specificHeat: sv(864, 'J/(kg·K)', 'solid, 25 °C', 'single-source', 0.01, [cite('wikipedia-sodium-chloride', 'Infobox: heat capacity 50.5 J/(K·mol)', '25 °C', 864.1)], 'Wikidata has no heat capacity for NaCl; Second source not checked yet.'),
     },
+    liquid: {
+      density: sv(1549, 'kg/m³', 'molten, 850 °C', 'single-source', 0.01, [cite('wikipedia-sodium-chloride-data', 'Liquid density 1.549 g/cm³ at 850 °C', '850 °C', 1549)], 'Only the Wikipedia data page checked so far.'),
+      specificHeat: sv(1195, 'J/(kg·K)', 'molten, 1100 K', 'single-source', 0.02, [cite('nist-sodium-chloride', 'Liquid Shomate (Chase, 1998) at 1100 K: 69.81 J/(mol·K) ÷ 0.058443 kg/mol', '1100 K', 1194.5)], 'Only NIST-JANAF checked so far. The heat capacity of molten salt barely changes with temperature in the range that matters here.'),
+    },
   },
-  melting: { point: sv(800.7, '°C', '1 atm', 'cross-checked', 0.001, [cite('wikipedia-sodium-chloride', 'Infobox: melting point', '—', 800.7), cite('wikidata', 'Q2314 P2101', '—', 800.8)]) },
+  melting: {
+    point: sv(800.7, '°C', '1 atm', 'cross-checked', 0.001, [cite('wikipedia-sodium-chloride', 'Infobox: melting point', '—', 800.7), cite('wikidata', 'Q2314 P2101', '—', 800.8)]),
+    latentHeat: sv(520_000, 'J/kg', 'at the melting point', 'single-source', 0.02, [cite('wikipedia-sodium-chloride-data', 'ΔfusH 30.39 kJ/mol (0.52 kJ/g)', '—', 520_000)], 'Other tables give ≈ 28 kJ/mol (≈ 480 kJ/kg); not checked yet — the melt would take ≈ 8 % less heat.'),
+  },
   boiling: { point: sv(1465, '°C', '1 atm', 'single-source', 0.01, [cite('wikidata', 'Q2314 P2102', '101.325 kPa', 1465)], 'Wikidata also lists 1413 °C without conditions.') },
   inWater: { solubility: NACL_SOLUBILITY.data, model: NACL_SOLUTE, ions: ['Na⁺', 'Cl⁻'] },
   electrical: { conducts: 'ions-in-solution' },

@@ -11,6 +11,7 @@ export const METAL: Readonly<Record<string, { fill: string; edge: string }>> = {
   iron: { fill: '#5d6268', edge: '#363a3f' },
   enamel: { fill: '#eef1f4', edge: '#9aa3ac' },
   ceramic: { fill: '#f0e6d8', edge: '#b9a68c' },
+  porcelain: { fill: '#f6f3ec', edge: '#b8b0a0' },
 };
 export const isGlass = (m: string) => m === 'glass' || m === 'borosilicate-glass';
 

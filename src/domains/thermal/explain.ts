@@ -271,8 +271,12 @@ function dataUsed(s: SystemState): DataUsage[] {
       const n = (l: Locale) => tr(sub.name, l);
       const add = (label: (l: Locale) => string, v: SourcedValue) => out.push({ label: both(label), origin: 'catalog', sourced: v });
       add((l) => MSG[l].specificHeatOf(n(l)), sub.liquid.specificHeat);
+      if (sub.melt) add((l) => `${n(l)}: ${l === 'uk' ? 'теплоємність розплаву' : 'specific heat (melt)'}`, sub.melt.liquidSpecificHeat);
       add((l) => `${n(l)}: ${l === 'uk' ? 'густина' : 'density'}`, sub.liquid.density);
-      if (sub.freezing) {
+      if (sub.melt) {
+        add((l) => `${n(l)}: ${l === 'uk' ? 'температура плавлення' : 'melting point'}`, sub.melt.point);
+        add((l) => `${n(l)}: ${l === 'uk' ? 'питома теплота плавлення' : 'latent heat of fusion'}`, sub.melt.latentHeat);
+      } else if (sub.freezing) {
         add((l) => `${n(l)}: ${l === 'uk' ? 'температура замерзання' : 'freezing point'}`, sub.freezing.point);
         add((l) => `${n(l)}: ${l === 'uk' ? 'питома теплота плавлення' : 'latent heat of fusion'}`, sub.freezing.latentHeat);
         add((l) => `${n(l)}: ${l === 'uk' ? 'теплоємність у твердому стані' : 'specific heat (solid)'}`, sub.freezing.solidSpecificHeat);

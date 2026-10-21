@@ -58,6 +58,8 @@ function outcome(st: LabStatus, length: number, ctx: ExplainContext): string {
       return `✗ ${tr(st.reason, ctx.locale)}`;
     case 'off':
       return uk ? 'прилад вимкнено' : 'the device is off';
+    case 'vessel-fails':
+      return uk ? `✗ посуд не витримав: ${tr(st.what, ctx.locale)} (${C(st.limit + ZERO_CELSIUS_IN_KELVIN, ctx.locale)})` : `✗ the vessel failed: ${tr(st.what, ctx.locale)} (${C(st.limit + ZERO_CELSIUS_IN_KELVIN, ctx.locale)})`;
   }
 }
 

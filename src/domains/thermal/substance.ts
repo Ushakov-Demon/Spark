@@ -5,6 +5,14 @@ import type { PhaseParams } from './phase.js';
 
 /** Thermal view of a catalog substance: liquid heat capacity, density and phase changes (in K). */
 export function substanceThermal(s: SubstanceItem): { readonly specificHeat: number; readonly density: number; readonly phase?: PhaseParams; readonly evaporation?: EvaporationParams } {
+  // A solid that melts: `liquid` holds the solid's own numbers, the melt comes from `melt`.
+  if (s.melt) {
+    return {
+      specificHeat: s.melt.liquidSpecificHeat.value,
+      density: s.liquid.density.value,
+      phase: { meltingPoint: celsius(s.melt.point.value), latentFusion: s.melt.latentHeat.value, specificHeatSolid: s.liquid.specificHeat.value },
+    };
+  }
   const phase: PhaseParams = {
     ...(s.freezing
       ? { meltingPoint: celsius(s.freezing.point.value), latentFusion: s.freezing.latentHeat.value, specificHeatSolid: s.freezing.solidSpecificHeat.value }

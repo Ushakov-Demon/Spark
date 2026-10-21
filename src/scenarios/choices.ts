@@ -21,7 +21,10 @@ import { SAMPLE_ID, type LabAction, type LabParams } from './thermal-lab.js';
 
 /** Substances an operation can be done with. */
 export const substancesFor = (action: LabAction): SubstanceItem[] =>
-  Object.values(SUBSTANCES).filter((s) => s.category.startsWith('liquid.') && (OPERATIONS[action].accepts?.(s) ?? true));
+  Object.values(SUBSTANCES).filter((s) => (s.category.startsWith('liquid.') || (isDrySample(s) && OPERATIONS[action].solids)) && (OPERATIONS[action].accepts?.(s) ?? true));
+
+/** A solid that can be the sample itself (heated or melted dry): not one that burns (wood chars — no data for that). */
+export const isDrySample = (s: SubstanceItem): boolean => s.category.startsWith('solid.') && !s.flammable;
 
 /** Can this vessel (this material and size) be used with the chosen device? */
 export function vesselWorks(p: LabParams, vessel: VesselItem, material: string, size: number): Compatibility {

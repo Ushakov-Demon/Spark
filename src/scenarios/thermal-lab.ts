@@ -6,6 +6,7 @@ import { createState, type SystemState } from '../core/state.js';
 import { celsius, seconds, ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { coolerSurroundings, placeCooler, placeHeater, placeVessel } from '../domains/thermal/assembly.js';
 import { energySplit } from '../domains/thermal/energy.js';
+import { SURFACES, type MaterialName } from '../domains/thermal/materials.js';
 import { bodyMass, isBurner, isHeater, isThermalBody, reservoir, thermostat, type ThermalBody } from '../domains/thermal/entities.js';
 import type { Block } from '../explain/blocks.js';
 import { formatDuration, formatQuantity, sig, type ExplainContext } from '../explain/format.js';
@@ -105,10 +106,14 @@ export function labSetup(p: LabParams): LabSetup {
         liquidTemp: p.startTemp,
       })
     : undefined;
-  const extra =
-    OPERATIONS[p.action].thermostat && p.heater && p.target !== undefined
+  const cutoff = p.heater ? HEATERS[p.heater.id].spec.vesselCutoff : undefined;
+  const extra = [
+    ...(OPERATIONS[p.action].thermostat && p.heater && p.target !== undefined
       ? [thermostat({ id: THERMOSTAT_ID, label: { uk: 'Терморегулятор', en: 'Thermostat' }, sensor: SAMPLE_ID, actuator: LAB_HEATER_ID, target: celsius(p.target), hysteresis: 1 })]
-      : [];
+      : []),
+    // An induction hob guards itself: it cuts the power while the pan is too hot (a pan heated empty).
+    ...(cutoff ? [thermostat({ id: `${THERMOSTAT_ID}.overheat`, label: { uk: 'Захист від перегріву', en: 'Overheat protection' }, sensor: LAB_VESSEL_ID, actuator: LAB_HEATER_ID, target: celsius(cutoff.value), hysteresis: 10 })] : []),
+  ];
   const state = createState({
     entities: [
       ...vessel.entities,
@@ -121,7 +126,18 @@ export function labSetup(p: LabParams): LabSetup {
     connections: [...vessel.connections, ...(heater?.connections ?? []), ...(supplyPiece?.connections ?? [])],
     environment: { ambientTemperature: room },
   });
+  // An immersion heater works only in a liquid: in dry salt or in the air it overheats and burns out.
+  const dryImmersion = p.heater && HEATERS[p.heater.id].spec.method === 'immersion' && substance.category.startsWith('solid.')
+    ? [{ uk: 'Кип’ятильник вмикають лише в рідині: у сухій речовині він не віддає теплоту, перегрівається й перегорає.', en: 'An immersion heater is switched on only in a liquid: in a dry substance it cannot give its heat away, overheats and burns out.' }]
+    : [];
+  if (dryImmersion.length) return { state: setHeaterOff(state), warnings: [...dryImmersion, ...vessel.warnings] };
   return { state, warnings: [...vessel.warnings, ...(heater?.warnings ?? [])] };
+}
+
+/** The heater stays where it is, switched off (it must not be used this way). */
+function setHeaterOff(s: SystemState): SystemState {
+  const h = s.entities[entityId(LAB_HEATER_ID)];
+  return h && (isHeater(h) || isBurner(h)) ? { ...s, entities: { ...s.entities, [h.id]: { ...h, params: { ...h.params, on: false } } } } : s;
 }
 
 // ---------------------------------------------------------------- outcome
@@ -134,9 +150,20 @@ export const sampleOf = (s: SystemState): ThermalBody => {
 
 const K = (c: number) => c + ZERO_CELSIUS_IN_KELVIN;
 
-/** Has the experiment reached its goal? (Used as the `until` stop condition.) */
+/**
+ * Is the run over? Its goal is reached — or the vessel would not survive any more (an aluminium
+ * pot heated dry melts through before the salt in it gets hot). Used as the `until` stop condition.
+ */
 export function labGoalReached(p: LabParams, s: SystemState): boolean {
-  return OPERATIONS[p.action].reached(sampleOf(s), p, SUBSTANCES[p.substance], s);
+  return OPERATIONS[p.action].reached(sampleOf(s), p, SUBSTANCES[p.substance], s) || vesselFails(p, s) !== undefined;
+}
+
+/** The vessel is at (or past) the hottest it stands: what happens to it, and at what temperature, °C. */
+export function vesselFails(p: LabParams, s: SystemState): { readonly limit: number; readonly what: LocalizedText } | undefined {
+  const limit = SURFACES[p.material as MaterialName]?.limit;
+  const v = s.entities[entityId(LAB_VESSEL_ID)];
+  if (!limit || !v || !isThermalBody(v)) return undefined;
+  return v.state.temperature >= K(limit.temperature.value) ? { limit: limit.temperature.value, what: limit.what } : undefined;
 }
 
 export type LabStatus =
@@ -146,6 +173,8 @@ export type LabStatus =
   | { readonly kind: 'impossible'; readonly reason: LocalizedText }
   | { readonly kind: 'decomposes'; readonly at: number } // oil reached its smoke point instead of boiling
   | { readonly kind: 'no-heat'; readonly reason: LocalizedText }
+  /** The vessel reaches the hottest it stands first (`at` s from the start; `ahead` — foreseen, not yet happened). */
+  | { readonly kind: 'vessel-fails'; readonly at: number; readonly limit: number; readonly what: LocalizedText; readonly ahead?: boolean }
   | { readonly kind: 'off' };
 
 /** What surrounds the vessel: the cooler or the room. */
@@ -197,6 +226,8 @@ export function forecastLab(p: LabParams, simulation: Simulation, from: SystemSt
   const limit = s.time + 24 * 3600;
   while (s.time < limit) {
     s = sim.tick(s, sim.fixedDt);
+    const fails = vesselFails(p, s);
+    if (fails) return { kind: 'vessel-fails', at: s.time - from.time, ...fails, ahead: true };
     if (labGoalReached(p, s)) {
       if (OPERATIONS[p.action].endsInstead?.(sub) === 'decomposes') return { kind: 'decomposes', at: s.time };
       return { kind: 'will-reach', after: s.time - from.time };
@@ -212,6 +243,8 @@ export function forecastLab(p: LabParams, simulation: Simulation, from: SystemSt
 
 export function labStatus<C extends Command>(p: LabParams, result: ExperimentResult<C>, simulation: Simulation, warnings: readonly LocalizedText[]): LabStatus {
   const sub = SUBSTANCES[p.substance];
+  const fails = vesselFails(p, result.final);
+  if (fails) return { kind: 'vessel-fails', at: result.final.time - result.initial.time, ...fails };
   if (labGoalReached(p, result.final)) {
     // Times are counted from the start of this run (a protocol step starts later than 0).
     const at = result.final.time - result.initial.time;
@@ -236,10 +269,13 @@ function subject(p: LabParams, locale: Locale, now?: SystemState): { text: strin
   // Salt was added during the experiment: it is a solution now.
   const salted = now !== undefined && !sub.mixture && sampleOf(now).state.mixture !== undefined;
   const vessel = VESSELS[p.vessel];
-  const amount = p.liters < 1 ? `${Math.round(p.liters * 1000)} ${locale === 'uk' ? 'мл' : 'mL'}` : `${sig(p.liters, 3, locale)} ${locale === 'uk' ? 'л' : 'L'}`;
+  const amount = sub.melt || sub.category.startsWith('solid.')
+    ? `${sig(p.liters * sub.liquid.density.value, 3, locale)} ${locale === 'uk' ? 'г' : 'g'}`
+    : p.liters < 1 ? `${Math.round(p.liters * 1000)} ${locale === 'uk' ? 'мл' : 'mL'}` : `${sig(p.liters, 3, locale)} ${locale === 'uk' ? 'л' : 'L'}`;
   let name = salted ? (locale === 'uk' ? 'Вода з сіллю' : 'Salt water') : tr(sub.name, locale);
   let gender: Gender = salted ? 'f' : sub.gender;
-  if (OPERATIONS[p.action].subjectIsSolid) {
+  // Melting ice names the ice ("Лід"); a metal or salt is a solid anyway — its own name.
+  if (OPERATIONS[p.action].subjectIsSolid && !sub.melt) {
     if (sub.solidName) {
       name = tr(sub.solidName, locale);
       gender = 'm';
@@ -283,7 +319,8 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
   const sub = SUBSTANCES[p.substance];
   const { text: subj, gender } = subject(p, locale, result.final);
   const T = (k: number) => formatQuantity(k, 'K', { locale, level: 'school' });
-  const op = OPERATIONS[p.action];
+  const op0 = OPERATIONS[p.action];
+  const op = sub.melt && op0.verbsMolten ? { ...op0, verbs: op0.verbsMolten } : op0;
   const target = p.target !== undefined && op.target ? ` ${T(K(p.target))}` : '';
   const past = `${uk ? op.verbs.past.uk[gender] : op.verbs.past.en}${target}`;
   const future = `${tr(op.verbs.future, locale)}${target}`;
@@ -335,6 +372,10 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
       ];
     case 'stalls': {
       const heating = op.direction === 'heating';
+      // An induction hob that keeps cutting out: the pan (heated nearly empty) is too hot for its sensor.
+      const cut = p.heater ? HEATERS[p.heater.id].spec.vesselCutoff : undefined;
+      const wall = result.final.entities[entityId(LAB_VESSEL_ID)];
+      const guarded = cut && wall && isThermalBody(wall) && wall.state.temperature >= K(cut.value) - 15;
       return [
         {
           kind: 'summary',
@@ -345,11 +386,16 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
               : `${subj} will not ${notFuture}: the ${heating ? 'highest' : 'lowest'} temperature it can reach is about ${T(status.limit)}.`,
             heating
               ? uk
-                ? 'Чому: що гарячіше тіло, то більше теплоти воно віддає повітрю. При цій температурі втрати зрівнюються з теплотою від нагрівача — і нагрівання зупиняється.'
-                : 'Why: the hotter the body, the more heat it loses to the air. At this temperature the losses equal the heat from the heater — and the heating stops.'
+                ? `Чому: що гарячіше тіло, то більше теплоти воно віддає повітрю${status.limit > K(400) ? ' — а розжарене ще й випромінює її' : ''}. При цій температурі втрати зрівнюються з теплотою від нагрівача — і нагрівання зупиняється.`
+                : `Why: the hotter the body, the more heat it loses to the air${status.limit > K(400) ? ' — and a red-hot one also radiates it away' : ''}. At this temperature the losses equal the heat from the heater — and the heating stops.`
               : uk
                 ? 'Чому: тіло не може стати холоднішим за те, що його оточує.'
                 : 'Why: a body cannot get colder than its surroundings.',
+            ...(guarded
+              ? [uk
+                  ? `${tr(HEATERS[p.heater!.id].name, locale)} вимикається, щойно посуд нагрівається понад ≈ ${T(K(cut!.value))}: так спрацьовує захист від перегріву, коли посуд гріють майже порожнім.`
+                  : `The ${tr(HEATERS[p.heater!.id].name, locale).toLowerCase()} switches off as soon as the pan is hotter than ≈ ${T(K(cut!.value))}: its overheat protection, for a pan heated nearly empty.`]
+              : []),
           ],
         },
       ];
@@ -379,6 +425,33 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
       return [{ kind: 'summary', tone: 'failure', lines: [uk ? `${subj} не нагрівається. ${tr(status.reason, locale)}` : `${subj} does not heat up. ${tr(status.reason, locale)}`] }];
     case 'off':
       return [{ kind: 'summary', tone: 'neutral', lines: [uk ? `Нагрівач вимкнено (зараз ${T(b1.state.temperature)}).` : `The heater is off (now ${T(b1.state.temperature)}).`] }];
+    case 'vessel-fails': {
+      const vessel = lowerFirst(tr(VESSELS[p.vessel].name, locale));
+      const what = tr(status.what, locale);
+      const name = lowerFirst(tr(sub.name, locale));
+      return [
+        {
+          kind: 'summary',
+          tone: 'failure',
+          lines: [
+            status.ahead
+              ? uk
+                ? `Посуд (${vessel}) не витримає: приблизно за ${formatDuration(status.at, locale)} його стінки нагріються до ${T(K(status.limit))}, а тоді ${what}. ${subj} до того часу не ${notFuture}.`
+                : `The vessel (${vessel}) will not survive: in about ${formatDuration(status.at, locale)} its walls reach ${T(K(status.limit))}, and then ${what}. By then it will not ${notFuture}.`
+              : uk
+                ? `Посуд (${vessel}) не витримав: за ${formatDuration(status.at, locale)} його стінки нагрілися до ${T(K(status.limit))}, а тоді ${what}. ${subj} за цей час ${HEATED_TO[gender]} ${T(b1.state.temperature)}.`
+                : `The vessel (${vessel}) did not survive: in ${formatDuration(status.at, locale)} its walls reached ${T(K(status.limit))}, and then ${what}. Meanwhile it only got to ${T(b1.state.temperature)}.`,
+            p.cooler && COOLERS[p.cooler.id].spec.hot
+              ? uk
+                ? `Чому: піч гріє посуд ззовні, тож його стінки нагріваються першими — а цей посуд не розрахований на такий жар. У печі розжарюють лише порцеляновий тигель.`
+                : `Why: the furnace heats the vessel from outside, so its walls get hot first — and this vessel is not made for such heat. Only a porcelain crucible goes into a furnace.`
+              : uk
+                ? `Чому: у посуді немає води, яка забирала б теплоту від стінок, а ${name} проводить її погано — тож гарячішим за все стає сам посуд. Для сильного нагрівання беруть порцеляновий тигель і пальник або муфельну піч.`
+                : `Why: there is no water to take the heat from the walls, and ${name} conducts it poorly — so the vessel itself gets hottest. For strong heating, use a porcelain crucible over a burner, or a muffle furnace.`,
+          ],
+        },
+      ];
+    }
   }
 }
 

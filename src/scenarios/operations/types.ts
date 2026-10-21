@@ -56,6 +56,8 @@ export interface Operation {
   readonly speed: number;
   /** Start temperature that makes sense for this operation and substance, °C. */
   startTemp(sub: SubstanceItem): number;
+  /** A solid (salt, a metal, glass) can be the sample itself — heated or melted dry, not only put into a liquid. */
+  readonly solids?: boolean;
   /** Can this operation be done with this substance at all (melting needs a solid state)? Absent — any. */
   accepts?(sub: SubstanceItem): boolean;
   /** Has the goal been reached? (The stop condition.) */
@@ -81,6 +83,8 @@ export interface Operation {
     /** In a negative sentence "completely" sounds wrong: "не замерзне", "will not freeze". */
     readonly negative?: LocalizedText;
   };
+  /** For a metal or salt (not a frozen liquid): "розплавилася", not "розтанула". */
+  readonly verbsMolten?: Operation['verbs'];
   /** Extra lines when the goal is reached ("на дні залишилося 36 г солі"). */
   reachedNotes?(ctx: { readonly sample: ThermalBody; readonly state: SystemState; readonly initial: SystemState; readonly locale: Locale }): string[];
   /** Word before the time in the headline: "закипіла за 6 хв" (default), "пробула під струмом 10 хв" (none). */

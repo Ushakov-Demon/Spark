@@ -61,12 +61,14 @@ import {
   PRESET_ANSWERS,
   type PresetAnswer,
   fitChoices,
+  isDrySample,
   substancesFor,
   vesselsFor,
   addableTo,
   PRESETS,
   PRESET_GRADES,
   guidedPlan,
+  freshParams,
   stepParams,
   type Preset,
   type ProtocolStep,
@@ -88,7 +90,7 @@ import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipmen
 import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
-import { createScene, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
+import { createScene, incandescent, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
@@ -659,7 +661,7 @@ function stop() {
   const result = session.result(labGoalReached(stepP, session.state));
   doneRecord = { params: stepP, result, status: labStatus(stepP, result, simulation, warnings) };
   // Heating that stalls: find what helps by re-running in the mind (after the headline is on screen).
-  if (doneRecord.status.kind === 'stalls' && OPERATIONS[stepP.action].direction === 'heating') {
+  if ((doneRecord.status.kind === 'stalls' && OPERATIONS[stepP.action].direction === 'heating') || doneRecord.status.kind === 'vessel-fails') {
     fixes = 'computing';
     const p = stepP;
     window.setTimeout(() => {
@@ -786,6 +788,9 @@ function chooseAdd(id: SubstanceId) {
   addGrams = sub.category === 'solid.metal' ? 100 : sub.category === 'solid.material' ? 10 : sub.category === 'solid.salt' ? 10 : 30;
 }
 /** A solid picked on the shelf: get it ready in the "add" panel and show the panel. */
+/** How much of a dry sample (salt, a metal) to take at first, g. */
+const DRY_GRAMS = 50;
+
 function prepareAdd(id: SubstanceId) {
   chooseAdd(id);
   addFrozen = false;
@@ -920,7 +925,7 @@ function phaseNote(): { text: string; pct: number } | null {
   lastSolid = s;
   if (s > 0 && s < 1) {
     const freezing = trend > 0 || (trend === 0 && OPERATIONS[params.action].direction === 'cooling');
-    return freezing ? { text: u.phaseFreezing(T, Math.round(s * 100)), pct: s * 100 } : { text: u.phaseMelting(T, Math.round((1 - s) * 100)), pct: (1 - s) * 100 };
+    return freezing ? { text: u.phaseFreezing(T, Math.round(s * 100)), pct: s * 100 } : { text: (substance().melt ? u.phaseMeltingDry : u.phaseMelting)(T, Math.round((1 - s) * 100)), pct: (1 - s) * 100 };
   }
   // Counted within this step: earlier steps may have boiled some off already.
   const before = sampleOf(initialState).state.boiledOff ?? 0;
@@ -1030,11 +1035,16 @@ function sceneView(): SceneView {
             : s > 0 && s < 1
               ? OPERATIONS[params.action].direction === 'cooling'
                 ? { mood: 'neutral', says: u.prof.freezing }
-                : { mood: 'neutral', says: u.prof.melting }
+                : { mood: 'neutral', says: sub.melt ? u.prof.meltingDry : u.prof.melting }
               : OPERATIONS[params.action].direction === 'cooling'
                 ? { mood: 'neutral', says: u.prof.cooling }
                 : { mood: 'neutral', says: u.prof.heating };
   const evaporating = Math.max(0, (T - 45) / 60);
+  const vesselBody = session.state.entities[entityId(LAB_VESSEL_ID)];
+  // Salt poured in dry is white grains; a metal its own colour; molten — shiny, glowing when red-hot.
+  const dry = isDrySample(sub)
+    ? { solid: sub.category === 'solid.salt' ? 'rgba(246, 246, 242, 0.97)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), melt: incandescent(T) ?? (sub.category === 'solid.salt' ? 'rgba(235, 240, 245, 0.9)' : '#d9dde2') }
+    : undefined;
   return {
     device,
     on: params.supply ? (sup?.state.current ?? 0) > 0 : params.heater ? power > 0 : !!params.cooler,
@@ -1049,7 +1059,10 @@ function sceneView(): SceneView {
     solid: mix && mix.water <= 1e-9 ? 0 : s,
     crystals: mix && mix.salt > 0 ? mix.crystals / mix.salt : 0,
     boiling: boilingNow,
-    steam: s >= 1 ? 0 : boilingNow ? (params.lid ? 0.5 : 1) : Math.min(0.6, evaporating) * (params.lid ? 0.3 : 1),
+    // A dry sample (salt, a metal) gives no steam; a hot one glows.
+    steam: dry || s >= 1 ? 0 : boilingNow ? (params.lid ? 0.5 : 1) : Math.min(0.6, evaporating) * (params.lid ? 0.3 : 1),
+    ...(dry ? { dry } : {}),
+    ...(vesselBody && isThermalBody(vesselBody) ? { wallTemp: vesselBody.state.temperature - 273.15 } : {}),
     // Oil past its smoke point smokes instead of steaming.
     ...(sub.decomposes && T >= sub.decomposes.value - 2 ? { smoke: true } : {}),
     ...(current ? { current } : {}),
@@ -1236,7 +1249,7 @@ function renderGuide(): boolean {
     const salt = s.kind === 'add' && SUBSTANCES[s.substance].category === 'solid.salt';
     const liquid = s.kind === 'add' && !s.frozen && SUBSTANCES[s.substance].category.startsWith('liquid.');
     const temp = s.kind === 'add' ? `${s.temperature} °C` : '';
-    const opKind = s.kind === 'operation' ? (OPERATIONS[s.action].uses === 'supply' ? 'current' : s.heater || OPERATIONS[s.action].uses === 'heater' ? 'heat' : s.cooler || OPERATIONS[s.action].uses === 'cooler' ? 'cool' : 'wait') : 'wait';
+    const opKind = s.kind === 'operation' ? (OPERATIONS[s.action].uses === 'supply' ? 'current' : s.heater || OPERATIONS[s.action].uses === 'heater' || (s.cooler && COOLERS[s.cooler.id].spec.hot) ? 'heat' : s.cooler || OPERATIONS[s.action].uses === 'cooler' ? 'cool' : 'wait') : 'wait';
     const op = s.kind === 'operation' ? tr(s.label ?? OPERATIONS[s.action].label, locale) : '';
     // Time has passed since the last look at the marks (the ice melted): did the level change?
     const lastLevel = [...done].reverse().find((x) => x.record.quantity === 'volume');
@@ -1489,7 +1502,7 @@ function render() {
     // A ready-made experiment goes on along its plan.
     if (plan.length && !preset?.guided) offer.push(`<div class="offer plan"><p>${u.planNext(planLabel(plan))}</p><div class="fixes"><button type="button" class="primary" data-plan="1">▶ ${planLabel(plan)}</button></div></div>`);
     // The goal was not reached: offer what would reach it — the experiment continues from where it is.
-    if (fixes === 'computing' || fixes.length) offer.push(`<div class="offer"><p>${doneRecord?.status.kind === 'stalls' ? u.offerAfterStall : u.offerAfterImpossible}</p><div class="fixes">${fixButtons()}</div></div>`);
+    if (fixes === 'computing' || fixes.length) offer.push(`<div class="offer"><p>${doneRecord?.status.kind === 'stalls' || doneRecord?.status.kind === 'vessel-fails' ? u.offerAfterStall : u.offerAfterImpossible}</p><div class="fixes">${fixButtons()}</div></div>`);
   } else {
     // A flat line on the chart is not "nothing happens": say what is going on and how far it got.
     const phase = phaseNote();
@@ -1842,7 +1855,10 @@ function buildShelf() {
             selected: x.id === params.heater?.id,
             onPick: () => {
               lastHeater = { id: x.id as HeaterId, rating: x.spec.defaultRating, knob: x.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 };
-              pick({ ...params, heater: lastHeater }, stepChanged);
+              // A flame instead of a furnace.
+              const { cooler: _c, ...rest } = params;
+              void _c;
+              pick({ ...rest, heater: lastHeater }, stepChanged);
             },
           }),
         ),
@@ -1850,20 +1866,50 @@ function buildShelf() {
     if (uses === 'either') {
       groups.unshift({
         label: locale === 'uk' ? 'Без нагрівача' : 'No heater',
-        cards: roomCard(!params.heater, () => {
-          const { heater: _h, ...rest } = params;
+        cards: roomCard(!params.heater && !params.cooler, () => {
+          const { heater: _h, cooler: _c, ...rest } = params;
           void _h;
+          void _c;
           pick(rest, stepChanged);
         }),
       });
+      // Hot surroundings instead of a flame: a muffle furnace holds its temperature around the vessel.
+      for (const c of childrenOf('device.furnace')) {
+        groups.push({
+          label: tr(c.name, locale),
+          cards: itemsUnder(c.id)
+            .filter((x): x is (typeof COOLERS)[CoolerId] => x.kind === 'cooler' && matches(x.name))
+            .map((x) =>
+              card({
+                name: x.name,
+                pic: devPic(x.look),
+                ref: `equipment:${x.id}`,
+                note: `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C`,
+                selected: x.id === params.cooler?.id,
+                onPick: () => {
+                  const { heater: _h, ...rest } = params;
+                  void _h;
+                  // (Not remembered as "the cooler": cooling down in a furnace makes no sense.)
+                  pick({ ...rest, cooler: { id: x.id as CoolerId, setpoint: x.spec.setpoint.default } }, stepChanged);
+                },
+              }),
+            ),
+        });
+      }
     }
-    const detail = h && params.heater && h.spec.ratings.length > 1
+    const furnace = params.cooler && COOLERS[params.cooler.id].spec.hot ? COOLERS[params.cooler.id] : undefined;
+    const furnaceDetail = furnace
+      ? [number(`${u.furnaceSetpoint} (${furnace.spec.setpoint.min}…${furnace.spec.setpoint.max})`, params.cooler!.setpoint, furnace.spec.setpoint.min, furnace.spec.setpoint.max, 10, (sp) => {
+          params = { ...params, cooler: { ...params.cooler!, setpoint: sp } };
+        }, stepChanged)]
+      : [];
+    const detail = furnace ? furnaceDetail : h && params.heater && h.spec.ratings.length > 1
       ? [el('span', { className: 'muted small' }, u.model), chips(h.spec.ratings.map((r) => [String(r), formatQuantity(r, 'W', { locale, level: 'school' })] as const), String(params.heater.rating), (r) => {
           lastHeater = { ...params.heater!, rating: Number(r) };
           pick({ ...params, heater: lastHeater }, stepChanged);
         })]
       : [];
-    section('device', uses === 'either' ? u.meltWith : u.device, h ? tr(h.name, locale) : u.justRoom, ...familyShelf('device', groups, detail));
+    section('device', uses === 'either' ? u.meltWith : u.device, h ? tr(h.name, locale) : furnace ? tr(furnace.name, locale) : u.justRoom, ...familyShelf('device', groups, detail));
   } else {
     const cool = params.cooler ? COOLERS[params.cooler.id] : undefined;
     const groups = [
@@ -1905,6 +1951,8 @@ function buildShelf() {
 
   // 3. Substance — only what the chosen operation can be done with.
   const accepted = new Set(substancesFor(params.action).map((x) => x.id));
+  /** A solid this action can take as the sample itself (salt heated dry, tin melted in a crucible). */
+  const asSample = (x: SubstanceItem) => !started && accepted.has(x.id) && isDrySample(x);
   const small = params.size < 0.1;
   const formulaOf = (x: SubstanceItem) =>
     x.recipe ? RECIPES[x.recipe as RecipeId].parts.map((p) => COMPONENTS[p.component].formula ?? '').join('+') : (x.component && COMPONENTS[x.component as keyof typeof COMPONENTS]?.formula) || '';
@@ -1933,7 +1981,8 @@ function buildShelf() {
                   note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
                   ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
                   selected: x.id === params.substance,
-                  onPick: () => pick({ ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x) }, rebuild),
+                  // From a dry sample back to a liquid: a usual amount of it.
+                  onPick: () => pick({ ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x), ...(isDrySample(sub) ? { liters: Math.round(params.size * 0.7 * 1000) / 1000 } : {}) }, rebuild),
                 })
               : card({
                   name: x.name,
@@ -1941,8 +1990,9 @@ function buildShelf() {
                   ref: `substance:${x.id}`,
                   note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${x.category === 'solid.salt' ? u.dissolves : u.putIn}`,
                   ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),
-                  selected: x.id === addSub && $<HTMLDetailsElement>('#add').open,
-                  onPick: () => prepareAdd(x.id as SubstanceId),
+                  // Heating or melting it dry: it becomes the sample itself; otherwise it is put into the liquid.
+                  selected: asSample(x) ? x.id === params.substance : x.id === addSub && $<HTMLDetailsElement>('#add').open,
+                  onPick: () => (asSample(x) ? pick({ ...params, substance: x.id as SubstanceId, liters: Math.min(params.size * 0.8, DRY_GRAMS / x.liquid.density.value), startTemp: OPERATIONS[params.action].startTemp(x) }, rebuild) : prepareAdd(x.id as SubstanceId)),
                 }),
           ),
       })),
@@ -1950,7 +2000,9 @@ function buildShelf() {
         ...(started
           ? [el('p', { className: 'muted small' }, u.lockedDuringExperiment)]
           : [
-              number(`${u.amount} (≤ ${volume(params.size)})`, params.liters, small ? 0.001 : 0.01, params.size, small ? 0.001 : 0.01, (x) => (params = { ...params, liters: x })),
+              isDrySample(sub)
+                ? number(u.mass, Math.round(params.liters * sub.liquid.density.value), 1, Math.floor(params.size * sub.liquid.density.value), 1, (g) => (params = { ...params, liters: g / sub.liquid.density.value }))
+                : number(`${u.amount} (≤ ${volume(params.size)})`, params.liters, small ? 0.001 : 0.01, params.size, small ? 0.001 : 0.01, (x) => (params = { ...params, liters: x })),
               number(u.startTemp, params.startTemp, -30, 300, 1, (x) => (params = { ...params, startTemp: x })),
             ]),
       ],
@@ -2205,7 +2257,7 @@ function nextPlanStep() {
     if (s.kind === 'fresh') {
       // A second run beside the first: the same setup from the start (cold vessel, fresh contents),
       // changed as said; the first run stays in the protocol, the chart starts again.
-      params = { ...params, ...(s.lid === undefined ? {} : { lid: s.lid }) };
+      params = freshParams(params, s);
       closeStep();
       points = { sample: [], vessel: [], source: [] };
       lastPointAt = -Infinity;
@@ -2215,7 +2267,8 @@ function nextPlanStep() {
     }
     params = stepParams(params, s);
     if (params.heater) lastHeater = params.heater;
-    if (params.cooler) lastCooler = params.cooler;
+    // (A furnace is not remembered as "the cooler".)
+    if (params.cooler && !COOLERS[params.cooler.id].spec.hot) lastCooler = params.cooler;
     if (params.supply) lastSupply = params.supply;
     speed = s.speed ?? OPERATIONS[s.action].speed;
     $<HTMLSelectElement>('#speed').value = String(speed);
@@ -2276,7 +2329,7 @@ function startPreset(given: Preset) {
   planTotal = plan.length;
   params = p.params;
   if (params.heater) lastHeater = params.heater;
-  if (params.cooler) lastCooler = params.cooler;
+  if (params.cooler && !COOLERS[params.cooler.id].spec.hot) lastCooler = params.cooler;
   if (params.supply) lastSupply = params.supply;
   expectKind = p.predict ? 'prediction' : 'none';
   speed = OPERATIONS[p.params.action].speed;
@@ -2310,7 +2363,7 @@ $('#presets-close').onclick = () => $<HTMLDialogElement>('#presets').close();
 function applyFix(f: LabFix) {
   params = f.params;
   if (params.heater) lastHeater = params.heater;
-  if (params.cooler) lastCooler = params.cooler;
+  if (params.cooler && !COOLERS[params.cooler.id].spec.hot) lastCooler = params.cooler;
   if (params.supply) lastSupply = params.supply;
   stepChanged();
   running = true;
@@ -2367,7 +2420,7 @@ function beginReplayStep(rec: Recording, index: number, from: SystemState | null
   const step = replayStep(rec.steps[index]!, from, simulation, commands, 10);
   params = step.params;
   if (params.heater) lastHeater = params.heater;
-  if (params.cooler) lastCooler = params.cooler;
+  if (params.cooler && !COOLERS[params.cooler.id].spec.hot) lastCooler = params.cooler;
   if (params.supply) lastSupply = params.supply;
   beginStep({ state: step.session.state, warnings: [] });
   // beginStep made a new session; the replay's own one carries the recorded actions.

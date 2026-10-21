@@ -51,7 +51,19 @@ export interface SubstanceItem {
     readonly solidSpecificHeat: SourcedValue; // J/(kg·K)
     readonly solidDensity?: SourcedValue; // kg/m³
   };
+  /**
+   * A solid that can be melted (a metal, salt): its melting point, latent heat and the molten
+   * state. Absent for liquids (they have `freezing`) and for solids without data (glass softens
+   * gradually, wood chars).
+   */
+  readonly melt?: {
+    readonly point: SourcedValue; // °C
+    readonly latentHeat: SourcedValue; // J/kg
+    readonly liquidSpecificHeat: SourcedValue; // J/(kg·K)
+    readonly liquidDensity?: SourcedValue; // kg/m³
+  };
   /** Absent: does not boil at normal pressure (oil decomposes first). */
+  // (For a solid that melts, `freezing` holds the same transition as `melt`, seen from the solid side.)
   readonly boiling?: {
     readonly point: SourcedValue; // °C
     readonly latentHeat: SourcedValue; // J/kg
@@ -71,3 +83,6 @@ export interface SubstanceItem {
   /** Simplifications specific to this substance, shown in explanations. */
   readonly modelNotes?: readonly LocalizedText[];
 }
+
+/** Specific heat of the liquid state: a liquid's own, or a molten solid's. */
+export const liquidHeat = (s: SubstanceItem): SourcedValue => s.melt?.liquidSpecificHeat ?? s.liquid.specificHeat;

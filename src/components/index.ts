@@ -15,11 +15,13 @@ import { HYDROGEN } from './hydrogen.js';
 import { IRON } from './iron.js';
 import { NITROGEN } from './nitrogen.js';
 import { OXYGEN } from './oxygen.js';
+import { PORCELAIN } from './porcelain.js';
 import { SODIUM_BICARBONATE } from './sodium-bicarbonate.js';
 import { SODIUM_CHLORIDE } from './sodium-chloride.js';
 import { STEEL } from './steel.js';
 import { SUCROSE } from './sucrose.js';
 import { SUNFLOWER_OIL } from './sunflower-oil.js';
+import { TIN } from './tin.js';
 import type { Component } from './types.js';
 import { WATER } from './water.js';
 import { WOOD } from './wood.js';
@@ -52,8 +54,10 @@ const LIST = {
   copper: COPPER,
   brass: BRASS,
   aluminium: ALUMINIUM,
+  tin: TIN,
   glass: GLASS,
   brick: BRICK,
+  porcelain: PORCELAIN,
   wood: WOOD,
 } as const satisfies Record<string, Component>;
 

@@ -11,7 +11,7 @@ import type { VesselId } from '../src/equipment/vessels.js';
 import { MASS_SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { sig } from '../src/explain/format.js';
 import { tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
-import { LAB_ACTIONS, OPERATIONS, PRESETS, substancesFor, vesselsFor, type LabAction, type LabParams, type Preset } from '../src/scenarios/index.js';
+import { isDrySample, LAB_ACTIONS, OPERATIONS, PRESETS, substancesFor, vesselsFor, type LabAction, type LabParams, type Preset } from '../src/scenarios/index.js';
 import { SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { COMPONENTS } from '../src/components/index.js';
 import { MATERIALS } from '../src/domains/thermal/materials.js';
@@ -147,7 +147,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['substance', 'речовина'],
-      usage: L('substance <name> [amount L|mL]', 'substance <name> [amount L|mL]'),
+      usage: L('substance <name> [amount L|mL|g]', 'substance <name> [amount L|mL|g]'),
       about: L('налити речовину: substance sea 0.5 l', 'pour a substance: substance sea 0.5 L'),
       run(args) {
         if (api.started()) return [uk() ? 'Під час досліду речовину не міняють — спершу «reset».' : 'The substance stays during an experiment — "reset" first.'];
@@ -156,9 +156,13 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         if (!f) return notFound(words(args));
         if (Array.isArray(f)) return ambiguous(f);
         const q = quantities(args)[0];
-        const liters = q ? (q.unit === 'мл' || q.unit === 'ml' ? q.value / 1000 : q.value) : p.liters;
-        api.choose({ ...p, substance: f.id as SubstanceId, liters: Math.min(liters, p.size), startTemp: OPERATIONS[p.action].startTemp(f) }, 'experiment');
-        return [`✓ ${T(f.name)}, ${sig(Math.min(liters, p.size), 3, loc())} ${uk() ? 'л' : 'L'}`];
+        // A solid is taken by mass (50 g of tin); a liquid by volume.
+        const dry = isDrySample(f);
+        const grams = q && (q.unit === 'г' || q.unit === 'g') ? q.value : q && (q.unit === 'кг' || q.unit === 'kg') ? q.value * 1000 : undefined;
+        const liters = grams !== undefined ? grams / f.liquid.density.value : q ? (q.unit === 'мл' || q.unit === 'ml' ? q.value / 1000 : q.value) : dry ? 50 / f.liquid.density.value : p.liters;
+        const amount = Math.min(liters, p.size);
+        api.choose({ ...p, substance: f.id as SubstanceId, liters: amount, startTemp: OPERATIONS[p.action].startTemp(f) }, 'experiment');
+        return [`✓ ${T(f.name)}, ${dry ? `${sig(amount * f.liquid.density.value, 3, loc())} ${uk() ? 'г' : 'g'}` : `${sig(amount, 3, loc())} ${uk() ? 'л' : 'L'}`}`];
       },
     },
     {
@@ -195,7 +199,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       about: L('прилади для вибраної дії', 'devices for the chosen action'),
       run() {
         const uses = OPERATIONS[api.params().action].uses;
-        const items = uses === 'supply' ? Object.values(SUPPLIES) : uses === 'cooler' ? Object.values(COOLERS) : Object.values(HEATERS);
+        const items = uses === 'supply' ? Object.values(SUPPLIES) : uses === 'cooler' ? Object.values(COOLERS).filter((x) => !x.spec.hot) : [...Object.values(HEATERS), ...(uses === 'either' ? Object.values(COOLERS).filter((x) => x.spec.hot) : [])];
         return list(uk() ? 'Прилади:' : 'Devices:', items.map((x) => T(x.name)));
       },
     },
@@ -222,8 +226,10 @@ export function createConsole(api: ConsoleApi): HTMLElement {
           api.choose({ ...strip(p), supply: { id: f.id as SupplyId, knob } }, 'step');
           return [`✓ ${T(f.name)}, ${sig(supplyVoltage(f, knob), 3, loc())} ${uk() ? 'В' : 'V'}`];
         }
-        if (uses === 'cooler') {
-          const f = find(Object.values(COOLERS), names, words(args));
+        // A furnace (hot surroundings) for melting; for cooling — only cold ones.
+        const furnace = uses === 'either' ? find(Object.values(COOLERS).filter((x) => x.spec.hot), names, words(args)) : undefined;
+        if (uses === 'cooler' || (furnace && !Array.isArray(furnace))) {
+          const f = furnace && !Array.isArray(furnace) ? furnace : find(Object.values(COOLERS).filter((x) => !x.spec.hot), names, words(args));
           if (!f || Array.isArray(f)) return f ? ambiguous(f) : notFound(words(args));
           const s = f.spec.setpoint;
           const setpoint = q ? Math.max(s.min, Math.min(s.max, q.value)) : s.default;

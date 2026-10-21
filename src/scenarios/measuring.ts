@@ -44,6 +44,8 @@ export function liquidDensity(state: SystemState): number | null {
 export function pieceDensity(piece: ThermalBody): number {
   const sub = substanceOf(piece);
   if (!sub) return WATER_DENSITY;
+  // A metal, salt: its own solid density, its melt's once molten.
+  if (sub.melt) return (piece.state.solidFraction ?? 1) > 0 ? sub.liquid.density.value : (sub.melt.liquidDensity ?? sub.liquid.density).value;
   // While any of it is still solid (a melting cube), the solid part is what floats.
   const frozen = (piece.state.solidFraction ?? 0) > 0;
   return frozen ? (sub.freezing?.solidDensity?.value ?? ICE_DENSITY) : sub.liquid.density.value;
@@ -76,9 +78,13 @@ export function levelVolume(state: SystemState): number {
     const sub = substanceOf(b);
     const m = bodyMass(b);
     const s = b.state.solidFraction ?? 0;
-    const liquid = sub?.liquid.density.value ?? WATER_DENSITY;
-    const solid = sub?.freezing?.solidDensity?.value ?? ICE_DENSITY;
-    v += (m * (1 - s)) / liquid + (rl ? (m * s) / rl : (m * s) / solid);
+    // A metal or salt in a crucible: the solid part by its own density, the melt by the melt's (the solid sinks in it).
+    if (sub?.melt) v += (m * s) / sub.liquid.density.value + (m * (1 - s)) / (sub.melt.liquidDensity ?? sub.liquid.density).value;
+    else {
+      const liquid = sub?.liquid.density.value ?? WATER_DENSITY;
+      const solid = sub?.freezing?.solidDensity?.value ?? ICE_DENSITY;
+      v += (m * (1 - s)) / liquid + (rl ? (m * s) / rl : (m * s) / solid);
+    }
   }
   for (const e of Object.values(state.entities)) {
     if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`)) continue;

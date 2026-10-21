@@ -42,6 +42,10 @@ export interface SceneView {
   readonly boiling: boolean;
   /** Steam over the surface, 0…1. */
   readonly steam: number;
+  /** Temperature of the vessel wall, °C: above ≈ 500 °C it glows dull red, then cherry, then orange. */
+  readonly wallTemp?: number;
+  /** A dry sample (salt, a metal): its colour solid and molten — instead of a liquid. */
+  readonly dry?: { readonly solid: string; readonly melt: string };
   /** Smoke instead of steam (oil past its smoke point). */
   readonly smoke?: boolean;
   /** Electrolysis: current, A, and the gases that form. */
@@ -163,6 +167,7 @@ export function createScene(): Scene {
           <g id="sc-crystals" class="crystals">${Array.from({ length: 18 }, (_, i) => `<path d="M${g.left + 18 + ((i * 29) % Math.max(20, g.right - g.left - 34))},${g.bottom - 5 - (i % 3) * 3} l4,-5 l4,5 l-4,4 Z"/>`).join('')}</g>
         </g>
         ${glass ? `<path d="${g.outer}" style="${wallStyle}" stroke-width="2.5"/>` : ''}
+        <path id="sc-glow" class="glow" d="${g.outer}"/>
         ${g.extras}
         ${v.lid && g.lidPath ? `<path class="lid" d="${g.lidPath}" style="fill:${metal.fill};stroke:${metal.edge}"/>` : ''}
       </g>
@@ -249,10 +254,19 @@ export function createScene(): Scene {
       $('sc-liq-rect')?.setAttribute('y', String(level));
       $('sc-liq-rect')?.setAttribute('height', String(g.bottom - level + 2));
       const liq = $<SVGRectElement>('sc-liquid');
-      if (liq) liq.style.fill = v.solid >= 1 ? 'rgba(220, 240, 255, 0.92)' : LIQUID[v.liquid];
-      // Ice is lighter than water: a growing layer floats on top.
+      if (liq) liq.style.fill = v.dry ? (v.solid > 0 && v.solid >= 1 ? v.dry.solid : v.dry.melt) : v.solid >= 1 ? 'rgba(220, 240, 255, 0.92)' : LIQUID[v.liquid];
+      // Ice is lighter than water: a growing layer floats on top. A metal or salt melting dry: the solid
+      // left lies on the bottom under its melt.
       const ice = $<SVGGElement>('sc-ice');
-      if (ice) {
+      if (ice && v.dry) {
+        const thick = v.solid > 0 && v.solid < 1 ? Math.max(3, v.solid * (g.bottom - level)) : 0;
+        const r = ice.querySelector('rect')!;
+        r.setAttribute('y', String(g.bottom - thick + 2));
+        r.setAttribute('height', String(thick));
+        r.style.fill = v.dry.solid;
+        ice.querySelector('path')!.style.display = 'none';
+        ice.style.opacity = thick > 0 ? '1' : '0';
+      } else if (ice) {
         const thick = v.solid > 0 && v.solid < 1 ? Math.max(4, v.solid * (g.bottom - level) * 0.9) : 0;
         const r = ice.querySelector('rect')!;
         r.setAttribute('y', String(level - 2));
@@ -310,6 +324,15 @@ export function createScene(): Scene {
         steam.classList.toggle('smoke', !!v.smoke);
         steam.classList.toggle('on', (v.steam > 0.02 || !!v.smoke) && (v.running || v.boiling));
       }
+      // Red heat: the wall glows above ≈ 500 °C (Draper point ≈ 525 °C), brighter and more orange as it gets hotter.
+      const glow = $<SVGPathElement>('sc-glow');
+      if (glow) {
+        const c = incandescent(v.wallTemp ?? 20);
+        glow.style.fill = c ?? 'transparent';
+        glow.style.opacity = c ? String(Math.min(0.85, ((v.wallTemp ?? 20) - 470) / 450)) : '0';
+      }
+      const oven = $<SVGRectElement>('sc-furnace');
+      if (oven) oven.style.fill = incandescent(v.setpoint ?? 20) ?? '#3b2d28';
       // Devices.
       const lamp = $('sc-lamp');
       lamp?.classList.toggle('on', v.on);
@@ -426,4 +449,12 @@ export function createScene(): Scene {
       if (says.textContent !== v.professor.says) says.textContent = v.professor.says;
       says.hidden = !v.professor.says;
   }
+}
+
+/** The colour of a body glowing at `t` °C, or null below visible red heat (≈ 470 °C). */
+export function incandescent(t: number): string | null {
+  if (t < 470) return null;
+  // dull red (≈ 550) → cherry (≈ 800) → orange (≈ 1000) → yellow (≈ 1200)
+  const k = Math.max(0, Math.min(1, (t - 470) / 730));
+  return `rgb(${Math.round(150 + 105 * Math.min(1, k * 2))}, ${Math.round(30 + 170 * k * k)}, ${Math.round(20 + 40 * k * k)})`;
 }

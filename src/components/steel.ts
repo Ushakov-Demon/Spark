@@ -5,6 +5,7 @@ export const STEEL = {
   kind: 'material',
   group: 'alloy',
   name: { uk: 'Сталь (вуглецева)', en: 'Carbon steel' },
+  genitive: { uk: 'сталі', en: 'steel' },
   gender: 'f',
   madeOf: [{ part: { uk: 'залізо', en: 'iron' }, fraction: 0.98 }, { part: { uk: 'вуглець', en: 'carbon' } }],
   stateAtRoom: 'solid',

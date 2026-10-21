@@ -104,6 +104,11 @@ const HEATER_LIST = {
         ],
         note: 'Tests measure heat reaching the water; the model also loses some heat from the pot walls, so it slightly underestimates. Rose & Morawicki (2023) found 54–81 % depending on water volume.',
       },
+      vesselCutoff: {
+        value: 270, unit: '°C', conditions: 'sensor under the glass, pan heated empty', verification: 'estimate', tolerance: 0.2,
+        citations: [{ source: 'spark', locator: 'estimate', conditions: 'no source found', range: [230, 300] }],
+        note: 'Induction hobs switch a zone off when the pan overheats (heated empty); manufacturers do not publish the temperature. Estimate.',
+      },
       requiresMaterial: {
         materials: ['steel', 'iron'],
         source: 'wikipedia-induction-cooking',
@@ -161,6 +166,11 @@ const HEATER_LIST = {
           { source: 'leafscore-cooktop-efficiency', locator: 'efficiency comparison', conditions: 'not stated', range: [0.38, 0.4] },
         ],
         note: 'Measured 30–44 %; depends strongly on pot size and flame height.',
+      },
+      flameTemperature: {
+        value: 1500, unit: '°C', conditions: 'natural gas flame, hottest zone', verification: 'single-source', tolerance: 0.05,
+        citations: [{ source: 'britannica-bunsen', locator: 'hottest part of the Bunsen flame ≈ 1500 °C', conditions: 'natural gas', value: 1500 }, { source: 'wikipedia-adiabatic-flame-temperature', locator: 'natural gas in air 1960 °C (theoretical upper bound)', conditions: 'stoichiometric', range: [0, 1960] }],
+        note: 'A hob burns the same gas as a Bunsen burner; measured flames stay well below the theoretical 1960 °C.',
       },
 
     },
@@ -262,6 +272,11 @@ const HEATER_LIST = {
         citations: [{ source: 'energystar-induction', locator: 'gas cooktop (by analogy)', conditions: 'not stated', value: 0.32 }],
         note: 'No measurement for lab burners found; taken by analogy with gas hobs. Measure it yourself: heat a known mass of water and compare with the burner power.',
       },
+      flameTemperature: {
+        value: 1500, unit: '°C', conditions: 'natural gas flame, hottest zone', verification: 'single-source', tolerance: 0.05,
+        citations: [{ source: 'britannica-bunsen', locator: 'hottest part of the Bunsen flame ≈ 1500 °C', conditions: 'natural gas', value: 1500 }, { source: 'wikipedia-adiabatic-flame-temperature', locator: 'natural gas in air 1960 °C (theoretical upper bound)', conditions: 'stoichiometric', range: [0, 1960] }],
+        note: 'A hob burns the same gas as a Bunsen burner; measured flames stay well below the theoretical 1960 °C.',
+      },
 
     },
   },
@@ -309,6 +324,11 @@ const HEATER_LIST = {
         tolerance: 0.5,
         citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [0.2, 0.4] }],
         note: 'Estimate; heat losses of spirit burners are large and variable.',
+      },
+      flameTemperature: {
+        value: 1200, unit: '°C', conditions: 'ethanol flame on a wick', verification: 'estimate', tolerance: 0.3,
+        citations: [{ source: 'wikipedia-alcohol-burner', locator: 'flame cooler than a Bunsen burner', conditions: 'not stated', range: [800, 1500] }, { source: 'wikipedia-adiabatic-flame-temperature', locator: 'ethanol in air 2082 °C (theoretical upper bound)', conditions: 'stoichiometric', range: [0, 2082] }],
+        note: 'No measurement found: a wick flame is a diffusion flame, cooler than a Bunsen burner (≈ 1500 °C). Estimate.',
       },
 
     },

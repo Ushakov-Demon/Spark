@@ -9,9 +9,10 @@ export const MELT: Operation = {
   uses: 'either',
   direction: 'heating',
   speed: 600,
-  // Start frozen: 10 °C below the melting point.
+  solids: true,
+  // A frozen liquid starts 10 °C below its melting point; a metal or salt — at room temperature.
   accepts: (sub) => sub.freezing !== undefined,
-  startTemp: (sub) => (sub.freezing ? Math.round(sub.freezing.point.value - 10) : 20),
+  startTemp: (sub) => (sub.melt ? 20 : sub.freezing ? Math.round(sub.freezing.point.value - 10) : 20),
   reached: (b, _p, sub) => (b.state.solidFraction ?? 0) <= 0 && sub.freezing !== undefined && b.state.temperature >= K(sub.freezing.point.value) - 1e-6,
   impossible({ p, sub, surroundingTemp, where }) {
     if (!sub.freezing) {
@@ -33,5 +34,10 @@ export const MELT: Operation = {
     past: { uk: { f: 'повністю розтанула', m: 'повністю розтанув', n: 'повністю розтануло' }, en: 'melted completely' },
     future: { uk: 'повністю розтане', en: 'melt completely' },
     negative: { uk: 'розтане', en: 'melt' },
+  },
+  verbsMolten: {
+    past: { uk: { f: 'повністю розплавилася', m: 'повністю розплавився', n: 'повністю розплавилося' }, en: 'melted completely' },
+    future: { uk: 'повністю розплавиться', en: 'melt completely' },
+    negative: { uk: 'розплавиться', en: 'melt' },
   },
 };

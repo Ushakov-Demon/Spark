@@ -60,7 +60,25 @@ export interface WeighStep {
 export interface FreshStep {
   readonly kind: 'fresh';
   readonly lid?: boolean;
+  /** What else changes for the new run (a crucible instead of the pot; a furnace — it replaces the heater). */
+  readonly set?: Partial<Pick<LabParams, 'vessel' | 'size' | 'material' | 'liters' | 'heater' | 'cooler'>>;
   readonly label?: LocalizedText;
+}
+
+/** The setup for a fresh run: the same, changed as the step says (a furnace replaces the heater and back). */
+export function freshParams(base: LabParams, step: FreshStep): LabParams {
+  const next: LabParams = { ...base, ...(step.lid === undefined ? {} : { lid: step.lid }), ...(step.set ?? {}) };
+  if (step.set?.cooler) {
+    const { heater: _h, ...rest } = next;
+    void _h;
+    return rest;
+  }
+  if (step.set?.heater) {
+    const { cooler: _c, ...rest } = next;
+    void _c;
+    return rest;
+  }
+  return next;
 }
 
 /** Read the level of the liquid by the vessel's marks. */
@@ -171,7 +189,7 @@ export function runProtocol(input: ProtocolInput): StepOutcome[] {
   for (const step of input.steps) {
     if (step.kind === 'fresh') {
       // The same setup again, from the start (cold vessel, fresh contents), changed as the step says.
-      base = { ...base, ...(step.lid === undefined ? {} : { lid: step.lid }) };
+      base = freshParams(base, step);
       state = labSetup(base).state;
       const session = createExperimentSession<LabCommand>({ initial: state, simulation: input.simulation, commands: input.commands, sampleEvery: input.sampleEvery });
       out.push({ step, result: session.result(), warnings: [] });

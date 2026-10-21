@@ -16,6 +16,8 @@ export const CATEGORIES: readonly Category[] = [
   c('device.cooler', 'device', 'Охолоджувачі', 'Coolers'),
   c('device.cooler.household', 'device.cooler', 'Побутові охолоджувачі', 'Household coolers'),
   c('device.cooler.laboratory', 'device.cooler', 'Лабораторні охолоджувачі', 'Laboratory cooling baths'),
+  c('device.furnace', 'device', 'Печі', 'Furnaces'),
+  c('device.furnace.laboratory', 'device.furnace', 'Лабораторні печі', 'Laboratory furnaces'),
   c('device.power', 'device', 'Джерела струму', 'Power sources'),
   c('device.power.household', 'device.power', 'Побутові джерела струму', 'Household power sources'),
   c('device.power.laboratory', 'device.power', 'Лабораторні джерела струму', 'Laboratory power supplies'),

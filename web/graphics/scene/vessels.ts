@@ -105,6 +105,19 @@ export function vesselGeom(shape: VesselShape, base: number): VesselGeom {
         mouth: { l: ln + 4, r: rn - 4 },
       };
     }
+    case 'crucible': {
+      // A small porcelain cup, narrow at the bottom, in a pipe-clay triangle (drawn larger than life: 4 cm is tiny on the table).
+      const wb = 44, wt = 76, h = 62, t = base - h;
+      const lb = CX - wb / 2, rb = CX + wb / 2, lt = CX - wt / 2, rt = CX + wt / 2;
+      return {
+        outer: `M${lt},${t} L${lb},${base - 4} Q${lb + 1},${base} ${lb + 6},${base} L${rb - 6},${base} Q${rb - 1},${base} ${rb},${base - 4} L${rt},${t} Z`,
+        inner: `M${lt + 5},${t} L${lb + 5},${base - 6} L${rb - 5},${base - 6} L${rt - 5},${t} Z`,
+        left: lt, right: rt, top: t, bottom: base - 6,
+        extras: `<path class="clay-triangle" d="M${lt - 26},${base - 18} L${rt + 26},${base - 18} M${lt - 18},${base - 22} L${CX},${base + 6} L${rt + 18},${base - 22}"/>`,
+        lidPath: `M${lt - 4},${t} Q${CX},${t - 12} ${rt + 4},${t} Z M${CX - 6},${t - 6} h12 v-6 h-12 Z`,
+        mouth: { l: lt + 10, r: rt - 10 },
+      };
+    }
     case 'test-tube': {
       const w = 34, h = 160, l = CX - w / 2, r = CX + w / 2, t = base - h;
       return {
@@ -120,6 +133,8 @@ export function vesselGeom(shape: VesselShape, base: number): VesselGeom {
 
 /** Where the vessel bottom sits for this device. */
 export const baseFor = (d: DeviceKind, shape: VesselShape): number => {
+  if (d === 'furnace') return TABLE - 46;
+  if (shape === 'crucible') return d === 'bunsen' ? 252 : d === 'spirit' ? 262 : TABLE;
   if (shape === 'flask-round' || shape === 'test-tube') return d === 'bunsen' || d === 'spirit' ? 236 : TABLE - 30;
   switch (d) {
     case 'hotplate':

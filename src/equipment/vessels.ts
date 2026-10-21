@@ -318,6 +318,50 @@ const VESSEL_LIST = {
       lid: 'none',
     },
   },
+  crucible: {
+    id: 'crucible',
+    look: 'crucible',
+    kind: 'vessel',
+    category: 'vessel.laboratory',
+    name: { uk: 'Тигель', en: 'Crucible' },
+    phraseIn: { porcelain: { uk: 'у порцеляновому тиглі', en: 'in a porcelain crucible' } },
+    description: {
+      novice: {
+        uk: 'Маленька товстостінна чашечка з порцеляни. У ній розжарюють і плавлять речовини просто у вогні: порцеляна не горить і не плавиться.',
+        en: 'A small thick-walled porcelain cup. Substances are heated red-hot and melted in it right in the flame: porcelain does not burn or melt.',
+      },
+      school: {
+        uk: 'Тигель ставлять у порцеляновий трикутник на триногу над пальником або в муфельну піч. Порцеляна витримує ≈ 1150 °C, але тріскає від різкої зміни температури — гарячий тигель не ставлять на холодне.',
+        en: 'A crucible sits in a pipe-clay triangle on a tripod over a burner, or in a muffle furnace. Porcelain stands ≈ 1150 °C but cracks from a sudden change of temperature — a hot crucible is never put on anything cold.',
+      },
+    },
+    safety: {
+      school: {
+        uk: 'Розжарений тигель беруть лише тигельними щипцями й ставлять на керамічну плитку.',
+        en: 'A red-hot crucible is handled only with crucible tongs and put down on a ceramic tile.',
+      },
+    },
+    media: [],
+    spec: {
+      sizes: [0.015, 0.03, 0.05],
+      defaultSize: 0.03,
+      materials: ['porcelain'],
+      defaultMaterial: 'porcelain',
+      shape: {
+        type: 'frustum',
+        heightToDiameter: { value: 0.86, unit: '', conditions: '30 mL high-form crucible, outside', verification: 'single-source', tolerance: 0.1, citations: [{ source: 'fishersci-porcelain-crucible-30', locator: 'Ø 43 mm × 37 mm', conditions: '30 mL high form', value: 0.86 }], note: 'Outer size of one catalogue crucible; inside it is a little smaller.' },
+        topToBottom: { value: 1.6, unit: '', conditions: 'top / bottom diameter', verification: 'estimate', tolerance: 0.3, citations: [{ source: 'spark', locator: 'estimate', conditions: 'not measured', range: [1.3, 2] }], note: 'Estimate: a crucible narrows strongly towards its bottom.' },
+      },
+      wallThickness: { value: 0.002, unit: 'm', conditions: '30 mL high-form crucible', verification: 'single-source', tolerance: 0.2, citations: [{ source: 'fishersci-porcelain-crucible-30', locator: 'wall thickness 2 mm', conditions: '30 mL high form', value: 0.002 }], note: 'One catalogue listing.' },
+      massModel: {
+        base: 0.006,
+        perLiter: 0.67,
+        data: { value: 0.026, unit: 'kg', conditions: '30 mL crucible', verification: 'single-source', tolerance: 0.1, citations: [{ source: 'fishersci-porcelain-crucible-30', locator: 'weight 26 g', conditions: '30 mL high form', value: 0.026 }], note: 'One catalogue crucible; other sizes scaled: 6 g + 0.67 kg per litre (an estimate).' },
+      },
+      lid: 'optional',
+      flameOnly: true,
+    },
+  },
 } as const satisfies Record<string, VesselItem>;
 
 export type VesselId = keyof typeof VESSEL_LIST;

@@ -72,6 +72,10 @@ export interface HeaterSpec {
   readonly minFractionData?: SourcedValue;
   /** flame / induction: share of the power that ends up in the vessel. */
   readonly vesselShare?: SourcedValue;
+  /** flame: how hot its flame is, °C — nothing in it gets hotter (the share it takes falls as it nears this). */
+  readonly flameTemperature?: SourcedValue;
+  /** Overheat protection: the device cuts its power while the vessel is hotter than this, °C (an induction hob's sensor). */
+  readonly vesselCutoff?: SourcedValue;
   /** Vessel materials it can heat at all (induction: ferromagnetic only). */
   readonly requiresMaterial?: { readonly materials: readonly string[]; readonly source: SourceId; readonly claim: string };
   /** contact / immersion: the device's own heated body. */
@@ -121,6 +125,8 @@ export interface VesselSpec {
   readonly measuringOnly?: boolean;
   /** A calorimeter: the cup stands in an outer one with an air gap of this width, m — heat leaks out slowly. */
   readonly jacket?: { readonly gap: SourcedValue };
+  /** A crucible: heated only in a laboratory flame (on a tripod with a pipe-clay triangle) or in a furnace, never on a hob. */
+  readonly flameOnly?: boolean;
 }
 
 export interface VesselItem extends EquipmentCard {
@@ -135,6 +141,8 @@ export interface VesselItem extends EquipmentCard {
 export interface CoolerSpec {
   /** air — the vessel stands inside (fridge, freezer); bath — the vessel sits in a cold liquid. */
   readonly method: 'air' | 'bath';
+  /** Hot surroundings (a muffle furnace), not cold ones: the vessel is heated by its walls and the hot air. */
+  readonly hot?: boolean;
   /** Temperature it holds, °C; `min`/`max` — the setting range of its thermostat (equal for baths). */
   readonly setpoint: { readonly min: number; readonly max: number; readonly default: number; readonly data: SourcedValue };
   /** Heat transfer to the vessel: key in CONVECTION (forced air in a freezer, still water in a bath). */

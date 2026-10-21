@@ -26,7 +26,7 @@ const CATEGORY: Partial<Record<ComponentGroup, SubstanceCategory>> = {
   acid: 'liquid.acid',
   oil: 'liquid.oil',
   salt: 'solid.salt',
-  // Metal blocks: put into a liquid (heated in boiling water) — they are never the sample itself.
+  // Metal blocks: put into a liquid (heated in boiling water), or melted themselves in a crucible.
   metal: 'solid.metal',
   alloy: 'solid.metal',
   // Other solid bodies: a wooden block floats, a glass ball sinks.
@@ -65,6 +65,13 @@ function fromComponent(c: Component, id: string = c.id, shelfName?: ShelfName): 
     liquid: { specificHeat: main.specificHeat, density: main.density, ...(main.conductivity ? { conductivity: main.conductivity } : {}) },
     ...(c.stateAtRoom === 'liquid' && c.melting?.latentHeat && solid?.specificHeat
       ? { freezing: { point: c.melting.point, latentHeat: c.melting.latentHeat, solidSpecificHeat: solid.specificHeat, ...(solid.density ? { solidDensity: solid.density } : {}) } }
+      : {}),
+    ...(c.stateAtRoom === 'solid' && c.melting?.latentHeat && c.phases.liquid?.specificHeat
+      ? {
+          melt: { point: c.melting.point, latentHeat: c.melting.latentHeat, liquidSpecificHeat: c.phases.liquid.specificHeat, ...(c.phases.liquid.density ? { liquidDensity: c.phases.liquid.density } : {}) },
+          // The same transition seen from the solid: everything that asks "where does it melt / freeze" finds it here.
+          freezing: { point: c.melting.point, latentHeat: c.melting.latentHeat, solidSpecificHeat: main.specificHeat, solidDensity: main.density },
+        }
       : {}),
     ...(c.stateAtRoom === 'liquid' && c.boiling?.latentHeat ? { boiling: { point: c.boiling.point, latentHeat: c.boiling.latentHeat } } : {}),
     ...(c.vapour && mm
@@ -137,6 +144,7 @@ const SHELF = [
   { id: 'iron', component: 'iron' },
   { id: 'steel', component: 'steel' },
   { id: 'brass', component: 'brass' },
+  { id: 'tin', component: 'tin' },
   { id: 'wood', component: 'wood', as: { name: { uk: 'Дерев’яний брусок (сосна)', en: 'Wooden block (pine)' }, gender: 'm' } },
   { id: 'glass', component: 'glass', as: { name: { uk: 'Скляна кулька', en: 'Glass marble' }, gender: 'f', bodyShape: 'ball' } },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];

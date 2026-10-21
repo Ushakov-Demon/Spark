@@ -7,7 +7,8 @@ import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBo
 import { sig } from '../explain/format.js';
 import type { Locale } from '../knowledge/i18n.js';
 import { COMPONENTS } from '../components/index.js';
-import { SUBSTANCES } from '../substances/catalog.js';
+import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
+import { liquidHeat } from '../substances/types.js';
 import { formatReading, weigh } from './weighing.js';
 import { formatMeasured } from './measuring.js';
 import type { MeasurementRecord } from '../core/trace.js';
@@ -34,6 +35,8 @@ export interface BoardLine {
 
 type Phase = 'solid' | 'liquid' | 'mix';
 const C = (k: number) => k - ZERO_CELSIUS_IN_KELVIN;
+/** Ice and other frozen liquids put in (they melt into the sample); a metal block with melting data is still a block. */
+const isFrozenLiquid = (e: ThermalBody) => 'phase' in e.params && !!e.params.phase && !SUBSTANCES[e.params.substance as SubstanceId]?.melt;
 const iceMass = (b: ThermalBody) => (b.state.mixture ? b.state.mixture.ice : (b.state.solidFraction ?? 0) * bodyMass(b));
 const phaseOf = (b: ThermalBody): Phase => {
   const m = b.state.mixture;
@@ -51,7 +54,8 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
   const out: BoardLine[] = [];
   if (!states.length) return out;
   const name = (uk ? (sub.genitive?.uk ?? sub.name.uk) : sub.name.en).toLowerCase();
-  const iceName = uk ? 'льоду' : 'ice';
+  // The solid state: ice for water and the like; a metal or salt is a solid under its own name.
+  const iceName = sub.melt ? name : uk ? 'льоду' : 'ice';
 
   // Split the step into phases: runs of states where the sample is all solid, all liquid or both.
   const bodies = states.map(sampleOf);
@@ -77,13 +81,13 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
         const m = Math.abs(dm);
         out.push({
           id,
-          title: dm > 0 ? (uk ? `кристалізація${over ? `: замерзло ${n(m * 1000)} г` : ''}` : `freezing${over ? `: ${n(m * 1000)} g froze` : ''}`) : uk ? `плавлення${over ? `: розтануло ${n(m * 1000)} г` : ''}` : `melting${over ? `: ${n(m * 1000)} g melted` : ''}`,
+          title: dm > 0 ? (uk ? `кристалізація${over ? `: замерзло ${n(m * 1000)} г` : ''}` : `freezing${over ? `: ${n(m * 1000)} g froze` : ''}`) : uk ? `плавлення${over ? `: ${sub.melt ? 'розплавилося' : 'розтануло'} ${n(m * 1000)} г` : ''}` : `melting${over ? `: ${n(m * 1000)} g melted` : ''}`,
           formula: 'Q = λ·m',
           ...(over ? { numbers: `${n(lambda)} · ${n(m)} ≈ ${kJ(lambda * m)}` } : {}),
         });
       }
     } else {
-      const c = ph === 'solid' ? (b.state.mixture ? COMPONENTS.water.phases.solid?.specificHeat?.value : sub.freezing?.solidSpecificHeat.value) : sub.liquid.specificHeat.value;
+      const c = ph === 'solid' ? (b.state.mixture ? COMPONENTS.water.phases.solid?.specificHeat?.value : sub.freezing?.solidSpecificHeat.value) : liquidHeat(sub).value;
       // Heat flow only: a jump at the moment something was poured in (mixing) is not warming.
       let dT = 0;
       for (let j = Math.max(1, start); j < i; j++) dT += jumpless(j);
@@ -125,7 +129,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
   // Pieces put into the liquid (a metal block): each gives or takes Q = c·m·Δt; at the end — the heat balance.
   const lastState = states[states.length - 1]!;
   const sampleBody = sampleOf(lastState);
-  const pieces = Object.values(lastState.entities).filter((e): e is ThermalBody => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`) && !('phase' in e.params && e.params.phase));
+  const pieces = Object.values(lastState.entities).filter((e): e is ThermalBody => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`) && !isFrozenLiquid(e));
   let given = 0;
   let taken = 0;
   for (const piece of pieces) {
@@ -150,7 +154,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
   if (finished && pieces.length && phaseOf(sampleBody) === 'liquid' && phaseOf(bodies[0]!) === 'liquid') {
     // The liquid's own share, from the start of the step to the end (no phase change in it).
     const dT = C(sampleBody.state.temperature) - C(bodies[0]!.state.temperature);
-    const q = sub.liquid.specificHeat.value * bodyMass(sampleBody) * Math.abs(dT);
+    const q = liquidHeat(sub).value * bodyMass(sampleBody) * Math.abs(dT);
     if (dT < 0) given += q;
     else taken += q;
     if (given > 0 && taken > 0) {

@@ -25,10 +25,24 @@ export type ThermalLinkOrigin =
       readonly dataRef?: string;
     };
 
+/**
+ * Thermal radiation of a surface to its surroundings, on top of G: P = ε·σ·A·(T₁⁴ − T₂⁴).
+ * The h of still air already holds the radiation of a surface near room temperature,
+ * linearised (≈ 4εσT_ref³ per kelvin); only what radiation adds beyond that is counted here —
+ * nothing near room temperature, most of the loss of a red-hot crucible.
+ */
+export interface Radiation {
+  readonly emissivity: number;
+  readonly area: SquareMeters;
+  /** Where the emissivity comes from (a MATERIALS key). */
+  readonly dataRef?: string;
+}
+
 export interface ThermalLinkParams {
   /** G, W/K. Precomputed from geometry/material so the solver stays trivial. */
   readonly conductance: ThermalConductance;
   readonly origin?: ThermalLinkOrigin;
+  readonly radiation?: Radiation;
 }
 export type ThermalLink = Connection<'thermal', 'thermal.link', ThermalLinkParams>;
 
@@ -64,7 +78,8 @@ interface LinkEnds {
   readonly b: string;
 }
 
-export function thermalLink(o: LinkEnds & { readonly conductance: ThermalConductance; readonly origin?: ThermalLinkOrigin }): ThermalLink {
+export function thermalLink(o: LinkEnds & { readonly conductance: ThermalConductance; readonly origin?: ThermalLinkOrigin; readonly radiation?: Radiation }): ThermalLink {
+  if (o.radiation && !(o.radiation.emissivity > 0 && o.radiation.emissivity <= 1)) throw new RangeError(`emissivity must be in (0, 1], got ${o.radiation.emissivity}`);
   if (!(o.conductance >= 0) || !Number.isFinite(o.conductance)) {
     throw new RangeError(`conductance must be ≥ 0, got ${o.conductance}`);
   }
@@ -74,7 +89,7 @@ export function thermalLink(o: LinkEnds & { readonly conductance: ThermalConduct
     kind: 'thermal.link',
     a: { entity: entityId(o.a), port: 'surface' },
     b: { entity: entityId(o.b), port: 'surface' },
-    params: { conductance: o.conductance, ...(o.origin === undefined ? {} : { origin: o.origin }) },
+    params: { conductance: o.conductance, ...(o.origin === undefined ? {} : { origin: o.origin }), ...(o.radiation ? { radiation: o.radiation } : {}) },
   };
 }
 
@@ -101,12 +116,14 @@ export const wallLink = (
     readonly coefficient: HeatTransferCoeff;
     readonly area: SquareMeters;
     readonly dataRef?: string;
+    readonly radiation?: Radiation;
   },
 ): ThermalLink =>
   thermalLink({
     id: o.id,
     a: o.a,
     b: o.b,
+    ...(o.radiation ? { radiation: o.radiation } : {}),
     conductance: seriesConductance(conductionConductance(o.conductivity, o.area, o.thickness), convectionConductance(o.coefficient, o.area)),
     origin: {
       type: 'wall',
@@ -121,12 +138,28 @@ export const wallLink = (
 
 /** Surface ↔ fluid (air, water): G = h·A. `dataRef` = CONVECTION key of h. */
 export const convectionLink = (
-  o: LinkEnds & { readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string; readonly surface?: boolean },
+  o: LinkEnds & { readonly coefficient: HeatTransferCoeff; readonly area: SquareMeters; readonly dataRef?: string; readonly surface?: boolean; readonly radiation?: Radiation },
 ): ThermalLink =>
   thermalLink({
     id: o.id,
     a: o.a,
     b: o.b,
+    ...(o.radiation ? { radiation: o.radiation } : {}),
     conductance: convectionConductance(o.coefficient, o.area),
     origin: { type: 'convection', coefficient: o.coefficient, area: o.area, ...ref(o.dataRef), ...(o.surface ? { surface: true } : {}) },
   });
+
+/** Stefan–Boltzmann constant, W/(m²·K⁴) (CODATA, exact since the 2019 SI). */
+export const STEFAN_BOLTZMANN = 5.670374419e-8;
+/** The temperature at which the h of still air already counts radiation (a room), K. */
+export const RADIATION_REFERENCE = 293.15;
+
+/** What radiation adds beyond the h of still air, W, from a (at ta) to b (at tb). */
+export function radiationExcess(r: Radiation, ta: number, tb: number): number {
+  const p = r.emissivity * STEFAN_BOLTZMANN * r.area * (ta ** 4 - tb ** 4 - 4 * RADIATION_REFERENCE ** 3 * (ta - tb));
+  // Colder than a room (a freezer) radiation is a little weaker than h assumes; that is left in h, never reversed.
+  return p * (ta - tb) > 0 ? p : 0;
+}
+
+/** How fast that grows with temperature, W/K — for the stability of the integration. */
+export const radiationSlope = (r: Radiation, t: number): number => Math.max(0, 4 * r.emissivity * STEFAN_BOLTZMANN * r.area * (t ** 3 - RADIATION_REFERENCE ** 3));

@@ -9,7 +9,7 @@ import type { LocalizedText } from '../../knowledge/i18n.js';
 import { burner, heater, mixtureBody, reservoir, thermalBody } from './entities.js';
 import { NACL_SOLUTE } from '../../components/index.js';
 import { convectionLink, supplyLink, thermalLink, wallLink } from './links.js';
-import { CONVECTION, MATERIALS, type MaterialName } from './materials.js';
+import { CONVECTION, MATERIALS, SURFACES, type MaterialName } from './materials.js';
 
 /**
  * Building blocks for thermal setups: put a vessel (with water) on the table,
@@ -59,6 +59,7 @@ export function placeVessel(v: VesselPlacement): Piece {
   if (!(v.liters > 0) || v.liters > v.size + 1e-9) throw new RangeError(`Water (${v.liters} L) must be > 0 and fit into ${v.size} L`);
 
   const g = vesselGeometry(spec.shape, v.size, v.liters);
+  const surface = SURFACES[v.material as MaterialName];
   const lid = v.lid && spec.lid === 'optional';
   const mass = v.mass ?? typicalVesselMass(v.item, v.size);
   const lidId = `${v.id}.lid`;
@@ -73,7 +74,9 @@ export function placeVessel(v: VesselPlacement): Piece {
     en: `${v.item.name.en} (${plain(material.name.en)}${lid ? ', with lid' : ''})`,
   };
 
-  const w = substance?.mixture?.saltFraction;
+  // A metal or salt poured in dry is one solid body (salt melts on its own, not as brine).
+  const dry = substance?.melt !== undefined || (substance?.category.startsWith('solid.') ?? false);
+  const w = dry ? undefined : substance?.mixture?.saltFraction;
   // Water + salt: total mass from the solution density, then split into the components.
   const solutionMass = w === undefined ? 0 : (v.liters / 1000) * NACL_SOLUTE.solutionDensity(w);
   const entities: AnyEntity[] = [
@@ -105,9 +108,9 @@ export function placeVessel(v: VesselPlacement): Piece {
       conductivity: material.conductivity.value,
       thickness: meters(spec.wallThickness.value),
       material: v.material,
-      coefficient: CONVECTION.stillWater.value,
+      coefficient: dry ? CONVECTION.dryContact.value : CONVECTION.stillWater.value,
       area: squareMeters(g.wetted),
-      dataRef: 'stillWater',
+      dataRef: dry ? 'dryContact' : 'stillWater',
     }),
     // Outer walls exchange heat with the surroundings; the bottom too if it sits in a bath.
     // A calorimeter's cup is wrapped in an air gap first (walls and bottom): conduction through still air, then the outside.
@@ -130,6 +133,8 @@ export function placeVessel(v: VesselPlacement): Piece {
           coefficient: CONVECTION[outside.convection].value,
           area: squareMeters(g.outerSide + (outside.bottom ? g.contactArea : 0)),
           dataRef: outside.convection,
+          // A red-hot wall loses most of its heat by radiation (nothing extra near room temperature, see links.ts).
+          ...(surface && !outside.bottom ? { radiation: { emissivity: surface.emissivity.value, area: squareMeters(g.outerSide), dataRef: v.material } } : {}),
         }),
   ];
   if (lid) {
@@ -196,14 +201,15 @@ export function placeHeater(h: HeaterPlacement): Piece {
       connections.push(
         // Contact scales with how much of the plate the vessel bottom covers.
         thermalLink({ id: `${h.id}->${h.vessel.id}`, a: h.id, b: h.vessel.id, conductance: thermalConductance(spec.contactConductance!.value * contactFraction(h, spec.plateDiameter?.value)) }),
-        convectionLink({ id: `${h.id}->${h.roomId}`, a: h.id, b: h.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(body.area.value), dataRef: 'stillAir' }),
+        // A hot plate glows: radiation keeps it from getting hotter and hotter under a dry pot.
+        convectionLink({ id: `${h.id}->${h.roomId}`, a: h.id, b: h.roomId, coefficient: CONVECTION.stillAir.value, area: squareMeters(body.area.value), dataRef: 'stillAir', ...(SURFACES[body.material as MaterialName] ? { radiation: { emissivity: SURFACES[body.material as MaterialName]!.emissivity.value, area: squareMeters(body.area.value), dataRef: body.material } } : {}) }),
       );
       break;
     }
     case 'flame':
     case 'induction': {
       const share = spec.vesselShare?.value ?? 0;
-      entities.push(burner({ id: h.id, label: h.item.name, power, on, device: h.item.id }));
+      entities.push(burner({ id: h.id, label: h.item.name, power, on, device: h.item.id, ...(spec.flameTemperature ? { flame: celsius(spec.flameTemperature.value) } : {}) }));
       connections.push(
         supplyLink({ id: `${h.id}=>${h.vessel.id}`, a: h.id, b: h.vessel.id, share, dataRef: h.item.id }),
         supplyLink({ id: `${h.id}=>${h.roomId}`, a: h.id, b: h.roomId, share: 1 - share, dataRef: h.item.id }),

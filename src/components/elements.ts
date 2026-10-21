@@ -17,6 +17,7 @@ export const ATOMIC_WEIGHTS = {
   Fe: 55.845,
   Cu: 63.546,
   Zn: 65.38,
+  Sn: 118.71,
 } as const;
 
 export type ElementSymbol = keyof typeof ATOMIC_WEIGHTS;
