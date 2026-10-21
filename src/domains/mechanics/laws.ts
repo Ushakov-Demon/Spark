@@ -56,7 +56,7 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     history: {
       people: [ARCHIMEDES],
       role: 'discovered',
-      when: 'бл. 246 р. до н. е.',
+      when: { uk: 'бл. 246 р. до н. е.', en: 'c. 246 BC' },
       work: 'Про плаваючі тіла (On Floating Bodies)',
       story: {
         school: {

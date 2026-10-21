@@ -6,7 +6,7 @@ import { getCurriculum } from '../knowledge/curricula.js';
 import { lifeYears, tr, type Locale } from '../knowledge/i18n.js';
 import { atLeast, LEVEL_INFO, textFor, type Level } from '../knowledge/levels.js';
 import { getSource } from '../knowledge/sources.js';
-import type { FormulaSpec, LawSpec } from '../knowledge/types.js';
+import { lawWhen, type FormulaSpec, type LawSpec } from '../knowledge/types.js';
 import { h, list, note, p, type Block } from './blocks.js';
 import type { DataUsage, DomainKnowledge } from './domain.js';
 import { formatDuration, formatQuantity, formatTime, sig, unitLabel, type ExplainContext } from './format.js';
@@ -134,11 +134,11 @@ function explainLaw<C extends Command>(
   if (history.people.length) {
     if (level === 'novice') {
       const names = history.people.map((x) => t(x.name)).join(', ');
-      out.push(p(history.story.novice ? t(history.story.novice) : `${who}: ${names} (${history.when}).`));
+      out.push(p(history.story.novice ? t(history.story.novice) : `${who}: ${names} (${lawWhen(law, locale)}).`));
     } else {
       if (atLeast(level, 'advanced')) {
         const people = history.people.map((x) => `${t(x.name)} (${lifeYears(x.born, x.died, locale)})`).join(', ');
-        out.push(p(`${who}: ${people}. ${m.when}: ${history.when}.${history.work ? ` ${m.work}: ${history.work}.` : ''}`));
+        out.push(p(`${who}: ${people}. ${m.when}: ${lawWhen(law, locale)}.${history.work ? ` ${m.work}: ${history.work}.` : ''}`));
       }
       out.push(p(t(textFor(history.story, level))));
     }

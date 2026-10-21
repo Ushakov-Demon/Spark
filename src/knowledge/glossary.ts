@@ -1,5 +1,5 @@
 import type { Locale, LocalizedText } from './i18n.js';
-import type { LawSpec } from './types.js';
+import { lawWhen, type LawSpec } from './types.js';
 
 /**
  * Terms explained in a footnote wherever they appear in the lab's texts (explanations, the
@@ -141,16 +141,14 @@ export function lawStems(name: LocalizedText): Term['stems'] {
   return { uk: [[`${first}*`, ...uk.slice(1)].join(' ')], en: [possessive ? `${possessive[1]} ${possessive[2]}` : en] };
 }
 
-const CYRILLIC = /\p{Script=Cyrillic}/u;
-
 /** «Відкрив Майкл Фарадей (1833–1834).» — from the law's own sourced history. */
 function whoFound(law: LawSpec, l: Locale): string {
   const h = law.history;
   const names = h.people.map((p) => p.name[l]);
   if (!names.length) return '';
   const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} ${l === 'uk' ? 'і' : 'and'} ${names[names.length - 1]}` : names[0]!;
-  // A date written only in Ukrainian («бл. 246 р. до н. е.») is left out of the English text.
-  const when = h.when !== '—' && (l === 'uk' || !CYRILLIC.test(h.when)) ? ` (${h.when})` : '';
+  const date = lawWhen(law, l);
+  const when = date !== '—' ? ` (${date})` : '';
   if (h.role === 'associated') return l === 'uk' ? ` Пов’язують з ім${names.length > 1 ? 'енами' : 'ям'}: ${list}${when}.` : ` Associated with ${list}${when}.`;
   return l === 'uk' ? ` ${names.length > 1 ? 'Відкрили' : 'Відкрив'} ${list}${when}.` : ` Discovered by ${list}${when}.`;
 }

@@ -13,7 +13,7 @@ import { COMPONENTS } from '../src/components/index.js';
 import { lifeYears, tr, type Locale } from '../src/knowledge/i18n.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { getSource } from '../src/knowledge/sources.js';
-import type { LawSpec } from '../src/knowledge/types.js';
+import { lawWhen, type LawSpec } from '../src/knowledge/types.js';
 
 export interface Article {
   /** The line over the headline: "20 жовтня 1891 року — день народження". */
@@ -119,7 +119,7 @@ export function offlineArticle(laws: readonly LawSpec[], lang: Locale, level: Le
   const people = law.history.people.map((p) => `${tr(p.name, lang)} (${lifeYears(p.born, p.died, lang)})`).join(', ');
   const sources = [...new Set(law.history.citations.map((c) => getSource(c.source)?.title).filter(Boolean))].join('; ');
   return {
-    kicker: lang === 'uk' ? `З історії науки · ${law.history.when}` : `From the history of science · ${law.history.when}`,
+    kicker: lang === 'uk' ? `З історії науки · ${lawWhen(law, lang)}` : `From the history of science · ${lawWhen(law, lang)}`,
     title: tr(law.name, lang),
     text: `${tr(textFor(law.history.story, level), lang)}${people ? `\n\n${people}.` : ''}`,
     source: { label: `Spark${sources ? ` · ${lang === 'uk' ? 'за джерелами' : 'sources'}: ${sources}` : ''}` },

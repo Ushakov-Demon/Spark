@@ -1,4 +1,4 @@
-import type { LocalizedText } from './i18n.js';
+import type { Locale, LocalizedText } from './i18n.js';
 import type { LeveledText } from './levels.js';
 
 export type { LocalizedText } from './i18n.js';
@@ -99,6 +99,9 @@ export interface FormulaSpec<F extends (...args: any[]) => number = (...args: an
 }
 
 /** Helper that keeps `F` inferred per formula while erasing it for the catalog array. */
+/** When a law was found, in a language. */
+export const lawWhen = (law: Pick<LawSpec, 'history'>, l: Locale): string => (typeof law.history.when === 'string' ? law.history.when : law.history.when[l]);
+
 export const defineFormula = <F extends (...args: any[]) => number>(spec: FormulaSpec<F>): FormulaSpec => spec as FormulaSpec;
 
 /** Source for a non-numeric fact (a date, an attribution, a publication). */
@@ -131,8 +134,8 @@ export interface LawSpec {
     readonly people: readonly Person[];
     /** 'discovered' — these people discovered it; 'associated' — no single discoverer, names are context. */
     readonly role: 'discovered' | 'associated';
-    /** e.g. "1701", "1807–1822" */
-    readonly when: string;
+    /** e.g. "1701", "1807–1822"; words in it are given in each language («бл. 246 р. до н. е.» — «c. 246 BC»). */
+    readonly when: string | LocalizedText;
     readonly work?: string;
     readonly story: LeveledText;
     readonly citations: readonly FactCitation[];

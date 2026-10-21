@@ -25,6 +25,7 @@ describe('glossary: laws become terms by themselves', () => {
     expect(t.text.uk).toContain('m = k·q');
     expect(t.text.uk).toContain('Відкрив Майкл Фарадей (1833–1834).');
     expect(t.text.en).toContain('Discovered by Michael Faraday (1833–1834).');
+    expect(LAB_GLOSSARY.find((x) => x.law === 'archimedes')!.text.en).toContain('Discovered by Archimedes (c. 246 BC).');
   });
 
   it('a law is found in any form of its name', () => {
