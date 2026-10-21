@@ -139,7 +139,8 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     const p0 = from?.entities[piece.id];
     if (!p0 || !isThermalBody(p0)) continue;
     const dT = C(piece.state.temperature) - C(p0.state.temperature);
-    const c = piece.params.specificHeat;
+    // A solid piece (a metal block) by its solid heat capacity — its params hold the melt's.
+    const c = (piece.state.solidFraction ?? 0) >= 1 && piece.params.phase?.specificHeatSolid ? piece.params.phase.specificHeatSolid : piece.params.specificHeat;
     const m = bodyMass(piece);
     const name = piece.params.substance && piece.params.substance in SUBSTANCES ? tr(SUBSTANCES[piece.params.substance as keyof typeof SUBSTANCES].name, locale) : tr(piece.label ?? { uk: 'тіло', en: 'body' }, locale);
     const q = c * m * Math.abs(dT);

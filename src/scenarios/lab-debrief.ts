@@ -90,7 +90,12 @@ export function lossBreakdown<C extends Command>(result: ExperimentResult<C>): {
     if (s.role === 'vapour') vapour += s.energy;
     else if (s.entity === SAMPLE_ID) parts.push({ key: 'sample', energy: s.energy });
     else if (s.role === 'source') parts.push({ key: 'heater', energy: s.energy });
-    else if (s.role === 'body') parts.push({ key: s.entity.endsWith('.lid') ? 'lid' : 'vessel', energy: s.energy });
+    // Bodies put into the liquid (a metal block) are not the vessel: one share for them all.
+    else if (s.role === 'body' && s.entity.startsWith(`${SAMPLE_ID}+`)) {
+      const x = parts.find((q) => q.key === 'pieces');
+      if (x) x.energy += s.energy;
+      else parts.push({ key: 'pieces', energy: s.energy });
+    } else if (s.role === 'body') parts.push({ key: s.entity.endsWith('.lid') ? 'lid' : 'vessel', energy: s.energy });
     else if (s.role === 'room') parts.push({ key: 'air', energy: s.energy - (intoSurroundings.get(s.entity) ?? 0) - (pastVessel.get(s.entity) ?? 0) });
   }
   // Boiled dry: the substance's own heat left with the steam too — count it there, not as a negative share.
@@ -162,6 +167,7 @@ const PART_NAMES: Readonly<Record<string, LocalizedText>> = {
   sample: { uk: 'на саму речовину (нагрівання, плавлення)', en: 'into the substance itself (warming, melting)' },
   vessel: { uk: 'на нагрівання посуду', en: 'into warming the vessel' },
   lid: { uk: 'на нагрівання кришки', en: 'into warming the lid' },
+  pieces: { uk: 'на нагрівання того, що поклали в рідину', en: 'into warming what was put into the liquid' },
   heater: { uk: 'залишилось у розжареному нагрівачі', en: 'stayed in the hot heater' },
   air: { uk: 'пішло в повітря (тепловіддача)', en: 'lost to the air (heat transfer)' },
   flame: { uk: 'полум’я пройшло повз посуд', en: 'flame heat that went past the vessel' },

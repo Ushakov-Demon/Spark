@@ -1,6 +1,6 @@
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
-import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, THERMAL_COMMANDS } from '../src/domains/thermal/index.js';
+import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, solubilityPer100, THERMAL_COMMANDS } from '../src/domains/thermal/index.js';
 import {
   childrenOf,
   COOLERS,
@@ -787,6 +787,17 @@ function chooseAdd(id: SubstanceId) {
   addTemp = sub.category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
   addGrams = sub.category === 'solid.metal' ? 100 : sub.category === 'solid.material' ? 10 : sub.category === 'solid.salt' ? 10 : 30;
 }
+/** Not all the salt dissolved: how much did, how much lies on the bottom, and what would help — warming or more water. */
+function saltLeftSay(): string {
+  const mix = sampleOf(session.state).state.mixture!;
+  const T = sampleOf(session.state).state.temperature - 273.15;
+  const g = (kg: number) => sig(kg * 1000, 3, locale);
+  const now = solubilityPer100(T);
+  const hot = solubilityPer100(100);
+  const heatHelps = mix.salt <= (mix.water * hot) / 100;
+  return t().guide.saltLeft(g(mix.salt - mix.crystals), g(mix.crystals), sig(T, 3, locale), sig(now, 3, locale), heatHelps, sig(hot, 3, locale));
+}
+
 /** A solid picked on the shelf: get it ready in the "add" panel and show the panel. */
 /** How much of a dry sample (salt, a metal) to take at first, g. */
 const DRY_GRAMS = 50;
@@ -804,7 +815,8 @@ function prepareAdd(id: SubstanceId) {
 }
 
 /** Can it be frozen within the temperatures the page offers (down to −30 °C)? Ethanol (−114 °C) cannot. */
-const canFreezeHere = (s: SubstanceItem) => s.freezing !== undefined && s.freezing.point.value > -30;
+// Only a liquid can be added frozen (ice); a metal or salt is solid anyway — its melting data are not "freezing".
+const canFreezeHere = (s: SubstanceItem) => !s.category.startsWith('solid.') && s.freezing !== undefined && s.freezing.point.value > -30;
 
 /** Volume taken by everything in the vessel now, litres. */
 function usedVolume(): number {
@@ -835,6 +847,8 @@ function addPortion(id: SubstanceId, grams: number, tempC: number, frozen: boole
   const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: id, mass: (grams / 1000) as never, temperature: celsius(tempC), ...(frozen ? { frozen: true } : {}) });
   if (!entry.ok) return tr(entry.error, locale);
   (finished ? pendingAdds : stepAdds).push({ what: sub.name, mass: grams / 1000 });
+  // The Professor comments on what was put in (salt dissolving, or some left on the bottom) — in free play too.
+  lastDrop = { at: session.state.time, step: session };
   splash(id, grams / 1000, frozen);
   boardEpoch++;
   headline = null;
@@ -997,7 +1011,7 @@ function sceneView(): SceneView {
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
     : showingDrop()
-    ? { mood: 'surprised', says: showingDrop() === 'salt' ? u.guide.dissolved : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
+    ? { mood: 'surprised', says: showingDrop() === 'salt' ? u.guide.dissolved : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
     : measured
     ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
@@ -1211,12 +1225,12 @@ let planTotal = 0;
 /** The latest thing put into the vessel during a guided procedure (the Professor comments on it). */
 let lastDrop: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
 /** What was just put in, while nothing has happened since: a body that sank or floats, or salt that dissolved. */
-function showingDrop(): 'body' | 'float' | 'salt' | null {
+function showingDrop(): 'body' | 'float' | 'salt' | 'salt-left' | null {
   if (!lastDrop || lastDrop.step !== session || running || session.state.time !== lastDrop.at) return null;
   const l = session.result().log;
   const c = l[l.length - 1]?.command;
   if (c?.type !== 'thermal.add') return null;
-  if (SUBSTANCES[c.substance as SubstanceId]?.category === 'solid.salt') return 'salt';
+  if (SUBSTANCES[c.substance as SubstanceId]?.category === 'solid.salt') return (sampleOf(session.state).state.mixture?.crystals ?? 0) > 1e-5 ? 'salt-left' : 'salt';
   const pieces = Object.values(session.state.entities).filter((e) => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`));
   const last = pieces[pieces.length - 1];
   return last && isThermalBody(last) && pieceShare(session.state, last) < 1 ? 'float' : 'body';

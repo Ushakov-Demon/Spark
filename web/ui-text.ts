@@ -60,6 +60,7 @@ export interface UiText {
     dropped: string;
     floats: string;
     dissolved: string;
+    saltLeft(dissolved: string, left: string, t: string, per100: string, heatHelps: boolean, hot: string): string;
     btnDissolve(what: string): string;
     wait(what: string): string;
     btnWait(what: string): string;
@@ -321,6 +322,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       dropped: 'Бульк! Брусок ліг на дно — і вода в мензурці піднялася.',
       floats: 'Бульк! Кубик плаває — і вода в мензурці піднялася.',
       dissolved: 'Сіль розчиняється — вода стає солоною і густішою.',
+      saltLeft: (d, l, t, s, heat, hot) => `Розчинилося ${d} г, а ${l} г лежить на дні: при ${t} °C 100 г води розчиняє лише ≈ ${s} г солі. ${heat ? 'Нагрій воду — при вищій температурі розчиниться решта.' : `Нагрівання тут мало допоможе (при 100 °C — ≈ ${hot} г на 100 г води): долий води.`}`,
       btnDissolve: (w) => `🥄 Розчинити: ${w}`,
       wait: (w) => `${w} — а ти стеж за тим, що відбувається в посуді.`,
       btnWait: (w) => `⏳ ${w}`,
@@ -579,6 +581,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       dropped: 'Plop! The block lies on the bottom — and the water in the cylinder rose.',
       floats: 'Plop! The cube floats — and the water in the cylinder rose.',
       dissolved: 'The salt is dissolving — the water turns salty and denser.',
+      saltLeft: (d, l, t, s, heat, hot) => `${d} g dissolved, and ${l} g lies on the bottom: at ${t} °C, 100 g of water dissolves only ≈ ${s} g of salt. ${heat ? 'Warm the water — the rest dissolves when it is hotter.' : `Warming helps little here (≈ ${hot} g per 100 g of water at 100 °C): add more water.`}`,
       btnDissolve: (w) => `🥄 Dissolve: ${w}`,
       wait: (w) => `${w} — and watch what happens in the vessel.`,
       btnWait: (w) => `⏳ ${w}`,
