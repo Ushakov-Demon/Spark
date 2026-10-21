@@ -89,3 +89,15 @@ describe('programmes of the ready-made experiments', () => {
     }
   });
 });
+
+describe('growing crystals: the answer', () => {
+  it('counts what lay on the bottom before heating, whatever state the first step starts from', () => {
+    const p = PRESETS.find((x) => x.id === 'grow-crystals')!;
+    const first: ProtocolStep = { kind: 'operation', action: p.params.action, target: p.params.target!, heater: p.params.heater! };
+    const out = runProtocol({ base: p.params, steps: [...(p.setup ?? []), first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
+    const a = PRESET_ANSWERS['grow-crystals']!({ steps, simulation });
+    expect(a.text.uk).toContain('спочатку на дні лишилося 18,1 г');
+    expect(a.correct).toBe('part');
+  }, 60_000);
+});

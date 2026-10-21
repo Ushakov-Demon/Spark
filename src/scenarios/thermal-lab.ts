@@ -264,7 +264,7 @@ export function labStatus<C extends Command>(p: LabParams, result: ExperimentRes
 const HEATED_TO: Readonly<Record<Gender, string>> = { f: 'нагрілася до', m: 'нагрівся до', n: 'нагрілося до' };
 
 /** "Distilled water (2 L) in a steel pot on a kitchen gas hob" — the subject of the headline. */
-function subject(p: LabParams, locale: Locale, now?: SystemState): { text: string; gender: Gender } {
+function subject(p: LabParams, locale: Locale, now?: SystemState): { text: string; gender: Gender; name: string } {
   const sub = SUBSTANCES[p.substance];
   // Salt was added during the experiment: it is a solution now.
   // (Dry salt with water poured on it is salt water too.)
@@ -289,7 +289,7 @@ function subject(p: LabParams, locale: Locale, now?: SystemState): { text: strin
   }
   const where = tr(vessel.phraseIn[p.material] ?? vessel.name, locale) + (p.lid ? (locale === 'uk' ? ' з кришкою' : ' with a lid') : '');
   const by = p.supply ? ` ${tr(SUPPLIES[p.supply.id].phrase, locale)}` : p.heater ? ` ${tr(HEATERS[p.heater.id].phrase, locale)}` : p.cooler ? ` ${tr(COOLERS[p.cooler.id].phrase, locale)}` : locale === 'uk' ? ' у кімнаті' : ' in the room';
-  return { text: `${name} (${amount}) ${where}${by}`, gender };
+  return { text: `${name} (${amount}) ${where}${by}`, gender, name };
 }
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
@@ -323,7 +323,7 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
   const { locale } = ctx;
   const uk = locale === 'uk';
   const sub = SUBSTANCES[p.substance];
-  const { text: subj, gender } = subject(p, locale, result.final);
+  const { text: subj, gender, name: subjName } = subject(p, locale, result.final);
   const T = (k: number) => formatQuantity(k, 'K', { locale, level: 'school' });
   const op0 = OPERATIONS[p.action];
   const op = sub.melt && op0.verbsMolten ? { ...op0, verbs: op0.verbsMolten } : op0;
@@ -347,7 +347,7 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
     const lost = -(split.shares.find((s) => s.entity === SAMPLE_ID)?.energy ?? 0);
     if (lost > 0) {
       return uk
-        ? `Для цього ${lowerFirst(tr(sub.name, locale))} віддала навколишньому ${formatQuantity(lost, 'J', { locale, level: 'school' })} теплоти${op.heatGivenNote ? (sub.melt ? op.heatGivenNote.uk.replace('замерзання', 'кристалізації') : op.heatGivenNote.uk) : ''}.`
+        ? `Для цього ${lowerFirst(subjName)} ${gender === 'f' ? 'віддала' : gender === 'n' ? 'віддало' : 'віддав'} навколишньому ${formatQuantity(lost, 'J', { locale, level: 'school' })} теплоти${op.heatGivenNote ? (sub.melt ? op.heatGivenNote.uk.replace('замерзання', 'кристалізації') : op.heatGivenNote.uk) : ''}.`
         : `To do so it gave ${formatQuantity(lost, 'J', { locale, level: 'school' })} of heat to its surroundings${op.heatGivenNote ? (sub.melt ? op.heatGivenNote.en.replace('freezing', 'crystallisation') : op.heatGivenNote.en) : ''}.`;
     }
     return null;
@@ -360,7 +360,7 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
       lines.push(...(op.reachedNotes?.({ sample: b1, state: result.final, initial: result.initial, locale }) ?? []));
       // A current's heat is told by the operation itself; "the heater released…" is for heaters.
       const e = op.uses === 'supply' ? null : energyLine();
-      if (e) lines.push(uk ? e.replace(/віддала навколишньому/, sub.gender === 'f' ? 'віддала навколишньому' : 'віддав навколишньому') : e);
+      if (e) lines.push(e);
       return [{ kind: 'summary', tone: 'success', lines }];
     }
     case 'will-reach':
