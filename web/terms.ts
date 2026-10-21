@@ -4,41 +4,16 @@
  * focusing or tapping it shows a short definition. The texts themselves stay plain — this only
  * wraps words in the rendered page.
  */
-import { GLOSSARY, termById } from '../src/knowledge/glossary.js';
+import { termById, termMatcher, type TermMatcher } from '../src/knowledge/glossary.js';
 import { tr, type Locale } from '../src/knowledge/i18n.js';
+import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
 
-/** One regular expression per language: every stem at a word start, then any letters (longest first). */
-const patterns = new Map<Locale, { re: RegExp; byStem: Map<string, string> }>();
-function patternFor(l: Locale) {
-  const cached = patterns.get(l);
-  if (cached) return cached;
-  const byStem = new Map<string, string>();
-  for (const t of GLOSSARY) for (const s of t.stems[l]) byStem.set(s.toLowerCase(), t.id);
-  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // A stem takes any ending; a «=word» is matched whole.
-  const alts = [...byStem.keys()].sort((a, b) => b.length - a.length).map((s) => (s.startsWith('=') ? `${esc(s.slice(1))}(?![\\p{L}])` : `${esc(s)}[\\p{L}’'-]*`));
-  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alts.join('|')})`, 'giu');
-  const p = { re, byStem };
-  patterns.set(l, p);
-  return p;
-}
-
-/** Which term a matched word is: by the longest stem it starts with. */
-function termOf(word: string, byStem: Map<string, string>): string | undefined {
-  const w = word.toLowerCase();
-  let best: string | undefined;
-  let len = 0;
-  for (const [s, id] of byStem) {
-    const exact = s.startsWith('=');
-    const stem = exact ? s.slice(1) : s;
-    if ((exact ? w === stem : w.startsWith(stem)) && stem.length > len) (best = id), (len = stem.length);
-  }
-  return best;
-}
+const matchers = new Map<Locale, TermMatcher>();
+const matcherFor = (l: Locale): TermMatcher => matchers.get(l) ?? matchers.set(l, termMatcher(LAB_GLOSSARY, l)).get(l)!;
 
 /** Wrap the first mention of each term inside `root` (skipping what is already wrapped, inputs, formulas). */
 export function annotate(root: Element, l: Locale, skip?: string): void {
-  const { re, byStem } = patternFor(l);
+  const { re, termOf } = matcherFor(l);
   const seen = new Set<string>(Array.from(root.querySelectorAll<HTMLElement>('.term')).map((e) => e.dataset['term']!));
   if (skip) seen.add(skip);
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
@@ -58,7 +33,7 @@ export function annotate(root: Element, l: Locale, skip?: string): void {
     const frag = document.createDocumentFragment();
     let changed = false;
     while ((m = re.exec(text))) {
-      const id = termOf(m[0], byStem);
+      const id = termOf(m[0]);
       if (!id || seen.has(id)) continue;
       seen.add(id);
       changed = true;
@@ -88,7 +63,7 @@ export function installFootnotes(locale: () => Locale): void {
   document.body.append(card);
   let current: HTMLElement | null = null;
   const show = (el: HTMLElement) => {
-    const t = termById(el.dataset['term'] ?? '');
+    const t = termById(el.dataset['term'] ?? '', LAB_GLOSSARY);
     if (!t) return;
     current = el;
     card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p><a href="#glossary/${t.id}" class="term-more">${ALL_TERMS[locale()]}</a>`;

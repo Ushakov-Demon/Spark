@@ -10,6 +10,7 @@ import { formatQuantity, type ExplainContext } from '../explain/format.js';
 import { ELECTRICAL_COMMANDS } from '../domains/electrical/commands.js';
 import { THERMAL_COMMANDS } from '../domains/thermal/commands.js';
 import { SCALES } from '../equipment/scales.js';
+import { GLOSSARY, lawTerms, type Term } from '../knowledge/glossary.js';
 import { tr } from '../knowledge/i18n.js';
 import { formatReading, WEIGH_COMMANDS, weighingsOf, type WeighCommand } from './weighing.js';
 import { formatMeasured, MEASURING_COMMANDS, readingsOf, type HangCommand, type LevelCommand } from './measuring.js';
@@ -63,3 +64,6 @@ export const LAB_KNOWLEDGE: DomainKnowledge<LabCommand> = {
   energyBalance: (result, ctx) => THERMAL_KNOWLEDGE.energyBalance(result as ExperimentResult<ThermalCommand>, ctx),
   dataUsed: (state) => THERMAL_KNOWLEDGE.dataUsed(state),
 };
+
+/** The lab's whole glossary: the written terms and every law of its knowledge (a new law appears by itself). */
+export const LAB_GLOSSARY: readonly Term[] = [...GLOSSARY, ...lawTerms(LAB_KNOWLEDGE.laws)];

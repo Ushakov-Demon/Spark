@@ -1,17 +1,25 @@
-import type { LocalizedText } from './i18n.js';
+import type { Locale, LocalizedText } from './i18n.js';
+import type { LawSpec } from './types.js';
 
 /**
  * Terms explained in a footnote wherever they appear in the lab's texts (explanations, the
  * Professor's lines, reference cards). `stems` match the word in any of its forms: a stem is followed
  * by any letters ("катод" → катода, катоді, катодом, катодний). Definitions are Spark's own short
- * texts; the lab grows — new terms are added here, nothing else changes.
+ * texts; the lab grows — new terms are added here, nothing else changes. Laws are not written here:
+ * every law of the lab's knowledge becomes a term by itself (`lawTerms`).
  */
 export interface Term {
   readonly id: string;
   readonly name: LocalizedText;
-  /** Word stems in each language, matched at a word start; the longest stem wins. A stem starting with «=» is a whole word (no other endings: «=розчин», «=розчину» — not «розчиняти»). */
+  /**
+   * Word stems in each language, matched at a word start; the longest stem wins. A stem starting with «=» is a whole word
+   * (no other endings: «=розчин», «=розчину» — not «розчиняти»). «*» inside a stem takes any ending there: «закон* ома» —
+   * «закону Ома», «законом Ома».
+   */
   readonly stems: { readonly uk: readonly string[]; readonly en: readonly string[] };
   readonly text: LocalizedText;
+  /** Made from a law of the lab's knowledge (its id there). */
+  readonly law?: string;
 }
 
 const t = (id: string, uk: string, en: string, stemsUk: string[], stemsEn: string[], textUk: string, textEn: string): Term => ({ id, name: { uk, en }, stems: { uk: stemsUk, en: stemsEn }, text: { uk: textUk, en: textEn } });
@@ -112,5 +120,94 @@ export const GLOSSARY: readonly Term[] = [
     'The force with which a liquid pushes a submerged body up; it equals the weight of the liquid the body displaces: F_A = ρ·g·V.'),
 ];
 
-/** A term by its id. */
-export const termById = (id: string): Term | undefined => GLOSSARY.find((x) => x.id === id);
+/** A term by its id (`terms` — the lab's whole glossary, laws included). */
+export const termById = (id: string, terms: readonly Term[] = GLOSSARY): Term | undefined => terms.find((x) => x.id === id);
+
+// ---------------------------------------------------------------- laws as terms
+
+/** The name as it is said in a sentence: without a qualifier («…: плавлення і кипіння», «… для електролізу»). */
+const spokenName = (name: string): string => name.split(/:| для /)[0]!.trim().toLowerCase();
+
+/**
+ * Stems a law is found by in a text. Ukrainian: the first word changes («закон» → «закону», «законом»;
+ * «рівняння» → «рівнянням»), the rest stays as it is («Ома», «Фарадея», «теплового балансу»). English:
+ * «Faraday’s law of electrolysis» is said «Faraday’s law(s)».
+ */
+export function lawStems(name: LocalizedText): Term['stems'] {
+  const uk = spokenName(name.uk).split(/\s+/);
+  const first = uk[0]!.replace(/[аеєиіїоуюяьй]+$/u, '');
+  const en = spokenName(name.en);
+  const possessive = /^(.*?(?:[’']s|s[’']))\s+(law|principle)\b/u.exec(en);
+  return { uk: [[`${first}*`, ...uk.slice(1)].join(' ')], en: [possessive ? `${possessive[1]} ${possessive[2]}` : en] };
+}
+
+const CYRILLIC = /\p{Script=Cyrillic}/u;
+
+/** «Відкрив Майкл Фарадей (1833–1834).» — from the law's own sourced history. */
+function whoFound(law: LawSpec, l: Locale): string {
+  const h = law.history;
+  const names = h.people.map((p) => p.name[l]);
+  if (!names.length) return '';
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} ${l === 'uk' ? 'і' : 'and'} ${names[names.length - 1]}` : names[0]!;
+  // A date written only in Ukrainian («бл. 246 р. до н. е.») is left out of the English text.
+  const when = h.when !== '—' && (l === 'uk' || !CYRILLIC.test(h.when)) ? ` (${h.when})` : '';
+  if (h.role === 'associated') return l === 'uk' ? ` Пов’язують з ім${names.length > 1 ? 'енами' : 'ям'}: ${list}${when}.` : ` Associated with ${list}${when}.`;
+  return l === 'uk' ? ` ${names.length > 1 ? 'Відкрили' : 'Відкрив'} ${list}${when}.` : ` Discovered by ${list}${when}.`;
+}
+
+/** Does the name start with a word some term of `terms` already explains (latent heat, heat balance)? */
+function explainedBy(terms: readonly Term[], name: LocalizedText): boolean {
+  return (['uk', 'en'] as const).some((l) => {
+    const spoken = spokenName(name[l]);
+    return terms.some((t) => t.stems[l].some((st) => !st.startsWith('=') && !st.includes('*') && spoken.startsWith(st.toLowerCase())));
+  });
+}
+
+/**
+ * Every law (not a definition or a model) as a glossary term: its name, its school statement and who found
+ * it. A law whose name a written term already explains is left to that term.
+ */
+export function lawTerms(laws: readonly LawSpec[], terms: readonly Term[] = GLOSSARY): Term[] {
+  return laws
+    .filter((law) => law.kind === 'law' && !explainedBy(terms, law.name))
+    .map((law) => ({
+      id: `law-${law.id}`,
+      law: law.id,
+      name: law.name,
+      stems: lawStems(law.name),
+      text: { uk: law.statement.school.uk + whoFound(law, 'uk'), en: law.statement.school.en + whoFound(law, 'en') },
+    }));
+}
+
+// ---------------------------------------------------------------- finding terms in a text
+
+export interface TermMatcher {
+  /** Every stem at a word start, then any letters (longest first); global, so reset `lastIndex`. */
+  readonly re: RegExp;
+  /** Which term a matched word is: by the longest stem it fits. */
+  termOf(word: string): string | undefined;
+}
+
+const escRe = (s: string) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+const ENDING = "[\\p{L}’'ʼ-]*";
+/** A stem as a regular expression: «*» is any ending, a space any spaces, an apostrophe any apostrophe. */
+function stemSource(stem: string): string {
+  const exact = stem.startsWith('=');
+  const body = [...(exact ? stem.slice(1) : stem).replace(/\s+/g, ' ')]
+    .map((ch) => (ch === '*' ? ENDING : ch === ' ' ? '\\s+' : /[’'ʼ]/.test(ch) ? "[’'ʼ]" : escRe(ch)))
+    .join('');
+  return exact ? `${body}(?![\\p{L}])` : `${body}${ENDING}`;
+}
+
+/** The matcher for the terms in one language. */
+export function termMatcher(terms: readonly Term[], l: Locale): TermMatcher {
+  const stems: { id: string; len: number; re: RegExp; src: string }[] = [];
+  for (const t of terms)
+    for (const s of t.stems[l]) {
+      const src = stemSource(s.toLowerCase());
+      stems.push({ id: t.id, len: s.replace(/[=*]/g, '').length, re: new RegExp(`^${src}$`, 'iu'), src });
+    }
+  stems.sort((a, b) => b.len - a.len);
+  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${stems.map((x) => x.src).join('|')})`, 'giu');
+  return { re, termOf: (word) => stems.find((x) => x.re.test(word))?.id };
+}

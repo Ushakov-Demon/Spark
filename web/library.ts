@@ -8,9 +8,9 @@ import { COMPONENTS, type ComponentId } from '../src/components/index.js';
 import { EQUIPMENT } from '../src/equipment/catalog.js';
 import { CATEGORIES } from '../src/equipment/taxonomy.js';
 import type { CategoryId } from '../src/equipment/types.js';
-import { GLOSSARY } from '../src/knowledge/glossary.js';
 import { tr, type Locale } from '../src/knowledge/i18n.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
+import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
 import { SUBSTANCE_FAMILIES, SUBSTANCES } from '../src/substances/catalog.js';
 import type { SubstanceItem } from '../src/substances/types.js';
 import { icon } from './graphics/icons/index.js';
@@ -25,9 +25,10 @@ export function libraryRoute(hash: string): { page: LibraryPage; item?: string }
   return item ? { page: page as LibraryPage, item: decodeURIComponent(item) } : { page: page as LibraryPage };
 }
 
-export const LIBRARY_UI: Record<Locale, { open: string; title: string; back: string; search: string; more: string; nothing: string; allTerms: string; tabs: Record<LibraryPage, string>; intro: Record<LibraryPage, string>; count: (n: number) => string }> = {
+export const LIBRARY_UI: Record<Locale, { open: string; law: string; title: string; back: string; search: string; more: string; nothing: string; allTerms: string; tabs: Record<LibraryPage, string>; intro: Record<LibraryPage, string>; count: (n: number) => string }> = {
   uk: {
     open: 'Довідник',
+    law: 'закон',
     title: 'Довідник лабораторії',
     back: '← До лабораторії',
     search: 'Пошук…',
@@ -36,7 +37,7 @@ export const LIBRARY_UI: Record<Locale, { open: string; title: string; back: str
     allTerms: 'Усі терміни →',
     tabs: { glossary: 'Глосарій', substances: 'Речовини й матеріали', equipment: 'Обладнання' },
     intro: {
-      glossary: 'Терміни, які трапляються в лабораторії. У текстах дослідів вони підкреслені пунктиром: торкніться слова, щоб побачити пояснення.',
+      glossary: 'Терміни й закони, які трапляються в лабораторії. У текстах дослідів вони підкреслені пунктиром: торкніться слова, щоб побачити пояснення.',
       substances: 'Усе, що є на полиці лабораторії. У довідці кожної речовини — її властивості, умови, за яких їх виміряно, і джерела.',
       equipment: 'Прилади й посуд, з якими можна працювати в лабораторії, з їхніми характеристиками.',
     },
@@ -44,6 +45,7 @@ export const LIBRARY_UI: Record<Locale, { open: string; title: string; back: str
   },
   en: {
     open: 'Library',
+    law: 'law',
     title: 'Lab library',
     back: '← Back to the lab',
     search: 'Search…',
@@ -52,7 +54,7 @@ export const LIBRARY_UI: Record<Locale, { open: string; title: string; back: str
     allTerms: 'All terms →',
     tabs: { glossary: 'Glossary', substances: 'Substances and materials', equipment: 'Equipment' },
     intro: {
-      glossary: 'Terms you meet in the lab. In the experiments’ texts they are underlined with dots: tap a word to see what it means.',
+      glossary: 'Terms and laws you meet in the lab. In the experiments’ texts they are underlined with dots: tap a word to see what it means.',
       substances: 'Everything on the lab’s shelf. Each substance’s card gives its properties, the conditions they were measured under, and the sources.',
       equipment: 'The devices and vessels you can work with in the lab, with their specifications.',
     },
@@ -72,7 +74,8 @@ const other = (l: Locale): Locale => (l === 'uk' ? 'en' : 'uk');
 
 /** Glossary: alphabetical, a letter bar on top; each term also named in the other language. */
 function glossaryHtml(c: Ctx): string {
-  const terms = [...GLOSSARY].sort((a, b) => tr(a.name, c.locale).localeCompare(tr(b.name, c.locale), c.locale));
+  const u = LIBRARY_UI[c.locale];
+  const terms = [...LAB_GLOSSARY].sort((a, b) => tr(a.name, c.locale).localeCompare(tr(b.name, c.locale), c.locale));
   const letters = [...new Set(terms.map((x) => tr(x.name, c.locale)[0]!.toUpperCase()))];
   const bar = `<nav class="lib-letters">${letters.map((l) => `<a href="#glossary/letter-${encodeURIComponent(l)}">${esc(l)}</a>`).join('')}</nav>`;
   const groups = letters
@@ -81,7 +84,7 @@ function glossaryHtml(c: Ctx): string {
         .filter((x) => tr(x.name, c.locale)[0]!.toUpperCase() === l)
         .map(
           (x) => `<article class="lib-term lib-entry" id="term-${x.id}" data-term-id="${x.id}">
-  <h3><a href="#glossary/${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> <span class="muted lib-other" lang="${other(c.locale)}">${esc(tr(x.name, other(c.locale)))}</span></h3>
+  <h3><a href="#glossary/${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> <span class="muted lib-other" lang="${other(c.locale)}">${esc(tr(x.name, other(c.locale)))}</span>${x.law ? ` <span class="lib-badge">${esc(u.law)}</span>` : ''}</h3>
   <p class="lib-desc">${esc(tr(x.text, c.locale))}</p>
 </article>`,
         )
@@ -149,7 +152,7 @@ function equipmentHtml(c: Ctx): string {
 }
 
 const COUNT: Record<LibraryPage, () => number> = {
-  glossary: () => GLOSSARY.length,
+  glossary: () => LAB_GLOSSARY.length,
   substances: () => Object.keys(SUBSTANCES).length,
   equipment: () => EQUIPMENT.length,
 };
