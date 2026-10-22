@@ -11,6 +11,7 @@ import { canHeat } from '../equipment/compatibility.js';
 import { HEATERS } from '../equipment/heaters.js';
 import { VESSELS } from '../equipment/vessels.js';
 import type { LabCommand } from './lab-knowledge.js';
+import type { BenchCommand } from './bench.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SubstanceId } from '../substances/catalog.js';
 import { LAB_ROOM_ID, labGoalReached, labProgress, noProgress, labSetup, labStatus, SAMPLE_ID, type LabAction, type LabParams, type LabStatus } from './thermal-lab.js';
@@ -22,7 +23,13 @@ import { LAB_ROOM_ID, labGoalReached, labProgress, noProgress, labSetup, labStat
  * added) carries over. Each step runs as its own experiment, so every step gets
  * its own headline, energy split and debrief.
  */
-export type ProtocolStep = OperationStep | AddStep | WeighStep | LevelStep | HangStep | FreshStep;
+export type ProtocolStep = OperationStep | AddStep | WeighStep | LevelStep | HangStep | BenchStep | FreshStep;
+
+/** A measurement on the mechanics bench (bench.ts): stretch the spring, pull the block, measure an edge. */
+export interface BenchStep {
+  readonly kind: 'bench';
+  readonly command: BenchCommand;
+}
 
 export interface OperationStep {
   readonly kind: 'operation';
@@ -112,6 +119,8 @@ export function stepCommand(step: Exclude<ProtocolStep, OperationStep | FreshSte
       return { type: 'lab.weigh', scale: step.scale };
     case 'level':
       return { type: 'lab.read-level', vessel: base.vessel, size: base.size };
+    case 'bench':
+      return step.command;
     case 'hang':
       return { type: 'lab.hang', substance: step.substance, mass: step.mass, into: step.into, ...(step.label ? { label: step.label } : {}) };
     case 'add':

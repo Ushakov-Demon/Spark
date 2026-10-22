@@ -15,13 +15,14 @@ import { tr } from '../knowledge/i18n.js';
 import { formatReading, WEIGH_COMMANDS, weighingsOf, type WeighCommand } from './weighing.js';
 import { formatMeasured, MEASURING_COMMANDS, readingsOf, type HangCommand, type LevelCommand } from './measuring.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
+import { BENCH_COMMANDS, type BenchCommand } from './bench.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 
 /** Everything the lab can do to an experiment: heat, pass a current, weigh. */
-export type LabCommand = ThermalCommand | ElectricalCommand | WeighCommand | LevelCommand | HangCommand;
+export type LabCommand = ThermalCommand | ElectricalCommand | WeighCommand | LevelCommand | HangCommand | BenchCommand;
 
 /** The handlers of all lab commands, for a command registry. */
-export const LAB_COMMANDS = [...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS, ...WEIGH_COMMANDS, ...MEASURING_COMMANDS] as const;
+export const LAB_COMMANDS = [...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS, ...WEIGH_COMMANDS, ...MEASURING_COMMANDS, ...BENCH_COMMANDS] as const;
 
 const isElectrical = (c: Command): c is ElectricalCommand => c.type.startsWith('electrical.');
 

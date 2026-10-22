@@ -38,6 +38,9 @@ import {
   pieceShare,
   stepCommand,
   OPERATIONS,
+  BENCH_TEXT,
+  BENCH_BLOCK,
+  BENCH_SPRING_L0,
   LAB_COOLER_ID,
   LAB_HEATER_ID,
   LAB_VESSEL_ID,
@@ -98,6 +101,7 @@ import { createChart } from './chart.js';
 import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
+import type { BenchView } from './graphics/scene/bench.js';
 import { filterLibrary, LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute } from './library.js';
 import { createScene, incandescent, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
@@ -309,12 +313,30 @@ function measureNow(command: LabCommand): string {
 }
 let lastMeasure: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
 let measureError = '';
+/** The mechanics bench of a preset, as its last reading left it: the spring with its weights, the block pulled or measured. */
+function benchView(): BenchView | null {
+  const kind = preset?.bench;
+  if (!kind) return null;
+  const log = session.result().log.filter((e) => e.ok);
+  const last = [...log].reverse().find((e) => ['lab.stretch', 'lab.pull', 'lab.edge', 'lab.hang'].includes(e.command.type));
+  const r = last ? readingsOf([last])[0]?.record : undefined;
+  const c = last?.command as ({ type: string } & Record<string, unknown>) | undefined;
+  const show = (q: 'force' | 'length', v: number | null | undefined) => formatMeasured(q, v ?? 0, q === 'force' ? 0.1 : 0.001, locale);
+  const base = { kind, weights: 0, block: BENCH_BLOCK.edges } as const;
+  if (kind === 'spring') {
+    const n = c?.type === 'lab.stretch' ? Number(c['weights']) : 0;
+    return { ...base, weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
+  }
+  if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
+  if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value) } : base;
+  return c?.type === 'lab.edge' && r ? { ...base, edge: { index: Number(c['edge']) as 0 | 1 | 2, display: show('length', r.value) } } : base;
+}
 /** The latest level reading or dynamometer reading while nothing has happened since. */
 function showingMeasure() {
   if (!lastMeasure || lastMeasure.step !== session || running || session.state.time !== lastMeasure.at) return null;
   const l = session.result().log;
   const last = l[l.length - 1];
-  if (!last?.ok || (last.command.type !== 'lab.read-level' && last.command.type !== 'lab.hang')) return null;
+  if (!last?.ok || !['lab.read-level', 'lab.hang', 'lab.stretch', 'lab.pull', 'lab.edge'].includes(last.command.type)) return null;
   return readingsOf([last])[0] ?? null;
 }
 /** Everything measured in this experiment, in order. */
@@ -335,6 +357,25 @@ function measureSay(): string {
     const prev = [...all.slice(0, i)].reverse().find((x) => x.record.quantity === 'volume' && x.record.value !== null);
     const rise = prev && r.value !== null && r.value - prev.record.value! > div / 2 ? formatMeasured('volume', r.value - prev.record.value!, div, locale) : null;
     return u.levelSay(formatMeasured('volume', r.value, div, locale), rise);
+  }
+  // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
+  const uk = locale === 'uk';
+  const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
+  if (m.command.type === 'lab.stretch') {
+    const n = (m.command as { weights: number }).weights;
+    const l0 = [...all.slice(0, i)].find((x) => x.command.type === 'lab.stretch' && (x.command as { weights: number }).weights === 0)?.record.value;
+    if (n === 0 || r.value === null) return uk ? `Довжина пружини без вантажу l₀ = ${cm(r.value ?? 0)}.` : `The spring’s length with no load l₀ = ${cm(r.value ?? 0)}.`;
+    const x = l0 !== undefined && l0 !== null ? r.value - l0 : null;
+    return uk ? `З ${n === 1 ? 'тягарцем' : `${n} тягарцями`} пружина завдовжки l = ${cm(r.value)}${x !== null ? `: видовження x = l − l₀ = ${cm(x)}` : ''}.` : `With ${n === 1 ? 'one weight' : `${n} weights`} the spring is l = ${cm(r.value)} long${x !== null ? `: the extension x = l − l₀ = ${cm(x)}` : ''}.`;
+  }
+  if (m.command.type === 'lab.pull') {
+    const n = (m.command as { weights: number }).weights;
+    return uk ? `Брусок${n ? ` із ${n} тягарц${n === 1 ? 'ем' : 'ями'}` : ''} ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}. Це і є сила тертя ковзання.` : `The block${n ? ` with ${n} weight${n === 1 ? '' : 's'}` : ''} slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}. That is the force of sliding friction.`;
+  }
+  if (m.command.type === 'lab.edge') {
+    const e = (m.command as { edge: number }).edge;
+    const what = uk ? ['Довжина', 'Ширина', 'Висота'][e] : ['Length', 'Width', 'Height'][e];
+    return `${what} ${uk ? 'бруска' : 'of the block'}: ${cm(r.value ?? 0)}.`;
   }
   const c = m.command as Extract<LabCommand, { type: 'lab.hang' }>;
   const what = c.label ? tr(c.label, locale) : nameOfBody(c.substance);
@@ -1204,6 +1245,7 @@ function sceneView(): SceneView {
     ...(measured?.command.type === 'lab.read-level' ? { levelMark: formatMeasured('volume', measured.record.value, measured.record.inputs?.['division'] ?? 1e-6, locale) } : {}),
     dissolve: dissolveKey,
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
+    ...(benchView() ? { bench: benchView()! } : {}),
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
 }
@@ -1385,8 +1427,9 @@ function renderGuide(): boolean {
     const lastLevel = [...done].reverse().find((x) => x.record.quantity === 'volume');
     const waited = !!lastLevel && session.state.time > lastLevel.time + 1e-9 || history.length > 0 && !!lastLevel;
     const fresh = s.kind === 'fresh' ? tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale) : '';
-    const say = s.kind === 'fresh' ? u.fresh(fresh) : s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : liquid ? u.pour(what, temp) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
-    const btn = s.kind === 'fresh' ? `🔄 ${fresh}` : s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
+    const bench = s.kind === 'bench' ? BENCH_TEXT[s.command.type](s.command) : null;
+    const say = bench ? tr(bench.say, locale) : s.kind === 'fresh' ? u.fresh(fresh) : s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : liquid ? u.pour(what, temp) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
+    const btn = bench ? tr(bench.button, locale) : s.kind === 'fresh' ? `🔄 ${fresh}` : s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
     // Before the first step: the prediction, if the experiment asks for one.
     const q = k === 1 ? quizNow() : null;
     setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1">${btn}</button></div>`);
@@ -1780,6 +1823,7 @@ function renderProtocol() {
       : s.kind === 'weigh' ? u.weigh.button
       : s.kind === 'level' ? u.measure.level
       : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid)
+      : s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale)
       : s.kind === 'fresh' ? `🔄 ${tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale)}`
       : tr(OPERATIONS[s.action].label, locale);
     rows.push(`<li class="planned"><span class="what">${label}</span></li>`);
@@ -2451,6 +2495,10 @@ function planLabel(steps: readonly ProtocolStep[]): string {
   const u = t();
   const parts: string[] = [];
   for (const s of steps) {
+    if (s.kind === 'bench') {
+      parts.push(tr(BENCH_TEXT[s.command.type](s.command).plan, locale));
+      break;
+    }
     if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang') {
       parts.push(s.kind === 'weigh' ? (locale === 'uk' ? 'зважити' : 'weigh') : s.kind === 'level' ? u.measure.planLevel : u.measure.planHang((s.label ? tr(s.label, locale) : nameOfBody(s.substance)).toLowerCase(), s.into));
       // A measurement is a stop of its own: the reading first.
@@ -2490,7 +2538,7 @@ function nextPlanStep() {
       }
       continue;
     }
-    if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang') {
+    if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang' || s.kind === 'bench') {
       // Stop at the instrument: the reading (and the Professor's question) first, the next step on the next press.
       if (s.kind === 'weigh') weighNow(s.scale);
       else measureNow(stepCommand(s, params));

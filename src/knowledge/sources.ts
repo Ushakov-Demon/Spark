@@ -555,6 +555,28 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-20',
   }),
+  'wikipedia-hookes-law': source({
+    id: 'wikipedia-hookes-law',
+    title: 'Wikipedia, Hooke’s law: first stated in 1676 as a Latin anagram; the solution published in 1678 as ut tensio, sic vis ("as the extension, so the force")',
+    url: 'https://en.wikipedia.org/wiki/Hooke%27s_law',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-22',
+  }),
+  'wikipedia-friction': source({
+    id: 'wikipedia-friction',
+    title: 'Wikipedia, Friction: laws of dry friction discovered by Leonardo da Vinci in 1493 (unpublished), rediscovered by Guillaume Amontons in 1699, developed by Coulomb (1785); friction proportional to load, independent of the apparent area; wood on wood μ 0.25–0.62 (static)',
+    url: 'https://en.wikipedia.org/wiki/Friction',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-22',
+  }),
+  '3b-helical-springs': source({
+    id: '3b-helical-springs',
+    title: '3B Scientific, Set of Helical Springs for Hooke’s Law 1003376 [U40816]: 5 springs with pointers, 2.5, 5, 10, 15, 25 N/m',
+    url: 'https://3bscientific.com/se/set-of-helical-springs-for-hooke-s-law-1003376-u40816,p_1112_1651.html',
+    license: 'facts-only',
+    retrieved: '2026-10-22',
+    caveats: 'One localized listing (Indonesian) gives 0.5–5 N/m instead; most give 2.5–25 N/m. Lengths and the maximum load are not stated.',
+  }),
   'wikipedia-archimedes-principle': source({
     id: 'wikipedia-archimedes-principle',
     title: 'Wikipedia, Archimedes’ principle: the buoyant force equals the weight of the fluid displaced; from On Floating Bodies, c. 246 BC; the tale of the gold crown',

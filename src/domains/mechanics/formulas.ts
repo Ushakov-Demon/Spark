@@ -1,6 +1,6 @@
 /**
- * Pure formulas of bodies at rest in a liquid (7th grade: density, weight,
- * Archimedes, floating). Plain numbers in SI units.
+ * Pure formulas of 7th-grade mechanics: density, weight, Archimedes, floating; a spring (Hooke),
+ * sliding friction, pressure on a support. Plain numbers in SI units.
  */
 
 /** Density: ρ = m / V. */
@@ -14,3 +14,12 @@ export const buoyantForce = (liquidDensity: number, g: number, submergedVolume: 
 
 /** A body floats when it is less dense than the liquid; then this share of it is under the surface: ρ_body / ρ_liquid. Otherwise it sinks (1). */
 export const submergedShare = (bodyDensity: number, liquidDensity: number): number => Math.min(1, bodyDensity / liquidDensity);
+
+/** Hooke's law: the elastic force of a stretched spring F = k·x (x — the extension). */
+export const elasticForce = (stiffness: number, extension: number): number => stiffness * extension;
+
+/** Sliding friction (Amontons–Coulomb): F = μ·N. */
+export const slidingFriction = (mu: number, normalForce: number): number => mu * normalForce;
+
+/** Pressure of a body on its support: p = F / S. */
+export const pressure = (force: number, area: number): number => force / area;

@@ -23,6 +23,10 @@ const UA_FLOATING: readonly CurriculumRef[] = [
   { program: 'ua-2017', grade: 7, depth: 'qualitative', quote: 'З’ясування умов плавання тіла.' },
 ];
 
+const UA_HOOKE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Гука.' }];
+const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Коефіцієнт тертя ковзання.' }];
+const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
+
 export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
   defineFormula({
     id: 'mechanics.density',
@@ -114,6 +118,75 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.submergedShare,
     examples: [{ args: [917, 1000], expected: 0.917, note: 'ice in water' }, { args: [7850, 1000], expected: 1, note: 'steel sinks' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.hooke',
+    law: 'hooke',
+    title: { uk: 'Сила пружності (закон Гука)', en: 'Elastic force (Hooke’s law)' },
+    latex: 'F_{пруж} = k \\cdot x',
+    plain: 'F = k · x',
+    argSymbols: ['k', 'x'],
+    resultSymbol: 'F',
+    variables: {
+      F: { name: { uk: 'сила пружності', en: 'elastic force' }, unit: 'N' },
+      k: { name: { uk: 'жорсткість', en: 'stiffness' }, unit: 'N/m' },
+      x: { name: { uk: 'видовження', en: 'extension' }, unit: 'm', meaning: { school: { uk: 'на скільки тіло розтягнулося: x = l − l₀', en: 'how far the body stretched: x = l − l₀' } } },
+    },
+    curriculum: UA_HOOKE,
+    explanation: {
+      novice: { uk: 'Що сильніше тягнеш пружину, то довшою вона стає — і тягне назад так само сильно.', en: 'The harder you pull a spring, the longer it gets — and it pulls back just as hard.' },
+      school: { uk: 'Поки деформація пружна, видовження пропорційне силі: удвічі більший вантаж — удвічі більше видовження. Відношення F/x — жорсткість k.', en: 'While the deformation is elastic, the extension is proportional to the force: twice the load, twice the extension. The ratio F/x is the stiffness k.' },
+    },
+    compute: f.elasticForce,
+    examples: [{ args: [25, 0.04], expected: 1, note: 'a 25 N/m spring stretched by 4 cm' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.friction',
+    law: 'friction',
+    title: { uk: 'Сила тертя ковзання', en: 'Sliding friction' },
+    latex: 'F_{тер} = \\mu \\cdot N',
+    plain: 'F = μ · N',
+    argSymbols: ['μ', 'N'],
+    resultSymbol: 'F',
+    variables: {
+      F: { name: { uk: 'сила тертя ковзання', en: 'sliding friction' }, unit: 'N' },
+      μ: { name: { uk: 'коефіцієнт тертя ковзання', en: 'coefficient of sliding friction' }, unit: '' },
+      N: { name: { uk: 'сила нормальної реакції опори', en: 'normal force' }, unit: 'N', meaning: { school: { uk: 'на горизонтальній опорі дорівнює вазі тіла', en: 'on a horizontal support it equals the weight of the body' } } },
+    },
+    curriculum: UA_FRICTION,
+    explanation: {
+      novice: { uk: 'Що важчий брусок, то важче тягти його по дошці.', en: 'The heavier the block, the harder it is to pull along the board.' },
+      school: { uk: 'Коли брусок рівномірно тягнуть динамометром, той показує силу тертя. Вона пропорційна силі, з якою брусок тисне на опору: F = μ·N. Коефіцієнт μ залежить від матеріалів і обробки поверхонь.', en: 'When the block is pulled at a steady speed, the dynamometer shows the friction. It is proportional to how hard the block presses on its support: F = μ·N. The coefficient μ depends on the materials and the finish of the surfaces.' },
+    },
+    compute: f.slidingFriction,
+    examples: [{ args: [0.25, 2], expected: 0.5, note: 'wood on wood, 2 N of load' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.pressure',
+    law: 'pressure',
+    title: { uk: 'Тиск', en: 'Pressure' },
+    latex: 'p = \\dfrac{F}{S}',
+    plain: 'p = F / S',
+    argSymbols: ['F', 'S'],
+    resultSymbol: 'p',
+    variables: {
+      p: { name: { uk: 'тиск', en: 'pressure' }, unit: 'Pa' },
+      F: { name: { uk: 'сила тиску', en: 'force' }, unit: 'N', meaning: { school: { uk: 'для тіла на горизонтальній опорі — його вага', en: 'for a body on a horizontal support — its weight' } } },
+      S: { name: { uk: 'площа опори', en: 'area of support' }, unit: 'm²' },
+    },
+    curriculum: UA_PRESSURE,
+    explanation: {
+      novice: { uk: 'Та сама вага на меншій площі тисне сильніше — тому гострий ніж ріже, а лижі не провалюються.', en: 'The same weight on a smaller area presses harder — that is why a sharp knife cuts and skis do not sink.' },
+      school: { uk: 'Тиск — сила, що припадає на кожен квадратний метр опори: p = F/S. Брусок, поставлений на меншу грань, тисне сильніше, хоча його вага та сама.', en: 'Pressure is the force on each square metre of support: p = F/S. A block stood on its smaller face presses harder, though its weight is the same.' },
+    },
+    compute: f.pressure,
+    examples: [{ args: [1.4, 0.0072], expected: 194.44444444444446, note: 'a 1.4 N block on a 12 × 6 cm face' }],
     textSource: 'spark',
     reviewed: false,
   }),

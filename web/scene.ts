@@ -11,6 +11,7 @@ import { isGlass, LIQUID, METAL } from './graphics/scene/colors.js';
 import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
 import { deviceSvg } from './graphics/scene/devices.js';
 import { dynamometerSvg, scalesSvg } from './graphics/scene/instruments.js';
+import { benchSvg, type BenchView } from './graphics/scene/bench.js';
 import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 
@@ -67,6 +68,8 @@ export interface SceneView {
   readonly dissolve?: number;
   /** A body hanging on the dynamometer, in the air above the vessel or lowered into the liquid; what the dial shows. */
   readonly hang?: { readonly display: string; readonly into: 'air' | 'liquid'; readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean };
+  /** The mechanics bench on the table instead of the vessel (grade 7: a spring, a block on a board). */
+  readonly bench?: BenchView;
   /** The level was just read by the marks: a line at the level and the reading. */
   readonly levelMark?: string;
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
@@ -196,7 +199,8 @@ export function createScene(): Scene {
       <g id="sc-scale" class="scales"></g>
       <g id="sc-dyn" class="dyn"></g>
       <g id="sc-mark" class="level-mark"></g>
-      </g>`;
+      </g>
+      <g id="sc-bench" class="bench"></g>`;
   }
 
   return {
@@ -316,6 +320,14 @@ export function createScene(): Scene {
         dyn.dataset['k'] = hk;
         dyn.innerHTML = v.hang ? dynamometerSvg(v.hang, g, level) : '';
       }
+      // The bench replaces the vessel on the table.
+      const bk = v.bench ? JSON.stringify(v.bench) : '';
+      const bench = $<SVGGElement>('sc-bench');
+      if (bench && bench.dataset['k'] !== bk) {
+        bench.dataset['k'] = bk;
+        bench.innerHTML = v.bench ? benchSvg(v.bench) : '';
+      }
+      root.classList.toggle('bench-on', !!v.bench);
       const mk = v.levelMark ? `${v.levelMark}|${Math.round(level)}` : '';
       const mark = $<SVGGElement>('sc-mark');
       if (mark && mark.dataset['k'] !== mk) {

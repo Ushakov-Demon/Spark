@@ -1,5 +1,8 @@
 import type { LawSpec, Person } from '../../knowledge/types.js';
 
+const HOOKE: Person = { name: { uk: 'Роберт Гук', en: 'Robert Hooke' }, born: 1635, died: 1703, wikidata: 'Q46830' };
+const AMONTONS: Person = { name: { uk: 'Гійом Амонтон', en: 'Guillaume Amontons' }, born: 1663, died: 1705, wikidata: 'Q368121' };
+const COULOMB: Person = { name: { uk: 'Шарль Огюстен де Кулон', en: 'Charles-Augustin de Coulomb' }, born: 1736, died: 1806, wikidata: 'Q81716' };
 const ARCHIMEDES: Person = { name: { uk: 'Архімед', en: 'Archimedes' }, born: -287, died: -212, wikidata: 'Q8739' };
 
 /**
@@ -76,5 +79,73 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
         en: 'It holds for a body at rest in a liquid or a gas. It ignores surface tension: a light needle can lie on water although it is denser.',
       },
     },
+  },
+  {
+    id: 'hooke',
+    kind: 'law',
+    name: { uk: 'Закон Гука', en: 'Hooke’s law' },
+    statement: {
+      novice: { uk: 'Пружина розтягується тим більше, чим сильніше її тягнуть.', en: 'A spring stretches the more, the harder it is pulled.' },
+      school: { uk: 'Сила пружності, що виникає під час пружної деформації тіла, прямо пропорційна його видовженню: F = k·x, де k — жорсткість тіла.', en: 'The elastic force arising in an elastic deformation is directly proportional to the extension: F = k·x, where k is the stiffness of the body.' },
+    },
+    history: {
+      people: [HOOKE],
+      role: 'discovered',
+      when: '1676–1678',
+      story: {
+        school: {
+          uk: 'Англійський учений Роберт Гук 1676 року записав свій закон латинською анаграмою — зашифрованим рядком літер, щоб ніхто не присвоїв відкриття. Розгадку він оприлюднив 1678 року: «ut tensio, sic vis» — «яке видовження, така й сила».',
+          en: 'The English scientist Robert Hooke wrote his law down in 1676 as a Latin anagram — a scrambled row of letters, so that no one could claim the discovery. He published the solution in 1678: “ut tensio, sic vis” — “as the extension, so the force”.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-hookes-law', locator: 'History', claim: 'He first stated the law in 1676 as a Latin anagram' },
+        { source: 'wikipedia-hookes-law', locator: 'History', claim: 'He published the solution of his anagram in 1678 as: ut tensio, sic vis ("as the extension, so the force")' },
+        { source: 'wikidata', locator: 'Q46830 (P569, P570)', claim: 'life dates' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Лише для пружних деформацій: якщо тіло розтягнути надто сильно, воно вже не повертається до початкової довжини, і закон не діє.', en: 'Only for elastic deformations: stretched too far, a body no longer returns to its length, and the law stops holding.' },
+    },
+  },
+  {
+    id: 'friction',
+    kind: 'law',
+    name: { uk: 'Закон тертя Амонтона — Кулона', en: 'Amontons–Coulomb law of friction' },
+    statement: {
+      novice: { uk: 'Що сильніше тіло притиснуте до опори, то більша сила тертя.', en: 'The harder a body is pressed to its support, the larger the friction.' },
+      school: { uk: 'Сила тертя ковзання прямо пропорційна силі нормальної реакції опори: F = μ·N — і не залежить від площі, якою тіло торкається опори.', en: 'The force of sliding friction is directly proportional to the normal force: F = μ·N — and does not depend on the area with which the body touches its support.' },
+    },
+    history: {
+      people: [AMONTONS, COULOMB],
+      role: 'discovered',
+      when: '1699–1785',
+      story: {
+        school: {
+          uk: 'Леонардо да Вінчі описав ці закономірності ще 1493 року, але його записи лишилися невідомими. Заново їх відкрив французький фізик Гійом Амонтон 1699 року, а Шарль Кулон 1785 року дослідив тертя глибше.',
+          en: 'Leonardo da Vinci described these rules as early as 1493, but his notes stayed unknown. The French physicist Guillaume Amontons rediscovered them in 1699, and Charles Coulomb studied friction further in 1785.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-friction', locator: 'History', claim: 'discovered by Leonardo da Vinci in 1493; his notebooks went unpublished' },
+        { source: 'wikipedia-friction', locator: 'History', claim: 'rediscovered by Guillaume Amontons in 1699' },
+        { source: 'wikipedia-friction', locator: 'History', claim: 'further developed by Charles-Augustin de Coulomb (1785)' },
+        { source: 'wikipedia-friction', locator: 'Laws of dry friction', claim: 'The force of friction is directly proportional to the applied load; it is independent of the apparent area of contact' },
+        { source: 'wikidata', locator: 'Q368121, Q81716 (P569, P570)', claim: 'life dates' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Це наближений закон: μ залежить від стану поверхонь (мокрі, змащені, відшліфовані), а на дуже гладких чи дуже м’яких поверхнях пропорційність порушується.', en: 'It is an approximate law: μ depends on the state of the surfaces (wet, oiled, polished), and on very smooth or very soft surfaces the proportionality breaks down.' },
+    },
+  },
+  {
+    id: 'pressure',
+    kind: 'definition',
+    name: { uk: 'Тиск', en: 'Pressure' },
+    statement: {
+      novice: { uk: 'Тиск показує, як сильно тіло тисне на кожен шматочок опори.', en: 'Pressure shows how hard a body presses on each bit of its support.' },
+      school: { uk: 'Тиск — фізична величина, що дорівнює відношенню сили, яка діє перпендикулярно до поверхні, до площі цієї поверхні: p = F/S. Одиниця — паскаль (1 Па = 1 Н/м²).', en: 'Pressure is the force acting perpendicular to a surface divided by the area of that surface: p = F/S. Its unit is the pascal (1 Pa = 1 N/m²).' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
   },
 ];
