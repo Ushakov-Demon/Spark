@@ -12,6 +12,7 @@ import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
 import { deviceSvg } from './graphics/scene/devices.js';
 import { dynamometerSvg, scalesSvg } from './graphics/scene/instruments.js';
 import { benchSvg, type BenchView } from './graphics/scene/bench.js';
+import { WEIGHT_SET } from '../src/scenarios/bench.js';
 import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 
@@ -139,6 +140,48 @@ export function createScene(): Scene {
     setToggle();
   };
   const $ = <T extends Element>(id: string) => svg.querySelector<T>(`#${id}`);
+
+  // The lever balance at work: try each weight of the set from the largest; one that tips the beam the
+  // other way is taken off again. The beam swings as a damped pendulum towards where the difference sends it.
+  let balanceFrame = 0;
+  const stopBalance = () => cancelAnimationFrame(balanceFrame);
+  function animateBalance(g: SVGGElement, view: BenchView, mass: number) {
+    const b = view.balance!;
+    const steps: { add: boolean; w: number }[] = [];
+    let sum = 0;
+    for (const w of WEIGHT_SET) {
+      steps.push({ add: true, w });
+      if (sum + w > mass + 0.000005) steps.push({ add: false, w });
+      else sum += w;
+    }
+    const on: number[] = [];
+    let angle = 0;
+    let speed = 0;
+    let step = 0;
+    let nextAt = performance.now() + 700;
+    let last = performance.now();
+    const target = () => 7 * Math.tanh((mass - on.reduce((a, x) => a + x, 0)) / 0.004);
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (now >= nextAt && step < steps.length) {
+        const s = steps[step++]!;
+        if (s.add) on.push(s.w);
+        else on.splice(on.lastIndexOf(s.w), 1);
+        // Grams take a moment to watch; the light milligram plates go on quicker.
+        nextAt = now + (s.w >= 0.001 ? 420 : 170) + (s.add && steps[step]?.add === false ? 200 : 0);
+      }
+      const w = (2 * Math.PI) / 1.1;
+      speed += (w * w * (target() - angle) - 2 * 0.45 * w * speed) * dt;
+      // The beam rests on stops: it cannot tip further than that.
+      angle = Math.max(-10, Math.min(10, angle + speed * dt));
+      const done = step >= steps.length && Math.abs(angle) < 0.05 && Math.abs(speed) < 0.1;
+      g.innerHTML = benchSvg({ ...view, balance: { ...b, weights: done ? b.weights : [...on], tilt: done ? 0 : angle, display: done ? b.display : '' } });
+      if (!done) balanceFrame = requestAnimationFrame(tick);
+      else root.dispatchEvent(new CustomEvent('balance-settled'));
+    };
+    balanceFrame = requestAnimationFrame(tick);
+  }
 
   function build(v: SceneView) {
     const base = baseFor(v.device, v.vessel);
@@ -325,7 +368,11 @@ export function createScene(): Scene {
       const bench = $<SVGGElement>('sc-bench');
       if (bench && bench.dataset['k'] !== bk) {
         bench.dataset['k'] = bk;
-        bench.innerHTML = v.bench ? benchSvg(v.bench) : '';
+        stopBalance();
+        const b = v.bench?.balance;
+        // A load just put on the lever balance: the weights go on one by one and the beam swings.
+        if (v.bench && b && b.mass !== undefined && !matchMedia('(prefers-reduced-motion: reduce)').matches) animateBalance(bench, v.bench, b.mass);
+        else bench.innerHTML = v.bench ? benchSvg(v.bench) : '';
       }
       root.classList.toggle('bench-on', !!v.bench);
       const mk = v.levelMark ? `${v.levelMark}|${Math.round(level)}` : '';

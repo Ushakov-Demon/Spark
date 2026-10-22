@@ -253,6 +253,8 @@ function temperature(id: string): number | undefined {
 /** A new experiment: fresh setup, empty protocol. */
 function newSession() {
   replaying = null;
+  balancing = false;
+  answerWhenSettled = false;
   history = [];
   pendingAdds = [];
   points = { sample: [], vessel: [], source: [] };
@@ -309,10 +311,14 @@ function measureNow(command: LabCommand): string {
   }
   measureError = '';
   lastMeasure = { at: session.state.time, step: session };
+  // The lever balance takes a few seconds to balance on the scene: its reading is told once it is level.
+  balancing = command.type === 'lab.balance' && entry.ok && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   boardEpoch++;
   render();
   return measureSay();
 }
+let balancing = false;
+let answerWhenSettled = false;
 let lastMeasure: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
 let measureError = '';
 /** The mechanics bench of a preset, as its last reading left it: the spring with its weights, the block pulled or measured. */
@@ -334,7 +340,7 @@ function benchView(): BenchView | null {
   if (kind === 'balance') {
     const b = c?.type === 'lab.balance' ? (c as unknown as { what: string; substance?: string; label?: { uk: string; en: string } }) : undefined;
     const set = r?.value != null && b ? (balanceWeights(r.value) ?? []) : [];
-    return { ...base, ...(b ? { balance: { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, display: r?.value != null ? `${weightsText(set, locale === 'uk')} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' } } : {}) };
+    return { ...base, ...(b ? { balance: { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, ...(r && r.value !== null ? { mass: r.exact } : {}), display: r?.value != null ? `${weightsText(set, locale === 'uk')} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' } } : {}) };
   }
   if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
   if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value) } : base;
@@ -382,6 +388,7 @@ function measureSay(): string {
     return uk ? `Брусок${n ? ` із ${n} тягарц${n === 1 ? 'ем' : 'ями'}` : ''} ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}. Це і є сила тертя ковзання.` : `The block${n ? ` with ${n} weight${n === 1 ? '' : 's'}` : ''} slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}. That is the force of sliding friction.`;
   }
   if (m.command.type === 'lab.balance') {
+    if (balancing) return uk ? 'Підбираю важки — від більших до менших…' : 'Picking the weights — from larger to smaller…';
     if (r.value === null) return uk ? 'Важків із набору не вистачає — тіло завелике для цих терезів (до 211 г).' : 'The set of weights is not enough — the load is too heavy for this balance (up to 211 g).';
     const set = balanceWeights(r.value) ?? [];
     return uk ? `Терези в рівновазі: ${weightsText(set, true)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.` : `The balance is level: ${weightsText(set, false)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.`;
@@ -1531,7 +1538,7 @@ function stepLine(l: ReturnType<typeof boardLines>[number], p: LabParams, i: num
 function boardNow(): ReturnType<typeof boardLines> {
   // The answer to the question asked at the end is not written before it is picked: those lines show the formula only.
   const hidden = preset?.answerOnBoard && prediction?.preset !== preset.id ? preset.answerOnBoard : null;
-  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}`;
+  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}|${balancing}`;
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
@@ -1540,8 +1547,11 @@ function boardNow(): ReturnType<typeof boardLines> {
     const { numbers: _, ...rest } = l;
     return rest;
   });
-  boardCache = { at: now, key, lines };
-  return lines;
+  // While the balance is still being balanced, what came of that weighing is not on the board yet.
+  const busy = balancing ? `:${r.log.length - 1}` : null;
+  const shown = busy ? lines.filter((l) => !l.id.endsWith(busy)) : lines;
+  boardCache = { at: now, key, lines: shown };
+  return shown;
 }
 
 /** The latest weighing while nothing has happened since: the vessel still stands on the scales. */
@@ -2557,7 +2567,11 @@ function nextPlanStep() {
       if (s.kind === 'weigh') weighNow(s.scale);
       else measureNow(stepCommand(s, params));
       // The plan ended with a measurement: the question can be answered now (or once the table is looked into).
-      if (!plan.length && preset?.choicesAt !== 'end') answerPreset();
+      if (!plan.length && preset?.choicesAt !== 'end') {
+        // A balance still being balanced: the answer comes once it is level.
+        if (balancing) answerWhenSettled = true;
+        else answerPreset();
+      }
       // A guided procedure is measured out: the table moves aside — the whole board is there to read.
       if (!plan.length && preset?.guided) window.setTimeout(() => scene.read(true), 1400);
       break;
@@ -3100,6 +3114,17 @@ $('#offer').addEventListener('click', (e) => {
   if (target.dataset['plan']) return nextPlanStep();
   const f = Array.isArray(fixes) ? fixes[Number(target.dataset['fix'])] : undefined;
   if (f) applyFix(f);
+});
+// The lever balance has settled: tell the reading, write it on the board.
+scene.element.addEventListener('balance-settled', () => {
+  if (!balancing) return;
+  balancing = false;
+  boardEpoch++;
+  if (answerWhenSettled) {
+    answerWhenSettled = false;
+    answerPreset();
+  }
+  render();
 });
 $('#knob-wrap').append(knob.element);
 $('#chart').append(chart.element);
