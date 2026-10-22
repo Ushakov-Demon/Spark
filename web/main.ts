@@ -260,8 +260,13 @@ function temperature(id: string): number | undefined {
   return e && (isThermalBody(e) || isHeater(e)) ? e.state.temperature : undefined;
 }
 
+/** A look at the board planned for later (when a guided procedure is measured out). */
+let readTimer = 0;
 /** A new experiment: fresh setup, empty protocol. */
 function newSession() {
+  // The Professor turns from the board back to the table, ready (a look at the board still due from the last one is off).
+  window.clearTimeout(readTimer);
+  scene.read(false);
   replaying = null;
   instrumentBusy = false;
   answerWhenSettled = false;
@@ -2695,7 +2700,7 @@ function nextPlanStep() {
         else answerPreset();
       }
       // A guided procedure is measured out: the table moves aside — the whole board is there to read.
-      if (!plan.length && preset?.guided) window.setTimeout(() => scene.read(true), 1400);
+      if (!plan.length && preset?.guided) readTimer = window.setTimeout(() => scene.read(true), 1400);
       break;
     }
     if (s.kind === 'fresh') {
