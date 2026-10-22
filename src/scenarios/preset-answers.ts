@@ -11,14 +11,14 @@ import { GAS_CONSTANT } from '../domains/electrical/gases.js';
 import { formatDuration, formatQuantity, sig } from '../explain/format.js';
 import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
-import { sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
+import { LAB_VESSEL_ID, sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
 import { formatReading, weigh } from './weighing.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { formatMeasured } from './measuring.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
-import { isThermalBody } from '../domains/thermal/entities.js';
+import { bodyEnergy, isThermalBody } from '../domains/thermal/entities.js';
 import { solubilityAt } from '../domains/thermal/mixture.js';
 import { LAB_COMMANDS, type LabCommand } from './lab-knowledge.js';
 import { labGoalReached, labSetup } from './thermal-lab.js';
@@ -93,6 +93,11 @@ function mixedAt(s: Step): number {
   return temp(s.result.initial);
 }
 /** The block put into the liquid in this step: substance, mass and the temperature it went in at. */
+/** Heat the calorimeter (the vessel and its lid) gave off during the step, J (negative — it took heat). */
+function cupHeatGiven(s: Step): number {
+  const e = (st: SystemState) => Object.values(st.entities).filter((x) => isThermalBody(x) && (x.id === LAB_VESSEL_ID || x.id === `${LAB_VESSEL_ID}.lid`)).reduce((a, x) => a + bodyEnergy(x as never), 0);
+  return e(s.result.initial) - e(s.result.final);
+}
 function blockOf(s: Step): { substance: string; mass: number; temperature: number } | undefined {
   const last = Object.values(s.result.final.entities).find((e) => isThermalBody(e) && e.id.startsWith('sample+'));
   if (!last || !isThermalBody(last) || !last.params.substance) return undefined;
@@ -309,6 +314,81 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
           : `Right after mixing the water was at ${C(ideal, l)} — exactly what the heat balance gives: θ = (m₁t₁ + m₂t₂) / (m₁ + m₂), since the heat the hot water gave is the heat the cold water took. But within ${D(t, l)} the cold glass beaker and the air took some of the heat, and equilibrium came at ${C(real, l)}. That is why a real mixture is always a little colder than the calculation; to cut the losses, labs mix in a calorimeter.`,
       ),
       correct: real < ideal - 0.5 ? 'less' : real > ideal + 0.5 ? 'more' : 'fifty',
+    };
+  },
+  'hydrostatic-weighing': (run) => {
+    const f = of(run, 'force');
+    const air = f.find((r) => r.command['into'] === 'air')?.record;
+    const wet = [...f].reverse().find((r) => r.command['into'] === 'liquid')?.record;
+    const P = air?.value ?? 0;
+    const P2 = wet?.value ?? 0;
+    const Fa = P - P2;
+    const rhoL = wet?.inputs?.['rhoLiquid'] ?? WATER;
+    const gg = air?.inputs?.['g'] ?? 9.81;
+    const rho = Fa > 0 ? (P / Fa) * rhoL : 0;
+    const solids = Object.values(SUBSTANCES).filter((x) => x.category === 'solid.metal' || x.category === 'solid.material');
+    const nearest = solids.reduce((best, x) => (Math.abs(x.liquid.density.value - rho) < Math.abs(best.liquid.density.value - rho) ? x : best), solids[0]!);
+    const name = (l: Locale) => nearest.name[l].toLowerCase();
+    const err = Fa > 0 ? (0.05 / Fa + 0.05 / P) * 100 : 0;
+    return {
+      ...(Fa > 0 ? { correct: nearest.id } : {}),
+      say: both((l) => (l === 'uk' ? `Це ${name(l)}!` : `It is ${name(l)}!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `У повітрі брусок важить P = ${N(P, l)}, у воді — P′ = ${N(P2, l)}. Архімедова сила F_A = P − P′ = ${N(Fa, l)}. Вона дорівнює вазі витісненої води: F_A = ρ_в·g·V, тож об’єм бруска V = F_A / (ρ_в·g) ≈ ${sig((Fa / (rhoL * gg)) * 1e6, 3, l)} см³. Маса m = P/g ≈ ${sig((P / gg) * 1000, 3, l)} г, а густина ρ = m/V = P/F_A · ρ_в ≈ ${sig(rho, 3, l)} кг/м³. Найближча в таблиці — ${name(l)} (${sig(nearest.liquid.density.value, 4, l)} кг/м³). Динамометр показує з точністю до 0,1 Н, тож результат може відрізнятися на кілька відсотків (тут до ≈ ${sig(err, 2, l)} %) — для схожих за густиною речовин потрібен точніший прилад або важчий брусок.`
+          : `In the air the block weighs P = ${N(P, l)}, in water P′ = ${N(P2, l)}. The buoyant force F_A = P − P′ = ${N(Fa, l)}. It equals the weight of the water pushed aside: F_A = ρ_w·g·V, so the block’s volume V = F_A / (ρ_w·g) ≈ ${sig((Fa / (rhoL * gg)) * 1e6, 3, l)} cm³. Its mass m = P/g ≈ ${sig((P / gg) * 1000, 3, l)} g, and its density ρ = m/V = P/F_A · ρ_w ≈ ${sig(rho, 3, l)} kg/m³. The nearest in the table is ${name(l)} (${sig(nearest.liquid.density.value, 4, l)} kg/m³). The dynamometer reads to 0.1 N, so the result may be off by a few per cent (here up to ≈ ${sig(err, 2, l)} %) — telling apart substances of similar density needs a finer instrument or a heavier block.`,
+      ),
+    };
+  },
+  'ice-latent-heat': ({ steps }) => {
+    // The last step: the ice in the water of a calorimeter that has warmed up with it.
+    const s = steps[steps.length - 1]!;
+    const ice = blockOf(s);
+    const mw = (s.params.liters / 1000) * WATER;
+    const t1 = temp(s.result.initial) - K0;
+    const th = temp(s.result.final) - K0;
+    const mi = ice?.mass ?? 0.02;
+    const ti = ice ? ice.temperature - K0 : -1;
+    const ci = COMPONENTS.water.phases.solid!.specificHeat!.value;
+    const cup = cupHeatGiven(s);
+    const warmIce = ci * mi * (0 - ti) + CW * mi * th;
+    const naive = (CW * mw * (t1 - th) - warmIce) / mi;
+    const full = (CW * mw * (t1 - th) + cup - warmIce) / mi;
+    const table = LF_KJ * 1000;
+    const correct = Math.abs(naive - table) / table < 0.05 ? 'table' : naive < table ? 'less' : 'more';
+    const kJ = (j: number, l: Locale) => `${sig(j / 1000, 3, l)} ${l === 'uk' ? 'кДж/кг' : 'kJ/kg'}`;
+    return {
+      correct,
+      say: both((l) => (l === 'uk' ? `λ ≈ ${kJ(naive, l)}!` : `λ ≈ ${kJ(naive, l)}!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `Вода охолола з ${sig(t1, 3, l)} до ${sig(th, 3, l)} °C і віддала Q₁ = c·m_в·(t₁ − θ) ≈ ${sig((CW * mw * (t1 - th)) / 1000, 3, l)} кДж. Лід спершу нагрівся до 0 °C, розтанув, а вода з нього нагрілася до θ: на нагрівання пішло ≈ ${sig(warmIce / 1000, 2, l)} кДж, решта — на плавлення. Отже, λ = (Q₁ − Q_нагр) / m_л ≈ ${kJ(naive, l)} — ${correct === 'table' ? 'майже як у таблиці' : correct === 'less' ? 'менше' : 'більше'} за табличні ${kJ(table, l)}. Чому? Віддавала теплоту не лише вода: алюмінієвий калориметр, прогрітий разом із нею, теж охолов і віддав ≈ ${sig(cup / 1000, 2, l)} кДж. Якщо врахувати і його, λ ≈ ${kJ(full, l)}. Решта різниці — теплообмін із повітрям у кімнаті. Тому в лабораторній роботі калориметр беруть легкий, а лід — сухий і подрібнений.`
+          : `The water cooled from ${sig(t1, 3, l)} to ${sig(th, 3, l)} °C and gave off Q₁ = c·m_w·(t₁ − θ) ≈ ${sig((CW * mw * (t1 - th)) / 1000, 3, l)} kJ. The ice first warmed to 0 °C, melted, and its water warmed to θ: warming took ≈ ${sig(warmIce / 1000, 2, l)} kJ, the rest went into melting. So λ = (Q₁ − Q_warm) / m_ice ≈ ${kJ(naive, l)} — ${correct === 'table' ? 'almost as in the table' : correct === 'less' ? 'less' : 'more'} than the table’s ${kJ(table, l)}. Why? Not only the water gave off heat: the aluminium calorimeter, warmed up with it, cooled too and gave ≈ ${sig(cup / 1000, 2, l)} kJ. Counting it as well, λ ≈ ${kJ(full, l)}. The rest of the difference is heat exchange with the room air. That is why the lab work uses a light calorimeter and dry, crushed ice.`,
+      ),
+    };
+  },
+  'specific-heat-metal': ({ steps }) => {
+    const s = steps[0]!;
+    const block = blockOf(s);
+    const mw = (s.params.liters / 1000) * WATER;
+    const t1 = s.params.startTemp;
+    const th = temp(s.result.final) - K0;
+    const mb = block?.mass ?? 0.1;
+    const tb = block ? block.temperature - K0 : 100;
+    const cup = -cupHeatGiven(s);
+    const naive = (CW * mw * (th - t1)) / (mb * (tb - th));
+    const full = (CW * mw * (th - t1) + cup) / (mb * (tb - th));
+    const table = block ? (COMPONENTS[block.substance as keyof typeof COMPONENTS]?.phases.solid?.specificHeat?.value ?? 0) : 0;
+    const correct = Math.abs(naive - table) / table < 0.05 ? 'table' : naive < table ? 'less' : 'more';
+    const J = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'Дж/(кг·°C)' : 'J/(kg·°C)'}`;
+    return {
+      correct,
+      say: both((l) => `c ≈ ${J(naive, l)}!`),
+      text: both((l) =>
+        l === 'uk'
+          ? `Вода нагрілася з ${sig(t1, 3, l)} до ${sig(th, 3, l)} °C і отримала Q = c_в·m_в·(θ − t₁) ≈ ${sig((CW * mw * (th - t1)) / 1000, 3, l)} кДж. Стільки ж віддав циліндр, охолонувши з ${sig(tb, 3, l)} до ${sig(th, 3, l)} °C. Отже, c = Q / (m·(t₂ − θ)) ≈ ${J(naive, l)} — ${correct === 'table' ? 'майже як у таблиці' : correct === 'less' ? 'менше' : 'більше'} за табличні ${J(table, l)}. Частину теплоти забрав сам калориметр — він теж нагрівся (≈ ${sig(cup / 1000, 2, l)} кДж). З ним c ≈ ${J(full, l)}; решта — теплообмін із повітрям і те, що циліндр, поки його переносили з окропу, трохи охолов.`
+          : `The water warmed from ${sig(t1, 3, l)} to ${sig(th, 3, l)} °C and took Q = c_w·m_w·(θ − t₁) ≈ ${sig((CW * mw * (th - t1)) / 1000, 3, l)} kJ. The cylinder gave as much, cooling from ${sig(tb, 3, l)} to ${sig(th, 3, l)} °C. So c = Q / (m·(t₂ − θ)) ≈ ${J(naive, l)} — ${correct === 'table' ? 'almost as in the table' : correct === 'less' ? 'less' : 'more'} than the table’s ${J(table, l)}. Part of the heat went into the calorimeter itself — it warmed too (≈ ${sig(cup / 1000, 2, l)} kJ). Counting it, c ≈ ${J(full, l)}; the rest is heat exchange with the air and the cylinder cooling a little while it was carried from the boiling water.`,
+      ),
     };
   },
   'which-metal': ({ steps, simulation }) => {

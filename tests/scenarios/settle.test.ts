@@ -84,7 +84,7 @@ describe('the calorimeter', () => {
 });
 
 describe('waiting while ice melts', () => {
-  it('ends soon after the last of the ice is gone — the meltwater has simply mixed in', () => {
+  it('ends once the meltwater has mixed in: the thermometer shows the common temperature', () => {
     const p: LabParams = { ...cold, vessel: 'cylinder', size: 0.1, liters: 0.07 };
     const s = createExperimentSession<LabCommand>({ initial: labSetup(p).state, simulation, commands, sampleEvery: seconds(10) });
     s.apply({ type: 'thermal.add', into: 'sample', substance: 'water', mass: kilograms(0.01), temperature: celsius(-5), frozen: true });
@@ -96,6 +96,10 @@ describe('waiting while ice melts', () => {
       s.advance(2);
     }
     expect(meltedAt).toBeGreaterThan(0);
-    expect(s.state.time - meltedAt).toBeLessThanOrEqual(30);
+    // The cold meltwater takes a minute or two to come to the water's temperature, then it ends.
+    expect(s.state.time - meltedAt).toBeLessThanOrEqual(240);
+    const melt = s.state.entities['sample+1' as never] as unknown as { state: { temperature: number } };
+    const water = s.state.entities['sample' as never] as unknown as { state: { temperature: number } };
+    expect(Math.abs(melt.state.temperature - water.state.temperature)).toBeLessThan(0.3);
   });
 });

@@ -26,11 +26,9 @@ export const SETTLE: Operation = {
   speed: 60, // one of the page's speeds (1, 10, 60, 300, 600, 3600)
   startTemp: () => 20,
   reached(sample, p, _sub, state) {
-    // Every piece put into the liquid (a block, a lump of ice) has come to the liquid's temperature…
-    // A melted ice cube is just more of the same water: it has mixed in, there is nothing left to wait for.
-    const mixedIn = (e: ThermalBody) =>
-      (e.state.solidFraction ?? 0) <= 0 && !!e.params.phase && (e.params.substance === sample.params.substance || (!!sample.state.mixture && e.params.substance === 'water'));
-    const pieces = Object.values(state.entities).filter((e): e is ThermalBody => isThermalBody(e) && e.id.startsWith(`${sample.id}+`) && !mixedIn(e));
+    // Every piece put into the liquid (a block, a lump of ice) has come to the liquid's temperature — a melted
+    // ice cube too: its cold water mixes in, and until it has, the thermometer would not show the common temperature.
+    const pieces = Object.values(state.entities).filter((e): e is ThermalBody => isThermalBody(e) && e.id.startsWith(`${sample.id}+`));
     if (!pieces.every((e) => isThermalBody(e) && Math.abs(e.state.temperature - sample.state.temperature) < CLOSE)) return false;
     // A body was put in (a block, ice): it was what we waited for. Only plain mixing waits for the walls.
     if (Object.keys(state.entities).some((id) => id.startsWith(`${sample.id}+`))) return true;

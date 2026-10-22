@@ -60,8 +60,12 @@ export interface PresetProgram {
   /** Id in CURRICULA. */
   readonly program: string;
   readonly grade?: number;
-  /** The item in the programme ("Required practical 3"), for the chip. */
+  /** The item in the programme ("Required practical 3", "ЛР № 9"), for the chip. */
   readonly item?: string;
+  /** The programme's topic it belongs to ("Тема 3. Взаємодія тіл. Сили в природі"). */
+  readonly topic?: string;
+  /** Where the textbook has it: a source id and the place ("§ 34, лабораторна робота № 9, с. 243"). */
+  readonly textbook?: { readonly source: string; readonly at: string };
   /** same — this very experiment is in the programme; related — the same idea on another substance. */
   readonly match: 'same' | 'related';
   /** Exact wording from the programme, in its original language. */
@@ -115,6 +119,7 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('up', 'Підніметься', 'It will rise'), ch('down', 'Опуститься', 'It will drop'), ch('same', 'Не зміниться', 'It will stay the same')],
     formulas: ['mechanics.submerged-share'],
     quoteHas: 'плавання',
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 10', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: '№ 10. Перевірка умов плавання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 35, лабораторна робота № 10, с. 251' } }],
     expect: 'reached',
   },
   {
@@ -141,8 +146,31 @@ export const PRESETS: readonly Preset[] = [
     choicesAt: 'end',
     choiceTable: 'density',
     formulas: ['mechanics.density'],
-    programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 7, item: 'Тема 1. Хімія. Перші кроки', match: 'related', quote: 'Актуалізація умінь, набутих в адаптаційному циклі на прикладі визначення густини тіла (цвяха, ключа тощо).' }],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 7, item: 'Тема 1. Хімія. Перші кроки', match: 'related', quote: 'Актуалізація умінь, набутих в адаптаційному циклі на прикладі визначення густини тіла (цвяха, ключа тощо).' }],
     quoteHas: 'густини',
+    expect: 'reached',
+  },
+  {
+    id: 'hydrostatic-weighing',
+    grade: 7,
+    topic: MECH,
+    title: { uk: 'Гідростатичне зважування: з чого брусок?', en: 'Hydrostatic weighing: what is the block made of?' },
+    question: {
+      uk: 'Перед нами брусок із невідомої речовини, а мензурки, щоб виміряти його об’єм, немає — лише динамометр і стакан води. Зважимо брусок у повітрі, потім у воді. Архімедова сила дорівнює вазі витісненої води, тож з неї дізнаємося об’єм, а тоді й густину. З чого брусок?',
+      en: 'Here is a block of an unknown substance, and there is no measuring cylinder for its volume — only a dynamometer and a beaker of water. We weigh the block in the air, then in water. The buoyant force equals the weight of the water it pushes aside, so it gives the volume, and then the density. What is the block made of?',
+    },
+    params: { ...room, ...beaker, liters: 0.2, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    plan: [
+      { kind: 'hang', substance: 'aluminium', mass: 0.4, into: 'air', label: { uk: 'Невідомий брусок', en: 'Unknown block' } },
+      { kind: 'hang', substance: 'aluminium', mass: 0.4, into: 'liquid', label: { uk: 'Невідомий брусок', en: 'Unknown block' } },
+    ],
+    choices: DENSITY_TABLE,
+    choicesAt: 'end',
+    choiceTable: 'density',
+    formulas: ['mechanics.buoyant-force', 'mechanics.weight'],
+    quoteHas: 'Архімеда',
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'вимірювання й визначення: атмосферного й гідростатичного тиску; виштовхувальної сили' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 9', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 9. Гідростатичне зважування тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 34, лабораторна робота № 9, с. 243' } }],
     expect: 'reached',
   },
   {
@@ -165,6 +193,7 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('fresh', 'У прісній воді', 'In fresh water'), ch('salt', 'У солоній воді', 'In salt water'), ch('same', 'Однаково', 'The same')],
     formulas: ['mechanics.buoyant-force', 'mechanics.weight'],
     quoteHas: 'Архімеда',
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 9', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: '№ 9. Гідростатичне зважування тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 34, лабораторна робота № 9, с. 243' } }],
     expect: 'reached',
   },
   // ---------------------------------------------------------------- 9 grade, solutions
@@ -263,6 +292,43 @@ export const PRESETS: readonly Preset[] = [
   },
   // ---------------------------------------------------------------- 8 grade, heat
   {
+    id: 'ice-latent-heat',
+    grade: 8,
+    topic: THERMAL,
+    title: { uk: 'Скільки теплоти треба, щоб розтопити лід?', en: 'How much heat does it take to melt ice?' },
+    question: {
+      uk: 'Наллємо в калориметр 150 г теплої води й дочекаємося, поки він прогріється разом із нею. Потім кинемо 20 г льоду (−1 °C) і дочекаємося, поки лід розтане й температура встановиться. З теплового балансу знайдемо питому теплоту плавлення льоду λ. Чи вийде табличне значення?',
+      en: 'We pour 150 g of warm water into a calorimeter and wait until it warms up together with the water. Then we drop in 20 g of ice (−1 °C) and wait until the ice melts and the temperature settles. From the heat balance we find the specific latent heat of fusion of ice λ. Will it come out as in the table?',
+    },
+    params: { roomTemp: 20, lid: true, vessel: 'calorimeter', size: 0.25, material: 'aluminium', liters: 0.15, action: 'settle', substance: 'water', startTemp: 45 },
+    plan: [
+      { kind: 'add', substance: 'water', mass: 0.02, temperature: -1, frozen: true, label: { uk: 'Лід', en: 'Ice' } },
+      { kind: 'operation', action: 'settle', label: { uk: 'Дочекатися, поки лід розтане', en: 'Wait for the ice to melt' } },
+    ],
+    choices: [ch('table', 'Так, ≈ 334 кДж/кг', 'Yes, ≈ 334 kJ/kg'), ch('less', 'Менше за табличне', 'Less than in the table'), ch('more', 'Більше за табличне', 'More than in the table')],
+    formulas: ['thermal.latent-heat', 'thermal.heat-for-temperature-change'],
+    quoteHas: 'плавлен',
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'related', quote: 'зміни агрегатних станів внаслідок поглинання / виділення тепла' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 5', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 5. Вимірювання питомої теплоти плавлення льоду.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'specific-heat-metal',
+    grade: 8,
+    topic: THERMAL,
+    title: { uk: 'Визначаємо питому теплоємність металу', en: 'Finding the specific heat of a metal' },
+    question: {
+      uk: 'Алюмінієвий циліндр масою 100 г нагріли в окропі до 100 °C і опустили в калориметр зі 150 г води при 20 °C. Виміряємо, до якої температури все прийде, і з рівняння теплового балансу знайдемо питому теплоємність алюмінію. Чи збіжеться вона з табличною?',
+      en: 'An aluminium cylinder of 100 g was heated in boiling water to 100 °C and put into a calorimeter with 150 g of water at 20 °C. We measure the temperature it all comes to and find the specific heat of aluminium from the heat balance. Will it match the table?',
+    },
+    params: { roomTemp: 20, lid: true, vessel: 'calorimeter', size: 0.25, material: 'aluminium', liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
+    setup: [{ kind: 'add', substance: 'aluminium', mass: 0.1, temperature: 100 }],
+    choices: [ch('table', 'Так, ≈ 900 Дж/(кг·°C)', 'Yes, ≈ 900 J/(kg·°C)'), ch('less', 'Менша за табличну', 'Less than in the table'), ch('more', 'Більша за табличну', 'More than in the table')],
+    formulas: ['thermal.heat-for-temperature-change', 'thermal.equilibrium-temperature'],
+    quoteHas: 'баланс',
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'визначення: питомої теплоємності твердого тіла' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
+    expect: 'reached',
+  },
+  {
     id: 'boil-a-litre',
     grade: 8,
     topic: THERMAL,
@@ -271,6 +337,7 @@ export const PRESETS: readonly Preset[] = [
     params: { ...room, ...pot, action: 'boil', substance: 'water', startTemp: 20, heater: hotplate },
     formulas: ['thermal.heat-for-temperature-change'],
     predict: true,
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 10', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'related', quote: '№ 10. Визначення ККД електричного нагрівника.' }],
     expect: 'reached',
   },
   {
@@ -300,6 +367,7 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('latent', 'Теплота йде на те, щоб розтопити лід', 'The heat goes into melting the ice'), ch('thermometer', 'Термометр не встигає за водою', 'The thermometer lags behind'), ch('insulates', 'Лід не пропускає тепло', 'Ice does not let heat through')],
     formulas: ['thermal.latent-heat'],
     quoteHas: 'плавлен',
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 5', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 5. Вимірювання питомої теплоти плавлення льоду.' }],
     expect: 'reached',
   },
   {
@@ -338,6 +406,7 @@ export const PRESETS: readonly Preset[] = [
     params: { ...room, ...beaker, action: 'heat-to', target: 50, substance: 'water', startTemp: 20, heater: { id: 'immersion-heater', rating: 500, knob: 1 } },
     choices: [ch('table', 'Рівно табличне — 4200 Дж/(кг·°C)', 'Exactly the table value — 4200 J/(kg·°C)'), ch('more', 'Більше за табличне', 'More than the table value'), ch('less', 'Помітно менше за табличне', 'Noticeably less than the table value')],
     formulas: ['thermal.heat-for-temperature-change', 'thermal.energy-from-power'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
     expect: 'reached',
   },
   {
@@ -397,6 +466,7 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('fifty', 'Рівно 50 °C', 'Exactly 50 °C'), ch('less', 'Трохи менше за 50 °C', 'A little below 50 °C'), ch('more', 'Більше за 50 °C', 'Above 50 °C')],
     formulas: ['thermal.equilibrium-temperature'],
     quoteHas: 'змішування',
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'теплового балансу за умов змішування води різної температури' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 3', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 3. Вивчення теплового балансу за умов змішування води різної температури.' }],
     expect: 'reached',
   },
   {
@@ -414,6 +484,7 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('al', 'Алюміній нагріє сильніше', 'Aluminium warms it more'), ch('cu', 'Мідь нагріє сильніше', 'Copper warms it more'), ch('same', 'Однаково — маса ж та сама', 'The same — the mass is the same')],
     formulas: ['thermal.heat-for-temperature-change', 'thermal.equilibrium-temperature'],
     quoteHas: 'баланс',
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
     expect: 'reached',
   },
   {
@@ -494,7 +565,7 @@ export const PRESETS: readonly Preset[] = [
     setup: [{ kind: 'add', substance: 'copper-sulfate', mass: 0.015, temperature: 20, label: { uk: 'Мідний купорос', en: 'Copper sulfate' } }],
     choices: [ch('copper', 'Шар міді', 'A layer of copper'), ch('hydrogen', 'Бульбашки водню', 'Bubbles of hydrogen'), ch('chlorine', 'Хлор', 'Chlorine')],
     formulas: ['electrical.faraday-moles'],
-    programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
     expect: 'reached',
   },
   // ---------------------------------------------------------------- for everyone

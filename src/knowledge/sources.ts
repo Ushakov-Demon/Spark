@@ -72,6 +72,22 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-11',
   }),
+  'ua-mnp-2023-kreminskyi': source({
+    id: 'ua-mnp-2023-kreminskyi',
+    title: 'Модельна навчальна програма «Фізика. 7–9 класи» (Кремінський Б. Г., Гельфгат І. М., Божинова Ф. Я., Ненашев І. Ю., Кірюхіна О. О.), рекомендовано наказом МОН України від 16.08.2023 № 1001',
+    url: 'https://osvita.ua/doc/files/news/901/90166/Fizyka_7-9_kl_Kreminskyy_ta_in_16_08_202.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-22',
+    caveats: 'НУШ: one of several recommended model programmes; schools choose one. Each grade has an indicative list of 10 lab works ("орієнтовний перелік", may be changed by the teacher).',
+  }),
+  'ua-textbook-2024-bariakhtar-physics-7': source({
+    id: 'ua-textbook-2024-bariakhtar-physics-7',
+    title: 'Бар’яхтар В. Г., Божинова Ф. Я., Довгий С. О., Кірюхін М. М., Кірюхіна О. О. Фізика: підручник для 7 класу ЗЗСО / за ред. С. О. Довгого. — Харків: Ранок, 2024 (рекомендовано наказом МОН від 05.02.2024 № 124; за модельною програмою Кремінського та ін.)',
+    url: 'https://rnk.com.ua/106125',
+    license: 'facts-only',
+    retrieved: '2026-10-22',
+    caveats: 'Paragraphs, lab work numbers and pages checked against the PDF the user supplied. The URL is the publisher’s electronic supplement printed in the book, not the book itself.',
+  }),
   'ua-mnp-2023-holovko': source({
     id: 'ua-mnp-2023-holovko',
     title:

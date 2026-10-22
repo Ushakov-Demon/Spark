@@ -22,6 +22,7 @@ import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, s
 import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
+import { getSource } from '../src/knowledge/sources.js';
 import {
   actionUses,
   LAB_ACTIONS,
@@ -336,7 +337,7 @@ function measureSay(): string {
     return u.levelSay(formatMeasured('volume', r.value, div, locale), rise);
   }
   const c = m.command as Extract<LabCommand, { type: 'lab.hang' }>;
-  const what = nameOfBody(c.substance);
+  const what = c.label ? tr(c.label, locale) : nameOfBody(c.substance);
   const air = c.into === 'liquid' ? [...all.slice(0, i)].reverse().find((x) => x.command.type === 'lab.hang' && (x.command as typeof c).into === 'air' && (x.command as typeof c).substance === c.substance && (x.command as typeof c).mass === c.mass) : undefined;
   const buoy = air && air.record.value !== null && r.value !== null ? formatMeasured('force', air.record.value - r.value, 0.1, locale) : null;
   return u.hangSay(what, c.into, formatMeasured('force', r.value, 0.1, locale), buoy, c.into === 'liquid' && (r.inputs?.['share'] ?? 1) < 1);
@@ -1345,6 +1346,15 @@ function measuredDensity(): number | null {
   const all = allReadings();
   const m = all.filter((x) => x.record.quantity === 'mass' && x.record.value !== null);
   const v = all.filter((x) => x.record.quantity === 'volume' && x.record.value !== null);
+  // Hydrostatic weighing: the weight in the air over the buoyant force, times the liquid's density.
+  const f = all.filter((x) => x.record.quantity === 'force' && x.record.value !== null);
+  const into = (x: (typeof f)[number]) => (x.command as { into?: string }).into;
+  const air = f.find((x) => into(x) === 'air');
+  const wet = [...f].reverse().find((x) => into(x) === 'liquid');
+  if (air && wet && m.length < 2) {
+    const fa = air.record.value! - wet.record.value!;
+    return fa > 0 ? (air.record.value! / fa) * (wet.record.inputs?.['rhoLiquid'] ?? 1000) : null;
+  }
   if (m.length < 2 || v.length < 2) return null;
   const dm = m[m.length - 1]!.record.value! - m[0]!.record.value!;
   const dv = v[v.length - 1]!.record.value! - v[0]!.record.value!;
@@ -2442,7 +2452,7 @@ function planLabel(steps: readonly ProtocolStep[]): string {
   const parts: string[] = [];
   for (const s of steps) {
     if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang') {
-      parts.push(s.kind === 'weigh' ? (locale === 'uk' ? 'зважити' : 'weigh') : s.kind === 'level' ? u.measure.planLevel : u.measure.planHang(nameOfBody(s.substance).toLowerCase(), s.into));
+      parts.push(s.kind === 'weigh' ? (locale === 'uk' ? 'зважити' : 'weigh') : s.kind === 'level' ? u.measure.planLevel : u.measure.planHang((s.label ? tr(s.label, locale) : nameOfBody(s.substance)).toLowerCase(), s.into));
       // A measurement is a stop of its own: the reading first.
       break;
     }
@@ -2550,7 +2560,9 @@ function buildPresets() {
       .map((x) => {
         const c = getCurriculum(x.program)!;
         const label = `${tr(c.short ?? c.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}${x.item ? ` · ${x.item}` : ''}${x.match === 'related' ? ' ≈' : ''}`;
-        return `<span class="program-chip" title="${escAttr(x.quote)}" data-program="${x.program}">${label}</span>`;
+        const book = x.textbook ? getSource(x.textbook.source) : undefined;
+        const hint = [x.topic, `«${x.quote}»`, book && x.textbook ? `${book.title.split('. —')[0]}: ${x.textbook.at}` : ''].filter(Boolean).join('\n');
+        return `<span class="program-chip" title="${escAttr(hint)}" data-program="${x.program}">${label}</span>${x.topic ? `<span class="program-topic muted small">${escAttr(x.topic)}${x.textbook ? ` · ${escAttr(x.textbook.at)}` : ''}</span>` : ''}`;
       })
       .join('');
     const card = el('article', { className: 'preset' });

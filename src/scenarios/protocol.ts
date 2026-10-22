@@ -101,6 +101,8 @@ export interface HangStep {
   readonly substance: SubstanceId;
   readonly mass: number; // kg
   readonly into: 'air' | 'liquid';
+  /** Its name in the protocol ("an unknown block"), instead of the substance's. */
+  readonly label?: LocalizedText;
 }
 
 /** The lab command of a step that is not an operation: put something in, or measure. */
@@ -111,7 +113,7 @@ export function stepCommand(step: Exclude<ProtocolStep, OperationStep | FreshSte
     case 'level':
       return { type: 'lab.read-level', vessel: base.vessel, size: base.size };
     case 'hang':
-      return { type: 'lab.hang', substance: step.substance, mass: step.mass, into: step.into };
+      return { type: 'lab.hang', substance: step.substance, mass: step.mass, into: step.into, ...(step.label ? { label: step.label } : {}) };
     case 'add':
       return { type: 'thermal.add', into: SAMPLE_ID, substance: step.substance, mass: kilograms(step.mass), temperature: celsius(step.temperature), ...(step.frozen ? { frozen: true } : {}), ...(step.label ? { label: step.label } : {}) };
   }

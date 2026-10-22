@@ -1,3 +1,4 @@
+import type { LocalizedText } from '../knowledge/i18n.js';
 import type { CommandHandler } from '../core/commands.js';
 import type { ExperimentLogEntry } from '../core/experiment.js';
 import { entityId } from '../core/ids.js';
@@ -115,6 +116,8 @@ export interface HangCommand {
   readonly substance: string;
   readonly mass: number; // kg
   readonly into: 'air' | 'liquid';
+  /** What the body is called ("невідомий брусок"), instead of its substance's name. */
+  readonly label?: LocalizedText;
 }
 
 

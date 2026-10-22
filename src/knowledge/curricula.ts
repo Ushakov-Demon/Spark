@@ -11,7 +11,15 @@ export const CURRICULA = {
     name: { uk: 'НУШ: модельна програма «Фізика. 7–9 класи» (Головко та ін., 2023)', en: 'Ukraine, New Ukrainian School: model programme Physics 7–9 (Holovko et al., 2023)' },
     source: 'ua-mnp-2023-holovko',
     firstGradeAge: 6,
-    short: { uk: 'НУШ · Фізика', en: 'NUS (Ukraine) · Physics' },
+    short: { uk: 'НУШ · Фізика (Головко)', en: 'NUS (Ukraine) · Physics (Holovko)' },
+  },
+  'ua-nus-2023-kreminskyi': {
+    id: 'ua-nus-2023-kreminskyi',
+    country: 'UA',
+    name: { uk: 'НУШ: модельна програма «Фізика. 7–9 класи» (Кремінський та ін., 2023)', en: 'Ukraine, New Ukrainian School: model programme Physics 7–9 (Kreminskyi et al., 2023)' },
+    source: 'ua-mnp-2023-kreminskyi',
+    firstGradeAge: 6,
+    short: { uk: 'НУШ · Фізика (Кремінський)', en: 'NUS (Ukraine) · Physics (Kreminskyi)' },
   },
   'ua-nus-2023-hryhorovych-chemistry': {
     id: 'ua-nus-2023-hryhorovych-chemistry',

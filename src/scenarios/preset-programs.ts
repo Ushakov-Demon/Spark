@@ -19,7 +19,11 @@ export function presetPrograms(p: Preset): PresetProgram[] {
     if (!getCurriculum(x.program)) continue;
     const same = out.find((y) => y.program === x.program && y.grade === x.grade && y.item === x.item);
     if (!same) out.push(x);
-    else if (!same.quote.includes(x.quote)) out[out.indexOf(same)] = { ...same, quote: `${same.quote} ${x.quote}` };
+    else {
+      // The same programme and grade from two places (a formula's quote and the preset's own): one chip, keeping the topic and the textbook.
+      const quote = same.quote.includes(x.quote) ? same.quote : `${same.quote} ${x.quote}`;
+      out[out.indexOf(same)] = { ...x, ...same, quote, ...(same.topic ?? x.topic ? { topic: same.topic ?? x.topic! } : {}), ...(same.textbook ?? x.textbook ? { textbook: same.textbook ?? x.textbook! } : {}) };
+    }
   }
   return out;
 }
