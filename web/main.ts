@@ -104,6 +104,7 @@ import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
+import { BUSY, SLIDE } from './graphics/scene/bench-motion.js';
 import { filterLibrary, LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute } from './library.js';
 import { createScene, incandescent, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
@@ -253,7 +254,7 @@ function temperature(id: string): number | undefined {
 /** A new experiment: fresh setup, empty protocol. */
 function newSession() {
   replaying = null;
-  balancing = false;
+  instrumentBusy = false;
   answerWhenSettled = false;
   history = [];
   pendingAdds = [];
@@ -311,13 +312,14 @@ function measureNow(command: LabCommand): string {
   }
   measureError = '';
   lastMeasure = { at: session.state.time, step: session };
-  // The lever balance takes a few seconds to balance on the scene: its reading is told once it is level.
-  balancing = command.type === 'lab.balance' && entry.ok && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // An instrument that moves on the scene (a balance, a spring, a pulled block): its reading is told once it is at rest.
+  instrumentBusy = entry.ok && command.type in BUSY && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   boardEpoch++;
   render();
   return measureSay();
 }
-let balancing = false;
+/** An instrument on the scene is still on its way to its reading. */
+let instrumentBusy = false;
 let answerWhenSettled = false;
 let lastMeasure: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
 let measureError = '';
@@ -343,7 +345,7 @@ function benchView(): BenchView | null {
     return { ...base, ...(b ? { balance: { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, ...(r && r.value !== null ? { mass: r.exact } : {}), display: r?.value != null ? `${weightsText(set, locale === 'uk')} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' } } : {}) };
   }
   if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
-  if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value) } : base;
+  if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE } : base;
   return c?.type === 'lab.edge' && r ? { ...base, edge: { index: Number(c['edge']) as 0 | 1 | 2, display: show('length', r.value) } } : base;
 }
 /** The latest level reading or dynamometer reading while nothing has happened since. */
@@ -375,6 +377,7 @@ function measureSay(): string {
   }
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
+  if (instrumentBusy && BUSY[m.command.type]) return tr(BUSY[m.command.type]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   if (m.command.type === 'lab.stretch') {
     const n = (m.command as { weights: number }).weights;
@@ -388,7 +391,6 @@ function measureSay(): string {
     return uk ? `Брусок${n ? ` із ${n} тягарц${n === 1 ? 'ем' : 'ями'}` : ''} ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}. Це і є сила тертя ковзання.` : `The block${n ? ` with ${n} weight${n === 1 ? '' : 's'}` : ''} slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}. That is the force of sliding friction.`;
   }
   if (m.command.type === 'lab.balance') {
-    if (balancing) return uk ? 'Підбираю важки — від більших до менших…' : 'Picking the weights — from larger to smaller…';
     if (r.value === null) return uk ? 'Важків із набору не вистачає — тіло завелике для цих терезів (до 211 г).' : 'The set of weights is not enough — the load is too heavy for this balance (up to 211 g).';
     const set = balanceWeights(r.value) ?? [];
     return uk ? `Терези в рівновазі: ${weightsText(set, true)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.` : `The balance is level: ${weightsText(set, false)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.`;
@@ -1538,7 +1540,7 @@ function stepLine(l: ReturnType<typeof boardLines>[number], p: LabParams, i: num
 function boardNow(): ReturnType<typeof boardLines> {
   // The answer to the question asked at the end is not written before it is picked: those lines show the formula only.
   const hidden = preset?.answerOnBoard && prediction?.preset !== preset.id ? preset.answerOnBoard : null;
-  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}|${balancing}`;
+  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}|${instrumentBusy}`;
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
@@ -1547,8 +1549,8 @@ function boardNow(): ReturnType<typeof boardLines> {
     const { numbers: _, ...rest } = l;
     return rest;
   });
-  // While the balance is still being balanced, what came of that weighing is not on the board yet.
-  const busy = balancing ? `:${r.log.length - 1}` : null;
+  // While an instrument is still moving, what it will show is not on the board yet.
+  const busy = instrumentBusy ? `:${r.log.length - 1}` : null;
   const shown = busy ? lines.filter((l) => !l.id.endsWith(busy)) : lines;
   boardCache = { at: now, key, lines: shown };
   return shown;
@@ -2568,8 +2570,8 @@ function nextPlanStep() {
       else measureNow(stepCommand(s, params));
       // The plan ended with a measurement: the question can be answered now (or once the table is looked into).
       if (!plan.length && preset?.choicesAt !== 'end') {
-        // A balance still being balanced: the answer comes once it is level.
-        if (balancing) answerWhenSettled = true;
+        // An instrument still moving: the answer comes once it is at rest.
+        if (instrumentBusy) answerWhenSettled = true;
         else answerPreset();
       }
       // A guided procedure is measured out: the table moves aside — the whole board is there to read.
@@ -3115,10 +3117,10 @@ $('#offer').addEventListener('click', (e) => {
   const f = Array.isArray(fixes) ? fixes[Number(target.dataset['fix'])] : undefined;
   if (f) applyFix(f);
 });
-// The lever balance has settled: tell the reading, write it on the board.
-scene.element.addEventListener('balance-settled', () => {
-  if (!balancing) return;
-  balancing = false;
+// An instrument has come to rest: tell its reading, write it on the board.
+scene.element.addEventListener('instrument-settled', () => {
+  if (!instrumentBusy) return;
+  instrumentBusy = false;
   boardEpoch++;
   if (answerWhenSettled) {
     answerWhenSettled = false;

@@ -14,6 +14,8 @@ export interface BenchView {
   readonly springLength?: number;
   /** The dynamometer pulling the block (friction): what it shows; absent — at rest. */
   readonly pull?: string;
+  /** How far the block has slid along the board, units of the drawing. */
+  readonly slide?: number;
   /** The block hanging on a dynamometer to be weighed: what it shows. */
   readonly hang?: string;
   /** The edge being measured (pressure): 0 — length, 1 — width, 2 — height, and the reading. */
@@ -142,10 +144,10 @@ export function benchSvg(v: BenchView): string {
   }
   if (v.hang) return hangingBlock(v.hang, v.block);
   if (v.kind === 'friction') {
-    // The board lies on the table; the block on the board.
+    // The board lies on the table; the block on the board (slid along it so far).
     const base = TABLE - 12;
     const boardSvg = `<rect x="110" y="${base}" width="450" height="12" rx="2" style="fill:#e3bf86;stroke:${WOOD_EDGE}"/>`;
-    const x = 200;
+    const x = 130 + (v.slide ?? 0);
     const w = v.block[0] * 100 * CM;
     const h = v.block[2] * 100 * CM;
     const mid = base - h / 2;
