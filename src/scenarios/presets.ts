@@ -1,7 +1,7 @@
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
-import { SUBSTANCES } from '../substances/catalog.js';
+import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -56,7 +56,47 @@ export interface Preset {
   readonly predict?: boolean;
   /** How the run ends in the model (checked by tests). */
   readonly expect: LabStatus['kind'];
+  /** What may be changed before the start, and how the experiment is built from it. */
+  readonly vary?: PresetVary;
 }
+
+/**
+ * What the experimenter may change in a ready-made experiment before it starts, within its own frame: an
+ * amount, a temperature, a material from a short list. The preset is built from the chosen values (its
+ * setup, plan, question and choices follow them); the answer is worked out from the run as always.
+ */
+export type PresetControl = { readonly id: string; readonly label: LocalizedText } & (
+  | { readonly kind: 'number'; readonly unit: string; readonly min: number; readonly max: number; readonly step: number; readonly value: number }
+  | { readonly kind: 'choice'; readonly options: readonly Choice[]; readonly value: string }
+);
+export type PresetValues = Readonly<Record<string, number | string>>;
+export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices'>>;
+export interface PresetVary {
+  readonly controls: readonly PresetControl[];
+  readonly build: (v: PresetValues) => PresetVariant;
+}
+
+/** The values a preset starts with. */
+export const defaultValues = (p: Preset): PresetValues => Object.fromEntries((p.vary?.controls ?? []).map((c) => [c.id, c.value]));
+/** The preset with these values: its setup, plan, question and choices built from them. */
+export function withValues(p: Preset, v: PresetValues): Preset {
+  if (!p.vary) return p;
+  const all = { ...defaultValues(p), ...v };
+  // Out-of-range or unknown values fall back to the defaults: the experiment stays within its frame.
+  const clean = Object.fromEntries(
+    p.vary.controls.map((c) => {
+      const x = all[c.id];
+      if (c.kind === 'number') return [c.id, typeof x === 'number' && x >= c.min && x <= c.max ? x : c.value];
+      return [c.id, typeof x === 'string' && c.options.some((o) => o.id === x) ? x : c.value];
+    }),
+  );
+  return { ...p, ...p.vary.build(clean) };
+}
+/** Define a preset whose setup depends on values: it is built with the defaults, and keeps how to rebuild it. */
+const varied = (base: Omit<Preset, 'params' | 'question'> & Partial<Preset>, vary: PresetVary): Preset => {
+  const p = { ...base, vary } as Preset;
+  return { ...p, ...vary.build(defaultValues(p)) };
+};
 
 export interface PresetProgram {
   /** Id in CURRICULA. */
@@ -92,6 +132,10 @@ const SOLUTIONS: LocalizedText = { uk: 'Розчини', en: 'Solutions' };
 const MECH: LocalizedText = { uk: 'Механічні явища: густина й плавання', en: 'Mechanics: density and floating' };
 
 const room = { roomTemp: 20, lid: false } as const;
+/** Metals for the specific-heat lab work: what a school set of calorimeter cylinders has. */
+const METALS_FOR_HEAT: readonly Choice[] = (['aluminium', 'copper', 'iron', 'brass', 'steel'] as const).map((id) => ({ id, label: SUBSTANCES[id].name }));
+/** Liquids whose density the lab work finds (all fit the balance in a 100 mL cylinder). */
+const LIQUIDS_FOR_DENSITY: readonly Choice[] = (['sunflower-oil', 'glycerol', 'ethanol', 'water'] as const).map((id) => ({ id, label: SUBSTANCES[id].name }));
 const hotplate = { id: 'electric-hotplate', rating: 2000, knob: 1 } as const;
 const bench = (knob: number) => ({ id: 'bench-supply', knob }) as const;
 const beaker = { vessel: 'beaker', size: 0.25, material: 'glass', liters: 0.2 } as const;
@@ -174,47 +218,74 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 4', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 4. Вимірювання маси тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 16, лабораторна робота № 4, с. 116' } }, { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }],
     expect: 'reached',
   },
-  {
-    id: 'liquid-density',
-    grade: 7,
-    topic: MECH,
-    title: { uk: 'Яка густина олії?', en: 'What is the density of oil?' },
-    question: {
-      uk: 'Зважимо порожню мензурку на важільних терезах, наллємо в неї соняшникову олію, зважимо ще раз і подивимося на поділки, скільки олії налили. Олія легша чи важча за воду, якщо порівняти однакові об’єми?',
-      en: 'We weigh an empty measuring cylinder on a lever balance, pour sunflower oil into it, weigh it again and read on the marks how much oil we poured. For equal volumes, is oil lighter or heavier than water?',
+  varied(
+    {
+      id: 'liquid-density',
+      grade: 7,
+      topic: MECH,
+      title: { uk: 'Яка густина рідини?', en: 'What is the density of a liquid?' },
+      guided: true,
+      bench: 'balance',
+      formulas: ['mechanics.density'],
+      quoteHas: 'густини',
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }],
+      expect: 'reached',
     },
-    params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'sunflower-oil', startTemp: 20 },
-    guided: true,
-    bench: 'balance',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel-empty', label: { uk: 'Порожня мензурка', en: 'Empty cylinder' } } },
-      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', label: { uk: 'Мензурка з олією', en: 'Cylinder with oil' } } },
-      { kind: 'level' },
-    ],
-    choices: [ch('lighter', 'Легша', 'Lighter'), ch('same', 'Однакова', 'The same'), ch('heavier', 'Важча', 'Heavier')],
-    formulas: ['mechanics.density'],
-    quoteHas: 'густини',
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }],
-    expect: 'reached',
-  },
-  {
-    id: 'hooke-spring',
-    grade: 7,
-    topic: MECH,
-    title: { uk: 'Як розтягується пружина?', en: 'How does a spring stretch?' },
-    question: {
-      uk: 'Підвісимо пружину на штатив і будемо чіпляти до неї тягарці по 100 г — один, два, три, чотири, щоразу вимірюючи її довжину лінійкою. Як видовження пружини залежить від сили, що її розтягує?',
-      en: 'We hang a spring on a stand and add 100 g weights to it — one, two, three, four — measuring its length with a ruler each time. How does the spring’s extension depend on the force stretching it?',
+    {
+      controls: [
+        { id: 'liquid', label: { uk: 'Рідина', en: 'Liquid' }, kind: 'choice', options: LIQUIDS_FOR_DENSITY, value: 'sunflower-oil' },
+        { id: 'volume', label: { uk: 'Скільки налити', en: 'How much to pour' }, kind: 'number', unit: 'мл', min: 30, max: 60, step: 5, value: 50 },
+      ],
+      build: (v) => {
+        const liquid = SUBSTANCES[v['liquid'] as SubstanceId];
+        const volume = Number(v['volume']);
+        const name = (l: 'uk' | 'en') => liquid.name[l].toLowerCase();
+        const gen = (l: 'uk' | 'en') => (liquid.genitive?.[l] ?? liquid.name[l]).toLowerCase();
+        return {
+          question: {
+            uk: `Зважимо порожню мензурку на важільних терезах, наллємо в неї ≈ ${volume} мл: ${name('uk')}, зважимо ще раз і подивимося на поділки, скільки рідини налили. Вона легша чи важча за воду, якщо порівняти однакові об’єми?`,
+            en: `We weigh an empty measuring cylinder on a lever balance, pour ≈ ${volume} mL of ${gen('en')} into it, weigh it again and read on the marks how much we poured. For equal volumes, is it lighter or heavier than water?`,
+          },
+          params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: volume / 1000, action: 'settle', substance: liquid.id as SubstanceId, startTemp: 20 },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.balance', what: 'vessel-empty', label: { uk: 'Порожня мензурка', en: 'Empty cylinder' } } },
+            { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', label: { uk: `Мензурка: ${name('uk')}`, en: `Cylinder with ${gen('en')}` } } },
+            { kind: 'level' },
+          ],
+          choices: [ch('lighter', 'Легша', 'Lighter'), ch('same', 'Однакова', 'The same'), ch('heavier', 'Важча', 'Heavier')],
+        };
+      },
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'spring',
-    plan: [0, 1, 2, 3, 4].map((weights) => ({ kind: 'bench', command: { type: 'lab.stretch', weights } }) as const),
-    choices: [ch('proportional', 'Пропорційно: удвічі більша сила — удвічі більше видовження', 'In proportion: twice the force, twice the extension'), ch('faster', 'Видовження росте швидше за силу', 'The extension grows faster than the force'), ch('slower', 'Видовження росте повільніше за силу', 'The extension grows slower than the force')],
-    formulas: ['mechanics.hooke', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }],
-    expect: 'reached',
-  },
+  ),
+  varied(
+    {
+      id: 'hooke-spring',
+      grade: 7,
+      topic: MECH,
+      title: { uk: 'Як розтягується пружина?', en: 'How does a spring stretch?' },
+      guided: true,
+      bench: 'spring',
+      choices: [ch('proportional', 'Пропорційно: удвічі більша сила — удвічі більше видовження', 'In proportion: twice the force, twice the extension'), ch('faster', 'Видовження росте швидше за силу', 'The extension grows faster than the force'), ch('slower', 'Видовження росте повільніше за силу', 'The extension grows slower than the force')],
+      formulas: ['mechanics.hooke', 'mechanics.weight'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }],
+      expect: 'reached',
+    },
+    {
+      // Only the springs that four 100 g weights stretch within the 40 cm ruler.
+      controls: [{ id: 'spring', label: { uk: 'Пружина з набору', en: 'Spring of the set' }, kind: 'choice', options: [ch('25', 'Тугіша', 'Stiffer'), ch('15', 'М’якша', 'Softer')], value: '25' }],
+      build: (v) => {
+        const stiffness = Number(v['spring']);
+        return {
+          question: {
+            uk: `Підвісимо ${stiffness === 25 ? 'тугішу' : 'м’якшу'} пружину з набору на штатив і будемо чіпляти до неї тягарці по 100 г — один, два, три, чотири, щоразу вимірюючи її довжину лінійкою. Як видовження пружини залежить від сили, що її розтягує?`,
+            en: `We hang the ${stiffness === 25 ? 'stiffer' : 'softer'} spring of the set on a stand and add 100 g weights to it — one, two, three, four — measuring its length with a ruler each time. How does the spring’s extension depend on the force stretching it?`,
+          },
+          params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+          plan: [0, 1, 2, 3, 4].map((weights) => ({ kind: 'bench', command: { type: 'lab.stretch', weights, stiffness } }) as const),
+        };
+      },
+    },
+  ),
   {
     id: 'friction-coefficient',
     grade: 7,
@@ -330,23 +401,37 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Виготовлення розчинів із заданою масовою часткою розчиненої речовини.' }],
     expect: 'reached',
   },
-  {
-    id: 'grow-crystals',
-    grade: 9,
-    topic: SOLUTIONS,
-    title: { uk: 'Виростимо кристали мідного купоросу', en: 'Growing copper sulfate crystals' },
-    question: {
-      uk: 'У 100 мл води насиплемо 50 г мідного купоросу — при 20 °C стільки не розчиниться. Нагріємо до 60 °C, поки весь купорос розчиниться, а потім поставимо стакан у холодильник і охолодимо до 20 °C. Скільки купоросу випаде кристалами?',
-      en: 'We put 50 g of copper sulfate into 100 mL of water — at 20 °C that much will not dissolve. We heat it to 60 °C until all of it dissolves, then put the beaker in a fridge and cool it to 20 °C. How much copper sulfate comes out as crystals?',
+  varied(
+    {
+      id: 'grow-crystals',
+      grade: 9,
+      topic: SOLUTIONS,
+      title: { uk: 'Виростимо кристали мідного купоросу', en: 'Growing copper sulfate crystals' },
+      formulas: [],
+      programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Вирощування кристалів.' }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, liters: 0.1, action: 'heat-to', target: 60, substance: 'water', startTemp: 20, heater: { ...hotplate, knob: 0.5 } },
-    setup: [{ kind: 'add', substance: 'copper-sulfate', mass: 0.05, temperature: 20 }],
-    plan: [{ kind: 'operation', action: 'cool-to', target: 20, cooler: { id: 'fridge', setpoint: 4 } }],
-    choices: [ch('none', 'Нічого — він лишиться розчиненим', 'None — it stays dissolved'), ch('part', 'Частина купоросу', 'Part of it'), ch('all', 'Увесь — 50 г', 'All of it — 50 g')],
-    formulas: [],
-    programs: [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 1. Досліджуємо розчинність речовин і розчини', match: 'same', quote: 'Вирощування кристалів.' }],
-    expect: 'reached',
-  },
+    {
+      controls: [
+        // At least what 100 mL do not dissolve at 20 °C (32 g), at most what they dissolve at 60 °C (61.8 g).
+        { id: 'salt', label: { uk: 'Мідний купорос', en: 'Copper sulfate' }, kind: 'number', unit: 'г', min: 35, max: 60, step: 5, value: 50 },
+        { id: 'hot', label: { uk: 'Нагріти до', en: 'Heat to' }, kind: 'number', unit: '°C', min: 60, max: 80, step: 5, value: 60 },
+      ],
+      build: (v) => {
+        const [salt, hot] = [Number(v['salt']), Number(v['hot'])];
+        return {
+          question: {
+            uk: `У 100 мл води насиплемо ${salt} г мідного купоросу — при 20 °C стільки не розчиниться. Нагріємо до ${hot} °C, поки весь купорос розчиниться, а потім поставимо стакан у холодильник і охолодимо до 20 °C. Скільки купоросу випаде кристалами?`,
+            en: `We put ${salt} g of copper sulfate into 100 mL of water — at 20 °C that much will not dissolve. We heat it to ${hot} °C until all of it dissolves, then put the beaker in a fridge and cool it to 20 °C. How much copper sulfate comes out as crystals?`,
+          },
+          params: { ...room, ...beaker, liters: 0.1, action: 'heat-to', target: hot, substance: 'water', startTemp: 20, heater: { ...hotplate, knob: 0.5 } },
+          setup: [{ kind: 'add', substance: 'copper-sulfate', mass: salt / 1000, temperature: 20 }],
+          plan: [{ kind: 'operation', action: 'cool-to', target: 20, cooler: { id: 'fridge', setpoint: 4 } }],
+          choices: [ch('none', 'Нічого — він лишиться розчиненим', 'None — it stays dissolved'), ch('part', 'Частина купоросу', 'Part of it'), ch('all', `Увесь — ${salt} г`, `All of it — ${salt} g`)],
+        };
+      },
+    },
+  ),
   {
     id: 'heat-of-solution',
     grade: 9,
@@ -420,23 +505,40 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'related', quote: 'зміни агрегатних станів внаслідок поглинання / виділення тепла' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 5', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 5. Вимірювання питомої теплоти плавлення льоду.' }],
     expect: 'reached',
   },
-  {
-    id: 'specific-heat-metal',
-    grade: 8,
-    topic: THERMAL,
-    title: { uk: 'Визначаємо питому теплоємність металу', en: 'Finding the specific heat of a metal' },
-    question: {
-      uk: 'Алюмінієвий циліндр масою 100 г нагріли в окропі до 100 °C і опустили в калориметр зі 150 г води при 20 °C. Виміряємо, до якої температури все прийде, і з рівняння теплового балансу знайдемо питому теплоємність алюмінію. Чи збіжеться вона з табличною?',
-      en: 'An aluminium cylinder of 100 g was heated in boiling water to 100 °C and put into a calorimeter with 150 g of water at 20 °C. We measure the temperature it all comes to and find the specific heat of aluminium from the heat balance. Will it match the table?',
+  varied(
+    {
+      id: 'specific-heat-metal',
+      grade: 8,
+      topic: THERMAL,
+      title: { uk: 'Визначаємо питому теплоємність металу', en: 'Finding the specific heat of a metal' },
+      formulas: ['thermal.heat-for-temperature-change', 'thermal.equilibrium-temperature'],
+      quoteHas: 'баланс',
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'визначення: питомої теплоємності твердого тіла' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
+      expect: 'reached',
     },
-    params: { roomTemp: 20, lid: true, vessel: 'calorimeter', size: 0.25, material: 'aluminium', liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
-    setup: [{ kind: 'add', substance: 'aluminium', mass: 0.1, temperature: 100 }],
-    choices: [ch('table', 'Так, ≈ 900 Дж/(кг·°C)', 'Yes, ≈ 900 J/(kg·°C)'), ch('less', 'Менша за табличну', 'Less than in the table'), ch('more', 'Більша за табличну', 'More than in the table')],
-    formulas: ['thermal.heat-for-temperature-change', 'thermal.equilibrium-temperature'],
-    quoteHas: 'баланс',
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'визначення: питомої теплоємності твердого тіла' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
-    expect: 'reached',
-  },
+    {
+      controls: [
+        { id: 'metal', label: { uk: 'Метал', en: 'Metal' }, kind: 'choice', options: METALS_FOR_HEAT, value: 'aluminium' },
+        { id: 'mass', label: { uk: 'Маса', en: 'Mass' }, kind: 'number', unit: 'г', min: 50, max: 200, step: 10, value: 100 },
+        { id: 'water', label: { uk: 'Вода', en: 'Water' }, kind: 'number', unit: 'мл', min: 100, max: 200, step: 10, value: 150 },
+      ],
+      build: (v) => {
+        const metal = SUBSTANCES[v['metal'] as SubstanceId];
+        const [mass, water] = [Number(v['mass']), Number(v['water'])];
+        const c = Math.round(metal.liquid.specificHeat.value / 10) * 10;
+        const gen = (l: 'uk' | 'en') => (metal.genitive?.[l] ?? metal.name[l]).toLowerCase();
+        return {
+          question: {
+            uk: `Циліндр із ${gen('uk')} масою ${mass} г нагріли в окропі до 100 °C і опустили в калориметр із ${water} г води при 20 °C. Виміряємо, до якої температури все прийде, і з рівняння теплового балансу знайдемо питому теплоємність металу. Чи збіжеться вона з табличною?`,
+            en: `A cylinder of ${gen('en')} of ${mass} g was heated in boiling water to 100 °C and put into a calorimeter with ${water} g of water at 20 °C. We measure the temperature it all comes to and find the metal’s specific heat from the heat balance. Will it match the table?`,
+          },
+          params: { roomTemp: 20, lid: true, vessel: 'calorimeter', size: 0.25, material: 'aluminium', liters: water / 1000, action: 'settle', substance: 'water', startTemp: 20 },
+          setup: [{ kind: 'add', substance: metal.id as SubstanceId, mass: mass / 1000, temperature: 100 }],
+          choices: [ch('table', `Так, ≈ ${c} Дж/(кг·°C)`, `Yes, ≈ ${c} J/(kg·°C)`), ch('less', 'Менша за табличну', 'Less than in the table'), ch('more', 'Більша за табличну', 'More than in the table')],
+        };
+      },
+    },
+  ),
   {
     id: 'boil-a-litre',
     grade: 8,
@@ -561,23 +663,41 @@ export const PRESETS: readonly Preset[] = [
     quoteHas: 'плавлен',
     expect: 'impossible',
   },
-  {
-    id: 'mix-hot-cold',
-    grade: 8,
-    topic: THERMAL,
-    title: { uk: 'Змішуємо гарячу й холодну воду', en: 'Mixing hot and cold water' },
-    question: {
-      uk: 'До 100 мл води при 20 °C долили 100 мл гарячої води при 80 °C. Якою буде температура суміші, коли все прийде до рівноваги?',
-      en: 'To 100 mL of water at 20 °C we add 100 mL of hot water at 80 °C. What will the temperature of the mixture be once everything comes to equilibrium?',
+  varied(
+    {
+      id: 'mix-hot-cold',
+      grade: 8,
+      topic: THERMAL,
+      title: { uk: 'Змішуємо гарячу й холодну воду', en: 'Mixing hot and cold water' },
+      formulas: ['thermal.equilibrium-temperature'],
+      quoteHas: 'змішування',
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'теплового балансу за умов змішування води різної температури' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 3', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 3. Вивчення теплового балансу за умов змішування води різної температури.' }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, liters: 0.1, action: 'settle', substance: 'water', startTemp: 20 },
-    setup: [{ kind: 'add', substance: 'water', mass: 0.1, temperature: 80 }],
-    choices: [ch('fifty', 'Рівно 50 °C', 'Exactly 50 °C'), ch('less', 'Трохи менше за 50 °C', 'A little below 50 °C'), ch('more', 'Більше за 50 °C', 'Above 50 °C')],
-    formulas: ['thermal.equilibrium-temperature'],
-    quoteHas: 'змішування',
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'теплового балансу за умов змішування води різної температури' }, { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 3', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'same', quote: '№ 3. Вивчення теплового балансу за умов змішування води різної температури.' }],
-    expect: 'reached',
-  },
+    {
+      controls: [
+        { id: 'cold', label: { uk: 'Холодна вода', en: 'Cold water' }, kind: 'number', unit: 'мл', min: 50, max: 120, step: 10, value: 100 },
+        { id: 'tCold', label: { uk: 't', en: 't' }, kind: 'number', unit: '°C', min: 10, max: 30, step: 1, value: 20 },
+        { id: 'hot', label: { uk: 'Гаряча вода', en: 'Hot water' }, kind: 'number', unit: 'г', min: 50, max: 110, step: 10, value: 100 },
+        { id: 'tHot', label: { uk: 't', en: 't' }, kind: 'number', unit: '°C', min: 50, max: 90, step: 1, value: 80 },
+      ],
+      build: (v) => {
+        const [cold, tCold, hot, tHot] = [Number(v['cold']), Number(v['tCold']), Number(v['hot']), Number(v['tHot'])];
+        // The heat balance (cold water ≈ 1 g per mL): what the choices name as "exactly".
+        const theta = Math.round(((cold * tCold + hot * tHot) / (cold + hot)) * 10) / 10;
+        const t = String(theta).replace('.', ',');
+        return {
+          question: {
+            uk: `До ${cold} мл води при ${tCold} °C долили ${hot} г гарячої води при ${tHot} °C. Якою буде температура суміші, коли все прийде до рівноваги?`,
+            en: `To ${cold} mL of water at ${tCold} °C we add ${hot} g of hot water at ${tHot} °C. What will the temperature of the mixture be once everything comes to equilibrium?`,
+          },
+          params: { ...room, ...beaker, liters: cold / 1000, action: 'settle', substance: 'water', startTemp: tCold },
+          setup: [{ kind: 'add', substance: 'water', mass: hot / 1000, temperature: tHot }],
+          choices: [ch('fifty', `Рівно ${t} °C`, `Exactly ${theta} °C`), ch('less', `Трохи менше за ${t} °C`, `A little below ${theta} °C`), ch('more', `Більше за ${t} °C`, `Above ${theta} °C`)],
+        };
+      },
+    },
+  ),
   {
     id: 'which-metal',
     grade: 8,

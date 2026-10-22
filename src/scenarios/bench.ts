@@ -19,6 +19,8 @@ import { weigh } from './weighing.js';
 
 /** The spring of the 3B set (Hooke's law) that suits 100 g weights: 25 N/m, ≈ 4 cm per weight. */
 export const BENCH_SPRING_K: SourcedValue = sv(25, 'N/m', 'the stiffest spring of the set', 'single-source', 0.01, [cite('3b-helical-springs', 'Set of Helical Springs for Hooke’s Law 1003376: 2.5, 5, 10, 15, 25 N/m', 'new spring', 25)], 'The listing gives nominal constants; a real spring may differ by a few per cent.');
+/** The springs of the set, N/m (nominal): one is chosen for the lab work. */
+export const SPRING_SET: readonly number[] = [2.5, 5, 10, 15, 25];
 /** Its length unloaded, m: the spring of this lab (the listing gives no lengths). */
 export const BENCH_SPRING_L0 = 0.08;
 /** One slotted weight, kg: as in the lab work (four of 100 g). */
@@ -36,6 +38,8 @@ const ruler = (x: number) => Math.round(x / RULER_DIVISION) * RULER_DIVISION;
 export interface StretchCommand {
   readonly type: 'lab.stretch';
   readonly weights: number;
+  /** Which spring of the set, N/m (default: the stiffest). */
+  readonly stiffness?: number;
 }
 /** Pull the block along the board at a steady speed with so many weights on it; read the dynamometer. */
 export interface PullCommand {
@@ -86,7 +90,8 @@ export const stretchCommand: CommandHandler<StretchCommand> = {
   type: 'lab.stretch',
   apply(state, c) {
     if (!(c.weights >= 0 && c.weights <= 4 && Number.isInteger(c.weights))) return err({ uk: 'На пружину вішають від 0 до 4 тягарців.', en: 'Hang 0 to 4 weights on the spring.' });
-    const k = BENCH_SPRING_K.value;
+    const k = c.stiffness ?? BENCH_SPRING_K.value;
+    if (!SPRING_SET.includes(k)) return err({ uk: 'Такої пружини в наборі немає.', en: 'There is no such spring in the set.' });
     const F = weight(c.weights * BENCH_WEIGHT.value, G);
     const x = F / k;
     const l = BENCH_SPRING_L0 + x;

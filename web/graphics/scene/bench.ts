@@ -10,8 +10,9 @@ export interface BenchView {
   readonly kind: 'spring' | 'friction' | 'pressure' | 'balance';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
-  /** The spring's length now, m. */
+  /** The spring's length now, m, and its stiffness, N/m. */
   readonly springLength?: number;
+  readonly stiffness?: number;
   /** The dynamometer pulling the block (friction): what it shows; absent — at rest. */
   readonly pull?: string;
   /** How far the block has slid along the board, units of the drawing. */
@@ -137,10 +138,10 @@ export function benchSvg(v: BenchView): string {
     const S = 4;
     const rodX = 270;
     const armX = 340;
-    const armY = 130;
+    const armY = 120;
     const len = (v.springLength ?? 0.08) * 100 * S;
     const bottom = armY + 3 + len;
-    return `${standSvg(rodX, armX, armY)}${springSvg(armX, armY + 3, len)}${weightsSvg(armX, bottom + 2, v.weights, 18, 8)}${rulerSvg(armX + 20, armY + 3, 30, true, S)}<path class="bench-mark" d="M${armX + 4},${bottom} H${armX + 22}"/>${v.reading ? `<text class="bench-reading" x="${armX + 46}" y="${bottom + 4}">${v.reading}</text>` : ''}`;
+    return `${standSvg(rodX, armX, armY)}${springSvg(armX, armY + 3, len)}${weightsSvg(armX, bottom + 2, v.weights, 18, 8)}${rulerSvg(armX + 20, armY + 3, 40, true, S)}<path class="bench-mark" d="M${armX + 4},${bottom} H${armX + 22}"/>${v.reading ? `<text class="bench-reading" x="${armX + 46}" y="${bottom + 4}">${v.reading}</text>` : ''}`;
   }
   if (v.hang) return hangingBlock(v.hang, v.block);
   if (v.kind === 'friction') {

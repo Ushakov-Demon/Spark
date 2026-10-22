@@ -22,6 +22,9 @@ export interface UiText {
   dissolvedShare(what: string, pct: string): string;
   crystals(mass: string, what?: string): string;
   supersaturated: string;
+  /** The conditions of a ready-made experiment, changeable before the start. */
+  varyTitle: string;
+  varyReset: string;
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
@@ -298,6 +301,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     dissolvedShare: (w, p) => `${w} ${p} %`,
     crystals: (m, w) => `на дні кристалів ${w ?? 'солі'} ${m}`,
     supersaturated: 'пересичений',
+    varyTitle: 'Умови:',
+    varyReset: 'Як у досліді',
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
@@ -565,6 +570,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     dissolvedShare: (w, p) => `${w} ${p} %`,
     crystals: (m, w) => `${w ?? 'salt'} crystals on the bottom ${m}`,
     supersaturated: 'supersaturated',
+    varyTitle: 'Conditions:',
+    varyReset: 'As in the experiment',
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',

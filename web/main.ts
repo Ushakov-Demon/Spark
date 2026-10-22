@@ -39,6 +39,9 @@ import {
   stepCommand,
   OPERATIONS,
   BENCH_TEXT,
+  defaultValues,
+  withValues,
+  type PresetValues,
   balanceWeights,
   weightsText,
   BENCH_BLOCK,
@@ -210,6 +213,8 @@ let doneRecord: Omit<StepRecord, 'adds'> | null = null;
 let preset: Preset | null = null;
 /** The ready-made experiment as it was chosen: starting over begins it anew from this (its steps change params on the way). */
 let presetGiven: Preset | null = null;
+/** The values a ready-made experiment was started with (what may be changed in it before the start). */
+let presetVals: PresetValues = {};
 let plan: ProtocolStep[] = [];
 /** The answer to a ready-made experiment's question, once its plan is done. */
 let presetAnswer: PresetAnswer | 'computing' | null = null;
@@ -337,7 +342,7 @@ function benchView(): BenchView | null {
   const base = { kind, weights: 0, block: BENCH_BLOCK.edges } as const;
   if (kind === 'spring') {
     const n = c?.type === 'lab.stretch' ? Number(c['weights']) : 0;
-    return { ...base, weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
+    return { ...base, weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r?.inputs?.['k'] ? { stiffness: r.inputs['k'] } : {}), ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
   }
   if (kind === 'balance') {
     const b = c?.type === 'lab.balance' ? (c as unknown as { what: string; substance?: string; label?: { uk: string; en: string } }) : undefined;
@@ -1425,6 +1430,51 @@ function measuredDensity(): number | null {
   const dv = v[v.length - 1]!.record.value! - v[0]!.record.value!;
   return dv > 0 ? dm / dv : null;
 }
+/**
+ * The conditions of a ready-made experiment, in one row under the scene: what it lets change (an amount, a
+ * temperature, a material) — only before it starts. Changing one starts it again with the new values;
+ * "↺" brings back its own.
+ */
+function renderVary() {
+  const box = $('#vary');
+  const chosen = presetGiven;
+  const fresh = !running && stepElapsed() === 0 && !history.length && !doneRecord && plan.length === planTotal && !session.result().log.some((e) => e.ok && e.command.type !== 'thermal.add');
+  if (!preset || !chosen?.vary || chosen.id !== preset.id || !fresh) {
+    if (box.innerHTML) box.innerHTML = '';
+    box.hidden = true;
+    return;
+  }
+  const key = `${locale}|${chosen.id}|${JSON.stringify(presetVals)}`;
+  box.hidden = false;
+  if (box.dataset['k'] === key) return;
+  box.dataset['k'] = key;
+  const u = t();
+  const vals = { ...defaultValues(chosen), ...presetVals };
+  const changed = JSON.stringify(vals) !== JSON.stringify(defaultValues(chosen));
+  const controls = chosen.vary.controls
+    .map((c) => {
+      const label = `<span>${tr(c.label, locale)}</span>`;
+      const unit = c.kind === 'number' ? (locale === 'uk' ? c.unit : c.unit.replace('мл', 'mL').replace(/^г$/, 'g')) : '';
+      return c.kind === 'number'
+        ? `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${vals[c.id]}"/><span class="muted">${unit}</span></label>`
+        : `<label class="vary-item">${label}<select data-vary="${c.id}">${c.options.map((o) => `<option value="${o.id}"${o.id === vals[c.id] ? ' selected' : ''}>${tr(o.label, locale)}</option>`).join('')}</select></label>`;
+    })
+    .join('');
+  box.innerHTML = `<span class="vary-title">${u.varyTitle}</span>${controls}${changed ? `<button type="button" class="vary-reset" data-vary-reset="1" title="${u.varyReset}" aria-label="${u.varyReset}">↺</button>` : ''}`;
+}
+$('#vary').addEventListener('change', (e) => {
+  const el = (e.target as HTMLElement).closest<HTMLInputElement | HTMLSelectElement>('[data-vary]');
+  if (!el || !presetGiven?.vary) return;
+  const c = presetGiven.vary.controls.find((x) => x.id === el.dataset['vary']);
+  if (!c) return;
+  // A number is kept within the experiment's frame (and on its step).
+  const value = c.kind === 'number' ? Math.min(c.max, Math.max(c.min, Math.round(Number(el.value) / c.step) * c.step)) : el.value;
+  startPreset(presetGiven, { ...presetVals, [c.id]: Number.isFinite(value as number) || typeof value === 'string' ? value : c.value });
+});
+$('#vary').addEventListener('click', (e) => {
+  if (!(e.target as HTMLElement).closest('[data-vary-reset]') || !presetGiven) return;
+  startPreset(presetGiven);
+});
 /** A guided procedure under the scene: the step, what to do, one button — and at the end the table to look the result up in. */
 function renderGuide(): boolean {
   if (!preset?.guided) return false;
@@ -1586,6 +1636,7 @@ const shelfPic = (x: SubstanceItem): string =>
 
 function render() {
   const u = t();
+  renderVary();
   document.documentElement.lang = locale;
   document.title = u.title;
   $('#title').textContent = u.title;
@@ -2653,8 +2704,11 @@ function buildPresets() {
   }
 }
 
-function startPreset(given: Preset) {
-  presetGiven = given;
+function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen)) {
+  presetGiven = chosen;
+  presetVals = values;
+  // Built with the values chosen under the scene (its amounts, materials), within its own frame.
+  const given = withValues(chosen, values);
   // Led step by step: what goes in first, the operation, the rest — no "Start" (see guidedPlan).
   const p: Preset = { ...given, guided: true, plan: guidedPlan(given) };
   delete (p as { setup?: unknown }).setup;
@@ -3158,7 +3212,7 @@ $<HTMLSelectElement>('#scale').onchange = (e) => {
 function resetExperiment() {
   // Starting over: a ready-made experiment starts over as it was chosen — the steps (a fresh pot without
   // the lid, waiting for the ice to melt) changed params on the way.
-  if (preset && presetGiven && presetGiven.id === preset.id) return startPreset(presetGiven);
+  if (preset && presetGiven && presetGiven.id === preset.id) return startPreset(presetGiven, presetVals);
   if (preset) plan = [...(preset.plan ?? [])];
   planTotal = plan.length;
   prediction = null;

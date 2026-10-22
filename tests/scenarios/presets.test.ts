@@ -101,3 +101,32 @@ describe('growing crystals: the answer', () => {
     expect(a.correct).toBe('part');
   }, 60_000);
 });
+
+describe('ready-made experiments with values to change', () => {
+  const run = (p: (typeof PRESETS)[number]) => {
+    const first: ProtocolStep = { kind: 'operation', action: p.params.action, ...(p.params.target === undefined ? {} : { target: p.params.target }), ...(p.params.heater ? { heater: p.params.heater } : {}), ...(p.params.cooler ? { cooler: p.params.cooler } : {}), ...(p.params.supply ? { supply: p.params.supply } : {}), ...(p.params.duration === undefined ? {} : { duration: p.params.duration }) };
+    const out = runProtocol({ base: p.params, steps: [...(p.setup ?? []), first, ...(p.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
+    return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
+  };
+  // Every control at each end of its range (or each option), the others at their defaults.
+  const cases = PRESETS.filter((p) => p.vary).flatMap((p) =>
+    p.vary!.controls.flatMap((c) => (c.kind === 'number' ? [c.min, c.max] : c.options.map((o) => o.id)).map((x) => [`${p.id} ${c.id}=${x}`, p, { [c.id]: x }] as const)),
+  );
+  it.each(cases)('%s: still the same experiment, answered from its run', async (_n, p, v) => {
+    const { withValues } = await import('../../src/scenarios/index.js');
+    const q = withValues(p, v);
+    expect(labSetup(q.params).warnings, _n).toEqual([]);
+    const { out, answer } = run(q);
+    expect(out.find((o) => o.step.kind === 'operation')?.status?.kind, _n).toBe(q.expect);
+    for (const l of ['uk', 'en'] as const) expect(answer.text[l], `${_n} ${l}`).not.toMatch(/NaN|Infinity|undefined|—$/);
+    if (q.choices && !q.choiceTable) expect(q.choices.map((c) => c.id), _n).toContain(answer.correct);
+    if (process.env['SHOW_ANSWERS']) console.log(`[${_n}] ${answer.say.uk} (${answer.correct})`);
+  }, 60_000);
+
+  it('values outside the frame fall back to the defaults', async () => {
+    const { withValues, defaultValues } = await import('../../src/scenarios/index.js');
+    const p = PRESETS.find((x) => x.id === 'mix-hot-cold')!;
+    expect(withValues(p, { cold: 5000, tHot: 'boiling' }).params).toEqual(withValues(p, defaultValues(p)).params);
+  });
+});

@@ -56,7 +56,7 @@ function balance(next: BenchView, mass: number, draw: (v: BenchView) => void): M
 /** A spring with a load: it drops to its new length and bounces about it — period 2π√(m/k), a little damping. */
 function spring(prev: BenchView, next: BenchView, draw: (v: BenchView) => void): Motion {
   const m = next.weights * BENCH_WEIGHT.value;
-  const period = 2 * Math.PI * Math.sqrt(m / BENCH_SPRING_K.value);
+  const period = 2 * Math.PI * Math.sqrt(m / (next.stiffness ?? BENCH_SPRING_K.value));
   const length = new Channel(prev.springLength ?? next.springLength!, next.springLength!, { kind: 'damped', period, damping: 0.12 }, 0.0004);
   return {
     channels: [length],
