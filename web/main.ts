@@ -263,6 +263,16 @@ function temperature(id: string): number | undefined {
   return e && (isThermalBody(e) || isHeater(e)) ? e.state.temperature : undefined;
 }
 
+/** What the scene looked like at the end of each row of the protocol (a step, a measurement): to look at it again. */
+let snapshots = new Map<string, SceneView>();
+/** The row looked back at (its key), or null — the experiment as it is now. */
+let lookingAt: string | null = null;
+/** The row of the protocol whose end is on the scene now: a step just finished, a reading just taken. */
+function liveRowKey(): string | null {
+  if (running || instrumentBusy) return null;
+  if (showingWeighing() || showingMeasure()) return `m:${history.length}:${readingsOf(session.result().log).length - 1}`;
+  return finished ? `s:${history.length}` : null;
+}
 /** A look at the board planned for later (when a guided procedure is measured out). */
 let readTimer = 0;
 /** A new experiment: fresh setup, empty protocol. */
@@ -270,6 +280,8 @@ function newSession() {
   // The Professor turns from the board back to the table, ready (a look at the board still due from the last one is off).
   window.clearTimeout(readTimer);
   scene.read(false);
+  snapshots = new Map();
+  lookingAt = null;
   replaying = null;
   instrumentBusy = false;
   answerWhenSettled = false;
@@ -1520,7 +1532,7 @@ function renderGuide(): boolean {
     const btn = bench ? tr(bench.button, locale) : s.kind === 'fresh' ? `🔄 ${fresh}` : s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
     // Before the first step: the prediction, if the experiment asks for one.
     const q = k === 1 ? quizNow() : null;
-    setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1">${btn}</button></div>`);
+    setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1"${instrumentBusy ? ' disabled' : ''}>${btn}</button></div>`);
     return true;
   }
   // Measured out: the answer to the question (and the verdict on the prediction), here under the scene.
@@ -1670,7 +1682,9 @@ function showOnlyWhatMatters() {
     const el = document.querySelector<HTMLElement>(sel);
     if (el && el.hidden !== h) el.hidden = h;
   };
-  hide('.controls', bench);
+  // Answered, the ready-made experiment is over: the knob and the readouts have nothing more to do.
+  const over = !!preset && !plan.length && !!presetAnswer && presetAnswer !== 'computing' && !running;
+  hide('.controls', bench || over);
   hide('.kitchen-head .weigh', bench);
   hide('.kitchen-head .speed', !timed);
   hide('#chart-box', points.sample.length < 2);
@@ -1797,16 +1811,22 @@ function render() {
     knob.element.setAttribute('aria-label', u.power);
   }
 
+  // Something goes on again: back from looking at an earlier row.
+  if (running) lookingAt = null;
   renderProtocol();
-  const view = sceneView();
+  const live = sceneView();
+  const row = liveRowKey();
+  if (row) snapshots.set(row, live);
+  const view = (lookingAt && snapshots.get(lookingAt)) || live;
   scene.render(view);
+  renderLookBack();
   // A new line of the Professor: he burbles it (the same line again stays quiet).
   // Lines that change several times in a moment (the board filling up): only the last one is spoken.
   if (view.professor.says !== lastSaid) {
     hush();
     window.clearTimeout(sayTimer);
     const line = view.professor.says;
-    if (line && !scene.reading) sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), 140);
+    if (line && !scene.reading && !lookingAt) sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), 140);
   }
   lastSaid = view.professor.says;
   if (!renderGuide()) {
@@ -1924,45 +1944,47 @@ function renderProtocol() {
   const outcome = (st: LabStatus, r: ExperimentResult<LabCommand>, p: LabParams) =>
     st.kind === 'reached' && OPERATIONS[p.action].duration ? `✓ ${D(st.at)}` : st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
   // Weighings before the step ran, and after it (in the pause before the next one).
-  const weighed = (log: ExperimentResult<LabCommand>['log'], start: number, before: boolean) =>
+  const weighed = (log: ExperimentResult<LabCommand>['log'], start: number, before: boolean, step: number) =>
     readingsOf(log)
+      .map((w, i) => ({ ...w, look: lookAttr(`m:${step}:${i}`) }))
       .filter((w) => (w.time <= start + 1e-9) === before)
-      .map(({ command: c, record: r }) => {
+      .map(({ command: c, record: r, look }) => {
         const text =
           c.type === 'lab.weigh' ? u.weigh.row(formatReading(c.scale, r.value, locale))
           : c.type === 'lab.read-level' ? u.measure.rowLevel(formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale))
           : c.type === 'lab.hang' ? u.measure.rowHang(formatMeasured('force', r.value, 0.1, locale), c.into)
           : '';
-        return `<span class="weighed">${text}</span>`;
+        return `<span class="weighed"${look}>${text}</span>`;
       })
       .join('');
-  const rows = history.map((h) => {
+  const rows = history.map((h, i) => {
     const ok = h.status.kind === 'reached' || h.status.kind === 'will-reach';
     const t0 = h.result.initial.time;
     const ran = h.result.final.time > t0;
-    return `<li class="${ok ? 'done' : 'failed'}"><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}${weighed(h.result.log, t0, true)}<span class="outcome">${outcome(h.status, h.result, h.params)}</span>${ran ? weighed(h.result.log, t0, false) : ''}</li>`;
+    return `<li class="${ok ? 'done' : 'failed'}"${lookAttr(`s:${i}`)}><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}${weighed(h.result.log, t0, true, i)}<span class="outcome">${outcome(h.status, h.result, h.params)}</span>${ran ? weighed(h.result.log, t0, false, i) : ''}</li>`;
   });
   const curLog = session.result().log;
   // A measuring procedure on the bench: the protocol is its measurements, each with what it showed.
   if (preset?.bench) {
-    const done = curLog.filter((e) => e.ok && readingsOf([e]).length).map((e) => {
+    const done = curLog.filter((e) => e.ok && readingsOf([e]).length).map((e, i) => {
       const c = e.command as LabCommand;
       const r = readingsOf([e])[0]!.record;
       const label = 'type' in c && c.type in BENCH_TEXT ? tr(BENCH_TEXT[c.type as keyof typeof BENCH_TEXT](c as never).plan, locale) : c.type === 'lab.hang' ? (c.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : u.measure.level;
       const shown = r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale);
-      return `<li class="done"><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
+      return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
     $('#protocol-title').textContent = u.protocolTitle;
     $('#protocol').innerHTML = [...done, ...next].join('');
-    $('#protocol-hint').textContent = '';
+    $('#protocol-hint').textContent = snapshots.size ? u.lookBackHint : '';
     // (Recording a bench procedure is not supported yet.)
     const save = document.querySelector<HTMLButtonElement>('.rec-save-btn');
     if (save) save.disabled = true;
     return;
   }
   const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
-  rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false)}${adds(pendingAdds)}</li>`);
+  const cur = history.length;
+  rows.push(`<li class="current"${finished ? lookAttr(`s:${cur}`) : ''}><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`);
   for (const s of plan) {
     const label =
       s.kind === 'add' ? u.added(tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' }))
@@ -1976,11 +1998,40 @@ function renderProtocol() {
   }
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
-  $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : finished ? u.protocolNext : u.protocolHint;
+  $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : snapshots.size && !plan.length ? u.lookBackHint : finished ? u.protocolNext : u.protocolHint;
   // The save button follows the experiment; the list is rebuilt only on its own events.
   const saveBtn = document.querySelector<HTMLButtonElement>('.rec-save-btn');
   if (saveBtn) saveBtn.disabled = !history.length && stepElapsed() <= 0 && !doneRecord;
 }
+
+/** A row of the protocol that can be looked back at: its key, and marked when it is on the scene now. */
+function lookAttr(key: string): string {
+  return snapshots.has(key) ? ` data-look="${key}"${lookingAt === key ? ' data-looking="1"' : ''}` : '';
+}
+/** Over the scene while an earlier row is looked at: which one, and the way back. */
+function renderLookBack() {
+  const bar = $('#look-back');
+  const row = lookingAt ? document.querySelector<HTMLElement>(`#protocol [data-look="${lookingAt}"]`) : null;
+  bar.hidden = !row;
+  if (!row) return;
+  const what = (row.querySelector('.what')?.textContent ?? row.textContent ?? '').trim();
+  setHtml('#look-back', `<span>👁 ${t().lookBack(what)}</span><button type="button" data-look-return="1">${t().lookBackReturn}</button>`);
+}
+$('#protocol').addEventListener('click', (e) => {
+  const row = (e.target as HTMLElement).closest<HTMLElement>('[data-look]');
+  if (!row || running) return;
+  // The same row again: back to the experiment as it is now.
+  const key = row.dataset['look']!;
+  lookingAt = lookingAt === key ? null : key;
+  // The table back in front: it is the instruments one comes to look at.
+  if (lookingAt) scene.read(false);
+  render();
+});
+$('#look-back').addEventListener('click', (e) => {
+  if (!(e.target as HTMLElement).closest('[data-look-return]')) return;
+  lookingAt = null;
+  render();
+});
 
 // ---------- shelf (left panel) ----------
 /** Which group is open in each shelf section (substances, devices, vessels, instruments) — by its label. */
@@ -2689,6 +2740,9 @@ function planLabel(steps: readonly ProtocolStep[]): string {
 
 /** Do the next plan steps: additions at once, then the operation runs as a new protocol step. */
 function nextPlanStep() {
+  // An instrument still on its way to its reading: the next step waits (as one waits for a spring to settle).
+  if (instrumentBusy) return;
+  lookingAt = null;
   while (plan.length) {
     const s = plan.shift()!;
     if (s.kind === 'add') {
@@ -3331,7 +3385,7 @@ scene.element.addEventListener('instrument-settled', () => {
 $('#knob-wrap').append(knob.element);
 $('#chart').append(chart.element);
 $('#scene').append(scene.element);
-$('#start').onclick = () => toggleStart();
+$('#start').onclick = () => ((lookingAt = null), toggleStart());
 function toggleStart() {
   // A finished step: the next one continues with the same contents (the user may have changed nothing).
   if (finished) {

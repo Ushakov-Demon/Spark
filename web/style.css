@@ -140,6 +140,14 @@ button.wide { width: 100%; }
 .protocol li.current { background: var(--bg); outline: 1px solid var(--accent); }
 .protocol li.current::before { background: var(--accent); color: var(--accent-text); }
 .protocol .what { font-weight: 600; }
+/* A row done can be looked back at: its end on the scene again. */
+.protocol [data-look] { cursor: pointer; }
+.protocol li[data-look]:hover, .protocol .weighed[data-look]:hover { background: var(--bg); }
+.protocol .weighed[data-look] { border-radius: 6px; padding: 0 4px; margin-left: -4px; }
+.protocol .weighed[data-look]:hover { text-decoration: underline dotted; }
+.protocol [data-looking] { outline: 2px solid var(--accent); background: var(--bg); }
+.look-back { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; padding: 6px 10px; border-radius: 10px; background: var(--warn-bg); border-left: 4px solid var(--accent); font-weight: 600; font-size: 0.9rem; }
+.look-back button { min-height: 32px; padding: 4px 12px; }
 .protocol .where, .protocol .added, .protocol .outcome { color: var(--muted); font-size: 0.82rem; }
 .protocol .outcome { color: var(--text); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }

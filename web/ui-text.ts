@@ -248,6 +248,10 @@ export interface UiText {
   protocolTitle: string;
   protocolHint: string;
   protocolNext: string;
+  /** Looking back at the end of a row of the protocol: what it was, the way back. */
+  lookBack(what: string): string;
+  lookBackReturn: string;
+  lookBackHint: string;
   stepRunning(elapsed: string): string;
   stepReached(time: string): string;
   stepStopped(time: string): string;
@@ -521,6 +525,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     offerAfterImpossible: 'Щоб досягти мети, можна продовжити з іншими умовами:',
     protocolTitle: 'Протокол досліду',
     protocolHint: 'Дослід можна продовжити: обери ліворуч іншу дію або прилад — посуд із тим самим вмістом переставлять, і почнеться наступний крок.',
+    lookBack: (what) => `Так було після кроку «${what}»`,
+    lookBackReturn: '↩ До досліду',
+    lookBackHint: 'Торкнися виконаного кроку, щоб повернутися до його кінця: прилади й дошка — як тоді.',
     protocolNext: 'Крок завершено. Що далі? Обери дію чи прилад ліворуч або досип щось — і натисни «Продовжити».',
     stepRunning: (e) => `іде ${e}`,
     stepReached: (t) => `✓ за ${t}`,
@@ -793,6 +800,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     offerAfterImpossible: 'To reach the goal, continue with other conditions:',
     protocolTitle: 'Experiment protocol',
     protocolHint: 'The experiment can go on: pick another action or device on the left — the vessel moves with its contents and the next step begins.',
+    lookBack: (what) => `As it was after “${what}”`,
+    lookBackReturn: '↩ Back to the experiment',
+    lookBackHint: 'Tap a step done to go back to its end: the instruments and the board as they were.',
     protocolNext: 'Step done. What next? Pick an action or a device on the left, or add something — then press “Continue”.',
     stepRunning: (e) => `running ${e}`,
     stepReached: (t) => `✓ in ${t}`,
