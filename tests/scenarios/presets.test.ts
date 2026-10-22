@@ -123,6 +123,15 @@ describe('ready-made experiments with values to change', () => {
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
   };
+  it('the floating ice: mass and volume are told apart, with the numbers of the run', () => {
+    const { answer } = run(PRESETS.find((p) => p.id === 'ice-level')!);
+    const text = answer.text.uk;
+    // What it pushed aside (mL) is the water of the ice's mass (g); the cube itself takes more room.
+    expect(text).toMatch(/витіснив [\d,]+ мл води — це ≈ [\d,]+ г: маса витісненої води дорівнює масі льоду/);
+    expect(text).toMatch(/займає більше — ≈ [\d,]+ мл/);
+    expect(text).not.toContain('скільки важить сам');
+  }, 60_000);
+
   // Every control at each end of its range (or each option), the others at their defaults.
   const cases = PRESETS.filter((p) => p.vary).flatMap((p) =>
     p.vary!.controls.flatMap((c) => (c.kind === 'number' ? [c.min, c.max] : c.options.map((o) => o.id)).map((x) => [`${p.id} ${c.id}=${x}`, p, { [c.id]: x }] as const)),

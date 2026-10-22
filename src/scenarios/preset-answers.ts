@@ -139,12 +139,26 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const div = a?.inputs?.['division'] ?? 1e-6;
     const d = a && b ? b.value! - a.value! : 0;
     const under = Math.round((ICE / WATER) * 100);
+    // What the cube pushed aside (by the marks), the mass of that water — the ice's own — and the room the ice takes.
+    const shown = w && a ? a.value! - w.value! : 0;
+    const iceMass = shown * WATER;
+    const iceVolume = iceMass / ICE;
+    // As exact as the marks it comes from (a cylinder read to its division): «≈ 10 г», not «9,97 г».
+    const gr = (kg: number, l: Locale) => `≈ ${sig(kg * 1000, 2, l)} ${l === 'uk' ? 'г' : 'g'}`;
     return {
       say: both((l) => (l === 'uk' ? 'Рівень не зрушив ні на поділку!' : 'The level did not move by a mark!')),
       text: both((l) =>
         l === 'uk'
-          ? `${w ? `Без льоду вода стояла на позначці ${mL(w.value!, l)}. ` : ''}З кубиком — ${a ? mL(a.value!, l) : '—'}: плаваючий лід витіснив стільки води, скільки важить сам, — під водою була ≈ ${under} % кубика (закон Архімеда). Коли лід розтанув — ${b ? mL(b.value!, l) : '—'}. Розтанувши, лід став водою тієї самої маси — і зайняв рівно те місце, яке витісняв. Тому рівень не змінюється; так само не підіймає рівень океану морський лід, що тане, — на відміну від льодовиків на суші.`
-          : `${w ? `Without ice the water stood at ${mL(w.value!, l)}. ` : ''}With the cube — ${a ? mL(a.value!, l) : '—'}: floating ice pushed aside its own weight of water — ≈ ${under} % of the cube was under it (Archimedes). Once the ice melted — ${b ? mL(b.value!, l) : '—'}. Melted, the ice became water of the same mass — and took exactly the room it had pushed aside. So the level stays; melting sea ice does not raise the ocean either — unlike glaciers on land.`,
+          ? `${w ? `Без льоду вода стояла на позначці ${mL(w.value!, l)}. ` : ''}З кубиком — ${a ? mL(a.value!, l) : '—'}. ${
+              shown
+                ? `Плаваючий лід витіснив ${mL(shown, l)} води — це ${gr(iceMass, l)}: маса витісненої води дорівнює масі льоду (вага витісненої води врівноважує вагу кубика — закон Архімеда). Сам кубик займає більше — ≈ ${mL(iceVolume, l)}, бо густина льоду менша за густину води; під водою була ≈ ${under} % його об’єму.`
+                : `Плаваючий лід витісняє воду, маса якої дорівнює масі льоду (закон Архімеда); під водою ≈ ${under} % об’єму кубика, бо густина льоду менша за густину води.`
+            } Коли лід розтанув — ${b ? mL(b.value!, l) : '—'}. Маса під час танення не змінюється: ${shown ? `${gr(iceMass, l)} льоду стали ${gr(iceMass, l)} води, а ${gr(iceMass, l)} води займають якраз ${mL(shown, l)}` : 'вода з льоду має ту саму масу, що й витіснена вода, а отже — і той самий об’єм'} — рівно стільки, скільки витісняв кубик. Тому рівень не змінюється; так само не підіймає рівень океану морський лід, що тане, — на відміну від льодовиків на суші.`
+          : `${w ? `Without ice the water stood at ${mL(w.value!, l)}. ` : ''}With the cube — ${a ? mL(a.value!, l) : '—'}. ${
+              shown
+                ? `The floating ice pushed aside ${mL(shown, l)} of water — that is ${gr(iceMass, l)}: the displaced water has the mass of the ice (its weight balances the cube's — Archimedes). The cube itself takes more room — ≈ ${mL(iceVolume, l)}, as ice is less dense than water; ≈ ${under} % of its volume was under water.`
+                : `Floating ice pushes aside water of its own mass (Archimedes); ≈ ${under} % of the cube's volume is under water, as ice is less dense than water.`
+            } Once the ice melted — ${b ? mL(b.value!, l) : '—'}. Melting does not change the mass: ${shown ? `${gr(iceMass, l)} of ice became ${gr(iceMass, l)} of water, and ${gr(iceMass, l)} of water take exactly ${mL(shown, l)}` : 'the meltwater has the mass of the displaced water, and so its volume'} — just as much as the cube pushed aside. So the level stays; melting sea ice does not raise the ocean either — unlike glaciers on land.`,
       ),
       ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
     };
