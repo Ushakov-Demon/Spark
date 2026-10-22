@@ -544,7 +544,7 @@ export const PRESETS: readonly Preset[] = [
     grade: 8,
     topic: THERMAL,
     title: { uk: 'За скільки закипить літр води?', en: 'How long does a litre of water take to boil?' },
-    question: { uk: 'Спершу зроби прогноз праворуч, у «Мій прогноз»: скільки хвилин знадобиться електроплиті на 2 кВт? Потім порівняй із дослідом і розрахунком «на папері».', en: 'Predict first: how many minutes will a 2 kW hob need? Then compare with the experiment and the paper calculation.' },
+    question: { uk: 'Скільки хвилин знадобиться електроплиті на 2 кВт, щоб закип’ятити літр води? Порівняй дослід із розрахунком «на папері».', en: 'How many minutes will a 2 kW hob need to bring a litre of water to the boil? Compare the experiment with the paper calculation.' },
     params: { ...room, ...pot, action: 'boil', substance: 'water', startTemp: 20, heater: hotplate },
     formulas: ['thermal.heat-for-temperature-change'],
     predict: true,

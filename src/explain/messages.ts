@@ -4,6 +4,8 @@ import type { Locale } from '../knowledge/i18n.js';
 export interface ReportMessages {
   level(name: string, audience: string): string;
   whatHappened: string;
+  /** A measuring procedure: what was measured and worked out. */
+  measured: string;
   yourActions: string;
   failed(error: string): string;
   lawsUsed: string;
@@ -43,6 +45,7 @@ export const REPORT_MESSAGES: Readonly<Record<Locale, ReportMessages>> = {
   uk: {
     level: (name, audience) => `Рівень пояснення: ${name} (${audience}).`,
     whatHappened: 'Що відбулося',
+    measured: 'Що виміряли й обчислили',
     yourActions: 'Ваші дії',
     failed: (e) => `не вдалося: ${e}`,
     lawsUsed: 'Які закони фізики працювали',
@@ -80,6 +83,7 @@ export const REPORT_MESSAGES: Readonly<Record<Locale, ReportMessages>> = {
   en: {
     level: (name, audience) => `Explanation level: ${name} (${audience}).`,
     whatHappened: 'What happened',
+    measured: 'What was measured and worked out',
     yourActions: 'Your actions',
     failed: (e) => `failed: ${e}`,
     lawsUsed: 'Laws of physics at work',

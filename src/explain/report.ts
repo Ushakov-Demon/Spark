@@ -115,11 +115,41 @@ export function buildReport<C extends Command>(input: ReportInput<C>): Block[] {
   return out;
 }
 
+/**
+ * The explanation of a measuring procedure (a spring and weights, a lever balance, a block pulled along a
+ * board): nothing ran in time, so instead of a timeline it lists what was measured and how it was worked
+ * out (the board's lines), then the laws behind the experiment's formulas — the same law sections as above.
+ */
+export function buildMeasuredReport(input: {
+  readonly title: string;
+  readonly level: ExplainContext['level'];
+  readonly locale: ExplainContext['locale'];
+  readonly country?: string;
+  readonly summary?: readonly Block[];
+  readonly measured: readonly string[];
+  readonly formulas: readonly FormulaSpec[];
+  readonly laws: readonly LawSpec[];
+}): Block[] {
+  const ctx: ExplainContext = { level: input.level, locale: input.locale };
+  const m = REPORT_MESSAGES[input.locale];
+  const t = (x: Parameters<typeof tr>[0]) => tr(x, input.locale);
+  const out: Block[] = [h(1, input.title), ...(input.summary ?? [])];
+  out.push(p(m.level(t(LEVEL_INFO[input.level].name), t(LEVEL_INFO[input.level].audience))));
+  if (input.measured.length) out.push(h(2, m.measured), list([...input.measured]));
+  const laws = input.laws.filter((l) => input.formulas.some((f) => f.law === l.id));
+  if (laws.length) {
+    out.push(h(2, m.lawsUsed));
+    if (!atLeast(input.level, 'school')) out.push(p(m.lawsIntroNovice));
+    for (const law of laws) out.push(...explainLaw(law, input.formulas.filter((f) => f.law === law.id), ctx, undefined, input.country));
+  }
+  return out;
+}
+
 function explainLaw<C extends Command>(
   law: LawSpec,
   used: readonly FormulaSpec[],
   ctx: ExplainContext,
-  result: ExperimentResult<C>,
+  result: ExperimentResult<C> | undefined,
   country: string | undefined,
 ): Block[] {
   const { level, locale } = ctx;
@@ -168,8 +198,8 @@ function explainLaw<C extends Command>(
     out.push(p(t(textFor(f.explanation, level))));
     if (country) out.push(...curriculumBlock(f, country, ctx));
     if (atLeast(level, 'expert')) {
-      const u = result.usage.get(f.id);
-      if (u) out.push(p(m.appliedTimes(u.count, [...u.entities].map((id) => entityLabel(result.final, id, locale)).join(', '))));
+      const u = result?.usage.get(f.id);
+      if (u && result) out.push(p(m.appliedTimes(u.count, [...u.entities].map((id) => entityLabel(result.final, id, locale)).join(', '))));
     }
   }
   return out;

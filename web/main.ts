@@ -18,7 +18,7 @@ import {
   ELECTRODE_MATERIALS,
   type ElectrodeMaterial,
 } from '../src/equipment/index.js';
-import { buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
+import { buildMeasuredReport, buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
@@ -39,6 +39,7 @@ import {
   stepCommand,
   OPERATIONS,
   BENCH_TEXT,
+  BENCH_SETUP,
   defaultValues,
   withValues,
   type PresetValues,
@@ -1634,6 +1635,32 @@ const shelfPic = (x: SubstanceItem): string =>
         ? ballSvg(BODY_COLOR[x.id] ?? '#9aa1a8')
         : blockSvg(BODY_COLOR[x.id] ?? '#9aa1a8', formulaOf(x));
 
+/**
+ * A part of the page is shown only when it has something to show: no chart without a curve, no readouts of
+ * the vessel's temperature or the "predict the minutes" card when nothing runs in time (a bench of springs
+ * and weights), no "add during the experiment" on the bench, no "explain" before there is anything to explain.
+ */
+function showOnlyWhatMatters() {
+  const bench = !!preset?.bench;
+  // Does anything in this experiment run in time (heating, waiting, a current)?
+  const timed = !preset?.guided || [...(presetGiven?.plan ?? []), ...plan].some((s) => s.kind === 'operation') || history.length > 0;
+  const hide = (sel: string, h: boolean) => {
+    const el = document.querySelector<HTMLElement>(sel);
+    if (el && el.hidden !== h) el.hidden = h;
+  };
+  hide('.controls', bench);
+  hide('.kitchen-head .weigh', bench);
+  hide('.kitchen-head .speed', !timed);
+  hide('#chart-box', points.sample.length < 2);
+  hide('#energy', bench);
+  // The prediction / goal card is put aside for now (it confused more than it helped).
+  document.querySelector('#expect')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', true);
+  document.querySelector('#add')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', bench);
+  const somethingToExplain = stepsSoFar().some((x) => x.result.final.time > x.result.initial.time) || allReadings().length > 0;
+  // (Not while an instrument is still on its way to its reading: that reading belongs in the explanation.)
+  document.querySelector('#explain')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', !somethingToExplain || instrumentBusy);
+}
+
 function render() {
   const u = t();
   renderVary();
@@ -1644,13 +1671,16 @@ function render() {
   $('#lbl-language').textContent = u.language;
   $('#lbl-level').textContent = u.level;
   $('#setup-title').textContent = u.setup;
-  $('#exp-title').textContent = u.experiment;
+  // A ready-made experiment is named: «2. Дослід: Як розтягується пружина?»
+  $('#exp-title').textContent = preset ? `${u.experiment}: ${tr(preset.title, locale)}` : u.experiment;
   $('#explain').textContent = u.explain;
   $('#explain-hint').textContent = u.explainHint;
   $('#footer').textContent = u.footer;
   renderSide();
 
-  $('#setup-line').textContent = labSubject(params, locale, session.state);
+  // On the bench the vessel is not what the experiment is about: what stands on the table is named instead.
+  $('#setup-line').textContent = preset?.bench && preset.bench !== 'balance' ? tr(BENCH_SETUP[preset.bench], locale) : preset?.bench === 'balance' ? `${tr(BENCH_SETUP.balance, locale)}; ${labSubject(params, locale, session.state)}` : labSubject(params, locale, session.state);
+  showOnlyWhatMatters();
   const sub = substance();
   const b = sample();
   const C = (k: number | undefined) => (k === undefined ? '—' : formatQuantity(k, 'K', { locale, level: 'school' }));
@@ -1892,6 +1922,24 @@ function renderProtocol() {
     return `<li class="${ok ? 'done' : 'failed'}"><span class="what">${what(h.params)}</span><span class="where">${place(h.params)}</span>${adds(h.adds)}${weighed(h.result.log, t0, true)}<span class="outcome">${outcome(h.status, h.result, h.params)}</span>${ran ? weighed(h.result.log, t0, false) : ''}</li>`;
   });
   const curLog = session.result().log;
+  // A measuring procedure on the bench: the protocol is its measurements, each with what it showed.
+  if (preset?.bench) {
+    const done = curLog.filter((e) => e.ok && readingsOf([e]).length).map((e) => {
+      const c = e.command as LabCommand;
+      const r = readingsOf([e])[0]!.record;
+      const label = 'type' in c && c.type in BENCH_TEXT ? tr(BENCH_TEXT[c.type as keyof typeof BENCH_TEXT](c as never).plan, locale) : c.type === 'lab.hang' ? (c.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : u.measure.level;
+      const shown = r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale);
+      return `<li class="done"><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
+    });
+    const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
+    $('#protocol-title').textContent = u.protocolTitle;
+    $('#protocol').innerHTML = [...done, ...next].join('');
+    $('#protocol-hint').textContent = '';
+    // (Recording a bench procedure is not supported yet.)
+    const save = document.querySelector<HTMLButtonElement>('.rec-save-btn');
+    if (save) save.disabled = true;
+    return;
+  }
   const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
   rows.push(`<li class="current"><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false)}${adds(pendingAdds)}</li>`);
   for (const s of plan) {
@@ -2543,7 +2591,27 @@ function explain() {
   const steps = stepsSoFar();
   const ran = steps.filter((x) => x.result.final.time > x.result.initial.time);
   const last = ran[ran.length - 1];
-  if (!last) return;
+  // Nothing ran in time — a measuring procedure: what was measured, and the laws behind it.
+  if (!last) {
+    if (!allReadings().length) return;
+    const formulas = (preset?.formulas ?? []).map((id) => LAB_KNOWLEDGE.formulas.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f);
+    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: tr(presetAnswer.text, locale) } as Block] : [];
+    $('#report').innerHTML = renderHtml(
+      buildMeasuredReport({
+        title: locale === 'uk' ? 'Що виміряли і чому так вийшло' : 'What was measured and why it came out so',
+        level,
+        locale,
+        country: 'UA',
+        summary: answer,
+        measured: boardNow().map((l) => `${l.title}: ${l.formula}${l.numbers ? ` ${l.numbers}` : ''}`),
+        formulas,
+        laws: LAB_KNOWLEDGE.laws,
+      }),
+    );
+    render();
+    $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   const result = last.result;
   if (!headline) setHeadline();
   const uk = locale === 'uk';
@@ -2720,7 +2788,8 @@ function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen
   if (params.heater) lastHeater = params.heater;
   if (params.cooler && !COOLERS[params.cooler.id].spec.hot) lastCooler = params.cooler;
   if (params.supply) lastSupply = params.supply;
-  expectKind = p.predict ? 'prediction' : 'none';
+  // (The prediction / goal card is put aside for now: nothing is expected there.)
+  expectKind = 'none';
   speed = OPERATIONS[p.params.action].speed;
   $<HTMLSelectElement>('#speed').value = String(speed);
   $<HTMLDialogElement>('#presets').close();
