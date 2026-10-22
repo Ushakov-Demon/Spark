@@ -1,3 +1,4 @@
+import type { Subject } from '../src/knowledge/types.js';
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
 import { bodyMass, createThermalSolver, energySplit, isBurner, isHeater, isThermalBody, liquidConcentration, solubilityAt, solubilityPer100, soluteBehaviour, solutionDensity, THERMAL_COMMANDS, type ThermalBody } from '../src/domains/thermal/index.js';
@@ -85,6 +86,8 @@ import {
   freshParams,
   stepParams,
   presetPrograms,
+  presetSubjects,
+  presetGradeIn,
   type Preset,
   type ProtocolStep,
   LAB_KNOWLEDGE,
@@ -1670,7 +1673,6 @@ function render() {
   $('#subtitle').textContent = u.subtitle;
   $('#lbl-language').textContent = u.language;
   $('#lbl-level').textContent = u.level;
-  $('#setup-title').textContent = u.setup;
   // A ready-made experiment is named: «2. Дослід: Як розтягується пружина?»
   $('#exp-title').textContent = preset ? `${u.experiment}: ${tr(preset.title, locale)}` : u.experiment;
   $('#explain').textContent = u.explain;
@@ -1979,7 +1981,6 @@ function buildShelf() {
   const shelf = $('#shelf');
   const scroll = shelf.scrollTop;
   root.innerHTML = '';
-  $<HTMLInputElement>('#search').placeholder = locale === 'uk' ? 'Пошук: речовина, посуд, прилад…' : 'Search: substance, vessel, device…';
   const rebuild = () => {
     // Another substance or vessel: a new, free experiment (a ready-made one's plan no longer fits).
     preset = null;
@@ -2565,7 +2566,7 @@ function buildHeader() {
     buildShelf();
     buildExpect();
     buildAdd();
-    buildPresets();
+    buildShelfTabs();
     renderRecords();
     render();
     if (refTarget) openRef(refTarget);
@@ -2726,17 +2727,67 @@ function nextPlanStep() {
 
 // ---------- ready-made experiments ----------
 const escAttr = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-let presetGrade: number | null = PRESET_GRADES[0] ?? null;
+/** Physics, chemistry…: the ready-made experiments by subject, then by grade (both remembered). */
+let presetSubject: Subject = store.get('subject') === 'chemistry' ? 'chemistry' : 'physics';
+const gradeStored = store.get('grade');
+let presetGrade: number | null = gradeStored === 'all' ? null : gradeStored ? Number(gradeStored) : (PRESET_GRADES[0] ?? null);
+/** The left panel shows the free sandbox or the ready-made experiments (remembered). */
+let shelfTab: 'sandbox' | 'experiments' = store.get('shelfTab') === 'sandbox' ? 'sandbox' : 'experiments';
+function buildShelfTabs() {
+  const u = t();
+  const tabs = $('#shelf-tabs');
+  tabs.innerHTML = '';
+  for (const id of ['experiments', 'sandbox'] as const) {
+    const b = el('button', { type: 'button', className: `shelf-tab${id === shelfTab ? ' selected' : ''}`, role: 'tab' }, u.shelfTabs[id]);
+    b.setAttribute('aria-selected', String(id === shelfTab));
+    b.onclick = () => {
+      shelfTab = id;
+      store.set('shelfTab', id);
+      buildShelfTabs();
+    };
+    tabs.append(b);
+  }
+  $('#shelf-jump').textContent = `${u.shelfTabs.experiments} ↓`;
+  $('#setup').hidden = shelfTab !== 'sandbox';
+  $('#presets').hidden = shelfTab !== 'experiments';
+  $<HTMLInputElement>('#search').placeholder =
+    shelfTab === 'sandbox' ? (locale === 'uk' ? 'Пошук: речовина, посуд, прилад…' : 'Search: substance, vessel, device…') : locale === 'uk' ? 'Пошук: дослід, тема…' : 'Search: experiment, topic…';
+  if (shelfTab === 'experiments') buildPresets();
+}
+// On a phone the panel stands below the scene: a button in the header goes down to the experiments.
+$('#shelf-jump').onclick = () => {
+  shelfTab = 'experiments';
+  store.set('shelfTab', shelfTab);
+  if (store.get('shelf') === 'folded') store.set('shelf', 'open'), renderSide();
+  buildShelfTabs();
+  $('#shelf').scrollIntoView({ behavior: 'smooth' });
+};
 function buildPresets() {
   const u = t();
-  $('#presets-open').innerHTML = `${icon('beaker')}<span>${u.presetsButton}</span>`;
-  $('#presets-title').textContent = u.presetsTitle;
   const tabs = $('#presets-tabs');
   tabs.innerHTML = '';
-  for (const g of PRESET_GRADES) {
+  // A search looks through all of them; otherwise a subject, then a grade (or those for everyone).
+  tabs.hidden = !!query;
+  const inSubject = PRESETS.filter((p) => presetSubjects(p).includes(presetSubject));
+  const gradeOf = (p: Preset) => presetGradeIn(p, presetSubject);
+  const grades = [...new Set(inSubject.map(gradeOf))].sort((a, b) => (a ?? 99) - (b ?? 99));
+  if (!grades.includes(presetGrade)) presetGrade = grades[0] ?? null;
+  const subjects = el('div', { className: 'subject-tabs' });
+  for (const sub of ['physics', 'chemistry'] as const) {
+    const b = el('button', { type: 'button', className: `subject-tab${sub === presetSubject ? ' selected' : ''}` }, u.subjects[sub]);
+    b.onclick = () => {
+      presetSubject = sub;
+      store.set('subject', sub);
+      buildPresets();
+    };
+    subjects.append(b);
+  }
+  tabs.append(subjects);
+  for (const g of grades) {
     const b = el('button', { type: 'button', className: `chip${g === presetGrade ? ' selected' : ''}` }, g === null ? u.forEveryone : u.grade(g));
     b.onclick = () => {
       presetGrade = g;
+      store.set('grade', g === null ? 'all' : String(g));
       buildPresets();
     };
     tabs.append(b);
@@ -2744,10 +2795,14 @@ function buildPresets() {
   const list = $('#presets-list');
   list.innerHTML = '';
   const formulas = new Map(LAB_KNOWLEDGE.formulas.map((f) => [f.id, f]));
+  const found = (p: Preset) => [p.title, p.question, p.topic].some((x) => tr(x, locale).toLowerCase().includes(query));
+  const shown = query ? PRESETS.filter(found) : inSubject.filter((x) => gradeOf(x) === presetGrade);
+  if (!shown.length) list.append(el('p', { className: 'muted small' }, u.presetsNone));
   let topic = '';
-  for (const p of PRESETS.filter((x) => x.grade === presetGrade)) {
-    if (tr(p.topic, locale) !== topic) {
-      topic = tr(p.topic, locale);
+  for (const p of shown) {
+    const heading = query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : tr(p.topic, locale);
+    if (heading !== topic) {
+      topic = heading;
       list.append(el('h3', { className: 'presets-topic' }, topic));
     }
     // Where it is in the programme: the formulas' curriculum quotes (newest programme first).
@@ -2762,10 +2817,10 @@ function buildPresets() {
         return `<span class="program-chip" title="${escAttr(hint)}" data-program="${x.program}">${label}</span>${x.topic ? `<span class="program-topic muted small">${escAttr(x.topic)}${x.textbook ? ` · ${escAttr(x.textbook.at)}` : ''}</span>` : ''}`;
       })
       .join('');
-    const card = el('article', { className: 'preset' });
-    card.innerHTML = `<div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic big')}</div>
-      <div><h4>${tr(p.title, locale)}</h4><p>${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small">${u.inProgramme} (${u.grade(p.grade)}): «${quotes.join(' ')}»</p>` : ''}${programs ? `<p class="programs"><span class="muted small">${u.programs}:</span> ${programs}</p>` : ''}</div>`;
-    const go = el('button', { type: 'button', className: 'primary' }, u.presetStart);
+    const card = el('article', { className: `preset${preset && presetGiven?.id === p.id ? ' current' : ''}` });
+    card.innerHTML = `<div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div>
+      <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(tr(p.question, locale))}">${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${programs ? `<p class="programs"><span class="muted small">${u.programs}:</span> ${programs}</p>` : ''}</div>`;
+    const go = el('button', { type: 'button', className: 'primary preset-go' }, u.presetStart);
     go.onclick = () => startPreset(p);
     card.append(go);
     list.append(card);
@@ -2792,13 +2847,15 @@ function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen
   expectKind = 'none';
   speed = OPERATIONS[p.params.action].speed;
   $<HTMLSelectElement>('#speed').value = String(speed);
-  $<HTMLDialogElement>('#presets').close();
   // Chosen from the library page: back to the lab.
   if (libraryRoute(location.hash)) location.hash = '';
   buildShelf();
+  buildPresets();
   buildExpect();
   newSession();
   presetSetup();
+  // On a phone the panel stands above the scene: go down to it.
+  if (matchMedia('(max-width: 900px)').matches) $('.kitchen').scrollIntoView({ behavior: 'smooth' });
 }
 /** What a ready-made experiment puts into the vessel before the start (hot water, a block from boiling water). */
 function presetSetup() {
@@ -2813,11 +2870,6 @@ function presetSetup() {
     render();
   }
 }
-$('#presets-open').onclick = () => {
-  buildPresets();
-  $<HTMLDialogElement>('#presets').showModal();
-};
-$('#presets-close').onclick = () => $<HTMLDialogElement>('#presets').close();
 
 /** Apply an offered change: the vessel moves on with its contents and the experiment goes on at once. */
 function applyFix(f: LabFix) {
@@ -3304,6 +3356,7 @@ $('#explain').onclick = explain;
 $<HTMLInputElement>('#search').addEventListener('input', (e) => {
   query = (e.target as HTMLInputElement).value.trim().toLowerCase();
   buildShelf();
+  if (shelfTab === 'experiments') buildPresets();
 });
 
 // A shadow under the experiment's bar once it sticks to the top of the screen.
@@ -3375,7 +3428,7 @@ window.addEventListener('hashchange', () => renderLibrary());
 buildHeader();
 buildInfo();
 renderLibrary();
-buildPresets();
+buildShelfTabs();
 buildShelf();
 buildExpect();
 newSession();

@@ -1,4 +1,5 @@
 import { getCurriculum } from '../knowledge/curricula.js';
+import type { Subject } from '../knowledge/types.js';
 import { LAB_KNOWLEDGE } from './lab-knowledge.js';
 import type { Preset, PresetProgram } from './presets.js';
 
@@ -26,4 +27,25 @@ export function presetPrograms(p: Preset): PresetProgram[] {
     }
   }
   return out;
+}
+
+/**
+ * The subjects an experiment belongs to: those of the programmes that have it as it is (not "≈"). One that is in
+ * the physics and the chemistry programmes both (electrolysis) is under each.
+ */
+export function presetSubjects(p: Preset): Subject[] {
+  const found = presetPrograms(p).flatMap((x) => (x.match === 'related' ? [] : [getCurriculum(x.program)?.subject ?? []].flat()));
+  // (None named: physics, the lab's first subject.)
+  return found.length ? [...new Set(found)] : ['physics'];
+}
+
+/**
+ * The grade an experiment is under in a subject: that subject's programmes may put it elsewhere than the
+ * experiment's own grade (salt on the roads: physics in the 8th, the chemistry of solutions in the 9th).
+ * Of several programmes, the earliest grade; none named — the experiment's own.
+ */
+export function presetGradeIn(p: Preset, subject: Subject): number | null {
+  if (p.grade === null) return null;
+  const grades = presetPrograms(p).flatMap((x) => (x.match !== 'related' && x.grade !== undefined && getCurriculum(x.program)?.subject === subject ? [x.grade] : []));
+  return grades.length ? Math.min(...grades) : p.grade;
 }

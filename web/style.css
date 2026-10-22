@@ -312,26 +312,38 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } }
 
 /* ---------- ready-made experiments ---------- */
-.presets-open { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; border-color: var(--accent); color: var(--accent); font-weight: 600; white-space: nowrap; }
-.presets-open:hover { background: var(--accent); color: var(--accent-text); }
-.presets { width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; background: var(--card); color: var(--text); }
-.presets::backdrop { background: rgba(10, 20, 35, 0.45); }
-.presets-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.presets-head h2 { margin: 0; }
-.presets-list { display: grid; gap: 10px; margin-top: 12px; }
-.presets-topic { margin: 10px 0 0; font-size: 0.95rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.preset { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--card), var(--bg)); }
-.preset h4 { margin: 0 0 4px; font-size: 1rem; }
-.preset p { margin: 0 0 4px; font-size: 0.9rem; }
-.preset-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--bg); color: var(--accent); }
-@media (max-width: 600px) { .preset { grid-template-columns: 36px 1fr; } .preset > button { grid-column: 1 / -1; } }
+/* The left panel's tabs: the sandbox and the ready-made experiments. */
+.shelf-jump { display: none; border-radius: 999px; padding: 6px 14px; border-color: var(--accent); color: var(--accent); font-weight: 600; }
+@media (max-width: 900px) { .shelf-jump { display: inline-flex; justify-content: center; } }
+.shelf-tabs { display: flex; gap: 4px; flex: 1; min-width: 0; }
+.shelf-tab { flex: 1; border: 0; border-bottom: 2px solid var(--line); border-radius: 8px 8px 0 0; background: none; padding: 6px 8px; font-weight: 600; font-size: 1.02rem; color: var(--muted); }
+.shelf-tab.selected { color: var(--text); border-bottom-color: var(--accent); }
+.shelf-tab:hover:not(.selected) { color: var(--text); }
+.presets-list { display: grid; gap: 8px; margin-top: 10px; }
+.presets-topic { margin: 8px 2px 0; font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.preset { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 4px 10px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(180deg, var(--card), var(--bg)); }
+.preset.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.preset h4 { margin: 0 0 4px; font-size: 0.95rem; }
+.preset p { margin: 0 0 4px; font-size: 0.85rem; }
+/* In the narrow panel the question is cut to three lines; the chosen one shows it all. */
+.preset:not(.current) .preset-q { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.presets .chips[hidden] { display: none; }
+/* The programmes' topics and wording: on the chosen card (the chips' hints have them on the others). */
+.preset:not(.current) .program-topic, .preset:not(.current) .preset-quote { display: none; }
+.subject-tabs { display: flex; width: 100%; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 2px; }
+.subject-tab { flex: 1; border: 0; border-radius: 0; min-height: 34px; padding: 4px 8px; font-weight: 600; color: var(--muted); background: var(--card); }
+.subject-tab + .subject-tab { border-left: 1px solid var(--line); }
+.subject-tab.selected { background: var(--accent); color: var(--accent-text); }
+.preset .program-chip { white-space: normal; }
+.preset-ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--bg); color: var(--accent); }
+.preset > .preset-go { grid-column: 2; justify-self: start; padding: 4px 14px; min-height: 30px; }
 .protocol li.planned { opacity: 0.55; border: 1px dashed var(--line); }
 .protocol li.planned::before { background: transparent; border: 1px dashed var(--muted); }
 .offer.plan { background: var(--ok-bg); border-left-color: #22a35a; }
 @media (max-width: 700px) {
   /* Phones: the title and the menu button on their own lines; the Professor's line sits at the top of the scene. */
   .brand { flex-basis: 100%; }
-  .presets-open { flex: 1 1 auto; justify-content: center; }
+  .shelf-jump { flex: 1 1 auto; }
   .scene-prof { position: static; }
   .scene-prof .prof { position: absolute; left: 1%; bottom: 2%; width: 17%; min-width: 56px; }
   .scene .bubble { top: 6px; right: 6px; left: auto; bottom: auto; margin: 0; width: 62%; }

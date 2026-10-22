@@ -88,6 +88,20 @@ describe('programmes of the ready-made experiments', () => {
       }
     }
   });
+
+  it('sorts them by subject, with the grade of that subject’s programme', async () => {
+    const { presetSubjects, presetGradeIn } = await import('../../src/scenarios/index.js');
+    const byId = (id: string) => PRESETS.find((p) => p.id === id)!;
+    expect(presetSubjects(byId('hooke-spring'))).toEqual(['physics']);
+    expect(presetSubjects(byId('grow-crystals'))).toEqual(['chemistry']);
+    // In both programmes: under each.
+    expect(presetSubjects(byId('electrolysis')).sort()).toEqual(['chemistry', 'physics']);
+    // Salt on the roads: physics in the 8th grade, the chemistry of solutions in the 9th.
+    expect(presetGradeIn(byId('road-salt'), 'physics')).toBe(8);
+    expect(presetGradeIn(byId('road-salt'), 'chemistry')).toBe(9);
+    // "≈" (the same idea, another substance) does not put it under a subject.
+    expect(presetSubjects(byId('mystery-metal'))).toEqual(['physics']);
+  });
 });
 
 describe('growing crystals: the answer', () => {

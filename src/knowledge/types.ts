@@ -173,4 +173,9 @@ export interface Curriculum {
   readonly firstGradeAge: number;
   /** A short label for chips and filters: «НУШ · Фізика». */
   readonly short?: LocalizedText;
+  /** The school subject it is a programme of; none — a programme of several (Oxford AQA sciences). */
+  readonly subject?: Subject;
 }
+
+/** A school subject the lab's experiments are sorted by. */
+export type Subject = 'physics' | 'chemistry';

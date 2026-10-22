@@ -12,6 +12,7 @@ export const CURRICULA = {
     source: 'ua-mnp-2023-holovko',
     firstGradeAge: 6,
     short: { uk: 'НУШ · Фізика (Головко)', en: 'NUS (Ukraine) · Physics (Holovko)' },
+    subject: 'physics',
   },
   'ua-nus-2023-kreminskyi': {
     id: 'ua-nus-2023-kreminskyi',
@@ -20,6 +21,7 @@ export const CURRICULA = {
     source: 'ua-mnp-2023-kreminskyi',
     firstGradeAge: 6,
     short: { uk: 'НУШ · Фізика (Кремінський)', en: 'NUS (Ukraine) · Physics (Kreminskyi)' },
+    subject: 'physics',
   },
   'ua-nus-2023-hryhorovych-chemistry': {
     id: 'ua-nus-2023-hryhorovych-chemistry',
@@ -28,6 +30,7 @@ export const CURRICULA = {
     source: 'ua-mnp-2023-hryhorovych-chemistry',
     firstGradeAge: 6,
     short: { uk: 'НУШ · Хімія', en: 'NUS (Ukraine) · Chemistry' },
+    subject: 'chemistry',
   },
   'ua-2017': {
     id: 'ua-2017',
@@ -36,6 +39,7 @@ export const CURRICULA = {
     source: 'ua-mon-2017-physics-7-9',
     firstGradeAge: 6,
     short: { uk: 'МОН 2017 · Фізика', en: 'Ukraine 2017 · Physics' },
+    subject: 'physics',
   },
   'oxfordaqa-igcse-sciences': {
     id: 'oxfordaqa-igcse-sciences',

@@ -14,7 +14,7 @@
         <h1 id="title">Spark</h1>
         <p id="subtitle" class="muted"></p>
       </div>
-      <button id="presets-open" class="presets-open" type="button"></button>
+      <button id="shelf-jump" class="shelf-jump" type="button"></button>
       <div class="prefs">
         <label><span id="lbl-language"></span><select id="language"></select></label>
         <label><span id="lbl-level"></span><select id="level"></select></label>
@@ -27,11 +27,15 @@
     </header>
 
     <div class="app">
-      <aside id="shelf" class="shelf" aria-labelledby="setup-title">
-        <div class="panel-head"><h2 id="setup-title" class="shelf-title"></h2><button id="shelf-fold" class="fold-btn" type="button" aria-controls="shelf"></button></div>
+      <aside id="shelf" class="shelf">
+        <div class="panel-head"><div id="shelf-tabs" class="shelf-tabs" role="tablist"></div><button id="shelf-fold" class="fold-btn" type="button" aria-controls="shelf"></button></div>
         <button id="shelf-open" class="fold-strip" type="button" aria-controls="shelf"></button>
         <input id="search" class="search" type="search" autocomplete="off" />
-        <div id="setup"></div>
+        <div id="setup" role="tabpanel"></div>
+        <div id="presets" class="presets" role="tabpanel" hidden>
+          <div id="presets-tabs" class="chips"></div>
+          <div id="presets-list" class="presets-list"></div>
+        </div>
       </aside>
 
       <main class="main">
@@ -124,15 +128,6 @@
       <p id="bug-error" class="bug-error" role="alert"></p>
       <div class="bug-buttons"><button id="bug-send" class="primary" type="button"></button><button id="bug-copy" type="button"></button></div>
       <p id="bug-note" class="muted small"></p>
-    </dialog>
-
-    <dialog id="presets" class="presets">
-      <div class="presets-head">
-        <h2 id="presets-title"></h2>
-        <button id="presets-close" type="button" aria-label="×">✕</button>
-      </div>
-      <div id="presets-tabs" class="chips"></div>
-      <div id="presets-list" class="presets-list"></div>
     </dialog>
 
     <div id="console-wrap" class="console-dock" aria-hidden="true">

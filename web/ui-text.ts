@@ -1,4 +1,5 @@
 import type { Locale } from '../src/knowledge/i18n.js';
+import type { Subject } from '../src/knowledge/types.js';
 
 /** Interface strings of the web lab. Content texts (laws, formulas) live in the knowledge layer. */
 export interface UiText {
@@ -148,8 +149,10 @@ export interface UiText {
   byTheWay: { say: string; button: string; fresh: string; loading: string; more: string; close: string; title: string };
   reference: string;
   lockedDuringExperiment: string;
-  presetsButton: string;
-  presetsTitle: string;
+  /** The left panel's tabs: the free sandbox and the ready-made experiments. */
+  shelfTabs: { sandbox: string; experiments: string };
+  presetsNone: string;
+  subjects: Record<Subject, string>;
   grade(n: number): string;
   forEveryone: string;
   presetStart: string;
@@ -411,7 +414,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       glasses: ['Так… А де ж мої окуляри?', 'Невже знову загубив?.. Кишеня… друга кишеня…', 'А, ось вони! На носі ж були.'],
       yawn: ['Аааах…', 'Може, закип’ятимо щось?'],
       sleep: ['Хррр… z-z-z…', 'Хррр…', 'Е-е?! Я не сплю! Я думаю!'],
-      chalk: (idea) => ['Цікаво…', `…${idea.charAt(0).toLowerCase()}${idea.slice(1)}`, 'Спробуємо? Глянь «Досліди за класами».'],
+      chalk: (idea) => ['Цікаво…', `…${idea.charAt(0).toLowerCase()}${idea.slice(1)}`, 'Спробуємо? Глянь «Досліди» ліворуч.'],
       tap: ['Тік-так…', 'Наука чекає!'],
       coffee: ['Так… час на каву.', 'Ммм… Що за наука без кави?', 'До речі, каву варять у турці — спробуй закип’ятити в ній воду!'],
     },
@@ -419,8 +422,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     byTheWay: { say: 'До речі!.. Згадав одну історію. Ось, почитай.', button: '📰 Газета', fresh: 'Свіжа газета! Ану, що там пишуть…', loading: 'Шукаю газету…', more: '📰 Ще одну', close: 'Закрити', title: 'Газета Професора' },
     reference: 'Довідка',
     lockedDuringExperiment: 'Під час досліду речовину й посуд не міняють — щоб почати інший дослід, натисни «Спочатку».',
-    presetsButton: 'Досліди за класами',
-    presetsTitle: 'Готові досліди',
+    shelfTabs: { sandbox: 'Пісочниця', experiments: 'Досліди' },
+    presetsNone: 'Такого досліду поки немає.',
+    subjects: { physics: 'Фізика', chemistry: 'Хімія' },
     grade: (n) => `${n} клас`,
     forEveryone: 'Для всіх',
     presetStart: '▶ Почати',
@@ -483,7 +487,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     subtitle: 'Нагрівай і охолоджуй, кип’яти й заморожуй: обери речовину, посуд і прилад — дивись, що відбувається, і дізнайся чому.',
     language: 'Мова',
     level: 'Рівень пояснень',
-    setup: '1. Установка',
+    setup: 'Установка',
     device: 'Нагрівач',
     model: 'Модель (потужність)',
     vessel: 'Посуд',
@@ -498,13 +502,13 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     startTemp: 'Початкова температура, °C',
     room: 'Температура в кімнаті, °C',
     apply: 'Зібрати установку',
-    experiment: '2. Дослід',
+    experiment: 'Дослід',
     start: '▶ Старт',
     continueStep: '▶ Продовжити',
     sideFold: 'Згорнути',
     sideUnfold: '⇤ Протокол',
     shelfFold: 'Згорнути',
-    shelfUnfold: 'Установка ⇥',
+    shelfUnfold: 'Пісочниця · Досліди ⇥',
     offerTitle: 'Так мети не досягти. Можна зупинити дослід або змінити умови:',
     offerStop: '⏹ Зупинити дослід',
     offerAfterStall: 'Що допоможе (перевірено розрахунком):',
@@ -680,7 +684,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       glasses: ['Now… where are my glasses?', 'Lost them again?.. This pocket… that pocket…', 'Ah, there they are! On my nose all along.'],
       yawn: ['Aaah…', 'Shall we boil something?'],
       sleep: ['Zzz…', 'Snore…', 'Eh?! I’m not asleep! I’m thinking!'],
-      chalk: (idea) => ['I wonder…', `…${idea.charAt(0).toLowerCase()}${idea.slice(1)}`, 'Shall we try? See “Experiments by grade”.'],
+      chalk: (idea) => ['I wonder…', `…${idea.charAt(0).toLowerCase()}${idea.slice(1)}`, 'Shall we try? See “Experiments” on the left.'],
       tap: ['Tick-tock…', 'Science is waiting!'],
       coffee: ['Right… coffee time.', 'Mmm… What is science without coffee?', 'By the way, coffee is made in a cezve — try boiling water in one!'],
     },
@@ -688,8 +692,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     byTheWay: { say: 'By the way!.. I remembered something. Here, read this.', button: '📰 Newspaper', fresh: 'A fresh newspaper! Let’s see what they write…', loading: 'Looking for a newspaper…', more: '📰 One more', close: 'Close', title: 'The Professor’s newspaper' },
     reference: 'Reference',
     lockedDuringExperiment: 'The substance and the vessel stay during an experiment — press “Start over” for another one.',
-    presetsButton: 'Experiments by grade',
-    presetsTitle: 'Ready-made experiments',
+    shelfTabs: { sandbox: 'Sandbox', experiments: 'Experiments' },
+    presetsNone: 'No such experiment yet.',
+    subjects: { physics: 'Physics', chemistry: 'Chemistry' },
     grade: (n) => `Grade ${n}`,
     forEveryone: 'For everyone',
     presetStart: '▶ Start',
@@ -752,7 +757,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     subtitle: 'Heat and cool, boil and freeze: pick a substance, a vessel and a device — watch what happens and find out why.',
     language: 'Language',
     level: 'Explanation level',
-    setup: '1. Setup',
+    setup: 'Setup',
     device: 'Heater',
     model: 'Model (power)',
     vessel: 'Vessel',
@@ -767,13 +772,13 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     startTemp: 'Starting temperature, °C',
     room: 'Room temperature, °C',
     apply: 'Build the setup',
-    experiment: '2. Experiment',
+    experiment: 'Experiment',
     start: '▶ Start',
     continueStep: '▶ Continue',
     sideFold: 'Fold',
     sideUnfold: '⇤ Protocol',
     shelfFold: 'Fold',
-    shelfUnfold: 'Setup ⇥',
+    shelfUnfold: 'Sandbox · Experiments ⇥',
     offerTitle: 'The goal cannot be reached like this. Stop the experiment or change the conditions:',
     offerStop: '⏹ Stop the experiment',
     offerAfterStall: 'What helps (checked by calculation):',
