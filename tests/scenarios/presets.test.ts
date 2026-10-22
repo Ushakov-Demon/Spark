@@ -63,6 +63,22 @@ describe('choices of the ready-made experiments', () => {
     expect(ids, `${p.id}: ${a.correct}`).toContain(a.correct);
     if (process.env['SHOW_ANSWERS']) console.log(`[${p.id}] correct: ${a.correct}`);
   }, 60_000);
+
+  it('never more than ten at once: a table offers the rows nearest to what was measured', async () => {
+    const { MAX_CHOICES, nearestRows, DENSITY_TABLE } = await import('../../src/scenarios/index.js');
+    const { SUBSTANCES } = await import('../../src/substances/index.js');
+    for (const p of PRESETS.filter((x) => x.choices && !x.choiceTable)) expect(p.choices!.length, p.id).toBeLessThanOrEqual(MAX_CHOICES);
+    const rho = (id: string) => SUBSTANCES[id as keyof typeof SUBSTANCES].liquid.density.value;
+    expect(DENSITY_TABLE.length).toBeGreaterThan(MAX_CHOICES);
+    // Whatever the block is made of, measured within 3 %, it is among the rows offered, in the table's order.
+    for (const c of DENSITY_TABLE)
+      for (const k of [0.97, 1, 1.03]) {
+        const rows = nearestRows(DENSITY_TABLE, rho(c.id) * k, rho);
+        expect(rows.length).toBe(MAX_CHOICES);
+        expect(rows.map((r) => r.id), `${c.id} × ${k}`).toContain(c.id);
+        expect(rows.map((r) => rho(r.id))).toEqual([...rows.map((r) => rho(r.id))].sort((a, b) => a - b));
+      }
+  });
 });
 
 describe('prediction choices', () => {

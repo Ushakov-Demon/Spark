@@ -82,6 +82,7 @@ import {
   addableTo,
   PRESETS,
   PRESET_GRADES,
+  nearestRows,
   guidedPlan,
   freshParams,
   stepParams,
@@ -1535,7 +1536,10 @@ function renderGuide(): boolean {
     const rho = measuredDensity();
     const chosen = prediction?.preset === preset.id ? prediction.choice : null;
     const right = presetAnswer && presetAnswer !== 'computing' ? presetAnswer.correct : undefined;
+    // The rows nearest to what was measured; once one is picked, only it and the right one stay.
+    const near = nearestRows(preset.choices, rho, (id) => SUBSTANCES[id as SubstanceId].liquid.density.value);
     const rows = preset.choices
+      .filter((c) => (chosen ? c.id === chosen || c.id === right : near.includes(c)))
       .map((c) => {
         const x = SUBSTANCES[c.id as SubstanceId];
         const cls = chosen === c.id ? (right === undefined ? 'picked' : right === c.id ? 'right' : 'wrong') : right && chosen && right === c.id ? 'right' : '';
@@ -1556,15 +1560,19 @@ function renderQuiz(q: Quiz | null) {
 function quizHtml(q: Quiz): string {
   const mine = picked.key === q.key ? picked.ids : [];
   const solved = !q.predict && q.options.some((o) => o.right && mine.includes(o.id));
+  // Once picked, the choices fold: the prediction shows only itself (and "Change" until the start), a solved question only the right answer.
+  const folded = (q.predict && mine.length > 0) || solved;
   const buttons = q.options
+    .filter((o) => !folded || (q.predict ? mine[mine.length - 1] === o.id : o.right && mine.includes(o.id)))
     .map((o) => {
       const was = mine.includes(o.id);
       const cls = q.predict ? (was && mine[mine.length - 1] === o.id ? 'picked' : '') : was ? (o.right ? 'right' : 'wrong') : '';
-      const off = !q.predict && (solved || was);
+      const off = !q.predict && (folded || was);
       return `<button type="button" class="${cls}" data-choice="${o.id}"${off ? ' disabled' : ''}>${cls === 'right' ? '✓ ' : cls === 'wrong' ? '✗ ' : ''}${o.text}</button>`;
     })
     .join('');
-  return `<div class="quiz" data-key="${q.key}"><span class="quiz-title">${q.title}</span><div class="quiz-options">${buttons}</div></div>`;
+  const change = q.predict && folded ? `<button type="button" class="link" data-rechoose="1">${t().quiz.rechoose}</button>` : '';
+  return `<div class="quiz" data-key="${q.key}"><span class="quiz-title">${q.title}</span><div class="quiz-options">${buttons}${change}</div></div>`;
 }
 const predictionVerdictRight = () => (prediction && presetAnswer && presetAnswer !== 'computing' && prediction.choice === presetAnswer.correct ? predictionVerdict() : null);
 /** The verdict on a prediction, once the run has answered the question. */
@@ -3268,6 +3276,12 @@ setConsole(store.get('console') === 'open');
 // ---------- wiring ----------
 $('#quiz').addEventListener('click', (e) => {
   if ((e.target as HTMLElement).closest('button[data-renew]')) return renew();
+  if ((e.target as HTMLElement).closest('button[data-rechoose]')) {
+    // The prediction opened again: all the choices, to pick anew.
+    picked = { key: '', ids: [] };
+    prediction = null;
+    return render();
+  }
   const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
   if (step) return nextPlanStep();
   if (preset?.guided && !plan.length) {

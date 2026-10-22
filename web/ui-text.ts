@@ -96,6 +96,8 @@ export interface UiText {
   quiz: {
     title: string;
     predictTitle: string;
+    /** Open the choices again after one was picked (a prediction can change until the start). */
+    rechoose: string;
     noted: string;
     right(choice: string): string;
     wrong(choice: string, real: string): string;
@@ -374,6 +376,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     quiz: {
       title: 'Як гадаєш?',
       predictTitle: 'Твій прогноз:',
+      rechoose: 'Змінити',
       noted: 'Записав твій прогноз! Тепер натисни «Старт» — і перевіримо.',
       right: (c) => `Твій прогноз «${c}» справдився!`,
       conclude: 'Що вийшло? Обери відповідь:',
@@ -644,6 +647,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     quiz: {
       title: 'What do you think?',
       predictTitle: 'Your prediction:',
+      rechoose: 'Change',
       noted: 'Noted your prediction! Now press “Start” — and we will check.',
       right: (c) => `Your prediction “${c}” came true!`,
       conclude: 'What came out? Pick an answer:',

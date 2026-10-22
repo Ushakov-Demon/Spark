@@ -125,6 +125,19 @@ export const DENSITY_TABLE: readonly Choice[] = Object.values(SUBSTANCES)
   .sort((a, b) => a.liquid.density.value - b.liquid.density.value)
   .map((s) => ({ id: s.id, label: s.name }));
 
+/** At most this many choices are offered at once: enough to look for the answer, not a list to wade through. */
+export const MAX_CHOICES = 10;
+
+/**
+ * The rows of a table offered to look the result up in: the MAX_CHOICES nearest to the measured value (as one
+ * looks in a reference table — near the number one got), in the table's order. Not measured yet — the first ones.
+ */
+export function nearestRows(rows: readonly Choice[], measured: number | null, valueOf: (id: string) => number): Choice[] {
+  if (measured === null) return rows.slice(0, MAX_CHOICES);
+  const near = [...rows].sort((a, b) => Math.abs(valueOf(a.id) - measured) - Math.abs(valueOf(b.id) - measured)).slice(0, MAX_CHOICES);
+  return rows.filter((r) => near.includes(r));
+}
+
 const THERMAL: LocalizedText = { uk: 'Теплові явища', en: 'Thermal phenomena' };
 const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
 const FUN: LocalizedText = { uk: 'Цікаві досліди', en: 'Curious experiments' };
