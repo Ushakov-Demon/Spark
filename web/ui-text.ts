@@ -63,6 +63,8 @@ export interface UiText {
     dropped: string;
     floats: string;
     dissolved(what: string, salty: boolean): string;
+    /** A crystal dropped into a supersaturated solution set off the crystallisation. */
+    seeded(what: string, crystals: string, temp: string, warmed: boolean): string;
     saltLeft(dissolved: string, left: string, t: string, per100: string, heatHelps: boolean, hot: string, what: string): string;
     btnDissolve(what: string): string;
     wait(what: string): string;
@@ -335,6 +337,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnHang: (into) => (into === 'air' ? '🧷 Підвісити в повітрі' : '🧷 Занурити в рідину'),
       dropped: 'Бульк! Брусок ліг на дно — і вода в мензурці піднялася.',
       floats: 'Бульк! Кубик плаває — і вода в мензурці піднялася.',
+      seeded: (w, c, t, warmed) => `Кристалик став затравкою: з розчину одразу випало ≈ ${c} кристалів ${w}, і розчин ${warmed ? 'нагрівся' : 'охолов'} до ${t}!`,
       dissolved: (w, salty) => `${w} розчиняється — вода стає ${salty ? 'солоною і ' : ''}густішою, а її частинки не видно навіть у мікроскоп.`,
       saltLeft: (d, l, t, s, heat, hot, w) => `Розчинилося ${d} г, а ${l} г лежить на дні: при ${t} °C 100 г води розчиняє лише ≈ ${s} г ${w}. ${heat ? 'Нагрій воду — при вищій температурі розчиниться решта.' : `Нагрівання тут мало допоможе (при 100 °C — ≈ ${hot} г на 100 г води): долий води.`}`,
       btnDissolve: (w) => `🥄 Розчинити: ${w}`,
@@ -433,7 +436,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       current: 'Іде струм! Бачиш бульбашки на електродах? Це гази виділяються.',
       chlorine: 'Кхе-кхе! Це хлор… У справжній лабораторії тут потрібна витяжка!',
       noCurrent: 'Струму майже немає… Може, у воді чогось бракує? Спробуй досипати солі.',
-      reached: 'Вийшло! Можна продовжити: обери наступну дію ліворуч.',
+      reached: 'Можна продовжити: обери наступну дію ліворуч.',
       failed: 'Не вийшло… Але це теж результат! Подивимось, що можна змінити.',
       smoke: 'Кхе! Олія димить — далі гріти небезпечно.',
     },
@@ -601,6 +604,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnHang: (into) => (into === 'air' ? '🧷 Hang in the air' : '🧷 Lower into the liquid'),
       dropped: 'Plop! The block lies on the bottom — and the water in the cylinder rose.',
       floats: 'Plop! The cube floats — and the water in the cylinder rose.',
+      seeded: (w, c, t, warmed) => `The crystal became a seed: ≈ ${c} of ${w} crystals came out of the solution at once, and it ${warmed ? 'warmed up' : 'cooled down'} to ${t}!`,
       dissolved: (w, salty) => `${w} is dissolving — the water turns ${salty ? 'salty and ' : ''}denser, and its particles cannot be seen even under a microscope.`,
       saltLeft: (d, l, t, s, heat, hot, w) => `${d} g dissolved, and ${l} g lies on the bottom: at ${t} °C, 100 g of water dissolves only ≈ ${s} g of ${w}. ${heat ? 'Warm the water — the rest dissolves when it is hotter.' : `Warming helps little here (≈ ${hot} g per 100 g of water at 100 °C): add more water.`}`,
       btnDissolve: (w) => `🥄 Dissolve: ${w}`,
@@ -699,7 +703,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       current: 'Current is flowing! See the bubbles at the electrodes? Those are gases.',
       chlorine: 'Cough, cough! That’s chlorine… A real lab would need a fume hood here!',
       noCurrent: 'Almost no current… Maybe something is missing in the water? Try adding salt.',
-      reached: 'It worked! You can go on: pick the next action on the left.',
+      reached: 'You can go on: pick the next action on the left.',
       failed: 'Didn’t work… But that is a result too! Let’s see what we can change.',
       smoke: 'Cough! The oil is smoking — heating further is dangerous.',
     },

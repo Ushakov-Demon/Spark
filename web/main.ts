@@ -51,6 +51,7 @@ import {
   goalOptions,
   type LabExpectation,
   labSummary,
+  stepOutcome,
   SAMPLE_ID,
   type LabAction,
   type LabParams,
@@ -854,6 +855,18 @@ function solutionLines(mix: NonNullable<ThermalBody['state']['mixture']>, temper
   return out;
 }
 
+function seededSay(): string {
+  const l = session.result().log;
+  const last = l[l.length - 1]!;
+  const b = sampleOf(session.state);
+  const id = SUBSTANCES[(last.command as unknown as { substance: SubstanceId }).substance].component!;
+  const own = b.state.mixture!.solutes.find((x) => x.component === id)!;
+  const c = COMPONENTS[id as ComponentId];
+  const name = lowerFirst(tr(c?.genitive ?? c?.name ?? { uk: id, en: id }, locale));
+  const T = b.state.temperature;
+  // Crystallising gives back the heat its dissolving took: a substance that cools water as it dissolves warms it as it crystallises.
+  return t().guide.seeded(name, `${sig(own.crystals * 1000, 2, locale)} ${locale === 'uk' ? 'г' : 'g'}`, `${sig(T - 273.15, 3, locale)} °C`, (c?.inWater?.enthalpyOfSolution?.value ?? 0) >= 0);
+}
 function saltLeftSay(): string {
   const mix = sampleOf(session.state).state.mixture!;
   const T = sampleOf(session.state).state.temperature - 273.15;
@@ -1074,6 +1087,8 @@ function sceneView(): SceneView {
   }, 0) : 0;
   // The Professor: what is going on, in one line.
   const st = doneRecord?.status;
+  // What came of the step just finished, in the Professor's words (every step, every experiment).
+  const outcome = doneRecord ? stepOutcome(doneRecord.params, doneRecord.result, doneRecord.status, locale) : null;
   const nextLabel = plan.length ? planLabel(plan) : '';
   const weighShown = showingWeighing();
   const measured = showingMeasure();
@@ -1092,7 +1107,7 @@ function sceneView(): SceneView {
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
     : showingDrop()
-    ? { mood: 'surprised', says: showingDrop() === 'salt' ? droppedDissolves() : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
+    ? { mood: 'surprised', says: showingDrop() === 'salt' ? droppedDissolves() : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'seeded' ? seededSay() : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
     : measured
     ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
@@ -1102,12 +1117,12 @@ function sceneView(): SceneView {
     : preset && !running && stepElapsed() === 0 && !history.length && !st
     ? { mood: 'thinking', says: tr(preset.question, locale) }
     : st && nextLabel
-    ? { mood: st.kind === 'reached' ? 'happy' : 'thinking', says: u.planNext(nextLabel) }
+    ? { mood: st.kind === 'reached' ? 'happy' : 'thinking', says: [outcome, u.planNext(nextLabel)].filter(Boolean).join(' ') }
     : st && preset && !plan.length && st.kind === 'reached' && history.length
-    ? { mood: 'happy', says: u.planDone }
+    ? { mood: 'happy', says: [outcome, u.planDone].filter(Boolean).join(' ') }
     : st
     ? st.kind === 'reached'
-      ? { mood: 'happy', says: u.prof.reached }
+      ? { mood: 'happy', says: [outcome, u.prof.reached].filter(Boolean).join(' ') }
       : st.kind === 'decomposes'
         ? { mood: 'sooty', says: u.prof.smoke }
         : { mood: 'thinking', says: u.prof.failed }
@@ -1309,12 +1324,18 @@ let planTotal = 0;
 /** The latest thing put into the vessel during a guided procedure (the Professor comments on it). */
 let lastDrop: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
 /** What was just put in, while nothing has happened since: a body that sank or floats, or salt that dissolved. */
-function showingDrop(): 'body' | 'float' | 'salt' | 'salt-left' | null {
+function showingDrop(): 'body' | 'float' | 'salt' | 'salt-left' | 'seeded' | null {
   if (!lastDrop || lastDrop.step !== session || running || session.state.time !== lastDrop.at) return null;
   const l = session.result().log;
   const c = l[l.length - 1]?.command;
   if (c?.type !== 'thermal.add') return null;
-  if (dissolves(SUBSTANCES[c.substance as SubstanceId])) return (sampleOf(session.state).state.mixture?.crystals ?? 0) > 1e-5 ? 'salt-left' : 'salt';
+  if (dissolves(SUBSTANCES[c.substance as SubstanceId])) {
+    const mix = sampleOf(session.state).state.mixture;
+    const own = mix?.solutes.find((x) => x.component === SUBSTANCES[c.substance as SubstanceId].component);
+    // More crystals than was poured in: it was a seed, and a supersaturated solution crystallised on it.
+    if (own && own.crystals > Number(c['mass']) * 1.05 + 1e-6) return 'seeded';
+    return (mix?.crystals ?? 0) > 1e-5 ? 'salt-left' : 'salt';
+  }
   const pieces = Object.values(session.state.entities).filter((e) => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`));
   const last = pieces[pieces.length - 1];
   return last && isThermalBody(last) && pieceShare(session.state, last) < 1 ? 'float' : 'body';
@@ -2427,14 +2448,17 @@ function planLabel(steps: readonly ProtocolStep[]): string {
     }
     if (s.kind === 'add') {
       const what = SUBSTANCES[s.substance];
-      parts.push(u.planAdd(tr(s.label ?? what.genitive ?? what.name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' })));
+      const mass = formatQuantity(s.mass, 'kg', { locale, level: 'school' });
+      // Its own name ("кристалик-затравка") is a noun of its own: said with the amount in brackets.
+      parts.push(s.label ? `${tr(s.label, locale).toLowerCase()} (${mass})` : u.planAdd(tr(what.genitive ?? what.name, locale).toLowerCase(), mass));
       continue;
     }
     if (s.kind === 'fresh') {
       parts.push(tr(s.label ?? { uk: 'почати знову', en: 'start afresh' }, locale).toLowerCase());
       break;
     }
-    parts.push(tr(OPERATIONS[s.action].label, locale).replace('…', '').toLowerCase());
+    // The step's own name, or the operation's — with its target ("охолодити до 22 °C").
+    parts.push(s.label ? lowerFirst(tr(s.label, locale)) : `${tr(OPERATIONS[s.action].label, locale).replace('…', '').toLowerCase()}${s.target !== undefined ? ` ${s.target} °C` : ''}`);
     break;
   }
   return parts.join(locale === 'uk' ? ', потім ' : ', then ');

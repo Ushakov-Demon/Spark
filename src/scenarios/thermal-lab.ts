@@ -17,6 +17,8 @@ import { electrodesOf, SUPPLIES, type ElectrodeMaterial, type SupplyId } from '.
 import { placeSupply } from '../domains/electrical/assembly.js';
 import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
+import { COMPONENTS, type ComponentId } from '../components/index.js';
+import { solubilityAt } from '../domains/thermal/mixture.js';
 import { OPERATION_IDS, OPERATIONS, type Gender, type Operation, type OperationContext, type OperationId } from './operations/index.js';
 
 /**
@@ -313,6 +315,94 @@ export function labCautions(p: LabParams): LocalizedText[] {
   return out;
 }
 
+/**
+ * What happened to the crystals of a solution during a step, said plainly: the ones on the bottom dissolved,
+ * crystals came out — or did not, though the solution is now beyond saturation (supersaturated). `states` are
+ * the step's states in time order; the first one with the solution in it is the start (a substance poured in
+ * at the very start of the step). Null — nothing to say (no solution, nothing changed, or it froze).
+ */
+export function crystalNote(states: readonly SystemState[], locale: Locale): { short: string; long: string } | null {
+  const uk = locale === 'uk';
+  const withMix = states.filter((x) => sampleOf(x).state.mixture);
+  if (withMix.length < 2) return null;
+  const b0 = sampleOf(withMix[0]!);
+  const b1 = sampleOf(withMix[withMix.length - 1]!);
+  const m0 = b0.state.mixture!;
+  const m1 = b1.state.mixture!;
+  if (m1.ice > 1e-9 || m0.ice > 1e-9) return null;
+  // The main solute: the one there is most of.
+  const s1 = [...m1.solutes].sort((a, b) => b.mass - a.mass)[0];
+  if (!s1) return null;
+  const c0 = m0.solutes.find((x) => x.component === s1.component)?.crystals ?? 0;
+  const c1 = s1.crystals;
+  const c = COMPONENTS[s1.component as ComponentId];
+  const what = c ? (uk ? (c.genitive?.uk ?? c.name.uk) : c.name.en).toLowerCase() : s1.component;
+  const T1 = b1.state.temperature - ZERO_CELSIUS_IN_KELVIN;
+  const water = m1.water - m1.ice;
+  const sol = solubilityAt(s1.component, T1);
+  const g = (kg: number) => `${sig(kg * 1000, 3, locale)} ${uk ? 'г' : 'g'}`;
+  const T = (t: number) => `${sig(t, 3, locale)} °C`;
+  const small = Math.max(1e-5, 0.02 * s1.mass);
+  if (c0 > small && c1 <= 1e-6) {
+    return {
+      short: uk ? 'Усі кристали розчинилися!' : 'All the crystals have dissolved!',
+      long: uk
+        ? `Кристали ${what}, що лежали на дні (${g(c0)}), повністю розчинилися: при ${T(T1)} 100 г води розчиняє вже ≈ ${sig(sol, 3, locale)} г.`
+        : `The ${what} crystals that lay on the bottom (${g(c0)}) have all dissolved: at ${T(T1)} 100 g of water dissolves ≈ ${sig(sol, 3, locale)} g.`,
+    };
+  }
+  if (c0 > c1 + small) {
+    return {
+      short: uk ? 'Частина кристалів розчинилася.' : 'Part of the crystals has dissolved.',
+      long: uk ? `Частина кристалів ${what} розчинилася: на дні було ${g(c0)}, лишилося ${g(c1)}.` : `Part of the ${what} crystals dissolved: there were ${g(c0)} on the bottom, ${g(c1)} remain.`,
+    };
+  }
+  if (c1 > c0 + small) {
+    return {
+      short: uk ? 'Випали кристали!' : 'Crystals have come out!',
+      long: uk
+        ? `Розчин став насиченим, і ${what} почав виходити кристалами: на дні ${c0 > 1e-6 ? `було ${g(c0)}, тепер` : 'тепер'} ${g(c1)}. При ${T(T1)} 100 г води утримує лише ≈ ${sig(sol, 3, locale)} г.`
+        : `The solution became saturated, and ${what} began to come out as crystals: ${c0 > 1e-6 ? `there were ${g(c0)} on the bottom, now` : 'now there are'} ${g(c1)}. At ${T(T1)} 100 g of water holds only ≈ ${sig(sol, 3, locale)} g.`,
+    };
+  }
+  // No crystals, though the water now holds more than its solubility allows: supersaturated.
+  const limit = (sol / 100) * water;
+  if (c1 <= 1e-6 && Number.isFinite(limit) && s1.mass > limit * 1.01) {
+    return {
+      short: uk ? 'Кристали не випали — розчин пересичений!' : 'No crystals came out — the solution is supersaturated!',
+      long: uk
+        ? `Розчин охолов до ${T(T1)}, а кристали не випали, хоча вода при цій температурі утримує лише ≈ ${g(limit)} ${what}, а в ній ${g(s1.mass)} — у ${sig(s1.mass / limit, 2, locale)} раза більше. Розчин пересичений: кристалам нема на чому почати рости.`
+        : `The solution cooled to ${T(T1)}, yet no crystals came out, though at this temperature the water holds only ≈ ${g(limit)} of ${what}, and it has ${g(s1.mass)} — ${sig(s1.mass / limit, 2, locale)} times as much. The solution is supersaturated: the crystals have nothing to start growing on.`,
+    };
+  }
+  return null;
+}
+
+/**
+ * The Professor's word at the end of a step: what came of it, in one or two short sentences — "Розчин
+ * мідного купоросу охолов до 20 °C за 45 хв. Випали кристали!" Every step, every experiment: the operation's
+ * own verb, the contents by name, the time; a short note of the operation (the common temperature) and of the
+ * crystals, if there is one. Null — the step did not reach its goal (other lines explain that).
+ */
+export function stepOutcome<C extends Command>(p: LabParams, result: ExperimentResult<C>, status: LabStatus, locale: Locale): string | null {
+  if (status.kind !== 'reached') return null;
+  const uk = locale === 'uk';
+  const sub = SUBSTANCES[p.substance];
+  const { gender, name } = subject(p, locale, result.final);
+  const op0 = OPERATIONS[p.action];
+  const op = sub.melt && op0.verbsMolten ? { ...op0, verbs: op0.verbsMolten } : op0;
+  const target = p.target !== undefined && op.target ? ` ${formatQuantity(K(p.target), 'K', { locale, level: 'school' })}` : '';
+  const word = op.durationWord ? tr(op.durationWord, locale) : uk ? 'за' : 'in';
+  const parts = [`${name} ${uk ? op.verbs.past.uk[gender] : op.verbs.past.en}${target} ${word ? `${word} ` : ''}${formatDuration(status.at, locale)}.`];
+  const note = op.reachedNotes?.({ sample: sampleOf(result.final), state: result.final, initial: result.initial, locale })?.[0];
+  // Its first sentence: the main thing the operation has to say (the common temperature, the mean current).
+  const first = note?.split(/(?<=[.!?])\s+/)[0];
+  if (first && first.length <= 160) parts.push(first);
+  const crystals = crystalNote([result.initial, ...result.samples, result.final], locale);
+  if (crystals) parts.push(crystals.short);
+  return parts.join(' ');
+}
+
 export function labSummary<C extends Command>(p: LabParams, result: ExperimentResult<C>, status: LabStatus, ctx: ExplainContext): Block[] {
   const blocks = labHeadline(p, result, status, ctx);
   const cautions = labCautions(p).map((c) => tr(c, ctx.locale));
@@ -358,6 +448,8 @@ function labHeadline<C extends Command>(p: LabParams, result: ExperimentResult<C
       const word = op.durationWord ? tr(op.durationWord, locale) : uk ? 'за' : 'in';
       const lines = [`${subj} ${past} ${word ? `${word} ` : ''}${formatDuration(status.at, locale)}.`];
       lines.push(...(op.reachedNotes?.({ sample: b1, state: result.final, initial: result.initial, locale }) ?? []));
+      const crystals = crystalNote([result.initial, ...result.samples, result.final], locale);
+      if (crystals) lines.push(crystals.long);
       // A current's heat is told by the operation itself; "the heater released…" is for heaters.
       const e = op.uses === 'supply' ? null : energyLine();
       if (e) lines.push(e);

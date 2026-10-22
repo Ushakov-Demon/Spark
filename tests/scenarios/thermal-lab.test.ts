@@ -121,3 +121,27 @@ describe('thermal lab presets', () => {
     expect(run(BASE).text('en')).toMatch(/Distilled water \(1 L\) in a steel pot on an electric hob boiled in/);
   });
 });
+
+describe('the Professor names what came of each step', () => {
+  it('heating dissolves the crystals; cooling a supersaturating solution brings none; others crystallise', async () => {
+    const { runProtocol, stepOutcome, crystalNote, LAB_COMMANDS } = await import('../../src/scenarios/index.js');
+    const { createCommandRegistry, createSimulation, seconds } = await import('../../src/core/index.js');
+    const { createThermalSolver } = await import('../../src/domains/thermal/index.js');
+    const simulation = createSimulation({ solvers: [createThermalSolver()], fixedDt: seconds(2) });
+    const commands = createCommandRegistry(LAB_COMMANDS as never);
+    const run = (substance: 'sodium-acetate' | 'copper-sulfate', mass: number, water: number, cool: number) =>
+      runProtocol({ base: { roomTemp: 20, lid: false, vessel: 'beaker', size: 0.25, material: 'glass', liters: water, action: 'heat-to', target: 70, substance: 'water', startTemp: 20, heater: { id: 'electric-hotplate', rating: 2000, knob: 0.5 } }, simulation, commands: commands as never, sampleEvery: seconds(30), maxStepSeconds: 6 * 3600, steps: [
+        { kind: 'add', substance, mass, temperature: 20 },
+        { kind: 'operation', action: 'heat-to', target: 70, heater: { id: 'electric-hotplate', rating: 2000, knob: 0.5 } },
+        { kind: 'operation', action: 'cool-to', target: cool, cooler: { id: 'fridge', setpoint: 4 } },
+      ] });
+    const acetate = run('sodium-acetate', 0.1, 0.02, 22);
+    const note = (o: (typeof acetate)[number]) => crystalNote([o.result!.initial, ...o.result!.samples, o.result!.final], 'uk');
+    expect(note(acetate[1]!)?.short).toBe('Усі кристали розчинилися!');
+    expect(note(acetate[2]!)?.short).toBe('Кристали не випали — розчин пересичений!');
+    const copper = run('copper-sulfate', 0.05, 0.1, 20);
+    expect(note(copper[2]!)?.short).toBe('Випали кристали!');
+    const o = copper[1]!;
+    expect(stepOutcome(o.params!, o.result as never, o.status!, 'uk')).toMatch(/^Розчин мідного купоросу нагрівся до 70(,0)? °C за .+\. Усі кристали розчинилися!$/);
+  }, 60_000);
+});
