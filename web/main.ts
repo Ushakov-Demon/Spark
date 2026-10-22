@@ -273,6 +273,18 @@ function liveRowKey(): string | null {
   if (showingWeighing() || showingMeasure()) return `m:${history.length}:${readingsOf(session.result().log).length - 1}`;
   return finished ? `s:${history.length}` : null;
 }
+/** A ready-made experiment led to its answer: it may go on freely from here (not on the bench: nothing is added there). */
+const presetDone = () => !!preset?.guided && !plan.length && presetAnswer !== null && !preset.bench;
+/**
+ * Going on after the answer: the experiment is a free one from now on — the same vessel with what is in it,
+ * the protocol and the board kept; its own question is answered.
+ */
+function goOnFreely() {
+  if (!presetDone()) return;
+  preset = null;
+  plan = [];
+  buildShelf();
+}
 /** A look at the board planned for later (when a guided procedure is measured out). */
 let readTimer = 0;
 /** A new experiment: fresh setup, empty protocol. */
@@ -476,6 +488,7 @@ function closeStep() {
  */
 function stepChanged() {
   replaying = null;
+  goOnFreely();
   buildShelf();
   const done = session.result().log;
   if (!history.length && stepElapsed() === 0 && !stepAdds.length && !done.length) return newSession();
@@ -1770,8 +1783,8 @@ function render() {
 
   const startBtn = $<HTMLButtonElement>('#start');
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
-  // A guided procedure is led by its steps, not by "Start".
-  startBtn.hidden = !!preset?.guided;
+  // A guided procedure is led by its steps, not by "Start" — until it is answered: then it may go on.
+  startBtn.hidden = !!preset?.guided && !presetDone();
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
   $<HTMLButtonElement>('#read-level').textContent = u.measure.level;
@@ -1813,10 +1826,11 @@ function render() {
 
   // Something goes on again: back from looking at an earlier row.
   if (running) lookingAt = null;
-  renderProtocol();
+  // (The snapshot first: the protocol offers the row as soon as its end is kept.)
   const live = sceneView();
   const row = liveRowKey();
   if (row) snapshots.set(row, live);
+  renderProtocol();
   const view = (lookingAt && snapshots.get(lookingAt)) || live;
   scene.render(view);
   renderLookBack();
@@ -1976,7 +1990,7 @@ function renderProtocol() {
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
     $('#protocol-title').textContent = u.protocolTitle;
     $('#protocol').innerHTML = [...done, ...next].join('');
-    $('#protocol-hint').textContent = snapshots.size ? u.lookBackHint : '';
+    $('#protocol-hint').textContent = snapshots.size && !instrumentBusy ? u.lookBackHint : '';
     // (Recording a bench procedure is not supported yet.)
     const save = document.querySelector<HTMLButtonElement>('.rec-save-btn');
     if (save) save.disabled = true;
@@ -1998,15 +2012,15 @@ function renderProtocol() {
   }
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
-  $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : snapshots.size && !plan.length ? u.lookBackHint : finished ? u.protocolNext : u.protocolHint;
+  $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : preset?.guided && !presetDone() ? (snapshots.size && !running ? u.lookBackHint : '') : [snapshots.size && !running ? u.lookBackHint : '', finished ? u.protocolNext : u.protocolHint].filter(Boolean).join(' ');
   // The save button follows the experiment; the list is rebuilt only on its own events.
   const saveBtn = document.querySelector<HTMLButtonElement>('.rec-save-btn');
   if (saveBtn) saveBtn.disabled = !history.length && stepElapsed() <= 0 && !doneRecord;
 }
 
-/** A row of the protocol that can be looked back at: its key, and marked when it is on the scene now. */
+/** A row of the protocol that can be looked back at: its key, and marked when it is on the scene now. Only in a pause or at the end — not while the experiment runs or an instrument is moving. */
 function lookAttr(key: string): string {
-  return snapshots.has(key) ? ` data-look="${key}"${lookingAt === key ? ' data-looking="1"' : ''}` : '';
+  return snapshots.has(key) && !running && !instrumentBusy ? ` data-look="${key}"${lookingAt === key ? ' data-looking="1"' : ''}` : '';
 }
 /** Over the scene while an earlier row is looked at: which one, and the way back. */
 function renderLookBack() {
@@ -2019,7 +2033,7 @@ function renderLookBack() {
 }
 $('#protocol').addEventListener('click', (e) => {
   const row = (e.target as HTMLElement).closest<HTMLElement>('[data-look]');
-  if (!row || running) return;
+  if (!row || running || instrumentBusy) return;
   // The same row again: back to the experiment as it is now.
   const key = row.dataset['look']!;
   lookingAt = lookingAt === key ? null : key;
@@ -3387,6 +3401,7 @@ $('#chart').append(chart.element);
 $('#scene').append(scene.element);
 $('#start').onclick = () => ((lookingAt = null), toggleStart());
 function toggleStart() {
+  goOnFreely();
   // A finished step: the next one continues with the same contents (the user may have changed nothing).
   if (finished) {
     closeStep();
