@@ -44,7 +44,7 @@ export interface Preset {
    */
   readonly answerOnBoard?: readonly string[];
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -150,6 +150,51 @@ export const PRESETS: readonly Preset[] = [
     formulas: ['mechanics.density'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 7, item: 'Тема 1. Хімія. Перші кроки', match: 'related', quote: 'Актуалізація умінь, набутих в адаптаційному циклі на прикладі визначення густини тіла (цвяха, ключа тощо).' }],
     quoteHas: 'густини',
+    expect: 'reached',
+  },
+  {
+    id: 'lever-balance',
+    grade: 7,
+    topic: MECH,
+    title: { uk: 'Зважуємо на важільних терезах', en: 'Weighing on a lever balance' },
+    question: {
+      uk: 'Зважимо на важільних терезах алюмінієвий циліндр, дерев’яний брусок, порожню склянку й склянку з водою. Тіло кладемо на ліву шальку, а на праву пінцетом — важки з набору, від більших до менших, поки терези не зрівноважаться. Скільки води в склянці?',
+      en: 'On a lever balance we weigh an aluminium cylinder, a wooden block, an empty glass and the glass with water. The load goes on the left pan, and on the right — weights from the set with tweezers, from larger to smaller, until the balance is level. How much water is in the glass?',
+    },
+    params: { ...room, vessel: 'beaker', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'balance',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.balance', what: 'body', substance: 'aluminium', mass: 0.0543, label: { uk: 'Алюмінієвий циліндр', en: 'Aluminium cylinder' } } },
+      { kind: 'bench', command: { type: 'lab.balance', what: 'body', substance: 'wood', mass: 0.12 * 0.06 * 0.04 * SUBSTANCES.wood.liquid.density.value, label: { uk: 'Дерев’яний брусок', en: 'Wooden block' } } },
+      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel-empty', label: { uk: 'Порожня склянка', en: 'Empty glass' } } },
+      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', label: { uk: 'Склянка з водою', en: 'Glass with water' } } },
+    ],
+    formulas: ['mechanics.weight'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 4', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 4. Вимірювання маси тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 16, лабораторна робота № 4, с. 116' } }, { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'liquid-density',
+    grade: 7,
+    topic: MECH,
+    title: { uk: 'Яка густина олії?', en: 'What is the density of oil?' },
+    question: {
+      uk: 'Зважимо порожню мензурку на важільних терезах, наллємо в неї соняшникову олію, зважимо ще раз і подивимося на поділки, скільки олії налили. Олія легша чи важча за воду, якщо порівняти однакові об’єми?',
+      en: 'We weigh an empty measuring cylinder on a lever balance, pour sunflower oil into it, weigh it again and read on the marks how much oil we poured. For equal volumes, is oil lighter or heavier than water?',
+    },
+    params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'sunflower-oil', startTemp: 20 },
+    guided: true,
+    bench: 'balance',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel-empty', label: { uk: 'Порожня мензурка', en: 'Empty cylinder' } } },
+      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', label: { uk: 'Мензурка з олією', en: 'Cylinder with oil' } } },
+      { kind: 'level' },
+    ],
+    choices: [ch('lighter', 'Легша', 'Lighter'), ch('same', 'Однакова', 'The same'), ch('heavier', 'Важча', 'Heavier')],
+    formulas: ['mechanics.density'],
+    quoteHas: 'густини',
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }],
     expect: 'reached',
   },
   {

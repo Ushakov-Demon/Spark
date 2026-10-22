@@ -324,6 +324,44 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       correct: real < ideal - 0.5 ? 'less' : real > ideal + 0.5 ? 'more' : 'fifty',
     };
   },
+  'lever-balance': (run) => {
+    const r = (run.readings ?? []).filter((x) => x.command.type === 'lab.balance');
+    const at = (what: string) => r.find((x) => x.command['what'] === what)?.record.value ?? null;
+    const empty = at('vessel-empty');
+    const full = at('vessel');
+    const water = empty !== null && full !== null ? full - empty : null;
+    const g = (kg: number, l: Locale) => formatMeasured('mass', kg, 0.00001, l);
+    const name = (x: (typeof r)[number], l: Locale) => ((x.command['label'] as { uk: string; en: string } | undefined)?.[l] ?? '').toLowerCase();
+    return {
+      say: both((l) => (water !== null ? (l === 'uk' ? `У склянці ${g(water, l)} води!` : `The glass holds ${g(water, l)} of water!`) : '—')),
+      text: both((l) =>
+        l === 'uk'
+          ? `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).join('; ')}. Масу води знаходимо як різницю двох зважувань: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. Найменший важок у наборі — 10 мг, тож саме з такою точністю зважено кожне тіло. Але точність маси води гірша: у різниці двох зважувань похибки додаються. Тіла кладуть на ліву шальку, важки — на праву, пінцетом, від більших до менших; брудне й вологе на шальки не кладуть, а рідину зважують лише в посудині.`
+          : `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).join('; ')}. The water’s mass is the difference of two weighings: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. The smallest weight of the set is 10 mg, so that is how precisely each body was weighed. The water’s mass is less precise: in a difference of two weighings the errors add up. Loads go on the left pan, weights on the right, with tweezers, from larger to smaller; nothing dirty or wet goes on the pans, and a liquid is weighed only in a vessel.`,
+      ),
+    };
+  },
+  'liquid-density': (run) => {
+    const r = run.readings ?? [];
+    const empty = r.find((x) => x.command.type === 'lab.balance' && x.command['what'] === 'vessel-empty')?.record.value ?? null;
+    const full = r.find((x) => x.command.type === 'lab.balance' && x.command['what'] === 'vessel')?.record.value ?? null;
+    const V = r.find((x) => x.record.quantity === 'volume')?.record.value ?? null;
+    const m = empty !== null && full !== null ? full - empty : null;
+    const rho = m !== null && V ? m / V : null;
+    const correct = rho === null ? undefined : rho < WATER * 0.97 ? 'lighter' : rho > WATER * 1.03 ? 'heavier' : 'same';
+    const table = COMPONENTS['sunflower-oil'].phases.liquid!.density!.value;
+    return {
+      ...(correct ? { correct } : {}),
+      say: both((l) => (rho !== null ? (l === 'uk' ? `ρ ≈ ${sig(rho, 3, l)} кг/м³ — олія легша за воду!` : `ρ ≈ ${sig(rho, 3, l)} kg/m³ — oil is lighter than water!`) : '—')),
+      text: both((l) =>
+        rho === null
+          ? '—'
+          : l === 'uk'
+            ? `Маса олії — різниця зважувань: m = ${formatMeasured('mass', full!, 0.00001, l)} − ${formatMeasured('mass', empty!, 0.00001, l)} = ${formatMeasured('mass', m!, 0.00001, l)}. Об’єм — за поділками мензурки: V = ${sig(V! * 1e6, 3, l)} см³. Густина ρ = m/V ≈ ${sig(rho / 1000, 3, l)} г/см³ = ${sig(rho, 3, l)} кг/м³ — менша за густину води (${sig(WATER, 3, l)} кг/м³), тому олія й плаває на воді плямами. У таблиці для соняшникової олії — ${sig(table, 3, l)} кг/м³. Найменше точне тут — об’єм: мензурка показує його лише з точністю до поділки.`
+            : `The oil’s mass is the difference of the weighings: m = ${formatMeasured('mass', full!, 0.00001, l)} − ${formatMeasured('mass', empty!, 0.00001, l)} = ${formatMeasured('mass', m!, 0.00001, l)}. Its volume comes from the cylinder’s marks: V = ${sig(V! * 1e6, 3, l)} cm³. The density ρ = m/V ≈ ${sig(rho / 1000, 3, l)} g/cm³ = ${sig(rho, 3, l)} kg/m³ — less than water’s (${sig(WATER, 3, l)} kg/m³), which is why oil floats on water in patches. The table gives ${sig(table, 3, l)} kg/m³ for sunflower oil. The least precise thing here is the volume: the cylinder shows it only to a division.`,
+      ),
+    };
+  },
   'hooke-spring': (run) => {
     const r = (run.readings ?? []).filter((x) => x.command.type === 'lab.stretch' && x.record.value !== null);
     const l0 = r.find((x) => x.command['weights'] === 0)?.record.value ?? null;

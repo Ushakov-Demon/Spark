@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m. */
@@ -20,6 +20,8 @@ export interface BenchView {
   readonly edge?: { readonly index: 0 | 1 | 2; readonly display: string };
   /** The block's edges, m, and the spring's length unloaded, m. */
   readonly block: readonly [number, number, number];
+  /** On the lever balance: what lies on the left pan, the weights on the right one (kg), and the sum. */
+  readonly balance?: { readonly load: 'body' | 'empty' | 'full'; readonly color: string; readonly weights: readonly number[]; readonly display: string };
   /** What the ruler at the spring shows. */
   readonly reading?: string;
 }
@@ -88,7 +90,29 @@ function hangingBlock(display: string, block: readonly [number, number, number])
   return `${standSvg(rodX, armX, armY)}${dynamometerSvg(armX, armY + 6, false, display)}<path d="M${armX},${armY + 86} v24" style="stroke:${THREAD};stroke-width:1.5"/>${blockSvg(armX - w / 2, armY + 110 + h, block)}`;
 }
 
+/** A school lever balance: a column, a beam, two pans; the load on the left, the weights on the right. */
+function balanceSvg(b: BenchView['balance']): string {
+  const cx = 330;
+  const top = 190;
+  const arm = 90;
+  const panY = top + 70;
+  const pan = (x: number) => `<path d="M${x},${top} L${x - 26},${panY} M${x},${top} L${x + 26},${panY}" style="stroke:${THREAD};stroke-width:1"/><path d="M${x - 32},${panY} q32,14 64,0 z" style="fill:#c9ced4;stroke:#6d7177"/>`;
+  const load = !b ? '' : b.load === 'body' ? `<rect x="${cx - arm - 14}" y="${panY - 22}" width="28" height="22" rx="3" style="fill:${b.color};stroke:rgba(0,0,0,0.35)"/>` : `<path d="M${cx - arm - 16},${panY - 40} v38 h32 v-38" style="fill:rgba(210,232,255,0.35);stroke:#8fb8dd;stroke-width:1.5"/>${b.load === 'full' ? `<rect x="${cx - arm - 15}" y="${panY - 22}" width="30" height="20" style="fill:rgba(240,200,80,0.55)"/>` : ''}`;
+  // The weights: brass cylinders for grams, flat plates for milligrams.
+  let x = cx + arm - 26;
+  const weights = (b?.weights ?? []).map((w) => {
+    const g = w * 1000;
+    const h = g >= 1 ? 6 + Math.cbrt(g) * 3 : 2;
+    const wd = g >= 1 ? 6 + Math.cbrt(g) * 2.2 : 7;
+    const s = `<rect x="${x}" y="${panY - h}" width="${wd}" height="${h}" rx="1.5" style="fill:${g >= 1 ? '#c9a43a' : '#d7dde6'};stroke:#7a6533"/>`;
+    x += wd + 1.5;
+    return s;
+  }).join('');
+  return `<rect x="${cx - 50}" y="${TABLE - 8}" width="100" height="8" rx="2" style="fill:${DARK}"/><rect x="${cx - 3}" y="${top}" width="6" height="${TABLE - 8 - top}" style="fill:${STEEL}"/><rect x="${cx - arm}" y="${top - 3}" width="${arm * 2}" height="6" rx="2" style="fill:${STEEL}"/><path d="M${cx},${top - 16} v14" style="stroke:#b11;stroke-width:2"/>${pan(cx - arm)}${pan(cx + arm)}${load}${weights}${b?.display ? `<text class="bench-reading" x="${cx}" y="${panY + 26}" text-anchor="middle">${b.display}</text>` : ''}`;
+}
+
 export function benchSvg(v: BenchView): string {
+  if (v.kind === 'balance') return balanceSvg(v.balance);
   if (v.kind === 'spring') {
     // A smaller scale here (4 units per cm): the stand with a 30 cm ruler fits under the board's writing.
     const S = 4;

@@ -555,6 +555,13 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-20',
   }),
+  'oiml-r111': source({
+    id: 'oiml-r111',
+    title: 'OIML R 111-1 (2004), Weights of classes E1 … M3, 4.3.1 Weight sequence: a set may use the sequences (1; 1; 2; 5), (1; 1; 1; 2; 5), (1; 2; 2; 5) or (1; 1; 2; 2; 5) × 10ⁿ kg',
+    url: 'https://www.oiml.org/en/files/pdf_r/r111-1-e04.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-22',
+  }),
   'wikipedia-hookes-law': source({
     id: 'wikipedia-hookes-law',
     title: 'Wikipedia, Hooke’s law: first stated in 1676 as a Latin anagram; the solution published in 1678 as ut tensio, sic vis ("as the extension, so the force")',

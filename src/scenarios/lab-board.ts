@@ -13,6 +13,7 @@ import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { liquidHeat } from '../substances/types.js';
 import { formatReading, weigh } from './weighing.js';
 import { formatMeasured } from './measuring.js';
+import { balanceWeights, weightsText } from './bench.js';
 import type { MeasurementRecord } from '../core/trace.js';
 import type { ScaleId } from '../equipment/scales.js';
 import { SAMPLE_ID, sampleOf, type LabParams } from './thermal-lab.js';
@@ -305,6 +306,16 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
   let body: { m?: number; v?: number } = {};
   const airByBody = new Map<string, number>();
   let springL0: number | null = null;
+  // A liquid weighed on the balance (empty vessel, then with the liquid) and its volume read by the marks: its density.
+  let emptyVessel: number | null = null;
+  let liquidMass: number | null = null;
+  let liquidVolume: number | null = null;
+  let liquidDone = false;
+  const liquidDensityLine = (i: number) => {
+    if (liquidDone || liquidMass === null || liquidVolume === null || !(liquidVolume > 0)) return;
+    liquidDone = true;
+    out.push({ id: `rhoL:${i}`, title: uk ? 'густина рідини' : 'the density of the liquid', formula: 'ρ = m / V', numbers: `${n(liquidMass * 1000)} ${uk ? 'г' : 'g'} / ${n(liquidVolume * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(liquidMass / liquidVolume / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(liquidMass / liquidVolume)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+  };
   const edges: (number | undefined)[] = [];
   const count = { volume: 0, mass: 0 };
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
@@ -340,6 +351,20 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       out.push({ id: `mu:${i}`, title: uk ? `тертя ковзання: брусок ${Number(c['weights']) === 0 ? 'без тягарців' : `і ${Number(c['weights'])} × 100 г`}` : `sliding friction: the block ${Number(c['weights']) === 0 ? 'alone' : `and ${Number(c['weights'])} × 100 g`}`, formula: 'μ = F / N', numbers: `${formatMeasured('force', r.value, 0.1, locale)} / ${F2(N)} ≈ ${n(r.value / N, 2)}` });
       return;
     }
+    if (c.type === 'lab.balance') {
+      const what = String(c['what']);
+      const label = (c['label'] as { uk: string; en: string } | undefined)?.[uk ? 'uk' : 'en'] ?? (what === 'vessel-empty' ? (uk ? 'порожня посудина' : 'the empty vessel') : what === 'vessel' ? (uk ? 'посудина з рідиною' : 'the vessel with the liquid') : uk ? 'тіло' : 'the body');
+      const g = (kg: number) => formatMeasured('mass', kg, 0.00001, locale);
+      const set = balanceWeights(r.value) ?? [];
+      out.push({ id: `bal:${i}`, title: uk ? `важільні терези: ${label.toLowerCase()}` : `lever balance: ${label.toLowerCase()}`, formula: `m = ${g(r.value)}`, numbers: weightsText(set, uk) });
+      if (what === 'vessel-empty') emptyVessel = r.value;
+      if (what === 'vessel' && emptyVessel !== null) {
+        liquidMass = r.value - emptyVessel;
+        out.push({ id: `liq:${i}`, title: uk ? 'маса рідини — різниця двох зважувань' : 'the mass of the liquid — the difference of two weighings', formula: 'm = m₂ − m₁', numbers: `${g(r.value)} − ${g(emptyVessel)} = ${g(liquidMass)}` });
+      }
+      liquidDensityLine(i);
+      return;
+    }
     if (c.type === 'lab.edge') {
       edges[Number(c['edge'])] = r.value;
       out.push({ id: `edge:${i}`, title: uk ? ['довжина бруска', 'ширина бруска', 'висота бруска'][Number(c['edge'])]! : ['the block’s length', 'its width', 'its height'][Number(c['edge'])]!, formula: `${['a', 'b', 'c'][Number(c['edge'])]} = ${cm(r.value)}` });
@@ -350,6 +375,10 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
         for (const [name, S] of faces) out.push({ id: `pressure:${i}:${name}`, title: uk ? `тиск бруска: ${name}` : `the block’s pressure: ${name}`, formula: 'p = P / S', numbers: `${formatMeasured('force', P, 0.1, locale)} / ${n(S * 1e4)} ${uk ? 'см²' : 'cm²'} ≈ ${n(P / S)} ${uk ? 'Па' : 'Pa'}` });
       }
       return;
+    }
+    if (r.quantity === 'volume' && liquidVolume === null && emptyVessel !== null) {
+      liquidVolume = r.value;
+      // (The reading's own line follows below; the density is written once the mass is known too.)
     }
     if (r.quantity === 'volume') {
       const div = r.inputs?.['division'] ?? 1e-6;
@@ -401,6 +430,7 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       out.push({ id: `rho:${i}`, title: uk ? 'густина речовини тіла' : 'the density of the body', formula: 'ρ = m / V', numbers: `${n(body.m * 1000)} ${uk ? 'г' : 'g'} / ${n(body.v * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(rho / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(rho)} ${uk ? 'кг/м³' : 'kg/m³'}` });
       body = {};
     }
+    liquidDensityLine(i);
   });
   return out;
 }

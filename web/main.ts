@@ -39,6 +39,8 @@ import {
   stepCommand,
   OPERATIONS,
   BENCH_TEXT,
+  balanceWeights,
+  weightsText,
   BENCH_BLOCK,
   BENCH_SPRING_L0,
   LAB_COOLER_ID,
@@ -318,7 +320,9 @@ function benchView(): BenchView | null {
   const kind = preset?.bench;
   if (!kind) return null;
   const log = session.result().log.filter((e) => e.ok);
-  const last = [...log].reverse().find((e) => ['lab.stretch', 'lab.pull', 'lab.edge', 'lab.hang'].includes(e.command.type));
+  const last = [...log].reverse().find((e) => ['lab.stretch', 'lab.pull', 'lab.edge', 'lab.hang', 'lab.balance', 'lab.read-level'].includes(e.command.type));
+  // Reading the marks of a cylinder: the vessel itself is on the table.
+  if (last?.command.type === 'lab.read-level') return null;
   const r = last ? readingsOf([last])[0]?.record : undefined;
   const c = last?.command as ({ type: string } & Record<string, unknown>) | undefined;
   const show = (q: 'force' | 'length', v: number | null | undefined) => formatMeasured(q, v ?? 0, q === 'force' ? 0.1 : 0.001, locale);
@@ -326,6 +330,11 @@ function benchView(): BenchView | null {
   if (kind === 'spring') {
     const n = c?.type === 'lab.stretch' ? Number(c['weights']) : 0;
     return { ...base, weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
+  }
+  if (kind === 'balance') {
+    const b = c?.type === 'lab.balance' ? (c as unknown as { what: string; substance?: string; label?: { uk: string; en: string } }) : undefined;
+    const set = r?.value != null && b ? (balanceWeights(r.value) ?? []) : [];
+    return { ...base, ...(b ? { balance: { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, display: r?.value != null ? `${weightsText(set, locale === 'uk')} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' } } : {}) };
   }
   if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
   if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value) } : base;
@@ -336,7 +345,7 @@ function showingMeasure() {
   if (!lastMeasure || lastMeasure.step !== session || running || session.state.time !== lastMeasure.at) return null;
   const l = session.result().log;
   const last = l[l.length - 1];
-  if (!last?.ok || !['lab.read-level', 'lab.hang', 'lab.stretch', 'lab.pull', 'lab.edge'].includes(last.command.type)) return null;
+  if (!last?.ok || !['lab.read-level', 'lab.hang', 'lab.stretch', 'lab.pull', 'lab.edge', 'lab.balance'].includes(last.command.type)) return null;
   return readingsOf([last])[0] ?? null;
 }
 /** Everything measured in this experiment, in order. */
@@ -371,6 +380,11 @@ function measureSay(): string {
   if (m.command.type === 'lab.pull') {
     const n = (m.command as { weights: number }).weights;
     return uk ? `Брусок${n ? ` із ${n} тягарц${n === 1 ? 'ем' : 'ями'}` : ''} ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}. Це і є сила тертя ковзання.` : `The block${n ? ` with ${n} weight${n === 1 ? '' : 's'}` : ''} slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}. That is the force of sliding friction.`;
+  }
+  if (m.command.type === 'lab.balance') {
+    if (r.value === null) return uk ? 'Важків із набору не вистачає — тіло завелике для цих терезів (до 211 г).' : 'The set of weights is not enough — the load is too heavy for this balance (up to 211 g).';
+    const set = balanceWeights(r.value) ?? [];
+    return uk ? `Терези в рівновазі: ${weightsText(set, true)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.` : `The balance is level: ${weightsText(set, false)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.`;
   }
   if (m.command.type === 'lab.edge') {
     const e = (m.command as { edge: number }).edge;
