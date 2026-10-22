@@ -103,6 +103,8 @@ export interface UiText {
     wrong(choice: string, real: string): string;
     /** The question asked at the end of a guided procedure. */
     conclude: string;
+    /** After the experiment's own question (the choices at the end). */
+    concludeAsk: string;
     concludedRight(choice: string): string;
     /** A wrong pick from the density table. */
     concludedWrong(choice: string, real: string): string;
@@ -380,6 +382,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       noted: 'Записав твій прогноз! Тепер натисни «Старт» — і перевіримо.',
       right: (c) => `Твій прогноз «${c}» справдився!`,
       conclude: 'Що вийшло? Обери відповідь:',
+      concludeAsk: 'Обери відповідь:',
       concludedRight: (c) => `Твоя відповідь «${c}» — правильно!`,
       concludedWrong: (c, r) => `Ти обрав «${c}», але виміряна густина найближча до «${r}». Порівняй ще раз із таблицею.`,
       concludedOther: (c, r) => `Ти обрав «${c}», а дослід показав «${r}». Подивись на розрахунок нижче.`,
@@ -651,6 +654,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       noted: 'Noted your prediction! Now press “Start” — and we will check.',
       right: (c) => `Your prediction “${c}” came true!`,
       conclude: 'What came out? Pick an answer:',
+      concludeAsk: 'Pick an answer:',
       concludedRight: (c) => `Your answer “${c}” is right!`,
       concludedWrong: (c, r) => `You chose “${c}”, but the measured density is nearest to “${r}”. Compare with the table again.`,
       concludedOther: (c, r) => `You chose “${c}”, and the experiment showed “${r}”. See the calculation below.`,

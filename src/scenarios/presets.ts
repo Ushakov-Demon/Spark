@@ -17,6 +17,11 @@ export interface Preset {
   readonly title: LocalizedText;
   /** The question to think about before pressing "Start". */
   readonly question: LocalizedText;
+  /**
+   * The question put in one line, over the choices («Чи замерзне спирт у морозилці?»). Not given — the last
+   * question of `question` (presetAsk), when it stands on its own.
+   */
+  readonly ask?: LocalizedText;
   readonly params: LabParams;
   /** Put into the vessel before the start (hot water poured into cold, a block from boiling water). */
   readonly setup?: readonly Exclude<ProtocolStep, { kind: 'operation' }>[];
@@ -125,6 +130,12 @@ export const DENSITY_TABLE: readonly Choice[] = Object.values(SUBSTANCES)
   .sort((a, b) => a.liquid.density.value - b.liquid.density.value)
   .map((s) => ({ id: s.id, label: s.name }));
 
+/** The question over the choices: the preset's own `ask`, or the last sentence of its text that asks something. */
+export function presetAsk(p: Preset): LocalizedText {
+  const last = (t: string) => (t.match(/[^.!?…]*\?/g) ?? []).pop()?.trim() ?? '';
+  return p.ask ?? { uk: last(p.question.uk), en: last(p.question.en) };
+}
+
 /**
  * Does the experiment need a thermometer? Not when all it works out is mechanics (a density, a buoyant force,
  * a lever): there the temperature only stands in the way. Solutions keep it — solubility goes with temperature.
@@ -188,6 +199,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'З якого металу зроблено брусок?', en: 'What metal is the block made of?' },
     id: 'mystery-metal',
     grade: 7,
     topic: MECH,
@@ -239,6 +251,7 @@ export const PRESETS: readonly Preset[] = [
   },
   varied(
     {
+      ask: { uk: 'Рідина легша чи важча за воду, якщо порівняти однакові об’єми?', en: 'Is the liquid lighter or heavier than water, for equal volumes?' },
       id: 'liquid-density',
       grade: 7,
       topic: MECH,
@@ -306,6 +319,7 @@ export const PRESETS: readonly Preset[] = [
     },
   ),
   {
+    ask: { uk: 'Як зміниться коефіцієнт тертя μ = F/N, коли додаватимемо тягарці?', en: 'How will the coefficient μ = F/N change as weights are added?' },
     id: 'friction-coefficient',
     grade: 7,
     topic: MECH,
@@ -327,6 +341,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'На якій грані брусок тиснутиме на стіл найсильніше?', en: 'On which face will the block press on the table hardest?' },
     id: 'block-pressure',
     grade: 7,
     topic: MECH,
@@ -350,6 +365,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'З якої речовини зроблено брусок?', en: 'What substance is the block made of?' },
     id: 'hydrostatic-weighing',
     grade: 7,
     topic: MECH,
@@ -478,6 +494,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'Що станеться з розчином, коли він охолоне, — і коли в нього кинути кристалик?', en: 'What happens to the solution as it cools — and when a crystal is dropped in?' },
     id: 'supersaturated',
     grade: 9,
     topic: SOLUTIONS,
@@ -505,6 +522,7 @@ export const PRESETS: readonly Preset[] = [
   },
   // ---------------------------------------------------------------- 8 grade, heat
   {
+    ask: { uk: 'Чи вийде в досліді табличне значення λ льоду?', en: 'Will the experiment give the table value of λ for ice?' },
     id: 'ice-latent-heat',
     grade: 8,
     topic: THERMAL,
@@ -526,6 +544,7 @@ export const PRESETS: readonly Preset[] = [
   },
   varied(
     {
+      ask: { uk: 'Чи збіжеться виміряна питома теплоємність металу з табличною?', en: 'Will the measured specific heat of the metal match the table?' },
       id: 'specific-heat-metal',
       grade: 8,
       topic: THERMAL,
@@ -628,6 +647,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'Якою вийде питома теплоємність води?', en: 'What specific heat of water will it give?' },
     id: 'specific-heat-water',
     grade: 8,
     topic: THERMAL,
@@ -640,6 +660,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'Чи розплавиться сіль у каструлі на газі?', en: 'Will the salt melt in a pot on the gas?' },
     id: 'salt-in-pot',
     grade: 8,
     topic: THERMAL,
@@ -670,6 +691,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'Чи замерзне морська вода так само, як прісна?', en: 'Will sea water freeze like fresh water?' },
     id: 'road-salt',
     grade: 8,
     topic: THERMAL,
@@ -718,6 +740,7 @@ export const PRESETS: readonly Preset[] = [
     },
   ),
   {
+    ask: { uk: 'Мідний брусок тієї самої маси нагрів би воду сильніше чи слабше, ніж алюмінієвий?', en: 'Would a copper block of the same mass warm the water more or less than the aluminium one?' },
     id: 'which-metal',
     grade: 8,
     topic: THERMAL,
@@ -736,6 +759,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'Що закипить швидше: спирт чи вода?', en: 'Which boils sooner: alcohol or water?' },
     id: 'alcohol-vs-water',
     grade: 8,
     topic: THERMAL,
@@ -767,6 +791,7 @@ export const PRESETS: readonly Preset[] = [
   },
   // ---------------------------------------------------------------- 8 grade, electricity
   {
+    ask: { uk: 'Чи проводить струм дистильована вода?', en: 'Does distilled water conduct electricity?' },
     id: 'does-water-conduct',
     grade: 8,
     topic: ELECTRIC,
@@ -818,6 +843,7 @@ export const PRESETS: readonly Preset[] = [
   },
   // ---------------------------------------------------------------- for everyone
   {
+    ask: { uk: 'Що станеться з олією раніше: закипить чи почне диміти?', en: 'What comes first with oil: boiling or smoke?' },
     id: 'oil-does-not-boil',
     grade: null,
     topic: FUN,
@@ -829,6 +855,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'decomposes',
   },
   {
+    ask: { uk: 'Чи замерзне спирт у морозилці?', en: 'Will alcohol freeze in the freezer?' },
     id: 'alcohol-in-freezer',
     grade: null,
     topic: FUN,
@@ -841,6 +868,7 @@ export const PRESETS: readonly Preset[] = [
     expect: 'impossible',
   },
   {
+    ask: { uk: 'Чи зміниться маса води, коли вона стане льодом?', en: 'Will the mass of the water change when it turns to ice?' },
     id: 'weigh-the-water',
     grade: null,
     topic: FUN,

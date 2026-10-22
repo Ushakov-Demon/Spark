@@ -52,6 +52,18 @@ describe('ready-made experiments', () => {
 });
 
 describe('choices of the ready-made experiments', () => {
+  it('the choices come with the question they answer, in one short line', async () => {
+    const { presetAsk } = await import('../../src/scenarios/index.js');
+    for (const p of PRESETS.filter((x) => x.choices))
+      for (const l of ['uk', 'en'] as const) {
+        const ask = presetAsk(p)[l];
+        expect(ask, `${p.id} ${l}`).toMatch(/\?$/);
+        // A question that stands on its own: not «А олія?».
+        expect(ask.length, `${p.id} ${l}: ${ask}`).toBeGreaterThan(20);
+        expect(ask.length, `${p.id} ${l}: ${ask}`).toBeLessThan(110);
+      }
+  });
+
   it('a thermometer only where the temperature matters', async () => {
     const { needsThermometer } = await import('../../src/scenarios/index.js');
     const need = (id: string) => needsThermometer(PRESETS.find((p) => p.id === id)!);

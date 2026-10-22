@@ -84,6 +84,7 @@ import {
   PRESET_GRADES,
   nearestRows,
   needsThermometer,
+  presetAsk,
   guidedPlan,
   freshParams,
   stepParams,
@@ -1304,6 +1305,8 @@ interface Quiz {
   readonly options: readonly QuizOption[];
   /** A prediction: one choice, changeable until the start. */
   readonly predict: boolean;
+  /** The question itself, after the title («Твій прогноз: Чи замерзне спирт у морозилці?»). */
+  readonly ask?: string;
 }
 /** What was picked in the question on screen (key), in order. */
 let picked: { key: string; ids: string[] } = { key: '', ids: [] };
@@ -1316,7 +1319,7 @@ function quizNow(): Quiz | null {
   if (preset?.choices && preset.choicesAt !== 'end' && !running && stepElapsed() === 0 && !history.length && !doneRecord && (!preset.guided || plan.length === planTotal)) {
     // Which choice is right only the run will tell, so a prediction offers all of them (at most four), shuffled.
     const key = `p:${preset.id}`;
-    return { key, title: u.predictTitle, predict: true, options: pickChoices(preset.choices.map((c) => ({ id: c.id, text: tr(c.label, locale), reply: u.noted })), key) };
+    return { key, title: u.predictTitle, ask: tr(presetAsk(preset), locale), predict: true, options: pickChoices(preset.choices.map((c) => ({ id: c.id, text: tr(c.label, locale), reply: u.noted })), key) };
   }
   // "Where did those grams go?" — after a weighing that shows less than the one before.
   const w = showingWeighing();
@@ -1526,7 +1529,8 @@ function renderGuide(): boolean {
     if (preset.choicesAt === 'end' && preset.choices && prediction?.preset !== preset.id) {
       const q = t().quiz;
       const buttons = preset.choices.map((c) => `<button type="button" data-choice="${c.id}">${tr(c.label, locale)}</button>`).join('');
-      setHtml('#quiz', `<div class="quiz"><span class="quiz-title">${q.conclude}</span><div class="quiz-options">${buttons}</div></div>`);
+      const ask = tr(presetAsk(preset), locale);
+      setHtml('#quiz', `<div class="quiz"><p class="quiz-head">${ask ? `<span class="quiz-ask">${ask}</span> <span class="quiz-title">${q.concludeAsk}</span>` : `<span class="quiz-title">${q.conclude}</span>`}</p><div class="quiz-options">${buttons}</div></div>`);
       return true;
     }
     if (!presetAnswer) return (setHtml('#quiz', ''), true);
@@ -1574,7 +1578,7 @@ function quizHtml(q: Quiz): string {
     })
     .join('');
   const change = q.predict && folded ? `<button type="button" class="link" data-rechoose="1">${t().quiz.rechoose}</button>` : '';
-  return `<div class="quiz" data-key="${q.key}"><span class="quiz-title">${q.title}</span><div class="quiz-options">${buttons}${change}</div></div>`;
+  return `<div class="quiz" data-key="${q.key}"><p class="quiz-head"><span class="quiz-title">${q.title}</span>${q.ask ? ` <span class="quiz-ask">${q.ask}</span>` : ''}</p><div class="quiz-options">${buttons}${change}</div></div>`;
 }
 const predictionVerdictRight = () => (prediction && presetAnswer && presetAnswer !== 'computing' && prediction.choice === presetAnswer.correct ? predictionVerdict() : null);
 /** The verdict on a prediction, once the run has answered the question. */
