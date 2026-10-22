@@ -52,6 +52,17 @@ describe('ready-made experiments', () => {
 });
 
 describe('choices of the ready-made experiments', () => {
+  it('a thermometer only where the temperature matters', async () => {
+    const { needsThermometer } = await import('../../src/scenarios/index.js');
+    const need = (id: string) => needsThermometer(PRESETS.find((p) => p.id === id)!);
+    expect(need('mystery-metal')).toBe(false);
+    expect(need('archimedes-salt')).toBe(false);
+    expect(need('freeze-water')).toBe(true);
+    expect(need('joule-heating')).toBe(true);
+    // Solutions: solubility goes with temperature.
+    expect(need('grow-crystals')).toBe(true);
+  });
+
   it.each(PRESETS.filter((p) => p.choices).map((p) => [p.id, p] as const))('%s: the run picks one of its choices', (_id, p) => {
     const ids = p.choices!.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);

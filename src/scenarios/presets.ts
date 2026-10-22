@@ -125,6 +125,12 @@ export const DENSITY_TABLE: readonly Choice[] = Object.values(SUBSTANCES)
   .sort((a, b) => a.liquid.density.value - b.liquid.density.value)
   .map((s) => ({ id: s.id, label: s.name }));
 
+/**
+ * Does the experiment need a thermometer? Not when all it works out is mechanics (a density, a buoyant force,
+ * a lever): there the temperature only stands in the way. Solutions keep it — solubility goes with temperature.
+ */
+export const needsThermometer = (p: Preset): boolean => !p.formulas.length || !p.formulas.every((f) => f.startsWith('mechanics.'));
+
 /** At most this many choices are offered at once: enough to look for the answer, not a list to wade through. */
 export const MAX_CHOICES = 10;
 

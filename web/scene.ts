@@ -74,6 +74,8 @@ export interface SceneView {
   readonly bench?: BenchView;
   /** The level was just read by the marks: a line at the level and the reading. */
   readonly levelMark?: string;
+  /** No thermometer in the vessel: the experiment is not about temperature (a density, a buoyant force). */
+  readonly noThermometer?: boolean;
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
   readonly board?: { readonly empty: string; readonly front: string; readonly back: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers?: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
@@ -156,7 +158,7 @@ export function createScene(): Scene {
     const metal = METAL[v.material] ?? METAL['steel']!;
     const wallStyle = glass ? 'fill:rgba(210,232,255,0.18);stroke:#8fb8dd' : `fill:${metal.fill};stroke:${metal.edge}`;
     const front = v.device === 'immersion' || v.device === 'supply';
-    // Thermometer to the left of the vessel.
+    // Thermometer to the left of the vessel; what it shows is written below, on the front of the table (not among the chalk on the board).
     const tx = g.left - 46;
     scaleKey = '';
     svg.innerHTML = `
@@ -197,12 +199,12 @@ export function createScene(): Scene {
       }).join('')}</g>
       <g id="sc-vapour" class="steam">${steamPuffs(g, v.lid && !!g.lidPath)}</g>
       <ellipse id="sc-cloud" class="toxic" cx="${CX}" cy="${g.top - 40}" rx="${(g.right - g.left) / 2 + 20}" ry="24"/>
-      <g class="thermo">
+      <g class="thermo" id="sc-thermo">
         <rect x="${tx - 6}" y="${g.top - 10}" width="12" height="${g.bottom - g.top + 6}" rx="6"/>
         <circle cx="${tx}" cy="${g.bottom + 2}" r="10"/>
         <rect id="sc-merc" class="merc" x="${tx - 2.5}" y="${g.bottom}" width="5" height="0"/>
         <circle class="merc" cx="${tx}" cy="${g.bottom + 2}" r="6.5"/>
-        <text id="sc-temp" class="thermo-text" x="${tx}" y="${g.top - 18}" text-anchor="middle"></text>
+        <text id="sc-temp" class="thermo-text" x="${tx}" y="${TABLE + 24}" text-anchor="middle"></text>
       </g>
       <g id="sc-scale" class="scales"></g>
       <g id="sc-dyn" class="dyn"></g>
@@ -484,6 +486,7 @@ export function createScene(): Scene {
       const tubeH = g.bottom - g.top - 4;
       merc?.setAttribute('y', String(g.bottom - k4 * tubeH));
       merc?.setAttribute('height', String(k4 * tubeH));
+      $('sc-thermo')?.setAttribute('display', v.noThermometer ? 'none' : 'inline');
       const tt = $('sc-temp');
       if (tt) tt.textContent = `${v.temperature.toFixed(1).replace('.', v.decimal)}°`;
       // The Professor.

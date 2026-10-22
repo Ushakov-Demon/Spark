@@ -83,6 +83,7 @@ import {
   PRESETS,
   PRESET_GRADES,
   nearestRows,
+  needsThermometer,
   guidedPlan,
   freshParams,
   stepParams,
@@ -1238,6 +1239,7 @@ function sceneView(): SceneView {
     : undefined;
   return {
     device,
+    ...(preset && !needsThermometer(preset) ? { noThermometer: true } : {}),
     on: params.supply ? (sup?.state.current ?? 0) > 0 : params.heater ? power > 0 : !!params.cooler,
     intensity: params.heater ? Math.min(1, power / maxPower) : 1,
     ...(heaterEntity && isHeater(heaterEntity) ? { deviceTemp: heaterEntity.state.temperature - 273.15 } : {}),
