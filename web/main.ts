@@ -305,6 +305,7 @@ function newSession() {
   scene.read(false);
   snapshots = new Map();
   lookingAt = null;
+  answerShown = null;
   replaying = null;
   instrumentBusy = false;
   answerWhenSettled = false;
@@ -1402,6 +1403,10 @@ interface Quiz {
 }
 /** What was picked in the question on screen (key), in order. */
 let picked: { key: string; ids: string[] } = { key: '', ids: [] };
+/** A ready-made experiment whose answer was asked for without picking a conclusion (picking is never a must). */
+let answerShown: string | null = null;
+/** The experiment's question is settled: a conclusion picked, or the answer asked for. */
+const concluded = () => !!preset && (prediction?.preset === preset.id || answerShown === preset.id);
 /** The prediction for a ready-made experiment, judged when its answer comes. */
 let prediction: { readonly preset: string; readonly choice: string } | null = null;
 
@@ -1619,11 +1624,11 @@ function renderGuide(): boolean {
   // Measured out: the answer to the question (and the verdict on the prediction), here under the scene.
   if (preset.choiceTable !== 'density') {
     // The question asked at the end: the conclusion is picked from the choices, then judged against the run.
-    if (preset.choicesAt === 'end' && preset.choices && prediction?.preset !== preset.id) {
+    if (preset.choicesAt === 'end' && preset.choices && !concluded()) {
       const q = t().quiz;
       const buttons = preset.choices.map((c) => `<button type="button" data-choice="${c.id}">${tr(c.label, locale)}</button>`).join('');
       const ask = tr(presetAsk(preset), locale);
-      setHtml('#quiz', `<div class="quiz"><p class="quiz-head">${ask ? `<span class="quiz-ask">${ask}</span> <span class="quiz-title">${q.concludeAsk}</span>` : `<span class="quiz-title">${q.conclude}</span>`}</p><div class="quiz-options">${buttons}</div></div>`);
+      setHtml('#quiz', `<div class="quiz"><p class="quiz-head">${ask ? `<span class="quiz-ask">${ask}</span> <span class="quiz-title">${q.concludeAsk}</span>` : `<span class="quiz-title">${q.conclude}</span>`}</p><div class="quiz-options">${buttons}${showAnswerButton()}</div></div>`);
       return true;
     }
     if (!presetAnswer) return (setHtml('#quiz', ''), true);
@@ -1634,21 +1639,23 @@ function renderGuide(): boolean {
   if (preset.choiceTable === 'density' && preset.choices) {
     const rho = measuredDensity();
     const chosen = prediction?.preset === preset.id ? prediction.choice : null;
+    // Asked for without a pick: the right row is marked, the answer shown.
+    const revealed = !!chosen || answerShown === preset.id;
     const right = presetAnswer && presetAnswer !== 'computing' ? presetAnswer.correct : undefined;
-    // The rows nearest to what was measured; once one is picked, only it and the right one stay.
+    // The rows nearest to what was measured; once one is picked, only it and the right one stay (the answer asked for — the right one).
     const near = nearestRows(preset.choices, rho, (id) => SUBSTANCES[id as SubstanceId].liquid.density.value);
     const rows = preset.choices
-      .filter((c) => (chosen ? c.id === chosen || c.id === right : near.includes(c)))
+      .filter((c) => (chosen ? c.id === chosen || c.id === right : revealed ? c.id === right : near.includes(c)))
       .map((c) => {
         const x = SUBSTANCES[c.id as SubstanceId];
-        const cls = chosen === c.id ? (right === undefined ? 'picked' : right === c.id ? 'right' : 'wrong') : right && chosen && right === c.id ? 'right' : '';
-        return `<tr class="${cls}"><td>${tr(c.label, locale)}</td><td class="num">${sig(x.liquid.density.value, 4, locale)}</td><td>${chosen ? (cls === 'right' ? '✓' : cls === 'wrong' ? '✗' : '') : `<button type="button" data-choice="${c.id}">${u.pick}</button>`}</td></tr>`;
+        const cls = chosen === c.id ? (right === undefined ? 'picked' : right === c.id ? 'right' : 'wrong') : right && revealed && right === c.id ? 'right' : '';
+        return `<tr class="${cls}"><td>${tr(c.label, locale)}</td><td class="num">${sig(x.liquid.density.value, 4, locale)}</td><td>${revealed ? (cls === 'right' ? '✓' : cls === 'wrong' ? '✗' : '') : `<button type="button" data-choice="${c.id}">${u.pick}</button>`}</td></tr>`;
       })
       .join('');
     const rhoText = rho === null ? '—' : `${sig(rho / 1000, 3, locale)} ${locale === 'uk' ? 'г/см³' : 'g/cm³'} = ${sig(rho, 3, locale)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'}`;
     const verdict = predictionVerdict();
-    const answer = verdict && presetAnswer && presetAnswer !== 'computing' ? `<p class="verdict">${verdict}</p><p class="answer-text">${tr(presetAnswer.text, locale)}</p>${whyHtml()}` : '';
-    setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table>${chosen ? renewButton() : ''}</div>`);
+    const answer = revealed && presetAnswer && presetAnswer !== 'computing' ? `${verdict ? `<p class="verdict">${verdict}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>${whyHtml()}` : '';
+    setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table>${revealed ? renewButton() : showAnswerButton()}</div>`);
     return true;
   }
   return false;
@@ -1674,6 +1681,10 @@ function quizHtml(q: Quiz): string {
   return `<div class="quiz" data-key="${q.key}"><p class="quiz-head"><span class="quiz-title">${q.title}</span>${q.ask ? ` <span class="quiz-ask">${q.ask}</span>` : ''}</p><div class="quiz-options">${buttons}${change}</div></div>`;
 }
 const predictionVerdictRight = () => (prediction && presetAnswer && presetAnswer !== 'computing' && prediction.choice === presetAnswer.correct ? predictionVerdict() : null);
+/** Beside the conclusions: the answer without picking one (picking is an invitation, not a must). */
+function showAnswerButton(): string {
+  return `<button type="button" class="link show-answer" data-show-answer="1">${t().quiz.showAnswer}</button>`;
+}
 /** «Чому так?»: the reasoning behind the answer, when it has one. */
 function whyHtml(): string {
   // (ρ_тіла, F_A: subscripts, as on the board.)
@@ -1711,7 +1722,7 @@ function stepLine(l: ReturnType<typeof boardLines>[number], p: LabParams, i: num
 }
 function boardNow(): ReturnType<typeof boardLines> {
   // The answer to the question asked at the end is not written before it is picked: those lines show the formula only.
-  const hidden = preset?.answerOnBoard && prediction?.preset !== preset.id ? preset.answerOnBoard : null;
+  const hidden = preset?.answerOnBoard && !concluded() ? preset.answerOnBoard : null;
   const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}|${instrumentBusy}`;
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
@@ -3563,6 +3574,11 @@ $('#quiz').addEventListener('click', (e) => {
   }
   const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
   if (step) return nextPlanStep();
+  if ((e.target as HTMLElement).closest('button[data-show-answer]') && preset) {
+    answerShown = preset.id;
+    answerPreset();
+    return render();
+  }
   if (preset?.guided && !plan.length) {
     const pick = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-choice]');
     if (!pick) return;

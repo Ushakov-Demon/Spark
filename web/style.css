@@ -622,6 +622,7 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .quiz { margin-top: 10px; display: grid; gap: 6px; }
 .quiz-title { font-weight: 600; font-size: 0.9rem; }
 .quiz-head { margin: 0; }
+.quiz-options .show-answer, .guide .show-answer { align-self: center; margin-left: 4px; }
 /* «Чому так?» under an answer: the reasoning, set apart. */
 .answer-why { margin: 8px 0 4px; padding: 8px 12px; border-left: 4px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; line-height: 1.5; }
 /* The question itself: what the choices answer. */
