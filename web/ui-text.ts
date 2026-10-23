@@ -165,6 +165,9 @@ export interface UiText {
   inProgramme: string;
   programs: string;
   topic: string;
+  /** The button under an experiment's icon: its full description. */
+  presetMore: string;
+  details: { aim: string; takes: string; steps: string; topic: string; formulas: string; related: string };
   planNext(step: string): string;
   planAdd(what: string, mass: string): string;
   planDone: string;
@@ -447,6 +450,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     inProgramme: 'У програмі',
     programs: 'Програми',
     topic: 'Тема',
+    presetMore: 'Повний опис досліду',
+    details: { aim: 'Мета', takes: 'Що знадобиться', steps: 'Хід досліду', topic: 'Тема', formulas: 'Формули', related: 'та сама ідея, інша речовина' },
     planNext: (s) => `Далі за планом: ${s}`,
     planAdd: (w, m) => `досипати ${m} ${w}`,
     planDone: 'План виконано! Можна експериментувати далі самостійно.',
@@ -725,6 +730,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     inProgramme: 'In the programme',
     programs: 'Programmes',
     topic: 'Topic',
+    presetMore: 'Full description of the experiment',
+    details: { aim: 'Aim', takes: 'What it takes', steps: 'Steps', topic: 'Topic', formulas: 'Formulas', related: 'the same idea, another substance' },
     planNext: (s) => `Next in the plan: ${s}`,
     planAdd: (w, m) => `add ${m} of ${w}`,
     planDone: 'Plan complete! Go on experimenting on your own.',

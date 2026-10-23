@@ -2060,17 +2060,7 @@ function renderProtocol() {
       ? `<li class="current"${finished ? lookAttr(`s:${cur}`) : ''}><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`
       : `<li class="${plan.length ? 'current' : 'done'}"><span class="what">${u.measuring}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`,
   );
-  for (const s of plan) {
-    const label =
-      s.kind === 'add' ? u.added(tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' }))
-      : s.kind === 'weigh' ? u.weigh.button
-      : s.kind === 'level' ? u.measure.level
-      : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid)
-      : s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale)
-      : s.kind === 'fresh' ? `🔄 ${tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale)}`
-      : tr(OPERATIONS[s.action].label, locale);
-    rows.push(`<li class="planned"><span class="what">${label}</span></li>`);
-  }
+  for (const s of plan) rows.push(`<li class="planned"><span class="what">${planStepLabel(s)}</span></li>`);
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
   $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : preset?.guided && !presetDone() ? (snapshots.size && !running ? u.lookBackHint : '') : [snapshots.size && !running ? u.lookBackHint : '', finished ? u.protocolNext : u.protocolHint].filter(Boolean).join(' ');
@@ -2079,6 +2069,17 @@ function renderProtocol() {
   if (saveBtn) saveBtn.disabled = !history.length && stepElapsed() <= 0 && !doneRecord;
 }
 
+/** A step still to do, as the protocol (and an experiment's description) names it. */
+function planStepLabel(s: ProtocolStep): string {
+  const u = t();
+  return s.kind === 'add' ? u.added(tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' }))
+    : s.kind === 'weigh' ? u.weigh.button
+    : s.kind === 'level' ? u.measure.level
+    : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid)
+    : s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale)
+    : s.kind === 'fresh' ? `🔄 ${tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale)}`
+    : `${s.label ? tr(s.label, locale) : tr(OPERATIONS[s.action].label, locale).replace('…', '')}${s.target !== undefined && OPERATIONS[s.action].target ? ` ${s.target} °C` : ''}`;
+}
 /** A row of the protocol that can be looked back at: its key, and marked when it is on the scene now. Only in a pause or at the end — not while the experiment runs or an instrument is moving. */
 function lookAttr(key: string): string {
   return snapshots.has(key) && !running && !instrumentBusy ? ` data-look="${key}"${lookingAt === key ? ' data-looking="1"' : ''}` : '';
@@ -2946,13 +2947,13 @@ function buildPresets() {
   const found = (p: Preset) => [p.title, p.question, p.topic].some((x) => tr(x, locale).toLowerCase().includes(query));
   const graded = query ? PRESETS.filter(found) : inSubject.filter((x) => gradeOf(x) === presetGrade);
   // Those under one heading stand together (in the order the headings first come).
-  const headOf = (p: Preset) => (query ? '' : presetTopicIn(p, presetSubject, locale));
+  const headOf = (p: Preset) => (query ? '' : presetTopicIn(p, presetSubject, locale).replace(TOPIC_NUMBER, ''));
   const heads = [...new Set(graded.map(headOf))];
   const shown = [...graded].sort((a, b) => heads.indexOf(headOf(a)) - heads.indexOf(headOf(b)));
   if (!shown.length) list.append(el('p', { className: 'muted small' }, u.presetsNone));
   let topic = '';
   for (const p of shown) {
-    const heading = query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : presetTopicIn(p, presetSubject, locale);
+    const heading = query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : headOf(p);
     if (heading !== topic) {
       topic = heading;
       list.append(el('h3', { className: 'presets-topic' }, topic));
@@ -2972,17 +2973,64 @@ function buildPresets() {
     // The topic of the programme it is in (of this subject first): «Тема 3. Взаємодія тіл. Сили в природі».
     const progs = presetPrograms(p).filter((x) => x.match !== 'related');
     const topicOf = (x: (typeof progs)[number]) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined);
-    const topicLine = [...progs.filter((x) => getCurriculum(x.program)?.subject === presetSubject), ...progs].map(topicOf).find(Boolean);
+    const topicLine = [...progs.filter((x) => getCurriculum(x.program)?.subject === presetSubject), ...progs].map(topicOf).find(Boolean)?.replace(TOPIC_NUMBER, '');
     // The programmes in one line, cut with «…»; opened — each with its topic and the textbook's page.
     const programLine = presetPrograms(p).map((x) => `${tr(getCurriculum(x.program)!.short ?? getCurriculum(x.program)!.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}`).join(', ');
     const card = el('article', { className: `preset${preset && presetGiven?.id === p.id ? ' current' : ''}` });
-    card.innerHTML = `<div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div>
+    card.innerHTML = `<div class="preset-side"><div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div><button type="button" class="preset-more-btn" aria-expanded="false" title="${escAttr(u.presetMore)}" aria-label="${escAttr(u.presetMore)}">ⓘ</button></div>
       <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(tr(p.question, locale))}">${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${topicLine ? `<p class="preset-topic small"><span class="muted">${u.topic}:</span> ${escAttr(topicLine)}</p>` : ''}${programs ? `<details class="programs"><summary><span class="muted">${u.programs}:</span> <span class="programs-line">${escAttr(programLine)}</span></summary><div class="programs-all">${programs}</div></details>` : ''}</div>`;
     const go = el('button', { type: 'button', className: 'primary preset-go' }, u.presetStart);
     go.onclick = () => startPreset(p);
     card.append(go);
+    // The full description, opened by the button under the icon: built when first opened.
+    const more = el('div', { className: 'preset-more' });
+    more.hidden = true;
+    card.append(more);
+    const btn = card.querySelector<HTMLButtonElement>('.preset-more-btn')!;
+    btn.onclick = () => {
+      if (!more.innerHTML) more.innerHTML = presetDetailsHtml(p);
+      more.hidden = !more.hidden;
+      btn.setAttribute('aria-expanded', String(!more.hidden));
+      card.classList.toggle('open', !more.hidden);
+    };
     list.append(card);
   }
+}
+
+/** «Тема 3. Взаємодія тіл» → «Взаємодія тіл»: the number belongs to the programme's own order. */
+const TOPIC_NUMBER = /^Тема\s*\d+\.\s*/;
+/** Everything about a ready-made experiment before it starts: the aim, what it takes, its steps, topic, programmes, formulas. */
+function presetDetailsHtml(p: Preset): string {
+  const u = t();
+  const d = u.details;
+  const plan = guidedPlan(p);
+  // What it takes: what stands on the table, the instruments its steps use, what goes in.
+  const things = new Set<string>();
+  if (p.bench) things.add(tr(BENCH_SETUP[p.bench], locale));
+  if (!p.bench || p.bench === 'balance') things.add(labSubject(p.params, locale));
+  for (const s of plan) {
+    if (s.kind === 'weigh') things.add(tr(SCALES[s.scale].name, locale));
+    else if (s.kind === 'hang') things.add(tr(SCALES.dynamometer.name, locale));
+    else if (s.kind === 'add') things.add(`${tr(s.label ?? SUBSTANCES[s.substance].name, locale)}, ${formatQuantity(s.mass, 'kg', { locale, level: 'school' })}`);
+  }
+  const formulas = new Map(LAB_KNOWLEDGE.formulas.map((f) => [f.id, f]));
+  const programs = presetPrograms(p)
+    .map((x) => {
+      const c = getCurriculum(x.program)!;
+      const book = x.textbook ? getSource(x.textbook.source) : undefined;
+      return `<li><strong>${escAttr(tr(c.short ?? c.name, locale))}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}${x.item && !x.item.startsWith('Тема') ? ` · ${escAttr(x.item)}` : ''}${x.match === 'related' ? ` (${d.related})` : ''}</strong>${x.topic ?? (x.item?.startsWith('Тема') ? x.item : '') ? `<br><span class="muted">${escAttr((x.topic ?? x.item ?? '').replace(TOPIC_NUMBER, ''))}</span>` : ''}<br>«${escAttr(x.quote)}»${book && x.textbook ? `<br><span class="muted">${escAttr(book.title.split('. —')[0] ?? '')}: ${escAttr(x.textbook.at)}</span>` : ''}</li>`;
+    })
+    .join('');
+  const topic = [...presetPrograms(p)].map((x) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined)).find(Boolean)?.replace(TOPIC_NUMBER, '');
+  const row = (title: string, body: string) => (body ? `<h5>${title}</h5>${body}` : '');
+  return [
+    row(d.aim, `<p>${escAttr(tr(p.question, locale))}</p>`),
+    row(d.takes, `<ul>${[...things].map((x) => `<li>${escAttr(x)}</li>`).join('')}</ul>`),
+    row(d.steps, plan.length ? `<ol>${plan.map((s) => `<li>${planStepLabel(s)}</li>`).join('')}</ol>` : ''),
+    row(d.topic, `<p>${escAttr(topic ?? tr(p.topic, locale))}</p>`),
+    row(u.programs, programs ? `<ul class="preset-programs">${programs}</ul>` : ''),
+    row(d.formulas, p.formulas.length ? `<ul>${p.formulas.map((id) => formulas.get(id)).filter(Boolean).map((f) => `<li>${escAttr(tr(f!.title, locale))}: <span class="formula">${escAttr(f!.plain)}</span></li>`).join('')}</ul>` : ''),
+  ].join('');
 }
 
 function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen)) {

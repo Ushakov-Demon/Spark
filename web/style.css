@@ -340,6 +340,18 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 /* The programmes' topics and wording: on the chosen card (the chips' hints have them on the others). */
 .preset:not(.current) .preset-quote { display: none; }
 .preset .preset-topic { margin: 2px 0 4px; font-size: 0.8rem; }
+/* Under the icon: the button that opens the full description; the description spans the card. */
+.preset-side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.preset-more-btn { min-height: 0; width: 26px; height: 26px; padding: 0; border-radius: 50%; font-size: 0.95rem; line-height: 1; color: var(--accent); border-color: var(--line); background: var(--card); }
+.preset.open .preset-more-btn { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.preset-more { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; font-size: 0.82rem; }
+.preset-more h5 { margin: 8px 0 2px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.preset-more p { margin: 0 0 4px; font-size: 0.82rem; }
+.preset-more ul, .preset-more ol { margin: 0 0 4px; padding-left: 18px; }
+.preset-more li { margin: 1px 0; }
+.preset-more .preset-programs { list-style: none; padding-left: 0; }
+.preset-more .preset-programs li { margin: 4px 0; }
+.preset-more .formula { font-family: ui-monospace, monospace; }
 /* The programmes: one line cut with «…»; opened — every programme with its topic and page. */
 .preset details.programs { margin: 2px 0 4px; font-size: 0.8rem; }
 .preset details.programs > summary { display: flex; gap: 4px; cursor: pointer; list-style: none; min-width: 0; }
