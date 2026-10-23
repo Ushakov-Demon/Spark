@@ -46,6 +46,8 @@ describe('ready-made experiments', () => {
       expect(a.text[l].length, `${p.id} ${l}`).toBeGreaterThan(60);
       expect(a.text[l], `${p.id} ${l}`).toMatch(/\d/);
       expect(a.text[l], `${p.id} ${l}`).not.toMatch(/NaN|Infinity|undefined/);
+      // And why it comes out so — not only what came out.
+      expect(a.why?.[l].length ?? 0, `${p.id} ${l}: «Чому так?»`).toBeGreaterThan(150);
     }
     if (process.env['SHOW_ANSWERS']) console.log(`\n[${p.id}] ${a.say.uk}\n${a.text.uk}`);
   }, 60_000);

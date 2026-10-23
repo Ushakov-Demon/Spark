@@ -149,6 +149,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     // As exact as the marks it comes from (a cylinder read to its division): «≈ 10 г», not «9,97 г».
     const gr = (kg: number, l: Locale) => `≈ ${sig(kg * 1000, 2, l)} ${l === 'uk' ? 'г' : 'g'}`;
     return {
+      why: both((l) => (l === 'uk' ? "Лід плаває, отже архімедова сила дорівнює його вазі: він витісняє воду рівно своєї маси. Розтанувши, лід стає водою тієї самої маси — маса під час танення не змінюється, — а вода тієї самої маси займає рівно той об’єм, який витісняв лід. Тому рівень лишається, де був. А лід, що лежить на суші (льодовики), води не витісняє — розтанувши, він додає воду в океан, і рівень росте." : "Ice floats, so the buoyant force equals its weight: it pushes aside water of exactly its own mass. Melted, the ice becomes water of the same mass — melting does not change the mass — and water of that mass takes exactly the room the ice pushed aside. So the level stays. Ice lying on land (glaciers) pushes aside no water — melted, it adds water to the ocean, and the level rises.")),
       say: both((l) => (l === 'uk' ? 'Рівень не зрушив ні на поділку!' : 'The level did not move by a mark!')),
       text: both((l) =>
         l === 'uk'
@@ -339,6 +340,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const name = (id: string, l: Locale) => (id in SUBSTANCES ? SUBSTANCES[id as keyof typeof SUBSTANCES].name[l] : id);
     const rhoOf = (id: string) => (id in SUBSTANCES ? SUBSTANCES[id as keyof typeof SUBSTANCES].liquid.density.value : 0);
     return {
+      why: both((l) => (l === 'uk' ? "Густина — властивість речовини, а не шматка: будь-який шматок міді, великий чи малий, має 8,9 г/см³, бо вона залежить від того, які важкі атоми речовини і як щільно вони складені. Тому за густиною речовину можна впізнати. Об’єм тіла неправильної форми мензурка дає тому, що занурене тіло витісняє рівно свій об’єм води — на стільки й піднімається рівень." : "Density belongs to a substance, not to a piece: any piece of copper, large or small, has 8.9 g/cm³, since it depends on how heavy the substance’s atoms are and how closely they are packed. So a substance can be recognised by its density. The cylinder gives the volume of an odd-shaped body because a body under water pushes aside exactly its own volume of water — that is how far the level rises.")),
       say: both((l) => (l === 'uk' ? `Це ${name(realId, l).toLowerCase()}!` : `It is ${name(realId, l).toLowerCase()}!`)),
       text: both((l) =>
         l === 'uk'
@@ -371,6 +373,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const correct = !cooled ? undefined : cooled.crystals > 1e-5 ? 'on-cooling' : after.crystals <= 1e-5 ? 'nothing' : peak > tCool + 1 ? 'warm' : 'cold';
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Щоб почали рости кристали, частинкам треба десь почати складатися в правильну ґратку. У чистому розчині, що охолонув спокійно, такого «зачину» немає, і зайва речовина лишається розчиненою — розчин пересичений. Крихітний кристалик дає готову ґратку, і частинки починають прилаштовуватися до неї одна за одною — кристалізація біжить по всьому розчину. При цьому виділяється та теплота, яку розчин забрав, коли речовина розчинялася, — тому розчин нагрівається. Так працюють грілки з натрій ацетатом." : "For crystals to grow, the particles need somewhere to start lining up into a regular lattice. In a clean solution cooled quietly there is no such start, and the extra substance stays dissolved — the solution is supersaturated. A tiny crystal gives a ready lattice, and the particles begin to fit onto it one by one — crystallising runs through the whole solution. It gives off the heat the solution took when the substance dissolved — so the solution warms up. That is how sodium acetate hand warmers work.")),
       say: both((l) => (l === 'uk' ? `Кристали — і розчин нагрівся до ${C(peak, l)}!` : `Crystals — and the solution warmed up to ${C(peak, l)}!`)),
       text: both((l) =>
         l === 'uk'
@@ -406,6 +409,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     };
     return {
       ...(a && b ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Розчинення — це два процеси. Щоб розібрати кристал на йони, треба витратити енергію. Коли йони оточують молекули води (гідратація), енергія, навпаки, виділяється. Що переважить — від речовини залежить: в амоній хлориду більше йде на руйнування кристала, тому розчин охолоджується; у натрій гідроксиду гідратація дає більше, тому розчин нагрівається." : "Dissolving is two processes. Taking a crystal apart into ions takes energy. When water molecules gather round the ions (hydration), energy is given off. Which wins depends on the substance: for ammonium chloride more goes into breaking the crystal, so the solution cools; for sodium hydroxide hydration gives more, so the solution warms.")),
       say: both((l) => (l === 'uk' ? 'Один розчин холоне, другий гріється!' : 'One solution cools, the other warms up!')),
       text: both((l) =>
         l === 'uk'
@@ -439,6 +443,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const correct = cold.crystals < 1e-4 ? 'none' : cold.crystals > cold.mass - 1e-4 ? 'all' : 'part';
     return {
       correct,
+      why: both((l) => (l === 'uk' ? "Розчинність мідного купоросу росте з температурою: у гарячій воді його розчиняється більше. Коли розчин охолоджується, вода вже не може втримати стільки — і зайве виходить кристалами. Скільки саме — різниця розчинностей при двох температурах, помножена на масу води. Що повільніше охолоджувати, то більші й правильніші виростають кристали." : "Copper sulfate dissolves better in hot water: its solubility grows with temperature. As the solution cools, the water can no longer hold that much — and the excess comes out as crystals. How much — the difference of the solubilities at the two temperatures times the mass of water. The slower the cooling, the bigger and more regular the crystals grow.")),
       say: both((l) => (l === 'uk' ? `Випало ≈ ${sig(cold.crystals * 1000, 3, l)} г кристалів!` : `≈ ${sig(cold.crystals * 1000, 3, l)} g of crystals came out!`)),
       text: both((l) =>
         l === 'uk'
@@ -459,6 +464,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const nearest = options.reduce((best, x) => (Math.abs(x - w) < Math.abs(best - w) ? x : best), options[0]!);
     const pct = (x: number, l: Locale) => `${sig(x, 3, l)} %`;
     return {
+      why: both((l) => (l === 'uk' ? "Масова частка — яку частину маси розчину становить розчинена речовина: w = m(солі) / m(розчину). Маса розчину — це вода разом із сіллю, тому 5 г солі в 45 г води — це 5 / 50 = 10 %, а не 5 / 45. Під час розчинення маса не зникає: терези показують суму мас води й солі, хоч сіль уже не видно." : "The mass fraction is the share of the solution’s mass the dissolved substance makes: w = m(salt) / m(solution). The solution is the water and the salt together, so 5 g of salt in 45 g of water is 5 / 50 = 10 %, not 5 / 45. Dissolving does not lose any mass: the scales show the sum of the water’s and the salt’s, though the salt can no longer be seen.")),
       say: both((l) => (l === 'uk' ? `Рівно ${pct(w, l)}!` : `Exactly ${pct(w, l)}!`)),
       text: both((l) =>
         l === 'uk'
@@ -477,6 +483,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const F2 = air && salty ? air.value! - salty.value! : 0;
     const rho2 = salty?.inputs?.['rhoLiquid'] ?? WATER;
     return {
+      why: both((l) => (l === 'uk' ? "Архімедова сила дорівнює вазі рідини в об’ємі тіла: F = ρ_рідини·g·V. Брусок той самий, тож V однаковий, а солона вода густіша за прісну — той самий об’єм її важить більше. Тому й виштовхує вона сильніше. Ось чому в морі плавати легше, ніж у річці, а в дуже солоному Мертвому морі людина лежить на воді." : "The buoyant force equals the weight of the liquid in the body’s volume: F = ρ_liquid·g·V. The block is the same, so V is the same, and salt water is denser than fresh — the same volume of it weighs more. So it pushes up harder. That is why swimming is easier in the sea than in a river, and in the very salty Dead Sea a person lies on the water.")),
       say: both((l) => (l === 'uk' ? 'Солона вода виштовхує сильніше!' : 'Salt water pushes harder!')),
       text: both((l) =>
         l === 'uk'
@@ -492,6 +499,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const real = temp(s.result.final);
     const t = reachedAt(s);
     return {
+      why: both((l) => (l === 'uk' ? "Енергія не зникає: скільки теплоти віддала гаряча вода, стільки отримала холодна — c·m₁·(t₁ − θ) = c·m₂·(θ − t₂). Маси однакові й речовина та сама, тож гаряча охолоне на стільки ж градусів, на скільки нагріється холодна: рівновага — посередині. Трохи нижче вийде, бо частина теплоти йде на посуд і в повітря." : "Energy is not lost: as much heat as the hot water gave, the cold water got — c·m₁·(t₁ − θ) = c·m₂·(θ − t₂). The masses are equal and the substance the same, so the hot water cools by as many degrees as the cold warms: the balance is half-way. It comes out a little lower, as part of the heat goes into the vessel and the air.")),
       say: both((l) => (l === 'uk' ? `Рівновага — ${C(real, l)}!` : `Equilibrium at ${C(real, l)}!`)),
       text: both((l) =>
         l === 'uk'
@@ -510,6 +518,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const g = (kg: number, l: Locale) => formatMeasured('mass', kg, 0.00001, l);
     const name = (x: (typeof r)[number], l: Locale) => ((x.command['label'] as { uk: string; en: string } | undefined)?.[l] ?? '').toLowerCase();
     return {
+      why: both((l) => (l === 'uk' ? "Важільні терези — рівноплечий важіль: шальки висять на однакових відстанях від осі. Тому коромисло стоїть рівно, коли однакові сили з обох боків, тобто однакові маси — Земля тягне кожен грам однаково. Терези порівнюють маси, а не ваги: на Місяці вони показали б те саме, бо там і тіло, і важки стали б легшими однаково." : "A lever balance is a lever with equal arms: the pans hang at equal distances from the axis. So the beam is level when the forces on both sides are equal, that is, the masses are — the Earth pulls each gram alike. The balance compares masses, not weights: on the Moon it would show the same, as the body and the weights would both get lighter alike.")),
       say: both((l) => (water !== null ? (l === 'uk' ? `У склянці ${g(water, l)} води!` : `The glass holds ${g(water, l)} of water!`) : '—')),
       text: both((l) =>
         l === 'uk'
@@ -534,6 +543,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const cmp = (l: Locale) => (correct === 'lighter' ? (l === 'uk' ? 'легша за воду' : 'lighter than water') : correct === 'heavier' ? (l === 'uk' ? 'важча за воду' : 'heavier than water') : l === 'uk' ? 'майже як вода' : 'about as dense as water');
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Густина — маса в одиниці об’єму: ρ = m/V. Масу рідини дають два зважування — маса мензурки при цьому скорочується (m = m₂ − m₁), об’єм — поділки. Різні рідини вміщують у тому самому об’ємі різну масу: частинки олії чи спирту легші й упаковані вільніше, ніж у воді, гліцерину — щільніше. Рідина, легша за воду, на ній плаває: олія збирається зверху." : "Density is the mass per unit volume: ρ = m/V. Two weighings give the liquid’s mass — the cylinder’s own mass cancels (m = m₂ − m₁) — and the marks give the volume. Different liquids pack a different mass into the same volume: the particles of oil or alcohol are lighter and packed more loosely than water’s, glycerol’s more tightly. A liquid lighter than water floats on it: oil gathers on top.")),
       say: both((l) => (rho !== null ? `ρ ≈ ${sig(rho, 3, l)} ${l === 'uk' ? 'кг/м³' : 'kg/m³'} — ${cmp(l)}!` : '—')),
       text: both((l) =>
         rho === null
@@ -624,6 +634,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const err = Fa > 0 ? (0.05 / Fa + 0.05 / P) * 100 : 0;
     return {
       ...(Fa > 0 ? { correct: nearest.id } : {}),
+      why: both((l) => (l === 'uk' ? "Архімедова сила дорівнює вазі води в об’ємі тіла: F_A = ρ_води·g·V. Отже, з різниці показів динамометра в повітрі й у воді можна знайти об’єм: V = F_A / (ρ_води·g) — без мензурки. Тоді густина тіла ρ = P / (g·V) = ρ_води · P / F_A: у скільки разів вага тіла більша за архімедову силу, у стільки разів тіло густіше за воду." : "The buoyant force equals the weight of water in the body’s volume: F_A = ρ_water·g·V. So the difference of the dynamometer in air and in water gives the volume: V = F_A / (ρ_water·g) — no cylinder needed. Then the body’s density ρ = P / (g·V) = ρ_water · P / F_A: as many times as the weight exceeds the buoyant force, the body is denser than water.")),
       say: both((l) => (l === 'uk' ? `Це ${name(l)}!` : `It is ${name(l)}!`)),
       text: both((l) =>
         l === 'uk'
@@ -651,6 +662,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const kJ = (j: number, l: Locale) => `${sig(j / 1000, 3, l)} ${l === 'uk' ? 'кДж/кг' : 'kJ/kg'}`;
     return {
       correct,
+      why: both((l) => (l === 'uk' ? "Тепла вода віддає теплоту, і вся вона йде на лід: спершу — щоб розтопити його (λ·m), потім — щоб нагріти талу воду до спільної температури. Віддане дорівнює отриманому (тепловий баланс), і з цієї рівності знаходять λ. Саме тому калориметр спершу прогрівають разом із водою: інакше частина теплоти пішла б на нього, і λ вийшла б меншою." : "The warm water gives off heat, and all of it goes into the ice: first to melt it (λ·m), then to warm the meltwater to the common temperature. What is given equals what is taken (the heat balance), and λ is found from that equality. That is why the calorimeter is warmed with the water first: otherwise part of the heat would go into it, and λ would come out smaller.")),
       say: both((l) => (l === 'uk' ? `λ ≈ ${kJ(naive, l)}!` : `λ ≈ ${kJ(naive, l)}!`)),
       text: both((l) =>
         l === 'uk'
@@ -675,6 +687,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const J = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'Дж/(кг·°C)' : 'J/(kg·°C)'}`;
     return {
       correct,
+      why: both((l) => (l === 'uk' ? "Гарячий метал віддає воді теплоту, поки їхні температури не зрівняються: c_мет·m_мет·(100 − θ) = c_в·m_в·(θ − 20). У металу питома теплоємність мала, тож, охолоджуючись на багато градусів, він віддає небагато теплоти — і вода нагрівається лише трохи. З цієї рівності й знаходять c металу." : "The hot metal gives heat to the water until their temperatures are equal: c_metal·m_metal·(100 − θ) = c_w·m_w·(θ − 20). A metal’s specific heat is small, so cooling by many degrees it gives little heat — and the water warms only a little. The metal’s c is found from that equality.")),
       say: both((l) => `c ≈ ${J(naive, l)}!`),
       text: both((l) =>
         l === 'uk'
@@ -692,6 +705,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const cAl = COMPONENTS.aluminium.phases.solid!.specificHeat!.value;
     const cCu = COMPONENTS.copper.phases.solid!.specificHeat!.value;
     return {
+      why: both((l) => (l === 'uk' ? "Питома теплоємність — скільки теплоти віддає кілограм, охолоджуючись на 1 °C. У міді вона майже вдвічі з половиною менша, ніж в алюмінію. Брусок тієї самої маси, охолоджуючись від 100 °C, віддасть воді менше теплоти — і вода нагріється слабше. Маса та сама, а «запас тепла» різний: його визначає речовина." : "The specific heat is how much heat a kilogram gives cooling by 1 °C. Copper’s is about two and a half times less than aluminium’s. A block of the same mass cooling from 100 °C gives the water less heat — and the water warms less. The same mass, a different “store of heat”: the substance sets it.")),
       say: both((l) => (l === 'uk' ? (al > cu ? 'Алюміній «тепліший»!' : 'Мідь «тепліша»!') : al > cu ? 'Aluminium holds more heat!' : 'Copper holds more heat!')),
       text: both((l) =>
         l === 'uk'
@@ -714,6 +728,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const change = b.exact.total - a.exact.total + (toAir(freeze.result.final) - toAir(freeze.result.initial));
     return {
       correct: change > 1e-6 ? 'heavier' : change < -1e-6 ? 'lighter' : 'same',
+      why: both((l) => (l === 'uk' ? "Маса — це кількість речовини, а замерзаючи, вода нікуди не дівається: ті самі молекули лише складаються в кристал. Тому лід важить стільки ж, скільки вода (хоч і займає більше місця — він легше за воду й плаває). А кипіння — інша річ: молекули відлітають парою з посудини, і маса того, що лишилося, зменшується." : "Mass is the amount of matter, and freezing water goes nowhere: the same molecules just line up into a crystal. So ice weighs as much as the water (though it takes more room — it is lighter than water and floats). Boiling is another thing: molecules fly off as vapour, and the mass of what is left falls.")),
       say: both((l) => (l === 'uk' ? 'Маса нікуди не зникає — вона йде парою!' : 'Mass does not vanish — it leaves as vapour!')),
       text: both((l) =>
         l === 'uk'
@@ -727,6 +742,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const t = reachedAt(s);
     const paper = paperTime(s.params);
     return {
+      why: both((l) => (l === 'uk' ? "Щоб нагріти воду, треба теплоти Q = c·m·Δt; плита дає її зі швидкістю P (Q = P·t). На папері t = Q / P. Насправді довше: плита спершу гріє сама себе й каструлю, а частина теплоти весь час іде в повітря — і що гарячіша вода, то більше. Тому розрахунок «на папері» завжди оптимістичний." : "Warming the water takes the heat Q = c·m·Δt; the stove gives it at the rate P (Q = P·t). On paper t = Q / P. In fact it takes longer: the stove first heats itself and the pot, and part of the heat keeps going into the air — the hotter the water, the more. So a calculation “on paper” is always optimistic.")),
       say: both((l) => (l === 'uk' ? `Закипіло за ${D(t, l)}!` : `Boiled in ${D(t, l)}!`)),
       text: both((l) =>
         l === 'uk'
@@ -744,6 +760,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const without = openRun ? reachedAt(openRun) : timeToGoal({ ...s.params, lid: false }, simulation);
     return {
       correct: withLid < without * 0.97 ? 'lid' : without < withLid * 0.97 ? 'no-lid' : 'equal',
+      why: both((l) => (l === 'uk' ? "Найбільше теплоти гаряча вода втрачає з поверхні: пара, що відлітає, забирає з собою приховану теплоту пароутворення — понад 2000 кДж на кілограм. Кришка тримає пару в каструлі: вона осідає краплями й повертає теплоту назад, а тепле повітря не витікає. Більше теплоти лишається воді — і вона закипає швидше." : "Hot water loses most heat from its surface: the vapour flying off carries the latent heat of vaporisation with it — over 2000 kJ a kilogram. A lid keeps the vapour in the pot: it settles in drops and gives the heat back, and the warm air does not escape. More heat stays in the water — and it boils sooner.")),
       say: both((l) => (l === 'uk' ? 'Кришка береже теплоту!' : 'A lid keeps the heat in!')),
       text: both((l) =>
         l === 'uk'
@@ -757,6 +774,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const p = plateau(s);
     return {
       ...(p > 60 ? { correct: 'stays' } : {}),
+      why: both((l) => (l === 'uk' ? "Поки лід тане, уся теплота з кімнати йде не на нагрівання, а на руйнування кристала: щоб відірвати молекули води від ґратки льоду, потрібна енергія — 334 кДж на кожен кілограм (питома теплота плавлення). Температура стоїть на 0 °C, поки не розтане останній шматочок; лише тоді теплота починає нагрівати воду." : "While the ice melts, all the heat from the room goes not into warming but into breaking the crystal: pulling water molecules off the ice lattice takes energy — 334 kJ for every kilogram (the latent heat of fusion). The temperature stands at 0 °C until the last piece melts; only then does the heat start warming the water.")),
       say: both((l) => (l === 'uk' ? 'Помітив, що температура стояла на нулі?' : 'Did you notice the temperature stuck at zero?')),
       text: both((l) =>
         l === 'uk'
@@ -772,6 +790,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const lf = COMPONENTS.tin.melting!.latentHeat!.value / 1000;
     return {
       ...(p > 30 ? { correct: 'stays' } : {}),
+      why: both((l) => (l === 'uk' ? "Плавлення — руйнування кристалічної ґратки, і на це потрібна енергія. Поки олово плавиться, теплота від спиртівки йде саме на це, а не на нагрівання: температура стоїть на 232 °C — температурі плавлення олова. Коли розплавиться все, теплота знову нагріває вже рідке олово." : "Melting is breaking the crystal lattice, and that takes energy. While the tin melts, the heat from the spirit lamp goes into exactly that, not into warming: the temperature stands at 232 °C — tin’s melting point. When it has all melted, the heat warms the now liquid tin again.")),
       say: both((l) => (l === 'uk' ? 'Бачив «полицю» на графіку?' : 'Did you see the flat “shelf” on the graph?')),
       text: both((l) =>
         l === 'uk'
@@ -786,6 +805,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const tm = COMPONENTS['stearic-acid'].melting!.point.value;
     return {
       ...(p > 30 ? { correct: 'stays' } : {}),
+      why: both((l) => (l === 'uk' ? "Твердіючи, речовина віддає ту саму теплоту, що забрала, коли плавилася: молекули складаються в кристал і вивільняють енергію. Поки розплав твердне, ця теплота якраз покриває те, що він віддає повітрю, — і температура стоїть на 69 °C. Коли затвердне все, віддавати вже нічого — і тверда речовина вистигає далі." : "Setting, a substance gives off the same heat it took when it melted: the molecules line up into a crystal and release energy. While the melt sets, that heat just covers what it gives to the air — and the temperature stands at 69 °C. When all of it has set, there is nothing more to give — and the solid cools on.")),
       say: both((l) => (l === 'uk' ? 'Бачиш «полицю» на графіку охолодження?' : 'See the flat “shelf” on the cooling curve?')),
       text: both((l) =>
         l === 'uk'
@@ -805,6 +825,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const extra = Math.round((c / table - 1) * 100);
     return {
       correct: Math.abs(c - table) / table < 0.01 ? 'table' : c > table ? 'more' : 'less',
+      why: both((l) => (l === 'uk' ? "Ми порахували так, ніби вся енергія кип’ятильника P·t дісталася воді. А насправді частина пішла на нагрівання склянки й самого кип’ятильника, частина — у повітря. Тож воді дісталося менше, ніж ми вважали, і, поділивши всю енергію на m·Δt, ми отримали більше за табличне. Щоб вийшло точніше, потрібен калориметр, який тримає теплоту." : "We counted as if all of the heater’s energy P·t went into the water. In fact part went into warming the glass and the heater itself, part into the air. So the water got less than we thought, and dividing all the energy by m·Δt gave more than the table. To come closer one needs a calorimeter that keeps the heat.")),
       say: both((l) => (l === 'uk' ? `Вийшло ≈ ${sig(c, 3, l)} Дж/(кг·°C)!` : `It came out ≈ ${sig(c, 3, l)} J/(kg·°C)!`)),
       text: both((l) =>
         l === 'uk'
@@ -841,6 +862,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const top = first.status.kind === 'stalls' ? first.status.limit : temp(first.result.final);
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Тіло нагрівається, поки теплота, що надходить, більша за ту, що воно віддає. Гаряча каструля віддає все більше теплоти повітрю й випромінює, а полум’я під нею гріє не безмежно — і десь на кількох сотнях градусів ці два потоки зрівнюються. Це набагато нижче за 801 °C, тож сіль не розплавиться. У муфельній печі все навколо гаряче (900 °C), тепло нікуди не тікає — і сіль плавиться." : "A body heats up while the heat coming in exceeds what it gives off. A hot pot gives more and more heat to the air and radiates, and the flame under it does not heat without limit — somewhere at a few hundred degrees the two flows even out. That is far below 801 °C, so the salt does not melt. In a muffle furnace everything around is hot (900 °C), the heat has nowhere to go — and the salt melts.")),
       say: both((l) => (l === 'uk' ? 'На плиті сіль не розплавити!' : 'You cannot melt salt on a stove!')),
       text: both((l) =>
         l === 'uk'
@@ -858,6 +880,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const degrees = Math.round((LF_KJ * 1000) / CW);
     return {
       correct: freeze > cool * 1.1 ? 'freezing' : cool > freeze * 1.1 ? 'cooling' : 'equal',
+      why: both((l) => (l === 'uk' ? "Щоб охолодити кілограм води з 20 до 0 °C, у неї треба забрати c·Δt ≈ 4,2 · 20 ≈ 84 кДж. А щоб потім перетворити його на лід — 334 кДж (питома теплота плавлення), учетверо більше. Морозилка забирає теплоту приблизно рівномірно, тож замерзання триває в рази довше за охолодження." : "Cooling a kilogram of water from 20 to 0 °C takes c·Δt ≈ 4.2 · 20 ≈ 84 kJ out of it. Turning it into ice then takes 334 kJ (the latent heat of fusion), four times more. The freezer takes heat out at about the same rate, so the freezing lasts several times longer than the cooling.")),
       say: both((l) => (l === 'uk' ? (freeze > cool ? 'Замерзати — довше, ніж холонути!' : 'Ось і лід!') : freeze > cool ? 'Freezing takes longer than cooling!' : 'There is the ice!')),
       text: both((l) =>
         l === 'uk'
@@ -875,6 +898,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const sp = steps[0]!.params.cooler?.setpoint ?? 0;
     return {
       correct: firstSolid >= 0.999 ? 'yes' : firstSolid > 0.01 ? 'partly' : 'no',
+      why: both((l) => (l === 'uk' ? "Щоб вода замерзла, її молекули мають скластися в кристал льоду. Розчинені йони солі їм заважають: молекули води тримаються біля йонів, і щоб усе ж утворився лід, треба охолодити сильніше. Тому морська вода замерзає не при 0 °C, а близько −2 °C, а розсіл на дорогах лишається рідким і в мороз — лід під ним тане." : "For water to freeze, its molecules have to line up into an ice crystal. The dissolved salt ions get in the way: water molecules stay round the ions, and for ice to form after all it has to be colder. So sea water freezes not at 0 °C but at about −2 °C, and brine on the roads stays liquid in frost — the ice under it melts.")),
       say: both((l) => (l === 'uk' ? 'Ось чому солять дороги!' : 'That is why roads are salted!')),
       text: both((l) => {
         const uk = l === 'uk';
@@ -904,6 +928,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const tb = COMPONENTS.ethanol.boiling!.point.value;
     return {
       correct: t < tw * 0.95 ? 'alcohol' : tw < t * 0.95 ? 'water' : 'equal',
+      why: both((l) => (l === 'uk' ? "Дві причини, і обидві — на користь спирту. Його питома теплоємність майже вдвічі менша, ніж у води (≈ 2,4 проти 4,2 кДж/(кг·°C)): кожен градус коштує менше теплоти. І кипить він при 78 °C, а не при 100 — нагрівати треба на менше градусів. Тож від того самого нагрівника спирт закипає значно швидше." : "Two reasons, both for the alcohol. Its specific heat is almost half water’s (≈ 2.4 against 4.2 kJ/(kg·°C)): each degree costs less heat. And it boils at 78 °C, not 100 — fewer degrees to go. So on the same heater alcohol boils much sooner.")),
       say: both((l) => (l === 'uk' ? 'Спирт — швидший!' : 'Alcohol wins!')),
       text: both((l) =>
         l === 'uk'
@@ -918,6 +943,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const crystals = mix?.crystals ?? 0;
     return {
       correct: salt > 0 && crystals / salt > 0.95 ? 'all' : crystals > 0 ? 'some' : 'none',
+      why: both((l) => (l === 'uk' ? "Випаровуються лише молекули води: вони відриваються від поверхні й летять у повітря. Йони солі такого не вміють — вони лишаються в розчині, і той стає все солонішим, поки сіль не почне випадати кристалами. Коли вода випарується вся, на дні лишиться вся сіль. Так добувають сіль із морської води в сонячних басейнах." : "Only water molecules evaporate: they leave the surface and fly into the air. Salt ions cannot do that — they stay in the solution, which gets saltier and saltier until the salt starts coming out as crystals. When all the water has gone, all the salt is left on the bottom. That is how salt is got from sea water in sunny ponds.")),
       say: both((l) => (l === 'uk' ? 'Уся сіль повернулася!' : 'All the salt came back!')),
       text: both((l) =>
         l === 'uk'
@@ -931,6 +957,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const after = current(steps[steps.length - 1]!).amps;
     return {
       correct: before >= 0.01 ? 'well' : before > 0 ? 'barely' : 'never',
+      why: both((l) => (l === 'uk' ? "Струм у рідині — це рух заряджених частинок, йонів. У дистильованій воді їх майже немає, тож струм ледь іде. Сіль, розчиняючись, розпадається на йони Na⁺ і Cl⁻ — з’являються носії заряду, і вода починає проводити. Тому водопровідна й морська вода проводять струм (вони не чисті) — і тому електроприлади біля води небезпечні." : "A current in a liquid is charged particles moving — ions. Distilled water has almost none, so a current hardly flows. Salt, dissolving, falls apart into the ions Na⁺ and Cl⁻ — charge carriers appear, and the water starts to conduct. That is why tap water and sea water conduct (they are not pure) — and why electrical things near water are dangerous.")),
       say: both((l) => (l === 'uk' ? 'Струм несуть йони солі!' : 'The salt ions carry the current!')),
       text: both((l) =>
         l === 'uk'
@@ -946,6 +973,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const heat = (e: SystemState) => (e.entities['supply.heat' as never] as unknown as { state: { energyDelivered: number } } | undefined)?.state.energyDelivered ?? 0;
     const q = heat(s.result.final) - heat(s.result.initial);
     return {
+      why: both((l) => (l === 'uk' ? "Йони, що рухаються під дією напруги, раз у раз штовхаються з молекулами води й передають їм енергію — рідина нагрівається. Скільки теплоти — каже закон Джоуля — Ленца: Q = I²·R·t, тобто вся енергія джерела, що пішла на струм у рідині, перетворюється на теплоту. Що більша напруга, то більший струм — і швидше нагрів." : "Ions driven by the voltage keep bumping into water molecules and passing them energy — the liquid warms. How much heat — Joule–Lenz’s law tells: Q = I²·R·t, that is, all of the source’s energy spent on the current in the liquid becomes heat. The higher the voltage, the larger the current — and the faster the warming.")),
       say: both((l) => (l === 'uk' ? `Нагріли струмом на ${sig(dT, 2, l)} °C!` : `Heated by ${sig(dT, 2, l)} °C with a current!`)),
       text: both((l) =>
         l === 'uk'
@@ -962,6 +990,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const o2 = (made('oxygen') * GAS_CONSTANT * temp(s.result.initial)) / 101_325;
     return {
       ...(cu > 0 ? { correct: 'copper' } : made('hydrogen') > 0 ? { correct: 'hydrogen' } : {}),
+      why: both((l) => (l === 'uk' ? "На катоді електрони забирає те, що відновлюється найлегше. Йони міді Cu²⁺ приймають електрони охочіше, ніж вода (їхній потенціал +0,34 В проти від’ємного для водню з води), — тому на катоді осідає мідь, а не водень. На графітовому аноді віддає електрони вода — виділяється кисень. Розчин поступово світлішає: мідь із нього переходить на катод." : "At the cathode the electrons go to whatever is reduced most easily. Copper ions Cu²⁺ take electrons more readily than water does (their potential is +0.34 V against a negative one for hydrogen from water) — so copper settles on the cathode, not hydrogen. At the graphite anode water gives up electrons — oxygen comes off. The solution slowly pales: its copper moves onto the cathode.")),
       say: both((l) => (l === 'uk' ? 'Катод став мідним!' : 'The cathode turned copper-coloured!')),
       text: both((l) =>
         l === 'uk'
@@ -978,6 +1007,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const moles = (sup(s.result.final)?.state.made?.['hydrogen'] ?? 0) - (sup(s.result.initial)?.state.made?.['hydrogen'] ?? 0);
     const h2 = (moles * GAS_CONSTANT * temp(s.result.initial)) / 101_325;
     return {
+      why: both((l) => (l === 'uk' ? "Кожна молекула водню H₂ утворюється, коли два йони водню забирають на катоді по електрону — тобто на кожну молекулу потрібно два електрони. Заряд, що пройшов, q = I·t; поділивши його на заряд моля електронів (F ≈ 96 485 Кл), дістанемо, скільки молів електронів пройшло, а молів водню вдвічі менше. Об’єм газу при кімнатних умовах дає газовий закон." : "Each hydrogen molecule H₂ forms when two hydrogen ions each take an electron at the cathode — so every molecule needs two electrons. The charge passed is q = I·t; divided by the charge of a mole of electrons (F ≈ 96 485 C) it gives the moles of electrons, and the moles of hydrogen are half that. The gas law gives the volume at room conditions.")),
       say: both((l) => (l === 'uk' ? `≈ ${sig(h2 * 1e6, 2, l)} мл водню!` : `≈ ${sig(h2 * 1e6, 2, l)} mL of hydrogen!`)),
       text: both((l) =>
         l === 'uk'
@@ -990,6 +1020,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const s = steps[steps.length - 1]!;
     return {
       correct: s.status.kind === 'decomposes' ? 'smokes' : 'boils',
+      why: both((l) => (l === 'uk' ? "Олія — суміш великих молекул, і щоб вони почали відлітати парою, потрібна дуже висока температура. Раніше, ніж до неї дійде, молекули починають розпадатися від нагрівання — з’являється дим (температура димлення ≈ 230 °C у соняшникової олії). Тому олія не кипить, як вода, а димить — і може спалахнути. Гасити її водою не можна: вода миттєво закипає й розкидає палаючу олію." : "Oil is a mixture of large molecules, and for them to fly off as vapour it would take a very high temperature. Before it gets there, the molecules start breaking down from the heat — smoke appears (sunflower oil’s smoke point ≈ 230 °C). So oil does not boil like water — it smokes, and can catch fire. It must never be put out with water: the water boils at once and throws the burning oil about.")),
       say: both((l) => (l === 'uk' ? 'Олія не кипить — вона димить!' : 'Oil does not boil — it smokes!')),
       text: both((l) =>
         l === 'uk'
@@ -1003,6 +1034,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const tf = COMPONENTS.ethanol.melting!.point.value;
     return {
       correct: (sampleOf(s.result.final).state.solidFraction ?? 0) > 0 ? 'yes' : 'no',
+      why: both((l) => (l === 'uk' ? "Щоб речовина замерзла, її молекули мають скластися в кристал, і для кожної речовини є своя температура, нижче якої це стається. Молекули спирту тримаються одна за одну слабше, ніж молекули води, і кристал спирту утворюється лише при −114 °C. Морозилка дає −18 °C — до цього дуже далеко. Тому спирт заливають у термометри для морозу й у незамерзайки." : "For a substance to freeze, its molecules have to line up into a crystal, and each substance has its own temperature below which that happens. Alcohol’s molecules hold on to each other more weakly than water’s, and alcohol crystallises only at −114 °C. A freezer gives −18 °C — very far off. That is why alcohol fills thermometers for frost and windscreen fluids.")),
       say: both((l) => (l === 'uk' ? 'Спирт морозу не боїться!' : 'Alcohol does not mind the frost!')),
       text: both((l) =>
         l === 'uk'
@@ -1019,6 +1051,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const i1 = current(a).amps, i2 = current(b).amps;
     return {
       correct: i2 > i1 * 1.05 ? 'more' : i2 < i1 * 0.95 ? 'less' : 'same',
+      why: both((l) => (l === 'uk' ? "Струм у розчині несуть йони, і їм доводиться протискатися між молекулами води. У гарячій воді молекули рухаються швидше, вода стає «рідшою» (менш в’язкою), і йонам легше рухатися — розчин проводить краще. Тому за тієї самої напруги в гарячому розчині струм більший. У металів навпаки: нагрівшись, вони проводять гірше." : "In a solution the current is carried by ions, and they have to push their way between water molecules. In hot water the molecules move faster, the water gets “thinner” (less viscous), and the ions move more easily — the solution conducts better. So at the same voltage the current in a hot solution is larger. Metals are the other way: warmed, they conduct worse.")),
       say: both((l) => (l === 'uk' ? 'Гарячий розчин проводить краще!' : 'A hot solution conducts better!')),
       text: both((l) =>
         l === 'uk'
