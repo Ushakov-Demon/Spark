@@ -37,6 +37,8 @@ const UA_HEAT_TRANSFER: readonly CurriculumRef[] = [
   { program: 'ua-2017', grade: 8, depth: 'qualitative', quote: 'Види теплообміну.' },
 ];
 
+const UA_CHEM = (quote: string): readonly CurriculumRef[] => [{ program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, depth: 'quantitative', quote }];
+
 export const THERMAL_FORMULAS: readonly FormulaSpec[] = [
   defineFormula({
     id: 'thermal.heat-for-temperature-change',
@@ -484,6 +486,76 @@ export const THERMAL_FORMULAS: readonly FormulaSpec[] = [
     examples: [
       { args: [celsius(90), celsius(20), seconds(600), seconds(600)], expected: 318.9015608820009, note: 'Чай 90 °C у кімнаті 20 °C, через одну τ → ≈ 45,8 °C' },
     ],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'thermal.mass-fraction',
+    law: 'mass-fraction',
+    title: { uk: 'Масова частка розчиненої речовини', en: 'Mass fraction of a dissolved substance' },
+    latex: 'w = \\dfrac{m_{р.р.}}{m_{розч}}',
+    plain: 'w = m_р.р. / m_розч',
+    argSymbols: ['m_р.р.', 'm_розч'],
+    resultSymbol: 'w',
+    variables: {
+      w: { name: { uk: 'масова частка', en: 'mass fraction' }, unit: '' },
+      'm_р.р.': { name: { uk: 'маса розчиненої речовини', en: 'mass of the dissolved substance' }, unit: 'kg' },
+      m_розч: { name: { uk: 'маса розчину', en: 'mass of the solution' }, unit: 'kg', meaning: { school: { uk: 'вода й розчинена речовина разом', en: 'the water and the dissolved substance together' } } },
+    },
+    curriculum: UA_CHEM('Виготовлення розчинів із заданою масовою часткою розчиненої речовини.'),
+    explanation: {
+      novice: { uk: 'Поділи масу солі на масу всього розчину — і дізнаєшся, яку частину він становить.', en: 'Divide the salt’s mass by the whole solution’s — and you know what part it makes.' },
+      school: { uk: 'w = m_р.р. / m_розч; у знаменнику — увесь розчин, вода разом із речовиною.', en: 'w = m_solute / m_solution; the whole solution, water and substance together, goes below.' },
+    },
+    compute: f.massFraction,
+    examples: [{ args: [0.005, 0.05], expected: 0.1, note: '5 g of salt in 50 g of solution' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'thermal.crystals-on-cooling',
+    law: 'solubility',
+    title: { uk: 'Скільки речовини випаде кристалами', en: 'How much comes out as crystals' },
+    latex: 'm = \\dfrac{(S_1 - S_2) \\cdot m_{в}}{100}',
+    plain: 'm = (S₁ − S₂) · m_в / 100',
+    argSymbols: ['S₁', 'S₂', 'm_в'],
+    resultSymbol: 'm',
+    variables: {
+      m: { name: { uk: 'маса кристалів', en: 'mass of the crystals' }, unit: 'g' },
+      'S₁': { name: { uk: 'розчинність за вищої температури', en: 'solubility when hot' }, unit: 'g/100 g' },
+      'S₂': { name: { uk: 'розчинність за нижчої температури', en: 'solubility when cold' }, unit: 'g/100 g' },
+      m_в: { name: { uk: 'маса води', en: 'mass of the water' }, unit: 'g' },
+    },
+    curriculum: UA_CHEM('Залежність розчинності твердих і газуватих речовин від температури.'),
+    explanation: {
+      novice: { uk: 'Холодна вода тримає менше речовини, ніж гаряча, — решта випадає кристалами.', en: 'Cold water holds less of a substance than hot — the rest comes out as crystals.' },
+      school: { uk: 'Розчинність S — грами речовини на 100 г води. Охолоджуючись, насичений розчин віддає кристалами різницю (S₁ − S₂) на кожні 100 г води.', en: 'Solubility S is grams of a substance per 100 g of water. Cooling, a saturated solution gives off the difference (S₁ − S₂) as crystals for every 100 g of water.' },
+    },
+    compute: f.crystalsOnCooling,
+    examples: [{ args: [40, 32, 100], expected: 8, note: 'from 40 to 32 g per 100 g, 100 g of water' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'thermal.heat-of-solution',
+    law: 'heat-of-solution',
+    title: { uk: 'Теплота розчинення', en: 'Heat of solution' },
+    latex: 'Q = n \\cdot \\Delta H',
+    plain: 'Q = n · ΔH',
+    argSymbols: ['n', 'ΔH'],
+    resultSymbol: 'Q',
+    variables: {
+      Q: { name: { uk: 'теплота розчинення', en: 'heat of solution' }, unit: 'J' },
+      n: { name: { uk: 'кількість речовини', en: 'amount of substance' }, unit: 'mol', meaning: { school: { uk: 'маса, поділена на молярну масу: n = m / M', en: 'the mass over the molar mass: n = m / M' } } },
+      ΔH: { name: { uk: 'молярна теплота розчинення', en: 'molar heat of solution' }, unit: 'J/mol' },
+    },
+    curriculum: UA_CHEM('Дослідження виділення або поглинання теплоти розчину під час розчинення.'),
+    explanation: {
+      novice: { uk: 'Що більше речовини розчинили, то сильніше змінилася температура.', en: 'The more substance dissolved, the more the temperature changed.' },
+      school: { uk: 'Q = n·ΔH: ΔH > 0 — теплота поглинається (розчин холоне), ΔH < 0 — виділяється (розчин гріється).', en: 'Q = n·ΔH: ΔH > 0 — heat is taken in (the solution cools), ΔH < 0 — given off (it warms).' },
+    },
+    compute: f.heatOfSolution,
+    examples: [{ args: [0.25, 14780], expected: 3695, note: 'a quarter mole of ammonium chloride' }],
     textSource: 'spark',
     reviewed: false,
   }),

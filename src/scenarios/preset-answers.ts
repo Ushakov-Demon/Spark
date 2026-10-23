@@ -518,6 +518,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const g = (kg: number, l: Locale) => formatMeasured('mass', kg, 0.00001, l);
     const name = (x: (typeof r)[number], l: Locale) => ((x.command['label'] as { uk: string; en: string } | undefined)?.[l] ?? '').toLowerCase();
     return {
+      ...(water !== null ? { correct: 'diff' } : {}),
       why: both((l) => (l === 'uk' ? "Важільні терези — рівноплечий важіль: шальки висять на однакових відстанях від осі. Тому коромисло стоїть рівно, коли однакові сили з обох боків, тобто однакові маси — Земля тягне кожен грам однаково. Терези порівнюють маси, а не ваги: на Місяці вони показали б те саме, бо там і тіло, і важки стали б легшими однаково." : "A lever balance is a lever with equal arms: the pans hang at equal distances from the axis. So the beam is level when the forces on both sides are equal, that is, the masses are — the Earth pulls each gram alike. The balance compares masses, not weights: on the Moon it would show the same, as the body and the weights would both get lighter alike.")),
       say: both((l) => (water !== null ? (l === 'uk' ? `У склянці ${g(water, l)} води!` : `The glass holds ${g(water, l)} of water!`) : '—')),
       text: both((l) =>
@@ -742,6 +743,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const t = reachedAt(s);
     const paper = paperTime(s.params);
     return {
+      ...(paper !== undefined ? { correct: t > paper * 1.05 ? 'longer' : t < paper * 0.95 ? 'shorter' : 'paper' } : {}),
       why: both((l) => (l === 'uk' ? "Щоб нагріти воду, треба теплоти Q = c·m·Δt; плита дає її зі швидкістю P (Q = P·t). На папері t = Q / P. Насправді довше: плита спершу гріє сама себе й каструлю, а частина теплоти весь час іде в повітря — і що гарячіша вода, то більше. Тому розрахунок «на папері» завжди оптимістичний." : "Warming the water takes the heat Q = c·m·Δt; the stove gives it at the rate P (Q = P·t). On paper t = Q / P. In fact it takes longer: the stove first heats itself and the pot, and part of the heat keeps going into the air — the hotter the water, the more. So a calculation “on paper” is always optimistic.")),
       say: both((l) => (l === 'uk' ? `Закипіло за ${D(t, l)}!` : `Boiled in ${D(t, l)}!`)),
       text: both((l) =>
@@ -973,6 +975,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const heat = (e: SystemState) => (e.entities['supply.heat' as never] as unknown as { state: { energyDelivered: number } } | undefined)?.state.energyDelivered ?? 0;
     const q = heat(s.result.final) - heat(s.result.initial);
     return {
+      correct: temp(s.result.final) >= 373.15 - 0.5 ? 'boils' : dT < 15 ? 'few' : 'tens',
       why: both((l) => (l === 'uk' ? "Йони, що рухаються під дією напруги, раз у раз штовхаються з молекулами води й передають їм енергію — рідина нагрівається. Скільки теплоти — каже закон Джоуля — Ленца: Q = I²·R·t, тобто вся енергія джерела, що пішла на струм у рідині, перетворюється на теплоту. Що більша напруга, то більший струм — і швидше нагрів." : "Ions driven by the voltage keep bumping into water molecules and passing them energy — the liquid warms. How much heat — Joule–Lenz’s law tells: Q = I²·R·t, that is, all of the source’s energy spent on the current in the liquid becomes heat. The higher the voltage, the larger the current — and the faster the warming.")),
       say: both((l) => (l === 'uk' ? `Нагріли струмом на ${sig(dT, 2, l)} °C!` : `Heated by ${sig(dT, 2, l)} °C with a current!`)),
       text: both((l) =>
@@ -1007,6 +1010,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const moles = (sup(s.result.final)?.state.made?.['hydrogen'] ?? 0) - (sup(s.result.initial)?.state.made?.['hydrogen'] ?? 0);
     const h2 = (moles * GAS_CONSTANT * temp(s.result.initial)) / 101_325;
     return {
+      correct: h2 < 1e-5 ? 'few' : h2 < 1e-4 ? 'tens' : 'hundreds',
       why: both((l) => (l === 'uk' ? "Кожна молекула водню H₂ утворюється, коли два йони водню забирають на катоді по електрону — тобто на кожну молекулу потрібно два електрони. Заряд, що пройшов, q = I·t; поділивши його на заряд моля електронів (F ≈ 96 485 Кл), дістанемо, скільки молів електронів пройшло, а молів водню вдвічі менше. Об’єм газу при кімнатних умовах дає газовий закон." : "Each hydrogen molecule H₂ forms when two hydrogen ions each take an electron at the cathode — so every molecule needs two electrons. The charge passed is q = I·t; divided by the charge of a mole of electrons (F ≈ 96 485 C) it gives the moles of electrons, and the moles of hydrogen are half that. The gas law gives the volume at room conditions.")),
       say: both((l) => (l === 'uk' ? `≈ ${sig(h2 * 1e6, 2, l)} мл водню!` : `≈ ${sig(h2 * 1e6, 2, l)} mL of hydrogen!`)),
       text: both((l) =>

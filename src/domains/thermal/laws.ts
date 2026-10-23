@@ -396,4 +396,34 @@ export const THERMAL_LAWS: readonly LawSpec[] = [
       citations: [],
     },
   },
+  {
+    id: 'mass-fraction',
+    kind: 'definition',
+    name: { uk: 'Масова частка розчиненої речовини', en: 'Mass fraction of a dissolved substance' },
+    statement: {
+      novice: { uk: 'Масова частка показує, яку частину розчину за масою становить розчинена речовина.', en: 'The mass fraction tells what part of a solution’s mass the dissolved substance makes.' },
+      school: { uk: 'w = m(речовини) / m(розчину) · 100 %; маса розчину — це маса розчинника й розчиненої речовини разом.', en: 'w = m(substance) / m(solution) · 100 %; the solution’s mass is the solvent and the dissolved substance together.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a quantity.' } }, citations: [] },
+  },
+  {
+    id: 'solubility',
+    kind: 'definition',
+    name: { uk: 'Розчинність', en: 'Solubility' },
+    statement: {
+      novice: { uk: 'Розчинність — скільки речовини може розчинитися у 100 г води. Для більшості твердих речовин у гарячій воді вона більша.', en: 'Solubility is how much of a substance can dissolve in 100 g of water. For most solids it is greater in hot water.' },
+      school: { uk: 'Розчинність S — маса речовини, що розчиняється в 100 г розчинника за даної температури, утворюючи насичений розчин. Під час охолодження насиченого розчину надлишок випадає кристалами: m = (S₁ − S₂)·m(води) / 100 г.', en: 'Solubility S is the mass of a substance that dissolves in 100 g of solvent at a given temperature, making a saturated solution. As a saturated solution cools, the excess comes out as crystals: m = (S₁ − S₂)·m(water) / 100 g.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a quantity.' } }, citations: [] },
+  },
+  {
+    id: 'heat-of-solution',
+    kind: 'definition',
+    name: { uk: 'Теплота розчинення', en: 'Heat of solution' },
+    statement: {
+      novice: { uk: 'Розчиняючись, одні речовини нагрівають воду, інші — охолоджують.', en: 'Dissolving, some substances warm the water, others cool it.' },
+      school: { uk: 'Теплота розчинення — теплота, що поглинається або виділяється під час розчинення моля речовини: Q = n·ΔH. Її знак залежить від того, що переважає — руйнування кристала (енергія витрачається) чи гідратація йонів (енергія виділяється).', en: 'The heat of solution is the heat taken in or given off when a mole of a substance dissolves: Q = n·ΔH. Its sign depends on which wins — breaking the crystal (energy taken) or hydrating the ions (energy given).' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a quantity.' } }, citations: [] },
+  },
 ];

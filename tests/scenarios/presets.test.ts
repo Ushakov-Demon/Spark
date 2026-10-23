@@ -53,6 +53,26 @@ describe('ready-made experiments', () => {
   }, 60_000);
 });
 
+describe('every experiment has the same structure, whatever its grade or subject', () => {
+  it.each(PRESETS.map((p) => [p.id, p] as const))('%s: title, question, its one-line ask, choices, formulas, programmes', async (_id, p) => {
+    const { presetAsk, presetPrograms, MAX_CHOICES } = await import('../../src/scenarios/index.js');
+    for (const l of ['uk', 'en'] as const) {
+      expect(p.title[l].length, `${p.id} title ${l}`).toBeGreaterThan(5);
+      expect(p.question[l].length, `${p.id} question ${l}`).toBeGreaterThan(40);
+      expect(presetAsk(p)[l], `${p.id} ask ${l}`).toMatch(/\?$/);
+    }
+    // A question with choices — a prediction before, or a conclusion after (picking is never a must).
+    expect(p.choices?.length ?? 0, `${p.id}: choices`).toBeGreaterThanOrEqual(2);
+    if (!p.choiceTable) expect(p.choices!.length, p.id).toBeLessThanOrEqual(MAX_CHOICES);
+    // The formulas behind it, each found in a programme; the programmes it is in.
+    expect(p.formulas.length, `${p.id}: formulas`).toBeGreaterThan(0);
+    for (const id of p.formulas) expect(LAB_KNOWLEDGE.formulas.find((f) => f.id === id)?.curriculum.length, `${p.id}: ${id}`).toBeGreaterThan(0);
+    expect(presetPrograms(p).length, `${p.id}: programmes`).toBeGreaterThan(0);
+    // (The answer from the run — what happened, with its numbers, and «Чому так?» — is checked by «ends as expected».)
+    expect(PRESET_ANSWERS[p.id], `${p.id}: answer`).toBeDefined();
+  });
+});
+
 describe('choices of the ready-made experiments', () => {
   it('the choices come with the question they answer, in one short line', async () => {
     const { presetAsk } = await import('../../src/scenarios/index.js');

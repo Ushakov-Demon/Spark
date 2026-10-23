@@ -89,3 +89,12 @@ export function equilibriumTemperature(
   if (sumC <= 0) throw new RangeError('Total heat capacity must be > 0');
   return kelvin(sumCT / sumC);
 }
+
+/** Mass fraction of a dissolved substance: its mass over the solution's (water and substance together), w = m_s / m_sol. */
+export const massFraction = (solute: number, solution: number): number => solute / solution;
+
+/** What comes out as crystals on cooling: the difference of the solubilities (g per 100 g of water) times the water, m = (S₁ − S₂)·m_w / 100. */
+export const crystalsOnCooling = (solubilityHot: number, solubilityCold: number, water: number): number => ((solubilityHot - solubilityCold) * water) / 100;
+
+/** Heat a dissolving takes in or gives off: the amount of substance times its molar heat of solution, Q = n·ΔH. */
+export const heatOfSolution = (moles: number, molarHeat: number): number => moles * molarHeat;
