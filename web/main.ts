@@ -1856,6 +1856,11 @@ function render() {
   $('#lbl-level').textContent = u.level;
   // A ready-made experiment is named: «2. Дослід: Як розтягується пружина?»
   $('#exp-title').textContent = preset ? `${u.experiment}: ${tr(preset.title, locale)}` : u.experiment;
+  // The running experiment's page of the lab notebook, from its title.
+  const sheetBtn = $<HTMLButtonElement>('#exp-sheet');
+  sheetBtn.hidden = !preset;
+  sheetBtn.title = u.presetMore;
+  sheetBtn.setAttribute('aria-label', u.presetMore);
   $('#explain').textContent = u.explain;
   $('#explain-hint').textContent = u.explainHint;
   $('#footer').textContent = u.footer;
@@ -3100,7 +3105,7 @@ const TOPIC_NUMBER = /^Тема\s*\d+\.\s*/;
  * its number (in the programme that numbers it), title, topic, aim, equipment, the course of the work, how the
  * results are worked out, and a place for the conclusion; the programmes it is in at the foot of the page.
  */
-function labSheetHtml(p: Preset): string {
+function labSheetHtml(p: Preset, running = false): string {
   const u = t();
   const d = u.details;
   const plan = guidedPlan(p);
@@ -3144,7 +3149,7 @@ function labSheetHtml(p: Preset): string {
     <h3 class="ls-sub">${d.conclusion}</h3>
     <p class="ls-blank">${d.conclusionHint}</p>
     ${programs ? `<footer class="ls-foot"><span>${u.programs}:</span><ul>${programs}</ul></footer>` : ''}
-    <div class="ls-actions"><button type="button" class="primary" data-ls-start="1">${u.presetStart}</button></div>`;
+    ${running ? '' : `<div class="ls-actions"><button type="button" class="primary" data-ls-start="1">${u.presetStart}</button></div>`}`;
 }
 let labSheetFor: Preset | null = null;
 /** The page is written by hand; it can be read in print instead (remembered). */
@@ -3156,9 +3161,9 @@ function renderLabSheetHand() {
   b.textContent = printed ? u.handwritten : u.printed;
   b.setAttribute('aria-pressed', String(printed));
 }
-function openLabSheet(p: Preset) {
+function openLabSheet(p: Preset, running = false) {
   labSheetFor = p;
-  $('#lab-sheet-body').innerHTML = labSheetHtml(p);
+  $('#lab-sheet-body').innerHTML = labSheetHtml(p, running);
   renderLabSheetHand();
   $<HTMLDialogElement>('#lab-sheet').showModal();
 }
@@ -3167,6 +3172,8 @@ $('#lab-sheet-hand').onclick = () => {
   renderLabSheetHand();
 };
 $('#lab-sheet-close').onclick = () => $<HTMLDialogElement>('#lab-sheet').close();
+// (The running one: its steps as they are; those that tell the answer stay hidden until it is given.)
+$('#exp-sheet').onclick = () => preset && openLabSheet(preset, true);
 $('#lab-sheet').addEventListener('click', (e) => {
   const dlg = $<HTMLDialogElement>('#lab-sheet');
   // A click past the page (on the backdrop) closes it.
