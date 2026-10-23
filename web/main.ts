@@ -639,6 +639,8 @@ let boredScenes = 0;
 // ---------- "By the way!.." — the Professor's newspaper ----------
 const paper = $<HTMLDialogElement>('#paper');
 let paperToken = 0;
+/** The newspaper comes on its own only to the lab page itself, and not over another window (the notebook page, «Про проєкт»…). */
+const mayInterrupt = () => !libraryRoute(location.hash) && !document.querySelector('dialog[open]');
 /** He exclaims, the newspaper opens when its article has come (from Wikipedia, or a story offline). */
 function byTheWay(now = performance.now(), asked = false) {
   const u = t();
@@ -652,7 +654,8 @@ function byTheWay(now = performance.now(), asked = false) {
     if (token !== paperToken) return;
     // Let the "By the way!" be read first.
     window.setTimeout(() => {
-      if (token !== paperToken) return;
+      // (Remembered by himself, it waits for another time if the pupil has gone elsewhere meanwhile.)
+      if (token !== paperToken || (!asked && !mayInterrupt())) return;
       showPaper(paperHtml(a, locale));
     }, Math.max(0, 1500 - (Date.now() - shown)));
   });
@@ -766,7 +769,7 @@ function idleTick(now: number): boolean {
   }
   // New scenes only when nothing is going on.
   if (running || document.hidden || now < nextActAt || scene.reading || paper.open) return false;
-  if (boredScenes >= 2) {
+  if (boredScenes >= 2 && mayInterrupt()) {
     byTheWay(now);
     return true;
   }

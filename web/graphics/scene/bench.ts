@@ -148,7 +148,8 @@ function balanceSvg(b: BenchView['balance']): string {
 
 export function benchSvg(v: BenchView): string {
   if (v.kind === 'balance') return balanceSvg(v.balance);
-  if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch) : ''}`;
+  // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
+  if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
   if (v.kind === 'spring') {
     // A smaller scale here (4 units per cm): the stand with a 30 cm ruler fits under the board's writing.
     const S = 4;
@@ -185,11 +186,10 @@ export function benchSvg(v: BenchView): string {
   return `${top}${blockSvg(x, base, v.block)}${e?.index === 1 ? `<path class="bench-mark" d="M${x + w + 2},${base - h} l${depth},${-depth * 0.6}"/>` : ''}${ruler}${label}`;
 }
 
-/** A stopwatch on the table's right: its display (and, when the drawing is sped up, by how much). */
-function stopwatchSvg(sw: NonNullable<BenchView['stopwatch']>): string {
-  const x = 575;
-  const y = 70;
-  return `<g class="stopwatch"><rect x="${x - 3}" y="${y - 30}" width="6" height="8" rx="1" style="fill:${DARK}"/><circle cx="${x}" cy="${y}" r="24" style="fill:#f4f1e8;stroke:${DARK};stroke-width:3"/><rect x="${x - 19}" y="${y - 8}" width="38" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-text" x="${x}" y="${y + 4.5}" text-anchor="middle">${sw.display}</text>${sw.fast && sw.fast > 1.05 ? `<text class="bench-reading" x="${x}" y="${y + 40}" text-anchor="middle">⏩ ×${Math.round(sw.fast)}</text>` : ''}</g>`;
+/** A stopwatch standing on the table at x, its bottom just above it: its display (and, when the drawing is sped up, by how much). */
+function stopwatchSvg(sw: NonNullable<BenchView['stopwatch']>, x: number): string {
+  const y = TABLE - 30;
+  return `<g class="stopwatch"><rect x="${x - 3}" y="${y - 30}" width="6" height="8" rx="1" style="fill:${DARK}"/><circle cx="${x}" cy="${y}" r="24" style="fill:#f4f1e8;stroke:${DARK};stroke-width:3"/><rect x="${x - 19}" y="${y - 8}" width="38" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-text" x="${x}" y="${y + 4.5}" text-anchor="middle">${sw.display}</text>${sw.fast && sw.fast > 1.05 ? `<text class="bench-reading" x="${x}" y="${y - 38}" text-anchor="middle">⏩ ×${Math.round(sw.fast)}</text>` : ''}</g>`;
 }
 
 /** Units of the drawing per metre for the motion benches: the 1 m pendulum fits between the board's top and the table. */
@@ -198,7 +198,7 @@ const M = 230;
 function motionSvg(v: BenchView): string {
   if (v.kind === 'incline') {
     // The groove: its upper end in the stand's clamp, the lower end on the table; the chalk mark, the cylinder, the ball.
-    const x0 = 150;
+    const x0 = 230;
     const y0 = TABLE - 70;
     const x1 = 560;
     const y1 = TABLE - 6;
