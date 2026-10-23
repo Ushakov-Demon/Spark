@@ -24,3 +24,6 @@ export const seriesVoltage = (u1: number, u2: number): number => u1 + u2;
 
 /** Two conductors in parallel: the same voltage, the currents add up, I = I₁ + I₂ (and 1/R = 1/R₁ + 1/R₂). */
 export const parallelCurrent = (i1: number, i2: number): number => i1 + i2;
+
+/** Power of a consumer: the voltage across it times the current through it, P = U · I. */
+export const electricPower = (voltage: number, current: number): number => voltage * current;

@@ -202,6 +202,10 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toMatch(/η ≈ \d+ %.*η ≈ \d+ %.*η ≈ \d+ %/);
   }, 60_000);
 
+  it('the power of a consumer: twice the voltage, four times the power', () => {
+    expect(run(PRESETS.find((p) => p.id === 'consumer-power')!).answer.correct).toBe('four');
+  }, 60_000);
+
   it('series and parallel: the voltages add up in series, the currents in parallel', () => {
     expect(run(PRESETS.find((p) => p.id === 'series-circuit')!).answer.correct).toBe('sum');
     expect(run(PRESETS.find((p) => p.id === 'parallel-circuit')!).answer.correct).toBe('sum');

@@ -188,6 +188,28 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       }),
     };
   },
+  'consumer-power': (run) => {
+    const rows = (run.readings ?? [])
+      .filter((x) => x.command.type === 'lab.circuit')
+      .reduce<{ I: number; U: number }[]>((acc, x, k, all) => (x.record.quantity === 'current' ? [...acc, { I: x.record.value ?? 0, U: all[k + 1]?.record.value ?? 0 }] : acc), [])
+      .filter((x) => x.I > 0);
+    const P = rows.map((x) => x.U * x.I);
+    const ratio = P.length >= 2 ? P[1]! / P[0]! : 0;
+    const A = (x: number, l: Locale) => formatMeasured('current', x, 0.01, l);
+    const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
+    const W = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'Вт' : 'W'}`;
+    return {
+      ...(P.length >= 2 ? { correct: ratio > 3 ? 'four' : ratio > 1.4 ? 'two' : 'same' } : {}),
+      why: both((l) => (l === 'uk' ? 'Потужність — це добуток двох величин: напруги й сили струму. А сила струму в резисторі сама пропорційна напрузі (закон Ома: I = U/R). Тож, подвоївши напругу, ми подвоюємо обидва множники: удвічі більша напруга «штовхає» удвічі більший струм — і потужність зростає в 2 · 2 = 4 рази: P = U²/R. Тому лампочка, розрахована на 220 В, у мережі зі 110 В світить ледь-ледь — її потужність учетверо менша, — а прилад, увімкнений на подвійну напругу, швидко перегріється.' : 'Power is the product of two quantities: the voltage and the current. And the current in a resistor is itself proportional to the voltage (Ohm’s law: I = U/R). So, doubling the voltage, we double both factors: twice the voltage drives twice the current — and the power grows 2 · 2 = 4 times: P = U²/R. That is why a bulb made for 220 V glows barely at 110 V — a quarter of its power — and a device put on twice its voltage soon overheats.')),
+      say: both((l) => (l === 'uk' ? `Удвічі більша напруга — у ${sig(ratio, 2, l)} раза більша потужність!` : `Twice the voltage — ${sig(ratio, 2, l)} times the power!`)),
+      text: both((l) => {
+        const list = rows.map((x, k) => `U = ${V(x.U, l)}, I = ${A(x.I, l)} → P ≈ ${W(P[k]!, l)}`).join('; ');
+        return l === 'uk'
+          ? `${list}. Напруга зросла вдвічі — потужність зросла в ${sig(ratio, 2, l)} раза, тобто майже вчетверо (розбіжність — від цін поділок приладів); утричі — у ${sig(P.length >= 3 ? P[2]! / P[0]! : 0, 2, l)} раза, майже вдев’ятеро. Потужність резистора пропорційна квадрату напруги: P = U · I = U² / R.`
+          : `${list}. The voltage doubled — the power grew ${sig(ratio, 2, l)} times, almost four times (the difference comes from the instruments’ divisions); tripled — ${sig(P.length >= 3 ? P[2]! / P[0]! : 0, 2, l)} times, almost nine. A resistor’s power is proportional to the square of the voltage: P = U · I = U² / R.`;
+      }),
+    };
+  },
   'series-circuit': (run) => pairAnswer(run, 'series'),
   'parallel-circuit': (run) => pairAnswer(run, 'parallel'),
   'conductor-resistance': (run) => {

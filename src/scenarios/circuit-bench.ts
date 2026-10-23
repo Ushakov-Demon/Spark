@@ -30,6 +30,8 @@ export interface CircuitCommand {
   readonly type: 'lab.circuit';
   readonly source: number;
   readonly resistor: number;
+  /** The power lab work: the board writes P = U · I as well. */
+  readonly power?: boolean;
 }
 
 const read = (x: number, div: number) => Math.round(x / div) * div;

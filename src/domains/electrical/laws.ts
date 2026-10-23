@@ -187,4 +187,14 @@ export const ELECTRICAL_LAWS: readonly LawSpec[] = [
       ],
     },
   },
+  {
+    id: 'electric-power',
+    kind: 'definition',
+    name: { uk: 'Потужність електричного струму', en: 'Electric power' },
+    statement: {
+      novice: { uk: 'Потужність показує, скільки енергії прилад бере від струму щосекунди.', en: 'Power tells how much energy a device takes from the current each second.' },
+      school: { uk: 'Потужність споживача P = U·I — добуток напруги на ньому й сили струму в ньому; вимірюють у ватах (1 Вт = 1 В·А). Для резистора, за законом Ома, P = I²·R = U²/R.', en: 'A consumer’s power P = U·I — the voltage across it times the current in it, in watts (1 W = 1 V·A). For a resistor, by Ohm’s law, P = I²·R = U²/R.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a quantity.' } }, citations: [] },
+  },
 ];

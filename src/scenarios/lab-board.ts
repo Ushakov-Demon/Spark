@@ -361,7 +361,8 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       const A = (x: number) => formatMeasured('current', x, 0.01, locale);
       const V = (x: number) => formatMeasured('voltage', x, 0.1, locale);
       out.push({ id: `IU:${i}`, title: uk ? `покази приладів (джерело ${n(Number(c['source']), 2)} В)` : `the instruments (source ${n(Number(c['source']), 2)} V)`, formula: `I = ${A(I.value)}, U = ${V(U.value)}` });
-      out.push({ id: `R:${i}`, title: uk ? 'опір провідника' : 'the resistance of the conductor', formula: 'R = U / I', numbers: `${V(U.value)} / ${A(I.value)} ≈ ${n(U.value / I.value, 2)} ${uk ? 'Ом' : 'Ω'}` });
+      if (c['power']) out.push({ id: `P:${i}`, title: uk ? 'потужність споживача' : 'the power of the consumer', formula: 'P = U · I', numbers: `${V(U.value)} · ${A(I.value)} ≈ ${n(U.value * I.value, 2)} ${uk ? 'Вт' : 'W'}` });
+      else out.push({ id: `R:${i}`, title: uk ? 'опір провідника' : 'the resistance of the conductor', formula: 'R = U / I', numbers: `${V(U.value)} / ${A(I.value)} ≈ ${n(U.value / I.value, 2)} ${uk ? 'Ом' : 'Ω'}` });
       return;
     }
     const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement');

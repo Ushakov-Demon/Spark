@@ -14,6 +14,7 @@ const UA_OHM: readonly CurriculumRef[] = [
   { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Закон Ома для ділянки кола.' },
 ];
 const UA_CONNECTIONS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Послідовне й паралельне з’єднання провідників та джерел струму.' }];
+const UA_POWER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Робота й потужність електричного струму.' }];
 const UA_JOULE: readonly CurriculumRef[] = [
   { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Робота й потужність електричного струму. Закон Джоуля–Ленца.' },
   { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Робота й потужність електричного струму. Закон Джоуля—Ленца.' },
@@ -233,6 +234,29 @@ export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.parallelCurrent,
     examples: [{ args: [0.95, 0.5], expected: 1.45, note: '0.95 A and 0.5 A' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'electrical.power',
+    law: 'electric-power',
+    title: { uk: 'Потужність споживача', en: 'Power of a consumer' },
+    latex: 'P = U \\cdot I',
+    plain: 'P = U · I',
+    argSymbols: ['U', 'I'],
+    resultSymbol: 'P',
+    variables: {
+      P: { name: { uk: 'потужність', en: 'power' }, unit: 'W' },
+      U: { name: { uk: 'напруга на споживачі', en: 'voltage across the consumer' }, unit: 'V' },
+      I: { name: { uk: 'сила струму в споживачі', en: 'current in the consumer' }, unit: 'A' },
+    },
+    curriculum: UA_POWER,
+    explanation: {
+      novice: { uk: 'Помнож покази вольтметра на покази амперметра — дізнаєшся, скільки ватів бере прилад.', en: 'Multiply the voltmeter by the ammeter — and you know how many watts the device takes.' },
+      school: { uk: 'P = U·I. Для резистора I = U/R, тож P = U²/R: удвічі більша напруга — учетверо більша потужність.', en: 'P = U·I. For a resistor I = U/R, so P = U²/R: twice the voltage — four times the power.' },
+    },
+    compute: f.electricPower,
+    examples: [{ args: [3, 0.6], expected: 1.8, note: '3 V and 0.6 A' }],
     textSource: 'spark',
     reviewed: false,
   }),
