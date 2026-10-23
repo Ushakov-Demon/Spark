@@ -428,7 +428,7 @@ export const PRESETS: readonly Preset[] = [
       bench: 'spring',
       choices: [ch('proportional', 'Пропорційно: удвічі більша сила — удвічі більше видовження', 'In proportion: twice the force, twice the extension'), ch('faster', 'Видовження росте швидше за силу', 'The extension grows faster than the force'), ch('slower', 'Видовження росте повільніше за силу', 'The extension grows slower than the force')],
       formulas: ['mechanics.hooke', 'mechanics.weight'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }, { program: 'oxfordaqa-igcse-sciences', item: 'Physics RP 1', match: 'same', quote: 'Investigate the relationship between force and extension for a spring.' }],
       expect: 'reached',
     },
     {
@@ -786,6 +786,23 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('table', 'Рівно табличне — 4200 Дж/(кг·°C)', 'Exactly the table value — 4200 J/(kg·°C)'), ch('more', 'Більше за табличне', 'More than the table value'), ch('less', 'Помітно менше за табличне', 'Noticeably less than the table value')],
     formulas: ['thermal.heat-for-temperature-change', 'thermal.energy-from-power'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'heater-efficiency',
+    ask: { uk: 'Яка частка енергії кип’ятильника дістанеться воді?', en: 'What share of the heater’s energy will the water get?' },
+    grade: 8,
+    topic: THERMAL,
+    title: { uk: 'Визначаємо ККД електричного нагрівника', en: 'Finding the efficiency of an electric heater' },
+    question: {
+      uk: 'Нагріємо 200 г води кип’ятильником потужністю 500 Вт (так написано на ньому) від 20 до 60 °C і засічемо час. Корисна теплота — та, що дісталася воді: Q = c·m·Δt; витрачена енергія — E = P·t. ККД η = Q / E. Яка частка енергії кип’ятильника дістанеться воді?',
+      en: 'We heat 200 g of water with a 500 W immersion heater (as written on it) from 20 to 60 °C and time it. The useful heat is what the water got: Q = c·m·Δt; the energy spent is E = P·t. The efficiency η = Q / E. What share of the heater’s energy will the water get?',
+    },
+    params: { ...room, ...beaker, action: 'heat-to', target: 60, substance: 'water', startTemp: 20, heater: { id: 'immersion-heater', rating: 500, knob: 1 } },
+    choices: [ch('all', 'Уся — ККД 100 %', 'All of it — 100 %'), ch('most', 'Більша частина, але не вся', 'Most of it, but not all'), ch('half', 'Менше половини', 'Less than half')],
+    choicesAt: 'end',
+    formulas: ['thermal.heat-for-temperature-change', 'thermal.energy-from-power'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 10', topic: 'Тема 3. Електричні явища', match: 'same', quote: '№ 10. Визначення ККД електричного нагрівника.' }, { program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'визначення: питомої теплоємності твердого тіла; ККД нагрівника' }],
     expect: 'reached',
   },
   {

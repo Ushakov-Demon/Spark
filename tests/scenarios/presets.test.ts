@@ -166,6 +166,12 @@ describe('ready-made experiments with values to change', () => {
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
   };
+  it('the heater’s efficiency: most of the energy, not all of it', () => {
+    const { answer } = run(PRESETS.find((p) => p.id === 'heater-efficiency')!);
+    expect(answer.correct).toBe('most');
+    expect(answer.text.uk).toMatch(/ККД η = Q \/ E ≈ \d/);
+  }, 60_000);
+
   it('motion (lab works 1–3): the ball speeds up, a shorter thread turns quicker, only the length sets the pendulum', () => {
     const answer = (id: string) => run(PRESETS.find((p) => p.id === id)!).answer;
     expect(answer('average-speed').correct).toBe('whole');

@@ -738,6 +738,25 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'heater-efficiency': ({ steps }) => {
+    const s = steps[0]!;
+    const t = reachedAt(s);
+    const P = s.params.heater?.rating ?? 500;
+    const m = bodyMassOf(s.result.initial);
+    const dT = temp(s.result.final) - temp(s.result.initial);
+    const Q = CW * m * dT;
+    const eta = Q / (P * t);
+    const pct = (x: number, l: Locale) => `${sig(x * 100, 2, l)} %`;
+    return {
+      correct: eta > 0.97 ? 'all' : eta >= 0.5 ? 'most' : 'half',
+      say: both((l) => (l === 'uk' ? `ККД ≈ ${pct(eta, l)}!` : `Efficiency ≈ ${pct(eta, l)}!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `За ${D(t, l)} кип’ятильник витратив E = P·t = ${sig((P * t) / 1000, 3, l)} кДж. Вода (${sig(m * 1000, 3, l)} г) нагрілася на ${sig(dT, 3, l)} °C і отримала Q = c·m·Δt = ${sig(Q / 1000, 3, l)} кДж. ККД η = Q / E ≈ ${pct(eta, l)}. Решта енергії пішла на нагрівання склянки й самого кип’ятильника та в повітря кімнати — подивись «Куди пішла енергія». Що краще нагрівник занурений і що менше посуд віддає теплоти, то вищий ККД.`
+          : `In ${D(t, l)} the heater spent E = P·t = ${sig((P * t) / 1000, 3, l)} kJ. The water (${sig(m * 1000, 3, l)} g) warmed by ${sig(dT, 3, l)} °C and got Q = c·m·Δt = ${sig(Q / 1000, 3, l)} kJ. The efficiency η = Q / E ≈ ${pct(eta, l)}. The rest went into warming the glass and the heater itself and into the room’s air — see «Where the energy went». The better the heater is immersed and the less heat the vessel gives away, the higher the efficiency.`,
+      ),
+    };
+  },
   'salt-in-pot': ({ steps }) => {
     const first = steps[0]!;
     const furnace = steps.find((x) => x.params.cooler);
