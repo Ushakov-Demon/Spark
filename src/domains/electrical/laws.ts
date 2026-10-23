@@ -2,6 +2,7 @@ import type { LawSpec, Person } from '../../knowledge/types.js';
 
 const OHM: Person = { name: { uk: 'Георг Симон Ом', en: 'Georg Simon Ohm' }, born: 1789, died: 1854, wikidata: 'Q1585' };
 const JOULE: Person = { name: { uk: 'Джеймс Прескотт Джоуль', en: 'James Prescott Joule' }, born: 1818, died: 1889, wikidata: 'Q8962' };
+const KIRCHHOFF: Person = { name: { uk: 'Густав Кірхгоф', en: 'Gustav Kirchhoff' }, born: 1824, died: 1887, wikidata: 'Q76508' };
 const LENZ: Person = { name: { uk: 'Генріх (Емілій) Ленц', en: 'Heinrich (Emil) Lenz' }, born: 1804, died: 1865, wikidata: 'Q154325' };
 const FARADAY: Person = { name: { uk: 'Майкл Фарадей', en: 'Michael Faraday' }, born: 1791, died: 1867, wikidata: 'Q8750' };
 
@@ -141,6 +142,48 @@ export const ELECTRICAL_LAWS: readonly LawSpec[] = [
         { source: 'wikipedia-electrolysis', locator: 'History', claim: 'the word "electrolysis" introduced by Faraday in 1834, with electrode, electrolyte, anode, cathode, anion and cation' },
         { source: 'wikipedia-electrolysis', locator: 'History (1800)', claim: 'Nicholson and Carlisle demonstrated the first sustained electrolysis of water into hydrogen and oxygen' },
         { source: 'wikidata', locator: 'Q8750 (P569, P570)', claim: 'life dates' },
+      ],
+    },
+  },
+  {
+    id: 'series',
+    kind: 'law',
+    name: { uk: 'Послідовне з’єднання провідників', en: 'Conductors in series' },
+    statement: {
+      novice: { uk: 'Провідники одне за одним: струм у них той самий, а напруга джерела ділиться між ними.', en: 'Conductors one after another: the same current in them, the source’s voltage shared between them.' },
+      school: { uk: 'За послідовного з’єднання сила струму однакова в усіх провідниках: I = I₁ = I₂; загальна напруга дорівнює сумі напруг: U = U₁ + U₂; загальний опір — сумі опорів: R = R₁ + R₂.', en: 'In series the current is the same in all conductors: I = I₁ = I₂; the total voltage is the sum: U = U₁ + U₂; the total resistance is the sum: R = R₁ + R₂.' },
+    },
+    history: {
+      people: [KIRCHHOFF],
+      role: 'discovered',
+      when: '1845',
+      story: { school: { uk: 'Ці правила — наслідки законів, які 1845 року сформулював німецький фізик Густав Кірхгоф: скільки струму входить у вузол кола, стільки й виходить; а напруги вздовж замкненого контуру в сумі дорівнюють напрузі джерела.', en: 'These rules follow from the laws the German physicist Gustav Kirchhoff stated in 1845: as much current as flows into a junction flows out; and the voltages around a closed loop add up to the source’s.' } },
+      citations: [
+        { source: 'wikipedia-kirchhoff', locator: 'lead', claim: 'first described in 1845 by Gustav Kirchhoff' },
+        { source: 'wikipedia-kirchhoff', locator: 'Kirchhoff’s current law', claim: 'the algebraic sum of currents in a network of conductors meeting at a point is zero' },
+        { source: 'wikipedia-kirchhoff', locator: 'Kirchhoff’s voltage law', claim: 'the directed sum of the potential differences around any closed loop is zero' },
+        { source: 'wikidata', locator: 'Q76508 (P569, P570)', claim: 'life dates' },
+      ],
+    },
+  },
+  {
+    id: 'parallel',
+    kind: 'law',
+    name: { uk: 'Паралельне з’єднання провідників', en: 'Conductors in parallel' },
+    statement: {
+      novice: { uk: 'Провідники поруч, кожен — своєю гілкою: напруга на них та сама, а струм розгалужується.', en: 'Conductors side by side, each on its own branch: the same voltage across them, the current splits.' },
+      school: { uk: 'За паралельного з’єднання напруга однакова на всіх провідниках: U = U₁ = U₂; сила струму в нерозгалуженій частині дорівнює сумі струмів у гілках: I = I₁ + I₂; загальний опір: 1/R = 1/R₁ + 1/R₂ — менший за найменший із них.', en: 'In parallel the voltage is the same across all conductors: U = U₁ = U₂; the current in the main line is the sum of the branch currents: I = I₁ + I₂; the total resistance: 1/R = 1/R₁ + 1/R₂ — less than the smallest of them.' },
+    },
+    history: {
+      people: [KIRCHHOFF],
+      role: 'discovered',
+      when: '1845',
+      story: { school: { uk: 'Ці правила — наслідки законів, які 1845 року сформулював німецький фізик Густав Кірхгоф: скільки струму входить у вузол кола, стільки й виходить; а напруги вздовж замкненого контуру в сумі дорівнюють напрузі джерела.', en: 'These rules follow from the laws the German physicist Gustav Kirchhoff stated in 1845: as much current as flows into a junction flows out; and the voltages around a closed loop add up to the source’s.' } },
+      citations: [
+        { source: 'wikipedia-kirchhoff', locator: 'lead', claim: 'first described in 1845 by Gustav Kirchhoff' },
+        { source: 'wikipedia-kirchhoff', locator: 'Kirchhoff’s current law', claim: 'the algebraic sum of currents in a network of conductors meeting at a point is zero' },
+        { source: 'wikipedia-kirchhoff', locator: 'Kirchhoff’s voltage law', claim: 'the directed sum of the potential differences around any closed loop is zero' },
+        { source: 'wikidata', locator: 'Q76508 (P569, P570)', claim: 'life dates' },
       ],
     },
   },

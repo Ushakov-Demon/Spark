@@ -618,6 +618,13 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-23',
   }),
+  'wikipedia-kirchhoff': source({
+    id: 'wikipedia-kirchhoff',
+    title: 'Wikipedia, Kirchhoff’s circuit laws: first described in 1845 by Gustav Kirchhoff; the current law — the algebraic sum of currents meeting at a point is zero; the voltage law — the directed sum of the voltages around any closed loop is zero',
+    url: 'https://en.wikipedia.org/wiki/Kirchhoff%27s_circuit_laws',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-23',
+  }),
   'wikipedia-friction': source({
     id: 'wikipedia-friction',
     title: 'Wikipedia, Friction: laws of dry friction discovered by Leonardo da Vinci in 1493 (unpublished), rediscovered by Guillaume Amontons in 1699, developed by Coulomb (1785); friction proportional to load, independent of the apparent area; wood on wood μ 0.25–0.62 (static)',

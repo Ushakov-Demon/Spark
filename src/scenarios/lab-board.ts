@@ -319,6 +319,7 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
   const edges: (number | undefined)[] = [];
   const count = { volume: 0, mass: 0 };
   let tapePath: number | null = null;
+  const pair: Partial<Record<'r1' | 'r2' | 'both', { I: number; U: number }>> = {};
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
     if (!e.ok) return;
@@ -327,6 +328,28 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       const sub = SUBSTANCES[c['substance'] as keyof typeof SUBSTANCES];
       if (sub?.category.startsWith('solid.') || c['frozen']) addedSince = { v: true, m: true };
       dissolvedAdded = !!sub && sub.category.startsWith('solid.') && !c['frozen'] && inWaterFamily(sub);
+      return;
+    }
+    // Two resistors: what the instruments show at each place; once all three are read, the sum that holds.
+    if (c.type === 'lab.pair') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
+      const I = recs.find((x) => x.quantity === 'current')?.value;
+      const U = recs.find((x) => x.quantity === 'voltage')?.value;
+      if (I == null || U == null) return;
+      const at = String(c['at']) as 'r1' | 'r2' | 'both';
+      const series = c['connection'] === 'series';
+      pair[at] = { I, U };
+      const A = (x: number) => formatMeasured('current', x, 0.01, locale);
+      const V = (x: number) => formatMeasured('voltage', x, 0.1, locale);
+      const sub = at === 'r1' ? '₁' : at === 'r2' ? '₂' : '';
+      const place = at === 'both' ? (series ? (uk ? 'на обох резисторах разом' : 'across both resistors') : uk ? 'до розгалуження' : 'before the fork') : uk ? `резистор ${at === 'r1' ? 1 : 2}` : `resistor ${at === 'r1' ? 1 : 2}`;
+      out.push({ id: `pair:${i}`, title: uk ? `покази: ${place}` : `the readings: ${place}`, formula: series ? `I = ${A(I)}, U${sub} = ${V(U)}` : `I${sub} = ${A(I)}, U = ${V(U)}` });
+      const { r1, r2, both } = pair;
+      if (r1 && r2 && both) {
+        out.push(series
+          ? { id: `sum:${i}`, title: uk ? 'сума напруг на резисторах — і загальна напруга' : 'the voltages across the resistors added — and the total', formula: 'U = U₁ + U₂', numbers: `${V(r1.U)} + ${V(r2.U)} = ${V(r1.U + r2.U)} (${uk ? 'виміряно' : 'measured'} ${V(both.U)})` }
+          : { id: `sum:${i}`, title: uk ? 'сума струмів у гілках — і загальний струм' : 'the branch currents added — and the total', formula: 'I = I₁ + I₂', numbers: `${A(r1.I)} + ${A(r2.I)} = ${A(r1.I + r2.I)} (${uk ? 'виміряно' : 'measured'} ${A(both.I)})` });
+      }
       return;
     }
     // The circuit: the ammeter and the voltmeter read together — the resistance R = U / I.

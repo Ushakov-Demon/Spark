@@ -18,3 +18,9 @@ export const faradayMoles = (charge: number, electrons: number): number => charg
 
 /** Resistance of a conductor from what the voltmeter and the ammeter show: R = U / I (Ohm's law for a part of a circuit). */
 export const resistanceFromReadings = (voltage: number, current: number): number => voltage / current;
+
+/** Two conductors in series: the same current, the voltages add up, U = U₁ + U₂ (and R = R₁ + R₂). */
+export const seriesVoltage = (u1: number, u2: number): number => u1 + u2;
+
+/** Two conductors in parallel: the same voltage, the currents add up, I = I₁ + I₂ (and 1/R = 1/R₁ + 1/R₂). */
+export const parallelCurrent = (i1: number, i2: number): number => i1 + i2;

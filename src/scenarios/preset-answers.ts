@@ -188,6 +188,8 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       }),
     };
   },
+  'series-circuit': (run) => pairAnswer(run, 'series'),
+  'parallel-circuit': (run) => pairAnswer(run, 'parallel'),
   'conductor-resistance': (run) => {
     const rows = (run.readings ?? [])
       .filter((x) => x.command.type === 'lab.circuit')
@@ -1087,3 +1089,48 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     };
   },
 };
+
+/** The two connections answered alike: the readings at each place, the sum that holds, why. */
+function pairAnswer(run: PresetRun, connection: 'series' | 'parallel'): PresetAnswer {
+  const at = (where: string) => {
+    const rs = (run.readings ?? []).filter((x) => x.command.type === 'lab.pair' && x.command['at'] === where).map((x) => x.record);
+    const I = rs.find((x) => x.quantity === 'current')?.value;
+    const U = rs.find((x) => x.quantity === 'voltage')?.value;
+    return I != null && U != null ? { I, U } : null;
+  };
+  const [r1, r2, all] = [at('r1'), at('r2'), at('both')];
+  const series = connection === 'series';
+  const A = (x: number, l: Locale) => formatMeasured('current', x, 0.01, l);
+  const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
+  // Within the instruments' divisions (two readings rounded each): the sum holds.
+  const ok = !!(r1 && r2 && all);
+  const sum = ok ? (series ? r1!.U + r2!.U : r1!.I + r2!.I) : 0;
+  const total = ok ? (series ? all!.U : all!.I) : 0;
+  const tol = series ? 0.3 : 0.12;
+  const each = ok ? (series ? Math.abs(r1!.U - total) < tol && Math.abs(r2!.U - total) < tol : Math.abs(r1!.I - total) < tol && Math.abs(r2!.I - total) < tol) : false;
+  const halves = ok ? (series ? Math.abs(r1!.U - r2!.U) < tol : Math.abs(r1!.I - r2!.I) < tol) : false;
+  const correct = ok ? (Math.abs(sum - total) <= tol ? 'sum' : each ? 'equal' : halves ? 'half' : undefined) : undefined;
+  return {
+    ...(correct ? { correct } : {}),
+    why: both((l) =>
+      series
+        ? l === 'uk'
+          ? 'У послідовному колі в струму одна дорога: скільки зарядів пройшло через перший резистор, стільки ж пройде й через другий — інакше вони десь накопичувалися б. Тому струм всюди однаковий. А напруга — це робота, яку джерело виконує, переносячи заряд по колу; цю роботу заряд «витрачає» по дорозі: частину на першому резисторі, решту — на другому. Отже, U = U₁ + U₂. За законом Ома U₁ = I·R₁, U₂ = I·R₂: на вдвічі більшому опорі — удвічі більша напруга. Так ялинкова гірлянда з лампочок, увімкнених одна за одною, ділить між ними напругу мережі — і якщо одна перегорить, згасає вся.'
+          : 'In a series circuit the current has one road: as many charges pass through the first resistor as through the second — otherwise they would pile up somewhere. So the current is the same everywhere. The voltage is the work the source does carrying charge round the circuit; the charge “spends” that work on the way: part across the first resistor, the rest across the second. So U = U₁ + U₂. By Ohm’s law U₁ = I·R₁, U₂ = I·R₂: twice the resistance, twice the voltage. That is how a string of tree lights wired one after another shares the mains voltage — and if one burns out, all go dark.'
+        : l === 'uk'
+          ? 'У паралельному колі обидва резистори під’єднані до тих самих двох точок, тож напруга на них однакова — це напруга між цими точками. Струм, дійшовши до розгалуження, ділиться: заряди не зникають і не з’являються, тож скільки ввійшло у вузол, стільки й вийшло: I = I₁ + I₂. У гілці з меншим опором струм більший (I = U/R): удвічі менший опір — удвічі більший струм. Кожна нова гілка додає ще одну дорогу для струму, тож загальний опір менший за найменший опір гілки. Так увімкнено прилади в квартирі: кожен має напругу мережі й працює незалежно від інших.'
+          : 'In a parallel circuit both resistors are joined to the same two points, so the voltage across them is the same — the voltage between those points. The current, reaching the fork, splits: charges neither vanish nor appear, so as much flows into the junction as out: I = I₁ + I₂. The branch of smaller resistance carries more current (I = U/R): half the resistance, twice the current. Each new branch adds another road for the current, so the total resistance is less than the smallest branch’s. That is how appliances at home are wired: each gets the mains voltage and works independently of the others.',
+    ),
+    say: both((l) => (l === 'uk' ? (series ? 'Напруги склалися — струм той самий!' : 'Струми склалися — напруга та сама!') : series ? 'The voltages add up — the current is the same!' : 'The currents add up — the voltage is the same!')),
+    text: both((l) => {
+      if (!ok) return l === 'uk' ? 'Дослід ще не завершено.' : 'The experiment is not finished yet.';
+      return series
+        ? l === 'uk'
+          ? `Струм у колі всюди однаковий — ${A(all!.I, l)}. Напруга на резисторі 2 Ом — ${V(r1!.U, l)}, на резисторі 4 Ом — ${V(r2!.U, l)}, на обох разом — ${V(all!.U, l)}. Сума U₁ + U₂ = ${V(r1!.U + r2!.U, l)} — та сама загальна напруга (розбіжність — у межах ціни поділки вольтметра, 0,2 В). На більшому опорі напруга більша: у скільки разів більший опір, у стільки ж разів більша напруга.`
+          : `The current is the same everywhere — ${A(all!.I, l)}. The voltage across the 2 Ω resistor is ${V(r1!.U, l)}, across the 4 Ω one ${V(r2!.U, l)}, across both ${V(all!.U, l)}. The sum U₁ + U₂ = ${V(r1!.U + r2!.U, l)} — the same total voltage (any difference is within the voltmeter’s 0.2 V division). The larger resistance gets the larger voltage: as many times more resistance, as many times more voltage.`
+        : l === 'uk'
+          ? `Напруга на обох гілках однакова — ${V(r1!.U, l)} (коли амперметр стоїть до розгалуження, вольтметр показує трохи менше — ${V(all!.U, l)}: частину напруги «забирає» сам амперметр). Струм у гілці з резистором 2 Ом — ${A(r1!.I, l)}, з резистором 4 Ом — ${A(r2!.I, l)}, до розгалуження — ${A(all!.I, l)}. Сума I₁ + I₂ = ${A(r1!.I + r2!.I, l)} — майже той самий загальний струм: невелика розбіжність — від ціни поділки амперметра (0,05 А) і від того, що він сам має невеликий опір і, ввімкнений у гілку, трохи зменшує в ній струм. У гілці з удвічі меншим опором струм удвічі більший.`
+          : `The voltage across both branches is the same — ${V(r1!.U, l)} (with the ammeter before the fork the voltmeter reads a little less — ${V(all!.U, l)}: the ammeter itself “takes” part of the voltage). The current in the branch of the 2 Ω resistor is ${A(r1!.I, l)}, of the 4 Ω one ${A(r2!.I, l)}, before the fork ${A(all!.I, l)}. The sum I₁ + I₂ = ${A(r1!.I + r2!.I, l)} — almost the same total: the small difference comes from the ammeter’s 0.05 A division and from its own small resistance, which, put in a branch, lowers the current in it a little. The branch of half the resistance carries twice the current.`;
+    }),
+  };
+}

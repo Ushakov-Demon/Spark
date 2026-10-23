@@ -202,6 +202,11 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toMatch(/η ≈ \d+ %.*η ≈ \d+ %.*η ≈ \d+ %/);
   }, 60_000);
 
+  it('series and parallel: the voltages add up in series, the currents in parallel', () => {
+    expect(run(PRESETS.find((p) => p.id === 'series-circuit')!).answer.correct).toBe('sum');
+    expect(run(PRESETS.find((p) => p.id === 'parallel-circuit')!).answer.correct).toBe('sum');
+  }, 60_000);
+
   it('the resistance of a conductor: U / I stays the same as the voltage grows', () => {
     const { answer } = run(PRESETS.find((p) => p.id === 'conductor-resistance')!);
     expect(answer.correct).toBe('same');

@@ -54,7 +54,7 @@ export interface Preset {
    */
   readonly answerOnBoard?: readonly string[];
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -277,6 +277,48 @@ export const PRESETS: readonly Preset[] = [
     answerOnBoard: ['R:'],
     formulas: ['electrical.ohm-resistance'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 6', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 6. Вимірювання опору провідника за допомогою амперметра й вольтметра.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'series-circuit',
+    ask: { uk: 'Як пов’язані напруги на резисторах із загальною напругою?', en: 'How do the voltages across the resistors relate to the total?' },
+    grade: 8,
+    topic: CIRCUITS,
+    title: { uk: 'Послідовне з’єднання провідників', en: 'Conductors in series' },
+    question: {
+      uk: 'З’єднаємо два резистори (2 і 4 Ом) послідовно — один за одним — з амперметром і джерелом на 4 В. Виміряємо силу струму й напругу на першому резисторі, на другому і на обох разом. Як пов’язані напруги на резисторах із загальною напругою?',
+      en: 'We connect two resistors (2 and 4 Ω) in series — one after the other — with an ammeter and a 4 V source. We measure the current and the voltage across the first resistor, the second and both together. How do the voltages across the resistors relate to the total?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'series',
+    plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source: 4, connection: 'series', at } }) as const),
+    choices: [ch('sum', 'Загальна напруга — сума напруг на резисторах', 'The total is the sum of the voltages across the resistors'), ch('equal', 'На кожному резисторі — уся напруга джерела', 'Each resistor gets the source’s whole voltage'), ch('half', 'Напруга ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
+    choicesAt: 'end',
+    answerOnBoard: ['sum:'],
+    formulas: ['electrical.series-voltage', 'electrical.ohm-resistance'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 7', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 7. Дослідження електричного кола з послідовним з’єднанням провідників.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'parallel-circuit',
+    ask: { uk: 'Як пов’язані струми в гілках із загальним струмом?', en: 'How do the branch currents relate to the total current?' },
+    grade: 8,
+    topic: CIRCUITS,
+    title: { uk: 'Паралельне з’єднання провідників', en: 'Conductors in parallel' },
+    question: {
+      uk: 'З’єднаємо ті самі резистори (2 і 4 Ом) паралельно — кожен своєю гілкою — і під’єднаємо до джерела на 2 В. Виміряємо струм у гілці з першим резистором, у гілці з другим і до розгалуження, а щоразу — й напругу. Як пов’язані струми в гілках із загальним струмом?',
+      en: 'We connect the same resistors (2 and 4 Ω) in parallel — each on its own branch — to a 2 V source. We measure the current in the branch of the first resistor, of the second and before the fork, and the voltage each time. How do the branch currents relate to the total current?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'parallel',
+    plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source: 2, connection: 'parallel', at } }) as const),
+    choices: [ch('sum', 'Загальний струм — сума струмів у гілках', 'The total is the sum of the branch currents'), ch('equal', 'У кожній гілці — увесь струм', 'Each branch carries the whole current'), ch('half', 'Струм ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
+    choicesAt: 'end',
+    answerOnBoard: ['sum:'],
+    formulas: ['electrical.parallel-current', 'electrical.ohm-resistance'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 8', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 8. Дослідження електричного кола з паралельним з’єднанням провідників.' }],
     expect: 'reached',
   },
   {

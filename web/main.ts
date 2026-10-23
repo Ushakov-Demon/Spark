@@ -413,6 +413,16 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // Two resistors: the instruments where this step reads them.
+  if (kind === 'series' || kind === 'parallel') {
+    const pc = c?.type === 'lab.pair' ? (c as unknown as { source: number; at: 'r1' | 'r2' | 'both' }) : undefined;
+    const recs = last ? readingsOf([last]).map((x) => x.record) : [];
+    const I = recs.find((x) => x.quantity === 'current');
+    const U = recs.find((x) => x.quantity === 'voltage');
+    const first = preset?.plan?.[0];
+    const source = pc?.source ?? (first?.kind === 'bench' && first.command.type === 'lab.pair' ? first.command.source : 0);
+    return { ...base, kind, pair: { source, at: pc?.at ?? 'r1', ...(pc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
+  }
   // The lever: what hangs on it, the dynamometer's reading, how it tips.
   if (kind === 'lever') {
     const lc = c?.type === 'lab.lever' ? (c as unknown as { left: { weights: number; at: number }; right: { weights?: number; at: number; dynamometer?: true } }) : undefined;
@@ -506,7 +516,7 @@ function measureSay(): string {
   // The motion bench: what the tape and the stopwatch showed.
   const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
   const cmd = m.command as unknown as Record<string, number | string>;
-  if (m.command.type === 'lab.circuit') {
+  if (m.command.type === 'lab.circuit' || m.command.type === 'lab.pair') {
     const recs = readingsOf([session.result().log[session.result().log.length - 1]!]).map((x) => x.record);
     const I = recs.find((x) => x.quantity === 'current')?.value ?? 0;
     const U = recs.find((x) => x.quantity === 'voltage')?.value ?? 0;
@@ -2115,7 +2125,7 @@ function renderProtocol() {
       // (Weights on both sides of the lever: no instrument — it balances or tips.)
       const leverShown = c.type === 'lab.lever' && r.instrument === 'lever' ? ((r.inputs?.['tip'] ?? 0) === 0 ? u.leverLevel : u.leverTips) : null;
       // (The circuit reads two instruments at once: both are written.)
-      const both = c.type === 'lab.circuit' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
+      const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
       const shown = both ?? leverShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
