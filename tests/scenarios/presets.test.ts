@@ -166,6 +166,12 @@ describe('ready-made experiments with values to change', () => {
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
   };
+  it('the slope: the higher it is raised, the higher its efficiency', () => {
+    const { answer } = run(PRESETS.find((p) => p.id === 'slope-efficiency')!);
+    expect(answer.correct).toBe('grows');
+    expect(answer.text.uk).toMatch(/η ≈ \d+ %.*η ≈ \d+ %.*η ≈ \d+ %/);
+  }, 60_000);
+
   it('the lever: it balances when the moments are equal, not the forces or the arms', () => {
     expect(run(PRESETS.find((p) => p.id === 'lever-moments')!).answer.correct).toBe('moments');
   }, 60_000);

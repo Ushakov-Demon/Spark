@@ -164,6 +164,26 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
     };
   },
+  'slope-efficiency': (run) => {
+    const R = run.readings ?? [];
+    const P = R.find((x) => x.command.type === 'lab.hang')?.record.value ?? null;
+    const rows = R.filter((x) => x.command.type === 'lab.slope' && x.record.value !== null).map((x) => ({ h: x.record.inputs?.['h'] ?? 0, l: x.record.inputs?.['l'] ?? 1, F: x.record.value! }));
+    const eta = rows.map((x) => (P !== null ? (P * x.h) / (x.F * x.l) : 0));
+    const trend = eta.length >= 2 ? eta[eta.length - 1]! - eta[0]! : 0;
+    const correct = P !== null && rows.length >= 2 ? (trend > 0.03 ? 'grows' : trend < -0.03 ? 'falls' : 'same') : undefined;
+    const N1 = (x: number, l: Locale) => formatMeasured('force', x, 0.1, l);
+    const pct = (x: number, l: Locale) => `${sig(x * 100, 2, l)} %`;
+    return {
+      ...(correct ? { correct } : {}),
+      say: both((l) => (l === 'uk' ? 'Що крутіша площина, то менше втрат на тертя!' : 'The steeper the slope, the less is lost to friction!')),
+      text: both((l) => {
+        const list = rows.map((x, k) => `h = ${Math.round(x.h * 100)} ${l === 'uk' ? 'см' : 'cm'}: F = ${N1(x.F, l)}, η ≈ ${pct(eta[k]!, l)}`).join('; ');
+        return l === 'uk'
+          ? `Брусок із тягарцями важить P = ${P !== null ? N1(P, l) : '—'}. ${list}. Що вище піднята дошка, то вищий ККД: брусок менше тисне на дошку (сила тертя пропорційна P·cos α), і на тертя йде менша частка роботи. Похила площина дає виграш у силі — тягнути легше, ніж піднімати (F < P), — але програє у відстані: «золоте правило механіки». ККД завжди менший за 100 %, бо тертя є завжди.`
+          : `The block with its weights weighs P = ${P !== null ? N1(P, l) : '—'}. ${list}. The higher the board, the higher the efficiency: the block presses on it less (friction is proportional to P·cos α), and a smaller share of the work goes into friction. A slope gains in force — pulling is easier than lifting (F < P) — but loses in distance: the “golden rule of mechanics”. The efficiency is always below 100 %, as there is always friction.`;
+      }),
+    };
+  },
   'lever-moments': (run) => {
     const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.lever' && x.record.value !== null).map((x) => ({ F1: x.record.inputs?.['F1'] ?? 0, l1: x.record.inputs?.['l1'] ?? 0, F2: x.record.value!, l2: x.record.inputs?.['l2'] ?? 0, dyn: x.record.instrument === 'dynamometer', balanced: x.record.inputs?.['balanced'] === 1 }));
     const M = (F: number, l: number) => F * l;

@@ -47,3 +47,6 @@ export const conicalPeriod = (threadLength: number, radius: number, g: number): 
 
 /** Moment of a force about an axis: the force times its arm, M = F·l. */
 export const moment = (force: number, arm: number): number => force * arm;
+
+/** Efficiency of a machine: the useful work over the work done, η = A_useful / A_done. */
+export const efficiency = (useful: number, done: number): number => useful / done;

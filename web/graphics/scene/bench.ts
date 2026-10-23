@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -42,6 +42,8 @@ export interface BenchView {
   readonly tape?: string;
   /** The lever (grade 8): weights on the left so far out, on the right weights or the dynamometer (what it shows); how it tips (−1 left down, 0 level, 1 right down). */
   readonly lever?: { readonly left: { readonly weights: number; readonly at: number }; readonly right: { readonly weights?: number; readonly at: number; readonly dynamometer?: string }; readonly tip: number };
+  /** The inclined plane (grade 8): how high its end is, m, and the board's length; how far up the block is (0…1). */
+  readonly slope?: { readonly height: number; readonly length: number; readonly up: number };
   /** A timed run to play (the ball rolling, the turns, the swings): how long it took, s; its period, s; how many; the swing, rad. */
   readonly run?: { readonly seconds: number; readonly period?: number; readonly count?: number; readonly amplitude?: number };
 }
@@ -164,6 +166,7 @@ export function benchSvg(v: BenchView): string {
     return `${standSvg(rodX, armX, armY)}${springSvg(armX, armY + 3, len)}${weightsSvg(armX, bottom + 2, v.weights, 18, 8)}${rulerSvg(armX + 20, armY + 3, 40, true, S)}<path class="bench-mark" d="M${armX + 4},${bottom} H${armX + 22}"/>${v.reading ? `<text class="bench-reading" x="${armX + 46}" y="${bottom + 4}">${v.reading}</text>` : ''}`;
   }
   if (v.hang) return hangingBlock(v.hang, v.block);
+  if (v.kind === 'slope') return slopeSvg(v);
   if (v.kind === 'friction') {
     // The board lies on the table; the block on the board (slid along it so far).
     const base = TABLE - 12;
@@ -283,4 +286,28 @@ function leverSvg(lv: BenchView['lever']): string {
       })()
     : hang(r.at * 100, r.weights ?? 0);
   return `<rect x="${ax - 40}" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="${ax - 3}" y="${ay}" width="6" height="${TABLE - 8 - ay}" style="fill:${STEEL}"/><g transform="rotate(${tilt} ${ax} ${ay})"><rect x="${ax - half}" y="${ay - 5}" width="${2 * half}" height="10" rx="2" style="fill:#e9d9a8;stroke:#a8955a"/>${holes}${marks}${left}${right}</g><circle cx="${ax}" cy="${ay}" r="4.5" style="fill:${DARK}"/>`;
+}
+
+/**
+ * The wooden board as a slope: its lower end on the table, the upper one on the stand's clamp at the height h;
+ * the block with two weights on it, pulled up along it by the dynamometer (what it shows).
+ */
+function slopeSvg(v: BenchView): string {
+  const sl = v.slope ?? { height: 0, length: 0.6, up: 0 };
+  const S = 600; // units per metre
+  const x0 = 140;
+  const y0 = TABLE - 4;
+  const L = sl.length * S;
+  const sin = sl.height / sl.length;
+  const cos = Math.sqrt(1 - sin * sin);
+  const x1 = x0 + L * cos;
+  const y1 = y0 - L * sin;
+  const ang = (-Math.asin(sin) * 180) / Math.PI;
+  const w = v.block[0] * 100 * 5;
+  const h = v.block[2] * 100 * 5;
+  // The block slides from near the bottom to near the top.
+  const at = 20 + (L - w - 150) * sl.up;
+  const pull = v.pull ? `<path d="M${at + w},${-h / 2} H${at + w + 40}" style="stroke:${THREAD};stroke-width:1.5"/>${dynamometerSvg(at + w + 40, -h / 2, true, v.pull)}` : '';
+  const stand = sl.height > 0 ? standSvg(x1 + 26, x1 + 2, y1) : '';
+  return `${stand}<g transform="translate(${x0},${y0}) rotate(${ang})"><rect x="0" y="0" width="${L}" height="10" rx="2" style="fill:#e3bf86;stroke:${WOOD_EDGE}"/>${blockSvg(at, 0, [v.block[0] * 5 / 6, 0, v.block[2] * 5 / 6])}${weightsSvg(at + w / 2, -h - 18, 2, 18, 9)}${pull}</g>${sl.height > 0 ? `<path class="bench-mark" d="M${x1 + 6},${y1} V${y0}"/><text class="bench-reading" x="${x1 + 10}" y="${(y1 + y0) / 2}">h = ${Math.round(sl.height * 100)} см</text>` : ''}`;
 }

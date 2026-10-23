@@ -29,6 +29,7 @@ const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gr
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
 const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' }];
+const UA_EFFICIENCY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Корисна й затрачена робота. Коефіцієнт корисної дії.' }];
 const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
 
 export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
@@ -283,6 +284,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.moment,
     examples: [{ args: [1.96, 0.1], expected: 0.196, note: 'two 100 g weights 10 cm from the axis' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.efficiency',
+    law: 'efficiency',
+    title: { uk: 'ККД механізму', en: 'Efficiency of a machine' },
+    latex: '\\eta = \\dfrac{A_{к}}{A_{п}}',
+    plain: 'η = A_к / A_п',
+    argSymbols: ['A_к', 'A_п'],
+    resultSymbol: 'η',
+    variables: {
+      η: { name: { uk: 'коефіцієнт корисної дії', en: 'efficiency' }, unit: '' },
+      A_к: { name: { uk: 'корисна робота', en: 'useful work' }, unit: 'J', meaning: { school: { uk: 'для похилої площини — підняти вантаж на висоту h: P·h', en: 'for a slope — lifting the load by h: P·h' } } },
+      A_п: { name: { uk: 'повна (затрачена) робота', en: 'work done' }, unit: 'J', meaning: { school: { uk: 'для похилої площини — тягти вздовж неї: F·l', en: 'for a slope — pulling along it: F·l' } } },
+    },
+    curriculum: UA_EFFICIENCY,
+    explanation: {
+      novice: { uk: 'По похилій площині вантаж підняти легше, але тягти доводиться довше — і частина зусиль іде на тертя.', en: 'Up a slope a load is easier to lift, but it has to be pulled farther — and part of the effort goes into friction.' },
+      school: { uk: 'ККД похилої площини η = P·h / (F·l): корисна робота — підняти вантаж на висоту h, повна — протягти його вздовж площини довжиною l.', en: 'The efficiency of a slope η = P·h / (F·l): the useful work lifts the load by h, the work done pulls it along the slope of length l.' },
+    },
+    compute: f.efficiency,
+    examples: [{ args: [0.337, 0.84], expected: 0.4011904761904762, note: 'a block with weights up a 0.6 m board raised 10 cm' }],
     textSource: 'spark',
     reviewed: false,
   }),

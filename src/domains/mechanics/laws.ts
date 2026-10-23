@@ -227,4 +227,14 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: { uk: 'Так — для важеля, що сам урівноважений (його вага не обертає його) і в якого сили діють перпендикулярно до нього; тертя в осі мале.', en: 'This holds for a lever that is balanced by itself (its own weight does not turn it), with the forces perpendicular to it and little friction at the axis.' },
     },
   },
+  {
+    id: 'efficiency',
+    kind: 'definition',
+    name: { uk: 'Коефіцієнт корисної дії', en: 'Efficiency' },
+    statement: {
+      novice: { uk: 'Жоден механізм не віддає всієї роботи, яку в нього вклали: частина йде на тертя. ККД показує, яка частка — корисна.', en: 'No machine gives back all the work put into it: part goes into friction. The efficiency tells what share is useful.' },
+      school: { uk: 'ККД — відношення корисної роботи до повної (затраченої): η = A_к / A_п · 100 %. Він завжди менший за 100 %.', en: 'Efficiency is the useful work over the total work done: η = A_useful / A_done · 100 %. It is always below 100 %.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
+  },
 ];

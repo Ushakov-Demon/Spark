@@ -5,6 +5,7 @@ import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
 import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './motion-bench.js';
+import { slopeLoad } from './lever-bench.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -52,7 +53,7 @@ export interface Preset {
    */
   readonly answerOnBoard?: readonly string[];
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -227,6 +228,32 @@ export const PRESETS: readonly Preset[] = [
     answerOnBoard: ['M1:', 'M2:'],
     formulas: ['mechanics.moment', 'mechanics.weight'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 1', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 1. Вивчення умови рівноваги важеля.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'slope-efficiency',
+    ask: { uk: 'Як зміниться ККД похилої площини, якщо підняти її вище?', en: 'How does a slope’s efficiency change if it is raised higher?' },
+    grade: 8,
+    topic: SIMPLE,
+    title: { uk: 'ККД похилої площини', en: 'The efficiency of an inclined plane' },
+    question: {
+      uk: 'Зважимо динамометром дерев’яний брусок із двома тягарцями по 100 г. Потім покладемо його на дерев’яну дошку завдовжки 60 см, піднімемо її кінець на 10, 20 і 30 см і щоразу рівномірно тягтимемо брусок вгору вздовж дошки. ККД похилої площини η = P·h / (F·l). Як він зміниться, якщо підняти дошку вище?',
+      en: 'We weigh a wooden block with two 100 g weights on the dynamometer. Then we put it on a 60 cm wooden board, raise its end 10, 20 and 30 cm and each time pull the block steadily up along the board. The efficiency of the slope η = P·h / (F·l). How does it change if the board is raised higher?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'slope',
+    plan: [
+      { kind: 'hang', substance: 'wood', mass: slopeLoad(), into: 'air', label: { uk: 'Брусок із двома тягарцями', en: 'Block with two weights' } },
+      { kind: 'bench', command: { type: 'lab.slope', height: 0.1 } },
+      { kind: 'bench', command: { type: 'lab.slope', height: 0.2 } },
+      { kind: 'bench', command: { type: 'lab.slope', height: 0.3 } },
+    ],
+    choices: [ch('grows', 'Зросте', 'It grows'), ch('falls', 'Зменшиться', 'It falls'), ch('same', 'Не зміниться', 'It stays the same')],
+    choicesAt: 'end',
+    answerOnBoard: ['eta:'],
+    formulas: ['mechanics.efficiency', 'mechanics.weight'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 2', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 2. Визначення ККД простого механізму.' }],
     expect: 'reached',
   },
   {

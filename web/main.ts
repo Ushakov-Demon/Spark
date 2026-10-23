@@ -46,6 +46,7 @@ import {
   ROLL_PATH,
   THREAD_LENGTH,
   PENDULUM_BALLS,
+  SLOPE_LENGTH,
   stepCommand,
   OPERATIONS,
   BENCH_TEXT,
@@ -421,6 +422,11 @@ function benchView(): BenchView | null {
     return { ...base, ...(b ? { balance: { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, ...(r && r.value !== null ? { mass: r.exact } : {}), display: r?.value != null ? `${weightsText(set, locale === 'uk')} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' } } : {}) };
   }
   if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
+  // The slope: raised so high, the block pulled up to the top with the dynamometer's reading.
+  if (kind === 'slope') {
+    const sc = c?.type === 'lab.slope' && r ? (c as unknown as { height: number }) : undefined;
+    return { ...base, kind, slope: { height: sc?.height ?? 0, length: SLOPE_LENGTH.value, up: sc ? 1 : 0 }, ...(sc ? { pull: show('force', r!.value) } : {}) };
+  }
   if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE } : base;
   return c?.type === 'lab.edge' && r ? { ...base, edge: { index: Number(c['edge']) as 0 | 1 | 2, display: show('length', r.value) } } : base;
 }
@@ -474,6 +480,7 @@ function measureSay(): string {
   // The motion bench: what the tape and the stopwatch showed.
   const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
   const cmd = m.command as unknown as Record<string, number | string>;
+  if (m.command.type === 'lab.slope') return uk ? `Брусок іде вгору рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `The block goes up steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
   if (m.command.type === 'lab.lever') {
     if (r.instrument === 'dynamometer') return uk ? `Важіль горизонтально — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `The lever is level — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
     const tip = r.inputs?.['tip'] ?? 0;

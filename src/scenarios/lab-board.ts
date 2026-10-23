@@ -366,6 +366,21 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       liquidDensityLine(i);
       return;
     }
+    // The inclined plane: the useful work (lifting by h), the work done (pulling along l), the efficiency.
+    if (c.type === 'lab.slope') {
+      const h = r.inputs?.['h'] ?? 0;
+      const l = r.inputs?.['l'] ?? 1;
+      // The weight as the dynamometer showed it in the air (the last weighing), else the model's.
+      const P = [...airByBody.values()].filter((x): x is number => x !== null).pop() ?? r.inputs?.['P'] ?? 0;
+      const N1 = (x: number) => formatMeasured('force', x, 0.1, locale);
+      const J = uk ? 'Дж' : 'J';
+      const Au = P * h;
+      const At = r.value * l;
+      out.push({ id: `Au:${i}`, title: uk ? `корисна робота — підняти брусок на h = ${cm(h)}` : `the useful work — lifting the block by h = ${cm(h)}`, formula: 'A_к = P·h', numbers: `${N1(P)} · ${n(h)} ${uk ? 'м' : 'm'} ≈ ${n(Au, 3)} ${J}` });
+      out.push({ id: `At:${i}`, title: uk ? `повна робота — тягти вздовж дошки l = ${cm(l)}` : `the work done — pulling along the board l = ${cm(l)}`, formula: 'A_п = F·l', numbers: `${N1(r.value)} · ${n(l)} ${uk ? 'м' : 'm'} ≈ ${n(At, 3)} ${J}` });
+      out.push({ id: `eta:${i}`, title: uk ? `ККД похилої площини (h = ${cm(h)})` : `the efficiency of the slope (h = ${cm(h)})`, formula: 'η = A_к / A_п', numbers: `${n(Au, 3)} ${J} / ${n(At, 3)} ${J} ≈ ${n((Au / At) * 100, 2)} %` });
+      return;
+    }
     // The lever: the moments on both sides — equal when it balances.
     if (c.type === 'lab.lever') {
       const F1 = r.inputs?.['F1'] ?? 0;

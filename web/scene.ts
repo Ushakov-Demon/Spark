@@ -447,7 +447,11 @@ export function createScene(): Scene {
         if (boardLines.children[idx] !== e) boardLines.insertBefore(e, boardLines.children[idx] ?? null);
         const [ti, fo, nu] = Array.from(e.children) as HTMLElement[];
         if (ti!.textContent !== l.title) ti!.textContent = l.title;
-        if (fo!.textContent !== l.formula) fo!.textContent = l.formula;
+        // F_A, A_к, ρ_рідини: the part after «_» is written as a subscript.
+        if (fo!.dataset['f'] !== l.formula) {
+          fo!.dataset['f'] = l.formula;
+          fo!.innerHTML = l.formula.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>');
+        }
         // The numbers come when the formula has done its work — written in chalk too.
         const num = l.numbers ? `= ${l.numbers}` : '';
         if (nu!.textContent !== num) {

@@ -913,6 +913,7 @@ footer .library-links a { color: var(--accent); }
 .scene .bench-mark { stroke: #ffd166; stroke-width: 1.6; }
 .scene .bench-reading { font: 600 12px system-ui, sans-serif; fill: #ffd166; }
 .scene .lever-mark { font: 7px system-ui, sans-serif; fill: #4b4b4b; }
+.scene .bl-formula sub { font-size: 0.65em; line-height: 0; }
 .scene .sw-text { font: 700 11px ui-monospace, monospace; fill: #1f2a16; }
 .scene .bench-arrow { stroke: #2563eb; stroke-width: 1.6; fill: none; }
 .scene .bench-label { font: italic 600 12px system-ui, sans-serif; fill: #2563eb; }

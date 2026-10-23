@@ -3,7 +3,8 @@ import { err, ok } from '../core/result.js';
 import type { MeasurementRecord } from '../core/trace.js';
 import { cite, sv } from '../components/sourced.js';
 import { G } from '../domains/mechanics/constants.js';
-import { moment, weight } from '../domains/mechanics/formulas.js';
+import { moment, slidingFriction, weight } from '../domains/mechanics/formulas.js';
+import { blockMass, WOOD_ON_WOOD } from './bench.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SourcedValue } from '../knowledge/types.js';
@@ -50,13 +51,54 @@ export const leverCommand: CommandHandler<LeverCommand> = {
   },
 };
 
-export const LEVER_COMMANDS = [leverCommand] as const;
+/**
+ * The inclined plane (lab work 2, the efficiency of a simple machine): the wooden board of the friction lab work,
+ * one end raised on the stand; the block with weights on it is pulled up along it at a steady speed. The
+ * dynamometer shows F = P·(sin α + μ·cos α) — gravity along the board and sliding friction, wood on wood.
+ */
+export const SLOPE_LENGTH: SourcedValue = sv(0.6, 'm', 'the board raised as a slope', 'estimate', 0.3, [cite('spark', 'estimate', 'the school wooden board, 0.5–0.8 m', 0.6)], 'Estimate: its length is measured by the ruler all the same.');
+/** Weights on the block (two of 100 g): the dynamometer reads more of a newton, and less of the error. */
+export const SLOPE_LOAD = 0.2;
+/** The block and its weights, kg. */
+export const slopeLoad = (): number => blockMass() + SLOPE_LOAD;
+
+/** Raise the board's end so high and pull the block up along it steadily; read the dynamometer. */
+export interface SlopeCommand {
+  readonly type: 'lab.slope';
+  readonly height: number;
+}
+
+export const slopeCommand: CommandHandler<SlopeCommand> = {
+  type: 'lab.slope',
+  apply(state, c) {
+    const l = SLOPE_LENGTH.value;
+    if (!(c.height > 0 && c.height < l)) return err({ uk: 'Кінець дошки піднімають на висоту, меншу за її довжину.', en: 'The board’s end is raised less than its length.' });
+    const P = weight(slopeLoad(), G);
+    const sin = c.height / l;
+    const cos = Math.sqrt(1 - sin * sin);
+    // Along the board: the share of gravity pulling down the slope, and friction against the normal force P·cos α.
+    const F = P * sin + slidingFriction(WOOD_ON_WOOD.value, P * cos);
+    const dyn = SCALES.dynamometer;
+    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [{ kind: 'measurement', instrument: 'dynamometer', quantity: 'force', value: scaleReading(dyn, F), exact: F, entities: [], inputs: { h: c.height, l, P, mu: WOOD_ON_WOOD.value } } satisfies MeasurementRecord] });
+  },
+};
+
+export const LEVER_COMMANDS = [leverCommand, slopeCommand] as const;
 
 const cm = (m: number) => Math.round(m * 100);
 const w = (n: number, uk: boolean) => (uk ? (n === 1 ? '1 тягарець' : `${n} тягарці`) : n === 1 ? '1 weight' : `${n} weights`);
 
-export const LEVER_TEXT: Record<LeverCommand['type'], (c: LeverCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
-  'lab.lever': (c) => {
+export const LEVER_TEXT: Record<LeverCommand['type'] | SlopeCommand['type'], (c: LeverCommand | SlopeCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
+  'lab.slope': (x) => {
+    const c = x as SlopeCommand;
+    return {
+    say: { uk: `Підніми кінець дошки на ${cm(c.height)} см і рівномірно тягни брусок із тягарцями вгору вздовж дошки динамометром. Що він показує?`, en: `Raise the board’s end ${cm(c.height)} cm and pull the block with its weights steadily up along the board with the dynamometer. What does it show?` },
+    button: { uk: `↗ Тягти вгору: h = ${cm(c.height)} см`, en: `↗ Pull up: h = ${cm(c.height)} cm` },
+    plan: { uk: `тягти брусок вгору, h = ${cm(c.height)} см`, en: `pull the block up, h = ${cm(c.height)} cm` },
+    };
+  },
+  'lab.lever': (x) => {
+    const c = x as LeverCommand;
     const l = c.left;
     const r = c.right;
     const left = { uk: `${w(l.weights, true)} на ${cm(l.at)} см ліворуч`, en: `${w(l.weights, false)} ${cm(l.at)} cm left` };
