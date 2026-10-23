@@ -85,7 +85,7 @@ function glossaryHtml(c: Ctx): string {
         .map(
           (x) => `<article class="lib-term lib-entry" id="term-${x.id}" data-term-id="${x.id}">
   <h3><a href="#glossary/${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> <span class="muted lib-other" lang="${other(c.locale)}">${esc(tr(x.name, other(c.locale)))}</span>${x.law ? ` <span class="lib-badge">${esc(u.law)}</span>` : ''}</h3>
-  <p class="lib-desc">${esc(tr(x.text, c.locale))}</p>
+  <p class="lib-desc">${esc(tr(x.text, c.locale))}</p>${x.more ? `<p class="lib-desc lib-more">${esc(tr(x.more, c.locale))}</p>` : ''}
 </article>`,
         )
         .join('');

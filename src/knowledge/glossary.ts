@@ -20,9 +20,14 @@ export interface Term {
   readonly text: LocalizedText;
   /** Made from a law of the lab's knowledge (its id there). */
   readonly law?: string;
+  /** More about it — shown in the glossary, while a footnote keeps to `text`. */
+  readonly more?: LocalizedText;
 }
 
 const t = (id: string, uk: string, en: string, stemsUk: string[], stemsEn: string[], textUk: string, textEn: string): Term => ({ id, name: { uk, en }, stems: { uk: stemsUk, en: stemsEn }, text: { uk: textUk, en: textEn } });
+
+/** A piece of equipment: a short footnote, and more about it in the glossary. */
+const eq = (id: string, uk: string, en: string, stemsUk: string[], stemsEn: string[], textUk: string, textEn: string, moreUk: string, moreEn: string): Term => ({ ...t(id, uk, en, stemsUk, stemsEn, textUk, textEn), more: { uk: moreUk, en: moreEn } });
 
 export const GLOSSARY: readonly Term[] = [
   // ---------------------------------------------------------------- electricity and electrochemistry
@@ -127,6 +132,87 @@ export const GLOSSARY: readonly Term[] = [
   t('buoyancy', 'Архімедова сила', 'Buoyant force', ['архімедов', 'виштовхувальн'], ['buoyan'],
     'Сила, з якою рідина виштовхує занурене тіло вгору; дорівнює вазі витісненої тілом рідини: F_A = ρ·g·V.',
     'The force with which a liquid pushes a submerged body up; it equals the weight of the liquid the body displaces: F_A = ρ·g·V.'),
+  // ---------------------------------------------------------------- equipment
+  eq("resistor", "Резистор", "Resistor", ["резистор"], ["resistor"],
+    "Деталь кола зі сталим опором: обмежує струм. На корпусі опір позначають кольоровими смужками або цифрами.",
+    "A circuit part with a fixed resistance: it limits the current. Its resistance is marked by coloured bands or figures.",
+    "Найпростіший резистор — дріт зі сплаву з великим питомим опором (ніхром, константан), намотаний на керамічну основу; у сучасній електроніці — тонка плівка вуглецю чи металу на керамічному циліндрику. Опір вимірюють в омах (Ом). Через резистор, як і через будь-який провідник, струм проходить за законом Ома: I = U / R. Струм нагріває резистор (закон Джоуля — Ленца), тому для кожного вказують ще й найбільшу потужність, яку він витримує. Кольорові смужки читають зліва направо: перші цифри опору, потім множник і точність.",
+    "The simplest resistor is a wire of an alloy with a high resistivity (nichrome, constantan) wound on a ceramic core; in modern electronics — a thin film of carbon or metal on a ceramic cylinder. Resistance is measured in ohms (Ω). Current goes through a resistor, as through any conductor, by Ohm’s law: I = U / R. The current warms it (Joule–Lenz), so each is also rated for the most power it can take. The coloured bands are read left to right: the first digits of the resistance, then a multiplier and the tolerance."),
+  eq("rheostat", "Реостат", "Rheostat", ["реостат"], ["rheostat"],
+    "Резистор, опір якого можна плавно змінювати повзунком, — щоб регулювати силу струму в колі.",
+    "A resistor whose resistance can be changed smoothly with a slider — to adjust the current in a circuit.",
+    "Шкільний повзунковий реостат — дріт, намотаний на керамічну трубу; повзунок ковзає по витках і вмикає в коло більшу чи меншу їх частину. Що довша увімкнена частина дроту, то більший опір і менший струм. Реостатом регулюють яскравість лампи чи швидкість двигуна; вмикають його послідовно з приладом.",
+    "A school slide rheostat is a wire wound on a ceramic tube; a slider moves over the turns and puts more or fewer of them into the circuit. The longer the part of the wire in use, the higher the resistance and the smaller the current. A rheostat sets a lamp’s brightness or a motor’s speed; it is connected in series with the device."),
+  eq("ammeter", "Амперметр", "Ammeter", ["амперметр"], ["ammeter"],
+    "Прилад для вимірювання сили струму. Вмикають послідовно — так, щоб через нього йшов увесь струм, який вимірюють.",
+    "An instrument that measures current. It is connected in series — so that all the current being measured goes through it.",
+    "Амперметр має дуже малий власний опір, щоб майже не змінювати струм у колі; тому його ніколи не вмикають безпосередньо до джерела без навантаження — струм буде величезним і прилад зіпсується. На шкалі є найбільше значення (межа вимірювання) і ціна поділки — від неї залежить, наскільки точно можна прочитати покази. Затискачі позначені «+» і «−»: «+» з’єднують із плюсом джерела. Шкільні прилади цієї лабораторії: межа 2 А, ціна поділки 0,05 А (оцінка).",
+    "An ammeter has a very small resistance of its own, so as to barely change the current; that is why it is never connected straight to a source with nothing else — the current would be huge and spoil it. Its scale has a largest value (the range) and a division — which sets how precisely it can be read. Its terminals are marked “+” and “−”: “+” goes to the source’s plus. The school instruments of this lab: a 2 A range, 0.05 A per division (an estimate)."),
+  eq("voltmeter", "Вольтметр", "Voltmeter", ["вольтметр"], ["voltmeter"],
+    "Прилад для вимірювання напруги. Вмикають паралельно до тієї ділянки кола, напругу на якій вимірюють.",
+    "An instrument that measures voltage. It is connected in parallel with the part of the circuit whose voltage is measured.",
+    "Вольтметр має дуже великий власний опір, тож крізь нього йде мізерний струм і він майже не змінює коло. Його затискачі приєднують до двох кінців ділянки — наприклад, резистора; «+» — ближче до плюса джерела. Як і в амперметра, на шкалі є межа вимірювання й ціна поділки. Шкільні прилади цієї лабораторії: межа 6 В, ціна поділки 0,2 В (оцінка).",
+    "A voltmeter has a very large resistance of its own, so a tiny current goes through it and it barely changes the circuit. Its terminals go to the two ends of the part — a resistor, for example; “+” nearer the source’s plus. Like an ammeter, its scale has a range and a division. The school instruments of this lab: a 6 V range, 0.2 V per division (an estimate)."),
+  eq("power-source", "Джерело струму", "Power source", ["джерел* струм", "блок* живлення"], ["power source", "power supply"],
+    "Пристрій, що підтримує напругу між своїми полюсами і змушує заряди рухатися по колу: батарейка, акумулятор, блок живлення.",
+    "A device that keeps a voltage between its terminals and makes charges move round a circuit: a battery, an accumulator, a power supply.",
+    "Усередині джерела сторонні сили — хімічні в батарейці, електричні в блоці живлення від мережі — розділяють заряди: на одному полюсі «плюс», на другому «мінус». Замкнеш коло — і заряди підуть від полюса до полюса через прилади. Лабораторний блок живлення дає безпечну низьку напругу, яку можна встановити ручкою. Джерело має й власний (внутрішній) опір, тож під навантаженням напруга на його полюсах трохи менша.",
+    "Inside a source, outside forces — chemical in a battery, electric in a mains power supply — separate charges: “plus” at one terminal, “minus” at the other. Close the circuit and the charges go from terminal to terminal through the devices. A lab power supply gives a safe low voltage set with a knob. A source also has a resistance of its own (internal), so under load the voltage at its terminals is a little lower."),
+  eq("switch", "Ключ (вимикач)", "Switch (key)", ["=ключ", "вимикач"], ["switch"],
+    "Деталь, що замикає або розмикає коло. Замкнутий ключ — струм іде, розімкнутий — струму немає.",
+    "A part that closes or opens a circuit. Closed — the current flows; open — there is no current.",
+    "У шкільних колах ключ — металева пластинка-важілець на ізолювальній основі: опущена, вона з’єднує два затискачі. Коло збирають при розімкнутому ключі й замикають його лише тоді, коли все перевірено, — це правило безпеки. Вимикач у кімнаті — той самий ключ, тільки в корпусі.",
+    "In school circuits the key is a small metal lever on an insulating base: pressed down, it joins two terminals. A circuit is built with the key open, and it is closed only once everything is checked — a safety rule. The light switch in a room is the same key in a case."),
+  eq("diode", "Діод", "Diode", ["діод"], ["diode"],
+    "Деталь, що пропускає струм лише в один бік — як клапан для струму.",
+    "A part that lets current through in one direction only — like a valve for current.",
+    "Сучасний діод — кристал напівпровідника (кремнію), дві частини якого мають різну провідність: на межі між ними утворюється шар, що пропускає заряди лише в одному напрямку. Увімкнений «у прямому напрямку», діод має малий опір, «у зворотному» — величезний. Діоди перетворюють змінний струм на постійний (у зарядних пристроях), а світлодіоди ще й світяться, коли через них іде струм.",
+    "A modern diode is a crystal of a semiconductor (silicon) whose two parts conduct differently: a layer forms at the boundary that lets charges through one way only. Connected “forward”, a diode has a small resistance; “in reverse”, a huge one. Diodes turn alternating current into direct (in chargers), and light-emitting diodes also glow when current goes through them."),
+  eq("transistor", "Транзистор", "Transistor", ["транзистор"], ["transistor"],
+    "Напівпровідникова деталь, у якій малий струм чи напруга керує великим струмом: підсилювач і перемикач.",
+    "A semiconductor part in which a small current or voltage controls a large current: an amplifier and a switch.",
+    "Транзистор має три виводи: через два йде основний струм, а третій керує ним — як кран, що відкривається слабким дотиком. Так транзистор підсилює слабкі сигнали (у навушниках, радіо) і вмикає та вимикає струм мільярди разів за секунду. Сучасний процесор — це мільярди мікроскопічних транзисторів на одному кристалі кремнію.",
+    "A transistor has three leads: the main current flows through two, and the third controls it — like a tap opened by a light touch. So a transistor amplifies weak signals (in headphones, radios) and switches current on and off billions of times a second. A modern processor is billions of tiny transistors on one silicon chip."),
+  eq("dynamometer", "Динамометр", "Dynamometer", ["динамометр"], ["dynamometer", "spring balance"],
+    "Прилад для вимірювання сили: пружина, що розтягується тим більше, чим більша сила, і шкала в ньютонах.",
+    "An instrument that measures force: a spring that stretches the more, the larger the force, and a scale in newtons.",
+    "Динамометр працює за законом Гука: видовження пружини пропорційне силі, тож шкалу можна розмітити рівномірно. Підвісивши тіло, ним вимірюють вагу; тягнучи брусок рівномірно — силу тертя. Перед вимірюванням стрілку ставлять на нуль, а дивляться на шкалу прямо, щоб не помилитися. Шкільний динамометр цієї лабораторії: до 5 Н, ціна поділки 0,1 Н.",
+    "A dynamometer works by Hooke’s law: the spring’s extension is proportional to the force, so the scale can be marked evenly. Hanging a body on it measures its weight; pulling a block steadily — the friction. Before measuring the pointer is set to zero, and the scale is read straight on. The school dynamometer of this lab: up to 5 N, 0.1 N per division."),
+  eq("measuring-cylinder", "Мензурка (мірний циліндр)", "Measuring cylinder", ["мензурк", "мірн* циліндр"], ["measuring cylinder", "graduated cylinder"],
+    "Скляна посудина з поділками для вимірювання об’єму рідини — а ще об’єму тіла, зануреного в неї.",
+    "A glass vessel with marks for measuring the volume of a liquid — and of a body put into it.",
+    "Рівень читають по нижньому краю меніска (увігнутої поверхні води), тримаючи очі на його висоті. Об’єм тіла неправильної форми — різниця рівнів до й після занурення: V = V₂ − V₁. Перед вимірюванням визначають ціну поділки: різницю двох підписаних позначок ділять на кількість поділок між ними. Мензурку не нагрівають.",
+    "The level is read at the bottom of the meniscus (the curved water surface), with the eyes at its height. The volume of an odd-shaped body is the difference of the levels before and after: V = V₂ − V₁. Before measuring, find the division: the difference of two labelled marks over the number of divisions between them. A cylinder is never heated."),
+  eq("calorimeter", "Калориметр", "Calorimeter", ["калориметр"], ["calorimeter"],
+    "Посудина, що майже не обмінюється теплотою з повітрям, — для дослідів із тепловим балансом.",
+    "A vessel that hardly exchanges heat with the air — for heat-balance experiments.",
+    "Шкільний калориметр — дві металеві склянки, вставлені одна в одну з повітряним проміжком і ізолювальною підставкою: повітря погано проводить теплоту, тож те, що всередині, довго зберігає температуру. Завдяки цьому теплота, віддана одним тілом, майже вся дістається іншому, і з рівняння теплового балансу можна знайти теплоємність чи теплоту плавлення.",
+    "A school calorimeter is two metal cups one inside the other with an air gap and an insulating stand: air conducts heat poorly, so what is inside keeps its temperature for long. Thanks to that, the heat given by one body almost all goes to another, and the heat balance gives a specific heat or a latent heat."),
+  eq("stopwatch", "Секундомір", "Stopwatch", ["секундомір"], ["stopwatch"],
+    "Прилад для вимірювання проміжків часу: вмикають на початку руху, зупиняють наприкінці.",
+    "An instrument for measuring time intervals: started at the beginning of a motion, stopped at its end.",
+    "Електронний секундомір (зокрема в телефоні) показує соті частки секунди, але людина вмикає й зупиняє його із запізненням близько 0,1–0,2 с. Тому короткі проміжки міряють за багатьма повтореннями — наприклад, час 20 коливань маятника, — і ділять на їхнє число: похибка руки ділиться теж.",
+    "An electronic stopwatch (in a phone too) shows hundredths of a second, but a person starts and stops it about 0.1–0.2 s late. So short intervals are timed over many repeats — say, 20 swings of a pendulum — and divided by their number: the hand’s error is divided too."),
+  eq("stand", "Штатив", "Lab stand", ["штатив"], ["lab stand", "retort stand"],
+    "Підставка з вертикальним стрижнем, до якого кріплять лапки, кільця й муфти — щоб тримати прилади на потрібній висоті.",
+    "A base with an upright rod to which clamps, rings and bosses are fixed — to hold apparatus at the right height.",
+    "Важка основа не дає штативу перекинутися, а муфта дозволяє закріпити лапку чи кільце на будь-якій висоті. На штативі підвішують пружину й маятник, закріплюють жолоб, пробірку над спиртівкою чи кінець похилої дошки.",
+    "A heavy base keeps the stand from tipping over, and a boss lets a clamp or a ring be fixed at any height. A spring and a pendulum hang from it; a groove, a test tube over a spirit lamp or the end of a sloping board are clamped to it."),
+  eq("lever-balance", "Важільні терези", "Lever balance", ["важільн* терез"], ["lever balance", "beam balance"],
+    "Терези з коромислом на осі й двома шальками: тіло зрівноважують набором важків.",
+    "A balance with a beam on an axis and two pans: a body is balanced with a set of weights.",
+    "Це рівноплечий важіль: коли маси на шальках однакові, коромисло стоїть рівно. Тіло кладуть на ліву шальку, важки пінцетом — на праву, від більших до менших; маса тіла — сума важків. Терези порівнюють маси, тому показали б те саме й на Місяці. Найменший важок набору задає точність зважування.",
+    "It is an equal-armed lever: when the masses on the pans are equal, the beam is level. The body goes on the left pan, the weights with tweezers on the right, from larger to smaller; the body’s mass is the sum of the weights. A balance compares masses, so it would show the same on the Moon. The smallest weight of the set sets the precision."),
+  eq("thermometer", "Термометр", "Thermometer", ["термометр"], ["thermometer"],
+    "Прилад для вимірювання температури.",
+    "An instrument that measures temperature.",
+    "Рідинний термометр — тонка скляна трубка з рідиною (спиртом, раніше ртуттю), що розширюється під час нагрівання і піднімається по шкалі. Щоб показати температуру тіла, термометр має з ним зрівнятися температурою — тому його тримають у воді, поки стовпчик не перестане рухатися. Спиртові термометри годяться й для сильного морозу: спирт замерзає лише при −114 °C.",
+    "A liquid thermometer is a thin glass tube with a liquid (alcohol, mercury in the past) that expands when warmed and climbs the scale. To show a body’s temperature, the thermometer must come to the same temperature — so it is held in the water until the column stops. Alcohol thermometers work in hard frost too: alcohol freezes only at −114 °C."),
+  eq("test-tube", "Пробірка", "Test tube", ["пробірк"], ["test tube"],
+    "Вузька скляна трубка, закрита з одного кінця, — для дослідів із малими кількостями речовин.",
+    "A narrow glass tube closed at one end — for experiments with small amounts of substances.",
+    "Пробірки роблять з термостійкого (боросилікатного) скла, тож їх можна нагрівати над полум’ям, тримаючи тримачем і повернувши отвором від себе й інших. Закрита корком, пробірка стає герметичним тілом сталого об’єму — у досліді з плаванням у неї насипають пісок, змінюючи масу.",
+    "Test tubes are made of heat-resistant (borosilicate) glass, so they can be heated over a flame, held in a holder with the mouth turned away from everyone. Stoppered, a tube becomes a sealed body of fixed volume — in the floating experiment sand is poured in to change its mass."),
 ];
 
 /** A term by its id (`terms` — the lab's whole glossary, laws included). */
