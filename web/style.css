@@ -347,7 +347,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 /* The lab notebook page: lined paper with a red margin, headings by hand. It is paper in either theme. */
 .lab-sheet-dialog { border: 0; padding: 0; background: transparent; width: min(720px, calc(100vw - 24px)); max-height: calc(100vh - 32px); overflow: visible; }
 .lab-sheet-dialog::backdrop { background: rgba(15, 20, 30, 0.6); }
-.lab-sheet { position: relative; box-sizing: border-box; max-height: calc(100vh - 32px); overflow: auto; padding: 26px 30px 26px 74px; color: #1f2a44; font-size: 15px; line-height: 26px;
+.lab-sheet { position: relative; box-sizing: border-box; max-height: calc(100vh - 32px); overflow: auto; padding: 26px 30px 26px 74px; color: #1f2a44; font-family: 'Spark Chalk', 'Segoe Print', cursive; font-size: 20px; line-height: 26px;
   background: linear-gradient(90deg, transparent 56px, #e57373 56px, #e57373 58px, transparent 58px), repeating-linear-gradient(180deg, transparent 0 25px, #b9cde6 25px 26px), #fdfcf6;
   background-attachment: local; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.45); }
 .lab-sheet::before { content: ''; position: absolute; left: 18px; top: 40px; bottom: 40px; width: 14px; background: radial-gradient(circle, #d9d4c4 5px, transparent 6px) 0 0 / 14px 78px repeat-y; }
@@ -360,10 +360,21 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .lab-sheet .ls-steps, .lab-sheet .ls-formulas { margin: 0; padding-left: 22px; }
 .lab-sheet .ls-formula { font-family: 'Spark Chalk', cursive; font-size: 20px; color: #0f172a; }
 .lab-sheet .ls-formula sub { font-size: 0.7em; line-height: 0; }
-.lab-sheet .ls-blank { color: #94a3b8; font-style: italic; }
-.lab-sheet .ls-foot { margin-top: 26px; font-size: 12px; line-height: 18px; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 6px; background: #fdfcf6; }
+.lab-sheet .ls-blank { color: #94a3b8; }
+.lab-sheet .ls-foot { font-size: 16px; line-height: 20px; }
+.lab-sheet-hand { position: absolute; top: 10px; right: 46px; min-height: 0; padding: 2px 10px; border-radius: 999px; font: 600 12px system-ui, sans-serif; color: #1e3a8a; background: #fdfcf6; border: 1px solid #b9cde6; }
+/* Read in print: the same page, every line in type (the headings too). */
+.lab-sheet.printed, .lab-sheet.printed .ls-head, .lab-sheet.printed .ls-title, .lab-sheet.printed .ls-label, .lab-sheet.printed .ls-sub, .lab-sheet.printed .ls-formula { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif; }
+.lab-sheet.printed { font-size: 15px; }
+.lab-sheet.printed .ls-head { font-size: 15px; font-weight: 600; }
+.lab-sheet.printed .ls-title { font-size: 21px; }
+.lab-sheet.printed .ls-label, .lab-sheet.printed .ls-sub { font-size: 15px; font-weight: 700; }
+.lab-sheet.printed .ls-formula { font-size: 15px; font-style: italic; }
+.lab-sheet.printed .ls-foot { font-size: 12px; line-height: 18px; }
+.lab-sheet .ls-foot { margin-top: 26px; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 6px; background: #fdfcf6; }
 .lab-sheet .ls-foot ul { margin: 2px 0 0; padding-left: 16px; }
 .lab-sheet .ls-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.lab-sheet .ls-actions button { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif; font-size: 15px; }
 @media (max-width: 600px) { .lab-sheet { padding: 22px 16px 18px 44px; background: linear-gradient(90deg, transparent 32px, #e57373 32px, #e57373 34px, transparent 34px), repeating-linear-gradient(180deg, transparent 0 25px, #b9cde6 25px 26px), #fdfcf6; } .lab-sheet::before { display: none; } }
 /* The programmes: one line cut with «…»; opened — every programme with its topic and page. */
 .preset details.programs { margin: 2px 0 4px; font-size: 0.8rem; }

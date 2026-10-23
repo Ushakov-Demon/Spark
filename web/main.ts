@@ -3042,11 +3042,25 @@ function labSheetHtml(p: Preset): string {
     <div class="ls-actions"><button type="button" class="primary" data-ls-start="1">${u.presetStart}</button></div>`;
 }
 let labSheetFor: Preset | null = null;
+/** The page is written by hand; it can be read in print instead (remembered). */
+function renderLabSheetHand() {
+  const printed = store.get('sheet') === 'print';
+  const u = t().details;
+  $('.lab-sheet').classList.toggle('printed', printed);
+  const b = $('#lab-sheet-hand');
+  b.textContent = printed ? u.handwritten : u.printed;
+  b.setAttribute('aria-pressed', String(printed));
+}
 function openLabSheet(p: Preset) {
   labSheetFor = p;
   $('#lab-sheet-body').innerHTML = labSheetHtml(p);
+  renderLabSheetHand();
   $<HTMLDialogElement>('#lab-sheet').showModal();
 }
+$('#lab-sheet-hand').onclick = () => {
+  store.set('sheet', store.get('sheet') === 'print' ? 'hand' : 'print');
+  renderLabSheetHand();
+};
 $('#lab-sheet-close').onclick = () => $<HTMLDialogElement>('#lab-sheet').close();
 $('#lab-sheet').addEventListener('click', (e) => {
   const dlg = $<HTMLDialogElement>('#lab-sheet');
