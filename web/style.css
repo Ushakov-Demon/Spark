@@ -35,6 +35,9 @@
   }
 }
 * { box-sizing: border-box; }
+/* While any modal is open, the page under it stays put (the modal scrolls on its own); the scrollbar's place is kept, so nothing shifts. */
+html { scrollbar-gutter: stable; }
+html:has(dialog[open]) { overflow: hidden; }
 /* Hidden is hidden, whatever display a part has otherwise (a flex row, a button). */
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
