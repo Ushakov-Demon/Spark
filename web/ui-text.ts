@@ -260,6 +260,8 @@ export interface UiText {
   protocolNext: string;
   /** The protocol's row of a measuring procedure. */
   measuring: string;
+  /** An experiment settled without an answer to show. */
+  answerMissing: string;
   /** Before the reasoning behind an answer. */
   whyTitle: string;
   leverLevel: string;
@@ -553,6 +555,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBackReturn: '↩ До досліду',
     lookBackHint: 'Торкнися виконаного кроку, щоб повернутися до його кінця: прилади й дошка — як тоді.',
     measuring: 'Вимірювання',
+    answerMissing: 'Відповіді для цього досліду не знайдено. Якщо сторінка відкрита давно — онови її (Ctrl+Shift+R).',
     whyTitle: 'Чому так?',
     leverLevel: 'рівновага',
     leverTips: 'переважує',
@@ -839,6 +842,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBackReturn: '↩ Back to the experiment',
     lookBackHint: 'Tap a step done to go back to its end: the instruments and the board as they were.',
     measuring: 'Measurements',
+    answerMissing: 'No answer found for this experiment. If the page has been open long, reload it (Ctrl+Shift+R).',
     whyTitle: 'Why so?',
     leverLevel: 'balanced',
     leverTips: 'tips',

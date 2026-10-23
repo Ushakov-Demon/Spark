@@ -298,10 +298,22 @@ function goOnFreely() {
 }
 /** A look at the board planned for later (when a guided procedure is measured out). */
 let readTimer = 0;
+/** After the last step: the readings stay on the instruments this long before the table moves aside for the board. */
+const READ_BOARD_AFTER = 10_000;
+/** The last step's instrument is still moving: the wait for the board starts once it is at rest. */
+let readWhenSettled = false;
+function readBoardSoon() {
+  window.clearTimeout(readTimer);
+  readTimer = window.setTimeout(() => {
+    // (Not over a look back at an earlier step, nor once something runs again.)
+    if (!lookingAt && !running) scene.read(true);
+  }, READ_BOARD_AFTER);
+}
 /** A new experiment: fresh setup, empty protocol. */
 function newSession() {
   // The Professor turns from the board back to the table, ready (a look at the board still due from the last one is off).
   window.clearTimeout(readTimer);
+  readWhenSettled = false;
   scene.read(false);
   snapshots = new Map();
   lookingAt = null;
@@ -1631,7 +1643,8 @@ function renderGuide(): boolean {
       setHtml('#quiz', `<div class="quiz"><p class="quiz-head">${ask ? `<span class="quiz-ask">${ask}</span> <span class="quiz-title">${q.concludeAsk}</span>` : `<span class="quiz-title">${q.conclude}</span>`}</p><div class="quiz-options">${buttons}${showAnswerButton()}</div></div>`);
       return true;
     }
-    if (!presetAnswer) return (setHtml('#quiz', ''), true);
+    // Settled, yet no answer (an experiment without one, or a page left behind its code): said, not a blank.
+    if (!presetAnswer) return (setHtml('#quiz', concluded() && !PRESET_ANSWERS[preset.id] ? `<div class="guide"><p class="muted">${t().answerMissing}</p>${renewButton()}</div>` : ''), true);
     const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>${whyHtml()}`;
     setHtml('#quiz', `<div class="guide"><span class="guide-step">${t().answerTitle}</span>${text}${renewButton()}</div>`);
     return true;
@@ -2900,8 +2913,11 @@ function nextPlanStep() {
         if (instrumentBusy) answerWhenSettled = true;
         else answerPreset();
       }
-      // A guided procedure is measured out: the table moves aside — the whole board is there to read.
-      if (!plan.length && preset?.guided) readTimer = window.setTimeout(() => scene.read(true), 1400);
+      // A guided procedure is measured out: once the readings have been seen, the table moves aside — the whole board is there to read.
+      if (!plan.length && preset?.guided) {
+        if (instrumentBusy) readWhenSettled = true;
+        else readBoardSoon();
+      }
       break;
     }
     if (s.kind === 'fresh') {
@@ -3610,6 +3626,10 @@ $('#offer').addEventListener('click', (e) => {
 scene.element.addEventListener('instrument-settled', () => {
   if (!instrumentBusy) return;
   instrumentBusy = false;
+  if (readWhenSettled) {
+    readWhenSettled = false;
+    readBoardSoon();
+  }
   boardEpoch++;
   if (answerWhenSettled) {
     answerWhenSettled = false;

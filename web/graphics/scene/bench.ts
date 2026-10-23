@@ -97,9 +97,9 @@ function blockSvg(x: number, base: number, block: readonly [number, number, numb
   return `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" rx="1.5" style="fill:${WOOD};stroke:${WOOD_EDGE}"/><path d="M${x + 6},${base - h + 6} h${w - 20} M${x + 10},${base - h / 2} h${w - 26}" style="stroke:rgba(154,107,51,0.45)"/>`;
 }
 
-/** The stand: a heavy base on the table, a rod, a clamp arm reaching to x. */
+/** The stand: a heavy base on the table, a rod, a clamp arm reaching to x (to the right or to the left of the rod). */
 function standSvg(rodX: number, armX: number, armY: number): string {
-  return `<rect x="${rodX - 40}" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="${rodX - 3}" y="${armY - 20}" width="6" height="${TABLE - 8 - armY + 20}" style="fill:${STEEL}"/><rect x="${rodX - 7}" y="${armY - 6}" width="14" height="12" rx="2" style="fill:${DARK}"/><rect x="${rodX}" y="${armY - 3}" width="${armX - rodX + 6}" height="6" rx="2" style="fill:${STEEL}"/>`;
+  return `<rect x="${rodX - 40}" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="${rodX - 3}" y="${armY - 20}" width="6" height="${TABLE - 8 - armY + 20}" style="fill:${STEEL}"/><rect x="${rodX - 7}" y="${armY - 6}" width="14" height="12" rx="2" style="fill:${DARK}"/><rect x="${Math.min(rodX, armX - 6)}" y="${armY - 3}" width="${Math.abs(armX - rodX) + 6}" height="6" rx="2" style="fill:${STEEL}"/>`;
 }
 
 /** A dynamometer hanging from the stand with the block on its hook (weighing the block). */
