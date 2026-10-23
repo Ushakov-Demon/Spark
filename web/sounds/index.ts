@@ -131,9 +131,10 @@ interface Voice {
 }
 const VOICES: Readonly<Record<Exclude<VoiceId, 'none' | 'speech'>, Voice>> = {
   // Matched by spectrogram to a cartoon voice the author liked (not copied: no recording is used) —
-  // the pitch climbing from ≈ 150 to ≈ 290 Hz over the line, little at 2–2.5 kHz, a strong band near 4 kHz —
-  // and made gibberish on purpose: a lively tune and no words, as cartoon characters chatter.
-  toon: { wave: 'glottal', low: 140, high: 180, step: 0.15, human: true, glide: 1.04, volume: 0.55, rasp: 0.15, formantShift: 1.2, clarity: 0.45, contour: 1.8, arc: 1.15, ring: 3900, legato: true, bright: 0.8, gibberish: true },
+  // ≈ 150…290 Hz, little at 2–2.5 kHz, a strong band near 4 kHz — and made gibberish on purpose:
+  // a lively tune and no words, as cartoon characters chatter. The pitch jumps about but stays level
+  // over the line (the sample climbed; line after line that sounded like a voice forever going up).
+  toon: { wave: 'glottal', low: 150, high: 240, step: 0.15, human: true, glide: 1.04, volume: 0.55, rasp: 0.15, formantShift: 1.2, clarity: 0.45, contour: 0.95, arc: 1.15, ring: 3900, legato: true, bright: 0.8, gibberish: true },
   mumble: { wave: 'glottal', low: 330, high: 430, step: 0.12, human: true, glide: 0.97, volume: 0.5, rasp: 0.45, formantShift: 1.5, clarity: 0.45 },
   gruff: { wave: 'glottal', low: 88, high: 112, step: 0.15, human: true, glide: 0.96, volume: 0.65, rasp: 0.35 },
   chirp: { wave: 'triangle', low: 420, high: 720, step: 0.062, human: false, glide: 1.25, volume: 0.2 },
