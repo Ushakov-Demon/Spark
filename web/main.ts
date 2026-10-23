@@ -11,6 +11,7 @@ import {
   canHeat,
   typicalVesselMass,
   VESSELS,
+  vesselGeometry,
   type CoolerId,
   type EquipmentItem,
   type HeaterId,
@@ -37,6 +38,11 @@ import {
   readingsOf,
   formatMeasured,
   pieceShare,
+  floatsInside,
+  tubeGlass,
+  sandFull,
+  TUBE_DIAMETER,
+  TUBE_LENGTH,
   stepCommand,
   OPERATIONS,
   BENCH_TEXT,
@@ -91,6 +97,7 @@ import {
   presetPrograms,
   presetSubjects,
   presetGradeIn,
+  presetTopicIn,
   type Preset,
   type ProtocolStep,
   LAB_KNOWLEDGE,
@@ -1214,7 +1221,7 @@ function sceneView(): SceneView {
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
     : showingDrop()
-    ? { mood: 'surprised', says: showingDrop() === 'salt' ? droppedDissolves() : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'seeded' ? seededSay() : showingDrop() === 'float' ? u.guide.floats : u.guide.dropped }
+    ? { mood: 'surprised', says: showingDrop() === 'salt' ? droppedDissolves() : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'seeded' ? seededSay() : showingDrop() === 'float' ? u.guide.floats : showingDrop() === 'inside' ? u.guide.inside : u.guide.dropped }
     : measured
     ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
@@ -1236,7 +1243,7 @@ function sceneView(): SceneView {
     : !running && stepElapsed() === 0
       ? labImpossibility(params) && !waitingForPlan()
         ? { mood: 'thinking', says: u.prof.impossible }
-        : OPERATIONS[params.action].needsAdded && !session.result().log.some((e) => e.ok && e.kind === 'matter')
+        : OPERATIONS[params.action].needsAdded && !preset?.guided && !session.result().log.some((e) => e.ok && e.kind === 'matter')
         ? { mood: 'thinking', says: tr(OPERATIONS[params.action].needsAdded!, locale) }
         : { mood: 'neutral', says: u.prof.idle }
       : current && current.amps > 0.005
@@ -1302,6 +1309,13 @@ function sceneView(): SceneView {
       const s = e.state.solidFraction ?? 0;
       const ice = s > 0 && !sub.category.startsWith('solid.');
       if (!sub.category.startsWith('solid.') && !ice) return [];
+      // A stoppered test tube with sand: upright, the sand at the bottom — on the bottom, inside the water or coming up.
+      if (e.params.volume) {
+        const shape = VESSELS[params.vessel].spec.shape;
+        const geo = vesselGeometry(shape, params.size, params.liters);
+        const sand = Math.max(0, bodyMass(e) - tubeGlass()) / sandFull();
+        return [{ color: '#d8bf86', volume: e.params.volume, share: pieceShare(session.state, e), tube: { width: TUBE_DIAMETER.value / geo.opening, height: TUBE_LENGTH.value / geo.height, sand: sand * 0.88 }, inside: floatsInside(session.state, e) }];
+      }
       const density = ice ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
       return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: (bodyMass(e) * (ice ? s : 1)) / density, share: pieceShare(session.state, e), ...(ice ? { melting: Math.min(1, s * 4) } : {}), ...(!ice && sub.bodyShape === 'ball' ? { ball: true } : {}) }];
     }),
@@ -1435,7 +1449,7 @@ let planTotal = 0;
 /** The latest thing put into the vessel during a guided procedure (the Professor comments on it). */
 let lastDrop: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
 /** What was just put in, while nothing has happened since: a body that sank or floats, or salt that dissolved. */
-function showingDrop(): 'body' | 'float' | 'salt' | 'salt-left' | 'seeded' | null {
+function showingDrop(): 'body' | 'float' | 'inside' | 'salt' | 'salt-left' | 'seeded' | null {
   if (!lastDrop || lastDrop.step !== session || running || session.state.time !== lastDrop.at) return null;
   const l = session.result().log;
   const c = l[l.length - 1]?.command;
@@ -1449,6 +1463,7 @@ function showingDrop(): 'body' | 'float' | 'salt' | 'salt-left' | 'seeded' | nul
   }
   const pieces = Object.values(session.state.entities).filter((e) => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`));
   const last = pieces[pieces.length - 1];
+  if (last && isThermalBody(last) && floatsInside(session.state, last)) return 'inside';
   return last && isThermalBody(last) && pieceShare(session.state, last) < 1 ? 'float' : 'body';
 }
 /** The density measured so far: the change of the scales over the change of the level (both around the drop). */
@@ -1687,17 +1702,25 @@ const shelfPic = (x: SubstanceItem): string =>
  * the vessel's temperature or the "predict the minutes" card when nothing runs in time (a bench of springs
  * and weights), no "add during the experiment" on the bench, no "explain" before there is anything to explain.
  */
+/** Does anything in this experiment run in time (heating, waiting, a current)? A measuring procedure does not. */
+function timedExperiment(): boolean {
+  return !preset?.guided || [...(presetGiven?.plan ?? []), ...plan].some((s) => s.kind === 'operation') || history.some((h) => h.result.final.time > h.result.initial.time);
+}
 function showOnlyWhatMatters() {
   const bench = !!preset?.bench;
-  // Does anything in this experiment run in time (heating, waiting, a current)?
-  const timed = !preset?.guided || [...(presetGiven?.plan ?? []), ...plan].some((s) => s.kind === 'operation') || history.length > 0;
+  const timed = timedExperiment();
   const hide = (sel: string, h: boolean) => {
     const el = document.querySelector<HTMLElement>(sel);
     if (el && el.hidden !== h) el.hidden = h;
   };
   // Answered, the ready-made experiment is over: the knob and the readouts have nothing more to do.
   const over = !!preset && !plan.length && !!presetAnswer && presetAnswer !== 'computing' && !running;
-  hide('.controls', bench || over);
+  // (Nothing runs in time — a measuring procedure: no knob, no clock.)
+  hide('.controls', bench || over || !timed);
+  // No thermometer in the vessel: no temperatures under the scene either.
+  const noThermo = !!preset && !needsThermometer(preset);
+  hide('#r-water', noThermo);
+  hide('#r-pot', noThermo);
   hide('.kitchen-head .weigh', bench);
   hide('.kitchen-head .speed', !timed);
   hide('#chart-box', points.sample.length < 2);
@@ -1971,7 +1994,10 @@ function renderProtocol() {
         return `<span class="weighed"${look}>${text}</span>`;
       })
       .join('');
+  const timed = timedExperiment();
   const rows = history.map((h, i) => {
+    // A run of a measuring procedure (before «почати знову»): what was put in and measured.
+    if (!timed) return `<li class="done"><span class="what">${u.measuring}</span>${adds(h.adds)}${weighed(h.result.log, h.result.initial.time, true, i)}</li>`;
     const ok = h.status.kind === 'reached' || h.status.kind === 'will-reach';
     const t0 = h.result.initial.time;
     const ran = h.result.final.time > t0;
@@ -1998,7 +2024,12 @@ function renderProtocol() {
   }
   const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
   const cur = history.length;
-  rows.push(`<li class="current"${finished ? lookAttr(`s:${cur}`) : ''}><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`);
+  // A measuring procedure (nothing runs in time): one row of what was measured, not a step waiting for its start.
+  rows.push(
+    timed
+      ? `<li class="current"${finished ? lookAttr(`s:${cur}`) : ''}><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`
+      : `<li class="${plan.length ? 'current' : 'done'}"><span class="what">${u.measuring}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`,
+  );
   for (const s of plan) {
     const label =
       s.kind === 'add' ? u.added(tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' }))
@@ -2883,11 +2914,15 @@ function buildPresets() {
   list.innerHTML = '';
   const formulas = new Map(LAB_KNOWLEDGE.formulas.map((f) => [f.id, f]));
   const found = (p: Preset) => [p.title, p.question, p.topic].some((x) => tr(x, locale).toLowerCase().includes(query));
-  const shown = query ? PRESETS.filter(found) : inSubject.filter((x) => gradeOf(x) === presetGrade);
+  const graded = query ? PRESETS.filter(found) : inSubject.filter((x) => gradeOf(x) === presetGrade);
+  // Those under one heading stand together (in the order the headings first come).
+  const headOf = (p: Preset) => (query ? '' : presetTopicIn(p, presetSubject, locale));
+  const heads = [...new Set(graded.map(headOf))];
+  const shown = [...graded].sort((a, b) => heads.indexOf(headOf(a)) - heads.indexOf(headOf(b)));
   if (!shown.length) list.append(el('p', { className: 'muted small' }, u.presetsNone));
   let topic = '';
   for (const p of shown) {
-    const heading = query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : tr(p.topic, locale);
+    const heading = query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : presetTopicIn(p, presetSubject, locale);
     if (heading !== topic) {
       topic = heading;
       list.append(el('h3', { className: 'presets-topic' }, topic));

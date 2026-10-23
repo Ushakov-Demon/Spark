@@ -2,6 +2,8 @@ import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
+import { COMPONENTS } from '../components/index.js';
+import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -225,6 +227,53 @@ export const PRESETS: readonly Preset[] = [
     formulas: ['mechanics.density'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 7, item: 'Тема 1. Хімія. Перші кроки', match: 'related', quote: 'Актуалізація умінь, набутих в адаптаційному циклі на прикладі визначення густини тіла (цвяха, ключа тощо).' }],
     quoteHas: 'густини',
+    expect: 'reached',
+  },
+  {
+    id: 'floating-conditions',
+    ask: { uk: 'За якої умови тіло тоне, плаває всередині рідини, спливає?', en: 'When does a body sink, float inside a liquid, come up?' },
+    grade: 7,
+    topic: MECH,
+    title: { uk: 'Коли тіло тоне, а коли плаває?', en: 'When does a body sink, and when does it float?' },
+    question: {
+      uk: 'Пробірка з корком, пісок і мензурка з водою. Наповнимо пробірку піском до країв — і вона потоне. Потім відсиплемо піску, щоб пробірка плавала всередині води, а тоді ще — і вона спливе. Щоразу виміряємо її масу (терезами: на скільки збільшилися покази) і об’єм (мензуркою: на скільки піднялася вода) та порівняємо її середню густину з густиною води. За якої умови тіло тоне, плаває всередині рідини, спливає?',
+      en: 'A stoppered test tube, sand and a measuring cylinder of water. We fill the tube with sand to the brim — and it sinks. Then we pour some sand out so that it floats inside the water, and then more — and it comes up. Each time we measure its mass (the scales: how much the reading grows) and its volume (the cylinder: how far the water rises) and compare its mean density with that of water. When does a body sink, float inside a liquid, come up?',
+    },
+    params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    plan: [
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'level' },
+      { kind: 'add', substance: 'glass', mass: tubeGlass() + sandFull(), volume: tubeVolume(), temperature: 20, label: { uk: 'Пробірка, повна піску', en: 'Test tube full of sand' } },
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'level' },
+      { kind: 'fresh', label: { uk: 'Дослід 2: відсипати піску, щоб пробірка плавала всередині води', en: 'Run 2: pour sand out so that the tube floats inside the water' } },
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'level' },
+      // As much sand as makes its mean density that of the water (rounded to a tenth of a gram — a pinch).
+      { kind: 'add', substance: 'glass', mass: tubeGlass() + Math.round(sandToFloatInside(COMPONENTS.water.phases.liquid!.density!.value) * 1e4) / 1e4, volume: tubeVolume(), temperature: 20, label: { uk: 'Пробірка з меншою кількістю піску', en: 'Test tube with less sand' } },
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'level' },
+      { kind: 'fresh', label: { uk: 'Дослід 3: відсипати ще піску', en: 'Run 3: pour out more sand' } },
+      { kind: 'weigh', scale: 'lab-balance' },
+      { kind: 'add', substance: 'glass', mass: tubeGlass() + 0.001, volume: tubeVolume(), temperature: 20, label: { uk: 'Пробірка з дрібкою піску', en: 'Test tube with a pinch of sand' } },
+      // (No cylinder now: the tube is not all under water, the level would tell only the part that is — its volume is that of run 1.)
+      { kind: 'weigh', scale: 'lab-balance' },
+    ],
+    choices: [
+      ch('density', 'Тоне, коли його густина більша за густину рідини; плаває всередині — коли рівна; спливає — коли менша', 'It sinks when its density is greater than the liquid’s; floats inside when equal; comes up when less'),
+      ch('mass', 'Тоне важке тіло, а легке спливає — яка б не була рідина', 'A heavy body sinks and a light one comes up, whatever the liquid'),
+      ch('volume', 'Тоне мале тіло, а велике спливає', 'A small body sinks and a large one comes up'),
+    ],
+    choicesAt: 'end',
+    // The densities are the answer: chalked in once the conclusion is picked.
+    answerOnBoard: ['rho:'],
+    formulas: ['mechanics.density', 'mechanics.buoyant-force', 'mechanics.submerged-share'],
+    quoteHas: 'плавання',
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'умов плавання тіл' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 10', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 10. Перевірка умов плавання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 35, лабораторна робота № 10, с. 251' } },
+    ],
     expect: 'reached',
   },
   {

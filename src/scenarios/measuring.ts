@@ -43,6 +43,8 @@ export function liquidDensity(state: SystemState): number | null {
 
 /** Density of a body put into the liquid, kg/m³ (ice when frozen, the solid itself for blocks). */
 export function pieceDensity(piece: ThermalBody): number {
+  // A closed hollow body (a stoppered test tube with sand): its mean density.
+  if (piece.params.volume) return bodyMass(piece) / piece.params.volume;
   const sub = substanceOf(piece);
   if (!sub) return WATER_DENSITY;
   // A metal, salt: its own solid density, its melt's once molten.
@@ -59,6 +61,19 @@ export function pieceShare(state: SystemState, piece: ThermalBody): number {
   // A liquid layer (oil) is liquid, not a floating body; with nothing liquid around, everything rests.
   if (rl === null || (sub && !sub.category.startsWith('solid.') && (piece.state.solidFraction ?? 0) <= 0)) return 1;
   return submergedShare(pieceDensity(piece), rl);
+}
+
+/**
+ * How close to the liquid's density a body floats inside the liquid — neither sinking nor coming up: within
+ * this share. An estimate: a few grains of sand more or less in a test tube (≈ 0.05 g of ≈ 8 g); a body a bit
+ * denser sinks slowly, a bit lighter comes up slowly, and in a lesson's minutes neither shows.
+ */
+export const FLOATS_INSIDE = { value: 0.005, unit: '', verification: 'estimate', note: 'Estimate: a few grains of sand in a test tube; slower drift is not seen in a lesson.' } as const;
+
+/** Does the body float inside the liquid — under the surface, off the bottom (its density that of the liquid)? */
+export function floatsInside(state: SystemState, piece: ThermalBody): boolean {
+  const rl = liquidDensity(state);
+  return rl !== null && Math.abs(pieceDensity(piece) - rl) / rl <= FLOATS_INSIDE.value;
 }
 
 /**

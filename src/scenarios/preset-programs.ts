@@ -1,5 +1,6 @@
 import { getCurriculum } from '../knowledge/curricula.js';
 import type { Subject } from '../knowledge/types.js';
+import { tr, type Locale } from '../knowledge/i18n.js';
 import { LAB_KNOWLEDGE } from './lab-knowledge.js';
 import type { Preset, PresetProgram } from './presets.js';
 
@@ -48,4 +49,19 @@ export function presetGradeIn(p: Preset, subject: Subject): number | null {
   if (p.grade === null) return null;
   const grades = presetPrograms(p).flatMap((x) => (x.match !== 'related' && x.grade !== undefined && getCurriculum(x.program)?.subject === subject ? [x.grade] : []));
   return grades.length ? Math.min(...grades) : p.grade;
+}
+
+/**
+ * The topic an experiment is under in a subject: that subject's programme names its own («Тема 2. Досліджуємо
+ * хімічні реакції в розчинах» for salt on the roads, not «Теплові явища» of physics). The programmes' topics are
+ * quoted in their own language (Ukrainian); in another language — the experiment's own topic.
+ */
+export function presetTopicIn(p: Preset, subject: Subject, locale: Locale): string {
+  // Under its own subject (the first of its programmes) an experiment keeps its own topic.
+  if (presetSubjects(p)[0] === subject) return tr(p.topic, locale);
+  // (The chemistry programme's items are its topics: «Тема 2. Досліджуємо хімічні реакції в розчинах».)
+  const topicOf = (x: PresetProgram) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined);
+  const mine = presetPrograms(p).find((x) => x.match !== 'related' && topicOf(x) && getCurriculum(x.program)?.subject === subject);
+  const own = mine && topicOf(mine);
+  return own && locale === 'uk' ? own : tr(p.topic, locale);
 }

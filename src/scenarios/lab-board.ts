@@ -427,7 +427,9 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
     // Both the mass and the volume of the body are known: its density.
     if (body.m !== undefined && body.v !== undefined && body.v > 0) {
       const rho = body.m / body.v;
-      out.push({ id: `rho:${i}`, title: uk ? 'густина речовини тіла' : 'the density of the body', formula: 'ρ = m / V', numbers: `${n(body.m * 1000)} ${uk ? 'г' : 'g'} / ${n(body.v * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(rho / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(rho)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+      // A closed hollow body (a stoppered test tube with sand): its density is the mean one, not a substance's.
+      const hollow = log.some((e) => e.ok && e.command.type === 'thermal.add' && (e.command as { volume?: number }).volume);
+      out.push({ id: `rho:${i}`, title: hollow ? (uk ? 'середня густина тіла' : 'the mean density of the body') : uk ? 'густина речовини тіла' : 'the density of the body', formula: 'ρ = m / V', numbers: `${n(body.m * 1000)} ${uk ? 'г' : 'g'} / ${n(body.v * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(rho / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(rho)} ${uk ? 'кг/м³' : 'kg/m³'}` });
       body = {};
     }
     liquidDensityLine(i);

@@ -66,6 +66,8 @@ export interface UiText {
     btnHang(into: 'air' | 'liquid'): string;
     dropped: string;
     floats: string;
+    /** A body that neither sinks nor comes up: its density that of the liquid. */
+    inside: string;
     dissolved(what: string, salty: boolean): string;
     /** A crystal dropped into a supersaturated solution set off the crystallisation. */
     seeded(what: string, crystals: string, temp: string, warmed: boolean): string;
@@ -248,6 +250,8 @@ export interface UiText {
   protocolTitle: string;
   protocolHint: string;
   protocolNext: string;
+  /** The protocol's row of a measuring procedure. */
+  measuring: string;
   /** Looking back at the end of a row of the protocol: what it was, the way back. */
   lookBack(what: string): string;
   lookBackReturn: string;
@@ -351,8 +355,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnLevel: '📏 Подивитися на поділки',
       btnAdd: (w) => `⬇ Опустити: ${w}`,
       btnHang: (into) => (into === 'air' ? '🧷 Підвісити в повітрі' : '🧷 Занурити в рідину'),
-      dropped: 'Бульк! Брусок ліг на дно — і вода в мензурці піднялася.',
+      dropped: 'Бульк! Тіло лягло на дно — і вода в мензурці піднялася.',
       floats: 'Бульк! Шматок плаває — і рівень води піднявся.',
+      inside: 'Бульк! Тіло зависло у воді: не тоне й не спливає.',
       seeded: (w, c, t, warmed) => `Кристалик став затравкою: з розчину одразу випало ≈ ${c} кристалів ${w}, і розчин ${warmed ? 'нагрівся' : 'охолов'} до ${t}!`,
       dissolved: (w, salty) => `${w} розчиняється — вода стає ${salty ? 'солоною і ' : ''}густішою, а її частинки не видно навіть у мікроскоп.`,
       saltLeft: (d, l, t, s, heat, hot, w) => `Розчинилося ${d} г, а ${l} г лежить на дні: при ${t} °C 100 г води розчиняє лише ≈ ${s} г ${w}. ${heat ? 'Нагрій воду — при вищій температурі розчиниться решта.' : `Нагрівання тут мало допоможе (при 100 °C — ≈ ${hot} г на 100 г води): долий води.`}`,
@@ -528,6 +533,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBack: (what) => `Так було після кроку «${what}»`,
     lookBackReturn: '↩ До досліду',
     lookBackHint: 'Торкнися виконаного кроку, щоб повернутися до його кінця: прилади й дошка — як тоді.',
+    measuring: 'Вимірювання',
     protocolNext: 'Крок завершено. Що далі? Обери дію чи прилад у «Пісочниці» ліворуч або досип щось — і натисни «Продовжити».',
     stepRunning: (e) => `іде ${e}`,
     stepReached: (t) => `✓ за ${t}`,
@@ -626,8 +632,9 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       btnLevel: '📏 Read the marks',
       btnAdd: (w) => `⬇ Lower in: ${w}`,
       btnHang: (into) => (into === 'air' ? '🧷 Hang in the air' : '🧷 Lower into the liquid'),
-      dropped: 'Plop! The block lies on the bottom — and the water in the cylinder rose.',
+      dropped: 'Plop! The body lies on the bottom — and the water in the cylinder rose.',
       floats: 'Plop! The piece floats — and the water level rose.',
+      inside: 'Plop! The body hangs in the water: it neither sinks nor comes up.',
       seeded: (w, c, t, warmed) => `The crystal became a seed: ≈ ${c} of ${w} crystals came out of the solution at once, and it ${warmed ? 'warmed up' : 'cooled down'} to ${t}!`,
       dissolved: (w, salty) => `${w} is dissolving — the water turns ${salty ? 'salty and ' : ''}denser, and its particles cannot be seen even under a microscope.`,
       saltLeft: (d, l, t, s, heat, hot, w) => `${d} g dissolved, and ${l} g lies on the bottom: at ${t} °C, 100 g of water dissolves only ≈ ${s} g of ${w}. ${heat ? 'Warm the water — the rest dissolves when it is hotter.' : `Warming helps little here (≈ ${hot} g per 100 g of water at 100 °C): add more water.`}`,
@@ -803,6 +810,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBack: (what) => `As it was after “${what}”`,
     lookBackReturn: '↩ Back to the experiment',
     lookBackHint: 'Tap a step done to go back to its end: the instruments and the board as they were.',
+    measuring: 'Measurements',
     protocolNext: 'Step done. What next? Pick an action or a device in the Sandbox on the left, or add something — then press “Continue”.',
     stepRunning: (e) => `running ${e}`,
     stepReached: (t) => `✓ in ${t}`,

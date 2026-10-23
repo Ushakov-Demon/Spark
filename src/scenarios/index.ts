@@ -19,3 +19,4 @@ export * from './lab-board.js';
 export * from './measuring.js';
 export * from './preset-programs.js';
 export * from './bench.js';
+export * from './test-tube.js';

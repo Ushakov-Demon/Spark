@@ -163,6 +163,33 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
     };
   },
+  'floating-conditions': (run) => {
+    // Three runs: m₁ (cylinder with water), the tube in, m₂ — so its mass; its volume from the level in run 1 (it lay on the bottom, all under water).
+    const m = of(run, 'mass').map((x) => x.record.value ?? 0);
+    const v = of(run, 'volume').map((x) => x.record);
+    const masses = [0, 1, 2].map((k) => (m[2 * k + 1] ?? 0) - (m[2 * k] ?? 0));
+    const div = v[1]?.inputs?.['division'] ?? 1e-6;
+    const vol = v.length >= 2 ? v[1]!.value! - v[0]!.value! : 0;
+    const rho = masses.map((x) => (vol > 0 ? x / vol : 0));
+    // Within what the cylinder tells (half a division of its volume) — the density of water; above it, it sinks; below, it comes up.
+    const err = WATER * (div / 2 / Math.max(vol, div));
+    const kind = (r: number) => (r > WATER + err ? 'sinks' : r < WATER - err ? 'up' : 'inside');
+    const kinds = rho.map(kind);
+    const fits = kinds[0] === 'sinks' && kinds[1] === 'inside' && kinds[2] === 'up';
+    const gcm = (r: number, l: Locale) => `${sig(r / 1000, 3, l)} ${l === 'uk' ? 'г/см³' : 'g/cm³'}`;
+    const word = { sinks: { uk: 'потонула', en: 'sank' }, inside: { uk: 'плавала всередині води', en: 'floated inside the water' }, up: { uk: 'спливла', en: 'came up' } } as const;
+    const cmp = { sinks: '>', inside: '≈', up: '<' } as const;
+    return {
+      say: both((l) => (l === 'uk' ? 'Тоне чи плаває — вирішує густина!' : 'Sinking or floating — the density decides!')),
+      text: both((l) => {
+        const runs = [0, 1, 2].map((k) => `${l === 'uk' ? `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ води — пробірка ${word[kinds[k]!].uk}` : `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ of water — the tube ${word[kinds[k]!].en}`}`).join('; ');
+        return l === 'uk'
+          ? `Об’єм пробірки — з першого досліду, коли вона лежала на дні: V = ${mL(vol, l)}. Відсипаючи пісок, ми змінювали масу, а об’єм лишався тим самим: ${runs}. Тіло тоне, коли його густина більша за густину рідини, плаває всередині — коли рівна, спливає — коли менша: тоді архімедова сила, що діє на все тіло під водою, більша за силу тяжіння. Спливла пробірка занурена лише частково: рівно настільки, щоб витіснити воду своєї маси. Тому в третьому досліді мензурка не дала б об’єму всієї пробірки.`
+          : `The tube’s volume is from run 1, when it lay on the bottom: V = ${mL(vol, l)}. Pouring sand out changed the mass, the volume stayed: ${runs}. A body sinks when its density is greater than the liquid’s, floats inside when equal, comes up when less: then the buoyant force on the whole body under water is greater than gravity. The tube that came up is only partly under water — just enough to push aside its own mass of water. So in run 3 the cylinder would not give the volume of the whole tube.`;
+      }),
+      ...(m.length >= 6 && vol > 0 ? { correct: fits ? 'density' : kinds[0] === 'sinks' ? 'mass' : 'volume' } : {}),
+    };
+  },
   'mystery-metal': (run) => {
     const m = of(run, 'mass');
     const v = of(run, 'volume');

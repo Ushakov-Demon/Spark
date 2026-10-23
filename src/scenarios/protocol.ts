@@ -55,6 +55,8 @@ export interface AddStep {
   readonly frozen?: boolean;
   /** Its name in the protocol ("an unknown metal"), instead of the substance's. */
   readonly label?: LocalizedText;
+  /** A closed hollow body (a stoppered test tube with sand): its outer volume, m³. */
+  readonly volume?: number;
 }
 
 /** Put the vessel on the scales and read them (changes nothing; the reading goes to the log). */
@@ -124,7 +126,7 @@ export function stepCommand(step: Exclude<ProtocolStep, OperationStep | FreshSte
     case 'hang':
       return { type: 'lab.hang', substance: step.substance, mass: step.mass, into: step.into, ...(step.label ? { label: step.label } : {}) };
     case 'add':
-      return { type: 'thermal.add', into: SAMPLE_ID, substance: step.substance, mass: kilograms(step.mass), temperature: celsius(step.temperature), ...(step.frozen ? { frozen: true } : {}), ...(step.label ? { label: step.label } : {}) };
+      return { type: 'thermal.add', into: SAMPLE_ID, substance: step.substance, mass: kilograms(step.mass), temperature: celsius(step.temperature), ...(step.frozen ? { frozen: true } : {}), ...(step.label ? { label: step.label } : {}), ...(step.volume ? { volume: step.volume } : {}) };
   }
 }
 

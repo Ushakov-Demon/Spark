@@ -6,7 +6,7 @@
  * so CSS animations run smoothly. It shows the state, it computes nothing.
  */
 import { professorSideSvg, professorSvg, type Mood } from './graphics/professor/index.js';
-import { blocksSvg } from './graphics/scene/bodies.js';
+import { blocksSvg, type TubePiece } from './graphics/scene/bodies.js';
 import { isGlass, LIQUID, METAL } from './graphics/scene/colors.js';
 import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
 import { deviceSvg } from './graphics/scene/devices.js';
@@ -65,7 +65,7 @@ export interface SceneView {
   /** Decimal separator for numbers on the drawing. */
   readonly decimal: ',' | '.';
   /** Solid pieces lying in the vessel (a metal block): colour and volume, m³. */
-  readonly pieces?: readonly { readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean; readonly melting?: number }[];
+  readonly pieces?: readonly { readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean; readonly melting?: number; readonly tube?: TubePiece; readonly inside?: boolean }[];
   /** Bumped when salt is poured in: grains sink and dissolve in a little cloud. */
   readonly dissolve?: number;
   /** A body hanging on the dynamometer, in the air above the vessel or lowered into the liquid; what the dial shows. */
@@ -300,7 +300,7 @@ export function createScene(): Scene {
       // (the share under water as by Archimedes). A 10 cm³ block is about 22 units wide; narrow vessels squeeze them.
       // Floating bodies follow the level; sunk ones do not (so a falling block is not redrawn as the water rises).
       const floats = (v.pieces ?? []).some((x) => x.share < 1);
-      const pk = `${(v.pieces ?? []).map((x) => `${x.color}:${x.volume.toExponential(2)}:${x.share.toFixed(2)}`).join('|')}@${floats ? Math.round(level) : ''}`;
+      const pk = `${(v.pieces ?? []).map((x) => `${x.color}:${x.volume.toExponential(2)}:${x.share.toFixed(2)}:${x.inside ? 'in' : ''}:${x.tube?.sand.toFixed(2) ?? ''}`).join('|')}@${floats ? Math.round(level) : ''}`;
       const pg = $<SVGGElement>('sc-pieces');
       if (pg && pg.dataset['k'] !== pk) {
         pg.dataset['k'] = pk;

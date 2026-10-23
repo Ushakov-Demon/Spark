@@ -569,6 +569,27 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-22',
   }),
+  'corning-9820-12': source({
+    id: 'corning-9820-12',
+    title: 'Corning 9820-12 PYREX 12 × 75 mm rimless Kahn culture tube, round bottom, 5 mL, borosilicate glass 7740',
+    url: 'https://www.capitolscientific.com/Corning-9820-12-PYREX-12-x-75mm-Rimless-Kahn-Culture-Tube-Reusable-5mL',
+    license: 'facts-only',
+    retrieved: '2026-10-23',
+  }),
+  'labbox-borosilicate-33': source({
+    id: 'labbox-borosilicate-33',
+    title: 'Labbox PDS-60, LBG 3.3 borosilicate glass (ISO 3585): density 2.23 ± 0.02 g/cm³',
+    url: 'https://labbox.es/wp-content/uploads/FT/PDS-60.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-23',
+  }),
+  'engineeringtoolbox-dirt-densities': source({
+    id: 'engineeringtoolbox-dirt-densities',
+    title: 'The Engineering ToolBox, Dirt and Mud — Densities: sand, dry 1555 kg/m³ (97 lb/ft³)',
+    url: 'https://www.engineeringtoolbox.com/dirt-mud-densities-d_1727.html',
+    license: 'facts-only',
+    retrieved: '2026-10-23',
+  }),
   'wikipedia-friction': source({
     id: 'wikipedia-friction',
     title: 'Wikipedia, Friction: laws of dry friction discovered by Leonardo da Vinci in 1493 (unpublished), rediscovered by Guillaume Amontons in 1699, developed by Coulomb (1785); friction proportional to load, independent of the apparent area; wood on wood μ 0.25–0.62 (static)',

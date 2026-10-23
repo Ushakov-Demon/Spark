@@ -138,6 +138,10 @@ describe('programmes of the ready-made experiments', () => {
     // Salt on the roads: physics in the 8th grade, the chemistry of solutions in the 9th.
     expect(presetGradeIn(byId('road-salt'), 'physics')).toBe(8);
     expect(presetGradeIn(byId('road-salt'), 'chemistry')).toBe(9);
+    // Under another subject, that programme's topic; under its own, its own.
+    const { presetTopicIn } = await import('../../src/scenarios/index.js');
+    expect(presetTopicIn(byId('road-salt'), 'chemistry', 'uk')).toMatch(/^Тема \d/);
+    expect(presetTopicIn(byId('road-salt'), 'physics', 'uk')).toBe(byId('road-salt').topic.uk);
     // "≈" (the same idea, another substance) does not put it under a subject.
     expect(presetSubjects(byId('mystery-metal'))).toEqual(['physics']);
   });
@@ -162,6 +166,12 @@ describe('ready-made experiments with values to change', () => {
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
   };
+  it('the conditions of floating: sinks, floats inside, comes up — by the tube’s mean density', () => {
+    const { answer } = run(PRESETS.find((p) => p.id === 'floating-conditions')!);
+    expect(answer.correct).toBe('density');
+    expect(answer.text.uk).toMatch(/потонула.*плавала всередині води.*спливла/);
+  }, 60_000);
+
   it('the floating ice: mass and volume are told apart, with the numbers of the run', () => {
     const { answer } = run(PRESETS.find((p) => p.id === 'ice-level')!);
     const text = answer.text.uk;

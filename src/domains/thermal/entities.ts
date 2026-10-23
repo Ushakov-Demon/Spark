@@ -35,6 +35,11 @@ export interface ThermalBodyParams {
   readonly mixture?: 'solution';
   /** Key in MATERIALS the values came from — lets explanations cite the data source. */
   readonly material?: string;
+  /**
+   * Outer volume of a closed hollow body, m³ (a stoppered test tube with sand): it floats by its mean density
+   * m/V, not by its substance's. Without it the volume is the mass over the substance's density.
+   */
+  readonly volume?: number;
 }
 export interface ThermalBodyState {
   readonly temperature: Kelvin;
@@ -179,6 +184,7 @@ export function thermalBody(
       ...(o.phase === undefined ? {} : { phase: o.phase }),
       ...(o.substance === undefined ? {} : { substance: o.substance }),
       ...(o.evaporation === undefined ? {} : { evaporation: o.evaporation }),
+      ...(o.volume === undefined ? {} : { volume: o.volume }),
     },
     state: { temperature: o.temperature, ...(solid === undefined ? {} : { solidFraction: solid }) },
   };

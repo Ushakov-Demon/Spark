@@ -60,6 +60,8 @@ export interface AddCommand {
   readonly frozen?: boolean;
   /** What to call the piece instead of its substance ("an unknown metal" in a guessing experiment). */
   readonly label?: LocalizedText;
+  /** A closed hollow body (a stoppered test tube with sand): its outer volume, m³; the mass is all it holds. */
+  readonly volume?: number;
 }
 
 export type ThermalCommand = SetHeaterCommand | PourCommand | SetTemperatureCommand | AddCommand;
@@ -253,7 +255,8 @@ export const add: CommandHandler<AddCommand> = {
     const n = Object.keys(state.entities).filter((id) => id.startsWith(`${c.into}+`)).length + 1;
     const id = `${c.into}+${n}`;
     const density = c.frozen ? (sub.freezing?.solidDensity?.value ?? th.density) : th.density;
-    const volume = c.mass / density;
+    if (c.volume !== undefined && !(c.volume > 0)) return err({ uk: 'Об’єм тіла має бути додатним.', en: 'The volume of a body must be positive.' });
+    const volume = c.volume ?? c.mass / density;
     // A frozen piece or a solid (a metal block): a cube of that volume, all sides wetted. A liquid layer: it spreads over the surface.
     const solidPiece = c.frozen || sub.category.startsWith('solid.');
     const surface = Object.values(state.connections).find(
@@ -269,6 +272,7 @@ export const add: CommandHandler<AddCommand> = {
       mass: c.mass,
       specificHeat: specificHeat(th.specificHeat),
       substance: sub.id,
+      ...(c.volume !== undefined ? { volume: c.volume } : {}),
       ...(th.phase ? { phase: th.phase } : {}),
       temperature: c.temperature,
       ...(th.phase?.meltingPoint !== undefined ? { solidFraction: solid } : {}),
