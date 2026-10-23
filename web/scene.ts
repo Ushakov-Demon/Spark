@@ -16,6 +16,7 @@ import { benchMotion } from './graphics/scene/bench-motion.js';
 import { play } from './motion.js';
 import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
+import { BUBBLE_PAGE, BUBBLE_PAGE_PHONE, bubblePages } from './bubble.js';
 
 // The drawings live in graphics/; the scene puts them together and moves the live parts.
 export type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
@@ -82,6 +83,8 @@ export interface SceneView {
   readonly scale?: { readonly look: 'kitchen-scale' | 'lab-balance'; readonly display: string };
   /** `act` — an idle scene the Professor plays when nobody does anything ("pace", "glasses"…). */
   readonly professor: { readonly mood: Mood; readonly says: string; readonly act?: string };
+  /** The bubble's buttons for a long line: to the next page; from the last page back to the first. */
+  readonly bubble?: { readonly next: string; readonly back: string };
 }
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -105,9 +108,37 @@ export function createScene(): Scene {
   root.className = 'scene';
   // The blackboard hangs on the wall behind everything on the table (the drawing's wall is see-through);
   // a button pulls it to the front to read it all, and back.
-  root.innerHTML = `<div class="scene-stage"><div class="table-buttons"><button type="button" class="board-toggle"></button></div><div class="board" id="sc-board" aria-live="polite"><div class="board-sponge" aria-hidden="true"></div><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 ${VIEW_TOP} ${W} ${H - VIEW_TOP}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
+  root.innerHTML = `<div class="scene-stage"><div class="table-buttons"><button type="button" class="board-toggle"></button></div><div class="board" id="sc-board" aria-live="polite"><div class="board-sponge" aria-hidden="true"></div><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 ${VIEW_TOP} ${W} ${H - VIEW_TOP}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"><p class="bubble-text"></p><div class="bubble-foot" hidden><span class="bubble-page"></span><button type="button" class="bubble-turn"></button></div></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
   const svg = root.querySelector('svg')!;
   const says = root.querySelector<HTMLElement>('#sc-says')!;
+  const saysText = says.querySelector<HTMLElement>('.bubble-text')!;
+  const saysFoot = says.querySelector<HTMLElement>('.bubble-foot')!;
+  const saysPage = says.querySelector<HTMLElement>('.bubble-page')!;
+  const saysTurn = says.querySelector<HTMLButtonElement>('.bubble-turn')!;
+  /** The line in the bubble, its pages and the page shown: a new line starts from its first page. */
+  let saysLine: string | null = null;
+  /** A phone's bubble is narrower: shorter pages, so the bubble stays inside the scene. */
+  const phone = matchMedia('(max-width: 700px)');
+  let saysMax = 0;
+  let saysPages: string[] = [];
+  let saysAt = 0;
+  let turnLabels = { next: '', back: '' };
+  const showPage = () => {
+    // Only what changed: the footnotes underline terms in the text, a rewrite every frame would wipe them.
+    const set = (el: HTMLElement, text: string) => {
+      if (el.textContent !== text) el.textContent = text;
+    };
+    set(saysText, saysPages[saysAt] ?? '');
+    const many = saysPages.length > 1;
+    saysFoot.hidden = !many;
+    if (!many) return;
+    set(saysPage, `${saysAt + 1}/${saysPages.length}`);
+    set(saysTurn, saysAt === saysPages.length - 1 ? turnLabels.back : turnLabels.next);
+  };
+  saysTurn.onclick = () => {
+    saysAt = saysAt === saysPages.length - 1 ? 0 : saysAt + 1;
+    showPage();
+  };
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
   const profSide = root.querySelector<HTMLElement>('#sc-prof-side')!;
   let key = '';
@@ -512,7 +543,15 @@ export function createScene(): Scene {
           profBox.classList.add(`act-${act}`);
         }
       }
-      if (says.textContent !== v.professor.says) says.textContent = v.professor.says;
+      if (v.bubble) turnLabels = v.bubble;
+      const max = phone.matches ? BUBBLE_PAGE_PHONE : BUBBLE_PAGE;
+      if (saysLine !== v.professor.says || saysMax !== max) {
+        saysLine = v.professor.says;
+        saysMax = max;
+        saysPages = bubblePages(saysLine, max);
+        saysAt = 0;
+      }
+      showPage();
       says.hidden = !v.professor.says;
   }
 }

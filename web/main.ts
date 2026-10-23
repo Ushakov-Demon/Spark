@@ -1394,7 +1394,7 @@ function sceneView(): SceneView {
     running,
     decimal: locale === 'uk' ? ',' : '.',
     professor,
-    pieces: Object.values(session.state.entities).flatMap((e) => {
+    pieces: Object.values(session.state.entities).flatMap((e): NonNullable<SceneView['pieces']>[number][] => {
       if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`)) return [];
       const id = 'substance' in e.params ? (e.params.substance as SubstanceId | undefined) : undefined;
       const sub = id ? SUBSTANCES[id] : undefined;
@@ -1420,6 +1420,7 @@ function sceneView(): SceneView {
     ...(measured?.command.type === 'lab.read-level' ? { levelMark: formatMeasured('volume', measured.record.value, measured.record.inputs?.['division'] ?? 1e-6, locale) } : {}),
     dissolve: dissolveKey,
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
+    bubble: { next: u.bubbleNext, back: u.bubbleBack },
     ...(benchView() ? { bench: benchView()! } : {}),
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };

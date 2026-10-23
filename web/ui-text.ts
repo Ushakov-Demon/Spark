@@ -95,6 +95,9 @@ export interface UiText {
   chartHide: string;
   boardFront: string;
   boardBack: string;
+  /** A long line of the Professor's, page by page: to the next page, and from the last back to the first. */
+  bubbleNext: string;
+  bubbleBack: string;
   quiz: {
     title: string;
     predictTitle: string;
@@ -399,6 +402,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     chartShow: '📈 Показати графік',
     chartHide: '📈 Сховати графік',
     boardFront: '👀 Подивитися на дошку',
+    bubbleNext: 'Далі ›',
+    bubbleBack: '‹ Назад',
     boardBack: '↩ Повернутися до досліду',
     quiz: {
       title: 'Як гадаєш?',
@@ -686,6 +691,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     chartShow: '📈 Show the chart',
     chartHide: '📈 Hide the chart',
     boardFront: '👀 Look at the board',
+    bubbleNext: 'Next ›',
+    bubbleBack: '‹ Back',
     boardBack: '↩ Back to the experiment',
     quiz: {
       title: 'What do you think?',
