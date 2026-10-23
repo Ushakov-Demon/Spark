@@ -166,6 +166,15 @@ describe('ready-made experiments with values to change', () => {
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
   };
+  it('motion (lab works 1–3): the ball speeds up, a shorter thread turns quicker, only the length sets the pendulum', () => {
+    const answer = (id: string) => run(PRESETS.find((p) => p.id === id)!).answer;
+    expect(answer('average-speed').correct).toBe('whole');
+    expect(answer('rotation-period').correct).toBe('shorter');
+    expect(answer('pendulum').correct).toBe('length');
+    // A metre pendulum: T = 2π·√(1/g) ≈ 2.01 s.
+    expect(answer('pendulum').text.uk).toMatch(/T ≈ 2,01 с/);
+  }, 60_000);
+
   it('the conditions of floating: sinks, floats inside, comes up — by the tube’s mean density', () => {
     const { answer } = run(PRESETS.find((p) => p.id === 'floating-conditions')!);
     expect(answer.correct).toBe('density');

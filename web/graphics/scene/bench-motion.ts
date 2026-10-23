@@ -17,14 +17,44 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.balance': { uk: 'Підбираю важки — від більших до менших…', en: 'Picking the weights — from larger to smaller…' },
   'lab.stretch': { uk: 'Пружина ще коливається — чекаємо, поки заспокоїться…', en: 'The spring is still bouncing — wait until it settles…' },
   'lab.pull': { uk: 'Тягну брусок рівномірно…', en: 'Pulling the block steadily…' },
+  'lab.roll': { uk: 'Кулька котиться — секундомір іде…', en: 'The ball is rolling — the stopwatch is running…' },
+  'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
+  'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
 };
+
+/** A long run (many turns, many swings) is played this much faster than real time: about this many seconds at most. */
+const PLAY_SECONDS = 6;
+/** The stopwatch's display: seconds to hundredths. */
+const sw = (t: number, comma: boolean) => `${t.toFixed(2).replace('.', comma ? ',' : '.')} ${comma ? 'с' : 's'}`;
 
 /** The motion from the previous picture to the new one; null — nothing moves (it is drawn at once). */
 export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: BenchView) => void): Motion | null {
   if (next.kind === 'balance' && next.balance?.mass !== undefined) return balance(next, next.balance.mass, draw);
   if (next.kind === 'spring' && next.springLength !== undefined && prev?.kind === 'spring' && next.weights > 0) return spring(prev, next, draw);
   if (next.kind === 'friction' && next.pull) return pull(next, draw);
+  if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   return null;
+}
+
+/**
+ * A timed run with the stopwatch going: the ball speeding up down the groove (its share of the path grows as t²),
+ * the body going round, the pendulum swinging (its angle A·cos of the phase). Long runs are sped up.
+ */
+function timed(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v: BenchView) => void): Motion {
+  const fast = Math.max(1, run.seconds / PLAY_SECONDS);
+  const comma = (next.stopwatch?.display ?? ',').includes(',');
+  const clock = new Channel(0, run.seconds, { kind: 'steady', speed: fast }, 1e-6);
+  return {
+    channels: [clock],
+    frame: (done) => {
+      const t = clock.value;
+      const stopwatch = { display: done ? (next.stopwatch?.display ?? sw(t, comma)) : sw(t, comma), fast };
+      if (next.kind === 'incline') return draw({ ...next, stopwatch, incline: { stop: next.incline?.stop ?? 1, ball: (t / run.seconds) ** 2 } });
+      const phase = run.period ? (2 * Math.PI * t) / run.period : 0;
+      if (next.kind === 'circle') return draw({ ...next, stopwatch, circle: { thread: next.circle?.thread ?? 0.5, angle: phase } });
+      return draw({ ...next, stopwatch, pendulum: { length: next.pendulum?.length ?? 1, mass: next.pendulum?.mass ?? 0.03, angle: done ? 0 : (run.amplitude ?? 0) * Math.cos(phase) } });
+    },
+  };
 }
 
 /**

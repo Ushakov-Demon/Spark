@@ -43,6 +43,9 @@ import {
   sandFull,
   TUBE_DIAMETER,
   TUBE_LENGTH,
+  ROLL_PATH,
+  THREAD_LENGTH,
+  PENDULUM_BALLS,
   stepCommand,
   OPERATIONS,
   BENCH_TEXT,
@@ -376,13 +379,33 @@ function benchView(): BenchView | null {
   const kind = preset?.bench;
   if (!kind) return null;
   const log = session.result().log.filter((e) => e.ok);
-  const last = [...log].reverse().find((e) => ['lab.stretch', 'lab.pull', 'lab.edge', 'lab.hang', 'lab.balance', 'lab.read-level'].includes(e.command.type));
+  const last = [...log].reverse().find((e) => e.command.type in BENCH_TEXT || ['lab.hang', 'lab.read-level'].includes(e.command.type));
   // Reading the marks of a cylinder: the vessel itself is on the table.
   if (last?.command.type === 'lab.read-level') return null;
   const r = last ? readingsOf([last])[0]?.record : undefined;
   const c = last?.command as ({ type: string } & Record<string, unknown>) | undefined;
   const show = (q: 'force' | 'length', v: number | null | undefined) => formatMeasured(q, v ?? 0, q === 'force' ? 0.1 : 0.001, locale);
   const base = { kind, weights: 0, block: BENCH_BLOCK.edges } as const;
+  // The motion bench: the groove, the body on a thread, the pendulum — the stopwatch with the time read, the run to play.
+  const sec = (x: number | null | undefined) => formatMeasured('time', x ?? 0, 0.01, locale);
+  const tapeShown = c?.type === 'lab.tape' && r ? { tape: show('length', r.value) } : {};
+  if (kind === 'incline') {
+    const roll = c?.type === 'lab.roll' && r;
+    const stop = roll ? Number(c!['path']) / ROLL_PATH : 1;
+    return { ...base, kind, incline: { stop, ball: roll ? 1 : 0 }, stopwatch: { display: sec(roll ? r!.value : 0) }, ...tapeShown, ...(roll ? { run: { seconds: r!.exact ?? r!.value ?? 0 } } : {}) };
+  }
+  if (kind === 'circle') {
+    const whirl = c?.type === 'lab.whirl' && r;
+    const thread = whirl ? Number(c!['thread']) : THREAD_LENGTH.value;
+    return { ...base, kind, circle: { thread, angle: 0 }, stopwatch: { display: sec(whirl ? r!.value : 0) }, ...(whirl ? { run: { seconds: r!.exact ?? r!.value ?? 0, period: r!.inputs?.['period'] ?? 1, count: Number(c!['turns']) } } : {}) };
+  }
+  if (kind === 'pendulum') {
+    const swing = c?.type === 'lab.swing' && r;
+    const prev = [...log].reverse().find((e) => e.command.type === 'lab.swing')?.command as { length?: number; mass?: number } | undefined;
+    const length = swing ? Number(c!['length']) : c?.type === 'lab.tape' ? Number(c['length']) : (prev?.length ?? 1);
+    const mass = swing ? Number(c!['mass']) : (prev?.mass ?? PENDULUM_BALLS.light);
+    return { ...base, kind, pendulum: { length, angle: 0, mass }, stopwatch: { display: sec(swing ? r!.value : 0) }, ...tapeShown, ...(swing ? { run: { seconds: r!.exact ?? r!.value ?? 0, period: r!.inputs?.['period'] ?? 2, count: Number(c!['count']), amplitude: Math.asin(Number(c!['amplitude']) / length) } } : {}) };
+  }
   if (kind === 'spring') {
     const n = c?.type === 'lab.stretch' ? Number(c['weights']) : 0;
     return { ...base, weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r?.inputs?.['k'] ? { stiffness: r.inputs['k'] } : {}), ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
@@ -401,7 +424,7 @@ function showingMeasure() {
   if (!lastMeasure || lastMeasure.step !== session || running || session.state.time !== lastMeasure.at) return null;
   const l = session.result().log;
   const last = l[l.length - 1];
-  if (!last?.ok || !['lab.read-level', 'lab.hang', 'lab.stretch', 'lab.pull', 'lab.edge', 'lab.balance'].includes(last.command.type)) return null;
+  if (!last?.ok || !(last.command.type in BENCH_TEXT || ['lab.read-level', 'lab.hang'].includes(last.command.type))) return null;
   return readingsOf([last])[0] ?? null;
 }
 /** Everything measured in this experiment, in order. */
@@ -443,6 +466,13 @@ function measureSay(): string {
     const set = balanceWeights(r.value) ?? [];
     return uk ? `Терези в рівновазі: ${weightsText(set, true)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.` : `The balance is level: ${weightsText(set, false)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.`;
   }
+  // The motion bench: what the tape and the stopwatch showed.
+  const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
+  const cmd = m.command as unknown as Record<string, number | string>;
+  if (m.command.type === 'lab.tape') return uk ? `${cmd['what'] === 'path' ? 'Шлях кульки' : 'Довжина маятника'}: l = ${cm(r.value ?? 0)}.` : `${cmd['what'] === 'path' ? 'The ball’s path' : 'The pendulum’s length'}: l = ${cm(r.value ?? 0)}.`;
+  if (m.command.type === 'lab.roll') return uk ? `Кулька докотилася до циліндра за ${sec(r.value)}.` : `The ball reached the cylinder in ${sec(r.value)}.`;
+  if (m.command.type === 'lab.whirl') return uk ? `${cmd['turns']} обертів — ${sec(r.value)}: один оберт ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} с.` : `${cmd['turns']} turns — ${sec(r.value)}: one turn ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} s.`;
+  if (m.command.type === 'lab.swing') return uk ? `${cmd['count']} коливань — ${sec(r.value)}: одне коливання ≈ ${sig((r.value ?? 0) / Number(cmd['count']), 3, locale)} с.` : `${cmd['count']} swings — ${sec(r.value)}: one swing ≈ ${sig((r.value ?? 0) / Number(cmd['count']), 3, locale)} s.`;
   if (m.command.type === 'lab.edge') {
     const e = (m.command as { edge: number }).edge;
     const what = uk ? ['Довжина', 'Ширина', 'Висота'][e] : ['Length', 'Width', 'Height'][e];
@@ -2010,7 +2040,7 @@ function renderProtocol() {
       const c = e.command as LabCommand;
       const r = readingsOf([e])[0]!.record;
       const label = 'type' in c && c.type in BENCH_TEXT ? tr(BENCH_TEXT[c.type as keyof typeof BENCH_TEXT](c as never).plan, locale) : c.type === 'lab.hang' ? (c.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : u.measure.level;
-      const shown = r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale);
+      const shown = r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale);
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

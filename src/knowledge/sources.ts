@@ -590,6 +590,27 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-23',
   }),
+  'wikipedia-pendulum': source({
+    id: 'wikipedia-pendulum',
+    title: 'Wikipedia, Pendulum: Galileo Galilei was the first to study the properties of pendulums, beginning around 1602 (isochronism); Huygens published his theory of the pendulum in 1673 (Horologium Oscillatorium); T ≈ 2π√(L/g) for θ₀ ≪ 1, with Daniel Bernoulli’s (1747) correction 1 + θ₀²/16 + …',
+    url: 'https://en.wikipedia.org/wiki/Pendulum',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-23',
+  }),
+  'wikipedia-conical-pendulum': source({
+    id: 'wikipedia-conical-pendulum',
+    title: 'Wikipedia, Conical pendulum: period t = 2π√(L cos θ / g), r = L sin θ',
+    url: 'https://en.wikipedia.org/wiki/Conical_pendulum',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-23',
+  }),
+  'wikipedia-rolling': source({
+    id: 'wikipedia-rolling',
+    title: 'Wikipedia, Rolling: down a slope without slipping, a = g·sin θ / (1 + (r_g/r)²); with the List of moments of inertia: a solid sphere I = 2/5·m·r²',
+    url: 'https://en.wikipedia.org/wiki/Rolling',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-23',
+  }),
   'wikipedia-friction': source({
     id: 'wikipedia-friction',
     title: 'Wikipedia, Friction: laws of dry friction discovered by Leonardo da Vinci in 1493 (unpublished), rediscovered by Guillaume Amontons in 1699, developed by Coulomb (1785); friction proportional to load, independent of the apparent area; wood on wood μ 0.25–0.62 (static)',

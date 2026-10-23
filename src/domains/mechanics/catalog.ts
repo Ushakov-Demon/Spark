@@ -25,6 +25,9 @@ const UA_FLOATING: readonly CurriculumRef[] = [
 
 const UA_HOOKE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Гука.' }];
 const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Коефіцієнт тертя ковзання.' }];
+const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
+const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
+const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
 const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
 
 export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
@@ -187,6 +190,75 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.pressure,
     examples: [{ args: [1.4, 0.0072], expected: 194.44444444444446, note: 'a 1.4 N block on a 12 × 6 cm face' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.average-speed',
+    law: 'average-speed',
+    title: { uk: 'Середня швидкість', en: 'Average speed' },
+    latex: 'v_{сер} = \\frac{l}{t}',
+    plain: 'v = l / t',
+    argSymbols: ['l', 't'],
+    resultSymbol: 'v',
+    variables: {
+      v: { name: { uk: 'середня швидкість', en: 'average speed' }, unit: 'm/s' },
+      l: { name: { uk: 'шлях', en: 'path' }, unit: 'm' },
+      t: { name: { uk: 'час руху', en: 'time of motion' }, unit: 's' },
+    },
+    curriculum: UA_SPEED,
+    explanation: {
+      novice: { uk: 'Поділи пройдений шлях на час — і дізнаєшся, скільки метрів тіло в середньому долало щосекунди.', en: 'Divide the path by the time — and you know how many metres the body covered each second on average.' },
+      school: { uk: 'Кулька на похилому жолобі розганяється, тож швидкість її весь час інша. Середня швидкість — весь шлях, поділений на весь час.', en: 'A ball on a sloping groove speeds up, so its speed keeps changing. The average speed is the whole path over the whole time.' },
+    },
+    compute: f.averageSpeed,
+    examples: [{ args: [1, 2], expected: 0.5, note: '1 m in 2 s' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.period',
+    law: 'period',
+    title: { uk: 'Період обертання (коливань)', en: 'Period of turning (swinging)' },
+    latex: 'T = \\frac{t}{N}',
+    plain: 'T = t / N',
+    argSymbols: ['t', 'N'],
+    resultSymbol: 'T',
+    variables: {
+      T: { name: { uk: 'період', en: 'period' }, unit: 's' },
+      t: { name: { uk: 'час', en: 'time' }, unit: 's' },
+      N: { name: { uk: 'число обертів (коливань)', en: 'number of turns (swings)' }, unit: '' },
+    },
+    curriculum: UA_PERIOD,
+    explanation: {
+      novice: { uk: 'Один оберт — надто швидко, щоб зловити секундоміром. Тому рахують час десяти обертів і ділять на десять.', en: 'One turn is too quick to catch with a stopwatch. So time ten turns and divide by ten.' },
+      school: { uk: 'Період — час одного оберту: T = t/N. Обертова частота — навпаки: n = N/t = 1/T.', en: 'The period is the time of one turn: T = t/N. The frequency is the other way round: n = N/t = 1/T.' },
+    },
+    compute: f.period,
+    examples: [{ args: [13.9, 10], expected: 1.39, note: '10 turns in 13.9 s' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.pendulum',
+    law: 'pendulum',
+    title: { uk: 'Період коливань нитяного маятника', en: 'Period of a thread pendulum' },
+    latex: 'T = 2\\pi \\sqrt{\\frac{l}{g}}',
+    plain: 'T = 2π · √(l / g)',
+    argSymbols: ['l', 'g'],
+    resultSymbol: 'T',
+    variables: {
+      T: { name: { uk: 'період коливань', en: 'period' }, unit: 's' },
+      l: { name: { uk: 'довжина маятника', en: 'length of the pendulum' }, unit: 'm' },
+      g: { name: { uk: 'прискорення вільного падіння', en: 'gravitational acceleration' }, unit: 'm/s²' },
+    },
+    curriculum: UA_PENDULUM,
+    explanation: {
+      novice: { uk: 'Довший маятник гойдається повільніше. А важча кулька чи ширший розмах ритму не змінюють.', en: 'A longer pendulum swings slower. A heavier ball or a wider swing does not change the rhythm.' },
+      school: { uk: 'Період малих коливань залежить лише від довжини нитки та g: учетверо коротша нитка — удвічі менший період.', en: 'The period of small swings depends only on the length and g: a thread four times shorter — half the period.' },
+    },
+    compute: f.pendulumPeriod,
+    examples: [{ args: [1, 9.81], expected: 2.0060666807106475, note: 'a 1 m pendulum' }],
     textSource: 'spark',
     reviewed: false,
   }),

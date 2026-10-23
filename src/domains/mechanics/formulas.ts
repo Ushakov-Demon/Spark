@@ -23,3 +23,24 @@ export const slidingFriction = (mu: number, normalForce: number): number => mu *
 
 /** Pressure of a body on its support: p = F / S. */
 export const pressure = (force: number, area: number): number => force / area;
+
+/** Average speed: the path over the time it took, v = l / t. */
+export const averageSpeed = (path: number, time: number): number => path / time;
+
+/** Period of a repeating motion: the time of N turns (or swings) over N, T = t / N. */
+export const period = (time: number, count: number): number => time / count;
+
+/** Period of a pendulum swinging a little: T = 2π·√(l / g). */
+export const pendulumPeriod = (length: number, g: number): number => 2 * Math.PI * Math.sqrt(length / g);
+
+/**
+ * A pendulum's period at an amplitude θ₀ (rad): the small-swing one lengthened by Bernoulli's first correction,
+ * T ≈ 2π·√(l/g)·(1 + θ₀²/16).
+ */
+export const pendulumPeriodAt = (length: number, g: number, amplitude: number): number => pendulumPeriod(length, g) * (1 + amplitude ** 2 / 16);
+
+/** Acceleration of a ball rolling down a slope without slipping: a = g·sin α / (1 + I/(m·r²)); a solid ball — I = 2/5·m·r². */
+export const rollingAcceleration = (g: number, sinSlope: number, inertiaShare = 2 / 5): number => (g * sinSlope) / (1 + inertiaShare);
+
+/** A body on a thread going round a horizontal circle (a conical pendulum): T = 2π·√(L·cos θ / g), sin θ = r / L. */
+export const conicalPeriod = (threadLength: number, radius: number, g: number): number => 2 * Math.PI * Math.sqrt((threadLength * Math.sqrt(1 - (radius / threadLength) ** 2)) / g);

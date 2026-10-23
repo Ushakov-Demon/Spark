@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -27,6 +27,21 @@ export interface BenchView {
   readonly balance?: { readonly load: 'body' | 'empty' | 'full'; readonly color: string; readonly weights: readonly number[]; readonly display: string; readonly mass?: number; readonly tilt?: number };
   /** What the ruler at the spring shows. */
   readonly reading?: string;
+  /**
+   * The groove (lab work 1): where the cylinder stands and where the ball is, as shares of the path from the
+   * chalk mark (0 — at the mark, 1 — at the cylinder); `stop` — the cylinder at this share of the full path.
+   */
+  readonly incline?: { readonly stop: number; readonly ball: number };
+  /** A body on a thread going round the circle (lab work 2): the thread, m; where it is on its round, rad. */
+  readonly circle?: { readonly thread: number; readonly angle: number };
+  /** The thread pendulum (lab work 3): its length, m; how far it is swung now, rad; the ball's mass, kg. */
+  readonly pendulum?: { readonly length: number; readonly angle: number; readonly mass: number };
+  /** What the stopwatch shows, and how much faster than real time the drawing goes (many turns, many swings). */
+  readonly stopwatch?: { readonly display: string; readonly fast?: number };
+  /** The measuring tape along what was measured, and what it shows. */
+  readonly tape?: string;
+  /** A timed run to play (the ball rolling, the turns, the swings): how long it took, s; its period, s; how many; the swing, rad. */
+  readonly run?: { readonly seconds: number; readonly period?: number; readonly count?: number; readonly amplitude?: number };
 }
 
 const CM = 6;
@@ -133,6 +148,7 @@ function balanceSvg(b: BenchView['balance']): string {
 
 export function benchSvg(v: BenchView): string {
   if (v.kind === 'balance') return balanceSvg(v.balance);
+  if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch) : ''}`;
   if (v.kind === 'spring') {
     // A smaller scale here (4 units per cm): the stand with a 30 cm ruler fits under the board's writing.
     const S = 4;
@@ -167,4 +183,73 @@ export function benchSvg(v: BenchView): string {
   const depth = v.block[1] * 100 * CM * 0.45;
   const top = `<path d="M${x},${base - h} l${depth},${-depth * 0.6} h${w} l${-depth},${depth * 0.6} z" style="fill:#e6be86;stroke:${WOOD_EDGE}"/><path d="M${x + w},${base} l${depth},${-depth * 0.6} v${-h} l${-depth},${depth * 0.6} z" style="fill:#c4914f;stroke:${WOOD_EDGE}"/>`;
   return `${top}${blockSvg(x, base, v.block)}${e?.index === 1 ? `<path class="bench-mark" d="M${x + w + 2},${base - h} l${depth},${-depth * 0.6}"/>` : ''}${ruler}${label}`;
+}
+
+/** A stopwatch on the table's right: its display (and, when the drawing is sped up, by how much). */
+function stopwatchSvg(sw: NonNullable<BenchView['stopwatch']>): string {
+  const x = 575;
+  const y = 70;
+  return `<g class="stopwatch"><rect x="${x - 3}" y="${y - 30}" width="6" height="8" rx="1" style="fill:${DARK}"/><circle cx="${x}" cy="${y}" r="24" style="fill:#f4f1e8;stroke:${DARK};stroke-width:3"/><rect x="${x - 19}" y="${y - 8}" width="38" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-text" x="${x}" y="${y + 4.5}" text-anchor="middle">${sw.display}</text>${sw.fast && sw.fast > 1.05 ? `<text class="bench-reading" x="${x}" y="${y + 40}" text-anchor="middle">⏩ ×${Math.round(sw.fast)}</text>` : ''}</g>`;
+}
+
+/** Units of the drawing per metre for the motion benches: the 1 m pendulum fits between the board's top and the table. */
+const M = 230;
+
+function motionSvg(v: BenchView): string {
+  if (v.kind === 'incline') {
+    // The groove: its upper end in the stand's clamp, the lower end on the table; the chalk mark, the cylinder, the ball.
+    const x0 = 150;
+    const y0 = TABLE - 70;
+    const x1 = 560;
+    const y1 = TABLE - 6;
+    const at = (k: number) => [x0 + (x1 - x0) * k, y0 + (y1 - y0) * k] as const;
+    // The path from the mark (1/6 of the groove from its top: 1 m of 1.2 m) to the cylinder.
+    const mark = 0.2 / 1.2;
+    const along = (share: number) => at(mark + (1 - mark) * share);
+    const inc = v.incline ?? { stop: 1, ball: 0 };
+    const [mx, my] = along(0);
+    const [cx, cy] = along(inc.stop);
+    const [bx, by] = along(inc.ball * inc.stop);
+    const ang = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
+    const r = 7;
+    const nx = Math.sin((ang * Math.PI) / 180);
+    const ny = -Math.cos((ang * Math.PI) / 180);
+    const tape = v.tape ? `<path class="bench-mark" d="M${mx + nx * 22},${my + ny * 22} L${cx + nx * 22},${cy + ny * 22}"/><text class="bench-reading" x="${(mx + cx) / 2 + nx * 30}" y="${(my + cy) / 2 + ny * 30}" text-anchor="middle">l = ${v.tape}</text>` : '';
+    return `${standSvg(x0 - 10, x0 + 4, y0)}<path d="M${x0},${y0} L${x1},${y1}" style="stroke:#b88a52;stroke-width:9;stroke-linecap:round"/><path d="M${x0},${y0 - 2} L${x1},${y1 - 2}" style="stroke:#e3bf86;stroke-width:3;stroke-linecap:round"/><path d="M${mx - nx * 2},${my - ny * 2} l${nx * 12},${ny * 12}" style="stroke:#fff;stroke-width:2.5"/><g transform="translate(${cx},${cy}) rotate(${ang})"><rect x="0" y="-22" width="14" height="18" rx="3" style="fill:${STEEL};stroke:${DARK}"/></g>${ballSvg(bx + nx * r, by + ny * r, r)}${tape}`;
+  }
+  if (v.kind === 'circle') {
+    // Side view: the hand above the circle drawn on a sheet; the body goes round a horizontal circle below the hand.
+    const c = v.circle ?? { thread: 0.5, angle: 0 };
+    const R = 0.15;
+    const h = Math.sqrt(c.thread ** 2 - R ** 2);
+    const cx = 340;
+    const sheetY = TABLE - 4;
+    const planeY = sheetY - 26;
+    const handY = planeY - h * M;
+    const rx = R * M;
+    const ry = rx * 0.28;
+    const bx = cx + rx * Math.cos(c.angle);
+    const by = planeY + ry * Math.sin(c.angle);
+    const behind = Math.sin(c.angle) < 0;
+    const body = `<path d="M${cx},${handY} L${bx},${by}" style="stroke:${THREAD};stroke-width:1.5"/>${ballSvg(bx, by, 7, '#c0453a')}`;
+    const sheet = `<path d="M${cx - 95},${sheetY + 4} l30,-16 h130 l-30,16 z" style="fill:#f6f4ee;stroke:#c9c4b5"/><ellipse cx="${cx}" cy="${sheetY - 4}" rx="${rx}" ry="${ry * 0.6}" style="fill:none;stroke:#3a5fa8;stroke-width:1.2"/>`;
+    const orbit = `<ellipse cx="${cx}" cy="${planeY}" rx="${rx}" ry="${ry}" style="fill:none;stroke:rgba(255,255,255,0.25);stroke-dasharray:3 4"/>`;
+    const hand = `<circle cx="${cx}" cy="${handY - 8}" r="10" style="fill:#f1c9a5;stroke:#b98a64"/><path d="M${cx},${handY - 2} v4" style="stroke:${THREAD};stroke-width:2"/>`;
+    return `${sheet}${orbit}${behind ? body + hand : hand + body}`;
+  }
+  // The pendulum: a stand with a ring at its top, the thread, the ball swung so far.
+  const p = v.pendulum ?? { length: 1, angle: 0, mass: 0.03 };
+  const pivotX = 330;
+  const pivotY = TABLE - 10 - 1.05 * M;
+  const L = p.length * M;
+  const bx = pivotX + L * Math.sin(p.angle);
+  const by = pivotY + L * Math.cos(p.angle);
+  const r = p.mass > 0.05 ? 9 : 6;
+  const tape = v.tape ? `<path class="bench-mark" d="M${pivotX + 22},${pivotY} V${pivotY + L}"/><text class="bench-reading" x="${pivotX + 28}" y="${pivotY + L / 2}">l = ${v.tape}</text>` : '';
+  return `${standSvg(pivotX - 80, pivotX, pivotY)}<circle cx="${pivotX}" cy="${pivotY + 4}" r="5" style="fill:none;stroke:${STEEL};stroke-width:2"/><path d="M${pivotX},${pivotY + 8} L${bx},${by}" style="stroke:${THREAD};stroke-width:1.2"/>${ballSvg(bx, by + r, r)}${tape}`;
+}
+
+/** A steel ball with a highlight. */
+function ballSvg(x: number, y: number, r: number, color = '#9aa3ad'): string {
+  return `<circle cx="${x}" cy="${y}" r="${r}" style="fill:${color};stroke:${DARK}"/><circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.3}" style="fill:rgba(255,255,255,0.75)"/>`;
 }

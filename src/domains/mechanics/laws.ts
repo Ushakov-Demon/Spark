@@ -3,6 +3,8 @@ import type { LawSpec, Person } from '../../knowledge/types.js';
 const HOOKE: Person = { name: { uk: 'Роберт Гук', en: 'Robert Hooke' }, born: 1635, died: 1703, wikidata: 'Q46830' };
 const AMONTONS: Person = { name: { uk: 'Гійом Амонтон', en: 'Guillaume Amontons' }, born: 1663, died: 1705, wikidata: 'Q368121' };
 const COULOMB: Person = { name: { uk: 'Шарль Огюстен де Кулон', en: 'Charles-Augustin de Coulomb' }, born: 1736, died: 1806, wikidata: 'Q81716' };
+const GALILEO: Person = { name: { uk: 'Галілео Галілей', en: 'Galileo Galilei' }, born: 1564, died: 1642, wikidata: 'Q307' };
+const HUYGENS: Person = { name: { uk: 'Крістіан Гюйгенс', en: 'Christiaan Huygens' }, born: 1629, died: 1695, wikidata: 'Q39599' };
 const ARCHIMEDES: Person = { name: { uk: 'Архімед', en: 'Archimedes' }, born: -287, died: -212, wikidata: 'Q8739' };
 
 /**
@@ -147,5 +149,54 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: { uk: 'Тиск — фізична величина, що дорівнює відношенню сили, яка діє перпендикулярно до поверхні, до площі цієї поверхні: p = F/S. Одиниця — паскаль (1 Па = 1 Н/м²).', en: 'Pressure is the force acting perpendicular to a surface divided by the area of that surface: p = F/S. Its unit is the pascal (1 Pa = 1 N/m²).' },
     },
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
+  },
+  {
+    id: 'average-speed',
+    kind: 'definition',
+    name: { uk: 'Середня швидкість', en: 'Average speed' },
+    statement: {
+      novice: { uk: 'Середня швидкість показує, який шлях тіло в середньому долало щосекунди — навіть якщо воно то розганялося, то гальмувало.', en: 'Average speed tells what distance a body covered each second on average — even if it sped up and slowed down.' },
+      school: { uk: 'Середня швидкість нерівномірного руху — відношення всього шляху до всього часу руху: v = l/t.', en: 'The average speed of an uneven motion is the whole path over the whole time: v = l/t.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
+  },
+  {
+    id: 'period',
+    kind: 'definition',
+    name: { uk: 'Період і частота', en: 'Period and frequency' },
+    statement: {
+      novice: { uk: 'Період — час одного оберту чи одного коливання. Щоб виміряти його точніше, рахують час багатьох обертів і ділять на їхнє число.', en: 'The period is the time of one turn or one swing. To measure it better, time many turns and divide by their number.' },
+      school: { uk: 'Період T = t/N — час одного оберту (коливання); частота n = N/t = 1/T — скільки обертів за секунду. Швидкість тіла на колі радіуса R: v = 2πR/T.', en: 'The period T = t/N is the time of one turn (swing); the frequency n = N/t = 1/T is how many turns a second. The speed of a body on a circle of radius R: v = 2πR/T.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичних величин.', en: 'These are definitions of physical quantities.' } }, citations: [] },
+  },
+  {
+    id: 'pendulum',
+    kind: 'law',
+    name: { uk: 'Період коливань маятника', en: 'The period of a pendulum' },
+    statement: {
+      novice: { uk: 'Маятник гойдається з тим самим ритмом, широко чи вузько, з легкою чи важкою кулькою. Змінити ритм може лише довжина нитки.', en: 'A pendulum swings in the same rhythm, wide or narrow, with a light ball or a heavy one. Only the length of the thread changes the rhythm.' },
+      school: { uk: 'Період малих коливань нитяного маятника не залежить від маси тягарця й амплітуди, а залежить від довжини нитки: T = 2π·√(l/g). Учетверо коротша нитка — удвічі менший період.', en: 'The period of a thread pendulum’s small swings depends on neither the mass nor the amplitude, but on the length: T = 2π·√(l/g). A thread four times shorter — half the period.' },
+    },
+    history: {
+      people: [GALILEO, HUYGENS],
+      role: 'discovered',
+      when: '1602–1673',
+      story: {
+        school: {
+          uk: 'Галілео Галілей першим дослідив маятники — від 1602 року — і помітив, що період майже не залежить від розмаху. На цьому побудовані маятникові годинники. Крістіан Гюйгенс 1673 року опублікував теорію маятника, а Данило Бернуллі 1747 року показав, як період трохи зростає за великого розмаху.',
+          en: 'Galileo Galilei was the first to study pendulums — from 1602 — and noticed that the period hardly depends on the width of the swing. Pendulum clocks are built on that. Christiaan Huygens published the theory of the pendulum in 1673, and Daniel Bernoulli showed in 1747 how the period grows a little at wide swings.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-pendulum', locator: 'History', claim: 'Galileo Galilei was the first to study the properties of pendulums, beginning around 1602; isochronism' },
+        { source: 'wikipedia-pendulum', locator: 'History', claim: 'In 1673 Christiaan Huygens published his theory of the pendulum, Horologium Oscillatorium' },
+        { source: 'wikipedia-pendulum', locator: 'Period of oscillation', claim: 'Daniel Bernoulli (1747) corrected for the lengthening of the period at a finite angle: 1 + θ₀²/16 + …' },
+        { source: 'wikidata', locator: 'Q307, Q39599 (P569, P570)', claim: 'life dates' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Формула — для малих коливань (кут до ≈ 10°) і маятника, у якого кулька мала порівняно з ниткою, а нитка не розтягується; опір повітря поступово зменшує розмах.', en: 'The formula is for small swings (up to ≈ 10°) and a pendulum whose ball is small beside the thread, which does not stretch; air slowly damps the swing.' },
+    },
   },
 ];
