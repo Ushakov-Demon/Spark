@@ -63,6 +63,8 @@ export function installFootnotes(locale: () => Locale): void {
   document.body.append(card);
   let current: HTMLElement | null = null;
   const show = (el: HTMLElement) => {
+    // (Already showing this one: leave it where it is.)
+    if (current === el && !card.hidden) return;
     const t = termById(el.dataset['term'] ?? '', LAB_GLOSSARY);
     if (!t) return;
     current = el;
@@ -75,14 +77,23 @@ export function installFootnotes(locale: () => Locale): void {
     const below = r.bottom + 8;
     card.style.top = `${below + card.offsetHeight > window.innerHeight - 8 ? Math.max(8, r.top - card.offsetHeight - 8) : below}px`;
   };
+  let hideTimer = 0;
   const hide = () => {
+    window.clearTimeout(hideTimer);
     card.hidden = true;
     current = null;
   };
+  /** Off the term, the card waits a moment: time to move the pointer onto it (to the glossary link). */
+  const HIDE_AFTER = 600;
   document.addEventListener('mouseover', (e) => {
     const el = (e.target as Element | null)?.closest?.('.term') as HTMLElement | null;
+    const onCard = !!(e.target as Element).closest?.('.term-card');
+    if (el || onCard) window.clearTimeout(hideTimer);
     if (el) show(el);
-    else if (current && !(e.target as Element).closest?.('.term-card')) hide();
+    else if (current && !onCard) {
+      window.clearTimeout(hideTimer);
+      hideTimer = window.setTimeout(hide, HIDE_AFTER);
+    }
   });
   document.addEventListener('focusin', (e) => {
     const el = (e.target as Element | null)?.closest?.('.term') as HTMLElement | null;
