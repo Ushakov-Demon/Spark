@@ -316,8 +316,8 @@ export const PRESETS: readonly Preset[] = [
     topic: MECH,
     title: { uk: 'Коли тіло тоне, а коли плаває?', en: 'When does a body sink, and when does it float?' },
     question: {
-      uk: 'Пробірка з корком, пісок і мензурка з водою. Наповнимо пробірку піском до країв — і вона потоне. Потім відсиплемо піску, щоб пробірка плавала всередині води, а тоді ще — і вона спливе. Щоразу виміряємо її масу (терезами: на скільки збільшилися покази) і об’єм (мензуркою: на скільки піднялася вода) та порівняємо її середню густину з густиною води. За якої умови тіло тоне, плаває всередині рідини, спливає?',
-      en: 'A stoppered test tube, sand and a measuring cylinder of water. We fill the tube with sand to the brim — and it sinks. Then we pour some sand out so that it floats inside the water, and then more — and it comes up. Each time we measure its mass (the scales: how much the reading grows) and its volume (the cylinder: how far the water rises) and compare its mean density with that of water. When does a body sink, float inside a liquid, come up?',
+      uk: 'Пробірка з корком, пісок і мензурка з водою. Наповнимо пробірку піском до країв і опустимо у воду. Потім відсиплемо частину піску й опустимо знову, а тоді відсиплемо ще. Щоразу виміряємо її масу (терезами: на скільки збільшилися покази) і об’єм (мензуркою: на скільки піднялася вода), подивимося, що з нею буде, і порівняємо її середню густину з густиною води. За якої умови тіло тоне, плаває всередині рідини, спливає?',
+      en: 'A stoppered test tube, sand and a measuring cylinder of water. We fill the tube with sand to the brim and put it into the water. Then we pour part of the sand out and put it in again, and then pour out more. Each time we measure its mass (the scales: how much the reading grows) and its volume (the cylinder: how far the water rises), watch what happens to it and compare its mean density with that of water. When does a body sink, float inside a liquid, come up?',
     },
     params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'water', startTemp: 20 },
     guided: true,
@@ -327,7 +327,7 @@ export const PRESETS: readonly Preset[] = [
       { kind: 'add', substance: 'glass', mass: tubeGlass() + sandFull(), volume: tubeVolume(), temperature: 20, label: { uk: 'Пробірка, повна піску', en: 'Test tube full of sand' } },
       { kind: 'weigh', scale: 'lab-balance' },
       { kind: 'level' },
-      { kind: 'fresh', label: { uk: 'Дослід 2: відсипати піску, щоб пробірка плавала всередині води', en: 'Run 2: pour sand out so that the tube floats inside the water' } },
+      { kind: 'fresh', label: { uk: 'Дослід 2: відсипати частину піску', en: 'Run 2: pour part of the sand out' } },
       { kind: 'weigh', scale: 'lab-balance' },
       { kind: 'level' },
       // As much sand as makes its mean density that of the water (rounded to a tenth of a gram — a pinch).

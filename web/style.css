@@ -340,18 +340,31 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 /* The programmes' topics and wording: on the chosen card (the chips' hints have them on the others). */
 .preset:not(.current) .preset-quote { display: none; }
 .preset .preset-topic { margin: 2px 0 4px; font-size: 0.8rem; }
-/* Under the icon: the button that opens the full description; the description spans the card. */
+/* Under the icon: the button that opens the experiment's page of the lab notebook. */
 .preset-side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .preset-more-btn { min-height: 0; width: 26px; height: 26px; padding: 0; border-radius: 50%; font-size: 0.95rem; line-height: 1; color: var(--accent); border-color: var(--line); background: var(--card); }
-.preset.open .preset-more-btn { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-.preset-more { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; font-size: 0.82rem; }
-.preset-more h5 { margin: 8px 0 2px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
-.preset-more p { margin: 0 0 4px; font-size: 0.82rem; }
-.preset-more ul, .preset-more ol { margin: 0 0 4px; padding-left: 18px; }
-.preset-more li { margin: 1px 0; }
-.preset-more .preset-programs { list-style: none; padding-left: 0; }
-.preset-more .preset-programs li { margin: 4px 0; }
-.preset-more .formula { font-family: ui-monospace, monospace; }
+.preset-more-btn:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+/* The lab notebook page: lined paper with a red margin, headings by hand. It is paper in either theme. */
+.lab-sheet-dialog { border: 0; padding: 0; background: transparent; width: min(720px, calc(100vw - 24px)); max-height: calc(100vh - 32px); overflow: visible; }
+.lab-sheet-dialog::backdrop { background: rgba(15, 20, 30, 0.6); }
+.lab-sheet { position: relative; box-sizing: border-box; max-height: calc(100vh - 32px); overflow: auto; padding: 26px 30px 26px 74px; color: #1f2a44; font-size: 15px; line-height: 26px;
+  background: linear-gradient(90deg, transparent 56px, #e57373 56px, #e57373 58px, transparent 58px), repeating-linear-gradient(180deg, transparent 0 25px, #b9cde6 25px 26px), #fdfcf6;
+  background-attachment: local; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.45); }
+.lab-sheet::before { content: ''; position: absolute; left: 18px; top: 40px; bottom: 40px; width: 14px; background: radial-gradient(circle, #d9d4c4 5px, transparent 6px) 0 0 / 14px 78px repeat-y; }
+.lab-sheet-close { position: absolute; top: 8px; right: 10px; min-height: 0; width: 32px; height: 32px; padding: 0; border: 0; background: none; color: #6b7280; font-size: 18px; }
+.lab-sheet .ls-head { display: flex; justify-content: space-between; line-height: 26px; font-family: 'Spark Chalk', 'Segoe Print', cursive; font-size: 22px; color: #1d4ed8; }
+.lab-sheet .ls-title { margin: 0; font-family: 'Spark Chalk', 'Segoe Print', cursive; font-weight: 600; font-size: 28px; line-height: 52px; color: #1e3a8a; text-align: center; }
+.lab-sheet .ls-line, .lab-sheet .ls-blank { margin: 0; }
+.lab-sheet .ls-label, .lab-sheet .ls-sub { font-family: 'Spark Chalk', 'Segoe Print', cursive; font-weight: 600; font-size: 21px; color: #1e3a8a; }
+.lab-sheet .ls-sub { margin: 0; line-height: 52px; }
+.lab-sheet .ls-steps, .lab-sheet .ls-formulas { margin: 0; padding-left: 22px; }
+.lab-sheet .ls-formula { font-family: 'Spark Chalk', cursive; font-size: 20px; color: #0f172a; }
+.lab-sheet .ls-formula sub { font-size: 0.7em; line-height: 0; }
+.lab-sheet .ls-blank { color: #94a3b8; font-style: italic; }
+.lab-sheet .ls-foot { margin-top: 26px; font-size: 12px; line-height: 18px; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 6px; background: #fdfcf6; }
+.lab-sheet .ls-foot ul { margin: 2px 0 0; padding-left: 16px; }
+.lab-sheet .ls-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+@media (max-width: 600px) { .lab-sheet { padding: 22px 16px 18px 44px; background: linear-gradient(90deg, transparent 32px, #e57373 32px, #e57373 34px, transparent 34px), repeating-linear-gradient(180deg, transparent 0 25px, #b9cde6 25px 26px), #fdfcf6; } .lab-sheet::before { display: none; } }
 /* The programmes: one line cut with «…»; opened — every programme with its topic and page. */
 .preset details.programs { margin: 2px 0 4px; font-size: 0.8rem; }
 .preset details.programs > summary { display: flex; gap: 4px; cursor: pointer; list-style: none; min-width: 0; }

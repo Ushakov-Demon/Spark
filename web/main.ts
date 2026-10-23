@@ -2977,61 +2977,86 @@ function buildPresets() {
     // The programmes in one line, cut with «…»; opened — each with its topic and the textbook's page.
     const programLine = presetPrograms(p).map((x) => `${tr(getCurriculum(x.program)!.short ?? getCurriculum(x.program)!.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}`).join(', ');
     const card = el('article', { className: `preset${preset && presetGiven?.id === p.id ? ' current' : ''}` });
-    card.innerHTML = `<div class="preset-side"><div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div><button type="button" class="preset-more-btn" aria-expanded="false" title="${escAttr(u.presetMore)}" aria-label="${escAttr(u.presetMore)}">ⓘ</button></div>
+    card.innerHTML = `<div class="preset-side"><div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div><button type="button" class="preset-more-btn" aria-haspopup="dialog" title="${escAttr(u.presetMore)}" aria-label="${escAttr(u.presetMore)}">ⓘ</button></div>
       <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(tr(p.question, locale))}">${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${topicLine ? `<p class="preset-topic small"><span class="muted">${u.topic}:</span> ${escAttr(topicLine)}</p>` : ''}${programs ? `<details class="programs"><summary><span class="muted">${u.programs}:</span> <span class="programs-line">${escAttr(programLine)}</span></summary><div class="programs-all">${programs}</div></details>` : ''}</div>`;
     const go = el('button', { type: 'button', className: 'primary preset-go' }, u.presetStart);
     go.onclick = () => startPreset(p);
     card.append(go);
-    // The full description, opened by the button under the icon: built when first opened.
-    const more = el('div', { className: 'preset-more' });
-    more.hidden = true;
-    card.append(more);
-    const btn = card.querySelector<HTMLButtonElement>('.preset-more-btn')!;
-    btn.onclick = () => {
-      if (!more.innerHTML) more.innerHTML = presetDetailsHtml(p);
-      more.hidden = !more.hidden;
-      btn.setAttribute('aria-expanded', String(!more.hidden));
-      card.classList.toggle('open', !more.hidden);
-    };
+    // The full description: a page of a lab notebook, in the middle of the screen.
+    card.querySelector<HTMLButtonElement>('.preset-more-btn')!.onclick = () => openLabSheet(p);
     list.append(card);
   }
 }
 
 /** «Тема 3. Взаємодія тіл» → «Взаємодія тіл»: the number belongs to the programme's own order. */
 const TOPIC_NUMBER = /^Тема\s*\d+\.\s*/;
-/** Everything about a ready-made experiment before it starts: the aim, what it takes, its steps, topic, programmes, formulas. */
-function presetDetailsHtml(p: Preset): string {
+/**
+ * Everything about a ready-made experiment before it starts, written as a lab work is written in a notebook:
+ * its number (in the programme that numbers it), title, topic, aim, equipment, the course of the work, how the
+ * results are worked out, and a place for the conclusion; the programmes it is in at the foot of the page.
+ */
+function labSheetHtml(p: Preset): string {
   const u = t();
   const d = u.details;
   const plan = guidedPlan(p);
-  // What it takes: what stands on the table, the instruments its steps use, what goes in.
+  const progs = presetPrograms(p);
   const things = new Set<string>();
-  if (p.bench) things.add(tr(BENCH_SETUP[p.bench], locale));
+  if (p.bench) for (const x of tr(BENCH_SETUP[p.bench], locale).split(', ')) things.add(x);
   if (!p.bench || p.bench === 'balance') things.add(labSubject(p.params, locale));
   for (const s of plan) {
     if (s.kind === 'weigh') things.add(tr(SCALES[s.scale].name, locale));
     else if (s.kind === 'hang') things.add(tr(SCALES.dynamometer.name, locale));
-    else if (s.kind === 'add') things.add(`${tr(s.label ?? SUBSTANCES[s.substance].name, locale)}, ${formatQuantity(s.mass, 'kg', { locale, level: 'school' })}`);
+    // (A stoppered tube with sand is one thing on the table, whatever is in it each run.)
+    else if (s.kind === 'add') things.add(s.volume ? d.tubeWithSand : tr(s.label ?? SUBSTANCES[s.substance].name, locale));
   }
+  // A step as written in a notebook: no pictograms; what goes in — «Опустити: …». What comes of the steps is not
+  // written here (no spoilers): the aim is the question; the formulas without the conditions that answer it.
+  const stepText = (s: ProtocolStep) => (s.kind === 'add' ? `${d.put}: ${tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase()}` : planStepLabel(s).replace(/^[^\p{L}\p{N}]+/u, ''));
+  // F_A = ρ_рідини · g · V → subscripts.
+  const formula = (x: string) => escAttr(x).replace(/_([^/·=()+−<>;,—&]+?)(?=\s*(?:[/·=()+−<>;,—&]|$))/g, '<sub>$1</sub>');
+  // «Лабораторна робота № 10» where a programme numbers it; otherwise it is an experiment.
+  const number = progs.map((x) => x.item?.match(/ЛР № (\d+)/)?.[1]).find(Boolean);
+  const topic = progs.map((x) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined)).find(Boolean)?.replace(TOPIC_NUMBER, '') ?? tr(p.topic, locale);
   const formulas = new Map(LAB_KNOWLEDGE.formulas.map((f) => [f.id, f]));
-  const programs = presetPrograms(p)
+  const fs = p.formulas.map((id) => formulas.get(id)).filter((f): f is NonNullable<typeof f> => !!f);
+  const programs = progs
     .map((x) => {
       const c = getCurriculum(x.program)!;
       const book = x.textbook ? getSource(x.textbook.source) : undefined;
-      return `<li><strong>${escAttr(tr(c.short ?? c.name, locale))}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}${x.item && !x.item.startsWith('Тема') ? ` · ${escAttr(x.item)}` : ''}${x.match === 'related' ? ` (${d.related})` : ''}</strong>${x.topic ?? (x.item?.startsWith('Тема') ? x.item : '') ? `<br><span class="muted">${escAttr((x.topic ?? x.item ?? '').replace(TOPIC_NUMBER, ''))}</span>` : ''}<br>«${escAttr(x.quote)}»${book && x.textbook ? `<br><span class="muted">${escAttr(book.title.split('. —')[0] ?? '')}: ${escAttr(x.textbook.at)}</span>` : ''}</li>`;
+      return `<li>${escAttr(tr(c.short ?? c.name, locale))}${x.grade !== undefined ? `, ${u.grade(x.grade)}` : ''}${x.item && !x.item.startsWith('Тема') ? `, ${escAttr(x.item)}` : ''}${x.match === 'related' ? ` (${d.related})` : ''}: «${escAttr(x.quote)}»${book && x.textbook ? ` — ${escAttr(book.title.split('. —')[0] ?? '')}, ${escAttr(x.textbook.at)}` : ''}</li>`;
     })
     .join('');
-  const topic = [...presetPrograms(p)].map((x) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined)).find(Boolean)?.replace(TOPIC_NUMBER, '');
-  const row = (title: string, body: string) => (body ? `<h5>${title}</h5>${body}` : '');
-  return [
-    row(d.aim, `<p>${escAttr(tr(p.question, locale))}</p>`),
-    row(d.takes, `<ul>${[...things].map((x) => `<li>${escAttr(x)}</li>`).join('')}</ul>`),
-    row(d.steps, plan.length ? `<ol>${plan.map((s) => `<li>${planStepLabel(s)}</li>`).join('')}</ol>` : ''),
-    row(d.topic, `<p>${escAttr(topic ?? tr(p.topic, locale))}</p>`),
-    row(u.programs, programs ? `<ul class="preset-programs">${programs}</ul>` : ''),
-    row(d.formulas, p.formulas.length ? `<ul>${p.formulas.map((id) => formulas.get(id)).filter(Boolean).map((f) => `<li>${escAttr(tr(f!.title, locale))}: <span class="formula">${escAttr(f!.plain)}</span></li>`).join('')}</ul>` : ''),
-  ].join('');
+  const line = (label: string, body: string) => `<p class="ls-line"><span class="ls-label">${label}.</span> ${body}</p>`;
+  return `
+    <header class="ls-head"><span class="ls-kind">${number ? d.labWork(number) : d.experiment}</span><span class="ls-grade">${p.grade === null ? u.forEveryone : u.grade(p.grade)}</span></header>
+    <h2 class="ls-title">${escAttr(tr(p.title, locale))}</h2>
+    ${line(d.topic, escAttr(topic))}
+    ${line(d.aim, escAttr(tr(presetAsk(p), locale)))}
+    ${line(d.takes, escAttr([...things].join('; ')))}
+    <h3 class="ls-sub">${d.steps}</h3>
+    <ol class="ls-steps">${plan.map((s) => `<li>${stepText(s)}</li>`).join('')}</ol>
+    ${fs.length ? `<h3 class="ls-sub">${d.formulas}</h3><ul class="ls-formulas">${fs.map((f) => `<li><span class="ls-formula">${formula(f.plain.replace(/\s*\(.*\)\s*$/, ''))}</span> — ${escAttr(tr(f.title, locale).toLowerCase())}</li>`).join('')}</ul>` : ''}
+    <h3 class="ls-sub">${d.conclusion}</h3>
+    <p class="ls-blank">${d.conclusionHint}</p>
+    ${programs ? `<footer class="ls-foot"><span>${u.programs}:</span><ul>${programs}</ul></footer>` : ''}
+    <div class="ls-actions"><button type="button" class="primary" data-ls-start="1">${u.presetStart}</button></div>`;
 }
+let labSheetFor: Preset | null = null;
+function openLabSheet(p: Preset) {
+  labSheetFor = p;
+  $('#lab-sheet-body').innerHTML = labSheetHtml(p);
+  $<HTMLDialogElement>('#lab-sheet').showModal();
+}
+$('#lab-sheet-close').onclick = () => $<HTMLDialogElement>('#lab-sheet').close();
+$('#lab-sheet').addEventListener('click', (e) => {
+  const dlg = $<HTMLDialogElement>('#lab-sheet');
+  // A click past the page (on the backdrop) closes it.
+  if (e.target === dlg) return dlg.close();
+  if ((e.target as HTMLElement).closest('[data-ls-start]') && labSheetFor) {
+    dlg.close();
+    startPreset(labSheetFor);
+  }
+});
 
 function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen)) {
   presetGiven = chosen;
