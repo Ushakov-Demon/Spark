@@ -164,6 +164,7 @@ export interface UiText {
   presetStart: string;
   inProgramme: string;
   programs: string;
+  topic: string;
   planNext(step: string): string;
   planAdd(what: string, mass: string): string;
   planDone: string;
@@ -445,6 +446,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     presetStart: '▶ Почати',
     inProgramme: 'У програмі',
     programs: 'Програми',
+    topic: 'Тема',
     planNext: (s) => `Далі за планом: ${s}`,
     planAdd: (w, m) => `досипати ${m} ${w}`,
     planDone: 'План виконано! Можна експериментувати далі самостійно.',
@@ -722,6 +724,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     presetStart: '▶ Start',
     inProgramme: 'In the programme',
     programs: 'Programmes',
+    topic: 'Topic',
     planNext: (s) => `Next in the plan: ${s}`,
     planAdd: (w, m) => `add ${m} of ${w}`,
     planDone: 'Plan complete! Go on experimenting on your own.',

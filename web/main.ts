@@ -2969,9 +2969,15 @@ function buildPresets() {
         return `<span class="program-chip" title="${escAttr(hint)}" data-program="${x.program}">${label}</span>${x.topic ? `<span class="program-topic muted small">${escAttr(x.topic)}${x.textbook ? ` · ${escAttr(x.textbook.at)}` : ''}</span>` : ''}`;
       })
       .join('');
+    // The topic of the programme it is in (of this subject first): «Тема 3. Взаємодія тіл. Сили в природі».
+    const progs = presetPrograms(p).filter((x) => x.match !== 'related');
+    const topicOf = (x: (typeof progs)[number]) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined);
+    const topicLine = [...progs.filter((x) => getCurriculum(x.program)?.subject === presetSubject), ...progs].map(topicOf).find(Boolean);
+    // The programmes in one line, cut with «…»; opened — each with its topic and the textbook's page.
+    const programLine = presetPrograms(p).map((x) => `${tr(getCurriculum(x.program)!.short ?? getCurriculum(x.program)!.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}`).join(', ');
     const card = el('article', { className: `preset${preset && presetGiven?.id === p.id ? ' current' : ''}` });
     card.innerHTML = `<div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div>
-      <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(tr(p.question, locale))}">${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${programs ? `<p class="programs"><span class="muted small">${u.programs}:</span> ${programs}</p>` : ''}</div>`;
+      <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(tr(p.question, locale))}">${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${topicLine ? `<p class="preset-topic small"><span class="muted">${u.topic}:</span> ${escAttr(topicLine)}</p>` : ''}${programs ? `<details class="programs"><summary><span class="muted">${u.programs}:</span> <span class="programs-line">${escAttr(programLine)}</span></summary><div class="programs-all">${programs}</div></details>` : ''}</div>`;
     const go = el('button', { type: 'button', className: 'primary preset-go' }, u.presetStart);
     go.onclick = () => startPreset(p);
     card.append(go);

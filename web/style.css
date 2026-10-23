@@ -338,7 +338,17 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 /* In the narrow panel the question is cut to three lines; the chosen one shows it all. */
 .preset:not(.current) .preset-q { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 /* The programmes' topics and wording: on the chosen card (the chips' hints have them on the others). */
-.preset:not(.current) .program-topic, .preset:not(.current) .preset-quote { display: none; }
+.preset:not(.current) .preset-quote { display: none; }
+.preset .preset-topic { margin: 2px 0 4px; font-size: 0.8rem; }
+/* The programmes: one line cut with «…»; opened — every programme with its topic and page. */
+.preset details.programs { margin: 2px 0 4px; font-size: 0.8rem; }
+.preset details.programs > summary { display: flex; gap: 4px; cursor: pointer; list-style: none; min-width: 0; }
+.preset details.programs > summary::-webkit-details-marker { display: none; }
+.preset details.programs > summary::after { content: '▸'; color: var(--muted); margin-left: auto; padding-left: 4px; }
+.preset details.programs[open] > summary::after { content: '▾'; }
+.preset .programs-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; color: var(--muted); }
+.preset details.programs[open] .programs-line { visibility: hidden; }
+.preset .programs-all { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-top: 4px; }
 .subject-tabs { display: flex; width: 100%; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 2px; }
 .subject-tab { flex: 1; border: 0; border-radius: 0; min-height: 34px; padding: 4px 8px; font-weight: 600; color: var(--muted); background: var(--card); }
 .subject-tab + .subject-tab { border-left: 1px solid var(--line); }
@@ -801,7 +811,7 @@ footer .link { background: none; border: 0; padding: 0; color: var(--accent); cu
 footer { padding-bottom: 72px; }
 
 /* Programmes an experiment belongs to (chips; the exact wording on hover). */
-.preset .programs { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 4px 0 0; }
+.preset p.programs { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 4px 0 0; }
 .program-chip { font-size: 0.74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: help; white-space: nowrap; }
 
 /* Footnotes on terms: a dotted underline; the card with the definition. */
