@@ -646,8 +646,9 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 /* From near the top down to the table top (86 % of the drawing), almost the whole width. */
 .scene .board { position: absolute; z-index: 0; left: 2.5%; right: 2.5%; top: 3%; bottom: 10.3%; overflow: hidden; box-sizing: border-box; padding: 10px 16px 12px; border: 8px solid #8a5a2e; border-bottom-width: 10px; border-radius: 6px; background: radial-gradient(ellipse at 30% 20%, #3b5a47, #2a4434); color: #f1efe4; box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 0 28px rgba(0,0,0,0.35); font-family: 'Spark Chalk', 'Segoe Print', 'Bradley Hand', cursive; font-weight: 500; font-size: clamp(14px, 2vw, 25px); line-height: 1.25; transition: box-shadow 0.25s, transform 0.25s; }
 /* Reading the board: what is on the table shrinks and moves to the table's right end; the Professor steps back and turns side-on. */
-.scene-svg .items { transform-origin: 632px 318px; transition: transform 0.7s ease-in-out; }
-.scene.reading .scene-svg .items { transform: scale(0.42); }
+/* (The bench — a spring, a pendulum, the balance, the stopwatch — stands on the table in place of the vessel and goes aside the same way.) */
+.scene-svg .items, .scene-svg .bench { transform-origin: 632px 318px; transition: transform 0.7s ease-in-out; }
+.scene.reading .scene-svg .items, .scene.reading .scene-svg .bench { transform: scale(0.42); }
 .scene-prof { transition: transform 0.7s ease-in-out; }
 .scene .prof-side { display: none; }
 .scene.reading .scene-prof { transform: translateX(-5%); animation: none !important; }
