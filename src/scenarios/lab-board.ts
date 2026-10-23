@@ -329,6 +329,18 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       dissolvedAdded = !!sub && sub.category.startsWith('solid.') && !c['frozen'] && inWaterFamily(sub);
       return;
     }
+    // The circuit: the ammeter and the voltmeter read together — the resistance R = U / I.
+    if (c.type === 'lab.circuit') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
+      const I = recs.find((x) => x.quantity === 'current');
+      const U = recs.find((x) => x.quantity === 'voltage');
+      if (!I || !U || I.value === null || U.value === null || I.value <= 0) return;
+      const A = (x: number) => formatMeasured('current', x, 0.01, locale);
+      const V = (x: number) => formatMeasured('voltage', x, 0.1, locale);
+      out.push({ id: `IU:${i}`, title: uk ? `покази приладів (джерело ${n(Number(c['source']), 2)} В)` : `the instruments (source ${n(Number(c['source']), 2)} V)`, formula: `I = ${A(I.value)}, U = ${V(U.value)}` });
+      out.push({ id: `R:${i}`, title: uk ? 'опір провідника' : 'the resistance of the conductor', formula: 'R = U / I', numbers: `${V(U.value)} / ${A(I.value)} ≈ ${n(U.value / I.value, 2)} ${uk ? 'Ом' : 'Ω'}` });
+      return;
+    }
     const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement');
     if (!r || r.value === null) return;
     // The bench: a spring stretched by weights, a block pulled along a board, the block's edges.

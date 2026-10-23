@@ -15,3 +15,6 @@ export const joulePower = (current: number, resistance: number): number => curre
 
 /** Faraday's law: amount of gas at an electrode, n = Q / (z·F). */
 export const faradayMoles = (charge: number, electrons: number): number => charge / (electrons * 96_485.33212);
+
+/** Resistance of a conductor from what the voltmeter and the ammeter show: R = U / I (Ohm's law for a part of a circuit). */
+export const resistanceFromReadings = (voltage: number, current: number): number => voltage / current;

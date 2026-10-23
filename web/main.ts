@@ -47,6 +47,8 @@ import {
   THREAD_LENGTH,
   PENDULUM_BALLS,
   SLOPE_LENGTH,
+  AMMETER,
+  VOLTMETER,
   stepCommand,
   OPERATIONS,
   BENCH_TEXT,
@@ -281,7 +283,10 @@ let lookingAt: string | null = null;
 /** The row of the protocol whose end is on the scene now: a step just finished, a reading just taken. */
 function liveRowKey(): string | null {
   if (running || instrumentBusy) return null;
-  if (showingWeighing() || showingMeasure()) return `m:${history.length}:${readingsOf(session.result().log).length - 1}`;
+  // (On the bench a row is a step that measured — the circuit reads two instruments in one; elsewhere a row is a reading.)
+  const log = session.result().log;
+  const rows = preset?.bench ? log.filter((e) => e.ok && readingsOf([e]).length).length : readingsOf(log).length;
+  if (showingWeighing() || showingMeasure()) return `m:${history.length}:${rows - 1}`;
   return finished ? `s:${history.length}` : null;
 }
 /** A ready-made experiment led to its answer: it may go on freely from here (not on the bench: nothing is added there). */
@@ -400,6 +405,14 @@ function benchView(): BenchView | null {
   const c = last?.command as ({ type: string } & Record<string, unknown>) | undefined;
   const show = (q: 'force' | 'length', v: number | null | undefined) => formatMeasured(q, v ?? 0, q === 'force' ? 0.1 : 0.001, locale);
   const base = { kind, weights: 0, block: BENCH_BLOCK.edges } as const;
+  // The circuit: the source's volts; the meters' needles and readings once the key is closed.
+  if (kind === 'circuit') {
+    const cc = c?.type === 'lab.circuit' ? (c as unknown as { source: number }) : undefined;
+    const recs = last ? readingsOf([last]).map((x) => x.record) : [];
+    const I = recs.find((x) => x.quantity === 'current');
+    const U = recs.find((x) => x.quantity === 'voltage');
+    return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
+  }
   // The lever: what hangs on it, the dynamometer's reading, how it tips.
   if (kind === 'lever') {
     const lc = c?.type === 'lab.lever' ? (c as unknown as { left: { weights: number; at: number }; right: { weights?: number; at: number; dynamometer?: true } }) : undefined;
@@ -493,6 +506,12 @@ function measureSay(): string {
   // The motion bench: what the tape and the stopwatch showed.
   const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
   const cmd = m.command as unknown as Record<string, number | string>;
+  if (m.command.type === 'lab.circuit') {
+    const recs = readingsOf([session.result().log[session.result().log.length - 1]!]).map((x) => x.record);
+    const I = recs.find((x) => x.quantity === 'current')?.value ?? 0;
+    const U = recs.find((x) => x.quantity === 'voltage')?.value ?? 0;
+    return uk ? `Ключ замкнено: амперметр показує ${formatMeasured('current', I, 0.01, locale)}, вольтметр — ${formatMeasured('voltage', U, 0.1, locale)}.` : `The key is closed: the ammeter shows ${formatMeasured('current', I, 0.01, locale)}, the voltmeter ${formatMeasured('voltage', U, 0.1, locale)}.`;
+  }
   if (m.command.type === 'lab.slope') return uk ? `Брусок іде вгору рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `The block goes up steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
   if (m.command.type === 'lab.lever') {
     if (r.instrument === 'dynamometer') return uk ? `Важіль горизонтально — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `The lever is level — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
@@ -2095,7 +2114,9 @@ function renderProtocol() {
       const label = 'type' in c && c.type in BENCH_TEXT ? tr(BENCH_TEXT[c.type as keyof typeof BENCH_TEXT](c as never).plan, locale) : c.type === 'lab.hang' ? (c.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : u.measure.level;
       // (Weights on both sides of the lever: no instrument — it balances or tips.)
       const leverShown = c.type === 'lab.lever' && r.instrument === 'lever' ? ((r.inputs?.['tip'] ?? 0) === 0 ? u.leverLevel : u.leverTips) : null;
-      const shown = leverShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      // (The circuit reads two instruments at once: both are written.)
+      const both = c.type === 'lab.circuit' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
+      const shown = both ?? leverShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

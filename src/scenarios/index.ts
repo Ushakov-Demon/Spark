@@ -23,3 +23,4 @@ export * from './test-tube.js';
 export * from './motion-bench.js';
 export * from './electrode-bench.js';
 export * from './lever-bench.js';
+export * from './circuit-bench.js';

@@ -202,6 +202,12 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toMatch(/η ≈ \d+ %.*η ≈ \d+ %.*η ≈ \d+ %/);
   }, 60_000);
 
+  it('the resistance of a conductor: U / I stays the same as the voltage grows', () => {
+    const { answer } = run(PRESETS.find((p) => p.id === 'conductor-resistance')!);
+    expect(answer.correct).toBe('same');
+    expect(answer.text.uk).toMatch(/R ≈ [45],\d Ом/);
+  }, 60_000);
+
   it('the lever: it balances when the moments are equal, not the forces or the arms', () => {
     expect(run(PRESETS.find((p) => p.id === 'lever-moments')!).answer.correct).toBe('moments');
   }, 60_000);

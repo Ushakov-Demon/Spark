@@ -6,6 +6,7 @@ import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
 import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './motion-bench.js';
 import { slopeLoad } from './lever-bench.js';
+import { LAB_RESISTOR } from './circuit-bench.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -53,7 +54,7 @@ export interface Preset {
    */
   readonly answerOnBoard?: readonly string[];
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -166,6 +167,7 @@ const SOLUTIONS: LocalizedText = { uk: 'Розчини', en: 'Solutions' };
 const MECH: LocalizedText = { uk: 'Механічні явища: густина й плавання', en: 'Mechanics: density and floating' };
 const MOTION: LocalizedText = { uk: 'Механічний рух', en: 'Mechanical motion' };
 const SIMPLE: LocalizedText = { uk: 'Прості механізми', en: 'Simple machines' };
+const CIRCUITS: LocalizedText = { uk: 'Електричний струм. Електричне коло', en: 'Electric current. Circuits' };
 
 const room = { roomTemp: 20, lid: false } as const;
 /** Metals for the specific-heat lab work: what a school set of calorimeter cylinders has. */
@@ -254,6 +256,27 @@ export const PRESETS: readonly Preset[] = [
     answerOnBoard: ['eta:'],
     formulas: ['mechanics.efficiency', 'mechanics.weight'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 2', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 2. Визначення ККД простого механізму.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'conductor-resistance',
+    ask: { uk: 'Чи зміниться опір провідника, якщо збільшити напругу на ньому?', en: 'Will the conductor’s resistance change if the voltage across it is raised?' },
+    grade: 8,
+    topic: CIRCUITS,
+    title: { uk: 'Вимірюємо опір провідника', en: 'Measuring the resistance of a conductor' },
+    question: {
+      uk: 'Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі 1,5, 3 і 4,5 В і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?',
+      en: 'We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to 1.5, 3 and 4.5 V, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'circuit',
+    plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value } }) as const),
+    choices: [ch('same', 'Ні — опір лишиться тим самим, зросте струм', 'No — the resistance stays, the current grows'), ch('grows', 'Так, зросте разом із напругою', 'Yes, it grows with the voltage'), ch('falls', 'Так, зменшиться', 'Yes, it falls')],
+    choicesAt: 'end',
+    answerOnBoard: ['R:'],
+    formulas: ['electrical.ohm-resistance'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 6', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 6. Вимірювання опору провідника за допомогою амперметра й вольтметра.' }],
     expect: 'reached',
   },
   {

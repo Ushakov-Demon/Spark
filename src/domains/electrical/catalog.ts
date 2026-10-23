@@ -166,4 +166,27 @@ export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
     textSource: 'spark',
     reviewed: false,
   }),
+  defineFormula({
+    id: 'electrical.ohm-resistance',
+    law: 'ohm',
+    title: { uk: 'Опір провідника (закон Ома для ділянки кола)', en: 'Resistance of a conductor (Ohm’s law for part of a circuit)' },
+    latex: 'R = \\dfrac{U}{I}',
+    plain: 'R = U / I',
+    argSymbols: ['U', 'I'],
+    resultSymbol: 'R',
+    variables: {
+      R: { name: { uk: 'опір провідника', en: 'resistance of the conductor' }, unit: 'Ω' },
+      U: { name: { uk: 'напруга на провіднику', en: 'voltage across the conductor' }, unit: 'V', meaning: { school: { uk: 'її показує вольтметр, під’єднаний паралельно до провідника', en: 'shown by a voltmeter connected in parallel with the conductor' } } },
+      I: { name: { uk: 'сила струму в провіднику', en: 'current in the conductor' }, unit: 'A', meaning: { school: { uk: 'її показує амперметр, увімкнений послідовно', en: 'shown by an ammeter connected in series' } } },
+    },
+    curriculum: UA_OHM,
+    explanation: {
+      novice: { uk: 'Поділи напругу на силу струму — і дізнаєшся, як сильно провідник «заважає» струму.', en: 'Divide the voltage by the current — and you know how much the conductor “holds back” the current.' },
+      school: { uk: 'Закон Ома для ділянки кола: I = U / R, отже R = U / I. Для металевого провідника за сталої температури опір не залежить від напруги: удвічі більша напруга — удвічі більший струм.', en: 'Ohm’s law for part of a circuit: I = U / R, so R = U / I. For a metal conductor at a steady temperature the resistance does not depend on the voltage: twice the voltage, twice the current.' },
+    },
+    compute: f.resistanceFromReadings,
+    examples: [{ args: [3, 0.6], expected: 5, note: '3 V and 0.6 A' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
 ];
