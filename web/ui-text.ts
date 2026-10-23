@@ -258,6 +258,8 @@ export interface UiText {
   protocolNext: string;
   /** The protocol's row of a measuring procedure. */
   measuring: string;
+  /** Before the reasoning behind an answer. */
+  whyTitle: string;
   leverLevel: string;
   leverTips: string;
   /** Steps that would tell the answer before it is predicted: shown once the experiment gets there. */
@@ -548,6 +550,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBackReturn: '↩ До досліду',
     lookBackHint: 'Торкнися виконаного кроку, щоб повернутися до його кінця: прилади й дошка — як тоді.',
     measuring: 'Вимірювання',
+    whyTitle: 'Чому так?',
     leverLevel: 'рівновага',
     leverTips: 'переважує',
     moreSteps: (n) => `… і ще ${n} ${n === 1 ? 'крок' : n < 5 ? 'кроки' : 'кроків'} — побачиш, коли дійдемо`,
@@ -832,6 +835,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBackReturn: '↩ Back to the experiment',
     lookBackHint: 'Tap a step done to go back to its end: the instruments and the board as they were.',
     measuring: 'Measurements',
+    whyTitle: 'Why so?',
     leverLevel: 'balanced',
     leverTips: 'tips',
     moreSteps: (n) => `… and ${n} more step${n === 1 ? '' : 's'} — you will see them when we get there`,

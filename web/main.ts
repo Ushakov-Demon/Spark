@@ -1627,7 +1627,7 @@ function renderGuide(): boolean {
       return true;
     }
     if (!presetAnswer) return (setHtml('#quiz', ''), true);
-    const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>`;
+    const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>${whyHtml()}`;
     setHtml('#quiz', `<div class="guide"><span class="guide-step">${t().answerTitle}</span>${text}${renewButton()}</div>`);
     return true;
   }
@@ -1647,7 +1647,7 @@ function renderGuide(): boolean {
       .join('');
     const rhoText = rho === null ? '—' : `${sig(rho / 1000, 3, locale)} ${locale === 'uk' ? 'г/см³' : 'g/cm³'} = ${sig(rho, 3, locale)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'}`;
     const verdict = predictionVerdict();
-    const answer = verdict && presetAnswer && presetAnswer !== 'computing' ? `<p class="verdict">${verdict}</p><p class="answer-text">${tr(presetAnswer.text, locale)}</p>` : '';
+    const answer = verdict && presetAnswer && presetAnswer !== 'computing' ? `<p class="verdict">${verdict}</p><p class="answer-text">${tr(presetAnswer.text, locale)}</p>${whyHtml()}` : '';
     setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table>${chosen ? renewButton() : ''}</div>`);
     return true;
   }
@@ -1674,6 +1674,12 @@ function quizHtml(q: Quiz): string {
   return `<div class="quiz" data-key="${q.key}"><p class="quiz-head"><span class="quiz-title">${q.title}</span>${q.ask ? ` <span class="quiz-ask">${q.ask}</span>` : ''}</p><div class="quiz-options">${buttons}${change}</div></div>`;
 }
 const predictionVerdictRight = () => (prediction && presetAnswer && presetAnswer !== 'computing' && prediction.choice === presetAnswer.correct ? predictionVerdict() : null);
+/** «Чому так?»: the reasoning behind the answer, when it has one. */
+function whyHtml(): string {
+  // (ρ_тіла, F_A: subscripts, as on the board.)
+  const why = presetAnswer && presetAnswer !== 'computing' && presetAnswer.why ? tr(presetAnswer.why, locale).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>') : '';
+  return why ? `<div class="answer-why"><strong>${t().whyTitle}</strong> ${why}</div>` : '';
+}
 /** The verdict on a prediction, once the run has answered the question. */
 function predictionVerdict(): string {
   if (!prediction || !preset || prediction.preset !== preset.id || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return '';
@@ -1938,7 +1944,7 @@ function render() {
       msg.push(
         presetAnswer === 'computing'
           ? `<div class="answer"><h4>${u.answerTitle}</h4><p class="muted">${u.answerComputing}</p></div>`
-          : `<div class="answer"><h4>${u.answerTitle}</h4>${preset ? `<p class="q">${tr(preset.question, locale)}</p>` : ''}<p>${tr(presetAnswer.text, locale)}</p>${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}</div>`,
+          : `<div class="answer"><h4>${u.answerTitle}</h4>${preset ? `<p class="q">${tr(preset.question, locale)}</p>` : ''}<p>${tr(presetAnswer.text, locale)}</p>${whyHtml()}${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}</div>`,
       );
     }
     // A ready-made experiment goes on along its plan.
@@ -2782,7 +2788,7 @@ function explain() {
   if (!last) {
     if (!allReadings().length) return;
     const formulas = (preset?.formulas ?? []).map((id) => LAB_KNOWLEDGE.formulas.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f);
-    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: tr(presetAnswer.text, locale) } as Block] : [];
+    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: tr(presetAnswer.text, locale) } as Block, ...(presetAnswer.why ? [{ kind: 'paragraph', text: `${t().whyTitle} ${tr(presetAnswer.why, locale)}` } as Block] : [])] : [];
     $('#report').innerHTML = renderHtml(
       buildMeasuredReport({
         title: locale === 'uk' ? 'Що виміряли і чому так вийшло' : 'What was measured and why it came out so',

@@ -44,6 +44,8 @@ export interface PresetAnswer {
   readonly text: LocalizedText;
   /** Which of the preset's choices this run proved right (absent — the run cannot tell). */
   readonly correct?: string;
+  /** Why it comes out so: the reasoning behind the result, at a pupil's level (not only the formula). */
+  readonly why?: LocalizedText;
 }
 
 type Step = PresetRun['steps'][number];
@@ -175,6 +177,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const pct = (x: number, l: Locale) => `${sig(x * 100, 2, l)} %`;
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Щоб підняти брусок на висоту h, треба виконати роботу P·h — хоч прямо вгору, хоч по похилій. Тягнучи вздовж дошки довжиною l, довшої за h, ту саму роботу виконують меншою силою: без тертя F = P·h / l — у стільки разів менша за вагу, у скільки разів дошка довша за висоту. Але брусок тисне на дошку й треться об неї: до сили додається тертя μ·P·cos α, і ця частина роботи йде в тепло, а не на підйом. Що крутіша дошка, то менше брусок тисне на неї (cos α менший) — менше тертя, — і водночас більша частка сили йде саме на підйом (sin α більший). Тому ККД росте з висотою, а 100 % не буде ніколи: тертя є завжди." : "Lifting the block by h takes the work P·h — straight up or along a slope. Pulling along a board of length l longer than h, the same work is done with a smaller force: without friction F = P·h / l — as many times less than the weight as the board is longer than the height. But the block presses on the board and rubs on it: friction μ·P·cos α adds to the force, and that part of the work goes into heat, not into lifting. The steeper the board, the less the block presses on it (a smaller cos α) — less friction — and the bigger the share of the force that lifts (a larger sin α). So the efficiency grows with the height, and it never reaches 100 %: there is always friction.")),
       say: both((l) => (l === 'uk' ? 'Що крутіша площина, то менше втрат на тертя!' : 'The steeper the slope, the less is lost to friction!')),
       text: both((l) => {
         const list = rows.map((x, k) => `h = ${Math.round(x.h * 100)} ${l === 'uk' ? 'см' : 'cm'}: F = ${N1(x.F, l)}, η ≈ ${pct(eta[k]!, l)}`).join('; ');
@@ -196,6 +199,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const cm = (x: number) => Math.round(x * 100);
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Уяви, що важіль трохи повернувся навколо осі. Кожна точка важеля проходить дугу, і що далі точка від осі, то довша її дуга: на плечі 20 см — удвічі довша, ніж на плечі 10 см (шлях s = l · кут). Сам важіль енергії не додає й не забирає (тертя в осі мале), тож робота, яку виконує сила з одного боку, дорівнює роботі з другого: F₁·s₁ = F₂·s₂. Підстав s = l · кут — кут однаковий для всього важеля й скорочується: F₁·l₁ = F₂·l₂. Ось чому важить не сила сама по собі й не плече саме по собі, а їхній добуток — момент сили. Це й «золоте правило механіки»: удвічі менша сила — зате вдвічі довший шлях; виграєш у силі — програєш у відстані. Тому дверну ручку ставлять далеко від завіс, гайку відкручують довгим ключем, а ломом підважують камінь, який руками не зрушиш." : "Imagine the lever turned a little about its axis. Every point of it moves along an arc, and the farther a point from the axis, the longer its arc: at 20 cm twice as long as at 10 cm (the path s = l · angle). The lever itself adds no energy and takes none (there is little friction at the axis), so the work done by the force on one side equals the work on the other: F₁·s₁ = F₂·s₂. Put s = l · angle — the angle is the same for the whole lever and cancels: F₁·l₁ = F₂·l₂. That is why what matters is neither the force alone nor the arm alone but their product — the moment. This is the “golden rule of mechanics”: half the force — but twice the path; what you gain in force you lose in distance. That is why a door handle sits far from the hinges, a nut is undone with a long spanner, and a crowbar lifts a stone hands cannot move.")),
       say: both((l) => (l === 'uk' ? 'Рівні моменти — і важіль у рівновазі!' : 'Equal moments — and the lever balances!')),
       text: both((l) => {
         const list = rows.map((x) => (l === 'uk' ? `${N(x.F1, l)} · ${cm(x.l1)} см ${x.dyn ? `і динамометр ${formatMeasured('force', x.F2, 0.1, l)}` : `і ${N(x.F2, l)}`} · ${cm(x.l2)} см: M₁ ≈ ${sig(M(x.F1, x.l1), 3, l)} Н·м, M₂ ≈ ${sig(M(x.F2, x.l2), 3, l)} Н·м` : `${N(x.F1, l)} · ${cm(x.l1)} cm ${x.dyn ? `and the dynamometer ${formatMeasured('force', x.F2, 0.1, l)}` : `and ${N(x.F2, l)}`} · ${cm(x.l2)} cm: M₁ ≈ ${sig(M(x.F1, x.l1), 3, l)} N·m, M₂ ≈ ${sig(M(x.F2, x.l2), 3, l)} N·m`)).join('; ');
@@ -219,6 +223,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const v = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'м/с' : 'm/s'}`;
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Кулька весь час розганяється: її тягне вниз уздовж жолоба частина сили тяжіння. На початку вона котиться повільно, наприкінці — швидко. Перша половина шляху — повільна частина, тому її середня швидкість менша; на всьому шляху до неї додається швидка друга половина. Під час розгону з місця шлях росте як квадрат часу (l = a·t²/2), тож половину шляху кулька проходить не за половину часу, а за ≈ 71 % (1/√2) — і середня швидкість на всьому шляху в √2 ≈ 1,4 раза більша. Тому, називаючи середню швидкість, завжди кажуть, на якій ділянці." : "The ball keeps speeding up: part of gravity pulls it down along the groove. It rolls slowly at first and fast at the end. The first half of the path is the slow part, so its average speed is lower; over the whole path the fast second half adds in. Speeding up from rest, the path grows as the square of the time (l = a·t²/2), so the ball covers half the path not in half the time but in ≈ 71 % of it (1/√2) — and the average speed over the whole path is √2 ≈ 1.4 times greater. That is why an average speed always comes with the stretch it is for.")),
       say: both((l) => (l === 'uk' ? 'Кулька розганяється — тому й середня швидкість різна!' : 'The ball speeds up — so the average speed differs!')),
       text: both((lc) =>
         lc === 'uk'
@@ -237,6 +242,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const s = (x: number, l: Locale) => formatMeasured('time', x, 0.01, l);
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Тіло йде по колу, бо нитка, нахилена до вертикалі, тягне його не лише вгору, а й до центру кола. Коло те саме, але коротка нитка нахилена сильніше, тож до центру тягне більша частка сили — і тіло мусить обходити коло швидше, щоб ця сила якраз утримувала його на колі. Виходить T = 2π·√(h/g), де h — висота руки над площиною кола: коротша нитка — нижче рука над колом — менший період. Це той самий закон, що й у нитяного маятника, — бо це теж маятник, тільки він не гойдається, а обертається." : "The body goes round because the slanting thread pulls it not only up but also towards the centre. The circle is the same, but a short thread slants more, so a bigger share of the pull points to the centre — and the body has to go round faster for that pull to keep it just on the circle. It comes out T = 2π·√(h/g), h being the hand’s height above the circle: a shorter thread — the hand lower over the circle — a shorter period. It is the same law as for a thread pendulum — because it is a pendulum too, only it turns instead of swinging.")),
       say: both((l) => (l === 'uk' ? 'Коротша нитка — частіше оберти!' : 'A shorter thread — quicker turns!')),
       text: both((l) =>
         l === 'uk'
@@ -254,6 +260,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const sT = (x: number, l: Locale) => formatMeasured('time', x, 0.01, l);
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Чому маса не важить? Важчу кульку Земля тягне сильніше, але й розігнати її важче — у стільки ж разів: і сила тяжіння, і інертність пропорційні масі, тож рухається важка кулька так само, як легка (як і падають вони однаково, якщо не заважає повітря). Чому майже не важить амплітуда? За ширшого розмаху кульці далі йти, але й сила, що повертає її до середини, більша — вона пропорційна відхиленню, тож кулька й рухається швидше; при малих кутах ці два ефекти точно компенсують один одного. А довжина важить: на довшій нитці та сама сила тяжіння повертає кульку повільніше — повертальна сила пропорційна відхиленню, поділеному на довжину. Звідси T = 2π·√(l/g): учетверо довша нитка — удвічі довший період." : "Why does the mass not matter? The Earth pulls a heavier ball harder, but it is also harder to speed up — by just as much: both gravity and inertia are proportional to the mass, so a heavy ball moves like a light one (just as they fall alike when the air does not get in the way). Why does the amplitude hardly matter? With a wider swing the ball has farther to go, but the force bringing it back to the middle is larger too — proportional to how far it is out — so it also moves faster; at small angles the two cancel exactly. But the length matters: on a longer thread the same gravity brings the ball back more slowly — the restoring force is proportional to the displacement over the length. Hence T = 2π·√(l/g): a thread four times longer — twice the period.")),
       say: both((l) => (l === 'uk' ? 'Лише довжина нитки задає ритм маятника!' : 'Only the length sets a pendulum’s rhythm!')),
       text: both((l) =>
         l === 'uk'
@@ -280,6 +287,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const g = (x: number, l: Locale) => formatMeasured('mass', x, 0.00001, l);
     return {
       ...(ok && q > 0 ? { correct: Math.abs(k - table) / table < 0.05 ? 'table' : k > table ? 'more' : 'less' } : {}),
+      why: both((l) => (l === 'uk' ? "Струм у розчині — це рух йонів. Кожен йон міді Cu²⁺, що доходить до катода, забирає з нього два електрони й стає атомом міді, що лишається на пластині. Отже, скільки заряду пройшло через розчин, стільки атомів і осіло: маса пропорційна заряду, m = k·q = k·I·t. Коефіцієнт k залежить лише від речовини — від маси її моля M і заряду йона z: k = M/(z·F), де F — заряд моля електронів. А анод із міді розчиняється: кожен його атом віддає два електрони й іде в розчин йоном — тому розчин не біднішає на мідь." : "A current in a solution is ions moving. Each copper ion Cu²⁺ that reaches the cathode takes two electrons from it and becomes a copper atom that stays on the plate. So as much charge as has passed, so many atoms have settled: the mass is proportional to the charge, m = k·q = k·I·t. The coefficient k depends only on the substance — on its molar mass M and the ion’s charge z: k = M/(z·F), F being the charge of a mole of electrons. And the copper anode dissolves: each of its atoms gives up two electrons and goes into the solution as an ion — so the solution does not run short of copper.")),
       say: both((l) => (l === 'uk' ? `k ≈ ${mgC(k, l)} — кожен кулон кладе на катод стільки міді!` : `k ≈ ${mgC(k, l)} — each coulomb puts this much copper on the cathode!`)),
       text: both((l) =>
         l === 'uk'
@@ -305,6 +313,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const word = { sinks: { uk: 'потонула', en: 'sank' }, inside: { uk: 'плавала всередині води', en: 'floated inside the water' }, up: { uk: 'спливла', en: 'came up' } } as const;
     const cmp = { sinks: '>', inside: '≈', up: '<' } as const;
     return {
+      why: both((l) => (l === 'uk' ? "На тіло під водою діють дві сили: сила тяжіння m·g = ρ_тіла·V·g тягне вниз, архімедова сила ρ_води·V·g штовхає вгору. Обидві пропорційні тому самому об’єму V, тож порівнюються лише густини. Більша густина тіла — переважає тяжіння, і тіло тоне. Рівні густини — сили рівні, і тіло лишається там, де його відпустили. Менша — переважає архімедова сила, і тіло спливає, поки над водою не вийде стільки, що занурена частина витіснятиме воду якраз його маси. Тому важкий корабель зі сталі плаває: він порожній усередині, і його середня густина менша за густину води." : "Two forces act on a body under water: gravity m·g = ρ_body·V·g pulls down, the buoyant force ρ_water·V·g pushes up. Both are proportional to the same volume V, so only the densities are compared. A denser body — gravity wins, and it sinks. Equal densities — the forces balance, and it stays where it was let go. Less dense — the buoyant force wins, and the body comes up until so much is out of the water that the part under it pushes aside just its own mass of water. That is why a heavy steel ship floats: it is hollow, and its mean density is less than water’s.")),
       say: both((l) => (l === 'uk' ? 'Тоне чи плаває — вирішує густина!' : 'Sinking or floating — the density decides!')),
       text: both((l) => {
         const runs = [0, 1, 2].map((k) => `${l === 'uk' ? `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ води — пробірка ${word[kinds[k]!].uk}` : `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ of water — the tube ${word[kinds[k]!].en}`}`).join('; ');
@@ -549,6 +558,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const cm = (x: number, l: Locale) => formatMeasured('length', x, 0.001, l);
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Пружина розтягується, бо трохи віддаляються одна від одної частинки її металу, а сили між ними тягнуть їх назад. При малих зміщеннях ці сили ростуть пропорційно зміщенню — так у кожному витку, тож і вся пружина подовжується пропорційно силі: удвічі більший вантаж — удвічі більше видовження. Відношення F/x — жорсткість — залежить від пружини: товщини дроту, діаметра й числа витків. Так буває, поки деформація пружна: розтягнута надто сильно пружина вже не повернеться до своєї довжини — там закон Гука не діє." : "A spring stretches because the particles of its metal move a little apart, and the forces between them pull them back. For small shifts these forces grow in proportion to the shift — in every coil, so the whole spring lengthens in proportion to the force: twice the load, twice the extension. The ratio F/x — the stiffness — depends on the spring: the wire’s thickness, the diameter and the number of coils. This holds while the deformation is elastic: a spring stretched too far does not return to its length — Hooke’s law does not hold there.")),
       say: both((l) => (l === 'uk' ? `Видовження пропорційне силі: k ≈ ${sig(kMean, 2, l)} Н/м!` : `The extension is proportional to the force: k ≈ ${sig(kMean, 2, l)} N/m!`)),
       text: both((l) =>
         l === 'uk'
@@ -567,6 +577,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const N1 = (x: number, l: Locale) => formatMeasured('force', x, 0.1, l);
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Навіть гладкі на вигляд поверхні торкаються лише горбиками. Що сильніше брусок притиснутий до дошки, то більше горбиків змикається й зачіпається — справжня площа дотику, а з нею й сила тертя, росте пропорційно силі тиску. Тому відношення F/N лишається сталим для пари матеріалів — це коефіцієнт тертя: він залежить від того, з чого поверхні й як оброблені, але не від ваги бруска." : "Even surfaces that look smooth touch only at their bumps. The harder the block is pressed to the board, the more bumps meet and catch — the real area of contact, and with it the friction, grows in proportion to the pressing force. So the ratio F/N stays the same for a pair of materials — the coefficient of friction: it depends on what the surfaces are and how they are finished, not on the block’s weight.")),
       say: both((l) => (l === 'uk' ? `μ ≈ ${sig(mean, 2, l)} — для дерева по дереву!` : `μ ≈ ${sig(mean, 2, l)} — for wood on wood!`)),
       text: both((l) =>
         l === 'uk'
@@ -586,6 +597,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const cm = (x: number, l: Locale) => formatMeasured('length', x, 0.001, l);
     return {
       ...(correct ? { correct } : {}),
+      why: both((l) => (l === 'uk' ? "Брусок тисне на стіл тією самою силою, хоч як його поклади, — своєю вагою. Але на меншій грані ця сила припадає на меншу площу, і кожному квадратному сантиметру стола дістається більша її частка: p = F/S. Тому гострий ніж ріже (мала площа — великий тиск), а широкі лижі не провалюються в сніг (велика площа — малий тиск)." : "The block presses on the table with the same force however it lies — its weight. But on a smaller face that force falls on a smaller area, and each square centimetre of the table gets a bigger share of it: p = F/S. That is why a sharp knife cuts (a small area — a large pressure) and wide skis do not sink into snow (a large area — a small pressure).")),
       say: both((l) => (l === 'uk' ? 'Найсильніше — на найменшій грані!' : 'Hardest on the smallest face!')),
       text: both((l) =>
         !ok
@@ -812,6 +824,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const pct = (x: number, l: Locale) => `${sig(x * 100, 2, l)} %`;
     return {
       correct: eta > 0.97 ? 'all' : eta >= 0.5 ? 'most' : 'half',
+      why: both((l) => (l === 'uk' ? "Кип’ятильник віддає теплоту тому, чого торкається, — воді. Але вода, теплішаючи, гріє склянку, а склянка й поверхня води віддають теплоту повітрю; та й сам кип’ятильник мусить спершу нагрітися. Що гарячіша вода порівняно з кімнатою, то швидше вона втрачає теплоту, — тому ККД менший, якщо гріти до вищої температури чи довше. Вищий ККД дає посуд, що погано проводить теплоту, з кришкою, і нагрівник, повністю занурений у воду." : "The heater gives its heat to what it touches — the water. But the water, warming up, warms the glass, and the glass and the water’s surface give heat to the air; and the heater itself has to warm up first. The hotter the water against the room, the faster it loses heat — so the efficiency is lower when heating to a higher temperature or for longer. A vessel that conducts heat poorly, a lid and a heater fully under water give a higher efficiency.")),
       say: both((l) => (l === 'uk' ? `ККД ≈ ${pct(eta, l)}!` : `Efficiency ≈ ${pct(eta, l)}!`)),
       text: both((l) =>
         l === 'uk'

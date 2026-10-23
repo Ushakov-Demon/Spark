@@ -166,6 +166,14 @@ describe('ready-made experiments with values to change', () => {
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
   };
+  it('the answers say why it comes out so, not only what came out', () => {
+    for (const id of ['lever-moments', 'slope-efficiency', 'pendulum', 'rotation-period', 'average-speed', 'electrochemical-equivalent', 'floating-conditions', 'heater-efficiency', 'hooke-spring', 'friction-coefficient', 'block-pressure']) {
+      const why = run(PRESETS.find((p) => p.id === id)!).answer.why;
+      expect(why?.uk.length ?? 0, id).toBeGreaterThan(200);
+      expect(why?.en.length ?? 0, id).toBeGreaterThan(200);
+    }
+  }, 120_000);
+
   it('the slope: the higher it is raised, the higher its efficiency', () => {
     const { answer } = run(PRESETS.find((p) => p.id === 'slope-efficiency')!);
     expect(answer.correct).toBe('grows');
