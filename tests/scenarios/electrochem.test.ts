@@ -9,7 +9,7 @@ const simulation = createSimulation({ solvers: [createElectricalSolver(), create
 const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS as never);
 const brine = COMPONENTS['sodium-chloride'].inWater!.model!.electrolysis!;
 
-function run(electrodes: 'graphite' | 'steel', piece?: 'iron' | 'copper') {
+function run(electrodes: 'graphite' | 'steel', piece?: 'iron' | 'copper' | 'brass') {
   const supply = { id: 'bench-supply', knob: 0.4, electrodes } as const;
   const base: LabParams = { substance: 'salt-water-10', liters: 0.2, startTemp: 20, roomTemp: 20, lid: false, vessel: 'beaker', size: 0.25, material: 'glass', action: 'pass-current', duration: 10, supply };
   const out = runProtocol({ simulation, commands, sampleEvery: seconds(10), base, steps: [
@@ -56,7 +56,7 @@ describe('electrolysis decided from the components', () => {
   });
 
   it('a metal without electrode data: said honestly, not silently ignored', () => {
-    const { text } = run('graphite', 'copper');
+    const { text } = run('graphite', 'brass');
     expect(text).toMatch(/модель для цього металу поки не вміє/);
   });
 

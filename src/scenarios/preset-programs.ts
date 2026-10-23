@@ -45,6 +45,16 @@ export function presetSubjects(p: Preset): Subject[] {
  * experiment's own grade (salt on the roads: physics in the 8th, the chemistry of solutions in the 9th).
  * Of several programmes, the earliest grade; none named — the experiment's own.
  */
+/**
+ * Every grade an experiment is under in a subject: its programmes may put it in different grades (electrolysis —
+ * the 8th in Holovko's, the 9th in Kreminskyi's), and schools work by either. None named — its own grade.
+ */
+export function presetGradesIn(p: Preset, subject: Subject): (number | null)[] {
+  if (p.grade === null) return [null];
+  const grades = presetPrograms(p).flatMap((x) => (x.match !== 'related' && x.grade !== undefined && getCurriculum(x.program)?.subject === subject ? [x.grade] : []));
+  return grades.length ? [...new Set(grades)].sort((a, b) => a - b) : [p.grade];
+}
+
 export function presetGradeIn(p: Preset, subject: Subject): number | null {
   if (p.grade === null) return null;
   const grades = presetPrograms(p).flatMap((x) => (x.match !== 'related' && x.grade !== undefined && getCurriculum(x.program)?.subject === subject ? [x.grade] : []));

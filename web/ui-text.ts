@@ -181,6 +181,8 @@ export interface UiText {
     melting: string;
     meltingDry: string;
     current: string;
+    /** Current through a cell that gives no gas: metal settles on the cathode, the anode dissolves. */
+    currentPlating: string;
     chlorine: string;
     noCurrent: string;
     reached: string;
@@ -467,6 +469,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       melting: 'Тане! Уся теплота зараз іде на плавлення льоду.',
       meltingDry: 'Плавиться! Температура стоїть, а вся теплота йде на плавлення.',
       current: 'Іде струм! Бачиш бульбашки на електродах? Це гази виділяються.',
+      currentPlating: 'Іде струм! Бульбашок немає: придивись до катода — на ньому осідає метал.',
       chlorine: 'Кхе-кхе! Це хлор… У справжній лабораторії тут потрібна витяжка!',
       noCurrent: 'Струму майже немає… Може, у воді чогось бракує? Спробуй досипати солі.',
       reached: 'Можна продовжити: обери наступну дію ліворуч.',
@@ -748,6 +751,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       melting: 'Melting! All the heat goes into melting the ice now.',
       meltingDry: 'It is melting! The temperature stands still, all the heat goes into melting.',
       current: 'Current is flowing! See the bubbles at the electrodes? Those are gases.',
+      currentPlating: 'Current is flowing! No bubbles: look at the cathode — metal is settling on it.',
       chlorine: 'Cough, cough! That’s chlorine… A real lab would need a fume hood here!',
       noCurrent: 'Almost no current… Maybe something is missing in the water? Try adding salt.',
       reached: 'You can go on: pick the next action on the left.',

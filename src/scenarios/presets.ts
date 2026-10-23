@@ -987,6 +987,34 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
     expect: 'reached',
   },
+  {
+    id: 'electrochemical-equivalent',
+    ask: { uk: 'Яким вийде електрохімічний еквівалент міді?', en: 'What will the electrochemical equivalent of copper come out as?' },
+    grade: 9,
+    topic: ELECTRIC,
+    title: { uk: 'Визначаємо електрохімічний еквівалент міді', en: 'Finding the electrochemical equivalent of copper' },
+    question: {
+      uk: 'У розчин мідного купоросу опустимо дві мідні пластини й під’єднаємо до джерела струму. Зважимо катод (пластину «−»), пропустимо струм 20 хвилин, тоді вийнемо катод, висушимо й зважимо знову. Електрохімічний еквівалент k = Δm / (I·t) — скільки речовини виділяє кожен кулон заряду. Яким вийде електрохімічний еквівалент міді?',
+      en: 'We dip two copper plates into a copper sulfate solution and connect them to a source of current. We weigh the cathode (the “−” plate), pass the current for 20 minutes, then take the cathode out, dry it and weigh it again. The electrochemical equivalent k = Δm / (I·t) — how much substance each coulomb gives. What will it come out as for copper?',
+    },
+    params: { ...room, ...beaker, liters: 0.15, action: 'pass-current', substance: 'water', startTemp: 20, supply: { id: 'bench-supply', knob: 0.4, electrodes: 'copper' }, duration: 20 },
+    guided: true,
+    plan: [
+      { kind: 'add', substance: 'copper-sulfate', mass: 0.015, temperature: 20, label: { uk: 'Мідний купорос', en: 'Copper sulfate' } },
+      { kind: 'bench', command: { type: 'lab.cathode' } },
+      { kind: 'operation', action: 'pass-current', supply: { id: 'bench-supply', knob: 0.4, electrodes: 'copper' }, duration: 20 },
+      { kind: 'bench', command: { type: 'lab.cathode' } },
+    ],
+    choices: [ch('table', '≈ 0,33 мг/Кл — як у таблиці для міді', '≈ 0.33 mg/C — as in the table for copper'), ch('more', 'Помітно більшим за табличне', 'Noticeably more than in the table'), ch('less', 'Помітно меншим за табличне', 'Noticeably less than in the table')],
+    choicesAt: 'end',
+    answerOnBoard: ['kEq:'],
+    formulas: ['electrical.faraday-moles'],
+    programs: [
+      { program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'same', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' },
+      { program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 2. Електричні явища', match: 'related', quote: 'електричного струму в розчинах електролітів та газах' },
+    ],
+    expect: 'reached',
+  },
   // ---------------------------------------------------------------- for everyone
   {
     ask: { uk: 'Що станеться з олією раніше: закипить чи почне диміти?', en: 'What comes first with oil: boiling or smoke?' },

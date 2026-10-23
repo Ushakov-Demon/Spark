@@ -166,6 +166,12 @@ describe('ready-made experiments with values to change', () => {
     const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
     return { out, answer: PRESET_ANSWERS[p.id]!({ steps, simulation, readings: readingsAll(out) as never }) };
   };
+  it('the electrochemical equivalent of copper: m₂ − m₁ over I·t is the table’s M / (2F)', () => {
+    const { answer } = run(PRESETS.find((p) => p.id === 'electrochemical-equivalent')!);
+    expect(answer.correct).toBe('table');
+    expect(answer.text.uk).toMatch(/k = Δm \/ \(I·t\) ≈ 0,3[23]\d? мг\/Кл/);
+  }, 60_000);
+
   it('the heater’s efficiency: most of the energy, not all of it', () => {
     const { answer } = run(PRESETS.find((p) => p.id === 'heater-efficiency')!);
     expect(answer.correct).toBe('most');

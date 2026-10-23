@@ -106,7 +106,7 @@ export const SUPPLIES: Readonly<Record<SupplyId, SupplyItem>> = LIST;
  */
 export const ELECTRODES: ElectrodesSpec = { material: 'graphite', width: 0.02, height: 0.05, gap: 0.03 };
 /** What the electrodes can be made of (component ids). */
-export const ELECTRODE_MATERIALS = ['graphite', 'steel'] as const;
+export const ELECTRODE_MATERIALS = ['graphite', 'steel', 'copper'] as const;
 export type ElectrodeMaterial = (typeof ELECTRODE_MATERIALS)[number];
 export const electrodesOf = (material: ElectrodeMaterial | undefined): ElectrodesSpec => (material ? { ...ELECTRODES, material } : ELECTRODES);
 /** Cell constant K = L / A, 1/m: the resistance of the liquid between the plates is K / κ. */

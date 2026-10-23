@@ -366,6 +366,26 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       liquidDensityLine(i);
       return;
     }
+    // The cathode on the balance: before the current, then after — the copper it gained, and k = Δm / (I·t).
+    if (c.type === 'lab.cathode') {
+      const g = (kg: number) => formatMeasured('mass', kg, 0.00001, locale);
+      const metal = r.inputs?.['metal'] ?? 0;
+      if (metal <= 0) {
+        out.push({ id: `cath1:${i}`, title: uk ? 'маса катода до досліду' : 'the cathode before', formula: `m₁ = ${g(r.value)}` });
+        return;
+      }
+      // (The weighing before is the plate without what settled since — the same reading as then.)
+      const div = r.inputs?.['division'] ?? 0.00001;
+      const before = Math.round((r.exact - metal) / div) * div;
+      const dm = r.value - before;
+      const q = r.inputs?.['charge'] ?? 0;
+      const t = r.inputs?.['time'] ?? 0;
+      const I = t > 0 ? q / t : 0;
+      out.push({ id: `cath2:${i}`, title: uk ? 'маса катода після досліду' : 'the cathode after', formula: `m₂ = ${g(r.value)}` });
+      out.push({ id: `dm:${i}`, title: uk ? 'маса міді, що осіла на катоді' : 'the copper settled on the cathode', formula: 'Δm = m₂ − m₁', numbers: `${g(r.value)} − ${g(before)} = ${g(dm)}` });
+      if (I > 0) out.push({ id: `kEq:${i}`, title: uk ? `електрохімічний еквівалент (I ≈ ${n(I, 2)} А, t = ${n(t / 60, 3)} хв)` : `the electrochemical equivalent (I ≈ ${n(I, 2)} A, t = ${n(t / 60, 3)} min)`, formula: 'k = Δm / (I·t)', numbers: `${n(dm * 1e6, 3)} ${uk ? 'мг' : 'mg'} / (${n(I, 2)} ${uk ? 'А' : 'A'} · ${n(t, 4)} ${uk ? 'с' : 's'}) ≈ ${n((dm * 1e6) / (I * t), 2)} ${uk ? 'мг/Кл' : 'mg/C'}` });
+      return;
+    }
     // The motion bench: a path by the tape, times by the stopwatch — speeds and periods.
     const sec = (x: number) => formatMeasured('time', x, 0.01, locale);
     if (c.type === 'lab.tape') {

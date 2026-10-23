@@ -10,6 +10,7 @@ import type { SourcedValue } from '../knowledge/types.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { weigh } from './weighing.js';
 import { MOTION_COMMANDS, MOTION_SETUP, MOTION_TEXT, type MotionCommand } from './motion-bench.js';
+import { ELECTRODE_COMMANDS, ELECTRODE_TEXT, type CathodeCommand } from './electrode-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -60,7 +61,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -137,11 +138,12 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   ...(MOTION_TEXT as Record<MotionCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
+  ...ELECTRODE_TEXT,
   'lab.stretch': (c) => {
     const n = (c as StretchCommand).weights;
     return n === 0

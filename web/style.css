@@ -297,6 +297,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .scene .wire { fill: none; stroke-width: 3; } .scene .wire.plus { stroke: #d33; } .scene .wire.minus { stroke: #222; }
 .scene .electrode { fill: #b8c0c8; stroke: #7d8790; }
 .scene .electrode.graphite { fill: #3b3f45; stroke: #22262a; }
+.scene .electrode.copper { fill: #c87a4a; stroke: #8a4a26; }
 .scene .sludge, .scene .cloudy { pointer-events: none; transition: opacity 0.6s; }
 .scene .vessel .inside { fill: rgba(0, 0, 0, 0.14); }
 .scene .vessel .handle { fill: none; stroke: #2b2f36; stroke-width: 5; stroke-linecap: round; }

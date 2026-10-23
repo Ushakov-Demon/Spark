@@ -56,7 +56,7 @@ export interface SceneView {
   /** Smoke instead of steam (oil past its smoke point). */
   readonly smoke?: boolean;
   /** Electrolysis: current, A, and the gases that form. */
-  readonly current?: { readonly amps: number; readonly volts: number; readonly toxicGas: boolean; readonly electrodes?: 'graphite' | 'steel'; readonly anodeGas?: boolean; readonly cathodeCoat?: string; readonly cathodeGas?: boolean };
+  readonly current?: { readonly amps: number; readonly volts: number; readonly toxicGas: boolean; readonly electrodes?: 'graphite' | 'steel' | 'copper'; readonly anodeGas?: boolean; readonly cathodeCoat?: string; readonly cathodeGas?: boolean };
   /** A sludge the current made (iron(II) hydroxide): its colour and how much, 0…1 — on the bottom, and the water turns cloudy. */
   readonly sludge?: { readonly color: string; readonly amount: number };
   /** Setpoint of a cooler, °C (shown on its display). */
@@ -400,7 +400,10 @@ export function createScene(): Scene {
       if (amps) amps.textContent = v.current ? `${v.current.amps.toFixed(2)} A` : '';
       // A steel anode dissolves instead of giving gas; graphite is dark, steel light.
       svg.querySelectorAll<SVGElement>('.at-anode').forEach((c) => (c.style.display = v.current?.anodeGas === false ? 'none' : ''));
-      svg.querySelectorAll<SVGElement>('.electrode').forEach((x) => x.classList.toggle('graphite', v.current?.electrodes !== 'steel'));
+      svg.querySelectorAll<SVGElement>('.electrode').forEach((x) => {
+        x.classList.toggle('graphite', !v.current?.electrodes || v.current.electrodes === 'graphite');
+        x.classList.toggle('copper', v.current?.electrodes === 'copper');
+      });
       // Copper settling on the cathode (the right electrode) colours it; no hydrogen bubbles there then.
       const els = svg.querySelectorAll<SVGElement>('.electrode');
       const cathode = els[els.length - 1];

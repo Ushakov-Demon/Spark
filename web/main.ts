@@ -99,7 +99,7 @@ import {
   stepParams,
   presetPrograms,
   presetSubjects,
-  presetGradeIn,
+  presetGradesIn,
   presetTopicIn,
   type Preset,
   type ProtocolStep,
@@ -1226,7 +1226,7 @@ function sceneView(): SceneView {
   const s = b?.state.solidFraction ?? 0;
   // What the cell does now (a steel anode dissolves: no chlorine, no gas at it).
   const cellNow = sup && electrolysis ? cellReaction(electrolysis, sup.params.electrodes?.material) : undefined;
-  const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: cellNow?.anode.component === 'chlorine', electrodes: (sup.params.electrodes?.material === 'steel' ? 'steel' : 'graphite') as 'steel' | 'graphite', anodeGas: !cellNow?.anode.dissolves, cathodeGas: cellNow ? COMPONENTS[cellNow.cathode.component]?.stateAtRoom === 'gas' : true, ...((sup.state.made?.['copper'] ?? 0) > 1e-5 ? { cathodeCoat: '#c46b3c' } : {}) } : undefined;
+  const current = sup ? { amps: sup.state.current, volts: sup.state.current > 0 ? sup.state.decomposition + sup.state.current * ((sup.state.resistance ?? 0) + sup.params.internalResistance) : sup.params.voltage, toxicGas: cellNow?.anode.component === 'chlorine', electrodes: (sup.params.electrodes?.material === 'steel' || sup.params.electrodes?.material === 'copper' ? sup.params.electrodes.material : 'graphite') as 'steel' | 'graphite' | 'copper', anodeGas: !cellNow?.anode.dissolves, cathodeGas: cellNow ? COMPONENTS[cellNow.cathode.component]?.stateAtRoom === 'gas' : true, ...((sup.state.made?.['copper'] ?? 0) > 1e-5 ? { cathodeCoat: '#c46b3c' } : {}) } : undefined;
   // A sludge the current made (grams of every solid product, the anode's and a metal piece's).
   const sludgeGrams = sup ? Object.entries(sup.state.made ?? {}).reduce((a, [k, n]) => {
     const c = (k.includes('|') ? k.split('|')[1] : k) as ComponentId;
@@ -1282,7 +1282,10 @@ function sceneView(): SceneView {
       : current && current.amps > 0.005
         ? current.toxicGas && current.amps > 0.05
           ? { mood: 'sooty', says: u.prof.chlorine }
-          : { mood: 'surprised', says: u.prof.current }
+          : // No gas at either electrode (copper plates in copper sulfate): the cathode is being plated.
+            !current.anodeGas && !current.cathodeGas
+            ? { mood: 'surprised', says: u.prof.currentPlating }
+            : { mood: 'surprised', says: u.prof.current }
         : params.supply
           ? { mood: 'thinking', says: u.prof.noCurrent }
           : boilingNow
@@ -2936,8 +2939,9 @@ function buildPresets() {
   // A search looks through all of them; otherwise a subject, then a grade (or those for everyone).
   tabs.hidden = !!query;
   const inSubject = PRESETS.filter((p) => presetSubjects(p).includes(presetSubject));
-  const gradeOf = (p: Preset) => presetGradeIn(p, presetSubject);
-  const grades = [...new Set(inSubject.map(gradeOf))].sort((a, b) => (a ?? 99) - (b ?? 99));
+  // (An experiment stands under each grade its programmes put it in.)
+  const gradesOf = (p: Preset) => presetGradesIn(p, presetSubject);
+  const grades = [...new Set(inSubject.flatMap(gradesOf))].sort((a, b) => (a ?? 99) - (b ?? 99));
   if (!grades.includes(presetGrade)) presetGrade = grades[0] ?? null;
   const subjects = el('div', { className: 'subject-tabs' });
   for (const sub of ['physics', 'chemistry'] as const) {
@@ -2963,7 +2967,7 @@ function buildPresets() {
   list.innerHTML = '';
   const formulas = new Map(LAB_KNOWLEDGE.formulas.map((f) => [f.id, f]));
   const found = (p: Preset) => [p.title, p.question, p.topic].some((x) => tr(x, locale).toLowerCase().includes(query));
-  const graded = query ? PRESETS.filter(found) : inSubject.filter((x) => gradeOf(x) === presetGrade);
+  const graded = query ? PRESETS.filter(found) : inSubject.filter((x) => gradesOf(x).includes(presetGrade));
   // Those under one heading stand together (in the order the headings first come).
   const headOf = (p: Preset) => (query ? '' : presetTopicIn(p, presetSubject, locale).replace(TOPIC_NUMBER, ''));
   const heads = [...new Set(graded.map(headOf))];

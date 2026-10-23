@@ -8,7 +8,7 @@ import type { SystemState } from '../core/state.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { cellReading } from '../domains/electrical/conductivity.js';
 import { isSupply } from '../domains/electrical/entities.js';
-import { GAS_CONSTANT } from '../domains/electrical/gases.js';
+import { FARADAY, GAS_CONSTANT } from '../domains/electrical/gases.js';
 import { formatDuration, formatQuantity, sig } from '../explain/format.js';
 import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
@@ -222,6 +222,28 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
           : ok
             ? `A 1 m pendulum: 2.5 cm aside — T ≈ ${sT(base!.T, l)}, 5.5 cm — T ≈ ${sT(wide!.T, l)}, a heavier ball — T ≈ ${sT(heavy!.T, l)}: the same period. A 25 cm pendulum — T ≈ ${sT(short!.T, l)}: a thread four times shorter — half the period. The period of small swings depends on neither the amplitude nor the mass, only on the length: T = 2π·√(l/g) ≈ ${sT(2 * Math.PI * Math.sqrt(1 / G), l)} for 1 m. (A wider swing lengthens it by thousandths — a stopwatch in a hand will not notice.) So a 4 m pendulum would swing with a period of ≈ 4 s — twice as long as a metre one, whatever its ball.`
             : 'The experiment is not finished yet.',
+      ),
+    };
+  },
+  'electrochemical-equivalent': (run) => {
+    const c = (run.readings ?? []).filter((x) => x.command.type === 'lab.cathode' && x.record.value !== null).map((x) => x.record);
+    const [before, after] = [c[0], c[c.length - 1]];
+    const ok = !!before && !!after && after !== before;
+    const dm = ok ? after!.value! - before!.value! : 0;
+    const q = after?.inputs?.['charge'] ?? 0;
+    const t = after?.inputs?.['time'] ?? 0;
+    const k = q > 0 ? dm / q : 0;
+    // The table's: one copper atom per two electrons, k = M / (z·F).
+    const table = (molarMassOf(COMPONENTS.copper) ?? 0.06355) / (2 * FARADAY);
+    const mgC = (x: number, l: Locale) => `${sig(x * 1e6, 3, l)} ${l === 'uk' ? 'мг/Кл' : 'mg/C'}`;
+    const g = (x: number, l: Locale) => formatMeasured('mass', x, 0.00001, l);
+    return {
+      ...(ok && q > 0 ? { correct: Math.abs(k - table) / table < 0.05 ? 'table' : k > table ? 'more' : 'less' } : {}),
+      say: both((l) => (l === 'uk' ? `k ≈ ${mgC(k, l)} — кожен кулон кладе на катод стільки міді!` : `k ≈ ${mgC(k, l)} — each coulomb puts this much copper on the cathode!`)),
+      text: both((l) =>
+        l === 'uk'
+          ? `Катод важив m₁ = ${ok ? g(before!.value!, l) : '—'}, після досліду — m₂ = ${ok ? g(after!.value!, l) : '—'}: на ньому осіло Δm = ${g(dm, l)} міді. Струм I ≈ ${sig(t > 0 ? q / t : 0, 2, l)} А ішов ${D(t, l)}, тож пройшов заряд I·t ≈ ${sig(q, 3, l)} Кл. k = Δm / (I·t) ≈ ${mgC(k, l)}; у таблиці для міді — ${mgC(table, l)}. Це закон Фарадея: кожен йон міді Cu²⁺ забирає на катоді два електрони, тож k = M / (2·F), де F ≈ 96 485 Кл/моль. Мідний анод тим часом розчиняється — стільки ж міді переходить у розчин, скільки осідає на катоді. Терези показують соті частки грама, тому що більший заряд, то точніший k.`
+          : `The cathode weighed m₁ = ${ok ? g(before!.value!, l) : '—'}, after the experiment m₂ = ${ok ? g(after!.value!, l) : '—'}: Δm = ${g(dm, l)} of copper settled on it. A current of I ≈ ${sig(t > 0 ? q / t : 0, 2, l)} A flowed for ${D(t, l)}, so a charge I·t ≈ ${sig(q, 3, l)} C passed. k = Δm / (I·t) ≈ ${mgC(k, l)}; the table gives ${mgC(table, l)} for copper. This is Faraday’s law: each Cu²⁺ ion takes two electrons at the cathode, so k = M / (2·F), F ≈ 96 485 C/mol. The copper anode meanwhile dissolves — as much copper goes into the solution as settles on the cathode. The balance reads hundredths of a gram, so the more charge, the more precise k.`,
       ),
     };
   },
