@@ -386,6 +386,11 @@ function benchView(): BenchView | null {
   const c = last?.command as ({ type: string } & Record<string, unknown>) | undefined;
   const show = (q: 'force' | 'length', v: number | null | undefined) => formatMeasured(q, v ?? 0, q === 'force' ? 0.1 : 0.001, locale);
   const base = { kind, weights: 0, block: BENCH_BLOCK.edges } as const;
+  // The lever: what hangs on it, the dynamometer's reading, how it tips.
+  if (kind === 'lever') {
+    const lc = c?.type === 'lab.lever' ? (c as unknown as { left: { weights: number; at: number }; right: { weights?: number; at: number; dynamometer?: true } }) : undefined;
+    return { ...base, kind, ...(lc && r ? { lever: { left: lc.left, right: lc.right.dynamometer ? { at: lc.right.at, dynamometer: show('force', r.value) } : { at: lc.right.at, weights: lc.right.weights ?? 0 }, tip: r.inputs?.['tip'] ?? 0 } } : {}) };
+  }
   // The motion bench: the groove, the body on a thread, the pendulum — the stopwatch with the time read, the run to play.
   const sec = (x: number | null | undefined) => formatMeasured('time', x ?? 0, 0.01, locale);
   const tapeShown = c?.type === 'lab.tape' && r ? { tape: show('length', r.value) } : {};
@@ -469,6 +474,11 @@ function measureSay(): string {
   // The motion bench: what the tape and the stopwatch showed.
   const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
   const cmd = m.command as unknown as Record<string, number | string>;
+  if (m.command.type === 'lab.lever') {
+    if (r.instrument === 'dynamometer') return uk ? `Важіль горизонтально — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `The lever is level — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
+    const tip = r.inputs?.['tip'] ?? 0;
+    return tip === 0 ? (uk ? 'Важіль у рівновазі — стоїть горизонтально!' : 'The lever balances — it stands level!') : uk ? `Важіль переважує ${tip < 0 ? 'ліворуч' : 'праворуч'}.` : `The lever tips to the ${tip < 0 ? 'left' : 'right'}.`;
+  }
   if (m.command.type === 'lab.tape') return uk ? `${cmd['what'] === 'path' ? 'Шлях кульки' : 'Довжина маятника'}: l = ${cm(r.value ?? 0)}.` : `${cmd['what'] === 'path' ? 'The ball’s path' : 'The pendulum’s length'}: l = ${cm(r.value ?? 0)}.`;
   if (m.command.type === 'lab.roll') return uk ? `Кулька докотилася до циліндра за ${sec(r.value)}.` : `The ball reached the cylinder in ${sec(r.value)}.`;
   if (m.command.type === 'lab.whirl') return uk ? `${cmd['turns']} обертів — ${sec(r.value)}: один оберт ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} с.` : `${cmd['turns']} turns — ${sec(r.value)}: one turn ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} s.`;
@@ -2046,7 +2056,9 @@ function renderProtocol() {
       const c = e.command as LabCommand;
       const r = readingsOf([e])[0]!.record;
       const label = 'type' in c && c.type in BENCH_TEXT ? tr(BENCH_TEXT[c.type as keyof typeof BENCH_TEXT](c as never).plan, locale) : c.type === 'lab.hang' ? (c.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : u.measure.level;
-      const shown = r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale);
+      // (Weights on both sides of the lever: no instrument — it balances or tips.)
+      const leverShown = c.type === 'lab.lever' && r.instrument === 'lever' ? ((r.inputs?.['tip'] ?? 0) === 0 ? u.leverLevel : u.leverTips) : null;
+      const shown = leverShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

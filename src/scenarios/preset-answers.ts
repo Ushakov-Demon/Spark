@@ -164,6 +164,27 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
     };
   },
+  'lever-moments': (run) => {
+    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.lever' && x.record.value !== null).map((x) => ({ F1: x.record.inputs?.['F1'] ?? 0, l1: x.record.inputs?.['l1'] ?? 0, F2: x.record.value!, l2: x.record.inputs?.['l2'] ?? 0, dyn: x.record.instrument === 'dynamometer', balanced: x.record.inputs?.['balanced'] === 1 }));
+    const M = (F: number, l: number) => F * l;
+    // Within what the dynamometer tells (half its 0.1 N division at that arm): the moments are equal.
+    const equal = rows.every((x) => Math.abs(M(x.F1, x.l1) - M(x.F2, x.l2)) <= 0.05 * x.l2 + 1e-9);
+    const forcesDiffer = rows.some((x) => Math.abs(x.F1 - x.F2) > 0.1);
+    const armsDiffer = rows.some((x) => Math.abs(x.l1 - x.l2) > 1e-6);
+    const correct = rows.length ? (equal ? 'moments' : !forcesDiffer ? 'forces' : !armsDiffer ? 'arms' : undefined) : undefined;
+    const N = (x: number, l: Locale) => formatMeasured('force', x, 0.01, l);
+    const cm = (x: number) => Math.round(x * 100);
+    return {
+      ...(correct ? { correct } : {}),
+      say: both((l) => (l === 'uk' ? 'Рівні моменти — і важіль у рівновазі!' : 'Equal moments — and the lever balances!')),
+      text: both((l) => {
+        const list = rows.map((x) => (l === 'uk' ? `${N(x.F1, l)} · ${cm(x.l1)} см ${x.dyn ? `і динамометр ${formatMeasured('force', x.F2, 0.1, l)}` : `і ${N(x.F2, l)}`} · ${cm(x.l2)} см: M₁ ≈ ${sig(M(x.F1, x.l1), 3, l)} Н·м, M₂ ≈ ${sig(M(x.F2, x.l2), 3, l)} Н·м` : `${N(x.F1, l)} · ${cm(x.l1)} cm ${x.dyn ? `and the dynamometer ${formatMeasured('force', x.F2, 0.1, l)}` : `and ${N(x.F2, l)}`} · ${cm(x.l2)} cm: M₁ ≈ ${sig(M(x.F1, x.l1), 3, l)} N·m, M₂ ≈ ${sig(M(x.F2, x.l2), 3, l)} N·m`)).join('; ');
+        return l === 'uk'
+          ? `${list}. Сили з боків були різні, плечі — теж, а важіль щоразу стояв рівно: рівними були моменти сил. Умова рівноваги важеля: F₁·l₁ = F₂·l₂ — у скільки разів менша сила, у стільки разів довше її плече. Це закон важеля, відомий з часів Архімеда. Розбіжності в соті частки — бо динамометр показує лише десяті частки ньютона.`
+          : `${list}. The forces on the two sides differed, so did the arms, and every time the lever stood level: the moments were equal. The condition of a lever’s balance: F₁·l₁ = F₂·l₂ — as many times smaller a force, as many times longer its arm. This is the law of the lever, known since Archimedes. Differences in the hundredths come from the dynamometer reading only tenths of a newton.`;
+      }),
+    };
+  },
   'average-speed': (run) => {
     const R = run.readings ?? [];
     const l = R.find((x) => x.command.type === 'lab.tape')?.record.value ?? null;

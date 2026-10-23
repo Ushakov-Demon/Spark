@@ -52,7 +52,7 @@ export interface Preset {
    */
   readonly answerOnBoard?: readonly string[];
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -164,6 +164,7 @@ const FUN: LocalizedText = { uk: 'Цікаві досліди', en: 'Curious exp
 const SOLUTIONS: LocalizedText = { uk: 'Розчини', en: 'Solutions' };
 const MECH: LocalizedText = { uk: 'Механічні явища: густина й плавання', en: 'Mechanics: density and floating' };
 const MOTION: LocalizedText = { uk: 'Механічний рух', en: 'Mechanical motion' };
+const SIMPLE: LocalizedText = { uk: 'Прості механізми', en: 'Simple machines' };
 
 const room = { roomTemp: 20, lid: false } as const;
 /** Metals for the specific-heat lab work: what a school set of calorimeter cylinders has. */
@@ -200,6 +201,32 @@ export const PRESETS: readonly Preset[] = [
     formulas: ['mechanics.submerged-share'],
     quoteHas: 'плавання',
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 10', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: '№ 10. Перевірка умов плавання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 35, лабораторна робота № 10, с. 251' } }],
+    expect: 'reached',
+  },
+  {
+    id: 'lever-moments',
+    ask: { uk: 'За якої умови важіль перебуває в рівновазі?', en: 'When is a lever in balance?' },
+    grade: 8,
+    topic: SIMPLE,
+    title: { uk: 'Умова рівноваги важеля', en: 'The condition of a lever’s balance' },
+    question: {
+      uk: 'Важіль-лінійка висить на осі в штативі й сам урівноважений; отвори для гачків — через 5 см. Чіплятимемо тягарці по 100 г ліворуч і праворуч на різних відстанях від осі, а потім урівноважимо їх динамометром. Щоразу знайдемо момент сили з кожного боку: M = F·l. За якої умови важіль перебуває в рівновазі?',
+      en: 'A lever ruler hangs on an axis in a stand and balances by itself; the holes for the hooks are every 5 cm. We hang 100 g weights left and right at different distances from the axis, then balance them with a dynamometer. Each time we find the moment on each side: M = F·l. When is a lever in balance?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'lever',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 2, at: 0.1 }, right: { weights: 1, at: 0.2 } } },
+      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 2, at: 0.15 }, right: { weights: 3, at: 0.1 } } },
+      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 3, at: 0.1 }, right: { dynamometer: true, at: 0.2 } } },
+      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 2, at: 0.2 }, right: { dynamometer: true, at: 0.1 } } },
+    ],
+    choices: [ch('moments', 'Коли моменти сил з обох боків рівні: F₁·l₁ = F₂·l₂', 'When the moments on both sides are equal: F₁·l₁ = F₂·l₂'), ch('forces', 'Коли сили з обох боків однакові', 'When the forces on both sides are the same'), ch('arms', 'Коли плечі з обох боків однакові', 'When the arms on both sides are the same')],
+    choicesAt: 'end',
+    answerOnBoard: ['M1:', 'M2:'],
+    formulas: ['mechanics.moment', 'mechanics.weight'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 1', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 1. Вивчення умови рівноваги важеля.' }],
     expect: 'reached',
   },
   {

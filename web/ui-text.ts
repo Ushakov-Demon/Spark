@@ -258,6 +258,8 @@ export interface UiText {
   protocolNext: string;
   /** The protocol's row of a measuring procedure. */
   measuring: string;
+  leverLevel: string;
+  leverTips: string;
   /** Steps that would tell the answer before it is predicted: shown once the experiment gets there. */
   moreSteps(n: number): string;
   /** Looking back at the end of a row of the protocol: what it was, the way back. */
@@ -546,6 +548,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBackReturn: '↩ До досліду',
     lookBackHint: 'Торкнися виконаного кроку, щоб повернутися до його кінця: прилади й дошка — як тоді.',
     measuring: 'Вимірювання',
+    leverLevel: 'рівновага',
+    leverTips: 'переважує',
     moreSteps: (n) => `… і ще ${n} ${n === 1 ? 'крок' : n < 5 ? 'кроки' : 'кроків'} — побачиш, коли дійдемо`,
     protocolNext: 'Крок завершено. Що далі? Обери дію чи прилад у «Пісочниці» ліворуч або досип щось — і натисни «Продовжити».',
     stepRunning: (e) => `іде ${e}`,
@@ -828,6 +832,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     lookBackReturn: '↩ Back to the experiment',
     lookBackHint: 'Tap a step done to go back to its end: the instruments and the board as they were.',
     measuring: 'Measurements',
+    leverLevel: 'balanced',
+    leverTips: 'tips',
     moreSteps: (n) => `… and ${n} more step${n === 1 ? '' : 's'} — you will see them when we get there`,
     protocolNext: 'Step done. What next? Pick an action or a device in the Sandbox on the left, or add something — then press “Continue”.',
     stepRunning: (e) => `running ${e}`,

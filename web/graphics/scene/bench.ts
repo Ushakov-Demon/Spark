@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -40,6 +40,8 @@ export interface BenchView {
   readonly stopwatch?: { readonly display: string; readonly fast?: number };
   /** The measuring tape along what was measured, and what it shows. */
   readonly tape?: string;
+  /** The lever (grade 8): weights on the left so far out, on the right weights or the dynamometer (what it shows); how it tips (−1 left down, 0 level, 1 right down). */
+  readonly lever?: { readonly left: { readonly weights: number; readonly at: number }; readonly right: { readonly weights?: number; readonly at: number; readonly dynamometer?: string }; readonly tip: number };
   /** A timed run to play (the ball rolling, the turns, the swings): how long it took, s; its period, s; how many; the swing, rad. */
   readonly run?: { readonly seconds: number; readonly period?: number; readonly count?: number; readonly amplitude?: number };
 }
@@ -148,6 +150,7 @@ function balanceSvg(b: BenchView['balance']): string {
 
 export function benchSvg(v: BenchView): string {
   if (v.kind === 'balance') return balanceSvg(v.balance);
+  if (v.kind === 'lever') return leverSvg(v.lever);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
   if (v.kind === 'spring') {
@@ -252,4 +255,32 @@ function motionSvg(v: BenchView): string {
 /** A steel ball with a highlight. */
 function ballSvg(x: number, y: number, r: number, color = '#9aa3ad'): string {
   return `<circle cx="${x}" cy="${y}" r="${r}" style="fill:${color};stroke:${DARK}"/><circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.3}" style="fill:rgba(255,255,255,0.75)"/>`;
+}
+
+/**
+ * The lever ruler on its axis in the stand: holes every 5 cm, the weights hanging on threads, the dynamometer
+ * pulling down on the right. Tipped a few degrees to the heavier side when the moments differ.
+ */
+function leverSvg(lv: BenchView['lever']): string {
+  const ax = 330;
+  // Low on the stand: the board's writing stays clear above it.
+  const ay = 200;
+  const U = 7.5; // units per cm
+  const half = 21 * U;
+  const tilt = (lv?.tip ?? 0) * 8;
+  const holes = Array.from({ length: 9 }, (_, i) => (i - 4) * 5 * U).map((x) => `<circle cx="${ax + x}" cy="${ay}" r="1.8" style="fill:${DARK}"/>`).join('');
+  const marks = [5, 10, 15, 20].flatMap((c) => [-c, c]).map((c) => `<text class="lever-mark" x="${ax + c * U}" y="${ay - 7}" text-anchor="middle">${Math.abs(c)}</text>`).join('');
+  const hang = (cmFromAxis: number, n: number) => {
+    const x = ax + cmFromAxis * U;
+    return `<path d="M${x},${ay + 3} v26" style="stroke:${THREAD};stroke-width:1.3"/>${weightsSvg(x, ay + 29, n, 18, 9)}`;
+  };
+  const left = lv ? hang(-lv.left.at * 100, lv.left.weights) : '';
+  const r = lv?.right;
+  const right = !r ? '' : r.dynamometer !== undefined
+    ? (() => {
+        const x = ax + r.at * 100 * U;
+        return `<path d="M${x},${ay + 3} v12" style="stroke:${THREAD};stroke-width:1.3"/>${dynamometerSvg(x, ay + 15, false, r.dynamometer)}<path d="M${x},${ay + 95} v16" style="stroke:${THREAD};stroke-width:1.3"/><path class="bench-arrow" d="M${x + 22},${ay + 70} v30 l-4,-6 m4,6 l4,-6"/>`;
+      })()
+    : hang(r.at * 100, r.weights ?? 0);
+  return `<rect x="${ax - 40}" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="${ax - 3}" y="${ay}" width="6" height="${TABLE - 8 - ay}" style="fill:${STEEL}"/><g transform="rotate(${tilt} ${ax} ${ay})"><rect x="${ax - half}" y="${ay - 5}" width="${2 * half}" height="10" rx="2" style="fill:#e9d9a8;stroke:#a8955a"/>${holes}${marks}${left}${right}</g><circle cx="${ax}" cy="${ay}" r="4.5" style="fill:${DARK}"/>`;
 }

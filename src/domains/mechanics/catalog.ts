@@ -28,6 +28,7 @@ const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko',
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
+const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' }];
 const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
 
 export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
@@ -259,6 +260,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.pendulumPeriod,
     examples: [{ args: [1, 9.81], expected: 2.0060666807106475, note: 'a 1 m pendulum' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.moment',
+    law: 'lever',
+    title: { uk: 'Момент сили', en: 'Moment of a force' },
+    latex: 'M = F \\cdot l',
+    plain: 'M = F · l',
+    argSymbols: ['F', 'l'],
+    resultSymbol: 'M',
+    variables: {
+      M: { name: { uk: 'момент сили', en: 'moment of a force' }, unit: 'N·m' },
+      F: { name: { uk: 'сила', en: 'force' }, unit: 'N' },
+      l: { name: { uk: 'плече сили', en: 'arm of the force' }, unit: 'm', meaning: { school: { uk: 'відстань від осі обертання до лінії дії сили', en: 'the distance from the axis to the line of the force' } } },
+    },
+    curriculum: UA_LEVER,
+    explanation: {
+      novice: { uk: 'Що далі від осі підвішено вантаж, то сильніше він повертає важіль.', en: 'The farther from the axis a load hangs, the harder it turns the lever.' },
+      school: { uk: 'Момент сили M = F·l. Важіль у рівновазі, коли моменти з обох боків рівні: F₁·l₁ = F₂·l₂.', en: 'The moment M = F·l. A lever balances when the moments on both sides are equal: F₁·l₁ = F₂·l₂.' },
+    },
+    compute: f.moment,
+    examples: [{ args: [1.96, 0.1], expected: 0.196, note: 'two 100 g weights 10 cm from the axis' }],
     textSource: 'spark',
     reviewed: false,
   }),

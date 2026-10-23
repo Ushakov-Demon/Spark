@@ -366,6 +366,18 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       liquidDensityLine(i);
       return;
     }
+    // The lever: the moments on both sides — equal when it balances.
+    if (c.type === 'lab.lever') {
+      const F1 = r.inputs?.['F1'] ?? 0;
+      const l1 = r.inputs?.['l1'] ?? 0;
+      const l2 = r.inputs?.['l2'] ?? 0;
+      const dyn = r.instrument === 'dynamometer';
+      const F2s = dyn ? formatMeasured('force', r.value, 0.1, locale) : F2(r.value);
+      const Nm = uk ? 'Н·м' : 'N·m';
+      out.push({ id: `M1:${i}`, title: uk ? `момент сили ліворуч (${F2(F1)} на ${cm(l1)})` : `the moment on the left (${F2(F1)} at ${cm(l1)})`, formula: 'M₁ = F₁·l₁', numbers: `${F2(F1)} · ${n(l1)} ${uk ? 'м' : 'm'} ≈ ${n(F1 * l1, 3)} ${Nm}` });
+      out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
+      return;
+    }
     // The cathode on the balance: before the current, then after — the copper it gained, and k = Δm / (I·t).
     if (c.type === 'lab.cathode') {
       const g = (kg: number) => formatMeasured('mass', kg, 0.00001, locale);

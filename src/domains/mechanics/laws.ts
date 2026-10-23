@@ -199,4 +199,32 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: { uk: 'Формула — для малих коливань (кут до ≈ 10°) і маятника, у якого кулька мала порівняно з ниткою, а нитка не розтягується; опір повітря поступово зменшує розмах.', en: 'The formula is for small swings (up to ≈ 10°) and a pendulum whose ball is small beside the thread, which does not stretch; air slowly damps the swing.' },
     },
   },
+  {
+    id: 'lever',
+    kind: 'law',
+    name: { uk: 'Умова рівноваги важеля', en: 'The law of the lever' },
+    statement: {
+      novice: { uk: 'Легкий вантаж далеко від осі може врівноважити важкий — близько до неї. Тому довгим ломом легко підважити камінь.', en: 'A light load far from the axis can balance a heavy one close to it. That is why a long crowbar lifts a stone easily.' },
+      school: { uk: 'Важіль у рівновазі, коли моменти сил, що обертають його в протилежні боки, рівні: F₁·l₁ = F₂·l₂. Момент сили M = F·l — сила, помножена на плече (відстань від осі до лінії дії сили).', en: 'A lever is in balance when the moments turning it opposite ways are equal: F₁·l₁ = F₂·l₂. The moment M = F·l is the force times its arm (the distance from the axis to the force’s line).' },
+    },
+    history: {
+      people: [ARCHIMEDES],
+      role: 'discovered',
+      when: { uk: 'III ст. до н. е.', en: '3rd century BC' },
+      story: {
+        school: {
+          uk: 'Найдавніші записи про важелі, що збереглися, — III століття до нашої ери, і їх приписують Архімедові. Йому ж приписують слова: «Дайте мені важіль і точку опори — і я зрушу світ».',
+          en: 'The earliest writings on levers that survive date from the third century BC and are ascribed to Archimedes. So are the words: “Give me a lever and a fulcrum, and I shall move the world.”',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-lever', locator: 'History', claim: 'the earliest remaining writings on levers date from the third century BC and were, by common belief, by Archimedes' },
+        { source: 'wikipedia-lever', locator: 'History', claim: '“Give me a lever (long enough and a fulcrum on which to place it), and I shall move the world.”' },
+        { source: 'wikipedia-lever', locator: 'Law of the lever', claim: 'the balance of moments about the fulcrum: F₁a = F₂b' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Так — для важеля, що сам урівноважений (його вага не обертає його) і в якого сили діють перпендикулярно до нього; тертя в осі мале.', en: 'This holds for a lever that is balanced by itself (its own weight does not turn it), with the forces perpendicular to it and little friction at the axis.' },
+    },
+  },
 ];

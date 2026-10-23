@@ -611,6 +611,13 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-23',
   }),
+  'wikipedia-lever': source({
+    id: 'wikipedia-lever',
+    title: 'Wikipedia, Lever: the earliest remaining writings on levers date from the third century BC and were, by common belief, by Archimedes; the law of the lever — F₁a = F₂b (balance of moments about the fulcrum)',
+    url: 'https://en.wikipedia.org/wiki/Lever',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-23',
+  }),
   'wikipedia-friction': source({
     id: 'wikipedia-friction',
     title: 'Wikipedia, Friction: laws of dry friction discovered by Leonardo da Vinci in 1493 (unpublished), rediscovered by Guillaume Amontons in 1699, developed by Coulomb (1785); friction proportional to load, independent of the apparent area; wood on wood μ 0.25–0.62 (static)',

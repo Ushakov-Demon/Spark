@@ -44,3 +44,6 @@ export const rollingAcceleration = (g: number, sinSlope: number, inertiaShare = 
 
 /** A body on a thread going round a horizontal circle (a conical pendulum): T = 2π·√(L·cos θ / g), sin θ = r / L. */
 export const conicalPeriod = (threadLength: number, radius: number, g: number): number => 2 * Math.PI * Math.sqrt((threadLength * Math.sqrt(1 - (radius / threadLength) ** 2)) / g);
+
+/** Moment of a force about an axis: the force times its arm, M = F·l. */
+export const moment = (force: number, arm: number): number => force * arm;
