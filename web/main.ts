@@ -2060,7 +2060,9 @@ function renderProtocol() {
       ? `<li class="current"${finished ? lookAttr(`s:${cur}`) : ''}><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`
       : `<li class="${plan.length ? 'current' : 'done'}"><span class="what">${u.measuring}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`,
   );
-  for (const s of plan) rows.push(`<li class="planned"><span class="what">${planStepLabel(s)}</span></li>`);
+  const { shown, hidden } = unspoiled(plan);
+  for (const s of shown) rows.push(`<li class="planned"><span class="what">${planStepLabel(s)}</span></li>`);
+  if (hidden) rows.push(`<li class="planned more"><span class="what">${u.moreSteps(hidden)}</span></li>`);
   $('#protocol-title').textContent = u.protocolTitle;
   $('#protocol').innerHTML = rows.join('');
   $('#protocol-hint').textContent = replaying ? u.rec.replaying(replaying.rec.name, replaying.index + 1, replaying.rec.steps.length) : preset?.guided && !presetDone() ? (snapshots.size && !running ? u.lookBackHint : '') : [snapshots.size && !running ? u.lookBackHint : '', finished ? u.protocolNext : u.protocolHint].filter(Boolean).join(' ');
@@ -2069,6 +2071,19 @@ function renderProtocol() {
   if (saveBtn) saveBtn.disabled = !history.length && stepElapsed() <= 0 && !doneRecord;
 }
 
+/**
+ * The steps to come that may be shown before a prediction is answered: up to the first operation (heating,
+ * freezing) or the first «start afresh» — what comes after tells the answer («pour the salt into a crucible, put
+ * it in a furnace» says the stove will not melt it). Measurements alone give nothing away and are all shown.
+ */
+function unspoiled(steps: readonly ProtocolStep[], p: Preset | null = preset): { shown: readonly ProtocolStep[]; hidden: number } {
+  const predicting = !!p?.choices && p.choicesAt !== 'end' && (p !== preset || presetAnswer === null);
+  if (!predicting) return { shown: steps, hidden: 0 };
+  const fresh = steps.findIndex((s) => s.kind === 'fresh');
+  const op = steps.findIndex((s) => s.kind === 'operation');
+  const cut = Math.min(fresh < 0 ? steps.length : fresh, op < 0 ? steps.length : op + 1);
+  return { shown: steps.slice(0, cut), hidden: steps.length - cut };
+}
 /** A step still to do, as the protocol (and an experiment's description) names it. */
 function planStepLabel(s: ProtocolStep): string {
   const u = t();
@@ -3034,7 +3049,7 @@ function labSheetHtml(p: Preset): string {
     ${line(d.aim, escAttr(tr(presetAsk(p), locale)))}
     ${line(d.takes, escAttr([...things].join('; ')))}
     <h3 class="ls-sub">${d.steps}</h3>
-    <ol class="ls-steps">${plan.map((s) => `<li>${stepText(s)}</li>`).join('')}</ol>
+    <ol class="ls-steps">${unspoiled(plan, p).shown.map((s) => `<li>${stepText(s)}</li>`).join('')}${unspoiled(plan, p).hidden ? `<li class="ls-later">${u.moreSteps(unspoiled(plan, p).hidden)}</li>` : ''}</ol>
     ${fs.length ? `<h3 class="ls-sub">${d.formulas}</h3><ul class="ls-formulas">${fs.map((f) => `<li><span class="ls-formula">${formula(f.plain.replace(/\s*\(.*\)\s*$/, ''))}</span> — ${escAttr(tr(f.title, locale).toLowerCase())}</li>`).join('')}</ul>` : ''}
     <h3 class="ls-sub">${d.conclusion}</h3>
     <p class="ls-blank">${d.conclusionHint}</p>

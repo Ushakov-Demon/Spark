@@ -681,7 +681,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
     const s = steps[0]!;
     const p = plateau(s);
     return {
-      ...(p > 60 ? { correct: 'latent' } : {}),
+      ...(p > 60 ? { correct: 'stays' } : {}),
       say: both((l) => (l === 'uk' ? 'Помітив, що температура стояла на нулі?' : 'Did you notice the temperature stuck at zero?')),
       text: both((l) =>
         l === 'uk'

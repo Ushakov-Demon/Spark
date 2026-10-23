@@ -360,7 +360,8 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .lab-sheet .ls-steps, .lab-sheet .ls-formulas { margin: 0; padding-left: 22px; }
 .lab-sheet .ls-formula { font-family: 'Spark Chalk', cursive; font-size: 20px; color: #0f172a; }
 .lab-sheet .ls-formula sub { font-size: 0.7em; line-height: 0; }
-.lab-sheet .ls-blank { color: #94a3b8; }
+.lab-sheet .ls-blank, .lab-sheet .ls-later { color: #94a3b8; }
+.lab-sheet .ls-later { list-style: none; margin-left: -18px; }
 .lab-sheet .ls-foot { font-size: 16px; line-height: 20px; }
 .lab-sheet-hand { position: absolute; top: 10px; right: 46px; min-height: 0; padding: 2px 10px; border-radius: 999px; font: 600 12px system-ui, sans-serif; color: #1e3a8a; background: #fdfcf6; border: 1px solid #b9cde6; }
 /* Read in print: the same page, every line in type (the headings too). */
@@ -393,6 +394,7 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 .preset-ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--bg); color: var(--accent); }
 .preset > .preset-go { grid-column: 2; justify-self: start; padding: 4px 14px; min-height: 30px; }
 .protocol li.planned { opacity: 0.55; border: 1px dashed var(--line); }
+.protocol li.planned.more { border-style: dotted; font-style: italic; }
 .protocol li.planned::before { background: transparent; border: 1px dashed var(--muted); }
 .offer.plan { background: var(--ok-bg); border-left-color: #22a35a; }
 @media (max-width: 700px) {
