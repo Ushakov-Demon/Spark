@@ -95,7 +95,7 @@ function noise(a: AudioContext, out: AudioNode, t: number, len: number, freq: nu
  * formants, so the syllables sound like "та-ко-лу-ме" in a made-up language. Or "speech": the
  * browser's own voice reads the line out in the page's language.
  */
-export type VoiceId = 'speech' | 'mumble' | 'gruff' | 'chirp' | 'robot' | 'whistle' | 'none';
+export type VoiceId = 'speech' | 'toon' | 'mumble' | 'gruff' | 'chirp' | 'robot' | 'whistle' | 'none';
 interface Voice {
   /** 'glottal' — a soft buzz like vocal folds (harmonics falling off); otherwise a plain wave. */
   readonly wave: OscillatorType | 'glottal';
@@ -113,20 +113,39 @@ interface Voice {
   readonly formantShift?: number;
   /** How clearly the vowels come out, 0…1: lower — broader formants and more of the plain voice. */
   readonly clarity?: number;
+  /** How the pitch goes over the line (×, from the first syllable to the last): below 1 it falls, as plain speech does; above 1 it climbs, as an excited cartoon voice. */
+  readonly contour?: number;
+  /** Within a syllable the pitch goes up to this (×) in the middle and comes back: a sing-song. */
+  readonly arc?: number;
+  /** A bright ring high in the voice, Hz (≈ 4 kHz): the resonance that makes a cartoon voice cut through. */
+  readonly ring?: number;
+  /** One breath for the whole line: the syllables flow into each other (the voice only dips between them), not a string of beeps. */
+  readonly legato?: boolean;
+  /** A pressed, brighter voice: its harmonics fall off slower (−6·`bright` dB per octave instead of −9). */
+  readonly bright?: number;
+  /**
+   * Gibberish: no real vowels — the mouth wanders anywhere between them, even within a syllable,
+   * so nothing sounds like a word, only the tune of the line is left.
+   */
+  readonly gibberish?: boolean;
 }
 const VOICES: Readonly<Record<Exclude<VoiceId, 'none' | 'speech'>, Voice>> = {
+  // Matched by spectrogram to a cartoon voice the author liked (not copied: no recording is used) —
+  // the pitch climbing from ≈ 150 to ≈ 290 Hz over the line, little at 2–2.5 kHz, a strong band near 4 kHz —
+  // and made gibberish on purpose: a lively tune and no words, as cartoon characters chatter.
+  toon: { wave: 'glottal', low: 140, high: 180, step: 0.15, human: true, glide: 1.04, volume: 0.55, rasp: 0.15, formantShift: 1.2, clarity: 0.45, contour: 1.8, arc: 1.15, ring: 3900, legato: true, bright: 0.8, gibberish: true },
   mumble: { wave: 'glottal', low: 330, high: 430, step: 0.12, human: true, glide: 0.97, volume: 0.5, rasp: 0.45, formantShift: 1.5, clarity: 0.45 },
   gruff: { wave: 'glottal', low: 88, high: 112, step: 0.15, human: true, glide: 0.96, volume: 0.65, rasp: 0.35 },
   chirp: { wave: 'triangle', low: 420, high: 720, step: 0.062, human: false, glide: 1.25, volume: 0.2 },
   robot: { wave: 'square', low: 220, high: 220, step: 0.075, human: false, glide: 1, volume: 0.09, quantize: [1, 1.26, 1.5, 2] },
   whistle: { wave: 'sine', low: 950, high: 1500, step: 0.1, human: false, glide: 1.12, volume: 0.16 },
 };
-export const VOICE_IDS: readonly VoiceId[] = ['speech', 'mumble', 'gruff', 'chirp', 'robot', 'whistle', 'none'];
+export const VOICE_IDS: readonly VoiceId[] = ['speech', 'toon', 'mumble', 'gruff', 'chirp', 'robot', 'whistle', 'none'];
 /** Formants (F1, F2, F3), Hz, of the vowels а, о, у, е, и. */
 const VOWELS: readonly (readonly [number, number, number])[] = [[750, 1250, 2600], [520, 900, 2500], [340, 760, 2400], [480, 1850, 2600], [320, 2250, 2900]];
 /** Consonants as short noise bursts: centre frequency, Hz, and length, s (с, ш, т, к, п/б, м/н — a soft hum). */
 const CONSONANTS: readonly (readonly [number, number])[] = [[6000, 0.05], [3000, 0.05], [4000, 0.018], [1800, 0.02], [900, 0.015], [300, 0.03]];
-let voice: VoiceId = 'mumble';
+let voice: VoiceId = 'toon';
 export const currentVoice = (): VoiceId => voice;
 export function setVoice(v: VoiceId): void {
   voice = v;
@@ -155,16 +174,18 @@ function breathBuffer(a: AudioContext): AudioBuffer {
   return breathBuf;
 }
 
-/** A soft "vocal folds" source: harmonics falling off like a human voice (≈ −12 dB per octave). */
-let glottal: PeriodicWave | null = null;
-function glottalWave(a: AudioContext): PeriodicWave {
-  if (glottal) return glottal;
-  const n = 32;
+/** A soft "vocal folds" source: harmonics falling off like a human voice (≈ −9 dB per octave); a pressed voice, slower. */
+const glottal = new Map<number, PeriodicWave>();
+function glottalWave(a: AudioContext, fall = 1.5): PeriodicWave {
+  const made = glottal.get(fall);
+  if (made) return made;
+  const n = 40;
   const real = new Float32Array(n);
   const imag = new Float32Array(n);
-  for (let k = 1; k < n; k++) imag[k] = 1 / (k * k ** 0.5);
-  glottal = a.createPeriodicWave(real, imag);
-  return glottal;
+  for (let k = 1; k < n; k++) imag[k] = 1 / k ** fall;
+  const w = a.createPeriodicWave(real, imag);
+  glottal.set(fall, w);
+  return w;
 }
 
 /** The browser's own voice for this language, if it has one. */
@@ -173,6 +194,121 @@ function browserVoice(lang: string): SpeechSynthesisVoice | null {
   const all = speechSynthesis.getVoices();
   return all.find((v) => v.lang.toLowerCase().startsWith(lang)) ?? null;
 }
+/**
+ * A line in one breath (a `legato` voice): one source for the whole line, its pitch gliding from syllable
+ * to syllable, the loudness dipping between them, the mouth (formants) moving from vowel to vowel,
+ * a short consonant at some of the joins. Returns how long it lasts, s.
+ */
+function flowing(a: AudioContext, out: GainNode, vc: Voice, count: number, question: boolean, exclaim: boolean, t0: number): number {
+  // Gibberish is uneven: some syllables run together, some are drawn out.
+  const spread = vc.gibberish ? 0.8 : 0.3;
+  const lens = Array.from({ length: count }, (_, i) => vc.step * (i === count - 1 ? 1.5 : 1 - spread / 2 + Math.random() * spread));
+  const end = t0 + lens.reduce((x, y) => x + y, 0);
+  const o = a.createOscillator();
+  o.setPeriodicWave(glottalWave(a, vc.bright ?? 1.5));
+  const voiceGain = a.createGain();
+  voiceGain.gain.setValueAtTime(0.0001, t0);
+  // The mouth: formant filters that move from vowel to vowel, the throat's ring that stays put.
+  // A small mouth: little of the low hum gets out.
+  const mouthIn = a.createGain();
+  const mouth = a.createBiquadFilter();
+  mouth.type = 'highpass';
+  mouth.frequency.value = 500;
+  mouthIn.connect(mouth);
+  const shift = vc.formantShift ?? 1;
+  const clarity = vc.clarity ?? 1;
+  const formants = ([[6, 1], [8, 0.8], [12, 0.04]] as const).map(([q, gain]) => {
+    const bp = a.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = q * (0.3 + 0.7 * clarity);
+    const fg = a.createGain();
+    fg.gain.value = gain * 3;
+    mouth.connect(bp).connect(fg);
+    return { bp, fg };
+  });
+  // Above ≈ 5 kHz a voice has little left; the lips round it off.
+  const lips = a.createBiquadFilter();
+  lips.type = 'lowpass';
+  lips.frequency.value = 5200;
+  // Between the mouth and the ring the voice is thin (≈ 2–2.5 kHz).
+  const hollow = a.createBiquadFilter();
+  hollow.type = 'peaking';
+  hollow.frequency.value = 2300;
+  hollow.Q.value = 1.2;
+  hollow.gain.value = -14;
+  lips.connect(hollow).connect(out);
+  for (const f of formants) f.fg.connect(lips);
+  if (vc.ring) {
+    const bp = a.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = vc.ring;
+    bp.Q.value = 8;
+    const rg = a.createGain();
+    rg.gain.value = 6;
+    mouth.connect(bp).connect(rg).connect(lips);
+  }
+  o.connect(voiceGain).connect(mouthIn);
+  if (vc.rasp) {
+    const breath = a.createBufferSource();
+    breath.buffer = breathBuffer(a);
+    breath.loop = true;
+    const bg = a.createGain();
+    bg.gain.value = 0.5 * vc.rasp;
+    breath.connect(bg).connect(voiceGain);
+    breath.start(t0);
+    breath.stop(end);
+  }
+  // A slow tremble of the whole line.
+  const lfo = a.createOscillator();
+  const depth = a.createGain();
+  lfo.frequency.value = 5 + Math.random() * 1.5;
+  depth.gain.value = vc.low * 0.03;
+  lfo.connect(depth).connect(o.frequency);
+  let t = t0;
+  for (let i = 0; i < count; i++) {
+    const len = lens[i]!;
+    const last = i === count - 1;
+    const along = i / Math.max(1, count - 1);
+    let f = (vc.low + Math.random() * (vc.high - vc.low) * (exclaim ? 1.15 : 1)) * (1 + ((vc.contour ?? 1) - 1) * along);
+    if (last && question) f *= 1.15;
+    // The pitch slides to the syllable's note, bends up in its middle and settles.
+    if (i === 0) o.frequency.setValueAtTime(f, t);
+    else o.frequency.linearRampToValueAtTime(f, t + 0.03);
+    // Not every syllable bends the same way: up, flat or a little down.
+    const bend = vc.arc ? 1 + (vc.arc - 1) * (Math.random() * 1.4 - 0.3) : 1;
+    o.frequency.linearRampToValueAtTime(f * bend, t + len * 0.45);
+    o.frequency.linearRampToValueAtTime(f * (last && question ? 1.25 : vc.glide), t + len * 0.95);
+    // Loud in the vowel, a dip at the join (never silent: one breath).
+    voiceGain.gain.linearRampToValueAtTime(1, t + Math.min(0.04, len * 0.3));
+    voiceGain.gain.setValueAtTime(1, t + len * 0.7);
+    voiceGain.gain.linearRampToValueAtTime(last ? 0.0001 : 0.4, t + len);
+    if (vc.gibberish) {
+      // Somewhere between the vowels, and somewhere else again by the end of the syllable.
+      const mouthAt = () => [450 + Math.random() * 500, 1000 + Math.random() * 700, 2500] as const;
+      const [a1, a2] = mouthAt();
+      const [b1, b2] = mouthAt();
+      formants[0]!.bp.frequency.linearRampToValueAtTime(a1 * shift, t + len * 0.3);
+      formants[1]!.bp.frequency.linearRampToValueAtTime(a2 * shift, t + len * 0.3);
+      formants[0]!.bp.frequency.linearRampToValueAtTime(b1 * shift, t + len * 0.9);
+      formants[1]!.bp.frequency.linearRampToValueAtTime(b2 * shift, t + len * 0.9);
+      formants[2]!.bp.frequency.setValueAtTime(2500 * shift, t);
+    } else {
+      const [f1, f2, f3] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
+      [f1, f2, f3].forEach((fq, k) => formants[k]!.bp.frequency.linearRampToValueAtTime(fq * shift, t + len * 0.35));
+    }
+    if (i > 0 && Math.random() < 0.6) {
+      const [cf, cl] = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)]!;
+      noise(a, out, t - cl * 0.3, cl, cf, 0.12);
+    }
+    t += len;
+  }
+  o.start(t0);
+  o.stop(end + 0.02);
+  lfo.start(t0);
+  lfo.stop(end);
+  return end - t0;
+}
+
 /** Can the "speech" voice speak this language here? (Otherwise it burbles.) */
 export const canSpeak = (lang: string): boolean => browserVoice(lang) !== null;
 
@@ -195,7 +331,7 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
       speechSynthesis.speak(u);
       return Math.min(12, text.length * 0.065);
     }
-    v = 'mumble';
+    v = 'toon';
   }
   const a = audio();
   if (!a) return 0;
@@ -203,7 +339,9 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
   // One line at a time: a new one cuts the one still playing (two at once sound like double speed).
   quiet(a);
   const words = text.split(/\s+/).filter(Boolean);
-  const count = Math.min(Math.floor(1.6 / vc.step), Math.max(3, words.reduce((n, w) => n + (w.length > 6 ? 2 : 1), 0)));
+  // Gibberish chatters: about a syllable per three letters (but still within ≈ 1.6 s).
+  const syllables = vc.gibberish ? Math.round(text.replace(/[^\p{L}]/gu, '').length / 3) : words.reduce((n, w) => n + (w.length > 6 ? 2 : 1), 0);
+  const count = Math.min(Math.floor(1.6 / vc.step), Math.max(3, syllables));
   const question = /\?\s*$/.test(text);
   const exclaim = /!\s*$/.test(text);
   const out = a.createGain();
@@ -212,13 +350,15 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
   speaking = out;
   let t = a.currentTime + 0.03;
   const start = t;
+  if (vc.legato) return flowing(a, out, vc, count, question, exclaim, t);
   for (let i = 0; i < count; i++) {
     const last = i === count - 1;
     // A stressed syllable now and then: longer and a little higher.
     const stressed = vc.human && (i % 3 === 1 || last);
     const len = vc.step * (stressed ? 1.35 : 0.85 + Math.random() * 0.25);
     // Over the line the pitch falls a little (as speech does), and rises at the end of a question.
-    const fall = vc.human ? 1 - 0.18 * (i / Math.max(1, count - 1)) : 1;
+    // A voice with its own contour goes from 1 to `contour` (a cartoon voice climbs instead).
+    const fall = vc.human ? 1 + ((vc.contour ?? 0.82) - 1) * (i / Math.max(1, count - 1)) : 1;
     let f = (vc.low + Math.random() * (vc.high - vc.low) * (exclaim ? 1.15 : 1)) * fall * (stressed ? 1.08 : 1);
     if (vc.quantize) f = vc.low * vc.quantize[Math.floor(Math.random() * vc.quantize.length)]!;
     if (last && question) f *= 1.3;
@@ -231,6 +371,7 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
     if (vc.wave === 'glottal') o.setPeriodicWave(glottalWave(a));
     else o.type = vc.wave;
     o.frequency.setValueAtTime(f, t);
+    if (vc.arc) o.frequency.linearRampToValueAtTime(f * vc.arc, t + len * 0.45);
     o.frequency.linearRampToValueAtTime(f * (last && question ? 1.22 : vc.glide), t + len * 0.9);
     if (vc.human) {
       // A tremble of the voice: a slow vibrato of a few hertz.
@@ -277,8 +418,11 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
       const [f1, f2, f3] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
       const shift = vc.formantShift ?? 1;
       const clarity = vc.clarity ?? 1;
-      for (const [fq0, q, gain] of [[f1, 6, 1], [f2, 9, 0.6], [f3, 12, 0.25]] as const) {
-        const fq = fq0 * shift;
+      const bands: (readonly [number, number, number, boolean?])[] = [[f1, 6, 1], [f2, 9, 0.6], [f3, 12, 0.25]];
+      if (vc.ring) bands.push([vc.ring, 5, 0.9, true]);
+      for (const [fq0, q, gain, fixed] of bands) {
+        // The ring stays where it is: it is a resonance of the throat, not of the vowel.
+        const fq = fixed ? fq0 : fq0 * shift;
         const bp = a.createBiquadFilter();
         bp.type = 'bandpass';
         bp.frequency.setValueAtTime(fq * 0.9, t);

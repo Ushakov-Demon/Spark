@@ -354,7 +354,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['voice', 'голос'],
-      usage: L('voice [mumble | gruff | chirp | robot | whistle | none]', 'voice [mumble | gruff | chirp | robot | whistle | none]'),
+      usage: L('voice [toon | mumble | gruff | chirp | robot | whistle | none]', 'voice [toon | mumble | gruff | chirp | robot | whistle | none]'),
       about: L('голос Професора: voice chirp', 'the Professor’s voice: voice chirp'),
       run(args) {
         if (!args[0]) return list(uk() ? 'Голоси (voice <назва>):' : 'Voices (voice <name>):', api.voices());
