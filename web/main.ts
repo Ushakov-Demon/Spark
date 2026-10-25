@@ -1245,6 +1245,12 @@ function phaseNote(): { text: string; pct: number } | null {
 const chart = createChart();
 const scene = createScene();
 scene.element.querySelector('.table-buttons')!.prepend(newsButton);
+// Turning the bubble's page: the Professor reads the page now shown (cutting the one before).
+scene.onTurn((page) => {
+  hush();
+  window.clearTimeout(sayTimer);
+  scene.talk(babble(page, currentVoice(), locale));
+});
 /** Bulk boiling in the last frames (boiled-off mass grew) — for the bubbles and the Professor. */
 let lastBoiled = 0;
 let boilingNow = false;
@@ -1980,7 +1986,8 @@ function render() {
   if (view.professor.says !== lastSaid) {
     hush();
     window.clearTimeout(sayTimer);
-    const line = view.professor.says;
+    // A long line is read page by page: now its first page, the rest as the bubble's pages are turned.
+    const line = scene.page;
     if (line && !scene.reading && !lookingAt) sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), 140);
   }
   lastSaid = view.professor.says;

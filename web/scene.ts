@@ -99,6 +99,10 @@ export interface Scene {
   wipe(done: () => void): void;
   /** The Professor's mouth moves for so many seconds (while he burbles a line). */
   talk(seconds: number): void;
+  /** The page of the line the bubble shows now (a long line is read page by page). */
+  readonly page: string;
+  /** Someone turned the bubble's page (Далі / Назад): `say` gets the page now shown, to read it out. */
+  onTurn(say: (page: string) => void): void;
   render(view: SceneView): void;
 }
 
@@ -135,9 +139,11 @@ export function createScene(): Scene {
     set(saysPage, `${saysAt + 1}/${saysPages.length}`);
     set(saysTurn, saysAt === saysPages.length - 1 ? turnLabels.back : turnLabels.next);
   };
+  let turned: (page: string) => void = () => {};
   saysTurn.onclick = () => {
     saysAt = saysAt === saysPages.length - 1 ? 0 : saysAt + 1;
     showPage();
+    turned(saysPages[saysAt] ?? '');
   };
   const prof = root.querySelector<HTMLElement>('#sc-prof')!;
   const profSide = root.querySelector<HTMLElement>('#sc-prof-side')!;
@@ -252,6 +258,12 @@ export function createScene(): Scene {
     read(on) {
       root.classList.toggle('reading', on);
       setToggle();
+    },
+    get page() {
+      return saysPages[saysAt] ?? '';
+    },
+    onTurn(say) {
+      turned = say;
     },
     talk(seconds) {
       profBox.classList.remove('talking');
