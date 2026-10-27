@@ -31,12 +31,18 @@ function singleFile(): Plugin {
 }
 
 // The web lab lives in web/; the engine in src/ is imported directly.
-export default defineConfig({
+// The site (default): the lab's script and styles as files of their own, shared by all the site's pages
+// (scripts/build-site.ts writes them). `--mode single`: the lab as one self-contained file, to open by
+// double-click or send to students.
+export default defineConfig(({ mode }) => ({
   root: 'web',
   base: './',
-  plugins: [singleFile()],
-  build: { outDir: '../dist-web', emptyOutDir: true, assetsInlineLimit: 100_000_000, cssCodeSplit: false },
+  plugins: mode === 'single' ? [singleFile()] : [],
+  build:
+    mode === 'single'
+      ? { outDir: '../dist-offline', emptyOutDir: true, assetsInlineLimit: 100_000_000, cssCodeSplit: false }
+      : { outDir: '../dist-web', emptyOutDir: true, cssCodeSplit: false },
   // 127.0.0.1 rather than "localhost": some browser setups never open the latter.
   server: { host: '127.0.0.1', open: true },
   preview: { host: '127.0.0.1' },
-});
+}));

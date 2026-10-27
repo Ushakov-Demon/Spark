@@ -18,7 +18,8 @@
     "lab": "tsx examples/mixing-lab.ts",
     "boil": "tsx examples/boil.ts",
     "web": "vite",
-    "web:build": "vite build"
+    "web:build": "vite build && tsx scripts/build-site.ts",
+    "web:offline": "vite build --mode single"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

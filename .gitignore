@@ -6,3 +6,4 @@ dist-web
 # Stray test screenshots and scripts never belong in the project root (real ones go to docs/screenshots/).
 /*.png
 /*.mjs
+dist-offline

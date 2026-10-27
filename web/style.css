@@ -885,6 +885,42 @@ footer { padding-bottom: 72px; }
 .library-open:hover { border-color: var(--accent); color: var(--accent); }
 body.in-library .library-open { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
 body.in-library .app, body.in-library .console-dock, body.in-library .console-fab { display: none; }
+/* "About the project": a page of its own, the lab hidden while it is read. */
+body.in-about .app, body.in-about .console-dock, body.in-about .console-fab { display: none; }
+/* «Досліди ↓» leads to the lab's shelf, which is hidden on these pages. */
+body.in-about .shelf-jump, body.in-library .shelf-jump, body.in-catalog .shelf-jump { display: none; }
+/* All the experiments: a page of its own (/experiments/), the lab hidden. */
+body.in-catalog .app, body.in-catalog .console-dock, body.in-catalog .console-fab { display: none; }
+body.in-catalog #catalog-open { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+.catalog { max-width: 1100px; margin: 0 auto; padding: 6px 16px 32px; }
+.cat-head h1 { margin: 6px 0; font-size: 1.6rem; }
+.cat-head p { margin: 0 0 6px; max-width: 760px; line-height: 1.5; }
+.cat-subject h2 { margin: 22px 0 4px; font-size: 1.35rem; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.cat-grade h3 { margin: 14px 0 8px; font-size: 1.05rem; color: var(--muted); }
+.cat-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.cat-item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 0.9rem; line-height: 1.45; }
+.cat-item h4 { margin: 0 0 6px; font-size: 1.02rem; }
+.cat-item h4 a { color: var(--text); text-decoration: none; }
+.cat-item h4 a:hover { color: var(--accent); }
+.cat-item p { margin: 0 0 4px; }
+.cat-kind { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.cat-filters { display: grid; gap: 8px; margin: 12px 0 6px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.cat-search { width: 100%; box-sizing: border-box; }
+.cat-program-pick { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.85rem; }
+.cat-program { max-width: 100%; }
+.cat-item { display: flex; flex-direction: column; }
+.cat-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; }
+.cat-actions > * { min-height: 34px; font-size: 0.85rem; }
+.cat-start { flex: 1; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; text-decoration: none; padding: 0 10px; background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.cat-start:hover { filter: brightness(1.08); }
+.cat-more { padding: 0 10px; }
+.cat-share { width: 38px; padding: 0; }
+.catalog.no-share .cat-share { display: none; }
+.cat-nothing { margin: 16px 0; }
+@media (max-width: 700px) { .cat-list { grid-template-columns: 1fr; } }
+body.in-about .about-btn { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+.about-page { max-width: 820px; margin: 0 auto; padding: 6px 16px 32px; }
+.about-page .lib-back { display: inline-block; margin: 4px 0 12px; }
 .library { max-width: 1100px; margin: 0 auto; padding: 6px 16px 32px; }
 .lib-head { display: grid; gap: 10px; margin-bottom: 10px; }
 .lib-head h1 { margin: 0; font-size: 1.6rem; }

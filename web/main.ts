@@ -123,6 +123,8 @@ import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplie
 import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
+import { catalogHtml, catalogUi, pagePath, parsePath, presetDescription, SITE, type Route } from './site.js';
+import { labSheetHtml as labSheetHtmlIn, planStepLabel as planStepLabelIn, predictsFirst, TOPIC_NUMBER, unspoiledSteps } from './experiment-sheet.js';
 import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
@@ -157,7 +159,12 @@ const store = {
   },
 };
 const browserLocale = (): Locale => (navigator.language.toLowerCase().startsWith('en') ? 'en' : 'uk');
+/** The page the address names (the site: /, /experiments/, /experiments/<id>/, the same under /en/). */
+const where = parsePath(location.pathname);
 let locale: Locale = (() => {
+  // A page of the site is in the language of its address (it was found, or shared, in it); the lab's front door — as chosen before.
+  if (where.locale) return where.locale;
+  if (where.route.page !== 'lab') return 'uk';
   const s = store.get('locale');
   return s && isLocale(s) ? s : browserLocale();
 })();
@@ -699,7 +706,7 @@ let boredScenes = 0;
 const paper = $<HTMLDialogElement>('#paper');
 let paperToken = 0;
 /** The newspaper comes on its own only to the lab page itself, and not over another window (the notebook page, «Про проєкт»…). */
-const mayInterrupt = () => !libraryRoute(location.hash) && !document.querySelector('dialog[open]');
+const mayInterrupt = () => !libraryRoute(location.hash) && !aboutRoute() && !document.querySelector('dialog[open]');
 /** He exclaims, the newspaper opens when its article has come (from Wikipedia, or a story offline). */
 function byTheWay(now = performance.now(), asked = false) {
   const u = t();
@@ -1856,7 +1863,7 @@ function render() {
   const u = t();
   renderVary();
   document.documentElement.lang = locale;
-  document.title = u.title;
+  document.title = pageTitle();
   $('#title').textContent = u.title;
   $('#subtitle').textContent = u.subtitle;
   $('#lbl-language').textContent = u.language;
@@ -1868,6 +1875,7 @@ function render() {
   sheetBtn.hidden = !preset;
   sheetBtn.title = u.presetMore;
   sheetBtn.setAttribute('aria-label', u.presetMore);
+  renderSite();
   $('#explain').textContent = u.explain;
   $('#explain-hint').textContent = u.explainHint;
   $('#footer').textContent = u.footer;
@@ -2170,30 +2178,11 @@ function renderProtocol() {
   if (saveBtn) saveBtn.disabled = !history.length && stepElapsed() <= 0 && !doneRecord;
 }
 
-/**
- * The steps to come that may be shown before a prediction is answered: up to the first operation (heating,
- * freezing) or the first «start afresh» — what comes after tells the answer («pour the salt into a crucible, put
- * it in a furnace» says the stove will not melt it). Measurements alone give nothing away and are all shown.
- */
+/** The steps to come that may be shown before a prediction is answered (experiment-sheet.ts). */
 function unspoiled(steps: readonly ProtocolStep[], p: Preset | null = preset): { shown: readonly ProtocolStep[]; hidden: number } {
-  const predicting = !!p?.choices && p.choicesAt !== 'end' && (p !== preset || presetAnswer === null);
-  if (!predicting) return { shown: steps, hidden: 0 };
-  const fresh = steps.findIndex((s) => s.kind === 'fresh');
-  const op = steps.findIndex((s) => s.kind === 'operation');
-  const cut = Math.min(fresh < 0 ? steps.length : fresh, op < 0 ? steps.length : op + 1);
-  return { shown: steps.slice(0, cut), hidden: steps.length - cut };
+  return unspoiledSteps(steps, !!p && predictsFirst(p) && (p !== preset || presetAnswer === null));
 }
-/** A step still to do, as the protocol (and an experiment's description) names it. */
-function planStepLabel(s: ProtocolStep): string {
-  const u = t();
-  return s.kind === 'add' ? u.added(tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase(), formatQuantity(s.mass, 'kg', { locale, level: 'school' }))
-    : s.kind === 'weigh' ? u.weigh.button
-    : s.kind === 'level' ? u.measure.level
-    : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid)
-    : s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale)
-    : s.kind === 'fresh' ? `🔄 ${tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale)}`
-    : `${s.label ? tr(s.label, locale) : tr(OPERATIONS[s.action].label, locale).replace('…', '')}${s.target !== undefined && OPERATIONS[s.action].target ? ` ${s.target} °C` : ''}`;
-}
+const planStepLabel = (s: ProtocolStep) => planStepLabelIn(s, locale);
 /** A row of the protocol that can be looked back at: its key, and marked when it is on the scene now. Only in a pause or at the end — not while the experiment runs or an instrument is moving. */
 function lookAttr(key: string): string {
   return snapshots.has(key) && !running && !instrumentBusy ? ` data-look="${key}"${lookingAt === key ? ' data-looking="1"' : ''}` : '';
@@ -2750,10 +2739,10 @@ function buildInfo() {
   $('#bug-open-2').textContent = a.bug;
   const lib = LIBRARY_UI[locale];
   $('#library-open').textContent = `📚 ${lib.open}`;
-  $('#library-links').innerHTML = LIBRARY_PAGES.map((p) => `<a href="#${p}">${lib.tabs[p]}</a>`).join('');
+  $('#library-links').innerHTML = [`<a href="${siteHref(pagePath({ page: 'catalog' }, locale))}" data-catalog="1">${catalogUi(locale).title}</a>`, ...LIBRARY_PAGES.map((p) => `<a href="#${p}">${lib.tabs[p]}</a>`)].join('');
   $('#safety').textContent = `⚠ ${SAFETY_LINE[locale]}`;
   $('#made-by').innerHTML = `${a.madeBy} <a href="${DEVELOPER.url}" target="_blank" rel="noopener">${DEVELOPER.name}</a>`;
-  $('#about-close').setAttribute('aria-label', a.close);
+  $('#about-back').textContent = lib.back;
   $('#bug-close').setAttribute('aria-label', a.close);
   $('#about-body').innerHTML = aboutHtml(locale);
   $('#bug-title').textContent = b.title;
@@ -2790,8 +2779,7 @@ function bugReportNow(): ReturnType<typeof bugReport> | null {
   }
   return bugReport(what, $<HTMLInputElement>('#bug-attach').checked ? bugContext() : null);
 }
-$('#about-open').onclick = $('#about-open-2').onclick = () => $<HTMLDialogElement>('#about').showModal();
-$('#about-close').onclick = () => $<HTMLDialogElement>('#about').close();
+$('#about-open').onclick = $('#about-open-2').onclick = () => (location.hash = 'about');
 $('#bug-open').onclick = $('#bug-open-2').onclick = openBug;
 $('#bug-close').onclick = () => $<HTMLDialogElement>('#bug').close();
 $<HTMLInputElement>('#bug-attach').onchange = () => ($('#bug-context').textContent = $<HTMLInputElement>('#bug-attach').checked ? bugContext() : '');
@@ -2810,8 +2798,173 @@ $('#bug-copy').onclick = async () => {
     $('#bug-error').textContent = `${r.title}\n\n${r.body}`;
   }
 };
-// A link straight to the page: …/#about
-if (location.hash === '#about') window.setTimeout(() => $<HTMLDialogElement>('#about').showModal(), 0);
+/** "About the project" is a page of its own (…/#about), like the library: the lab steps aside. */
+function aboutRoute(): boolean {
+  return location.hash === '#about';
+}
+function renderAbout() {
+  const on = aboutRoute();
+  const was = document.body.classList.contains('in-about');
+  document.body.classList.toggle('in-about', on);
+  $('#about-page').hidden = !on;
+  if (on && !was) window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', () => renderAbout());
+
+// ---------- the site: all the experiments, an experiment's own address, sharing it ----------
+/** A link within the site: the same under a folder, on a server and in dev. */
+const siteHref = (path: string) => `${where.root}${path}`;
+/** Served (not a file opened from the disk): the address can follow what is on the screen. */
+const onServer = /^https?:$/.test(location.protocol);
+let onCatalog = where.route.page === 'catalog';
+/** The page as it is now: the catalogue, the chosen experiment, or the lab. */
+const siteRoute = (): Route => (onCatalog ? { page: 'catalog' } : preset && presetGiven ? { page: 'experiment', id: presetGiven.id } : { page: 'lab' });
+function pageTitle(): string {
+  const lib = libraryRoute(location.hash);
+  if (lib) return `${LIBRARY_UI[locale].tabs[lib.page]} · Spark`;
+  if (aboutRoute()) return `${ABOUT_UI[locale].about} · Spark`;
+  const r = siteRoute();
+  if (r.page === 'catalog') return `${catalogUi(locale).title} · ${SITE.name}`;
+  if (r.page === 'experiment') return `${tr(presetGiven!.title, locale)} · ${SITE.name}`;
+  return t().title;
+}
+/** The address of a page of the site, in full (to share); none for a lab opened from a file, unless the site's address is known. */
+function siteUrl(r: Route): string | null {
+  const path = pagePath(r, locale);
+  if (onServer) return new URL(siteHref(path), location.origin).href;
+  return SITE.url ? `${SITE.url.replace(/\/$/, '')}/${path}` : null;
+}
+let catalogKey = '';
+/** The catalogue page, the share button, the address. */
+function renderSite() {
+  const c = catalogUi(locale);
+  const cat = $('#catalog-open') as HTMLAnchorElement;
+  cat.textContent = c.all;
+  cat.href = siteHref(pagePath({ page: 'catalog' }, locale));
+  document.body.classList.toggle('in-catalog', onCatalog);
+  $('#catalog').hidden = !onCatalog;
+  if (onCatalog && catalogKey !== locale) {
+    catalogKey = locale;
+    $('#catalog').innerHTML = catalogHtml(locale, siteHref);
+    filterCatalog();
+  }
+  // Nothing to share from a file opened from the disk, while the site's address is not known.
+  $('#catalog').classList.toggle('no-share', !siteUrl({ page: 'catalog' }));
+  const p = preset && presetGiven ? presetGiven : null;
+  const share = $<HTMLButtonElement>('#exp-share');
+  share.hidden = !p || !siteUrl({ page: 'experiment', id: p.id });
+  share.title = c.share;
+  share.setAttribute('aria-label', c.share);
+  // The address follows the screen, so that it can be copied, bookmarked or shared as it is.
+  if (onServer) {
+    const want = `${siteHref(pagePath(siteRoute(), locale))}${location.search}${location.hash}`;
+    if (want !== `${location.pathname}${location.search}${location.hash}`) window.history.replaceState(window.history.state, '', want);
+  }
+}
+/** To the catalogue, or from it: a page of its own (the browser's "back" returns). */
+function showCatalog(on: boolean) {
+  if (onCatalog === on) return;
+  onCatalog = on;
+  if (onServer) window.history.pushState(null, '', siteHref(pagePath(siteRoute(), locale)));
+  render();
+  window.scrollTo(0, 0);
+}
+const toCatalog = (e: Event) => {
+  e.preventDefault();
+  if (location.hash) window.history.replaceState(window.history.state, '', location.pathname + location.search);
+  renderLibrary();
+  renderAbout();
+  showCatalog(true);
+};
+$('#catalog-open').addEventListener('click', toCatalog);
+$('#library-links').addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest('[data-catalog]')) toCatalog(e);
+});
+/** What the catalogue's filters are set to; the cards (and then empty groups) that do not fit are hidden. */
+const catalogFilter = { subject: '', grade: '', program: '', query: '' };
+function filterCatalog() {
+  const root = $('#catalog');
+  const f = catalogFilter;
+  const q = f.query.trim().toLowerCase();
+  root.querySelectorAll<HTMLElement>('.cat-subject').forEach((sec) => (sec.hidden = !!f.subject && sec.id !== `cat-${f.subject}`));
+  const shown = new Set<string>();
+  root.querySelectorAll<HTMLElement>('.cat-item').forEach((card) => {
+    const hit =
+      !card.closest<HTMLElement>('.cat-subject')!.hidden &&
+      (!f.grade || (card.dataset['grades'] ?? '').split(' ').includes(f.grade)) &&
+      (!f.program || (card.dataset['programs'] ?? '').split(' ').includes(f.program)) &&
+      (!q || (card.textContent ?? '').toLowerCase().includes(q));
+    card.hidden = !hit;
+    if (hit) shown.add(card.dataset['id']!);
+  });
+  root.querySelectorAll<HTMLElement>('.cat-grade').forEach((g) => (g.hidden = !g.querySelector('.cat-item:not([hidden])')));
+  root.querySelectorAll<HTMLElement>('[data-subject], [data-grade]').forEach((chip) => {
+    const on = chip.dataset['subject'] !== undefined ? chip.dataset['subject'] === f.subject : chip.dataset['grade'] === f.grade;
+    chip.classList.toggle('selected', on);
+    chip.setAttribute('aria-pressed', String(on));
+  });
+  const pick = root.querySelector<HTMLSelectElement>('.cat-program');
+  if (pick) pick.value = f.program;
+  const search = root.querySelector<HTMLInputElement>('.cat-search');
+  if (search && search.value !== f.query) search.value = f.query;
+  const c = catalogUi(locale);
+  const count = root.querySelector('.cat-count');
+  // (An experiment of both subjects is in each: counted once.)
+  if (count) count.textContent = shown.size === PRESETS.length ? c.count(PRESETS.length) : c.shown(shown.size, PRESETS.length);
+  root.querySelector<HTMLElement>('.cat-nothing')!.hidden = shown.size > 0;
+}
+$('#catalog').addEventListener('input', (e) => {
+  const t = e.target as HTMLElement;
+  if (t.matches('.cat-search')) catalogFilter.query = (t as HTMLInputElement).value;
+  else if (t.matches('.cat-program')) catalogFilter.program = (t as HTMLSelectElement).value;
+  else return;
+  filterCatalog();
+});
+$('#catalog').addEventListener('click', (e) => {
+  const el = e.target as HTMLElement;
+  const chip = el.closest<HTMLElement>('[data-subject], [data-grade]');
+  if (chip) {
+    if (chip.dataset['subject'] !== undefined) catalogFilter.subject = chip.dataset['subject'];
+    else catalogFilter.grade = chip.dataset['grade']!;
+    return filterCatalog();
+  }
+  const byId = (id: string | undefined) => PRESETS.find((p) => p.id === id);
+  // «Детальніше»: the experiment's page of the notebook, with its own «Почати».
+  const more = el.closest<HTMLElement>('[data-sheet]');
+  if (more) return void openLabSheet(byId(more.dataset['sheet'])!);
+  const share = el.closest<HTMLButtonElement>('[data-share]');
+  if (share) return void shareExperiment(byId(share.dataset['share'])!, share);
+  // An experiment opens in the lab here (the links stay real addresses — for robots, and for "open in a new tab").
+  const a = el.closest<HTMLAnchorElement>('a[href]');
+  if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+  const to = parsePath(new URL(a.href, location.href).pathname).route;
+  if (to.page === 'catalog') return;
+  e.preventDefault();
+  if (to.page === 'experiment') startPreset(byId(to.id)!);
+  else showCatalog(false);
+});
+window.addEventListener('popstate', () => {
+  const to = parsePath(location.pathname).route;
+  onCatalog = to.page === 'catalog';
+  if (to.page === 'experiment' && presetGiven?.id !== to.id) startPreset(PRESETS.find((p) => p.id === to.id)!);
+  else render();
+});
+/** Share an experiment's link: on a phone, the system's own "share" (messengers, mail…); elsewhere the link is copied, and the button says so. */
+async function shareExperiment(p: Preset, button: HTMLButtonElement) {
+  const url = siteUrl({ page: 'experiment', id: p.id });
+  if (!url) return;
+  try {
+    if (navigator.share) return void (await navigator.share({ title: tr(p.title, locale), text: presetDescription(p, locale), url }));
+    await navigator.clipboard.writeText(url);
+    const was = button.textContent;
+    button.textContent = '✓';
+    button.title = catalogUi(locale).copied;
+    window.setTimeout(() => ((button.textContent = was), (button.title = catalogUi(locale).share)), 2000);
+  } catch {
+    /* the share sheet was closed, or no clipboard: nothing to do */
+  }
+}
+$('#exp-share').onclick = () => presetGiven && void shareExperiment(presetGiven, $<HTMLButtonElement>('#exp-share'));
 
 function buildHeader() {
   const lang = $<HTMLSelectElement>('#language');
@@ -2831,6 +2984,8 @@ function buildHeader() {
     render();
     if (refTarget) openRef(refTarget);
     renderLibrary(false);
+    renderAbout();
+    renderSite();
     if ($('#report').innerHTML) explain();
   };
   const lv = $<HTMLSelectElement>('#level');
@@ -2842,6 +2997,7 @@ function buildHeader() {
     buildShelf();
     if (refTarget) openRef(refTarget);
     renderLibrary(false);
+    renderAbout();
     if ($('#report').innerHTML) explain();
   };
 }
@@ -3107,57 +3263,13 @@ function buildPresets() {
 }
 
 /** «Тема 3. Взаємодія тіл» → «Взаємодія тіл»: the number belongs to the programme's own order. */
-const TOPIC_NUMBER = /^Тема\s*\d+\.\s*/;
 /**
  * Everything about a ready-made experiment before it starts, written as a lab work is written in a notebook:
  * its number (in the programme that numbers it), title, topic, aim, equipment, the course of the work, how the
  * results are worked out, and a place for the conclusion; the programmes it is in at the foot of the page.
  */
 function labSheetHtml(p: Preset, running = false): string {
-  const u = t();
-  const d = u.details;
-  const plan = guidedPlan(p);
-  const progs = presetPrograms(p);
-  const things = new Set<string>();
-  if (p.bench) for (const x of tr(BENCH_SETUP[p.bench], locale).split(', ')) things.add(x);
-  if (!p.bench || p.bench === 'balance') things.add(labSubject(p.params, locale));
-  for (const s of plan) {
-    if (s.kind === 'weigh') things.add(tr(SCALES[s.scale].name, locale));
-    else if (s.kind === 'hang') things.add(tr(SCALES.dynamometer.name, locale));
-    // (A stoppered tube with sand is one thing on the table, whatever is in it each run.)
-    else if (s.kind === 'add') things.add(s.volume ? d.tubeWithSand : tr(s.label ?? SUBSTANCES[s.substance].name, locale));
-  }
-  // A step as written in a notebook: no pictograms; what goes in — «Опустити: …». What comes of the steps is not
-  // written here (no spoilers): the aim is the question; the formulas without the conditions that answer it.
-  const stepText = (s: ProtocolStep) => (s.kind === 'add' ? `${d.put}: ${tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase()}` : planStepLabel(s).replace(/^[^\p{L}\p{N}]+/u, ''));
-  // F_A = ρ_рідини · g · V → subscripts.
-  const formula = (x: string) => escAttr(x).replace(/_([^/·=()+−<>;,—&]+?)(?=\s*(?:[/·=()+−<>;,—&]|$))/g, '<sub>$1</sub>');
-  // «Лабораторна робота № 10» where a programme numbers it; otherwise it is an experiment.
-  const number = progs.map((x) => x.item?.match(/ЛР № (\d+)/)?.[1]).find(Boolean);
-  const topic = progs.map((x) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined)).find(Boolean)?.replace(TOPIC_NUMBER, '') ?? tr(p.topic, locale);
-  const formulas = new Map(LAB_KNOWLEDGE.formulas.map((f) => [f.id, f]));
-  const fs = p.formulas.map((id) => formulas.get(id)).filter((f): f is NonNullable<typeof f> => !!f);
-  const programs = progs
-    .map((x) => {
-      const c = getCurriculum(x.program)!;
-      const book = x.textbook ? getSource(x.textbook.source) : undefined;
-      return `<li>${escAttr(tr(c.short ?? c.name, locale))}${x.grade !== undefined ? `, ${u.grade(x.grade)}` : ''}${x.item && !x.item.startsWith('Тема') ? `, ${escAttr(x.item)}` : ''}${x.match === 'related' ? ` (${d.related})` : ''}: «${escAttr(x.quote)}»${book && x.textbook ? ` — ${escAttr(book.title.split('. —')[0] ?? '')}, ${escAttr(x.textbook.at)}` : ''}</li>`;
-    })
-    .join('');
-  const line = (label: string, body: string) => `<p class="ls-line"><span class="ls-label">${label}.</span> ${body}</p>`;
-  return `
-    <header class="ls-head"><span class="ls-kind">${number ? d.labWork(number) : d.experiment}</span><span class="ls-grade">${p.grade === null ? u.forEveryone : u.grade(p.grade)}</span></header>
-    <h2 class="ls-title">${escAttr(tr(p.title, locale))}</h2>
-    ${line(d.topic, escAttr(topic))}
-    ${line(d.aim, escAttr(tr(presetAsk(p), locale)))}
-    ${line(d.takes, escAttr([...things].join('; ')))}
-    <h3 class="ls-sub">${d.steps}</h3>
-    <ol class="ls-steps">${unspoiled(plan, p).shown.map((s) => `<li>${stepText(s)}</li>`).join('')}${unspoiled(plan, p).hidden ? `<li class="ls-later">${u.moreSteps(unspoiled(plan, p).hidden)}</li>` : ''}</ol>
-    ${fs.length ? `<h3 class="ls-sub">${d.formulas}</h3><ul class="ls-formulas">${fs.map((f) => `<li><span class="ls-formula">${formula(f.plain.replace(/\s*\(.*\)\s*$/, ''))}</span> — ${escAttr(tr(f.title, locale).toLowerCase())}</li>`).join('')}</ul>` : ''}
-    <h3 class="ls-sub">${d.conclusion}</h3>
-    <p class="ls-blank">${d.conclusionHint}</p>
-    ${programs ? `<footer class="ls-foot"><span>${u.programs}:</span><ul>${programs}</ul></footer>` : ''}
-    ${running ? '' : `<div class="ls-actions"><button type="button" class="primary" data-ls-start="1">${u.presetStart}</button></div>`}`;
+  return labSheetHtmlIn(p, locale, { running, predicting: unspoiled(guidedPlan(p), p).hidden > 0 });
 }
 let labSheetFor: Preset | null = null;
 /** The page is written by hand; it can be read in print instead (remembered). */
@@ -3193,6 +3305,12 @@ $('#lab-sheet').addEventListener('click', (e) => {
 });
 
 function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen)) {
+  // Chosen in the catalogue: to the lab, on the experiment's address (the browser's "back" returns to the catalogue).
+  if (onCatalog) {
+    onCatalog = false;
+    if (onServer) window.history.pushState(null, '', siteHref(pagePath({ page: 'experiment', id: chosen.id }, locale)));
+    window.scrollTo(0, 0);
+  }
   presetGiven = chosen;
   presetVals = values;
   // Built with the values chosen under the scene (its amounts, materials), within its own frame.
@@ -3757,14 +3875,14 @@ installFootnotes(() => locale);
       const el = document.querySelector(sel);
       if (el) annotate(el, locale);
     }
-    // On the shelf only the descriptions (not card names or family headers).
-    document.querySelectorAll('#setup .item-detail').forEach((el) => annotate(el, locale));
+    // On the shelf only the descriptions (not card names or family headers); in the catalogue, not the titles (they are links).
+    document.querySelectorAll('#setup .item-detail, #catalog .cat-item p:not(.cat-kind)').forEach((el) => annotate(el, locale));
   };
   const schedule = () => {
     if (!queued) (queued = true), requestAnimationFrame(run);
   };
   const obs = new MutationObserver(schedule);
-  for (const sel of [...roots, '#setup']) {
+  for (const sel of [...roots, '#setup', '#catalog']) {
     const el = document.querySelector(sel);
     if (el) obs.observe(el, { childList: true, subtree: true, characterData: true });
   }
@@ -3779,7 +3897,7 @@ function renderLibrary(toTop = true) {
   const lib = $('#library');
   document.body.classList.toggle('in-library', !!route);
   lib.hidden = !route;
-  document.title = route ? `${LIBRARY_UI[locale].tabs[route.page]} · Spark` : 'Spark';
+  document.title = pageTitle();
   if (!route) {
     libraryShown = '';
     return;
@@ -3809,6 +3927,12 @@ window.addEventListener('hashchange', () => renderLibrary());
 buildHeader();
 buildInfo();
 renderLibrary();
+renderAbout();
+// The address names a ready-made experiment: it is chosen at once (a shared link opens on it).
+if (where.route.page === 'experiment') {
+  const id = where.route.id;
+  queueMicrotask(() => startPreset(PRESETS.find((p) => p.id === id)!));
+}
 buildShelfTabs();
 buildShelf();
 buildExpect();
