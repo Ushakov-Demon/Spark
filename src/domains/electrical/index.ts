@@ -8,3 +8,4 @@ export * from './formulas.js';
 export * from './catalog.js';
 export * from './laws.js';
 export * from './electrochem.js';
+export * from './diode.js';

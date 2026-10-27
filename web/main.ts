@@ -428,6 +428,14 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // The black box: the source, which way the box stands, the milliammeter in mA (a tenth).
+  if (kind === 'box') {
+    const bc = c?.type === 'lab.box' ? (c as unknown as { source: number; reversed: boolean }) : undefined;
+    const planned = preset?.plan?.find((s) => s.kind === 'bench' && s.command.type === 'lab.box');
+    const first = planned?.kind === 'bench' ? (planned.command as { source: number }).source : 0;
+    const mA = bc && r && r.value !== null ? (r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.') : undefined;
+    return { ...base, kind, box: { source: bc?.source ?? first, reversed: !!bc?.reversed, ...(mA !== undefined ? { display: mA } : {}) } };
+  }
   // Two resistors: the instruments where this step reads them.
   if (kind === 'series' || kind === 'parallel') {
     const pc = c?.type === 'lab.pair' ? (c as unknown as { source: number; at: 'r1' | 'r2' | 'both' }) : undefined;
@@ -582,6 +590,18 @@ function measureSay(): string {
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
   }
+  // The black box: what the milliammeter shows, one way or turned round.
+  if (m.command.type === 'lab.box') {
+    if (r.value === null) return '';
+    const back = !!(m.command as { reversed?: boolean }).reversed;
+    const mA = `${(r.value * 1000).toFixed(1).replace('.', uk ? ',' : '.')} ${uk ? 'мА' : 'mA'}`;
+    const zero = r.value < (r.inputs?.['division'] ?? 0.0001);
+    return back
+      ? zero ? (uk ? 'Скриньку перевернули — і міліамперметр показує нуль!' : 'The box turned round — and the milliammeter shows zero!') : uk ? `Скриньку перевернули — міліамперметр показує ${mA}.` : `The box turned round — the milliammeter shows ${mA}.`
+      : uk ? `Ключ замкнено: міліамперметр показує ${mA}.` : `The key is closed: the milliammeter shows ${mA}.`;
+  }
+  // (Only the dynamometer from here on; another instrument without its own line says nothing rather than something wrong.)
+  if (m.command.type !== 'lab.hang') return '';
   const c = m.command as Extract<LabCommand, { type: 'lab.hang' }>;
   const what = c.label ? tr(c.label, locale) : nameOfBody(c.substance);
   const air = c.into === 'liquid' ? [...all.slice(0, i)].reverse().find((x) => x.command.type === 'lab.hang' && (x.command as typeof c).into === 'air' && (x.command as typeof c).substance === c.substance && (x.command as typeof c).mass === c.mass) : undefined;
@@ -2200,7 +2220,9 @@ function renderProtocol() {
       const leverShown = c.type === 'lab.lever' && r.instrument === 'lever' ? ((r.inputs?.['tip'] ?? 0) === 0 ? u.leverLevel : u.leverTips) : null;
       // (The circuit reads two instruments at once: both are written.)
       const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
-      const shown = both ?? leverShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      // (The black box's milliammeter: milliamperes to a tenth.)
+      const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
+      const shown = both ?? leverShown ?? boxShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

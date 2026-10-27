@@ -277,6 +277,13 @@ describe('ready-made experiments with values to change', () => {
     if (process.env['SHOW_ANSWERS']) console.log(`[${_n}] ${answer.say.uk} (${answer.correct})`);
   }, 60_000);
 
+  it('the black box: current one way, none turned round — a diode; the resistance falls with the voltage', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'diode-black-box')!);
+    expect(answer.correct).toBe('diode');
+    expect(answer.text.uk).toMatch(/Скринька як стоїть: 1 В — 3,\d мА.*3 В — 2\d,\d мА.*Перевернута: 1 В — 0,0 мА, 2 В — 0,0 мА, 3 В — 0,0 мА/);
+    expect(answer.text.uk).toMatch(/не в 3 раза, а в [56],\d/);
+  }, 60_000);
+
   it('a copper coil heated in water: its resistance grows, α comes out as copper’s ≈ 0.0039 1/°C', () => {
     const p = PRESETS.find((x) => x.id === 'resistance-temperature')!;
     const { answer } = run(p);

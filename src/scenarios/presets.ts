@@ -56,7 +56,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -1296,6 +1296,27 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('copper', 'Шар міді', 'A layer of copper'), ch('hydrogen', 'Бульбашки водню', 'Bubbles of hydrogen'), ch('chlorine', 'Хлор', 'Chlorine')],
     formulas: ['electrical.faraday-moles'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'diode-black-box',
+    ask: { uk: 'Що сховано в «чорній скриньці»?', en: 'What is hidden in the “black box”?' },
+    grade: 9,
+    topic: ELECTRIC,
+    title: { uk: 'Що в «чорній скриньці»?', en: 'What is in the “black box”?' },
+    question: {
+      uk: 'Перед нами закрита скринька з двома клемами, A і B. Увімкнемо її в коло з джерелом, ключем, захисним резистором на 100 Ом і мультиметром-міліамперметром. Ставитимемо на джерелі 1, 2 і 3 В і записуватимемо силу струму, а тоді перевернемо скриньку — поміняємо клеми місцями — і повторимо. З напруги й струму знайдемо опір кола R = U / I. Що всередині скриньки?',
+      en: 'Here is a closed box with two terminals, A and B. We connect it into a circuit with a source, a key, a 100 Ω protective resistor and a multimeter as a milliammeter. We set the source to 1, 2 and 3 V and write down the current, then turn the box round — swap its terminals — and do the same again. From the voltage and the current we find the circuit’s resistance R = U / I. What is inside the box?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'box',
+    plan: [false, true].flatMap((reversed) => [1, 2, 3].map((source) => ({ kind: 'bench', command: { type: 'lab.box', source, reversed } }) as const)),
+    choices: [ch('resistor', 'Резистор', 'A resistor'), ch('diode', 'Напівпровідниковий діод', 'A semiconductor diode'), ch('open', 'Нічого — коло розірване', 'Nothing — the circuit is broken')],
+    choicesAt: 'end',
+    answerOnBoard: ['boxR:'],
+    formulas: ['electrical.ohm-resistance'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 2', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'same', quote: '№ 2. Дослідження електричного опору кола з напівпровідниковим діодом (дослідження «чорної скриньки»).' }],
     expect: 'reached',
   },
   {

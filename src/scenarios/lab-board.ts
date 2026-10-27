@@ -430,6 +430,18 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // The black box: the current at this voltage, one way or turned round, and the circuit's resistance R = U / I.
+    if (c.type === 'lab.box') {
+      const U = Number(c['source']);
+      const back = !!c['reversed'];
+      const div = r.inputs?.['division'] ?? 0.0001;
+      const mA = `${n(r.value * 1000, 3)} ${uk ? 'мА' : 'mA'}`;
+      const way = back ? (uk ? ', скринька перевернута' : ', the box turned round') : '';
+      out.push({ id: `box:${back ? 'b' : 'a'}${U}`, title: uk ? `струм за ${n(U)} В${way}` : `the current at ${n(U)} V${way}`, formula: `I = ${mA}` });
+      if (r.value >= div) out.push({ id: `boxR:${back ? 'b' : 'a'}${U}`, title: uk ? `опір кола${way}` : `the circuit’s resistance${way}`, formula: 'R = U / I', numbers: `${n(U)} ${uk ? 'В' : 'V'} / ${n(r.value * 1000, 3)} ${uk ? 'мА' : 'mA'} ≈ ${n(U / r.value, 2)} ${uk ? 'Ом' : 'Ω'}` });
+      else out.push({ id: `boxR:${back ? 'b' : 'a'}${U}`, title: uk ? `опір кола${way}` : `the circuit’s resistance${way}`, formula: uk ? 'I ≈ 0 → R дуже великий' : 'I ≈ 0 → R very large' });
+      return;
+    }
     // The coil in the water on the multimeter: its resistance at this temperature, and — once warmer than at the
     // start — the temperature coefficient α = (R − R₀) / (R₀·Δt). (R₀ is its reading at 20 °C, where it starts.)
     if (c.type === 'lab.ohm') {
