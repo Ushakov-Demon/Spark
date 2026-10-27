@@ -136,7 +136,7 @@ import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
-import { babble, canSpeak, currentVoice, fizz, hush, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
+import { babble, canSpeak, currentVoice, fizz, hum, hush, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -253,6 +253,8 @@ let finished = false;
 let speed = 60;
 let acc = 0;
 let lastFrame = 0;
+/** Was a current flowing at the last render (the power supply humming)? */
+let humFlowing = false;
 let points: { sample: { t: number; v: number }[]; vessel: { t: number; v: number }[]; source: { t: number; v: number }[] } = { sample: [], vessel: [], source: [] };
 let lastPointAt = -Infinity;
 let checkpoint: { t: number; T: number; s: number; m: number } | null = null;
@@ -389,6 +391,11 @@ function measureNow(command: LabCommand): string {
   }
   measureError = '';
   lastMeasure = { at: session.state.time, step: session };
+  // A circuit's key closed for a reading: the power supply hums for a moment, the louder the more current.
+  if (command.type === 'lab.circuit' || command.type === 'lab.pair') {
+    const amps = readingsOf([entry]).find((x) => x.record.quantity === 'current')?.record.value ?? 0;
+    hum(0.3 + amps / 2, 1.6);
+  }
   // An instrument that moves on the scene (a balance, a spring, a pulled block): its reading is told once it is at rest.
   instrumentBusy = entry.ok && command.type in BUSY && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   boardEpoch++;
@@ -2005,6 +2012,11 @@ function render() {
   renderProtocol();
   const view = (lookingAt && snapshots.get(lookingAt)) || live;
   scene.render(view);
+  // While a current flows (electrolysis, heating by current), the power supply hums; quiet once it stops.
+  const flowing = running && !lookingAt && view.current && view.current.amps > 0 ? view.current.amps : 0;
+  if (flowing) hum(0.3 + flowing / 2);
+  else if (humFlowing) hum(0);
+  humFlowing = flowing > 0;
   renderLookBack();
   // A new line of the Professor: he burbles it (the same line again stays quiet).
   // Lines that change several times in a moment (the board filling up): only the last one is spoken.

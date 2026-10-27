@@ -19,7 +19,10 @@ if (typeof window !== 'undefined') {
 export const soundOn = (): boolean => on;
 export function setSound(v: boolean): void {
   on = v;
-  if (!v) hush();
+  if (!v) {
+    hush();
+    hum(0);
+  }
 }
 /** Stop reading out loud (a new line, the sound off, another voice). */
 export function hush(): void {
@@ -61,6 +64,57 @@ export function plop(size = 1): void {
     o.stop(t + delay + len + 0.02);
   }
   noise(a, out, t, 0.18, 2500, 0.25);
+}
+
+/**
+ * The power supply humming while a current flows — its transformer: mostly 100 Hz (twice the 50 Hz of the
+ * mains: the iron core is squeezed twice a period, magnetostriction), a little of the 50 Hz itself, and a
+ * buzz of the higher harmonics, so that small speakers, which hardly play 100 Hz, still give it. `level`
+ * 0…1 (with the current); 0 — quiet. With `seconds`: a moment of it (a key closed for a reading), then quiet.
+ */
+let humming: { readonly out: GainNode; readonly stop: (at: number) => void } | null = null;
+let humOff = 0;
+export function hum(level: number, seconds?: number): void {
+  window.clearTimeout(humOff);
+  const a = level > 0 ? audio() : ctx;
+  if (!a) return;
+  const t = a.currentTime;
+  if (level <= 0) {
+    if (!humming) return;
+    const h = humming;
+    humming = null;
+    h.out.gain.cancelScheduledValues(t);
+    h.out.gain.setTargetAtTime(0, t, 0.06);
+    h.stop(t + 0.4);
+    return;
+  }
+  if (!humming) {
+    const out = a.createGain();
+    out.gain.value = 0;
+    out.connect(a.destination);
+    const sources: OscillatorNode[] = [];
+    const tone = (f: number, type: OscillatorType, vol: number, through?: AudioNode) => {
+      const o = a.createOscillator();
+      o.type = type;
+      o.frequency.value = f;
+      const g = a.createGain();
+      g.gain.value = vol;
+      o.connect(g).connect(through ?? out);
+      o.start(t);
+      sources.push(o);
+    };
+    tone(100, 'sine', 1);
+    tone(50, 'sine', 0.3);
+    // The buzz: a sawtooth at 100 Hz, its harmonics rounded off above a few hundred hertz.
+    const buzz = a.createBiquadFilter();
+    buzz.type = 'lowpass';
+    buzz.frequency.value = 900;
+    buzz.connect(out);
+    tone(100, 'sawtooth', 0.6, buzz);
+    humming = { out, stop: (at) => sources.forEach((o) => o.stop(at)) };
+  }
+  humming.out.gain.setTargetAtTime(0.05 + 0.1 * Math.min(1, level), t, 0.08);
+  if (seconds) humOff = window.setTimeout(() => hum(0), seconds * 1000);
 }
 
 /** Salt dissolving: a quiet fizz that fades. */
