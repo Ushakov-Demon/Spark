@@ -441,7 +441,10 @@ function benchView(): BenchView | null {
   if (kind === 'incline') {
     const roll = c?.type === 'lab.roll' && r;
     const stop = roll ? Number(c!['path']) / ROLL_PATH : 1;
-    return { ...base, kind, incline: { stop, ball: roll ? 1 : 0 }, stopwatch: { display: sec(roll ? r!.value : 0) }, ...tapeShown, ...(roll ? { run: { seconds: r!.exact ?? r!.value ?? 0 } } : {}) };
+    // As high as the experiment raises the groove (before the first roll too).
+    const planned = preset?.plan?.find((s) => s.kind === 'bench' && s.command.type === 'lab.roll');
+    const raise = (roll ? (c as { raise?: number }).raise : undefined) ?? (planned?.kind === 'bench' ? (planned.command as { raise?: number }).raise : undefined);
+    return { ...base, kind, incline: { stop, ball: roll ? 1 : 0, ...(raise ? { raise } : {}) }, stopwatch: { display: sec(roll ? r!.value : 0) }, ...tapeShown, ...(roll ? { run: { seconds: r!.exact ?? r!.value ?? 0 } } : {}) };
   }
   if (kind === 'circle') {
     const whirl = c?.type === 'lab.whirl' && r;

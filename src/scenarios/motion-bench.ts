@@ -44,6 +44,8 @@ export interface TapeCommand {
 export interface RollCommand {
   readonly type: 'lab.roll';
   readonly path: number;
+  /** How high the groove's upper end is, m (GROOVE_RAISE if not said): a steeper groove, a quicker roll. */
+  readonly raise?: number;
 }
 /** Swing the body round the circle on the thread; time so many turns. */
 export interface WhirlCommand {
@@ -62,7 +64,7 @@ export interface SwingCommand {
 export type MotionCommand = TapeCommand | RollCommand | WhirlCommand | SwingCommand;
 
 /** The ball's acceleration down the groove, m/s²: a solid steel ball rolling. */
-export const grooveAcceleration = (): number => rollingAcceleration(G, GROOVE_RAISE.value / GROOVE_LENGTH.value);
+export const grooveAcceleration = (raise = GROOVE_RAISE.value): number => rollingAcceleration(G, raise / GROOVE_LENGTH.value);
 
 export const tapeCommand: CommandHandler<TapeCommand> = {
   type: 'lab.tape',
@@ -76,10 +78,12 @@ export const rollCommand: CommandHandler<RollCommand> = {
   type: 'lab.roll',
   apply(state, c) {
     if (!(c.path > 0 && c.path <= GROOVE_LENGTH.value)) return err({ uk: 'Кулька котиться лише жолобом.', en: 'The ball rolls only along the groove.' });
+    const raise = c.raise ?? GROOVE_RAISE.value;
+    if (!(raise > 0 && raise <= 0.3)) return err({ uk: 'Жолоб ставлять під невеликим кутом: верхній кінець — до 30 см.', en: 'The groove stands at a small angle: its upper end up to 30 cm.' });
     // From rest, at a steady acceleration: l = a·t²/2.
-    const a = grooveAcceleration();
+    const a = grooveAcceleration(raise);
     const t = Math.sqrt((2 * c.path) / a);
-    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('stopwatch', 'time', stopwatch(t), t, { path: c.path, a, division: STOPWATCH_DIVISION.value })] });
+    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('stopwatch', 'time', stopwatch(t), t, { path: c.path, a, raise, division: STOPWATCH_DIVISION.value })] });
   },
 };
 

@@ -31,7 +31,7 @@ export interface BenchView {
    * The groove (lab work 1): where the cylinder stands and where the ball is, as shares of the path from the
    * chalk mark (0 — at the mark, 1 — at the cylinder); `stop` — the cylinder at this share of the full path.
    */
-  readonly incline?: { readonly stop: number; readonly ball: number };
+  readonly incline?: { readonly stop: number; readonly ball: number; /** The upper end's height, m (0.1 if not said). */ readonly raise?: number };
   /** A body on a thread going round the circle (lab work 2): the thread, m; where it is on its round, rad. */
   readonly circle?: { readonly thread: number; readonly angle: number };
   /** The thread pendulum (lab work 3): its length, m; how far it is swung now, rad; the ball's mass, kg. */
@@ -211,9 +211,10 @@ function motionSvg(v: BenchView): string {
   if (v.kind === 'incline') {
     // The groove: its upper end in the stand's clamp, the lower end on the table; the chalk mark, the cylinder, the ball.
     const x0 = 230;
-    const y0 = TABLE - 70;
     const x1 = 560;
     const y1 = TABLE - 6;
+    // 64 px for the 10 cm the upper end is raised by default: steeper drawn steeper.
+    const y0 = y1 - 64 * ((v.incline?.raise ?? 0.1) / 0.1);
     const at = (k: number) => [x0 + (x1 - x0) * k, y0 + (y1 - y0) * k] as const;
     // The path from the mark (1/6 of the groove from its top: 1 m of 1.2 m) to the cylinder.
     const mark = 0.2 / 1.2;

@@ -209,31 +209,39 @@ const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 
 export const PRESETS: readonly Preset[] = [
   // ---------------------------------------------------------------- 7 grade, mechanics
-  {
-    id: 'ice-level',
-    grade: 7,
-    topic: MECH,
-    title: { uk: 'Чи зміниться рівень води, коли лід розтане?', en: 'Will the water level change when the ice melts?' },
-    question: {
-      uk: 'Опустимо в мензурку з водою кубик льоду — він плаватиме. Запишемо рівень, дочекаємося, поки лід розтане, і подивимося на поділки знову. Як зміниться рівень води, коли лід розтане?',
-      en: 'We drop an ice cube into a measuring cylinder of water — it will float. We note the level, wait for the ice to melt and read the marks again. How will the water level change when the ice melts?',
+  varied(
+    {
+      id: 'ice-level',
+      grade: 7,
+      topic: MECH,
+      title: { uk: 'Чи зміниться рівень води, коли лід розтане?', en: 'Will the water level change when the ice melts?' },
+      question: {
+        uk: 'Опустимо в мензурку з водою кубик льоду — він плаватиме. Запишемо рівень, дочекаємося, поки лід розтане, і подивимося на поділки знову. Як зміниться рівень води, коли лід розтане?',
+        en: 'We drop an ice cube into a measuring cylinder of water — it will float. We note the level, wait for the ice to melt and read the marks again. How will the water level change when the ice melts?',
+      },
+      params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.07, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      choices: [ch('up', 'Підніметься', 'It will rise'), ch('down', 'Опуститься', 'It will drop'), ch('same', 'Не зміниться', 'It will stay the same')],
+      formulas: ['mechanics.submerged-share'],
+      quoteHas: 'плавання',
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 10', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: '№ 10. Перевірка умов плавання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 35, лабораторна робота № 10, с. 251' } }],
+      expect: 'reached',
     },
-    params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.07, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    plan: [
-      { kind: 'level' },
-      { kind: 'add', substance: 'water', mass: 0.01, temperature: -5, frozen: true, label: { uk: 'Кубик льоду', en: 'Ice cube' } },
-      { kind: 'level' },
-      // Slow enough to watch the cube shrink (the speed can still be raised).
-      { kind: 'operation', action: 'settle', speed: 10, label: { uk: 'Чекати, поки лід розтане', en: 'Wait for the ice to melt' } },
-      { kind: 'level' },
-    ],
-    choices: [ch('up', 'Підніметься', 'It will rise'), ch('down', 'Опуститься', 'It will drop'), ch('same', 'Не зміниться', 'It will stay the same')],
-    formulas: ['mechanics.submerged-share'],
-    quoteHas: 'плавання',
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 10', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: '№ 10. Перевірка умов плавання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 35, лабораторна робота № 10, с. 251' } }],
-    expect: 'reached',
-  },
+    {
+      // A cube that the 100 ml cylinder with 70 ml of water takes, and whose few millilitres its marks still show.
+      controls: [{ id: 'cube', label: { uk: 'Кубик льоду', en: 'Ice cube' }, kind: 'choice', options: [ch('5', 'Маленький (5 г)', 'Small (5 g)'), ch('10', 'Середній (10 г)', 'Medium (10 g)'), ch('20', 'Великий (20 г)', 'Large (20 g)')], value: '10' }],
+      build: (v) => ({
+        plan: [
+          { kind: 'level' },
+          { kind: 'add', substance: 'water', mass: Number(v['cube']) / 1000, temperature: -5, frozen: true, label: { uk: 'Кубик льоду', en: 'Ice cube' } },
+          { kind: 'level' },
+          // Slow enough to watch the cube shrink (the speed can still be raised).
+          { kind: 'operation', action: 'settle', speed: 10, label: { uk: 'Чекати, поки лід розтане', en: 'Wait for the ice to melt' } },
+          { kind: 'level' },
+        ],
+      }),
+    },
+  ),
   {
     id: 'lever-moments',
     ask: { uk: 'За якої умови важіль перебуває в рівновазі?', en: 'When is a lever in balance?' },
@@ -367,126 +375,183 @@ export const PRESETS: readonly Preset[] = [
       },
     },
   ),
-  {
-    id: 'series-circuit',
-    ask: { uk: 'Як пов’язані напруги на резисторах із загальною напругою?', en: 'How do the voltages across the resistors relate to the total?' },
-    grade: 8,
-    topic: CIRCUITS,
-    title: { uk: 'Послідовне з’єднання провідників', en: 'Conductors in series' },
-    question: {
-      uk: 'З’єднаємо два резистори (2 і 4 Ом) послідовно — один за одним — з амперметром і джерелом на 4 В. Виміряємо силу струму й напругу на першому резисторі, на другому і на обох разом. Як пов’язані напруги на резисторах із загальною напругою?',
-      en: 'We connect two resistors (2 and 4 Ω) in series — one after the other — with an ammeter and a 4 V source. We measure the current and the voltage across the first resistor, the second and both together. How do the voltages across the resistors relate to the total?',
+  varied(
+    {
+      id: 'series-circuit',
+      ask: { uk: 'Як пов’язані напруги на резисторах із загальною напругою?', en: 'How do the voltages across the resistors relate to the total?' },
+      grade: 8,
+      topic: CIRCUITS,
+      title: { uk: 'Послідовне з’єднання провідників', en: 'Conductors in series' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'series',
+      choices: [ch('sum', 'Загальна напруга — сума напруг на резисторах', 'The total is the sum of the voltages across the resistors'), ch('equal', 'На кожному резисторі — уся напруга джерела', 'Each resistor gets the source’s whole voltage'), ch('half', 'Напруга ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
+      choicesAt: 'end',
+      answerOnBoard: ['sum:'],
+      formulas: ['electrical.series-voltage', 'electrical.ohm-resistance'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 7', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 7. Дослідження електричного кола з послідовним з’єднанням провідників.' }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'series',
-    plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source: 4, connection: 'series', at } }) as const),
-    choices: [ch('sum', 'Загальна напруга — сума напруг на резисторах', 'The total is the sum of the voltages across the resistors'), ch('equal', 'На кожному резисторі — уся напруга джерела', 'Each resistor gets the source’s whole voltage'), ch('half', 'Напруга ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
-    choicesAt: 'end',
-    answerOnBoard: ['sum:'],
-    formulas: ['electrical.series-voltage', 'electrical.ohm-resistance'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 7', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 7. Дослідження електричного кола з послідовним з’єднанням провідників.' }],
-    expect: 'reached',
-  },
-  {
-    id: 'parallel-circuit',
-    ask: { uk: 'Як пов’язані струми в гілках із загальним струмом?', en: 'How do the branch currents relate to the total current?' },
-    grade: 8,
-    topic: CIRCUITS,
-    title: { uk: 'Паралельне з’єднання провідників', en: 'Conductors in parallel' },
-    question: {
-      uk: 'З’єднаємо ті самі резистори (2 і 4 Ом) паралельно — кожен своєю гілкою — і під’єднаємо до джерела на 2 В. Виміряємо струм у гілці з першим резистором, у гілці з другим і до розгалуження, а щоразу — й напругу. Як пов’язані струми в гілках із загальним струмом?',
-      en: 'We connect the same resistors (2 and 4 Ω) in parallel — each on its own branch — to a 2 V source. We measure the current in the branch of the first resistor, of the second and before the fork, and the voltage each time. How do the branch currents relate to the total current?',
+    {
+      // In series 6.1 Ω in all: 6 V drive ≈ 1 A (the ammeter takes 2 A), the voltmeter across both reads up to 6 V.
+      controls: [{ id: 'source', label: { uk: 'Напруга джерела', en: 'Source voltage' }, kind: 'choice', options: [ch('2', '2 В', '2 V'), ch('4', '4 В', '4 V'), ch('6', '6 В', '6 V')], value: '4' }],
+      build: (v) => {
+        const source = Number(v['source']);
+        return {
+          question: {
+            uk: `З’єднаємо два резистори (2 і 4 Ом) послідовно — один за одним — з амперметром і джерелом на ${source} В. Виміряємо силу струму й напругу на першому резисторі, на другому і на обох разом. Як пов’язані напруги на резисторах із загальною напругою?`,
+            en: `We connect two resistors (2 and 4 Ω) in series — one after the other — with an ammeter and a ${source} V source. We measure the current and the voltage across the first resistor, the second and both together. How do the voltages across the resistors relate to the total?`,
+          },
+          plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source, connection: 'series', at } }) as const),
+        };
+      },
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'parallel',
-    plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source: 2, connection: 'parallel', at } }) as const),
-    choices: [ch('sum', 'Загальний струм — сума струмів у гілках', 'The total is the sum of the branch currents'), ch('equal', 'У кожній гілці — увесь струм', 'Each branch carries the whole current'), ch('half', 'Струм ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
-    choicesAt: 'end',
-    answerOnBoard: ['sum:'],
-    formulas: ['electrical.parallel-current', 'electrical.ohm-resistance'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 8', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 8. Дослідження електричного кола з паралельним з’єднанням провідників.' }],
-    expect: 'reached',
-  },
-  {
-    id: 'average-speed',
-    ask: { uk: 'Де середня швидкість кульки більша: на всьому шляху чи на першій половині?', en: 'Where is the ball’s average speed greater: on the whole path or on its first half?' },
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Середня швидкість кульки на жолобі', en: 'The average speed of a ball in a groove' },
-    question: {
-      uk: 'Жолоб закріпили на штативі під невеликим кутом, на ньому — позначка крейдою, а внизу — металевий циліндр, що зупиняє кульку. Виміряємо шлях і час, за який кулька скотиться від позначки до циліндра, а потім — лише першу половину шляху. Де середня швидкість кульки більша: на всьому шляху чи на першій половині?',
-      en: 'A groove is fixed on a stand at a small angle, with a chalk mark on it and a metal cylinder at the bottom to stop the ball. We measure the path and the time the ball takes from the mark to the cylinder, then the first half of the path only. Where is the ball’s average speed greater: on the whole path or on its first half?',
+  ),
+  varied(
+    {
+      id: 'parallel-circuit',
+      ask: { uk: 'Як пов’язані струми в гілках із загальним струмом?', en: 'How do the branch currents relate to the total current?' },
+      grade: 8,
+      topic: CIRCUITS,
+      title: { uk: 'Паралельне з’єднання провідників', en: 'Conductors in parallel' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'parallel',
+      choices: [ch('sum', 'Загальний струм — сума струмів у гілках', 'The total is the sum of the branch currents'), ch('equal', 'У кожній гілці — увесь струм', 'Each branch carries the whole current'), ch('half', 'Струм ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
+      choicesAt: 'end',
+      answerOnBoard: ['sum:'],
+      formulas: ['electrical.parallel-current', 'electrical.ohm-resistance'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 8', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 8. Дослідження електричного кола з паралельним з’єднанням провідників.' }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'incline',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.tape', what: 'path', length: ROLL_PATH } },
-      { kind: 'bench', command: { type: 'lab.roll', path: ROLL_PATH } },
-      { kind: 'bench', command: { type: 'lab.roll', path: ROLL_PATH / 2 } },
-    ],
-    choices: [ch('whole', 'На всьому шляху', 'On the whole path'), ch('half', 'На першій половині', 'On the first half'), ch('same', 'Однакова', 'The same')],
-    choicesAt: 'end',
-    answerOnBoard: ['roll:'],
-    formulas: ['mechanics.average-speed'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 1', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 1. Визначення середньої швидкості руху тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 1, с. 75' } }],
-    expect: 'reached',
-  },
-  {
-    id: 'rotation-period',
-    ask: { uk: 'Як зміниться період обертання, якщо вкоротити нитку, а коло лишити те саме?', en: 'How does the period change if the thread is shortened and the circle stays the same?' },
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Період обертання тіла на нитці', en: 'The period of a body turning on a thread' },
-    question: {
-      uk: 'Тримаючи нитку за петлю над центром кола радіусом 15 см, розкрутимо тіло так, щоб воно йшло по колу, і виміряємо час 10 обертів. З нього знайдемо період, обертову частоту й швидкість тіла. А потім вкоротимо нитку, а коло лишимо те саме. Як зміниться період обертання?',
-      en: 'Holding the thread by its loop over the centre of a 15 cm circle, we swing the body round it and time 10 turns. From that we find the period, the frequency and the body’s speed. Then we shorten the thread and keep the circle. How does the period change?',
+    {
+      // In parallel ≈ 1.33 Ω: before the fork 2.5 V drive ≈ 1.7 A, 3 V would be past the ammeter's 2 A.
+      controls: [{ id: 'source', label: { uk: 'Напруга джерела', en: 'Source voltage' }, kind: 'choice', options: [ch('1', '1 В', '1 V'), ch('1.5', '1,5 В', '1.5 V'), ch('2', '2 В', '2 V'), ch('2.5', '2,5 В', '2.5 V')], value: '2' }],
+      build: (v) => {
+        const source = Number(v['source']);
+        const uk = String(source).replace('.', ',');
+        return {
+          question: {
+            uk: `З’єднаємо ті самі резистори (2 і 4 Ом) паралельно — кожен своєю гілкою — і під’єднаємо до джерела на ${uk} В. Виміряємо струм у гілці з першим резистором, у гілці з другим і до розгалуження, а щоразу — й напругу. Як пов’язані струми в гілках із загальним струмом?`,
+            en: `We connect the same resistors (2 and 4 Ω) in parallel — each on its own branch — to a ${source} V source. We measure the current in the branch of the first resistor, of the second and before the fork, and the voltage each time. How do the branch currents relate to the total current?`,
+          },
+          plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source, connection: 'parallel', at } }) as const),
+        };
+      },
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'circle',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.whirl', thread: THREAD_LENGTH.value, turns: 10 } },
-      { kind: 'bench', command: { type: 'lab.whirl', thread: 0.3, turns: 10 } },
-    ],
-    choices: [ch('shorter', 'Стане меншим — тіло обертатиметься частіше', 'It gets shorter — the body turns more often'), ch('longer', 'Стане більшим', 'It gets longer'), ch('same', 'Не зміниться — коло ж те саме', 'It stays — the circle is the same')],
-    choicesAt: 'end',
-    formulas: ['mechanics.period'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 2', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 2. Визначення періоду обертання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 2, с. 87' } }],
-    expect: 'reached',
-  },
-  {
-    id: 'pendulum',
-    ask: { uk: 'Від чого залежить період коливань маятника: від амплітуди, маси кульки чи довжини нитки?', en: 'What does a pendulum’s period depend on: the amplitude, the ball’s mass or the length?' },
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Коливання нитяного маятника', en: 'The swings of a thread pendulum' },
-    question: {
-      uk: 'Підвісимо до кільця штатива кульку на нитці завдовжки 1 м. Виміряємо час 20 коливань, відхиливши кульку на 2,5 см, потім — на 5,5 см. Тоді замінимо кульку важчою, а наостанок вкоротимо нитку до 25 см. Від чого залежить період коливань маятника?',
-      en: 'We hang a ball on a 1 m thread from the stand’s ring. We time 20 swings with the ball pulled 2.5 cm aside, then 5.5 cm. Then we put on a heavier ball, and at last shorten the thread to 25 cm. What does the pendulum’s period depend on?',
+  ),
+  varied(
+    {
+      id: 'average-speed',
+      ask: { uk: 'Де середня швидкість кульки більша: на всьому шляху чи на першій половині?', en: 'Where is the ball’s average speed greater: on the whole path or on its first half?' },
+      grade: 7,
+      topic: MOTION,
+      title: { uk: 'Середня швидкість кульки на жолобі', en: 'The average speed of a ball in a groove' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'incline',
+      choices: [ch('whole', 'На всьому шляху', 'On the whole path'), ch('half', 'На першій половині', 'On the first half'), ch('same', 'Однакова', 'The same')],
+      choicesAt: 'end',
+      answerOnBoard: ['roll:'],
+      formulas: ['mechanics.average-speed'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 1', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 1. Визначення середньої швидкості руху тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 1, с. 75' } }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'pendulum',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.tape', what: 'length', length: 1 } },
-      { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.light, count: 20 } },
-      { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.055, mass: PENDULUM_BALLS.light, count: 20 } },
-      { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.heavy, count: 20 } },
-      { kind: 'bench', command: { type: 'lab.swing', length: 0.25, amplitude: 0.025, mass: PENDULUM_BALLS.light, count: 20 } },
-    ],
-    choices: [ch('length', 'Лише від довжини нитки', 'Only on the length'), ch('amplitude', 'Від амплітуди: що ширше розмах, то довше', 'On the amplitude: the wider, the longer'), ch('mass', 'Від маси: важча кулька гойдається повільніше', 'On the mass: a heavier ball swings slower')],
-    choicesAt: 'end',
-    answerOnBoard: ['Tp:'],
-    formulas: ['mechanics.pendulum', 'mechanics.period'],
-    programs: [
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 3', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 3. Дослідження коливань нитяного маятника.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 3, с. 99' } },
-      { program: 'ua-nus-2023-holovko', grade: 9, match: 'same', quote: 'коливань математичного маятника' },
-    ],
-    expect: 'reached',
-  },
+    {
+      // «At a small angle»: the upper end of the 1.2 m groove raised 5, 10 or 15 cm.
+      controls: [{ id: 'raise', label: { uk: 'Верхній кінець жолоба', en: 'Upper end of the groove' }, kind: 'choice', options: [ch('5', '5 см', '5 cm'), ch('10', '10 см', '10 cm'), ch('15', '15 см', '15 cm')], value: '10' }],
+      build: (v) => {
+        const cm = Number(v['raise']);
+        const raise = cm / 100;
+        return {
+          question: {
+            uk: `Жолоб закріпили на штативі під невеликим кутом — верхній кінець піднято на ${cm} см, на ньому — позначка крейдою, а внизу — металевий циліндр, що зупиняє кульку. Виміряємо шлях і час, за який кулька скотиться від позначки до циліндра, а потім — лише першу половину шляху. Де середня швидкість кульки більша: на всьому шляху чи на першій половині?`,
+            en: `A groove is fixed on a stand at a small angle — its upper end raised ${cm} cm, with a chalk mark on it and a metal cylinder at the bottom to stop the ball. We measure the path and the time the ball takes from the mark to the cylinder, then the first half of the path only. Where is the ball’s average speed greater: on the whole path or on its first half?`,
+          },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.tape', what: 'path', length: ROLL_PATH } },
+            { kind: 'bench', command: { type: 'lab.roll', path: ROLL_PATH, raise } },
+            { kind: 'bench', command: { type: 'lab.roll', path: ROLL_PATH / 2, raise } },
+          ],
+        };
+      },
+    },
+  ),
+  varied(
+    {
+      id: 'rotation-period',
+      ask: { uk: 'Як зміниться період обертання, якщо вкоротити нитку, а коло лишити те саме?', en: 'How does the period change if the thread is shortened and the circle stays the same?' },
+      grade: 7,
+      topic: MOTION,
+      title: { uk: 'Період обертання тіла на нитці', en: 'The period of a body turning on a thread' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'circle',
+      choices: [ch('shorter', 'Стане меншим — тіло обертатиметься частіше', 'It gets shorter — the body turns more often'), ch('longer', 'Стане більшим', 'It gets longer'), ch('same', 'Не зміниться — коло ж те саме', 'It stays — the circle is the same')],
+      choicesAt: 'end',
+      formulas: ['mechanics.period'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 2', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 2. Визначення періоду обертання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 2, с. 87' } }],
+      expect: 'reached',
+    },
+    {
+      // More turns timed — the same slip of the stopwatch shared among more of them: a truer period.
+      controls: [{ id: 'turns', label: { uk: 'Скільки обертів рахувати', en: 'Turns to count' }, kind: 'choice', options: [ch('10', '10', '10'), ch('20', '20', '20')], value: '10' }],
+      build: (v) => {
+        const turns = Number(v['turns']);
+        return {
+          question: {
+            uk: `Тримаючи нитку за петлю над центром кола радіусом 15 см, розкрутимо тіло так, щоб воно йшло по колу, і виміряємо час ${turns} обертів. З нього знайдемо період, обертову частоту й швидкість тіла. А потім вкоротимо нитку, а коло лишимо те саме. Як зміниться період обертання?`,
+            en: `Holding the thread by its loop over the centre of a 15 cm circle, we swing the body round it and time ${turns} turns. From that we find the period, the frequency and the body’s speed. Then we shorten the thread and keep the circle. How does the period change?`,
+          },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.whirl', thread: THREAD_LENGTH.value, turns } },
+            { kind: 'bench', command: { type: 'lab.whirl', thread: 0.3, turns } },
+          ],
+        };
+      },
+    },
+  ),
+  varied(
+    {
+      id: 'pendulum',
+      ask: { uk: 'Від чого залежить період коливань маятника: від амплітуди, маси кульки чи довжини нитки?', en: 'What does a pendulum’s period depend on: the amplitude, the ball’s mass or the length?' },
+      grade: 7,
+      topic: MOTION,
+      title: { uk: 'Коливання нитяного маятника', en: 'The swings of a thread pendulum' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'pendulum',
+      choices: [ch('length', 'Лише від довжини нитки', 'Only on the length'), ch('amplitude', 'Від амплітуди: що ширше розмах, то довше', 'On the amplitude: the wider, the longer'), ch('mass', 'Від маси: важча кулька гойдається повільніше', 'On the mass: a heavier ball swings slower')],
+      choicesAt: 'end',
+      answerOnBoard: ['Tp:'],
+      formulas: ['mechanics.pendulum', 'mechanics.period'],
+      programs: [
+        { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 3', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 3. Дослідження коливань нитяного маятника.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 3, с. 99' } },
+        { program: 'ua-nus-2023-holovko', grade: 9, match: 'same', quote: 'коливань математичного маятника' },
+      ],
+      expect: 'reached',
+    },
+    {
+      // More swings timed — the same slip of the stopwatch shared among more of them: a truer period.
+      controls: [{ id: 'count', label: { uk: 'Скільки коливань рахувати', en: 'Swings to count' }, kind: 'choice', options: [ch('10', '10', '10'), ch('20', '20', '20'), ch('30', '30', '30')], value: '20' }],
+      build: (v) => {
+        const count = Number(v['count']);
+        return {
+          question: {
+            uk: `Підвісимо до кільця штатива кульку на нитці завдовжки 1 м. Виміряємо час ${count} коливань, відхиливши кульку на 2,5 см, потім — на 5,5 см. Тоді замінимо кульку важчою, а наостанок вкоротимо нитку до 25 см. Від чого залежить період коливань маятника?`,
+            en: `We hang a ball on a 1 m thread from the stand’s ring. We time ${count} swings with the ball pulled 2.5 cm aside, then 5.5 cm. Then we put on a heavier ball, and at last shorten the thread to 25 cm. What does the pendulum’s period depend on?`,
+          },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.tape', what: 'length', length: 1 } },
+            { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.light, count } },
+            { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.055, mass: PENDULUM_BALLS.light, count } },
+            { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.heavy, count } },
+            { kind: 'bench', command: { type: 'lab.swing', length: 0.25, amplitude: 0.025, mass: PENDULUM_BALLS.light, count } },
+          ],
+        };
+      },
+    },
+  ),
   {
     ask: { uk: 'З якого металу зроблено брусок?', en: 'What metal is the block made of?' },
     id: 'mystery-metal',
