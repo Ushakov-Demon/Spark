@@ -23,9 +23,7 @@ export function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; col
 }
 
 /** Electronic scales on the table to the right, with the vessel (a small copy) on them and an LCD. */
-export function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string): string {
-  const x0 = 506;
-  const w = 118;
+export function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string, x0 = 506, w = 118): string {
   const lab = look === 'lab-balance';
   const top = lab ? 286 : 296;
   const seat = lab ? top - 6 : top - 1;
@@ -36,4 +34,9 @@ export function scalesSvg(look: 'kitchen-scale' | 'lab-balance', vessel: string)
     ${load}
     <rect class="scale-lcd" x="${x0 + 24}" y="${TABLE - (lab ? 24 : 18)}" width="${w - 48}" height="${lab ? 16 : 14}" rx="2"/>
     <text id="sc-scale-text" class="scale-text" x="${x0 + w / 2}" y="${TABLE - (lab ? 12.5 : 7.5)}" text-anchor="middle"></text>`;
+}
+
+/** An electrode plate lying flat (for the pan of the balance): copper, or as coated. */
+export function plateSvg(fill: string): string {
+  return `<svg class="thumb" viewBox="0 0 80 22"><rect x="6" y="13" width="68" height="7" rx="1.5" style="fill:${fill || '#c8794a'};stroke:#7a4a1f;stroke-width:1.2"/><path d="M10,14.5 h58" style="stroke:rgba(255,255,255,0.35)"/></svg>`;
 }

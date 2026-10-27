@@ -10,7 +10,7 @@ import { blocksSvg, type TubePiece } from './graphics/scene/bodies.js';
 import { isGlass, LIQUID, METAL } from './graphics/scene/colors.js';
 import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
 import { deviceSvg } from './graphics/scene/devices.js';
-import { dynamometerSvg, scalesSvg } from './graphics/scene/instruments.js';
+import { dynamometerSvg, plateSvg, scalesSvg } from './graphics/scene/instruments.js';
 import { benchSvg, type BenchView } from './graphics/scene/bench.js';
 import { benchMotion } from './graphics/scene/bench-motion.js';
 import { play } from './motion.js';
@@ -80,7 +80,7 @@ export interface SceneView {
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
   readonly board?: { readonly empty: string; readonly front: string; readonly back: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers?: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
-  readonly scale?: { readonly look: 'kitchen-scale' | 'lab-balance'; readonly display: string };
+  readonly scale?: { readonly look: 'kitchen-scale' | 'lab-balance'; readonly display: string; /** What is on it: the vessel (by default), or the cathode taken out of the cell. */ readonly load?: 'cathode' };
   /** `act` — an idle scene the Professor plays when nobody does anything ("pace", "glasses"…). */
   readonly professor: { readonly mood: Mood; readonly says: string; readonly act?: string };
   /** The bubble's buttons for a long line: to the next page; from the last page back to the first. */
@@ -519,14 +519,22 @@ export function createScene(): Scene {
       boardToggle.hidden = !v.board;
       // Scales: appear when the vessel was weighed, with a small copy of it on the platform.
       const sc = $<SVGGElement>('sc-scale');
-      const scKey = v.scale ? [v.scale.look, v.vessel, v.material, v.liquid, Math.round(v.fill * 20), v.solid >= 1].join('|') : '';
+      const cathodeOut = v.scale?.load === 'cathode';
+      const plates = svg.querySelectorAll<SVGElement>('.electrode');
+      const cathodeEl = plates[plates.length - 1];
+      const scKey = v.scale ? [v.scale.look, v.scale.load, v.vessel, v.material, v.liquid, Math.round(v.fill * 20), v.solid >= 1, cathodeEl?.style.fill].join('|') : '';
       if (sc && scKey !== scaleKey) {
         scaleKey = scKey;
-        sc.innerHTML = v.scale ? scalesSvg(v.scale.look, vesselPreview(v.vessel, v.material, v.solid >= 1 ? 'other' : v.liquid, Math.min(1, v.fill))) : '';
+        // The cathode lies on the balance's pan, between the beaker and the power supply; the vessel stays in its place.
+        sc.innerHTML = !v.scale ? '' : cathodeOut ? scalesSvg(v.scale.look, plateSvg(cathodeEl?.style.fill || ''), 374, 92) : scalesSvg(v.scale.look, vesselPreview(v.vessel, v.material, v.solid >= 1 ? 'other' : v.liquid, Math.min(1, v.fill)));
       }
       sc?.classList.toggle('on', !!v.scale);
-      // The vessel moved onto the scales: it is not on the device meanwhile.
-      root.classList.toggle('weighing', !!v.scale);
+      // The vessel moved onto the scales: it is not on the device meanwhile. The cathode taken out: not in the beaker.
+      root.classList.toggle('weighing', !!v.scale && !cathodeOut);
+      if (cathodeEl) cathodeEl.style.opacity = cathodeOut ? '0' : '';
+      // Its lead is unclipped too: no wire hanging into the beaker to nothing.
+      const lead = svg.querySelector<SVGElement>('.wire.minus');
+      if (lead) lead.style.opacity = cathodeOut ? '0' : '';
       const scText = $('sc-scale-text');
       if (scText && v.scale) scText.textContent = v.scale.display;
       // Thermometer: −30 … 120 °C scale (stretches for hotter things).

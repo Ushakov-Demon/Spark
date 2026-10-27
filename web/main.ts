@@ -550,6 +550,15 @@ function measureSay(): string {
     const what = uk ? ['Довжина', 'Ширина', 'Висота'][e] : ['Length', 'Width', 'Height'][e];
     return `${what} ${uk ? 'бруска' : 'of the block'}: ${cm(r.value ?? 0)}.`;
   }
+  // The cathode on the balance: its mass, and after the current — how much heavier it came out.
+  if (m.command.type === 'lab.cathode') {
+    const g = (x: number) => formatReading('lab-balance', x, locale);
+    const before = [...all.slice(0, i)].reverse().find((x) => x.command.type === 'lab.cathode' && x.record.value !== null);
+    if (r.value === null) return '';
+    if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
+    const dm = r.value - before.record.value!;
+    return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+  }
   const c = m.command as Extract<LabCommand, { type: 'lab.hang' }>;
   const what = c.label ? tr(c.label, locale) : nameOfBody(c.substance);
   const air = c.into === 'liquid' ? [...all.slice(0, i)].reverse().find((x) => x.command.type === 'lab.hang' && (x.command as typeof c).into === 'air' && (x.command as typeof c).substance === c.substance && (x.command as typeof c).mass === c.mass) : undefined;
@@ -1441,6 +1450,8 @@ function sceneView(): SceneView {
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
     bubble: { next: u.bubbleNext, back: u.bubbleBack },
     ...(benchView() ? { bench: benchView()! } : {}),
+    // The cathode taken out and weighed: on the laboratory balance beside the beaker (the cell stays where it is).
+    ...(measured?.command.type === 'lab.cathode' ? { scale: { look: 'lab-balance', display: measured.record.value === null ? 'O-Ld' : formatReading('lab-balance', measured.record.value, locale), load: 'cathode' } } : {}),
     ...(weighShown ? { scale: { look: SCALES[weighShown.scale].look === 'lab-balance' ? 'lab-balance' : 'kitchen-scale', display: weighShown.reading === null ? 'O-Ld' : formatReading(weighShown.scale, weighShown.reading, locale) } } : {}),
   };
 }
@@ -2168,7 +2179,13 @@ function renderProtocol() {
   const now = doneRecord ? outcome(doneRecord.status, doneRecord.result, doneRecord.params) : running || stepElapsed() > 0 ? u.stepRunning(formatDuration(Math.floor(stepElapsed()), locale)) : u.stepWaiting;
   const cur = history.length;
   // A measuring procedure (nothing runs in time): one row of what was measured, not a step waiting for its start.
-  rows.push(
+  // A guided procedure before its operation has begun: the operation is in the plan below, in its place —
+  // here only what was already put in or measured (nothing yet — no row), not the same step a second time.
+  const ahead = !!preset?.guided && timed && !running && stepElapsed() === 0 && !doneRecord && plan.some((s) => s.kind === 'operation');
+  const doneHere = stepAdds.length > 0 || readingsOf(curLog).length > 0;
+  if (ahead) {
+    if (doneHere) rows.push(`<li class="done"><span class="what">${u.measuring}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}</li>`);
+  } else rows.push(
     timed
       ? `<li class="current"${finished ? lookAttr(`s:${cur}`) : ''}><span class="what">${what(stepP)}</span><span class="where">${place(stepP)}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}<span class="outcome">${now}</span>${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`
       : `<li class="${plan.length ? 'current' : 'done'}"><span class="what">${u.measuring}</span>${adds(stepAdds)}${weighed(curLog, initialState.time, true, cur)}${weighed(curLog, initialState.time, false, cur)}${adds(pendingAdds)}</li>`,
