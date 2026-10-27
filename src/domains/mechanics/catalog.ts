@@ -30,6 +30,7 @@ const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', g
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
+const UA_PASCAL: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Паскаля. … Гідравлічна машина.' }];
 const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' }];
 const UA_EFFICIENCY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Корисна й затрачена робота. Коефіцієнт корисної дії.' }];
 const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
@@ -221,6 +222,33 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.hydrostaticPressure,
     examples: [{ args: [997.05, 9.81, 0.09], expected: 880.39515, note: 'water, 9 cm deep' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.hydraulic',
+    law: 'pascal',
+    title: { uk: 'Гідравлічна машина', en: 'A hydraulic machine' },
+    latex: '\\dfrac{F_2}{F_1} = \\dfrac{S_2}{S_1}',
+    plain: 'F₂ / F₁ = S₂ / S₁',
+    argSymbols: ['F₁', 'S₁', 'S₂'],
+    resultSymbol: 'F₂',
+    variables: {
+      'F₂': { name: { uk: 'сила на великому поршні', en: 'force on the large piston' }, unit: 'N' },
+      'F₁': { name: { uk: 'сила на малому поршні', en: 'force on the small piston' }, unit: 'N' },
+      'S₁': { name: { uk: 'площа малого поршня', en: 'area of the small piston' }, unit: 'm²' },
+      'S₂': { name: { uk: 'площа великого поршня', en: 'area of the large piston' }, unit: 'm²' },
+    },
+    curriculum: UA_PASCAL,
+    explanation: {
+      novice: { uk: 'Тиснеш на маленький поршень — великий піднімає набагато важчий вантаж.', en: 'Push the small piston — the large one lifts a much heavier load.' },
+      school: {
+        uk: 'Тиск під обома поршнями однаковий (закон Паскаля): F₁/S₁ = F₂/S₂. Виграш у силі F₂/F₁ дорівнює відношенню площ S₂/S₁ — тобто квадрату відношення діаметрів. Але малий поршень проходить у стільки ж разів довший шлях: у роботі виграшу немає.',
+        en: 'The pressure under both pistons is the same (Pascal’s law): F₁/S₁ = F₂/S₂. The gain in force F₂/F₁ equals the ratio of the areas S₂/S₁ — the square of the ratio of the diameters. But the small piston travels as many times farther: there is no gain in work.',
+      },
+    },
+    compute: f.hydraulicForce,
+    examples: [{ args: [0.84, 1.131e-4, 5.309e-4], expected: 3.9431, note: '0.84 N on a 12 mm piston, a 26 mm one' }],
     textSource: 'spark',
     reviewed: false,
   }),

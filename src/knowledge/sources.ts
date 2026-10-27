@@ -625,6 +625,13 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-23',
   }),
+  'wikipedia-pascal-law': source({
+    id: 'wikipedia-pascal-law',
+    title: 'Wikipedia, Pascal’s law: a pressure change at any point in a confined incompressible fluid is transmitted throughout the fluid; established by Blaise Pascal in 1653, published in 1663; it underlies the hydraulic press, F₂/F₁ = A₂/A₁',
+    url: 'https://en.wikipedia.org/wiki/Pascal%27s_law',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-27',
+  }),
   'wikipedia-lever': source({
     id: 'wikipedia-lever',
     title: 'Wikipedia, Lever: the earliest remaining writings on levers date from the third century BC and were, by common belief, by Archimedes; the law of the lever — F₁a = F₂b (balance of moments about the fulcrum)',

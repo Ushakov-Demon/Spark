@@ -277,6 +277,14 @@ describe('ready-made experiments with values to change', () => {
     if (process.env['SHOW_ANSWERS']) console.log(`[${_n}] ${answer.say.uk} (${answer.correct})`);
   }, 60_000);
 
+  it('the hydraulic machine: the gain in force is the ratio of the areas, and none in work', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'hydraulic-press')!);
+    expect(answer.correct).toBe('areas');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const [w1, w2] = [...answer.text.uk.matchAll(/≈ ([\d,]+) Дж/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(Math.abs(w1! / w2! - 1)).toBeLessThan(0.15);
+  }, 60_000);
+
   it('communicating vessels: water level alike; the oil column taller; the oil’s density from ρ₁h₁ = ρ₂h₂', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'communicating-vessels')!);
     expect(answer.correct).toBe('oil');

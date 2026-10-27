@@ -326,6 +326,39 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'hydraulic-press': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.press' && x.record.value !== null);
+    const d1 = R.find((x) => x.record.inputs?.['which'] === 1)?.record.value ?? 0;
+    const d2 = R.find((x) => x.record.inputs?.['which'] === 2)?.record.value ?? 0;
+    const lifts = R.filter((x) => x.command['step'] === 'lift').map((x) => ({ n: Number(x.command['weights']), F1: x.record.value!, F2: x.record.inputs?.['load'] ?? 0 }));
+    const travel = R.find((x) => x.command['step'] === 'travel')?.record;
+    const areas = d1 > 0 ? (d2 / d1) ** 2 : 0;
+    const diam = d1 > 0 ? d2 / d1 : 0;
+    const gains = lifts.filter((x) => x.F1 > 0).map((x) => x.F2 / x.F1);
+    const gain = gains.length ? gains.reduce((a, b) => a + b, 0) / gains.length : 0;
+    // Closer to the ratio of the areas or of the diameters (or none at all)?
+    const correct = !gains.length ? undefined : Math.abs(gain - areas) < Math.abs(gain - diam) && Math.abs(gain - areas) < Math.abs(gain - 1) ? 'areas' : Math.abs(gain - diam) < Math.abs(gain - 1) ? 'diameters' : 'none';
+    const N = (x: number, l: Locale) => formatMeasured('force', x, 0.1, l);
+    const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
+    const lastLift = lifts[lifts.length - 1];
+    const push = travel?.inputs?.['push'] ?? 0.06;
+    const rise = travel?.value ?? 0;
+    const list = (l: Locale) => lifts.map((x) => `F₂ = ${N(x.F2, l)} — F₁ = ${N(x.F1, l)}`).join('; ');
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Вода майже не стискається й передає тиск, який створює вузький поршень, в усі боки однаково — і під широкий поршень теж (закон Паскаля). Тиск — це сила на кожен квадратний сантиметр. Під широким поршнем таких сантиметрів у стільки разів більше, у скільки разів більша його площа, — у стільки ж разів більша й сила. А площа зростає як квадрат діаметра. Але за виграш у силі платять шляхом: вода з вузького шприца, розтікаючись широким, піднімає поршень на стільки ж менше.'
+          : 'Water hardly compresses and passes the pressure the narrow piston makes on in all directions alike — under the wide piston too (Pascal’s law). Pressure is force on each square centimetre. Under the wide piston there are as many times more of those centimetres as its area is larger — and so as many times more force. And the area grows as the square of the diameter. But the gain in force is paid for in distance: the water from the narrow syringe, spread over the wide one, lifts its piston that many times less.',
+      ),
+      say: both((l) => (correct === 'areas' ? (l === 'uk' ? `Виграш у силі ≈ ${sig(gain, 2, l)} раза — як відношення площ!` : `A gain in force of ≈ ${sig(gain, 2, l)} times — the ratio of the areas!`) : l === 'uk' ? 'Подивімося, що показав динамометр.' : 'Let us look at the dynamometer.')),
+      text: both((l) =>
+        l === 'uk'
+          ? `Діаметри поршнів ${cm(d1, l)} і ${cm(d2, l)}: широкий більший у ${sig(diam, 2, l)} раза, а його площа — у (d₂/d₁)² ≈ ${sig(areas, 2, l)} раза. ${list(l)}: широкий поршень щоразу піднімав вантаж у ≈ ${sig(gain, 2, l)} раза важчий за силу, якою тиснули на вузький, — як відношення площ, а не діаметрів. Зате коли вузький поршень опустили на ${cm(push, l)}, широкий піднявся лише на ${cm(rise, l)}: робота F₁·l₁ ≈ ${sig((lastLift?.F1 ?? 0) * push, 2, l)} Дж і F₂·l₂ ≈ ${sig((lastLift?.F2 ?? 0) * rise, 2, l)} Дж — майже однакові, у роботі виграшу немає. (Тертя поршнів не враховано: зі справжніми шприцами тиснути доводиться трохи сильніше.)`
+          : `The pistons are ${cm(d1, l)} and ${cm(d2, l)} across: the wide one is ${sig(diam, 2, l)} times wider, and its area (d₂/d₁)² ≈ ${sig(areas, 2, l)} times larger. ${list(l)}: each time the wide piston lifted a load ≈ ${sig(gain, 2, l)} times the force on the narrow one — the ratio of the areas, not of the diameters. But when the narrow piston went ${cm(push, l)} down, the wide one rose only ${cm(rise, l)}: the work F₁·l₁ ≈ ${sig((lastLift?.F1 ?? 0) * push, 2, l)} J and F₂·l₂ ≈ ${sig((lastLift?.F2 ?? 0) * rise, 2, l)} J — almost the same, no gain in work. (The pistons’ friction is left out: with real syringes one has to push a little harder.)`,
+      ),
+    };
+  },
   'communicating-vessels': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.utube' && x.record.value !== null);
     const alone = R.find((x) => x.record.inputs?.['which'] === 2)?.record;

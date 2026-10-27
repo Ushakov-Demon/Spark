@@ -28,3 +28,4 @@ export * from './coil-bench.js';
 export * from './box-bench.js';
 export * from './depth-bench.js';
 export * from './utube-bench.js';
+export * from './press-bench.js';

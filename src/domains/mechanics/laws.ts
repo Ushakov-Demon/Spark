@@ -6,6 +6,7 @@ const COULOMB: Person = { name: { uk: 'Шарль Огюстен де Кулон
 const GALILEO: Person = { name: { uk: 'Галілео Галілей', en: 'Galileo Galilei' }, born: 1564, died: 1642, wikidata: 'Q307' };
 const HUYGENS: Person = { name: { uk: 'Крістіан Гюйгенс', en: 'Christiaan Huygens' }, born: 1629, died: 1695, wikidata: 'Q39599' };
 const ARCHIMEDES: Person = { name: { uk: 'Архімед', en: 'Archimedes' }, born: -287, died: -212, wikidata: 'Q8739' };
+const PASCAL: Person = { name: { uk: 'Блез Паскаль', en: 'Blaise Pascal' }, born: 1623, died: 1662, wikidata: 'Q1290' };
 
 /**
  * Laws behind the mechanics formulas (bodies at rest in a liquid). Texts follow
@@ -225,6 +226,34 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     },
     limits: {
       school: { uk: 'Так — для важеля, що сам урівноважений (його вага не обертає його) і в якого сили діють перпендикулярно до нього; тертя в осі мале.', en: 'This holds for a lever that is balanced by itself (its own weight does not turn it), with the forces perpendicular to it and little friction at the axis.' },
+    },
+  },
+  {
+    id: 'pascal',
+    kind: 'law',
+    name: { uk: 'Закон Паскаля', en: 'Pascal’s law' },
+    statement: {
+      novice: { uk: 'Натисни на рідину в закритій посудині — і цей натиск відчує кожна її частинка, в усіх напрямках однаково.', en: 'Press on a liquid in a closed vessel — and every bit of it feels that push, equally in all directions.' },
+      school: { uk: 'Тиск, створений на рідину чи газ у закритій посудині, передається в кожну їхню точку без змін. Тому в гідравлічній машині тиски під поршнями рівні: F₁/S₁ = F₂/S₂ — на більший поршень діє у стільки разів більша сила, у скільки разів більша його площа.', en: 'A pressure applied to a liquid or a gas in a closed vessel is passed on unchanged to every point of it. So in a hydraulic machine the pressures under the pistons are equal: F₁/S₁ = F₂/S₂ — the larger piston gets as many times more force as its area is larger.' },
+    },
+    history: {
+      people: [PASCAL],
+      role: 'discovered',
+      when: { uk: '1653 (надруковано 1663)', en: '1653 (published 1663)' },
+      story: {
+        school: {
+          uk: 'Французький математик і фізик Блез Паскаль сформулював цей закон 1653 року, а надрукували його працю 1663-го, уже після його смерті. На законі Паскаля працює гідравлічний прес.',
+          en: 'The French mathematician and physicist Blaise Pascal stated this law in 1653; his work was printed in 1663, after his death. The hydraulic press works by Pascal’s law.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-pascal-law', locator: 'lead', claim: 'established by French mathematician Blaise Pascal in 1653 and published in 1663' },
+        { source: 'wikipedia-pascal-law', locator: 'lead', claim: 'a pressure change at any point in a confined incompressible fluid is transmitted throughout the fluid' },
+        { source: 'wikipedia-pascal-law', locator: 'Applications', claim: 'Pascal’s principle underlies the operation of the hydraulic press; F₂/F₁ = A₂/A₁' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Так — для рідини, що стоїть (тиск її власної ваги тут додається окремо, ρ·g·h), і для поршнів без тертя: у справжніх шприцах частина сили йде на тертя.', en: 'So — for a liquid at rest (the pressure of its own weight adds separately, ρ·g·h) and for pistons without friction: in real syringes some of the force goes into friction.' },
     },
   },
   {

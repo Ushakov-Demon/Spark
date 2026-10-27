@@ -320,6 +320,7 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   const edges: (number | undefined)[] = [];
   const count = { volume: 0, mass: 0 };
   let tapePath: number | null = null;
+  let pressAreas: number | null = null;
   const pair: Partial<Record<'r1' | 'r2' | 'both', { I: number; U: number }>> = {};
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
@@ -428,6 +429,28 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const Nm = uk ? 'Н·м' : 'N·m';
       out.push({ id: `M1:${i}`, title: uk ? `момент сили ліворуч (${F2(F1)} на ${cm(l1)})` : `the moment on the left (${F2(F1)} at ${cm(l1)})`, formula: 'M₁ = F₁·l₁', numbers: `${F2(F1)} · ${n(l1)} ${uk ? 'м' : 'm'} ≈ ${n(F1 * l1, 3)} ${Nm}` });
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
+      return;
+    }
+    // The hydraulic machine: the pistons' areas, the force each load needed, the gain; the travel.
+    if (c.type === 'lab.press') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
+      const cmT = (m: number) => `${n(m * 100)} ${uk ? 'см' : 'cm'}`;
+      const N1 = (x: number) => formatMeasured('force', x, 0.1, locale);
+      if (c['step'] === 'diameters') {
+        const d1 = recs.find((x) => x.inputs?.['which'] === 1)?.value ?? 0;
+        const d2 = recs.find((x) => x.inputs?.['which'] === 2)?.value ?? 0;
+        pressAreas = d1 > 0 ? (d2 / d1) ** 2 : null;
+        out.push({ id: 'pd', title: uk ? 'діаметри поршнів' : 'the pistons’ diameters', formula: `d₁ = ${cmT(d1)}, d₂ = ${cmT(d2)}` });
+        if (pressAreas) out.push({ id: 'pS', title: uk ? 'у скільки разів більша площа широкого' : 'how many times larger the wide one’s area', formula: 'S₂ / S₁ = (d₂ / d₁)²', numbers: `(${n(d2 * 100)} / ${n(d1 * 100)})² ≈ ${n(pressAreas, 2)}` });
+        return;
+      }
+      if (c['step'] === 'lift') {
+        const F2 = r.inputs?.['load'] ?? 0;
+        out.push({ id: `pF:${c['weights']}`, title: uk ? `${c['weights']} ${Number(c['weights']) === 1 ? 'тягарець' : Number(c['weights']) < 5 ? 'тягарці' : 'тягарців'} на широкому поршні` : `${c['weights']} weights on the wide piston`, formula: `F₂ = ${N1(F2)}, F₁ = ${N1(r.value)}` });
+        if (r.value > 0) out.push({ id: `gain:${c['weights']}`, title: uk ? 'виграш у силі' : 'the gain in force', formula: 'F₂ / F₁', numbers: `${n(F2, 2)} / ${n(r.value, 2)} ≈ ${n(F2 / r.value, 2)}` });
+        return;
+      }
+      out.push({ id: 'pl', title: uk ? 'вузький поршень на 6 см униз — широкий угору на' : 'the narrow piston 6 cm down — the wide one up by', formula: `l₂ = ${cmT(r.value)}` });
       return;
     }
     // The U-tube: water alone — its levels alike; with oil — both columns above the boundary, and the oil's density.

@@ -56,7 +56,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -582,6 +582,31 @@ export const PRESETS: readonly Preset[] = [
     formulas: ['mechanics.density'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 7, item: 'Тема 1. Хімія. Перші кроки', match: 'related', quote: 'Актуалізація умінь, набутих в адаптаційному циклі на прикладі визначення густини тіла (цвяха, ключа тощо).' }],
     quoteHas: 'густини',
+    expect: 'reached',
+  },
+  {
+    id: 'hydraulic-press',
+    ask: { uk: 'У скільки разів гідравлічна машина виграє в силі?', en: 'How many times does a hydraulic machine gain in force?' },
+    grade: 7,
+    topic: PRESSURE,
+    title: { uk: 'Гідравлічна машина зі шприців', en: 'A hydraulic machine of syringes' },
+    question: {
+      uk: 'Два шприци — вузький і широкий — з’єднані трубкою, усе заповнене водою. Виміряємо діаметри поршнів. Ставитимемо на широкий поршень 2, 4 і 6 тягарців по 100 г і тиснутимемо динамометром на вузький, поки вантаж не почне підніматися. А наостанок опустимо вузький поршень на 6 см і подивимося, на скільки підніметься широкий. У скільки разів така машина виграє в силі?',
+      en: 'Two syringes — a narrow and a wide one — are joined by a tube, all full of water. We measure the pistons’ diameters. We put 2, 4 and 6 weights of 100 g on the wide piston and push the narrow one with the dynamometer until the load starts to rise. At last we push the narrow piston 6 cm down and see how far the wide one rises. How many times does such a machine gain in force?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'press',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.press', step: 'diameters' } },
+      ...[2, 4, 6].map((weights) => ({ kind: 'bench', command: { type: 'lab.press', step: 'lift', weights } }) as const),
+      { kind: 'bench', command: { type: 'lab.press', step: 'travel', weights: 6 } },
+    ],
+    choices: [ch('areas', 'У стільки, у скільки площа широкого поршня більша за площу вузького', 'As many times as the wide piston’s area is larger than the narrow one’s'), ch('diameters', 'У стільки, у скільки більший діаметр', 'As many times as the diameter is larger'), ch('none', 'Ні в скільки — сила та сама', 'Not at all — the force is the same')],
+    choicesAt: 'end',
+    answerOnBoard: ['gain:'],
+    formulas: ['mechanics.hydraulic', 'mechanics.pressure'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Закон Паскаля. … Гідравлічна машина. … Дослідження: … передавання тиску рідинами й газами' }],
     expect: 'reached',
   },
   {

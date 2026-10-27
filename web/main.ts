@@ -428,6 +428,15 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // The hydraulic machine: the load on the wide piston (from this step, or the next one planned), the dynamometer.
+  if (kind === 'press') {
+    const pc = c?.type === 'lab.press' ? (c as unknown as { step: string; weights?: number }) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.press' && 'weights' in s.command);
+    const weights = pc?.weights ?? (next?.kind === 'bench' ? ((next.command as { weights?: number }).weights ?? 0) : 0);
+    const recs = last && pc ? readingsOf([last]).map((x) => x.record) : [];
+    const read = pc?.step === 'diameters' ? `d₁ = ${formatMeasured('length', recs[0]?.value ?? 0, 0.001, locale)}, d₂ = ${formatMeasured('length', recs[1]?.value ?? 0, 0.001, locale)}` : pc?.step === 'travel' ? `l₂ = ${formatMeasured('length', recs[0]?.value ?? 0, 0.001, locale)}` : undefined;
+    return { ...base, kind, press: { weights, pushed: pc?.step === 'travel' ? 1 : 0, ...(pc?.step === 'lift' && r ? { pull: show('force', r.value) } : {}), ...(read ? { read } : {}) } };
+  }
   // The U-tube: water poured once the first step is done; the oil's and the water's columns as the ruler read them.
   if (kind === 'utube') {
     const uc = c?.type === 'lab.utube' ? (c as unknown as { poured: number }) : undefined;
@@ -606,6 +615,17 @@ function measureSay(): string {
     if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+  }
+  // The hydraulic machine: the pistons, the force the load needed, how far the wide piston rose.
+  if (m.command.type === 'lab.press') {
+    const pc = m.command as { step: string; weights?: number };
+    const recs = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.press').slice(0, 1)).map((x) => x.record);
+    if (pc.step === 'diameters') return uk ? `Вузький поршень — ${cm(recs[0]?.value ?? 0)} у діаметрі, широкий — ${cm(recs[1]?.value ?? 0)}.` : `The narrow piston is ${cm(recs[0]?.value ?? 0)} across, the wide one ${cm(recs[1]?.value ?? 0)}.`;
+    if (pc.step === 'lift') {
+      const F2 = r.inputs?.['load'] ?? 0;
+      return uk ? `Вантаж ${formatMeasured('force', F2, 0.1, locale)} пішов угору, коли динамометр показав лише ${formatMeasured('force', r.value, 0.1, locale)}!` : `The ${formatMeasured('force', F2, 0.1, locale)} load went up when the dynamometer showed only ${formatMeasured('force', r.value, 0.1, locale)}!`;
+    }
+    return uk ? `Вузький поршень пройшов 6 см, а широкий піднявся лише на ${cm(r.value ?? 0)}.` : `The narrow piston went 6 cm, and the wide one rose only ${cm(r.value ?? 0)}.`;
   }
   // The U-tube: the levels alike with water alone; with oil — both columns above the boundary.
   if (m.command.type === 'lab.utube') {
@@ -2255,11 +2275,14 @@ function renderProtocol() {
       // (The circuit reads two instruments at once: both are written.)
       const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
       // (The black box's milliammeter: milliamperes to a tenth.)
+      // (The pistons' two diameters.)
+      const pRecs = c.type === 'lab.press' ? readingsOf([e]).map((x) => x.record) : [];
+      const pShown = c.type === 'lab.press' && pRecs.length === 2 ? `${formatMeasured('length', pRecs[0]!.value, 0.001, locale)} · ${formatMeasured('length', pRecs[1]!.value, 0.001, locale)}` : null;
       // (The U-tube with oil: both columns.)
       const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
-      const shown = both ?? leverShown ?? boxShown ?? uShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
