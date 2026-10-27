@@ -56,7 +56,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -582,6 +582,27 @@ export const PRESETS: readonly Preset[] = [
     formulas: ['mechanics.density'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 7, item: 'Тема 1. Хімія. Перші кроки', match: 'related', quote: 'Актуалізація умінь, набутих в адаптаційному циклі на прикладі визначення густини тіла (цвяха, ключа тощо).' }],
     quoteHas: 'густини',
+    expect: 'reached',
+  },
+  {
+    id: 'communicating-vessels',
+    ask: { uk: 'Де стоятиме вищий рівень — олії чи води?', en: 'Which level will stand higher — the oil’s or the water’s?' },
+    grade: 7,
+    topic: PRESSURE,
+    title: { uk: 'Сполучені посудини: вода й олія', en: 'Communicating vessels: water and oil' },
+    question: {
+      uk: 'Наллємо у скляну U-подібну трубку води й порівняємо рівні в обох колінах. Потім доливатимемо в ліве коліно соняшникову олію — 10 мл, а тоді ще 10 мл — і щоразу вимірюватимемо лінійкою висоту стовпа олії й висоту води в правому коліні над рівнем межі між олією й водою. Де стоятиме вищий рівень — олії чи води?',
+      en: 'We pour water into a glass U-tube and compare the levels in its two arms. Then we pour sunflower oil into the left arm — 10 mL, then 10 mL more — and each time measure with a ruler the height of the oil column and of the water in the right arm above the level of the boundary between the oil and the water. Which level will stand higher — the oil’s or the water’s?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'utube',
+    plan: [0, 10, 20].map((poured) => ({ kind: 'bench', command: { type: 'lab.utube', poured, liquid: 'sunflower-oil' } }) as const),
+    choices: [ch('oil', 'Вищим буде рівень олії', 'The oil’s level will be higher'), ch('water', 'Вищим буде рівень води', 'The water’s level will be higher'), ch('same', 'Рівні будуть однакові', 'The levels will be the same')],
+    choicesAt: 'end',
+    answerOnBoard: ['rhoU:'],
+    formulas: ['mechanics.communicating-vessels', 'mechanics.hydrostatic-pressure'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Сполучені посудини. … моделювання: сполучених посудин' }],
     expect: 'reached',
   },
   varied(

@@ -29,6 +29,7 @@ const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gr
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
+const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' }];
 const UA_EFFICIENCY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Корисна й затрачена робота. Коефіцієнт корисної дії.' }];
 const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
@@ -220,6 +221,33 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.hydrostaticPressure,
     examples: [{ args: [997.05, 9.81, 0.09], expected: 880.39515, note: 'water, 9 cm deep' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.communicating-vessels',
+    law: 'pressure',
+    title: { uk: 'Різні рідини в сполучених посудинах', en: 'Two liquids in communicating vessels' },
+    latex: '\\rho_1 h_1 = \\rho_2 h_2',
+    plain: 'ρ₂ = ρ₁·h₁ / h₂',
+    argSymbols: ['ρ₁', 'h₁', 'h₂'],
+    resultSymbol: 'ρ₂',
+    variables: {
+      'ρ₂': { name: { uk: 'густина другої рідини', en: 'density of the second liquid' }, unit: 'kg/m³' },
+      'ρ₁': { name: { uk: 'густина першої рідини (води)', en: 'density of the first liquid (water)' }, unit: 'kg/m³' },
+      'h₁': { name: { uk: 'висота стовпа першої рідини над межею', en: 'height of the first liquid above the boundary' }, unit: 'm' },
+      'h₂': { name: { uk: 'висота стовпа другої рідини над межею', en: 'height of the second liquid above the boundary' }, unit: 'm' },
+    },
+    curriculum: UA_COMMUNICATING,
+    explanation: {
+      novice: { uk: 'Легшої рідини треба вищий стовп, щоб урівноважити важчу.', en: 'A lighter liquid needs a taller column to balance a heavier one.' },
+      school: {
+        uk: 'В одній рідині рівні в сполучених посудинах однакові. Різні рідини, що не змішуються, стоять так, щоб на рівні межі їхні тиски були рівні: ρ₁·g·h₁ = ρ₂·g·h₂ — висоти обернено пропорційні густинам.',
+        en: 'With one liquid the levels in communicating vessels are the same. Two liquids that do not mix stand so that their pressures are equal at the level of the boundary: ρ₁·g·h₁ = ρ₂·g·h₂ — the heights are inversely proportional to the densities.',
+      },
+    },
+    compute: f.balancedDensity,
+    examples: [{ args: [997.05, 0.046, 0.05], expected: 917.286, note: 'water 4.6 cm against 5 cm of oil' }],
     textSource: 'spark',
     reviewed: false,
   }),

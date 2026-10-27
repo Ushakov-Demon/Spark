@@ -430,6 +430,22 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // The U-tube: water alone — its levels alike; with oil — both columns above the boundary, and the oil's density.
+    if (c.type === 'lab.utube') {
+      const ml = Number(c['poured']);
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
+      const cmT = (m: number) => `${n(m * 100)} ${uk ? 'см' : 'cm'}`;
+      if (ml === 0) {
+        out.push({ id: 'u0', title: uk ? 'сама вода: різниця рівнів у колінах' : 'water alone: the levels’ difference', formula: `Δh = ${cmT(r.value)}` });
+        return;
+      }
+      const hO = recs.find((x) => x.inputs?.['which'] === 1)?.value ?? 0;
+      const hW = recs.find((x) => x.inputs?.['which'] === 0)?.value ?? 0;
+      const rhoW = r.inputs?.['rhoWater'] ?? 997;
+      out.push({ id: `uh:${ml}`, title: uk ? `олії ${ml} мл: висоти над межею` : `${ml} mL of oil: the heights above the boundary`, formula: `h_${uk ? 'олії' : 'oil'} = ${cmT(hO)}, h_${uk ? 'води' : 'water'} = ${cmT(hW)}` });
+      if (hO > 0) out.push({ id: `rhoU:${ml}`, title: uk ? `густина олії (${ml} мл)` : `the oil’s density (${ml} mL)`, formula: uk ? 'ρ_олії = ρ_води·h_води / h_олії' : 'ρ_oil = ρ_water·h_water / h_oil', numbers: `${n(rhoW, 4)} · ${n(hW * 100)} / ${n(hO * 100)} ≈ ${n((rhoW * hW) / hO, 3)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+      return;
+    }
     // The pressure at a depth: the manometer's Δh gives p = ρ_water·g·Δh, and over the depth — the liquid's density.
     if (c.type === 'lab.depth') {
       const h = Number(c['depth']);

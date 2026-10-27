@@ -277,6 +277,14 @@ describe('ready-made experiments with values to change', () => {
     if (process.env['SHOW_ANSWERS']) console.log(`[${_n}] ${answer.say.uk} (${answer.correct})`);
   }, 60_000);
 
+  it('communicating vessels: water level alike; the oil column taller; the oil’s density from ρ₁h₁ = ρ₂h₂', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'communicating-vessels')!);
+    expect(answer.correct).toBe('oil');
+    expect(answer.text.uk).toMatch(/різниця 0 см/);
+    const found = Number(answer.text.uk.match(/ρ = ρ_води·h_води \/ h_олії ≈ ([^к]+)кг/)![1]!.replace(/[^\d,]/g, '').replace(',', '.'));
+    expect(Math.abs(found / 919 - 1)).toBeLessThan(0.03);
+  }, 60_000);
+
   it('the pressure at a depth: in proportion to it, the same sideways; the manometer gives the liquid’s density', async () => {
     const { withValues } = await import('../../src/scenarios/index.js');
     const p = PRESETS.find((x) => x.id === 'depth-pressure')!;
