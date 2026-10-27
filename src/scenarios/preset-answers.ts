@@ -326,6 +326,39 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'depth-pressure': (run) => {
+    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.depth' && x.record.value !== null).map((x) => ({ h: Number(x.command['depth']), side: !!x.command['sideways'], dh: x.record.value!, rhoM: x.record.inputs?.['rhoManometer'] ?? 1000, rhoL: x.record.inputs?.['rhoLiquid'] ?? 1000, g: x.record.inputs?.['g'] ?? 9.81 }));
+    const down = rows.filter((x) => !x.side);
+    const side = rows.find((x) => x.side);
+    const p = (x: (typeof rows)[number]) => x.rhoM * x.g * x.dh;
+    // Proportional: p / h the same at every depth, within the manometer's millimetre (half of it, relative to Δh).
+    const k = down.map((x) => p(x) / x.h);
+    const mean = k.reduce((a, b) => a + b, 0) / Math.max(1, k.length);
+    const err = down.length ? Math.max(...down.map((x) => 0.0005 / x.dh)) : 0;
+    const spread = k.length ? Math.max(...k.map((x) => Math.abs(x / mean - 1))) : 0;
+    const first = down[0];
+    const last = down[down.length - 1];
+    const correct = down.length < 2 ? undefined : spread <= err + 0.01 ? 'proportional' : last && first && p(last) > p(first) ? 'slower' : 'same';
+    const rho = first ? mean / first.g : 0;
+    const table = first?.rhoL ?? 0;
+    const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
+    const Pa = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'Па' : 'Pa'}`;
+    const list = (l: Locale) => down.map((x) => `${cm(x.h, l)} — Δh = ${cm(x.dh, l)}, p ≈ ${Pa(p(x), l)}`).join('; ');
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Рідина важка: кожен її шар тисне на шари під собою вагою всього, що над ним. На глибині h на кожен квадратний метр давить стовп рідини висотою h і масою ρ·h, тобто вагою ρ·g·h — тому тиск росте рівно пропорційно глибині. А частинки рідини легко зсуваються одна відносно одної й передають цей тиск в усі боки однаково (закон Паскаля): плівка, повернута вбік, відчуває той самий тиск.'
+          : 'A liquid is heavy: each layer presses on the layers below with the weight of all that is above it. At a depth h each square metre carries a column of liquid h high with a mass ρ·h, that is, a weight ρ·g·h — so the pressure grows exactly in proportion to the depth. And the bits of a liquid slide past each other easily and pass that pressure on in all directions alike (Pascal’s law): the film turned sideways feels the same pressure.',
+      ),
+      say: both((l) => (correct === 'proportional' ? (l === 'uk' ? 'Удвічі глибше — удвічі більший тиск!' : 'Twice as deep — twice the pressure!') : l === 'uk' ? 'Подивімося на манометр.' : 'Let us look at the manometer.')),
+      text: both((l) =>
+        l === 'uk'
+          ? `${list(l)}. Тиск, який показує манометр (p = ρ_води·g·Δh), зростав пропорційно глибині: p / h скрізь ≈ ${sig(mean, 3, l)} Па/м. Звідси й густина рідини ρ = p / (g·h) ≈ ${sig(rho, 3, l)} кг/м³ (у таблиці — ${sig(table, 3, l)} кг/м³).${side ? ` Плівка, повернута вбік на ${cm(side.h, l)}, дала ті самі Δh = ${cm(side.dh, l)}: на одній глибині тиск однаковий в усі боки.` : ''}`
+          : `${list(l)}. The pressure the manometer shows (p = ρ_water·g·Δh) grew in proportion to the depth: p / h ≈ ${sig(mean, 3, l)} Pa/m everywhere. From it the liquid’s density ρ = p / (g·h) ≈ ${sig(rho, 3, l)} kg/m³ (the table gives ${sig(table, 3, l)} kg/m³).${side ? ` The film turned sideways at ${cm(side.h, l)} gave the same Δh = ${cm(side.dh, l)}: at one depth the pressure is the same in all directions.` : ''}`,
+      ),
+    };
+  },
   'diode-black-box': (run) => {
     const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.box' && x.record.value !== null).map((x) => ({ U: Number(x.command['source']), back: !!x.command['reversed'], I: x.record.value!, div: x.record.inputs?.['division'] ?? 0.0001 }));
     const there = rows.filter((x) => !x.back);

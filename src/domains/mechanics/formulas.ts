@@ -23,6 +23,8 @@ export const slidingFriction = (mu: number, normalForce: number): number => mu *
 
 /** Pressure of a body on its support: p = F / S. */
 export const pressure = (force: number, area: number): number => force / area;
+/** The pressure of a liquid at a depth h: the weight of the column above each square metre, p = ρ·g·h. */
+export const hydrostaticPressure = (density: number, g: number, depth: number): number => density * g * depth;
 
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;

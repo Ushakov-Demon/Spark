@@ -26,3 +26,4 @@ export * from './lever-bench.js';
 export * from './circuit-bench.js';
 export * from './coil-bench.js';
 export * from './box-bench.js';
+export * from './depth-bench.js';

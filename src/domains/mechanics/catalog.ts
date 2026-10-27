@@ -28,6 +28,7 @@ const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko',
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
+const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' }];
 const UA_EFFICIENCY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Корисна й затрачена робота. Коефіцієнт корисної дії.' }];
 const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
@@ -192,6 +193,33 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.pressure,
     examples: [{ args: [1.4, 0.0072], expected: 194.44444444444446, note: 'a 1.4 N block on a 12 × 6 cm face' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.hydrostatic-pressure',
+    law: 'pressure',
+    title: { uk: 'Гідростатичний тиск', en: 'Hydrostatic pressure' },
+    latex: 'p = \\rho\\,g\\,h',
+    plain: 'p = ρ·g·h',
+    argSymbols: ['ρ', 'g', 'h'],
+    resultSymbol: 'p',
+    variables: {
+      p: { name: { uk: 'тиск рідини на глибині h', en: 'pressure of the liquid at the depth h' }, unit: 'Pa' },
+      ρ: { name: { uk: 'густина рідини', en: 'density of the liquid' }, unit: 'kg/m³' },
+      g: { name: { uk: 'прискорення вільного падіння', en: 'gravitational acceleration' }, unit: 'N/kg' },
+      h: { name: { uk: 'глибина', en: 'depth' }, unit: 'm', meaning: { school: { uk: 'відстань від поверхні рідини до місця, де міряють тиск', en: 'from the surface of the liquid down to where the pressure is measured' } } },
+    },
+    curriculum: UA_HYDROSTATIC,
+    explanation: {
+      novice: { uk: 'Що глибше, то більше рідини над тобою — і то сильніше вона тисне.', en: 'The deeper, the more liquid above you — and the harder it presses.' },
+      school: {
+        uk: 'На кожен квадратний метр на глибині h тисне вага стовпа рідини над ним: p = ρ·g·h. Тиск не залежить від форми посудини й однаковий у всіх напрямках на тій самій глибині (закон Паскаля).',
+        en: 'Each square metre at a depth h carries the weight of the column of liquid above it: p = ρ·g·h. The pressure does not depend on the vessel’s shape and is the same in all directions at the same depth (Pascal’s law).',
+      },
+    },
+    compute: f.hydrostaticPressure,
+    examples: [{ args: [997.05, 9.81, 0.09], expected: 880.39515, note: 'water, 9 cm deep' }],
     textSource: 'spark',
     reviewed: false,
   }),

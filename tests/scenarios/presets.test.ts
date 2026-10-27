@@ -277,6 +277,18 @@ describe('ready-made experiments with values to change', () => {
     if (process.env['SHOW_ANSWERS']) console.log(`[${_n}] ${answer.say.uk} (${answer.correct})`);
   }, 60_000);
 
+  it('the pressure at a depth: in proportion to it, the same sideways; the manometer gives the liquid’s density', async () => {
+    const { withValues } = await import('../../src/scenarios/index.js');
+    const p = PRESETS.find((x) => x.id === 'depth-pressure')!;
+    for (const [liquid, rho] of [['water', 997], ['salt-water-20', 1150], ['sunflower-oil', 919]] as const) {
+      const { answer } = run(withValues(p, { liquid }));
+      expect(answer.correct, liquid).toBe('proportional');
+      const found = Number(answer.text.uk.match(/ρ = p \/ \(g·h\) ≈ ([^к]+)кг\/м³/)![1]!.replace(/[^\d,]/g, '').replace(',', '.'));
+      expect(Math.abs(found / rho - 1), liquid).toBeLessThan(0.03);
+      expect(answer.text.uk, liquid).toMatch(/повернута вбік на 9 см, дала ті самі/);
+    }
+  }, 60_000);
+
   it('the black box: current one way, none turned round — a diode; the resistance falls with the voltage', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'diode-black-box')!);
     expect(answer.correct).toBe('diode');

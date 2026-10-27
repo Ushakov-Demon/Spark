@@ -430,6 +430,19 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // The pressure at a depth: the manometer's Δh gives p = ρ_water·g·Δh, and over the depth — the liquid's density.
+    if (c.type === 'lab.depth') {
+      const h = Number(c['depth']);
+      const side = !!c['sideways'];
+      const rhoM = r.inputs?.['rhoManometer'] ?? 1000;
+      const g = r.inputs?.['g'] ?? 9.81;
+      const p = rhoM * g * r.value;
+      const cmT = (m: number) => `${n(m * 100)} ${uk ? 'см' : 'cm'}`;
+      const where = side ? (uk ? `, плівкою вбік` : ', film sideways') : '';
+      out.push({ id: `dp:${side ? 's' : ''}${Math.round(h * 1000)}`, title: uk ? `тиск на глибині ${cmT(h)}${where}` : `the pressure at ${cmT(h)}${where}`, formula: 'p = ρ_води·g·Δh', numbers: `${n(rhoM, 4)} · ${n(g)} · ${n(r.value, 3)} ≈ ${n(p, 3)} ${uk ? 'Па' : 'Pa'}` });
+      if (!side) out.push({ id: `rhoD:${Math.round(h * 1000)}`, title: uk ? `густина рідини (з глибини ${cmT(h)})` : `the liquid’s density (from ${cmT(h)})`, formula: 'ρ = p / (g·h)', numbers: `${n(p, 3)} / (${n(g)} · ${n(h)}) ≈ ${n(p / (g * h), 3)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+      return;
+    }
     // The black box: the current at this voltage, one way or turned round, and the circuit's resistance R = U / I.
     if (c.type === 'lab.box') {
       const U = Number(c['source']);

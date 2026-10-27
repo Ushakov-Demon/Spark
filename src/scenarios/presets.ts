@@ -56,7 +56,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -170,6 +170,7 @@ const MECH: LocalizedText = { uk: 'Механічні явища: густина
 const MOTION: LocalizedText = { uk: 'Механічний рух', en: 'Mechanical motion' };
 const SIMPLE: LocalizedText = { uk: 'Прості механізми', en: 'Simple machines' };
 const CIRCUITS: LocalizedText = { uk: 'Електричний струм. Електричне коло', en: 'Electric current. Circuits' };
+const PRESSURE: LocalizedText = { uk: 'Тиск рідин і газів', en: 'Pressure in liquids and gases' };
 
 const room = { roomTemp: 20, lid: false } as const;
 /** Metals for the specific-heat lab work: what a school set of calorimeter cylinders has. */
@@ -583,6 +584,42 @@ export const PRESETS: readonly Preset[] = [
     quoteHas: 'густини',
     expect: 'reached',
   },
+  varied(
+    {
+      id: 'depth-pressure',
+      ask: { uk: 'Як тиск рідини залежить від глибини?', en: 'How does a liquid’s pressure depend on the depth?' },
+      grade: 7,
+      topic: PRESSURE,
+      title: { uk: 'Як тиск рідини залежить від глибини?', en: 'How does the pressure of a liquid depend on the depth?' },
+      guided: true,
+      bench: 'depth',
+      choices: [ch('proportional', 'Зростає пропорційно глибині: удвічі глибше — удвічі більший тиск', 'It grows in proportion: twice as deep — twice the pressure'), ch('same', 'Не залежить від глибини', 'It does not depend on the depth'), ch('slower', 'Зростає, але все повільніше', 'It grows, but ever more slowly')],
+      choicesAt: 'end',
+      answerOnBoard: ['rhoD:'],
+      formulas: ['mechanics.hydrostatic-pressure'],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Дослідження: … зміни тиску в рідині з глибиною; … вимірювання й визначення: атмосферного й гідростатичного тиску' }],
+      expect: 'reached',
+    },
+    {
+      // Liquids of different densities: the manometer's water tells them apart (salt water deeper, oil less).
+      controls: [{ id: 'liquid', label: { uk: 'Рідина в стакані', en: 'Liquid in the beaker' }, kind: 'choice', options: [ch('water', 'Вода', 'Water'), ch('salt-water-20', 'Солона вода (20 %)', 'Salt water (20 %)'), ch('sunflower-oil', 'Соняшникова олія', 'Sunflower oil')], value: 'water' }],
+      build: (v) => {
+        const liquid = String(v['liquid']) as 'water' | 'salt-water-20' | 'sunflower-oil';
+        const name = { water: { uk: 'водою', en: 'water' }, 'salt-water-20': { uk: 'солоною водою', en: 'salt water' }, 'sunflower-oil': { uk: 'соняшниковою олією', en: 'sunflower oil' } }[liquid];
+        return {
+          question: {
+            uk: `У стакані з ${name.uk} (рідини — на 12 см) опускатимемо воронку, затягнуту гумовою плівкою; трубка від неї йде до U-подібного манометра з водою. Записуватимемо, на скільки різняться рівні води в манометрі, коли плівка на глибині 3, 6 і 9 см, а наостанок на 9 см повернемо її вбік. Як тиск рідини залежить від глибини?`,
+            en: `Into a beaker of ${name.en} (12 cm of it) we lower a funnel covered with a rubber film; a tube leads from it to a U-tube manometer with water. We write down how far apart the water levels in the manometer are with the film 3, 6 and 9 cm deep, and at last turn it sideways at 9 cm. How does the liquid’s pressure depend on the depth?`,
+          },
+          params: { ...room, vessel: 'beaker', size: 1, material: 'glass', liters: 0.9, action: 'settle', substance: liquid, startTemp: 20 },
+          plan: [
+            ...[0.03, 0.06, 0.09].map((depth) => ({ kind: 'bench', command: { type: 'lab.depth', depth } }) as const),
+            { kind: 'bench', command: { type: 'lab.depth', depth: 0.09, sideways: true } },
+          ],
+        };
+      },
+    },
+  ),
   {
     id: 'floating-conditions',
     ask: { uk: 'За якої умови тіло тоне, плаває всередині рідини, спливає?', en: 'When does a body sink, float inside a liquid, come up?' },

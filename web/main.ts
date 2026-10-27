@@ -428,6 +428,13 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // The pressure at a depth: the funnel where this step put it, the manometer's Δh; the liquid's own colour.
+  if (kind === 'depth') {
+    const dc = c?.type === 'lab.depth' ? (c as unknown as { depth: number; sideways?: boolean }) : undefined;
+    const liquid = params.substance as SubstanceId;
+    const color = liquid === 'sunflower-oil' ? 'rgba(232,190,60,0.6)' : liquid.startsWith('salt-water') ? 'rgba(150,190,225,0.6)' : 'rgba(120,170,230,0.55)';
+    return { ...base, kind, depth: { depth: dc?.depth ?? 0, sideways: !!dc?.sideways, dh: dc && r ? (r.value ?? 0) : 0, color, ...(dc && r ? { display: formatMeasured('length', r.value, 0.001, locale) } : {}) } };
+  }
   // The black box: the source, which way the box stands, the milliammeter in mA (a tenth).
   if (kind === 'box') {
     const bc = c?.type === 'lab.box' ? (c as unknown as { source: number; reversed: boolean }) : undefined;
@@ -589,6 +596,14 @@ function measureSay(): string {
     if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+  }
+  // The manometer: how far apart its water levels are at this depth; sideways — the same as with the film down.
+  if (m.command.type === 'lab.depth') {
+    if (r.value === null) return '';
+    const dc = m.command as { depth: number; sideways?: boolean };
+    const d = cm(dc.depth);
+    if (dc.sideways) return uk ? `Плівка вбік на ${d} — а рівні в манометрі різняться так само: на ${cm(r.value)}!` : `The film sideways at ${d} — and the manometer’s levels differ just the same: by ${cm(r.value)}!`;
+    return uk ? `Плівка на глибині ${d}: рівні води в манометрі різняться на ${cm(r.value)}.` : `The film ${d} deep: the water levels in the manometer differ by ${cm(r.value)}.`;
   }
   // The black box: what the milliammeter shows, one way or turned round.
   if (m.command.type === 'lab.box') {
