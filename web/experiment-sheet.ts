@@ -10,6 +10,7 @@ import { tr, type Locale } from '../src/knowledge/i18n.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
 import { getSource } from '../src/knowledge/sources.js';
 import { SCALES } from '../src/equipment/scales.js';
+import { HEATERS } from '../src/equipment/heaters.js';
 import { SUBSTANCES } from '../src/substances/index.js';
 import { BENCH_SETUP, BENCH_TEXT, guidedPlan, LAB_KNOWLEDGE, labSubject, OPERATIONS, presetAsk, presetPrograms, type Preset, type ProtocolStep } from '../src/scenarios/index.js';
 import { UI } from './ui-text.js';
@@ -60,6 +61,9 @@ export function presetEquipment(p: Preset, locale: Locale): string[] {
   if (p.bench) for (const x of tr(BENCH_SETUP[p.bench], locale).split(', ')) things.add(x);
   if (!p.bench || p.bench === 'balance') things.add(labSubject(p.params, locale));
   for (const s of guidedPlan(p)) {
+    // What heats it, and the thermometer that tells when; the instruments a step reads (the multimeter on the coil).
+    if (s.kind === 'operation' && s.heater) things.add(tr(HEATERS[s.heater.id].name, locale)).add(d.thermometer);
+    if (s.kind === 'bench' && s.command.type === 'lab.ohm') things.add(d.coil);
     if (s.kind === 'weigh') things.add(tr(SCALES[s.scale].name, locale));
     else if (s.kind === 'hang') things.add(tr(SCALES.dynamometer.name, locale));
     // (A stoppered tube with sand is one thing on the table, whatever is in it each run.)
@@ -87,7 +91,9 @@ export function labSheetHtml(p: Preset, locale: Locale, o: SheetOptions = {}): s
   const plan = guidedPlan(p);
   // A step as written in a notebook: no pictograms; what goes in — «Опустити: …». What comes of the steps is not
   // written here (no spoilers): the aim is the question; the formulas without the conditions that answer it.
-  const stepText = (s: ProtocolStep) => esc(s.kind === 'add' ? `${d.put}: ${tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase()}` : planStepLabel(s, locale).replace(/^[^\p{L}\p{N}]+/u, ''));
+  // (A bench step by its plan's words — its button may start with a sign, «Ω Виміряти…».)
+  const upper = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+  const stepText = (s: ProtocolStep) => esc(s.kind === 'add' ? `${d.put}: ${tr(s.label ?? SUBSTANCES[s.substance].name, locale).toLowerCase()}` : s.kind === 'bench' ? upper(tr(BENCH_TEXT[s.command.type](s.command).plan, locale)) : planStepLabel(s, locale).replace(/^[^\p{L}\p{N}]+/u, ''));
   // F_A = ρ_рідини · g · V → subscripts.
   const formula = (x: string) => esc(x).replace(/_([^/·=()+−<>;,—&]+?)(?=\s*(?:[/·=()+−<>;,—&]|$))/g, '<sub>$1</sub>');
   const number = presetLabNumber(p);

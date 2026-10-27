@@ -75,6 +75,8 @@ export interface SceneView {
   readonly bench?: BenchView;
   /** The level was just read by the marks: a line at the level and the reading. */
   readonly levelMark?: string;
+  /** A copper coil in the liquid, its ends to a multimeter measuring resistance: what its display shows. */
+  readonly ohmmeter?: { readonly display: string };
   /** No thermometer in the vessel: the experiment is not about temperature (a density, a buoyant force). */
   readonly noThermometer?: boolean;
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
@@ -246,6 +248,7 @@ export function createScene(): Scene {
       <g id="sc-scale" class="scales"></g>
       <g id="sc-dyn" class="dyn"></g>
       <g id="sc-mark" class="level-mark"></g>
+      <g id="sc-coil" class="coil"></g>
       </g>
       <g id="sc-bench" class="bench"></g>`;
   }
@@ -389,6 +392,13 @@ export function createScene(): Scene {
         benchShown = v.bench ?? null;
       }
       root.classList.toggle('bench-on', !!v.bench);
+      // The coil in the water and the multimeter beside the beaker, its leads over the rim.
+      const ck = v.ohmmeter ? `${v.ohmmeter.display}|${g.left}|${g.bottom}` : '';
+      const coil = $<SVGGElement>('sc-coil');
+      if (coil && coil.dataset['k'] !== ck) {
+        coil.dataset['k'] = ck;
+        coil.innerHTML = v.ohmmeter ? coilSvg(g, v.ohmmeter.display) : '';
+      }
       const mk = v.levelMark ? `${v.levelMark}|${Math.round(level)}` : '';
       const mark = $<SVGGElement>('sc-mark');
       if (mark && mark.dataset['k'] !== mk) {
@@ -574,6 +584,28 @@ export function createScene(): Scene {
       showPage();
       says.hidden = !v.professor.says;
   }
+}
+
+/**
+ * A coil of copper wire hanging in the liquid (between the heater's legs), its two leads up over the rim and down
+ * to a digital multimeter on the table, set to Ω; what it shows on its display.
+ */
+function coilSvg(g: VesselGeom, display: string): string {
+  const cx = (g.mouth.l + g.mouth.r) / 2;
+  const top = g.bottom - 74;
+  const turns = 9;
+  const wire = '#b87333';
+  const loops = Array.from({ length: turns }, (_, k) => `<ellipse cx="${cx}" cy="${top + 8 + k * 4}" rx="11" ry="3" style="fill:none;stroke:${wire};stroke-width:1.6"/>`).join('');
+  const mx = g.right + 56;
+  const my = TABLE - 74;
+  const lead = (dx: number, jack: number, colour: string) => `<path d="M${cx + dx},${top + 6} V${g.top - 22} Q${cx + dx},${g.top - 34} ${cx + dx + 14},${g.top - 34} H${mx + jack - 10} Q${mx + jack},${g.top - 34} ${mx + jack},${g.top - 22} V${my + 62}" style="fill:none;stroke:${colour};stroke-width:2"/>`;
+  return `${lead(-6, 18, '#c0392b')}${lead(6, 44, '#222')}${loops}
+    <rect x="${mx}" y="${my}" width="62" height="74" rx="7" style="fill:#f1c40f;stroke:#7d6608;stroke-width:1.5"/>
+    <rect x="${mx + 6}" y="${my + 6}" width="50" height="20" rx="2" style="fill:#c9d6a3;stroke:#55603a"/>
+    <text class="mm-text" x="${mx + 52}" y="${my + 21}" text-anchor="end">${display}</text>
+    <circle cx="${mx + 31}" cy="${my + 44}" r="9" style="fill:#2d2d2d"/><path d="M${mx + 31},${my + 44} L${mx + 24},${my + 37}" style="stroke:#eee;stroke-width:2"/>
+    <text x="${mx + 46}" y="${my + 40}" style="font:700 8px system-ui;fill:#2d2d2d">Ω</text>
+    <circle cx="${mx + 18}" cy="${my + 64}" r="3" style="fill:#c0392b"/><circle cx="${mx + 44}" cy="${my + 64}" r="3" style="fill:#222"/>`;
 }
 
 /** The colour of a body glowing at `t` °C, or null below visible red heat (≈ 470 °C). */

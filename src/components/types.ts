@@ -195,6 +195,8 @@ export interface Component {
     /** Metals conduct; ionic substances only melted or dissolved; the rest are insulators. */
     readonly conducts: 'metal' | 'ions-in-solution' | 'insulator';
     readonly resistivity?: SourcedValue; // Ω·m, solid at 20 °C
+    /** How the resistivity grows with temperature near room temperature, 1/K: ρ(t) = ρ₂₀·(1 + α·(t − 20 °C)). */
+    readonly temperatureCoefficient?: SourcedValue;
     /** A liquid's own conductivity, S/m at 20 °C (distilled water conducts a little). */
     readonly conductivity?: SourcedValue;
     /** What a current does to the pure liquid (water splits into hydrogen and oxygen). */

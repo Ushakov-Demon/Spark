@@ -326,6 +326,35 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'resistance-temperature': (run) => {
+    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.ohm' && x.record.value !== null).map((x) => ({ R: x.record.value!, t: x.record.inputs?.['temperature'] ?? 20, div: x.record.inputs?.['division'] ?? 0.01 }));
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    const ok = !!first && !!last && last !== first && last.t > first.t + 1;
+    // α from the first and the last reading: by what share the resistance grew per degree.
+    const alpha = ok ? (last!.R - first!.R) / (first!.R * (last!.t - first!.t)) : 0;
+    const table = COMPONENTS.copper.electrical?.temperatureCoefficient?.value ?? 0.00393;
+    const grew = ok && last!.R - first!.R > 2 * first!.div;
+    const fell = ok && first!.R - last!.R > 2 * first!.div;
+    const Om = (x: number, l: Locale) => formatMeasured('resistance', x, first?.div ?? 0.01, l);
+    const deg = (x: number, l: Locale) => `${sig(x, 3, l)} °C`;
+    const a = (x: number, l: Locale) => sig(x, 2, l);
+    return {
+      ...(ok ? { correct: grew ? 'grows' : fell ? 'falls' : 'same' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Струм у металі — це впорядкований рух вільних електронів крізь кристалічну ґратку з йонів. Електрони раз у раз натикаються на йони й віддають їм енергію — це і є опір. Нагріваючись, йони коливаються дедалі сильніше й частіше заступають електронам дорогу, тож опір зростає. Біля кімнатної температури — майже рівномірно: на кожен градус на ту саму частку α, для міді ≈ 0,4 % на градус.'
+          : 'A current in a metal is the ordered motion of free electrons through a crystal lattice of ions. The electrons keep bumping into the ions and giving them energy — that is the resistance. As the metal warms, the ions vibrate harder and get in the electrons’ way more often, so the resistance grows. Near room temperature almost evenly: by the same share α per degree, for copper ≈ 0.4 % per degree.',
+      ),
+      say: both((l) => (l === 'uk' ? `Нагріли на ${deg(ok ? last!.t - first!.t : 0, l)} — опір зріс: α ≈ ${a(alpha, l)} на градус!` : `Warmed by ${deg(ok ? last!.t - first!.t : 0, l)} — the resistance grew: α ≈ ${a(alpha, l)} per degree!`)),
+      text: both((l) => {
+        const list = rows.map((x) => `${deg(x.t, l)}: R = ${Om(x.R, l)}`).join('; ');
+        return l === 'uk'
+          ? `${list}. Що гарячіша вода (а з нею й мідний дріт), то більший опір котушки. Температурний коефіцієнт опору α = (R − R₀) / (R₀·Δt) = (${Om(last?.R ?? 0, l)} − ${Om(first?.R ?? 0, l)}) / (${Om(first?.R ?? 0, l)} · ${deg(ok ? last!.t - first!.t : 0, l)}) ≈ ${a(alpha, l)} 1/°C, а в таблиці для міді — ${a(table, l)} 1/°C: на кожен градус опір зростає приблизно на ${sig(alpha * 100, 2, l)} %. Так само, тільки набагато сильніше, росте опір розжареної нитки лампи.`
+          : `${list}. The hotter the water (and the copper wire in it), the larger the coil’s resistance. The temperature coefficient of resistance α = (R − R₀) / (R₀·Δt) = (${Om(last?.R ?? 0, l)} − ${Om(first?.R ?? 0, l)}) / (${Om(first?.R ?? 0, l)} · ${deg(ok ? last!.t - first!.t : 0, l)}) ≈ ${a(alpha, l)} 1/°C, and the table gives ${a(table, l)} 1/°C for copper: the resistance grows by about ${sig(alpha * 100, 2, l)} % per degree. A glowing lamp filament does the same, only much more.`;
+      }),
+    };
+  },
   'electrochemical-equivalent': (run) => {
     const c = (run.readings ?? []).filter((x) => x.command.type === 'lab.cathode' && x.record.value !== null).map((x) => x.record);
     const [before, after] = [c[0], c[c.length - 1]];

@@ -324,6 +324,20 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-11',
   }),
+  'wikipedia-resistivity': source({
+    id: 'wikipedia-resistivity',
+    title: 'Wikipedia, Electrical resistivity and conductivity: table of ρ and the temperature coefficient α at 20 °C (copper 4.04·10⁻³ K⁻¹, annealed copper 3.93·10⁻³ K⁻¹)',
+    url: 'https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-27',
+  }),
+  'hyperphysics-resistivity': source({
+    id: 'hyperphysics-resistivity',
+    title: 'HyperPhysics (Georgia State University), Resistivity and temperature coefficient at 20 °C: copper, annealed — 1.72·10⁻⁸ Ω·m, α = 0.00393 (after the CRC Handbook, 64th ed.)',
+    url: 'https://hyperphysics.gsu.edu/hbase/Tables/rstiv.html',
+    license: 'facts-only',
+    retrieved: '2026-10-27',
+  }),
   'wikipedia-aluminium': source({
     id: 'wikipedia-aluminium',
     title: 'Wikipedia, Aluminium (infobox): ρ 2.699 g/cm³ at 20 °C, mp 660.32 °C, bp 2470 °C, ρₑ 26.5 nΩ·m at 20 °C, paramagnetic',

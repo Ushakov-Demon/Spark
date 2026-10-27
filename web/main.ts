@@ -31,6 +31,7 @@ import {
   LAB_COMMANDS,
   labCourse,
   boardLines,
+  measuredLines,
   stepPlace,
   formatReading,
   weigh,
@@ -494,6 +495,11 @@ function showingMeasure() {
   if (!last?.ok || !(last.command.type in BENCH_TEXT || ['lab.read-level', 'lab.hang'].includes(last.command.type))) return null;
   return readingsOf([last])[0] ?? null;
 }
+/** The multimeter's display: the coil's latest reading in this experiment, or dashes before the first. */
+function ohmShown(): string {
+  const last = [...allReadings()].reverse().find((x) => x.command.type === 'lab.ohm');
+  return last && last.record.value !== null ? formatMeasured('resistance', last.record.value, last.record.inputs?.['division'] ?? 0.01, locale).replace(/\s*(Ом|Ω)$/, '') : '-.--';
+}
 /** Everything measured in this experiment, in order. */
 function allReadings() {
   return [...history.map((h) => h.result.log), session.result().log].flatMap((l) => readingsOf(l));
@@ -556,6 +562,16 @@ function measureSay(): string {
     const e = (m.command as { edge: number }).edge;
     const what = uk ? ['Довжина', 'Ширина', 'Висота'][e] : ['Length', 'Width', 'Height'][e];
     return `${what} ${uk ? 'бруска' : 'of the block'}: ${cm(r.value ?? 0)}.`;
+  }
+  // The coil on the multimeter: its resistance at the water's temperature, and how much it grew since the first reading.
+  if (m.command.type === 'lab.ohm') {
+    const Om = (x: number) => formatMeasured('resistance', x, r.inputs?.['division'] ?? 0.01, locale);
+    const t = sig(r.inputs?.['temperature'] ?? 20, 3, locale);
+    const first = all.find((x) => x.command.type === 'lab.ohm' && x.record.value !== null);
+    if (r.value === null) return '';
+    if (!first || first.record === r) return uk ? `Вода — ${t} °C, мультиметр показує R = ${Om(r.value)}.` : `The water is at ${t} °C, the multimeter shows R = ${Om(r.value)}.`;
+    const dr = r.value - first.record.value!;
+    return uk ? `Вода — ${t} °C, а опір уже ${Om(r.value)}: на ${Om(dr)} більше, ніж спочатку.` : `The water is at ${t} °C, and the resistance is ${Om(r.value)}: ${Om(dr)} more than at first.`;
   }
   // The cathode on the balance: its mass, and after the current — how much heavier it came out.
   if (m.command.type === 'lab.cathode') {
@@ -1452,6 +1468,8 @@ function sceneView(): SceneView {
     ...(measured?.command.type === 'lab.hang'
       ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1, ...(SUBSTANCES[measured.command.substance as SubstanceId]?.bodyShape === 'ball' ? { ball: true } : {}) } }
       : {}),
+    // The coil on the multimeter: the latest reading stays on its display (dashes before the first).
+    ...(preset?.plan?.some((s) => s.kind === 'bench' && s.command.type === 'lab.ohm') ? { ohmmeter: { display: ohmShown() } } : {}),
     ...(measured?.command.type === 'lab.read-level' ? { levelMark: formatMeasured('volume', measured.record.value, measured.record.inputs?.['division'] ?? 1e-6, locale) } : {}),
     dissolve: dissolveKey,
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
@@ -1687,7 +1705,8 @@ function renderGuide(): boolean {
     const liquid = s.kind === 'add' && !s.frozen && SUBSTANCES[s.substance].category.startsWith('liquid.');
     const temp = s.kind === 'add' ? `${s.temperature} °C` : '';
     const opKind = s.kind === 'operation' ? (OPERATIONS[s.action].uses === 'supply' ? 'current' : s.heater || OPERATIONS[s.action].uses === 'heater' || (s.cooler && COOLERS[s.cooler.id].spec.hot) ? 'heat' : s.cooler || OPERATIONS[s.action].uses === 'cooler' ? 'cool' : 'wait') : 'wait';
-    const op = s.kind === 'operation' ? tr(s.label ?? OPERATIONS[s.action].label, locale) : '';
+    // «Нагріти до 40 °C», not «Нагріти до…»: the step's own target.
+    const op = s.kind === 'operation' ? (s.label ? tr(s.label, locale) : s.target !== undefined && OPERATIONS[s.action].target ? `${tr(OPERATIONS[s.action].label, locale).replace('…', '')} ${s.target} °C` : tr(OPERATIONS[s.action].label, locale)) : '';
     // Time has passed since the last look at the marks (the ice melted): did the level change?
     const lastLevel = [...done].reverse().find((x) => x.record.quantity === 'volume');
     const waited = !!lastLevel && session.state.time > lastLevel.time + 1e-9 || history.length > 0 && !!lastLevel;
@@ -1790,9 +1809,13 @@ let pastCache: { key: string; lines: ReturnType<typeof boardLines> } | null = nu
 function pastBoard(): ReturnType<typeof boardLines> {
   const key = `${locale}|${history.length}|${history[0]?.result.initial.time ?? ''}`;
   if (pastCache?.key === key) return pastCache.lines;
-  const lines = history.flatMap((h, i) => boardLines(h.params, [...h.result.samples, h.result.final], locale, weighingsOf(h.result.log).map((w) => w.scale), true, h.result.log).map((l) => stepLine(l, h.params, i)));
+  const lines = history.flatMap((h, i) => stepBoard(h.params, [...h.result.samples, h.result.final], h.result.log, true).map((l) => stepLine(l, h.params, i)));
   pastCache = { key, lines };
   return lines;
+}
+/** The board's lines of a step: all it worked out, or — where the experiment says so — only what was measured. */
+function stepBoard(p: LabParams, states: SystemState[], log: ExperimentResult<LabCommand>['log'], done: boolean): ReturnType<typeof boardLines> {
+  return preset?.board === 'measurements' ? measuredLines(log, locale) : boardLines(p, states, locale, weighingsOf(log).map((w) => w.scale), done, log);
 }
 /** A line of step `i`: its own id; when the steps differ only in the lid, its title says which. */
 function stepLine(l: ReturnType<typeof boardLines>[number], p: LabParams, i: number): ReturnType<typeof boardLines>[number] {
@@ -1807,7 +1830,7 @@ function boardNow(): ReturnType<typeof boardLines> {
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
-  const lines = [...pastBoard(), ...boardLines(stepP, [...r.samples, r.final], locale, weighingsOf(r.log).map((w) => w.scale), finished, r.log).map((l) => stepLine(l, stepP, history.length))].map((l) => {
+  const lines = [...pastBoard(), ...stepBoard(stepP, [...r.samples, r.final], r.log, finished).map((l) => stepLine(l, stepP, history.length))].map((l) => {
     if (!hidden || !l.numbers || !hidden.some((h) => l.id.split(':').slice(1).join(':').startsWith(h))) return l;
     const { numbers: _, ...rest } = l;
     return rest;
@@ -2152,6 +2175,7 @@ function renderProtocol() {
           c.type === 'lab.weigh' ? u.weigh.row(formatReading(c.scale, r.value, locale))
           : c.type === 'lab.read-level' ? u.measure.rowLevel(formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale))
           : c.type === 'lab.hang' ? u.measure.rowHang(formatMeasured('force', r.value, 0.1, locale), c.into)
+          : c.type === 'lab.ohm' ? `Ω ${formatMeasured('resistance', r.value, r.inputs?.['division'] ?? 0.01, locale)} (${sig(r.inputs?.['temperature'] ?? 20, 3, locale)} °C)`
           : '';
         return `<span class="weighed"${look}>${text}</span>`;
       })

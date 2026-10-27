@@ -277,6 +277,16 @@ describe('ready-made experiments with values to change', () => {
     if (process.env['SHOW_ANSWERS']) console.log(`[${_n}] ${answer.say.uk} (${answer.correct})`);
   }, 60_000);
 
+  it('a copper coil heated in water: its resistance grows, α comes out as copper’s ≈ 0.0039 1/°C', () => {
+    const p = PRESETS.find((x) => x.id === 'resistance-temperature')!;
+    const { answer } = run(p);
+    expect(answer.correct).toBe('grows');
+    const alpha = Number(answer.text.uk.match(/≈ ([\d,]+) 1\/°C, а в таблиці/)![1]!.replace(',', '.'));
+    expect(alpha).toBeGreaterThan(0.0035);
+    expect(alpha).toBeLessThan(0.0043);
+    expect(answer.text.uk).toMatch(/^20 °C: R = 10,00 Ом;.*80,\d °C: R = 12,\d\d Ом/);
+  }, 60_000);
+
   it('a resistor keeps its resistance with any resistor and any voltages: the spread is within the instruments', async () => {
     const { withValues } = await import('../../src/scenarios/index.js');
     const p = PRESETS.find((x) => x.id === 'conductor-resistance')!;

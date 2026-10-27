@@ -294,7 +294,8 @@ function massFractionLines(state: SystemState, scale: ScaleId, locale: Locale): 
  * its mass from the scales (m = m₂ − m₁) and so its density; its weight on the dynamometer,
  * and the buoyant force two ways — from the readings (P − P′) and from Archimedes (ρ·g·V).
  */
-function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], locale: Locale): BoardLine[] {
+/** Only what was measured (a lab work where heating is just the way to a temperature: no heat balance on the board). */
+export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], locale: Locale): BoardLine[] {
   const uk = locale === 'uk';
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
   const out: BoardLine[] = [];
@@ -427,6 +428,19 @@ function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], loc
       const Nm = uk ? 'Н·м' : 'N·m';
       out.push({ id: `M1:${i}`, title: uk ? `момент сили ліворуч (${F2(F1)} на ${cm(l1)})` : `the moment on the left (${F2(F1)} at ${cm(l1)})`, formula: 'M₁ = F₁·l₁', numbers: `${F2(F1)} · ${n(l1)} ${uk ? 'м' : 'm'} ≈ ${n(F1 * l1, 3)} ${Nm}` });
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
+      return;
+    }
+    // The coil in the water on the multimeter: its resistance at this temperature, and — once warmer than at the
+    // start — the temperature coefficient α = (R − R₀) / (R₀·Δt). (R₀ is its reading at 20 °C, where it starts.)
+    if (c.type === 'lab.ohm') {
+      const t = r.inputs?.['temperature'] ?? 20;
+      const div = r.inputs?.['division'] ?? 0.01;
+      const Om = (x: number) => formatMeasured('resistance', x, div, locale);
+      const key = Math.round(t);
+      out.push({ id: `ohm:${key}`, title: uk ? `опір котушки за ${n(t, 3)} °C` : `the coil’s resistance at ${n(t, 3)} °C`, formula: `R = ${Om(r.value)}` });
+      const r0 = Math.round((r.inputs?.['r20'] ?? 0) / div) * div;
+      const dt = t - 20;
+      if (dt > 1 && r0 > 0) out.push({ id: `alphaT:${key}`, title: uk ? `температурний коефіцієнт опору (нагріли на ${n(dt, 3)} °C)` : `the temperature coefficient (warmed by ${n(dt, 3)} °C)`, formula: 'α = (R − R₀) / (R₀·Δt)', numbers: `(${n(r.value, 4)} − ${n(r0, 4)}) / (${n(r0, 4)} · ${n(dt, 3)}) ≈ ${n((r.value - r0) / (r0 * dt), 2)} ${uk ? '1/°C' : '1/°C'}` });
       return;
     }
     // The cathode on the balance: before the current, then after — the copper it gained, and k = Δm / (I·t).

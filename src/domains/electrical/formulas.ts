@@ -19,6 +19,9 @@ export const faradayMoles = (charge: number, electrons: number): number => charg
 /** Resistance of a conductor from what the voltmeter and the ammeter show: R = U / I (Ohm's law for a part of a circuit). */
 export const resistanceFromReadings = (voltage: number, current: number): number => voltage / current;
 
+/** A metal's resistance warmed by Δt: R = R₀·(1 + α·Δt) — near room temperature its resistivity grows almost linearly. */
+export const resistanceAtTemperature = (r0: number, alpha: number, dt: number): number => r0 * (1 + alpha * dt);
+
 /** Two conductors in series: the same current, the voltages add up, U = U₁ + U₂ (and R = R₁ + R₂). */
 export const seriesVoltage = (u1: number, u2: number): number => u1 + u2;
 

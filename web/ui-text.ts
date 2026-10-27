@@ -172,7 +172,7 @@ export interface UiText {
   topic: string;
   /** The button under an experiment's icon: its full description. */
   presetMore: string;
-  details: { aim: string; takes: string; steps: string; topic: string; formulas: string; related: string; labWork(n: string): string; experiment: string; conclusion: string; conclusionHint: string; put: string; tubeWithSand: string; printed: string; handwritten: string };
+  details: { aim: string; takes: string; steps: string; topic: string; formulas: string; related: string; labWork(n: string): string; experiment: string; conclusion: string; conclusionHint: string; put: string; tubeWithSand: string; thermometer: string; coil: string; printed: string; handwritten: string };
   planNext(step: string): string;
   planAdd(what: string, mass: string): string;
   planDone: string;
@@ -469,7 +469,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     programs: 'Програми',
     topic: 'Тема',
     presetMore: 'Повний опис досліду',
-    details: { aim: 'Мета', takes: 'Обладнання', steps: 'Хід роботи', topic: 'Тема', formulas: 'Опрацювання результатів', related: 'та сама ідея, інша речовина', labWork: (n) => `Лабораторна робота № ${n}`, experiment: 'Дослід', conclusion: 'Висновок', conclusionHint: 'Його запишеш сам — після досліду: що виміряли, що вийшло, чому.', put: 'Опустити', tubeWithSand: 'Пробірка з корком, сухий пісок', printed: 'Аа Друкованим', handwritten: '✍ Від руки' },
+    details: { aim: 'Мета', takes: 'Обладнання', steps: 'Хід роботи', topic: 'Тема', formulas: 'Опрацювання результатів', related: 'та сама ідея, інша речовина', labWork: (n) => `Лабораторна робота № ${n}`, experiment: 'Дослід', conclusion: 'Висновок', conclusionHint: 'Його запишеш сам — після досліду: що виміряли, що вийшло, чому.', put: 'Опустити', tubeWithSand: 'Пробірка з корком, сухий пісок', thermometer: 'термометр', coil: 'котушка з мідного дроту, мультиметр', printed: 'Аа Друкованим', handwritten: '✍ Від руки' },
     planNext: (s) => `Далі за планом: ${s}`,
     planAdd: (w, m) => `досипати ${m} ${w}`,
     planDone: 'План виконано! Можна експериментувати далі самостійно.',
@@ -758,7 +758,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     programs: 'Programmes',
     topic: 'Topic',
     presetMore: 'Full description of the experiment',
-    details: { aim: 'Aim', takes: 'Equipment', steps: 'Procedure', topic: 'Topic', formulas: 'Working out the results', related: 'the same idea, another substance', labWork: (n) => `Lab work No. ${n}`, experiment: 'Experiment', conclusion: 'Conclusion', conclusionHint: 'You write it yourself — after the experiment: what was measured, what came out, why.', put: 'Put in', tubeWithSand: 'A stoppered test tube, dry sand', printed: 'Aa In print', handwritten: '✍ By hand' },
+    details: { aim: 'Aim', takes: 'Equipment', steps: 'Procedure', topic: 'Topic', formulas: 'Working out the results', related: 'the same idea, another substance', labWork: (n) => `Lab work No. ${n}`, experiment: 'Experiment', conclusion: 'Conclusion', conclusionHint: 'You write it yourself — after the experiment: what was measured, what came out, why.', put: 'Put in', tubeWithSand: 'A stoppered test tube, dry sand', thermometer: 'a thermometer', coil: 'a coil of copper wire, a multimeter', printed: 'Aa In print', handwritten: '✍ By hand' },
     planNext: (s) => `Next in the plan: ${s}`,
     planAdd: (w, m) => `add ${m} of ${w}`,
     planDone: 'Plan complete! Go on experimenting on your own.',

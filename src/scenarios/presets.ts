@@ -53,6 +53,8 @@ export interface Preset {
    * conclusion is picked, the board shows their formula only, then chalks the numbers in.
    */
   readonly answerOnBoard?: readonly string[];
+  /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
+  readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
   readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
@@ -1294,6 +1296,34 @@ export const PRESETS: readonly Preset[] = [
     choices: [ch('copper', 'Шар міді', 'A layer of copper'), ch('hydrogen', 'Бульбашки водню', 'Bubbles of hydrogen'), ch('chlorine', 'Хлор', 'Chlorine')],
     formulas: ['electrical.faraday-moles'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
+    expect: 'reached',
+  },
+  {
+    id: 'resistance-temperature',
+    ask: { uk: 'Як зміниться опір мідного дроту, коли він нагріється?', en: 'How will the resistance of a copper wire change when it warms up?' },
+    grade: 9,
+    topic: ELECTRIC,
+    title: { uk: 'Як опір провідника залежить від температури?', en: 'How does a conductor’s resistance depend on temperature?' },
+    question: {
+      uk: 'У склянці з водою — котушка з тонкого мідного дроту, її кінці під’єднано до мультиметра в режимі вимірювання опору; поруч — термометр. Нагріватимемо воду кип’ятильником і за 20, 40, 60 і 80 °C записуватимемо температуру й опір котушки. Як змінюватиметься опір провідника, коли він нагріватиметься?',
+      en: 'In a beaker of water there is a coil of thin copper wire, its ends connected to a multimeter set to measure resistance; a thermometer beside it. We heat the water with an immersion heater and at 20, 40, 60 and 80 °C write down the temperature and the coil’s resistance. How will the conductor’s resistance change as it warms up?',
+    },
+    // The first reading at room temperature; the heater goes in with the first heating.
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    plan: [
+      { kind: 'bench', command: { type: 'lab.ohm' } },
+      ...[40, 60, 80].flatMap((target) => [
+        { kind: 'operation', action: 'heat-to', target, heater: { id: 'immersion-heater', rating: 500, knob: 1 } } as const,
+        { kind: 'bench', command: { type: 'lab.ohm' } } as const,
+      ]),
+    ],
+    choices: [ch('grows', 'Зростатиме', 'It will grow'), ch('falls', 'Зменшуватиметься', 'It will fall'), ch('same', 'Не зміниться', 'It will not change')],
+    choicesAt: 'end',
+    answerOnBoard: ['alphaT:'],
+    board: 'measurements',
+    formulas: ['electrical.resistance-temperature'],
+    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 1', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'same', quote: '№ 1. Дослідження залежності електричного опору провідника від температури.' }],
     expect: 'reached',
   },
   varied(

@@ -9,6 +9,9 @@ const UA_RESISTANCE: readonly CurriculumRef[] = [
   { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Залежність опору провідника від його довжини, площі перерізу та матеріалу.' },
   { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Електричний опір. Залежність опору провідника від його довжини, площі перерізу та матеріалу.' },
 ];
+const UA_TEMPERATURE: readonly CurriculumRef[] = [
+  { program: 'ua-nus-2023-kreminskyi', grade: 9, depth: 'quantitative', quote: 'Електричний струм у металах. Залежність електричного опору металу від температури, температурний коефіцієнт опору.' },
+];
 const UA_OHM: readonly CurriculumRef[] = [
   { program: 'ua-nus-2023-holovko', grade: 8, depth: 'quantitative', quote: 'Закон Ома для ділянки кола.' },
   { program: 'ua-2017', grade: 8, depth: 'quantitative', quote: 'Закон Ома для ділянки кола.' },
@@ -25,6 +28,33 @@ const UA_FARADAY: readonly CurriculumRef[] = [
 ];
 
 export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
+  defineFormula({
+    id: 'electrical.resistance-temperature',
+    law: 'resistance',
+    title: { uk: 'Залежність опору металу від температури', en: 'How a metal’s resistance depends on temperature' },
+    latex: 'R = R_0\\,(1 + \\alpha\\,\\Delta t)',
+    plain: 'R = R₀·(1 + α·Δt)',
+    argSymbols: ['R₀', 'α', 'Δt'],
+    resultSymbol: 'R',
+    variables: {
+      R: { name: { uk: 'опір провідника після нагрівання', en: 'resistance of the conductor when warmed' }, unit: 'Ω' },
+      'R₀': { name: { uk: 'опір за початкової температури', en: 'resistance at the starting temperature' }, unit: 'Ω' },
+      α: { name: { uk: 'температурний коефіцієнт опору', en: 'temperature coefficient of resistance' }, unit: '1/K', meaning: { school: { uk: 'на яку частку зростає опір, коли провідник нагрівається на 1 °C; для міді ≈ 0,0039', en: 'by what share the resistance grows when the conductor warms by 1 °C; for copper ≈ 0.0039' } } },
+      Δt: { name: { uk: 'на скільки нагрівся провідник', en: 'how much the conductor warmed' }, unit: '°C' },
+    },
+    curriculum: UA_TEMPERATURE,
+    explanation: {
+      novice: { uk: 'Що гарячіший метал, то сильніше він «заважає» струму: його опір росте.', en: 'The hotter a metal, the more it “gets in the way” of a current: its resistance grows.' },
+      school: {
+        uk: 'Опір металевого провідника зростає з температурою: R = R₀·(1 + α·Δt). Звідси температурний коефіцієнт α = (R − R₀) / (R₀·Δt) — на яку частку зростає опір на кожен градус.',
+        en: 'The resistance of a metal conductor grows with temperature: R = R₀·(1 + α·Δt). Hence the temperature coefficient α = (R − R₀) / (R₀·Δt) — by what share the resistance grows per degree.',
+      },
+    },
+    compute: f.resistanceAtTemperature,
+    examples: [{ args: [10, 0.00393, 60], expected: 12.358, note: 'a 10 Ω copper coil warmed from 20 to 80 °C' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
   defineFormula({
     id: 'electrical.cell-resistance',
     law: 'resistance',
