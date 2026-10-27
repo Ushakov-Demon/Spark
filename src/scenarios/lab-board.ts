@@ -321,6 +321,7 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   const count = { volume: 0, mass: 0 };
   let tapePath: number | null = null;
   let pressAreas: number | null = null;
+  let atmScale: number | null = null;
   const pair: Partial<Record<'r1' | 'r2' | 'both', { I: number; U: number }>> = {};
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
@@ -429,6 +430,27 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const Nm = uk ? 'Н·м' : 'N·m';
       out.push({ id: `M1:${i}`, title: uk ? `момент сили ліворуч (${F2(F1)} на ${cm(l1)})` : `the moment on the left (${F2(F1)} at ${cm(l1)})`, formula: 'M₁ = F₁·l₁', numbers: `${F2(F1)} · ${n(l1)} ${uk ? 'м' : 'm'} ≈ ${n(F1 * l1, 3)} ${Nm}` });
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
+      return;
+    }
+    // The syringe: the plunger's area from its scale, the barometer, and the pressure each pull gives.
+    if (c.type === 'lab.atm') {
+      if (c['step'] === 'scale') {
+        atmScale = r.value;
+        out.push({ id: 'atS', title: uk ? 'площа поршня зі шкали (1 мл)' : 'the plunger’s area from the scale (1 mL)', formula: 'S = V / l', numbers: `1 ${uk ? 'мл' : 'mL'} / ${n(r.value * 100)} ${uk ? 'см' : 'cm'} ≈ ${n(1 / (r.value * 100), 3)} ${uk ? 'см²' : 'cm²'}` });
+        return;
+      }
+      if (c['step'] === 'barometer') {
+        out.push({ id: 'atB', title: uk ? 'барометр' : 'the barometer', formula: `p₀ = ${formatMeasured('pressure', r.value, 100, locale)} = ${n(r.value, 4)} ${uk ? 'Па' : 'Pa'}` });
+        return;
+      }
+      if (c['step'] === 'open') {
+        out.push({ id: 'atO', title: uk ? 'носик відкритий' : 'the nozzle open', formula: `F = ${formatMeasured('force', r.value, 0.1, locale)}` });
+        return;
+      }
+      if (atmScale) {
+        const v = Number(c['pulled']);
+        out.push({ id: `pa:${v}`, title: uk ? `носик закритий, поршень до ${n(v)} мл` : `the nozzle shut, the plunger to ${n(v)} mL`, formula: 'p = F·l / V', numbers: `${n(r.value, 2)} ${uk ? 'Н' : 'N'} · ${n(atmScale, 3)} ${uk ? 'м' : 'm'} / 10⁻⁶ ${uk ? 'м³' : 'm³'} ≈ ${n((r.value * atmScale) / 1e-6, 3)} ${uk ? 'Па' : 'Pa'}` });
+      }
       return;
     }
     // The hydraulic machine: the pistons' areas, the force each load needed, the gain; the travel.

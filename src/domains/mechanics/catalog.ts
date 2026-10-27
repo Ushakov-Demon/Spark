@@ -30,6 +30,7 @@ const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', g
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
+const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
 const UA_PASCAL: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Паскаля. … Гідравлічна машина.' }];
 const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' }];
 const UA_EFFICIENCY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Корисна й затрачена робота. Коефіцієнт корисної дії.' }];
@@ -222,6 +223,33 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.hydrostaticPressure,
     examples: [{ args: [997.05, 9.81, 0.09], expected: 880.39515, note: 'water, 9 cm deep' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.atmosphere-syringe',
+    law: 'atmospheric-pressure',
+    title: { uk: 'Атмосферний тиск зі шприца', en: 'The atmospheric pressure from a syringe' },
+    latex: 'p = \\dfrac{F}{S} = \\dfrac{F\\,l}{V}',
+    plain: 'p = F / S = F·l / V',
+    argSymbols: ['F', 'l', 'V'],
+    resultSymbol: 'p',
+    variables: {
+      p: { name: { uk: 'атмосферний тиск', en: 'the atmospheric pressure' }, unit: 'Pa' },
+      F: { name: { uk: 'сила, з якою витягають поршень закритого шприца', en: 'the force pulling the shut syringe’s plunger' }, unit: 'N' },
+      l: { name: { uk: 'довжина шкали шприца', en: 'the length of the syringe’s scale' }, unit: 'm' },
+      V: { name: { uk: 'об’єм, що відповідає шкалі', en: 'the volume that scale stands for' }, unit: 'm³' },
+    },
+    curriculum: UA_ATMOSPHERE,
+    explanation: {
+      novice: { uk: 'Поршень закритого шприца важко витягти: повітря ззовні тисне на нього, а зсередини тиснути нічому.', en: 'The plunger of a shut syringe is hard to pull: the air outside presses on it, and inside there is nothing to press back.' },
+      school: {
+        uk: 'Повітря тисне на поршень з силою F = p·S. Площу поршня дає шкала: циліндр об’ємом V і довжиною l має площу перерізу S = V / l. Отже p = F·l / V.',
+        en: 'The air presses on the plunger with F = p·S. The scale gives its area: a cylinder of volume V and length l has a cross-section S = V / l. So p = F·l / V.',
+      },
+    },
+    compute: f.syringePressure,
+    examples: [{ args: [1.7, 0.057, 1e-6], expected: 96900, note: '1.7 N on a 1 mL syringe with a 5.7 cm scale' }],
     textSource: 'spark',
     reviewed: false,
   }),

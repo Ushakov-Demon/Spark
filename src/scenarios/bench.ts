@@ -18,6 +18,7 @@ import { BOX_COMMANDS, BOX_TEXT, type BoxCommand } from './box-bench.js';
 import { DEPTH_COMMANDS, DEPTH_TEXT, type DepthCommand } from './depth-bench.js';
 import { UTUBE_COMMANDS, UTUBE_TEXT, type UtubeCommand } from './utube-bench.js';
 import { PRESS_COMMANDS, PRESS_TEXT, type PressCommand } from './press-bench.js';
+import { ATM_COMMANDS, ATM_TEXT, type AtmCommand } from './atm-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -68,7 +69,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -145,7 +146,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -153,6 +154,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...ELECTRODE_TEXT,
   ...COIL_TEXT,
   ...(PRESS_TEXT as Record<PressCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
+  ...(ATM_TEXT as Record<AtmCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(UTUBE_TEXT as Record<UtubeCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(DEPTH_TEXT as Record<DepthCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(BOX_TEXT as Record<BoxCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -193,8 +195,9 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press', LocalizedText> = {
+export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm', LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
+  atm: { uk: 'Шприц на 1 мл із ковпачком на носик, динамометр, лінійка, барометр-анероїд', en: 'A 1 mL syringe with a cap for its nozzle, a dynamometer, a ruler, an aneroid barometer' },
   press: { uk: 'Два шприци (на 5 і 50 мл), з’єднані трубкою з водою, тягарці по 100 г, динамометр, лінійка', en: 'Two syringes (5 and 50 mL) joined by a tube of water, 100 g weights, a dynamometer, a ruler' },
   utube: { uk: 'Скляна U-подібна трубка на штативі, вода, соняшникова олія, мензурка, лінійка', en: 'A glass U-tube on a stand, water, sunflower oil, a measuring cylinder, a ruler' },
   depth: { uk: 'Хімічний стакан на 1 л із рідиною, воронка з гумовою плівкою на трубці, рідинний (U-подібний) манометр із водою, лінійка', en: 'A 1 L beaker of liquid, a funnel with a rubber film on a tube, a liquid (U-tube) manometer with water, a ruler' },

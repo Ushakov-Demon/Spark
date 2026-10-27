@@ -428,6 +428,16 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // The syringe: how far its plunger is out and whether its nozzle is shut; the barometer once it has been read.
+  if (kind === 'atm') {
+    const ac = c?.type === 'lab.atm' ? (c as unknown as { step: string; pulled?: number; air: number }) : undefined;
+    const any = log.find((e) => e.command.type === 'lab.atm') ?? plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.atm');
+    const air = (any && 'command' in any ? (any.command as unknown as { air: number }).air : undefined) ?? 101_300;
+    const b = log.find((e) => e.command.type === 'lab.atm' && (e.command as unknown as { step: string }).step === 'barometer');
+    const baro = b ? readingsOf([b])[0]?.record.value : undefined;
+    const pull = ac && (ac.step === 'open' || ac.step === 'sealed') && r ? show('force', r.value) : undefined;
+    return { ...base, kind, atm: { pulled: ac?.step === 'sealed' ? (ac.pulled ?? 0) : ac?.step === 'open' ? 1 : 0, sealed: ac?.step === 'sealed', air, ...(pull ? { pull } : {}), ...(ac?.step === 'scale' && r ? { read: `l = ${show('length', r.value)}` } : {}), ...(baro != null ? { baro: formatMeasured('pressure', baro, 100, locale) } : {}) } };
+  }
   // The hydraulic machine: the load on the wide piston (from this step, or the next one planned), the dynamometer.
   if (kind === 'press') {
     const pc = c?.type === 'lab.press' ? (c as unknown as { step: string; weights?: number }) : undefined;
@@ -615,6 +625,16 @@ function measureSay(): string {
     if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+  }
+  // The syringe: its scale, the barometer, the force on its plunger — and the pressure it gives.
+  if (m.command.type === 'lab.atm') {
+    const ac = m.command as { step: string; pulled?: number };
+    if (ac.step === 'scale') return uk ? `Шкала від 0 до 1 мл займає ${cm(r.value ?? 0)}.` : `The scale from 0 to 1 mL is ${cm(r.value ?? 0)} long.`;
+    if (ac.step === 'barometer') return uk ? `Барометр показує ${formatMeasured('pressure', r.value, 100, locale)}.` : `The barometer shows ${formatMeasured('pressure', r.value, 100, locale)}.`;
+    const F = formatMeasured('force', r.value, 0.1, locale);
+    if (ac.step === 'open') return uk ? `З відкритим носиком поршень іде легко: ${F}.` : `With the nozzle open the plunger goes easily: ${F}.`;
+    const v = String(ac.pulled ?? 0).replace('.', uk ? ',' : '.');
+    return uk ? `Закритий носик, поршень до ${v} мл — динамометр показує ${F}!` : `The nozzle shut, the plunger to ${v} mL — the dynamometer shows ${F}!`;
   }
   // The hydraulic machine: the pistons, the force the load needed, how far the wide piston rose.
   if (m.command.type === 'lab.press') {
@@ -2282,7 +2302,7 @@ function renderProtocol() {
       const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
-      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? (r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

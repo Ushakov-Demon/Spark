@@ -625,6 +625,27 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-23',
   }),
+  'wikipedia-atmospheric-pressure': source({
+    id: 'wikipedia-atmospheric-pressure',
+    title: 'Wikipedia, Atmospheric pressure: the standard atmosphere is 101 325 Pa (1013.25 hPa) — the mean at sea level; the Siberian High often exceeds 1050 hPa, records near 1085 hPa; the record low, 870 hPa, in a tropical cyclone',
+    url: 'https://en.wikipedia.org/wiki/Atmospheric_pressure',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-27',
+  }),
+  'wikipedia-barometer': source({
+    id: 'wikipedia-barometer',
+    title: 'Wikipedia, Barometer: Evangelista Torricelli is usually credited with inventing the mercury barometer in 1643 (Middleton argues for 1644); in 1648 Florin Périer carried one up the Puy de Dôme and found it lower higher up, as Pascal predicted; Lucien Vidi made the aneroid barometer in 1844',
+    url: 'https://en.wikipedia.org/wiki/Barometer',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-27',
+  }),
+  'msf-syringe-dead-space': source({
+    id: 'msf-syringe-dead-space',
+    title: 'MSF UniCat, Syringe, single use, Luer: maximum dead space by capacity — 1 ml and 2 ml: 0.07 ml (central cone), 5 ml: 0.075 ml, 10 ml: 0.10 ml; quality standard ISO 7886-1:2017',
+    url: 'https://unicat.msf.org/cat/product/18712',
+    license: 'facts-only',
+    retrieved: '2026-10-27',
+  }),
   'wikipedia-pascal-law': source({
     id: 'wikipedia-pascal-law',
     title: 'Wikipedia, Pascal’s law: a pressure change at any point in a confined incompressible fluid is transmitted throughout the fluid; established by Blaise Pascal in 1653, published in 1663; it underlies the hydraulic press, F₂/F₁ = A₂/A₁',

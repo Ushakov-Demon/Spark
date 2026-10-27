@@ -56,7 +56,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -630,6 +630,43 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Сполучені посудини. … моделювання: сполучених посудин' }],
     expect: 'reached',
   },
+  varied(
+    {
+      id: 'atmospheric-pressure',
+      ask: { uk: 'Чи покаже шприц такий самий тиск повітря, як барометр?', en: 'Will a syringe show the same air pressure as the barometer?' },
+      grade: 7,
+      topic: PRESSURE,
+      title: { uk: 'Вимірюємо атмосферний тиск шприцом', en: 'Measuring the atmospheric pressure with a syringe' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'atm',
+      choices: [ch('less', 'Менший, ніж барометр', 'Less than the barometer'), ch('same', 'Такий самий, як барометр', 'The same as the barometer'), ch('more', 'Більший, ніж барометр', 'More than the barometer')],
+      choicesAt: 'end',
+      answerOnBoard: ['pa:'],
+      formulas: ['mechanics.atmosphere-syringe', 'mechanics.pressure'],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'вимірювання й визначення: атмосферного й гідростатичного тиску' }],
+      expect: 'reached',
+    },
+    {
+      // The weather: the barometer, and so the force on the plunger, differ from day to day.
+      controls: [{ id: 'air', label: { uk: 'Погода (тиск повітря)', en: 'The weather (air pressure)' }, kind: 'choice', options: [ch('99000', 'Циклон: 990 гПа', 'A cyclone: 990 hPa'), ch('101300', 'Звичайний день: 1013 гПа', 'An ordinary day: 1013 hPa'), ch('103500', 'Антициклон: 1035 гПа', 'An anticyclone: 1035 hPa')], value: '101300' }],
+      build: (v) => {
+        const air = Number(v['air']);
+        return {
+          question: {
+            uk: 'Шприц на 1 мл, динамометр, лінійка й барометр-анероїд. Виміряємо, яку довжину займає шкала шприца від 0 до 1 мл, і подивимося на барометр. Спершу витягнемо поршень динамометром із відкритим носиком, потім — закривши носик ковпачком: до позначок 0,25, 0,5 і 1 мл. Тиск повітря дасть сила, поділена на площу поршня. Чи покаже шприц такий самий тиск, як барометр?',
+            en: 'A 1 mL syringe, a dynamometer, a ruler and an aneroid barometer. We measure how long the syringe’s scale from 0 to 1 mL is and look at the barometer. First we pull the plunger out with the dynamometer with the nozzle open, then with the nozzle shut by a cap: to the 0.25, 0.5 and 1 mL marks. The force over the plunger’s area gives the air’s pressure. Will the syringe show the same pressure as the barometer?',
+          },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.atm', step: 'scale', air } },
+            { kind: 'bench', command: { type: 'lab.atm', step: 'barometer', air } },
+            { kind: 'bench', command: { type: 'lab.atm', step: 'open', air } },
+            ...[0.25, 0.5, 1].map((pulled) => ({ kind: 'bench', command: { type: 'lab.atm', step: 'sealed', air, pulled } }) as const),
+          ],
+        };
+      },
+    },
+  ),
   varied(
     {
       id: 'depth-pressure',

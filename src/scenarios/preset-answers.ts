@@ -359,6 +359,36 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'atmospheric-pressure': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.atm' && x.record.value !== null);
+    const len = R.find((x) => x.command['step'] === 'scale')?.record.value ?? 0;
+    const p0 = R.find((x) => x.command['step'] === 'barometer')?.record.value ?? 0;
+    const open = R.find((x) => x.command['step'] === 'open')?.record.value ?? 0;
+    const pulls = R.filter((x) => x.command['step'] === 'sealed').map((x) => ({ v: Number(x.command['pulled']), F: x.record.value!, p: len > 0 ? (x.record.value! * len) / 1e-6 : 0 }));
+    const last = pulls[pulls.length - 1];
+    // Beyond the dynamometer's half division (as a share of the force), the syringe's pressure differs from the barometer's.
+    const off = last && last.F > 0 ? 0.05 / last.F : 1;
+    const correct = !last || !p0 ? undefined : Math.abs(last.p - p0) <= off * p0 ? 'same' : last.p < p0 ? 'less' : 'more';
+    const hPa = (p: number, l: Locale) => formatMeasured('pressure', p, 100, l);
+    const N = (x: number, l: Locale) => formatMeasured('force', x, 0.1, l);
+    const mlT = (v: number, l: Locale) => `${sig(v, 2, l)} ${l === 'uk' ? 'мл' : 'mL'}`;
+    const list = (l: Locale) => pulls.map((x) => `${mlT(x.v, l)} — ${N(x.F, l)} → ${hPa(x.p, l)}`).join('; ');
+    const short = last && p0 ? Math.round((1 - last.p / p0) * 100) : 0;
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Поки носик відкритий, повітря заходить у шприц слідом за поршнем і тисне на нього зсередини так само, як ззовні, — тягнути легко. Коли носик закритий, зсередини тиснути майже нічому, і повітря ззовні впирається в поршень з силою F = p·S. Але трохи повітря завжди лишається в носику. Коли поршень іде вгору, це повітря розходиться по всьому шприцу й тисне зсередини тим слабше, чим більше йому місця. Тому сила зростає, що далі витягнуто поршень, і наближається до p·S, але не досягає її: тиск зі шприца виходить трохи меншим, ніж показує барометр.'
+          : 'While the nozzle is open, air comes into the syringe after the plunger and presses on it from inside as much as from outside — it pulls easily. With the nozzle shut, there is almost nothing inside to press, and the air outside pushes on the plunger with F = p·S. But a little air always stays in the nozzle. As the plunger goes up, that air spreads over the whole syringe and presses from inside the weaker the more room it has. So the force grows the farther the plunger is pulled and comes near p·S, but does not reach it: the syringe’s pressure comes out a little less than the barometer shows.',
+      ),
+      say: both((l) => (last ? (l === 'uk' ? `Шприц показав ${hPa(last.p, l)}, барометр — ${hPa(p0, l)}.` : `The syringe showed ${hPa(last.p, l)}, the barometer ${hPa(p0, l)}.`) : l === 'uk' ? 'Подивімося, що показав динамометр.' : 'Let us look at the dynamometer.')),
+      text: both((l) =>
+        l === 'uk'
+          ? `Шкала 1 мл займає ${sig(len * 100, 2, l)} см, тож площа поршня S = V / l ≈ ${sig(1e-6 / Math.max(len, 1e-9) * 1e4, 3, l)} см². З відкритим носиком динамометр показав ${N(open, l)}. Із закритим: ${list(l)} (p = F / S). Барометр показував ${hPa(p0, l)}: шприц дав ${correct === 'same' ? 'той самий тиск у межах точності динамометра' : correct === 'less' ? `на ${short} % менше — тим ближче до барометра, що далі витягнуто поршень` : 'більше'}. (Тертя поршня не враховано: у справжньому шприці воно додає до сили.)`
+          : `The 1 mL scale is ${sig(len * 100, 2, l)} cm long, so the plunger’s area S = V / l ≈ ${sig(1e-6 / Math.max(len, 1e-9) * 1e4, 3, l)} cm². With the nozzle open the dynamometer showed ${N(open, l)}. Shut: ${list(l)} (p = F / S). The barometer showed ${hPa(p0, l)}: the syringe gave ${correct === 'same' ? 'the same pressure within the dynamometer’s accuracy' : correct === 'less' ? `${short} % less — the nearer the barometer the farther the plunger is pulled` : 'more'}. (The plunger’s friction is left out: in a real syringe it adds to the force.)`,
+      ),
+    };
+  },
   'communicating-vessels': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.utube' && x.record.value !== null);
     const alone = R.find((x) => x.record.inputs?.['which'] === 2)?.record;

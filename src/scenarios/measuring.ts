@@ -192,7 +192,7 @@ export function readingsOf<C extends { type: string }>(log: readonly ExperimentL
 export function formatMeasured(quantity: MeasurementRecord['quantity'], value: number | null, division: number, locale: 'uk' | 'en'): string {
   const uk = locale === 'uk';
   if (value === null) return quantity === 'volume' ? (uk ? 'вище за поділки' : 'above the marks') : uk ? 'перевантаження' : 'overload';
-  const [k, unit] = quantity === 'mass' ? [1000, uk ? 'г' : 'g'] : quantity === 'volume' ? [1e6, uk ? 'мл' : 'mL'] : quantity === 'length' ? [100, uk ? 'см' : 'cm'] : quantity === 'time' ? [1, uk ? 'с' : 's'] : quantity === 'current' ? [1, uk ? 'А' : 'A'] : quantity === 'voltage' ? [1, uk ? 'В' : 'V'] : quantity === 'resistance' ? [1, uk ? 'Ом' : 'Ω'] : [1, uk ? 'Н' : 'N'];
+  const [k, unit] = quantity === 'mass' ? [1000, uk ? 'г' : 'g'] : quantity === 'volume' ? [1e6, uk ? 'мл' : 'mL'] : quantity === 'length' ? [100, uk ? 'см' : 'cm'] : quantity === 'time' ? [1, uk ? 'с' : 's'] : quantity === 'current' ? [1, uk ? 'А' : 'A'] : quantity === 'voltage' ? [1, uk ? 'В' : 'V'] : quantity === 'resistance' ? [1, uk ? 'Ом' : 'Ω'] : quantity === 'pressure' ? [0.01, uk ? 'гПа' : 'hPa'] : [1, uk ? 'Н' : 'N'];
   const digits = Math.max(0, Math.round(-Math.log10(division * k)));
   return `${new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value * k)} ${unit}`;
 }

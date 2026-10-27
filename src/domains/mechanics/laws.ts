@@ -6,6 +6,7 @@ const COULOMB: Person = { name: { uk: 'Шарль Огюстен де Кулон
 const GALILEO: Person = { name: { uk: 'Галілео Галілей', en: 'Galileo Galilei' }, born: 1564, died: 1642, wikidata: 'Q307' };
 const HUYGENS: Person = { name: { uk: 'Крістіан Гюйгенс', en: 'Christiaan Huygens' }, born: 1629, died: 1695, wikidata: 'Q39599' };
 const ARCHIMEDES: Person = { name: { uk: 'Архімед', en: 'Archimedes' }, born: -287, died: -212, wikidata: 'Q8739' };
+const TORRICELLI: Person = { name: { uk: 'Еванджеліста Торрічеллі', en: 'Evangelista Torricelli' }, born: 1608, died: 1647, wikidata: 'Q102490' };
 const PASCAL: Person = { name: { uk: 'Блез Паскаль', en: 'Blaise Pascal' }, born: 1623, died: 1662, wikidata: 'Q1290' };
 
 /**
@@ -254,6 +255,35 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     },
     limits: {
       school: { uk: 'Так — для рідини, що стоїть (тиск її власної ваги тут додається окремо, ρ·g·h), і для поршнів без тертя: у справжніх шприцах частина сили йде на тертя.', en: 'So — for a liquid at rest (the pressure of its own weight adds separately, ρ·g·h) and for pistons without friction: in real syringes some of the force goes into friction.' },
+    },
+  },
+  {
+    id: 'atmospheric-pressure',
+    kind: 'law',
+    name: { uk: 'Атмосферний тиск', en: 'Atmospheric pressure' },
+    statement: {
+      novice: { uk: 'Повітря має вагу й тисне на все довкола — на нас, на стіл, на поршень шприца — з усіх боків.', en: 'Air has weight and presses on everything around — on us, the table, a syringe’s plunger — from all sides.' },
+      school: { uk: 'Повітряна оболонка Землі тисне на все, що в ній, — це атмосферний тиск. Біля рівня моря він у середньому 101 325 Па (нормальний атмосферний тиск, 1013 гПа) і змінюється з погодою й висотою. Вимірюють його барометром.', en: 'The Earth’s envelope of air presses on all that is in it — the atmospheric pressure. At sea level it is 101 325 Pa on average (the standard atmosphere, 1013 hPa) and changes with the weather and the height. A barometer measures it.' },
+    },
+    history: {
+      people: [TORRICELLI, PASCAL],
+      role: 'discovered',
+      when: '1643–1648',
+      story: {
+        school: {
+          uk: 'Італієць Еванджеліста Торрічеллі 1643 року (або 1644-го) зробив перший ртутний барометр: стовп ртуті в трубці тримається тиском повітря. 1648 року Флорен Пер’є підніс такий барометр на гору Пюї-де-Дом — і вгорі ртуть стояла нижче, як і передбачав Паскаль. Барометр-анероїд, без рідини, зробив Люсьєн Віді 1844 року.',
+          en: 'The Italian Evangelista Torricelli made the first mercury barometer in 1643 (or 1644): the column of mercury in the tube is held up by the air’s pressure. In 1648 Florin Périer carried such a barometer up the Puy de Dôme — and higher up the mercury stood lower, as Pascal had predicted. The aneroid barometer, with no liquid, was made by Lucien Vidi in 1844.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-barometer', locator: 'History', claim: 'Evangelista Torricelli is usually credited with inventing the mercury barometer in 1643; Middleton argues for 1644' },
+        { source: 'wikipedia-barometer', locator: 'History', claim: 'in September 1648 Florin Périer carried a mercury barometer up the Puy de Dôme and found lower readings higher up, as Pascal predicted' },
+        { source: 'wikipedia-barometer', locator: 'Aneroid barometers', claim: 'Lucien Vidi invented the aneroid barometer in 1844' },
+        { source: 'wikipedia-atmospheric-pressure', locator: 'Standard atmosphere', claim: 'the standard atmosphere is 101 325 Pa (1013.25 hPa)' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Тиск повітря біля землі не сталий: від приблизно 870 до 1085 гПа в рекордах, зазвичай — кілька десятків гектопаскалів довкола 1013. Зі шприцом він виходить трохи меншим: у носику лишається трохи повітря.', en: 'The air’s pressure at the ground is not constant: about 870 to 1085 hPa in records, usually within a few tens of hectopascals of 1013. With a syringe it comes out a little lower: a little air stays in the nozzle.' },
     },
   },
   {
