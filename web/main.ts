@@ -467,8 +467,11 @@ function benchView(): BenchView | null {
   if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
   // The slope: raised so high, the block pulled up to the top with the dynamometer's reading.
   if (kind === 'slope') {
-    const sc = c?.type === 'lab.slope' && r ? (c as unknown as { height: number }) : undefined;
-    return { ...base, kind, slope: { height: sc?.height ?? 0, length: SLOPE_LENGTH.value, up: sc ? 1 : 0 }, ...(sc ? { pull: show('force', r!.value) } : {}) };
+    const sc = c?.type === 'lab.slope' && r ? (c as unknown as { height: number; weights?: number }) : undefined;
+    // So many weights on the block as the experiment puts there (before the first pull too).
+    const planned = preset?.plan?.find((s) => s.kind === 'bench' && s.command.type === 'lab.slope');
+    const weights = sc?.weights ?? (planned?.kind === 'bench' ? (planned.command as { weights?: number }).weights : undefined) ?? 2;
+    return { ...base, kind, slope: { height: sc?.height ?? 0, length: SLOPE_LENGTH.value, up: sc ? 1 : 0, weights }, ...(sc ? { pull: show('force', r!.value) } : {}) };
   }
   if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE } : base;
   return c?.type === 'lab.edge' && r ? { ...base, edge: { index: Number(c['edge']) as 0 | 1 | 2, display: show('length', r.value) } } : base;

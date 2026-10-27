@@ -16,6 +16,7 @@ import { LAB_VESSEL_ID, sampleOf, type LabParams, type LabStatus } from './therm
 import { formatReading, weigh } from './weighing.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { formatMeasured } from './measuring.js';
+import { AMMETER, VOLTMETER } from './circuit-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -219,11 +220,16 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       .filter((x) => (x.I ?? 0) > 0) as { I: number; U: number }[];
     const R = rows.map((x) => x.U / x.I);
     const mean = R.reduce((a, b) => a + b, 0) / Math.max(1, R.length);
-    const trend = R.length >= 2 ? (R[R.length - 1]! - R[0]!) / mean : 0;
+    // The same, if the first and the last R differ by no more than the instruments allow: half a division of each,
+    // relative to its reading (at a small current the ammeter's 0.05 A is a large share).
+    const err = (x: { I: number; U: number }) => AMMETER.division.value / 2 / x.I + VOLTMETER.division.value / 2 / x.U;
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    const apart = first && last ? Math.abs(R[R.length - 1]! - R[0]!) - (R[0]! * err(first) + R[R.length - 1]! * err(last)) : 0;
     const A = (x: number, l: Locale) => formatMeasured('current', x, 0.01, l);
     const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
     return {
-      ...(rows.length >= 2 ? { correct: Math.abs(trend) < 0.1 ? 'same' : trend > 0 ? 'grows' : 'falls' } : {}),
+      ...(rows.length >= 2 ? { correct: apart <= 0 ? 'same' : R[R.length - 1]! > R[0]! ? 'grows' : 'falls' } : {}),
       why: both((l) => (l === 'uk' ? 'Напруга — це те, що змушує заряджені частинки (у металі — електрони) рухатися впорядковано; опір — те, наскільки провідник цьому заважає: електрони раз у раз натрапляють на коливні йони кристалічної ґратки й гальмуються. Удвічі більша напруга вдвічі сильніше підганяє електрони — і вони рухаються вдвічі швидше, тож струм удвічі більший; а «перешкоди» в провіднику ті самі. Тому відношення U / I не змінюється — це і є опір, властивість самого провідника: він залежить від матеріалу, довжини й товщини дроту, а не від приладів і не від напруги. Так буває, поки провідник не нагрівається: у нагрітому металі йони коливаються сильніше, і опір зростає (це видно в нитки лампи).' : 'The voltage is what makes charged particles (electrons, in a metal) move in an orderly way; the resistance is how much the conductor hinders that: the electrons keep running into the vibrating ions of the crystal lattice and are slowed. Twice the voltage drives the electrons twice as hard — they drift twice as fast, so the current is twice as large; the “obstacles” in the conductor are the same. So the ratio U / I stays — that is the resistance, a property of the conductor itself: it depends on the material, the length and the thickness of the wire, not on the instruments or the voltage. This holds while the conductor does not warm up: in a hot metal the ions vibrate harder, and the resistance grows (as in a lamp’s filament).')),
       say: both((l) => (l === 'uk' ? `R ≈ ${sig(mean, 2, l)} Ом — за будь-якої напруги!` : `R ≈ ${sig(mean, 2, l)} Ω — at any voltage!`)),
       text: both((l) => {
@@ -865,7 +871,7 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
   'specific-heat-water': ({ steps }) => {
     const s = steps[0]!;
     const t = reachedAt(s);
-    const P = 500;
+    const P = s.params.heater?.rating ?? 500;
     const m = bodyMassOf(s.result.initial);
     const dT = temp(s.result.final) - temp(s.result.initial);
     const c = (P * t) / (m * dT);

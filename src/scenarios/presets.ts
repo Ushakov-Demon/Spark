@@ -6,7 +6,7 @@ import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
 import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './motion-bench.js';
 import { slopeLoad } from './lever-bench.js';
-import { LAB_RESISTOR } from './circuit-bench.js';
+import { LAB_RESISTOR, SET_RESISTORS } from './circuit-bench.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -177,6 +177,34 @@ const LIQUIDS_FOR_DENSITY: readonly Choice[] = (['sunflower-oil', 'glycerol', 'e
 const hotplate = { id: 'electric-hotplate', rating: 2000, knob: 1 } as const;
 const bench = (knob: number) => ({ id: 'bench-supply', knob }) as const;
 const beaker = { vessel: 'beaker', size: 0.25, material: 'glass', liters: 0.2 } as const;
+
+/**
+ * The circuit lab works' conditions: a resistor from the set and the source's steps. The resistor goes by its
+ * number where its resistance is what the work finds. Every set of steps stays within the instruments with
+ * every resistor: at most 6 V / 3.1 Ω ≈ 1.9 A (the ammeter takes 2 A), 6 V on the voltmeter (it takes 6 V);
+ * each doubles a voltage of the set, for the power's «twice the voltage».
+ */
+const CIRCUIT_RESISTOR = (unknown: boolean): PresetControl => ({
+  id: 'resistor',
+  label: unknown ? { uk: 'Резистор (опір невідомий — його й знайдемо)', en: 'Resistor (its resistance unknown — that is what we find)' } : { uk: 'Резистор із набору', en: 'Resistor from the set' },
+  kind: 'choice',
+  options: SET_RESISTORS.map((r, k) => (unknown ? ch(String(r.value), `№ ${k + 1}`, `No. ${k + 1}`) : ch(String(r.value), `${r.value} Ом`, `${r.value} Ω`))),
+  value: String(LAB_RESISTOR.value),
+});
+const VOLT_SETS = [[1.5, 3, 4.5], [1, 2, 3, 4], [2, 4, 6]] as const;
+const CIRCUIT_VOLTS: PresetControl = {
+  id: 'volts',
+  label: { uk: 'Напруга джерела', en: 'Source voltage' },
+  kind: 'choice',
+  options: VOLT_SETS.map((set) => ch(set.join('-'), `${set.map((x) => String(x).replace('.', ',')).join(' · ')} В`, `${set.join(' · ')} V`)),
+  value: '1.5-3-4.5',
+};
+const voltsOf = (v: PresetValues): number[] => String(v['volts']).split('-').map(Number);
+/** «1,5, 3 і 4,5 В» / «1.5, 3 and 4.5 V». */
+const voltsText = (volts: readonly number[], l: 'uk' | 'en') => {
+  const n = volts.map((x) => (l === 'uk' ? String(x).replace('.', ',') : String(x)));
+  return `${n.slice(0, -1).join(', ')} ${l === 'uk' ? 'і' : 'and'} ${n[n.length - 1]} ${l === 'uk' ? 'В' : 'V'}`;
+};
 const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 
 export const PRESETS: readonly Preset[] = [
@@ -232,74 +260,113 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 1', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 1. Вивчення умови рівноваги важеля.' }],
     expect: 'reached',
   },
-  {
-    id: 'slope-efficiency',
-    ask: { uk: 'Як зміниться ККД похилої площини, якщо підняти її вище?', en: 'How does a slope’s efficiency change if it is raised higher?' },
-    grade: 8,
-    topic: SIMPLE,
-    title: { uk: 'ККД похилої площини', en: 'The efficiency of an inclined plane' },
-    question: {
-      uk: 'Зважимо динамометром дерев’яний брусок із двома тягарцями по 100 г. Потім покладемо його на дерев’яну дошку завдовжки 60 см, піднімемо її кінець на 10, 20 і 30 см і щоразу рівномірно тягтимемо брусок вгору вздовж дошки. ККД похилої площини η = P·h / (F·l). Як він зміниться, якщо підняти дошку вище?',
-      en: 'We weigh a wooden block with two 100 g weights on the dynamometer. Then we put it on a 60 cm wooden board, raise its end 10, 20 and 30 cm and each time pull the block steadily up along the board. The efficiency of the slope η = P·h / (F·l). How does it change if the board is raised higher?',
+  varied(
+    {
+      id: 'slope-efficiency',
+      ask: { uk: 'Як зміниться ККД похилої площини, якщо підняти її вище?', en: 'How does a slope’s efficiency change if it is raised higher?' },
+      grade: 8,
+      topic: SIMPLE,
+      title: { uk: 'ККД похилої площини', en: 'The efficiency of an inclined plane' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'slope',
+      choices: [ch('grows', 'Зросте', 'It grows'), ch('falls', 'Зменшиться', 'It falls'), ch('same', 'Не зміниться', 'It stays the same')],
+      choicesAt: 'end',
+      answerOnBoard: ['eta:'],
+      formulas: ['mechanics.efficiency', 'mechanics.weight'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 2', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 2. Визначення ККД простого механізму.' }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'slope',
-    plan: [
-      { kind: 'hang', substance: 'wood', mass: slopeLoad(), into: 'air', label: { uk: 'Брусок із двома тягарцями', en: 'Block with two weights' } },
-      { kind: 'bench', command: { type: 'lab.slope', height: 0.1 } },
-      { kind: 'bench', command: { type: 'lab.slope', height: 0.2 } },
-      { kind: 'bench', command: { type: 'lab.slope', height: 0.3 } },
-    ],
-    choices: [ch('grows', 'Зросте', 'It grows'), ch('falls', 'Зменшиться', 'It falls'), ch('same', 'Не зміниться', 'It stays the same')],
-    choicesAt: 'end',
-    answerOnBoard: ['eta:'],
-    formulas: ['mechanics.efficiency', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 2', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 2. Визначення ККД простого механізму.' }],
-    expect: 'reached',
-  },
-  {
-    id: 'conductor-resistance',
-    ask: { uk: 'Чи зміниться опір провідника, якщо збільшити напругу на ньому?', en: 'Will the conductor’s resistance change if the voltage across it is raised?' },
-    grade: 8,
-    topic: CIRCUITS,
-    title: { uk: 'Вимірюємо опір провідника', en: 'Measuring the resistance of a conductor' },
-    question: {
-      uk: 'Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі 1,5, 3 і 4,5 В і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?',
-      en: 'We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to 1.5, 3 and 4.5 V, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?',
+    {
+      controls: [{ id: 'weights', label: { uk: 'Тягарців на бруску (по 100 г)', en: 'Weights on the block (100 g each)' }, kind: 'number', unit: '', min: 1, max: 3, step: 1, value: 2 }],
+      build: (v) => {
+        const n = Number(v['weights']);
+        const with_ = { uk: n === 1 ? 'з одним тягарцем' : n === 2 ? 'із двома тягарцями' : 'із трьома тягарцями', en: n === 1 ? 'with one weight' : n === 2 ? 'with two weights' : 'with three weights' };
+        return {
+          question: {
+            uk: `Зважимо динамометром дерев’яний брусок ${with_.uk} по 100 г. Потім покладемо його на дерев’яну дошку завдовжки 60 см, піднімемо її кінець на 10, 20 і 30 см і щоразу рівномірно тягтимемо брусок вгору вздовж дошки. ККД похилої площини η = P·h / (F·l). Як він зміниться, якщо підняти дошку вище?`,
+            en: `We weigh a wooden block ${with_.en} of 100 g on the dynamometer. Then we put it on a 60 cm wooden board, raise its end 10, 20 and 30 cm and each time pull the block steadily up along the board. The efficiency of the slope η = P·h / (F·l). How does it change if the board is raised higher?`,
+          },
+          plan: [
+            { kind: 'hang', substance: 'wood', mass: slopeLoad(n), into: 'air', label: { uk: `Брусок ${with_.uk}`, en: `Block ${with_.en}` } },
+            ...[0.1, 0.2, 0.3].map((height) => ({ kind: 'bench', command: { type: 'lab.slope', height, weights: n } }) as const),
+          ],
+        };
+      },
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'circuit',
-    plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value } }) as const),
-    choices: [ch('same', 'Ні — опір лишиться тим самим, зросте струм', 'No — the resistance stays, the current grows'), ch('grows', 'Так, зросте разом із напругою', 'Yes, it grows with the voltage'), ch('falls', 'Так, зменшиться', 'Yes, it falls')],
-    choicesAt: 'end',
-    answerOnBoard: ['R:'],
-    formulas: ['electrical.ohm-resistance'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 6', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 6. Вимірювання опору провідника за допомогою амперметра й вольтметра.' }],
-    expect: 'reached',
-  },
-  {
-    id: 'consumer-power',
-    ask: { uk: 'У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?', en: 'How many times does the power grow if the voltage across the resistor is doubled?' },
-    grade: 8,
-    topic: CIRCUITS,
-    title: { uk: 'Вимірюємо потужність споживача', en: 'Measuring the power of a consumer' },
-    question: {
-      uk: 'У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі 1,5, 3 і 4,5 В, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?',
-      en: 'The circuit has a source, a key, a resistor (the consumer), an ammeter and a voltmeter. We set the source to 1.5, 3 and 4.5 V, write down the instruments each time and find the power P = U · I. How many times does the power grow if the voltage across the resistor is doubled?',
+  ),
+  varied(
+    {
+      id: 'conductor-resistance',
+      ask: { uk: 'Чи зміниться опір провідника, якщо збільшити напругу на ньому?', en: 'Will the conductor’s resistance change if the voltage across it is raised?' },
+      grade: 8,
+      topic: CIRCUITS,
+      title: { uk: 'Вимірюємо опір провідника', en: 'Measuring the resistance of a conductor' },
+      question: {
+        uk: 'Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі 1,5, 3 і 4,5 В і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?',
+        en: 'We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to 1.5, 3 and 4.5 V, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?',
+      },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'circuit',
+      plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value } }) as const),
+      choices: [ch('same', 'Ні — опір лишиться тим самим, зросте струм', 'No — the resistance stays, the current grows'), ch('grows', 'Так, зросте разом із напругою', 'Yes, it grows with the voltage'), ch('falls', 'Так, зменшиться', 'Yes, it falls')],
+      choicesAt: 'end',
+      answerOnBoard: ['R:'],
+      formulas: ['electrical.ohm-resistance'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 6', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 6. Вимірювання опору провідника за допомогою амперметра й вольтметра.' }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'circuit',
-    plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value, power: true } }) as const),
-    choices: [ch('four', 'Учетверо', 'Four times'), ch('two', 'Удвічі', 'Twice'), ch('same', 'Не зміниться', 'It stays the same')],
-    choicesAt: 'end',
-    answerOnBoard: ['P:'],
-    formulas: ['electrical.power', 'electrical.ohm-resistance'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 9', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 9. Вимірювання потужності споживача електроенергії.' }],
-    expect: 'reached',
-  },
+    {
+      controls: [CIRCUIT_RESISTOR(true), CIRCUIT_VOLTS],
+      build: (v) => {
+        const volts = voltsOf(v);
+        return {
+          question: {
+            uk: `Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі ${voltsText(volts, 'uk')} і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?`,
+            en: `We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to ${voltsText(volts, 'en')}, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?`,
+          },
+          plan: volts.map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: Number(v['resistor']) } }) as const),
+        };
+      },
+    },
+  ),
+  varied(
+    {
+      id: 'consumer-power',
+      ask: { uk: 'У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?', en: 'How many times does the power grow if the voltage across the resistor is doubled?' },
+      grade: 8,
+      topic: CIRCUITS,
+      title: { uk: 'Вимірюємо потужність споживача', en: 'Measuring the power of a consumer' },
+      question: {
+        uk: 'У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі 1,5, 3 і 4,5 В, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?',
+        en: 'The circuit has a source, a key, a resistor (the consumer), an ammeter and a voltmeter. We set the source to 1.5, 3 and 4.5 V, write down the instruments each time and find the power P = U · I. How many times does the power grow if the voltage across the resistor is doubled?',
+      },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'circuit',
+      plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value, power: true } }) as const),
+      choices: [ch('four', 'Учетверо', 'Four times'), ch('two', 'Удвічі', 'Twice'), ch('same', 'Не зміниться', 'It stays the same')],
+      choicesAt: 'end',
+      answerOnBoard: ['P:'],
+      formulas: ['electrical.power', 'electrical.ohm-resistance'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 9', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 9. Вимірювання потужності споживача електроенергії.' }],
+      expect: 'reached',
+    },
+    {
+      controls: [CIRCUIT_RESISTOR(false), CIRCUIT_VOLTS],
+      build: (v) => {
+        const volts = voltsOf(v);
+        return {
+          question: {
+            uk: `У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі ${voltsText(volts, 'uk')}, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?`,
+            en: `The circuit has a source, a key, a resistor (the consumer), an ammeter and a voltmeter. We set the source to ${voltsText(volts, 'en')}, write down the instruments each time and find the power P = U · I. How many times does the power grow if the voltage across the resistor is doubled?`,
+          },
+          plan: volts.map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: Number(v['resistor']), power: true } }) as const),
+        };
+      },
+    },
+  ),
   {
     id: 'series-circuit',
     ask: { uk: 'Як пов’язані напруги на резисторах із загальною напругою?', en: 'How do the voltages across the resistors relate to the total?' },
@@ -877,19 +944,30 @@ export const PRESETS: readonly Preset[] = [
     quoteHas: 'пароутвор',
     expect: 'reached',
   },
-  {
-    id: 'melt-ice',
-    grade: 8,
-    topic: THERMAL,
-    title: { uk: 'Як тане лід?', en: 'How does ice melt?' },
-    question: { uk: 'Поклади лід (−10 °C) у теплу кімнату й стеж за термометром. Що буде з температурою, поки лід тане?', en: 'Put ice (−10 °C) in a warm room and watch the thermometer. What happens to the temperature while the ice melts?' },
-    params: { ...room, ...beaker, action: 'melt', substance: 'water', startTemp: -10 },
-    choices: [ch('stays', 'Стоїть на місці, поки весь лід не розтане', 'It stands still until all the ice has melted'), ch('rises', 'Весь час росте', 'It keeps rising'), ch('falls', 'Спершу падає нижче', 'It drops lower first')],
-    formulas: ['thermal.latent-heat'],
-    quoteHas: 'плавлен',
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 5', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 5. Вимірювання питомої теплоти плавлення льоду.' }],
-    expect: 'reached',
-  },
+  varied(
+    {
+      id: 'melt-ice',
+      grade: 8,
+      topic: THERMAL,
+      title: { uk: 'Як тане лід?', en: 'How does ice melt?' },
+      choices: [ch('stays', 'Стоїть на місці, поки весь лід не розтане', 'It stands still until all the ice has melted'), ch('rises', 'Весь час росте', 'It keeps rising'), ch('falls', 'Спершу падає нижче', 'It drops lower first')],
+      formulas: ['thermal.latent-heat'],
+      quoteHas: 'плавлен',
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 5', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 5. Вимірювання питомої теплоти плавлення льоду.' }],
+      expect: 'reached',
+    },
+    {
+      controls: [{ id: 'cold', label: { uk: 'Температура льоду', en: 'Temperature of the ice' }, kind: 'number', unit: '°C', min: -20, max: -5, step: 5, value: -10 }],
+      build: (v) => {
+        const t = Number(v['cold']);
+        const n = `−${-t}`;
+        return {
+          question: { uk: `Поклади лід (${n} °C) у теплу кімнату й стеж за термометром. Що буде з температурою, поки лід тане?`, en: `Put ice (${n} °C) in a warm room and watch the thermometer. What happens to the temperature while the ice melts?` },
+          params: { ...room, ...beaker, action: 'melt', substance: 'water', startTemp: t },
+        };
+      },
+    },
+  ),
   {
     id: 'melt-tin',
     grade: 8,
@@ -917,36 +995,58 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'oxfordaqa-igcse-sciences', item: 'Physics RP 3', match: 'same', quote: 'Cooling curves (P). Investigating the cooling curve of stearic acid.' }],
     expect: 'reached',
   },
-  {
-    ask: { uk: 'Якою вийде питома теплоємність води?', en: 'What specific heat of water will it give?' },
-    id: 'specific-heat-water',
-    grade: 8,
-    topic: THERMAL,
-    title: { uk: 'Яка питома теплоємність води?', en: 'What is the specific heat of water?' },
-    question: { uk: 'Нагрій 200 г води кип’ятильником 500 Вт від 20 до 50 °C. Знаючи потужність і час, порахуй c = P·t / (m·Δt). Яким вийде число?', en: 'Heat 200 g of water with a 500 W immersion heater from 20 to 50 °C. From the power and the time, compute c = P·t / (m·Δt). What number do you get?' },
-    params: { ...room, ...beaker, action: 'heat-to', target: 50, substance: 'water', startTemp: 20, heater: { id: 'immersion-heater', rating: 500, knob: 1 } },
-    choices: [ch('table', 'Рівно табличне — 4200 Дж/(кг·°C)', 'Exactly the table value — 4200 J/(kg·°C)'), ch('more', 'Більше за табличне', 'More than the table value'), ch('less', 'Помітно менше за табличне', 'Noticeably less than the table value')],
-    formulas: ['thermal.heat-for-temperature-change', 'thermal.energy-from-power'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
-    expect: 'reached',
-  },
-  {
-    id: 'heater-efficiency',
-    ask: { uk: 'Яка частка енергії кип’ятильника дістанеться воді?', en: 'What share of the heater’s energy will the water get?' },
-    grade: 8,
-    topic: THERMAL,
-    title: { uk: 'Визначаємо ККД електричного нагрівника', en: 'Finding the efficiency of an electric heater' },
-    question: {
-      uk: 'Нагріємо 200 г води кип’ятильником потужністю 500 Вт (так написано на ньому) від 20 до 60 °C і засічемо час. Корисна теплота — та, що дісталася воді: Q = c·m·Δt; витрачена енергія — E = P·t. ККД η = Q / E. Яка частка енергії кип’ятильника дістанеться воді?',
-      en: 'We heat 200 g of water with a 500 W immersion heater (as written on it) from 20 to 60 °C and time it. The useful heat is what the water got: Q = c·m·Δt; the energy spent is E = P·t. The efficiency η = Q / E. What share of the heater’s energy will the water get?',
+  varied(
+    {
+      ask: { uk: 'Якою вийде питома теплоємність води?', en: 'What specific heat of water will it give?' },
+      id: 'specific-heat-water',
+      grade: 8,
+      topic: THERMAL,
+      title: { uk: 'Яка питома теплоємність води?', en: 'What is the specific heat of water?' },
+      choices: [ch('table', 'Рівно табличне — 4200 Дж/(кг·°C)', 'Exactly the table value — 4200 J/(kg·°C)'), ch('more', 'Більше за табличне', 'More than the table value'), ch('less', 'Помітно менше за табличне', 'Noticeably less than the table value')],
+      formulas: ['thermal.heat-for-temperature-change', 'thermal.energy-from-power'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 4', topic: 'Тема 2. Внутрішня енергія. Теплові явища', match: 'related', quote: '№ 4. Визначення питомої теплоємності речовини.' }],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, action: 'heat-to', target: 60, substance: 'water', startTemp: 20, heater: { id: 'immersion-heater', rating: 500, knob: 1 } },
-    choices: [ch('all', 'Уся — ККД 100 %', 'All of it — 100 %'), ch('most', 'Більша частина, але не вся', 'Most of it, but not all'), ch('half', 'Менше половини', 'Less than half')],
-    choicesAt: 'end',
-    formulas: ['thermal.heat-for-temperature-change', 'thermal.energy-from-power'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 10', topic: 'Тема 3. Електричні явища', match: 'same', quote: '№ 10. Визначення ККД електричного нагрівника.' }, { program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'визначення: питомої теплоємності твердого тіла; ККД нагрівника' }],
-    expect: 'reached',
-  },
+    {
+      // No more than the beaker (250 ml) takes with the heater in it.
+      controls: [{ id: 'water', label: { uk: 'Води', en: 'Water' }, kind: 'number', unit: 'г', min: 100, max: 200, step: 50, value: 200 }],
+      build: (v) => {
+        const g = Number(v['water']);
+        return {
+          question: { uk: `Нагрій ${g} г води кип’ятильником 500 Вт від 20 до 50 °C. Знаючи потужність і час, порахуй c = P·t / (m·Δt). Яким вийде число?`, en: `Heat ${g} g of water with a 500 W immersion heater from 20 to 50 °C. From the power and the time, compute c = P·t / (m·Δt). What number do you get?` },
+          params: { ...room, ...beaker, liters: g / SUBSTANCES.water.liquid.density.value, action: 'heat-to', target: 50, substance: 'water', startTemp: 20, heater: { id: 'immersion-heater', rating: 500, knob: 1 } },
+        };
+      },
+    },
+  ),
+  varied(
+    {
+      id: 'heater-efficiency',
+      ask: { uk: 'Яка частка енергії кип’ятильника дістанеться воді?', en: 'What share of the heater’s energy will the water get?' },
+      grade: 8,
+      topic: THERMAL,
+      title: { uk: 'Визначаємо ККД електричного нагрівника', en: 'Finding the efficiency of an electric heater' },
+      choices: [ch('all', 'Уся — ККД 100 %', 'All of it — 100 %'), ch('most', 'Більша частина, але не вся', 'Most of it, but not all'), ch('half', 'Менше половини', 'Less than half')],
+      choicesAt: 'end',
+      formulas: ['thermal.heat-for-temperature-change', 'thermal.energy-from-power'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 10', topic: 'Тема 3. Електричні явища', match: 'same', quote: '№ 10. Визначення ККД електричного нагрівника.' }, { program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 1. Теплові явища', match: 'same', quote: 'визначення: питомої теплоємності твердого тіла; ККД нагрівника' }],
+      expect: 'reached',
+    },
+    {
+      // No more than the beaker (250 ml) takes with the heater in it.
+      controls: [{ id: 'water', label: { uk: 'Води', en: 'Water' }, kind: 'number', unit: 'г', min: 100, max: 200, step: 50, value: 200 }],
+      build: (v) => {
+        const g = Number(v['water']);
+        return {
+          question: {
+            uk: `Нагріємо ${g} г води кип’ятильником потужністю 500 Вт (так написано на ньому) від 20 до 60 °C і засічемо час. Корисна теплота — та, що дісталася воді: Q = c·m·Δt; витрачена енергія — E = P·t. ККД η = Q / E. Яка частка енергії кип’ятильника дістанеться воді?`,
+            en: `We heat ${g} g of water with a 500 W immersion heater (as written on it) from 20 to 60 °C and time it. The useful heat is what the water got: Q = c·m·Δt; the energy spent is E = P·t. The efficiency η = Q / E. What share of the heater’s energy will the water get?`,
+          },
+          params: { ...room, ...beaker, liters: g / SUBSTANCES.water.liquid.density.value, action: 'heat-to', target: 60, substance: 'water', startTemp: 20, heater: { id: 'immersion-heater', rating: 500, knob: 1 } },
+        };
+      },
+    },
+  ),
   {
     ask: { uk: 'Чи розплавиться сіль у каструлі на газі?', en: 'Will the salt melt in a pot on the gas?' },
     id: 'salt-in-pot',
@@ -1131,34 +1231,45 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
     expect: 'reached',
   },
-  {
-    id: 'electrochemical-equivalent',
-    ask: { uk: 'Яким вийде електрохімічний еквівалент міді?', en: 'What will the electrochemical equivalent of copper come out as?' },
-    grade: 9,
-    topic: ELECTRIC,
-    title: { uk: 'Визначаємо електрохімічний еквівалент міді', en: 'Finding the electrochemical equivalent of copper' },
-    question: {
-      uk: 'У розчин мідного купоросу опустимо дві мідні пластини й під’єднаємо до джерела струму. Зважимо катод (пластину «−»), пропустимо струм 20 хвилин, тоді вийнемо катод, висушимо й зважимо знову. Електрохімічний еквівалент k = Δm / (I·t) — скільки речовини виділяє кожен кулон заряду. Яким вийде електрохімічний еквівалент міді?',
-      en: 'We dip two copper plates into a copper sulfate solution and connect them to a source of current. We weigh the cathode (the “−” plate), pass the current for 20 minutes, then take the cathode out, dry it and weigh it again. The electrochemical equivalent k = Δm / (I·t) — how much substance each coulomb gives. What will it come out as for copper?',
+  varied(
+    {
+      id: 'electrochemical-equivalent',
+      ask: { uk: 'Яким вийде електрохімічний еквівалент міді?', en: 'What will the electrochemical equivalent of copper come out as?' },
+      grade: 9,
+      topic: ELECTRIC,
+      title: { uk: 'Визначаємо електрохімічний еквівалент міді', en: 'Finding the electrochemical equivalent of copper' },
+      guided: true,
+      choices: [ch('table', '≈ 0,33 мг/Кл — як у таблиці для міді', '≈ 0.33 mg/C — as in the table for copper'), ch('more', 'Помітно більшим за табличне', 'Noticeably more than in the table'), ch('less', 'Помітно меншим за табличне', 'Noticeably less than in the table')],
+      choicesAt: 'end',
+      answerOnBoard: ['kEq:'],
+      formulas: ['electrical.faraday-moles'],
+      programs: [
+        { program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'same', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' },
+        { program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 2. Електричні явища', match: 'related', quote: 'електричного струму в розчинах електролітів та газах' },
+      ],
+      expect: 'reached',
     },
-    params: { ...room, ...beaker, liters: 0.15, action: 'pass-current', substance: 'water', startTemp: 20, supply: { id: 'bench-supply', knob: 0.4, electrodes: 'copper' }, duration: 20 },
-    guided: true,
-    plan: [
-      { kind: 'add', substance: 'copper-sulfate', mass: 0.015, temperature: 20, label: { uk: 'Мідний купорос', en: 'Copper sulfate' } },
-      { kind: 'bench', command: { type: 'lab.cathode' } },
-      { kind: 'operation', action: 'pass-current', supply: { id: 'bench-supply', knob: 0.4, electrodes: 'copper' }, duration: 20 },
-      { kind: 'bench', command: { type: 'lab.cathode' } },
-    ],
-    choices: [ch('table', '≈ 0,33 мг/Кл — як у таблиці для міді', '≈ 0.33 mg/C — as in the table for copper'), ch('more', 'Помітно більшим за табличне', 'Noticeably more than in the table'), ch('less', 'Помітно меншим за табличне', 'Noticeably less than in the table')],
-    choicesAt: 'end',
-    answerOnBoard: ['kEq:'],
-    formulas: ['electrical.faraday-moles'],
-    programs: [
-      { program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'same', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' },
-      { program: 'ua-nus-2023-holovko', grade: 8, topic: 'Тема 2. Електричні явища', match: 'related', quote: 'електричного струму в розчинах електролітів та газах' },
-    ],
-    expect: 'reached',
-  },
+    {
+      controls: [{ id: 'minutes', label: { uk: 'Скільки пропускати струм', en: 'How long the current runs' }, kind: 'choice', options: [ch('10', '10 хв', '10 min'), ch('20', '20 хв', '20 min'), ch('30', '30 хв', '30 min')], value: '20' }],
+      build: (v) => {
+        const min = Number(v['minutes']);
+        const supply = { id: 'bench-supply', knob: 0.4, electrodes: 'copper' } as const;
+        return {
+          question: {
+            uk: `У розчин мідного купоросу опустимо дві мідні пластини й під’єднаємо до джерела струму. Зважимо катод (пластину «−»), пропустимо струм ${min} хвилин, тоді вийнемо катод, висушимо й зважимо знову. Електрохімічний еквівалент k = Δm / (I·t) — скільки речовини виділяє кожен кулон заряду. Яким вийде електрохімічний еквівалент міді?`,
+            en: `We dip two copper plates into a copper sulfate solution and connect them to a source of current. We weigh the cathode (the “−” plate), pass the current for ${min} minutes, then take the cathode out, dry it and weigh it again. The electrochemical equivalent k = Δm / (I·t) — how much substance each coulomb gives. What will it come out as for copper?`,
+          },
+          params: { ...room, ...beaker, liters: 0.15, action: 'pass-current', substance: 'water', startTemp: 20, supply, duration: min },
+          plan: [
+            { kind: 'add', substance: 'copper-sulfate', mass: 0.015, temperature: 20, label: { uk: 'Мідний купорос', en: 'Copper sulfate' } },
+            { kind: 'bench', command: { type: 'lab.cathode' } },
+            { kind: 'operation', action: 'pass-current', supply, duration: min },
+            { kind: 'bench', command: { type: 'lab.cathode' } },
+          ],
+        };
+      },
+    },
+  ),
   // ---------------------------------------------------------------- for everyone
   {
     ask: { uk: 'Що станеться з олією раніше: закипить чи почне диміти?', en: 'What comes first with oil: boiling or smoke?' },

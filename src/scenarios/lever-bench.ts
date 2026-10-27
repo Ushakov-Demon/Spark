@@ -57,15 +57,18 @@ export const leverCommand: CommandHandler<LeverCommand> = {
  * dynamometer shows F = P·(sin α + μ·cos α) — gravity along the board and sliding friction, wood on wood.
  */
 export const SLOPE_LENGTH: SourcedValue = sv(0.6, 'm', 'the board raised as a slope', 'estimate', 0.3, [cite('spark', 'estimate', 'the school wooden board, 0.5–0.8 m', 0.6)], 'Estimate: its length is measured by the ruler all the same.');
-/** Weights on the block (two of 100 g): the dynamometer reads more of a newton, and less of the error. */
-export const SLOPE_LOAD = 0.2;
+/** Weights on the block (two of 100 g by default): the dynamometer reads more of a newton, and less of the error. */
+export const SLOPE_WEIGHTS = 2;
+const SLOPE_WEIGHT = 0.1;
 /** The block and its weights, kg. */
-export const slopeLoad = (): number => blockMass() + SLOPE_LOAD;
+export const slopeLoad = (weights = SLOPE_WEIGHTS): number => blockMass() + weights * SLOPE_WEIGHT;
 
 /** Raise the board's end so high and pull the block up along it steadily; read the dynamometer. */
 export interface SlopeCommand {
   readonly type: 'lab.slope';
   readonly height: number;
+  /** 100 g weights on the block (two if not said). */
+  readonly weights?: number;
 }
 
 export const slopeCommand: CommandHandler<SlopeCommand> = {
@@ -73,13 +76,13 @@ export const slopeCommand: CommandHandler<SlopeCommand> = {
   apply(state, c) {
     const l = SLOPE_LENGTH.value;
     if (!(c.height > 0 && c.height < l)) return err({ uk: 'Кінець дошки піднімають на висоту, меншу за її довжину.', en: 'The board’s end is raised less than its length.' });
-    const P = weight(slopeLoad(), G);
+    const P = weight(slopeLoad(c.weights), G);
     const sin = c.height / l;
     const cos = Math.sqrt(1 - sin * sin);
     // Along the board: the share of gravity pulling down the slope, and friction against the normal force P·cos α.
     const F = P * sin + slidingFriction(WOOD_ON_WOOD.value, P * cos);
     const dyn = SCALES.dynamometer;
-    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [{ kind: 'measurement', instrument: 'dynamometer', quantity: 'force', value: scaleReading(dyn, F), exact: F, entities: [], inputs: { h: c.height, l, P, mu: WOOD_ON_WOOD.value } } satisfies MeasurementRecord] });
+    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [{ kind: 'measurement', instrument: 'dynamometer', quantity: 'force', value: scaleReading(dyn, F), exact: F, entities: [], inputs: { h: c.height, l, P, mu: WOOD_ON_WOOD.value, weights: c.weights ?? SLOPE_WEIGHTS } } satisfies MeasurementRecord] });
   },
 };
 

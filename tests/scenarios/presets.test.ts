@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createSimulation, seconds } from '../../src/core/index.js';
 import { createElectricalSolver, ELECTRICAL_COMMANDS } from '../../src/domains/electrical/index.js';
 import { createThermalSolver, THERMAL_COMMANDS } from '../../src/domains/thermal/index.js';
-import { readingsOf, LAB_COMMANDS, LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESETS, runProtocol, type LabCommand, type ProtocolStep } from '../../src/scenarios/index.js';
+import { readingsOf, LAB_COMMANDS, LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESETS, runProtocol, type LabCommand, type ProtocolStep, type PresetControl } from '../../src/scenarios/index.js';
 
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: seconds(2) });
 const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS as never);
@@ -257,10 +257,15 @@ describe('ready-made experiments with values to change', () => {
     expect(text).not.toContain('скільки важить сам');
   }, 60_000);
 
-  // Every control at each end of its range (or each option), the others at their defaults.
-  const cases = PRESETS.filter((p) => p.vary).flatMap((p) =>
-    p.vary!.controls.flatMap((c) => (c.kind === 'number' ? [c.min, c.max] : c.options.map((o) => o.id)).map((x) => [`${p.id} ${c.id}=${x}`, p, { [c.id]: x }] as const)),
-  );
+  // Every control at each end of its range (or each option), the others at their defaults; when there are only a
+  // few of them, every combination (the circuit's resistor with each set of voltages: the smallest current and the largest).
+  const values = (c: PresetControl) => (c.kind === 'number' ? [c.min, c.max] : c.options.map((o) => o.id));
+  const cases = PRESETS.filter((p) => p.vary).flatMap((p) => {
+    const cs = p.vary!.controls;
+    const all = cs.reduce<Record<string, number | string>[]>((acc, c) => acc.flatMap((v) => values(c).map((x) => ({ ...v, [c.id]: x }))), [{}]);
+    const sets = cs.length > 1 && all.length <= 12 ? all : cs.flatMap((c) => values(c).map((x) => ({ [c.id]: x })));
+    return sets.map((v) => [`${p.id} ${Object.entries(v).map(([k, x]) => `${k}=${x}`).join(' ')}`, p, v] as const);
+  });
   it.each(cases)('%s: still the same experiment, answered from its run', async (_n, p, v) => {
     const { withValues } = await import('../../src/scenarios/index.js');
     const q = withValues(p, v);
@@ -271,6 +276,13 @@ describe('ready-made experiments with values to change', () => {
     if (q.choices && !q.choiceTable) expect(q.choices.map((c) => c.id), _n).toContain(answer.correct);
     if (process.env['SHOW_ANSWERS']) console.log(`[${_n}] ${answer.say.uk} (${answer.correct})`);
   }, 60_000);
+
+  it('a resistor keeps its resistance with any resistor and any voltages: the spread is within the instruments', async () => {
+    const { withValues } = await import('../../src/scenarios/index.js');
+    const p = PRESETS.find((x) => x.id === 'conductor-resistance')!;
+    for (const resistor of ['3', '5', '6'])
+      for (const volts of ['1.5-3-4.5', '1-2-3-4', '2-4-6']) expect(run(withValues(p, { resistor, volts })).answer.correct, `${resistor} Ω, ${volts} V`).toBe('same');
+  });
 
   it('values outside the frame fall back to the defaults', async () => {
     const { withValues, defaultValues } = await import('../../src/scenarios/index.js');
