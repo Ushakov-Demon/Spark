@@ -51,14 +51,25 @@ export function presetSubjects(p: Preset): Subject[] {
  */
 export function presetGradesIn(p: Preset, subject: Subject): (number | null)[] {
   if (p.grade === null) return [null];
-  const grades = presetPrograms(p).flatMap((x) => (x.match !== 'related' && x.grade !== undefined && getCurriculum(x.program)?.subject === subject ? [x.grade] : []));
+  const grades = gradesIn(p, subject);
   return grades.length ? [...new Set(grades)].sort((a, b) => a - b) : [p.grade];
 }
 
 export function presetGradeIn(p: Preset, subject: Subject): number | null {
   if (p.grade === null) return null;
-  const grades = presetPrograms(p).flatMap((x) => (x.match !== 'related' && x.grade !== undefined && getCurriculum(x.program)?.subject === subject ? [x.grade] : []));
+  const grades = gradesIn(p, subject);
   return grades.length ? Math.min(...grades) : p.grade;
+}
+
+/**
+ * The grades a subject's programmes give an experiment: those the preset names itself and those of its main (first)
+ * formula. A helping formula does not move it (heating water with a heater uses P = A/t, which the programmes
+ * teach in grade 7 with mechanical work — the experiment is still grade 8's).
+ */
+function gradesIn(p: Preset, subject: Subject): number[] {
+  const main = new Set(LAB_KNOWLEDGE.formulas.find((f) => f.id === p.formulas[0])?.curriculum.filter((c) => !p.quoteHas || c.quote.includes(p.quoteHas)).map((c) => `${c.program}|${c.grade}`) ?? []);
+  const own = new Set((p.programs ?? []).map((x) => `${x.program}|${x.grade}`));
+  return presetPrograms(p).flatMap((x) => (x.match !== 'related' && x.grade !== undefined && getCurriculum(x.program)?.subject === subject && (main.has(`${x.program}|${x.grade}`) || own.has(`${x.program}|${x.grade}`)) ? [x.grade] : []));
 }
 
 /**

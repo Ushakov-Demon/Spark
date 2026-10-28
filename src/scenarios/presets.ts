@@ -184,11 +184,13 @@ const THERMAL: LocalizedText = { uk: 'Теплові явища', en: 'Thermal p
 const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
 const FUN: LocalizedText = { uk: 'Цікаві досліди', en: 'Curious experiments' };
 const SOLUTIONS: LocalizedText = { uk: 'Розчини', en: 'Solutions' };
-const MECH: LocalizedText = { uk: 'Механічні явища: густина й плавання', en: 'Mechanics: density and floating' };
+// The physics topics as the programmes name them (grade 7: Holovko's four; 9: Kreminskyi's), in their order.
 const MOTION: LocalizedText = { uk: 'Механічний рух', en: 'Mechanical motion' };
-const SIMPLE: LocalizedText = { uk: 'Прості механізми', en: 'Simple machines' };
-const CIRCUITS: LocalizedText = { uk: 'Електричний струм. Електричне коло', en: 'Electric current. Circuits' };
-const PRESSURE: LocalizedText = { uk: 'Тиск рідин і газів', en: 'Pressure in liquids and gases' };
+const INTERACTION: LocalizedText = { uk: 'Взаємодія тіл. Сила', en: 'Interaction of bodies. Force' };
+const PRESSURE: LocalizedText = { uk: 'Тиск твердих тіл, рідин і газів', en: 'Pressure of solids, liquids and gases' };
+const WORK: LocalizedText = { uk: 'Механічна робота. Механічна енергія', en: 'Mechanical work. Mechanical energy' };
+const MEDIA: LocalizedText = { uk: 'Електричний струм у різних середовищах', en: 'Electric current in different media' };
+const MAGNETIC: LocalizedText = { uk: 'Магнітні та електромагнітні явища', en: 'Magnetic and electromagnetic phenomena' };
 
 const room = { roomTemp: 20, lid: false } as const;
 /** Metals for the specific-heat lab work: what a school set of calorimeter cylinders has. */
@@ -232,13 +234,13 @@ const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 const MAGNET_KYIV = 'Київ|50.4500|30.5200';
 const MAGNET_NEW_YORK = 'New York|40.7128|-74.0060';
 
-export const PRESETS: readonly Preset[] = [
+const LIST: readonly Preset[] = [
   // ---------------------------------------------------------------- 7 grade, mechanics
   varied(
     {
       id: 'ice-level',
       grade: 7,
-      topic: MECH,
+      topic: PRESSURE,
       title: { uk: 'Чи зміниться рівень води, коли лід розтане?', en: 'Will the water level change when the ice melts?' },
       question: {
         uk: 'Опустимо в мензурку з водою кубик льоду — він плаватиме. Запишемо рівень, дочекаємося, поки лід розтане, і подивимося на поділки знову. Як зміниться рівень води, коли лід розтане?',
@@ -271,7 +273,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'lever-moments',
     ask: { uk: 'За якої умови важіль перебуває в рівновазі?', en: 'When is a lever in balance?' },
     grade: 8,
-    topic: SIMPLE,
+    topic: WORK,
     title: { uk: 'Умова рівноваги важеля', en: 'The condition of a lever’s balance' },
     question: {
       uk: 'Важіль-лінійка висить на осі в штативі й сам урівноважений; отвори для гачків — через 5 см. Чіплятимемо тягарці по 100 г ліворуч і праворуч на різних відстанях від осі, а потім урівноважимо їх динамометром. Щоразу знайдемо момент сили з кожного боку: M = F·l. За якої умови важіль перебуває в рівновазі?',
@@ -298,7 +300,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'slope-efficiency',
       ask: { uk: 'Як зміниться ККД похилої площини, якщо підняти її вище?', en: 'How does a slope’s efficiency change if it is raised higher?' },
       grade: 8,
-      topic: SIMPLE,
+      topic: WORK,
       title: { uk: 'ККД похилої площини', en: 'The efficiency of an inclined plane' },
       params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
       guided: true,
@@ -333,7 +335,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'conductor-resistance',
       ask: { uk: 'Чи зміниться опір провідника, якщо збільшити напругу на ньому?', en: 'Will the conductor’s resistance change if the voltage across it is raised?' },
       grade: 8,
-      topic: CIRCUITS,
+      topic: ELECTRIC,
       title: { uk: 'Вимірюємо опір провідника', en: 'Measuring the resistance of a conductor' },
       question: {
         uk: 'Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі 1,5, 3 і 4,5 В і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?',
@@ -369,7 +371,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'consumer-power',
       ask: { uk: 'У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?', en: 'How many times does the power grow if the voltage across the resistor is doubled?' },
       grade: 8,
-      topic: CIRCUITS,
+      topic: ELECTRIC,
       title: { uk: 'Вимірюємо потужність споживача', en: 'Measuring the power of a consumer' },
       question: {
         uk: 'У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі 1,5, 3 і 4,5 В, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?',
@@ -405,7 +407,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'series-circuit',
       ask: { uk: 'Як пов’язані напруги на резисторах із загальною напругою?', en: 'How do the voltages across the resistors relate to the total?' },
       grade: 8,
-      topic: CIRCUITS,
+      topic: ELECTRIC,
       title: { uk: 'Послідовне з’єднання провідників', en: 'Conductors in series' },
       params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
       guided: true,
@@ -437,7 +439,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'parallel-circuit',
       ask: { uk: 'Як пов’язані струми в гілках із загальним струмом?', en: 'How do the branch currents relate to the total current?' },
       grade: 8,
-      topic: CIRCUITS,
+      topic: ELECTRIC,
       title: { uk: 'Паралельне з’єднання провідників', en: 'Conductors in parallel' },
       params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
       guided: true,
@@ -581,7 +583,7 @@ export const PRESETS: readonly Preset[] = [
     ask: { uk: 'З якого металу зроблено брусок?', en: 'What metal is the block made of?' },
     id: 'mystery-metal',
     grade: 7,
-    topic: MECH,
+    topic: INTERACTION,
     title: { uk: 'Що це за метал?', en: 'Which metal is it?' },
     question: {
       uk: 'Перед нами брусок із невідомого металу. Визначимо його густину ρ = m/V і знайдемо метал у таблиці густин. Масу дізнаємося терезами, а об’єм — мензуркою: на скільки підніметься вода. Почнемо: зважимо мензурку з водою.',
@@ -765,7 +767,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'floating-conditions',
     ask: { uk: 'За якої умови тіло тоне, плаває всередині рідини, спливає?', en: 'When does a body sink, float inside a liquid, come up?' },
     grade: 7,
-    topic: MECH,
+    topic: PRESSURE,
     title: { uk: 'Коли тіло тоне, а коли плаває?', en: 'When does a body sink, and when does it float?' },
     question: {
       uk: 'Пробірка з корком, пісок і мензурка з водою. Наповнимо пробірку піском до країв і опустимо у воду. Потім відсиплемо частину піску й опустимо знову, а тоді відсиплемо ще. Щоразу виміряємо її масу (терезами: на скільки збільшилися покази) і об’єм (мензуркою: на скільки піднялася вода), подивимося, що з нею буде, і порівняємо її середню густину з густиною води. За якої умови тіло тоне, плаває всередині рідини, спливає?',
@@ -811,7 +813,7 @@ export const PRESETS: readonly Preset[] = [
   {
     id: 'lever-balance',
     grade: 7,
-    topic: MECH,
+    topic: INTERACTION,
     title: { uk: 'Зважуємо на важільних терезах', en: 'Weighing on a lever balance' },
     question: {
       uk: 'Зважимо на важільних терезах алюмінієвий циліндр, дерев’яний брусок, порожню склянку й склянку з водою. Тіло кладемо на ліву шальку, а на праву пінцетом — важки з набору, від більших до менших, поки терези не зрівноважаться. Скільки води в склянці?',
@@ -837,7 +839,7 @@ export const PRESETS: readonly Preset[] = [
       ask: { uk: 'Рідина легша чи важча за воду, якщо порівняти однакові об’єми?', en: 'Is the liquid lighter or heavier than water, for equal volumes?' },
       id: 'liquid-density',
       grade: 7,
-      topic: MECH,
+      topic: INTERACTION,
       title: { uk: 'Яка густина рідини?', en: 'What is the density of a liquid?' },
       guided: true,
       bench: 'balance',
@@ -876,7 +878,7 @@ export const PRESETS: readonly Preset[] = [
     {
       id: 'hooke-spring',
       grade: 7,
-      topic: MECH,
+      topic: INTERACTION,
       title: { uk: 'Як розтягується пружина?', en: 'How does a spring stretch?' },
       guided: true,
       bench: 'spring',
@@ -905,7 +907,7 @@ export const PRESETS: readonly Preset[] = [
     ask: { uk: 'Як зміниться коефіцієнт тертя μ = F/N, коли додаватимемо тягарці?', en: 'How will the coefficient μ = F/N change as weights are added?' },
     id: 'friction-coefficient',
     grade: 7,
-    topic: MECH,
+    topic: INTERACTION,
     title: { uk: 'Визначаємо коефіцієнт тертя ковзання', en: 'Finding the coefficient of sliding friction' },
     question: {
       uk: 'Зважимо дерев’яний брусок динамометром, а потім тягтимемо його по дерев’яній дошці — спершу порожнього, далі з одним, двома, трьома тягарцями по 100 г, щоразу записуючи покази динамометра. Що буде з коефіцієнтом тертя μ = F/N?',
@@ -927,7 +929,7 @@ export const PRESETS: readonly Preset[] = [
     ask: { uk: 'На якій грані брусок тиснутиме на стіл найсильніше?', en: 'On which face will the block press on the table hardest?' },
     id: 'block-pressure',
     grade: 7,
-    topic: MECH,
+    topic: PRESSURE,
     title: { uk: 'Який тиск чинить брусок на стіл?', en: 'What pressure does a block put on the table?' },
     question: {
       uk: 'Зважимо дерев’яний брусок динамометром і виміряємо лінійкою його довжину, ширину й висоту. Брусок можна покласти на стіл трьома різними гранями. На якій грані він тиснутиме на стіл найсильніше?',
@@ -951,7 +953,7 @@ export const PRESETS: readonly Preset[] = [
     ask: { uk: 'З якої речовини зроблено брусок?', en: 'What substance is the block made of?' },
     id: 'hydrostatic-weighing',
     grade: 7,
-    topic: MECH,
+    topic: PRESSURE,
     title: { uk: 'Гідростатичне зважування: з чого брусок?', en: 'Hydrostatic weighing: what is the block made of?' },
     question: {
       uk: 'Перед нами брусок із невідомої речовини, а мензурки, щоб виміряти його об’єм, немає — лише динамометр і стакан води. Зважимо брусок у повітрі, потім у воді. Архімедова сила дорівнює вазі витісненої води, тож з неї дізнаємося об’єм, а тоді й густину. З чого брусок?',
@@ -974,7 +976,7 @@ export const PRESETS: readonly Preset[] = [
   {
     id: 'archimedes-salt',
     grade: 7,
-    topic: MECH,
+    topic: PRESSURE,
     title: { uk: 'Де архімедова сила більша?', en: 'Where is the buoyant force larger?' },
     question: {
       uk: 'Підвісимо брусок алюмінію (250 г) на динамометр — спершу в повітрі, потім опустимо у воду, а тоді — у ту саму воду, розчинивши в ній сіль. Де архімедова сила буде більшою?',
@@ -1481,7 +1483,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'electromagnet',
       ask: { uk: 'Що робить електромагніт сильнішим?', en: 'What makes an electromagnet stronger?' },
       grade: 9,
-      topic: ELECTRIC,
+      topic: MAGNETIC,
       title: { uk: 'Робимо електромагніт', en: 'Making an electromagnet' },
       params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
       guided: true,
@@ -1527,7 +1529,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'electromagnetic-induction',
       ask: { uk: 'Коли в котушці виникає струм?', en: 'When does a current flow in the coil?' },
       grade: 9,
-      topic: ELECTRIC,
+      topic: MAGNETIC,
       title: { uk: 'Магніт і котушка: електромагнітна індукція', en: 'A magnet and a coil: electromagnetic induction' },
       params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
       guided: true,
@@ -1567,7 +1569,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'diode-black-box',
     ask: { uk: 'Що сховано в «чорній скриньці»?', en: 'What is hidden in the “black box”?' },
     grade: 9,
-    topic: ELECTRIC,
+    topic: MEDIA,
     title: { uk: 'Що в «чорній скриньці»?', en: 'What is in the “black box”?' },
     question: {
       uk: 'Перед нами закрита скринька з двома клемами, A і B. Увімкнемо її в коло з джерелом, ключем, захисним резистором на 100 Ом і мультиметром-міліамперметром. Ставитимемо на джерелі 1, 2 і 3 В і записуватимемо силу струму, а тоді перевернемо скриньку — поміняємо клеми місцями — і повторимо. З напруги й струму знайдемо опір кола R = U / I. Що всередині скриньки?',
@@ -1588,7 +1590,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'resistance-temperature',
     ask: { uk: 'Як зміниться опір мідного дроту, коли він нагріється?', en: 'How will the resistance of a copper wire change when it warms up?' },
     grade: 9,
-    topic: ELECTRIC,
+    topic: MEDIA,
     title: { uk: 'Як опір провідника залежить від температури?', en: 'How does a conductor’s resistance depend on temperature?' },
     question: {
       uk: 'У склянці з водою — котушка з тонкого мідного дроту, її кінці під’єднано до мультиметра в режимі вимірювання опору; поруч — термометр. Нагріватимемо воду кип’ятильником і за 20, 40, 60 і 80 °C записуватимемо температуру й опір котушки. Як змінюватиметься опір провідника, коли він нагріватиметься?',
@@ -1617,7 +1619,7 @@ export const PRESETS: readonly Preset[] = [
       id: 'electrochemical-equivalent',
       ask: { uk: 'Яким вийде електрохімічний еквівалент міді?', en: 'What will the electrochemical equivalent of copper come out as?' },
       grade: 9,
-      topic: ELECTRIC,
+      topic: MEDIA,
       title: { uk: 'Визначаємо електрохімічний еквівалент міді', en: 'Finding the electrochemical equivalent of copper' },
       guided: true,
       choices: [ch('table', '≈ 0,33 мг/Кл — як у таблиці для міді', '≈ 0.33 mg/C — as in the table for copper'), ch('more', 'Помітно більшим за табличне', 'Noticeably more than in the table'), ch('less', 'Помітно меншим за табличне', 'Noticeably less than in the table')],
@@ -1716,6 +1718,43 @@ export const PRESETS: readonly Preset[] = [
     expect: 'reached',
   },
 ];
+
+/**
+ * The ready-made experiments in the order the programmes take them up: by grade, the topics in turn, and within a
+ * topic in the order of its content (Holovko's) with Kreminskyi's lab works by their numbers — the two programmes go
+ * the same way. An experiment of several grades stands where its first one puts it (the lever: Holovko's grade 7,
+ * topic 4, is Kreminskyi's grade 8, lab work 1 — so it comes last in grade 7 and first in grade 8). Chemistry's own
+ * stand before the physics ones they share a list with. Those for everyone — at the end. Every experiment is here
+ * (a test checks): a new one is put in its place.
+ */
+export const PRESET_ORDER: readonly string[] = [
+  // Grade 7. Mechanical motion.
+  'average-speed', 'rotation-period', 'pendulum',
+  // Interaction of bodies. Force: mass, density, elasticity, friction.
+  'lever-balance', 'mystery-metal', 'liquid-density', 'hooke-spring', 'friction-coefficient',
+  // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
+  // the atmosphere's; the buoyant force; floating.
+  'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',
+  // Mechanical work and energy (Kreminskyi: grade 8, lab works 1–2).
+  'lever-moments', 'slope-efficiency',
+  // Chemistry, grade 9, topic 1: solutions.
+  'mass-fraction', 'grow-crystals', 'heat-of-solution', 'supersaturated',
+  // Grade 8. Thermal phenomena: heat balance (lab work 3), specific heat (4), melting (5), then solidifying,
+  // boiling and evaporation.
+  'mix-hot-cold', 'specific-heat-water', 'which-metal', 'specific-heat-metal', 'melt-ice', 'ice-latent-heat', 'freeze-water', 'stearic-cooling', 'melt-tin', 'salt-in-pot', 'road-salt', 'alcohol-vs-water', 'lid-or-not', 'sea-salt',
+  // Electric phenomena: resistance (6), series (7), parallel (8), power (9), heating by a current and a heater's
+  // efficiency (10), the current in solutions.
+  'conductor-resistance', 'series-circuit', 'parallel-circuit', 'consumer-power', 'joule-heating', 'boil-a-litre', 'heater-efficiency', 'does-water-conduct', 'electrolysis', 'copper-sulfate-electrolysis',
+  // Grade 9. The current in different media (lab works 1–3); magnetic and electromagnetic phenomena (4–5).
+  'resistance-temperature', 'diode-black-box', 'electrochemical-equivalent', 'electromagnet', 'electromagnetic-induction',
+  // For everyone.
+  'oil-does-not-boil', 'alcohol-in-freezer', 'weigh-the-water', 'grand-chain',
+];
+const rank = (p: Preset) => {
+  const k = PRESET_ORDER.indexOf(p.id);
+  return k < 0 ? PRESET_ORDER.length + LIST.indexOf(p) : k;
+};
+export const PRESETS: readonly Preset[] = [...LIST].sort((a, b) => rank(a) - rank(b));
 
 /** Grades that have presets, in order; null (for everyone) last. */
 export const PRESET_GRADES: readonly (number | null)[] = [...new Set(PRESETS.map((p) => p.grade))].sort((a, b) => (a ?? 99) - (b ?? 99));

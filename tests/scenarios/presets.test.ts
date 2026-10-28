@@ -2,13 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createSimulation, seconds } from '../../src/core/index.js';
 import { createElectricalSolver, ELECTRICAL_COMMANDS } from '../../src/domains/electrical/index.js';
 import { createThermalSolver, THERMAL_COMMANDS } from '../../src/domains/thermal/index.js';
-import { readingsOf, LAB_COMMANDS, LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESETS, runProtocol, type LabCommand, type ProtocolStep, type PresetControl } from '../../src/scenarios/index.js';
+import { readingsOf, LAB_COMMANDS, LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESET_ORDER, PRESETS, runProtocol, type LabCommand, type ProtocolStep, type PresetControl } from '../../src/scenarios/index.js';
 
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: seconds(2) });
 const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS as never);
 
 /** Every reading of a scripted run, in order (measurements are steps of their own there). */
 const readingsAll = (out: ReturnType<typeof runProtocol>) => out.flatMap((o) => readingsOf(o.step.kind === 'operation' ? o.result.log : o.entry ? [o.entry] : []));
+
+describe('the order of the ready-made experiments', () => {
+  it('every experiment has its place in the programmes’ order, once', () => {
+    const ids = PRESETS.map((p) => p.id);
+    expect([...PRESET_ORDER].sort()).toEqual([...ids].sort());
+    expect(new Set(PRESET_ORDER).size).toBe(PRESET_ORDER.length);
+    expect(ids).toEqual([...PRESET_ORDER]);
+  });
+});
 
 describe('ready-made experiments', () => {
   it('ids are unique; every preset names known formulas with curriculum quotes', () => {
