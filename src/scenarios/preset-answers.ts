@@ -22,6 +22,7 @@ import { sinkLiquidName, type SinkLiquid } from './sink-bench.js';
 import { rowName, type RowBody } from './rows-bench.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { BOUNCE_FROM, bounceBallName, type BounceBall } from './bounce-bench.js';
+import { winchSpoolName, type WinchSpool } from './winch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -418,6 +419,37 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
         const s = `${parts.join('; ')}.`;
         return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
+    };
+  },
+  windlass: (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.winch' && x.record.value !== null).map((x) => ({ spool: String(x.command['spool']), mode: String(x.command['mode']), amount: Number(x.command['amount']), v: x.record.value!, d: x.record.inputs?.['diameter'] ?? 0 }));
+    const turns = R.filter((x) => x.mode === 'lower');
+    // Each count against l / (π·d) and l / d: which one the turns follow (to a quarter turn).
+    const byCircle = turns.length > 0 && turns.every((x) => Math.abs(x.v - x.amount / (Math.PI * x.d)) <= 0.25);
+    const num = (x: number, l: Locale) => sig(x, 3, l);
+    const cm = (x: number, l: Locale) => `${sig(x * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
+    const name = (sp: string, l: Locale) => tr(winchSpoolName(sp as WinchSpool), l);
+    return {
+      ...(byCircle ? { correct: 'circle' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Нитка лежить на котушці кільцями. За один оберт котушки з неї змотується один виток — це довжина кола котушки, C = π·d. Тож вантаж, опускаючись на l, обертає котушку n = l / (π·d) разів: прямолінійний рух вантажу стає обертанням котушки. І навпаки: повертаючи ручку n разів, намотуємо n·π·d нитки — обертання стає прямолінійним рухом вантажу. Тонкий олівець має коротше коло, тож на ті самі 30 см обертається більше разів, а за ті самі 5 обертів піднімає вантаж менше. Так працюють ворот колодязя, котушка спінінга, рулетка; а рейка з шестірнею чи колесо, що котиться, роблять те саме без нитки. Товщину нитки тут не враховано — з нею кожен виток трохи довший.'
+          : 'The thread lies on the spool in rings. One turn of the spool unwinds one ring — the spool’s circumference, C = π·d. So the load, going down by l, turns the spool n = l / (π·d) times: the load’s straight motion becomes the spool’s turning. And back: turning the handle n times winds n·π·d of thread — turning becomes the load’s straight motion. The thin pencil has a shorter circumference, so it turns more times for the same 30 cm, and lifts the load less in the same 5 turns. This is how a well’s windlass, a fishing reel, a tape measure work; a rack and pinion or a rolling wheel do the same without a thread. The thread’s thickness is left out here — with it each ring is a little longer.',
+      ),
+      say: both((l) => {
+        const a = turns[0];
+        return a ? (l === 'uk' ? `${name(a.spool, l).replace(/^./, (ch) => ch.toUpperCase())}: ${num(a.v, l)} оберту на 30 см — стільки разів π·d вміщується в довжину нитки.` : `${name(a.spool, l).replace(/^./, (ch) => ch.toUpperCase())}: ${num(a.v, l)} turns for 30 cm — as many times as π·d fits into the thread.`) : '';
+      }),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts = R.map((x) =>
+          x.mode === 'lower'
+            ? uk ? `${name(x.spool, l)}, вантаж опустився на ${cm(x.amount, l)} — ${num(x.v, l)} об. (l / (π·d) = ${sig(x.amount / (Math.PI * x.d), 3, l)})` : `${name(x.spool, l)}, the load down ${cm(x.amount, l)} — ${num(x.v, l)} turns (l / (π·d) = ${sig(x.amount / (Math.PI * x.d), 3, l)})`
+            : uk ? `${name(x.spool, l)}, ${x.amount} обертів ручки — вантаж піднявся на ${cm(x.v, l)} (π·d·n = ${cm(Math.PI * x.d * x.amount, l)})` : `${name(x.spool, l)}, ${x.amount} turns of the handle — the load rose ${cm(x.v, l)} (π·d·n = ${cm(Math.PI * x.d * x.amount, l)})`,
+        );
+        const s = `${parts.join('; ')}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Оберти лічено за міткою — до чверті оберту.' : ' The turns are counted by a mark — to a quarter turn.');
       }),
     };
   },

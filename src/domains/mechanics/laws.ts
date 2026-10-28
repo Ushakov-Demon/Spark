@@ -174,6 +174,16 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це спосіб вимірювання.', en: 'This is a way of measuring.' } }, citations: [] },
   },
   {
+    id: 'turning-and-straight',
+    kind: 'definition',
+    name: { uk: 'Перетворення прямолінійного руху на обертальний', en: 'Straight motion into turning' },
+    statement: {
+      novice: { uk: 'Нитка на котушці, ворот колодязя, рейка й шестірня перетворюють рух уздовж прямої на обертання — і навпаки.', en: 'A thread on a spool, a well’s windlass, a rack and pinion turn motion along a line into turning — and back.' },
+      school: { uk: 'Коли нитка змотується з котушки без проковзування, за кожен оберт вона проходить довжину кола котушки: l = π·d·n. Що менший діаметр, то більше обертів на ту саму довжину.', en: 'When a thread unwinds from a spool without slipping, each turn moves it by the spool’s circumference: l = π·d·n. The smaller the diameter, the more turns for the same length.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це спосіб будови механізмів.', en: 'This is a way of building mechanisms.' } }, citations: [] },
+  },
+  {
     id: 'mechanical-energy',
     kind: 'definition',
     name: { uk: 'Механічна енергія та її перетворення', en: 'Mechanical energy and how it changes form' },

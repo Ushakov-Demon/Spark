@@ -40,6 +40,9 @@ export const averageSpeed = (path: number, time: number): number => path / time;
 /** The method of rows: a small body's size from a row of N of them, d = L / N. */
 export const rowSize = (length: number, count: number): number => length / count;
 
+/** A thread wound on (off) a spool: each turn moves it by the circumference, l = π·d·n. */
+export const woundLength = (diameter: number, turns: number): number => Math.PI * diameter * turns;
+
 /** The potential energy of a body raised by h: Eп = m·g·h. */
 export const potentialEnergy = (mass: number, g: number, height: number): number => mass * g * height;
 

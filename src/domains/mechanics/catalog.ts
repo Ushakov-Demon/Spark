@@ -28,6 +28,7 @@ const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko',
 const UA_UNIFORM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний прямолінійний рух. Швидкість руху.' }];
 const UA_ROWS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' }];
 const UA_ENERGY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна енергія та її види. Закон збереження енергії в механічних процесах' }];
+const UA_WINCH: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'конструювання механізмів, що перетворюють прямолінійний рух на обертальний і навпаки' }];
 const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Взаємодія тіл. Сила. Додавання сил. Рівнодійна.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
@@ -383,6 +384,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.rowSize,
     examples: [{ args: [0.065, 30], expected: 0.002167, note: '30 millet grains in 65 mm' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.wound-length',
+    law: 'turning-and-straight',
+    title: { uk: 'Нитка на котушці: довжина й оберти', en: 'A thread on a spool: length and turns' },
+    latex: 'l = \\pi \\cdot d \\cdot n',
+    plain: 'l = π · d · n',
+    argSymbols: ['d', 'n'],
+    resultSymbol: 'l',
+    variables: {
+      l: { name: { uk: 'довжина нитки, що змоталася (намоталася)', en: 'the length of thread unwound (wound)' }, unit: 'm' },
+      d: { name: { uk: 'діаметр котушки', en: 'the spool’s diameter' }, unit: 'm' },
+      n: { name: { uk: 'кількість обертів', en: 'the number of turns' }, unit: '' },
+    },
+    curriculum: UA_WINCH,
+    explanation: {
+      novice: { uk: 'За один оберт котушки нитка проходить стільки, скільки довжина кола котушки. Тонка котушка мусить крутитися більше.', en: 'In one turn of the spool the thread goes as far as the spool’s circumference. A thin spool has to turn more.' },
+      school: { uk: 'Довжина кола C = π·d. За n обертів нитка змотується (намотується) на n·π·d: так прямолінійний рух вантажу перетворюється на обертання котушки — і навпаки.', en: 'The circumference C = π·d. In n turns the thread unwinds (winds) by n·π·d: that is how the load’s straight motion turns into the spool’s turning — and back.' },
+    },
+    compute: f.woundLength,
+    examples: [{ args: [0.02, 5], expected: 0.314159, note: '5 turns of a 2 cm reel' }],
     textSource: 'spark',
     reviewed: false,
   }),

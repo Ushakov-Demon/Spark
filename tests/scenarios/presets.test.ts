@@ -322,6 +322,16 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('a windlass: the turns are the length over the circumference, and a turn winds π·d', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'windlass')!);
+    expect(answer.correct).toBe('circle');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const n = [...answer.text.uk.matchAll(/— ([\d,]+) об\./g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(n).toEqual([4.75, 12]);
+    const h = [...answer.text.uk.matchAll(/піднявся на ([\d,]+) см/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(h).toEqual([31.4, 12.6]);
+  }, 60_000);
+
   it('the relativity of motion: the same time each step, a longer path relative to the table the faster the bottle goes', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'relative-motion')!);
     expect(answer.correct).toBe('depends');

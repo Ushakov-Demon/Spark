@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -951,6 +951,31 @@ const LIST: readonly Preset[] = [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
     ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Скільки обертів робить котушка, поки вантаж опускається на 30 см?', en: 'How many turns does the spool make while the load goes down 30 cm?' },
+    id: 'windlass',
+    grade: 7,
+    topic: MOTION,
+    title: { uk: 'Конструюємо ворот: прямолінійний рух і обертання', en: 'Building a windlass: straight motion and turning' },
+    question: {
+      uk: 'Збираємо на штативі ворот, як у колодязя: на вісь із ручкою надіваємо котушку від ниток (діаметр — 2 см, виміряли лінійкою), намотуємо нитку, на кінці — невеликий вантаж. Опускаємо вантаж на 30 см і рахуємо оберти котушки за міткою на ній, потім те саме з олівцем (8 мм) замість котушки. А тоді навпаки — повертаємо ручку 5 разів і вимірюємо, на скільки піднявся вантаж. Скільки обертів робить котушка, поки вантаж опускається на 30 см?',
+      en: 'We build a windlass on a stand, like a well’s: a cotton reel (2 cm across, measured by a ruler) goes on an axis with a handle, a thread is wound on it, a small load at its end. We let the load down by 30 cm and count the reel’s turns by a mark on it, then the same with a pencil (8 mm) instead of the reel. And then the other way — we turn the handle 5 times and measure how far the load rose. How many turns does the spool make while the load goes down 30 cm?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'winch',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.winch', spool: 'reel', mode: 'lower', amount: 0.3 } },
+      { kind: 'bench', command: { type: 'lab.winch', spool: 'pencil', mode: 'lower', amount: 0.3 } },
+      { kind: 'bench', command: { type: 'lab.winch', spool: 'reel', mode: 'turn', amount: 5 } },
+      { kind: 'bench', command: { type: 'lab.winch', spool: 'pencil', mode: 'turn', amount: 5 } },
+    ],
+    choices: [ch('circle', 'Стільки, скільки разів довжина кола котушки (π·d) вміщується в 30 см', 'As many as the spool’s circumference (π·d) fits into 30 cm'), ch('diameter', 'Стільки, скільки разів діаметр котушки вміщується в 30 см', 'As many as the spool’s diameter fits into 30 cm'), ch('same', 'Будь-яка котушка зробить однаково обертів', 'Any spool makes the same number of turns')],
+    answerOnBoard: ['wc:'],
+    formulas: ['mechanics.wound-length'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'конструювання механізмів, що перетворюють прямолінійний рух на обертальний і навпаки' }],
     expect: 'reached',
   },
   {
@@ -1919,7 +1944,7 @@ const LIST: readonly Preset[] = [
  */
 export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
-  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'rotation-period', 'pendulum',
+  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
   'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;

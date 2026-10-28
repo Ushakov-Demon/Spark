@@ -39,3 +39,4 @@ export * from './rows-bench.js';
 export * from './lift-bench.js';
 export * from './bounce-bench.js';
 export * from './carry-bench.js';
+export * from './winch-bench.js';

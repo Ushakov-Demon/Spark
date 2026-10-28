@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -60,6 +60,11 @@ export interface BenchView {
   /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
+  /**
+   * A windlass: the spool and its diameter (m); how far it has turned (turns, + — the way letting the load down
+   * turns it); the load's depth below the spool (m); what was counted or measured.
+   */
+  readonly winch?: { readonly spool: string; readonly d: number; readonly turned: number; readonly drop: number; readonly read?: string };
   /**
    * The relativity of motion: the bubble's bottle (in `sink`) carried along the table at `speed` (m/s), moved `shift`
    * (m) so far; the line on the paper behind, once measured (`path`).
@@ -205,6 +210,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'rows') return rowsSvg(v.rows);
   if (v.kind === 'lift') return liftSvg(v.lift);
   if (v.kind === 'bounce') return bounceSvg(v.bounce);
+  if (v.kind === 'winch') return winchSvg(v.winch);
   if (v.kind === 'carry') return `${carrySvg(v.sink, v.carry)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 585) : ''}`;
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
@@ -430,6 +436,36 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/** The windlass's drawing: its axis, and the load's way down the ruler (6 units to the centimetre, as the other rulers). */
+const WINCH_AXIS = { x: 520, y: 64 };
+/**
+ * A windlass: a stand with the axis at the arm's end, the spool on it (drawn some 2½ times larger than life) with a
+ * red mark and a handle that turn together; the thread from the spool's right edge down to the load; a ruler beside
+ * it from the spool's level down. The reading by the load.
+ */
+function winchSvg(w: BenchView['winch']): string {
+  if (!w) return '';
+  const { x, y } = WINCH_AXIS;
+  const r = w.d * 1000 * 1.1 + 2;
+  const top = y + 24;
+  const loadY = top + w.drop * 100 * CM;
+  const a = w.turned * 2 * Math.PI;
+  const stand = standSvg(x - 90, x, y);
+  const ruler = rulerSvg(x + r + 26, top, 35, true);
+  const thread = `<path d="M${x + r},${y} V${loadY}" style="stroke:${THREAD};stroke-width:1.6"/>`;
+  const load = `${weightsSvg(x + r, loadY, 2, 20, 9)}<path d="M${x + r - 30},${loadY} h26" style="stroke:#c0392b;stroke-width:1.5"/>`;
+  const spool = w.spool === 'pencil'
+    ? `<circle cx="${x}" cy="${y}" r="${r}" style="fill:#f2c94c;stroke:#9a7a1f;stroke-width:1.5"/><circle cx="${x}" cy="${y}" r="${r * 0.35}" style="fill:#3a3f46"/>`
+    : `<circle cx="${x}" cy="${y}" r="${r + 5}" style="fill:#d9b27c;stroke:${WOOD_EDGE};stroke-width:1.5"/><circle cx="${x}" cy="${y}" r="${r}" style="fill:#f1efe4;stroke:#c9c2a8"/><circle cx="${x}" cy="${y}" r="3" style="fill:${DARK}"/>`;
+  // The mark and the handle turn with the spool (letting the load down turns it clockwise).
+  const mark = `<path d="M${x},${y} L${x + r * Math.sin(a)},${y - r * Math.cos(a)}" style="stroke:#c0392b;stroke-width:2.5"/>`;
+  const hx = x - 34 * Math.sin(a + Math.PI / 3);
+  const hy = y + 34 * Math.cos(a + Math.PI / 3);
+  const handle = `<path d="M${x},${y} L${hx},${hy}" style="stroke:${STEEL};stroke-width:4;stroke-linecap:round"/><circle cx="${hx}" cy="${hy}" r="5" style="fill:#7a4a1f"/>`;
+  const read = w.read ? `<text class="bench-reading" x="${x + r - 34}" y="${loadY + 14}" text-anchor="end">${w.read}</text>` : '';
+  return `${stand}${ruler}${thread}${load}${handle}${spool}${mark}${read}`;
 }
 
 /** Where the carried bottle starts (its axis), units of the drawing; the drawing's scale is the bottle's: 8 to the centimetre. */

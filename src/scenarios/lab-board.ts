@@ -445,6 +445,21 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
       return;
     }
+    // A windlass: what was counted or measured; how it follows from the circumference (hidden till the answer).
+    if (c.type === 'lab.winch') {
+      const d = r.inputs?.['diameter'] ?? 0;
+      const amount = Number(c['amount']);
+      const what = c['spool'] === 'pencil' ? (uk ? 'олівець, d = 8 мм' : 'pencil, d = 8 mm') : uk ? 'котушка, d = 2 см' : 'reel, d = 2 cm';
+      const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
+      if (c['mode'] === 'lower') {
+        out.push({ id: `wm:${i}`, title: uk ? `${what}: вантаж униз на ${cm(amount)}` : `${what}: the load down ${cm(amount)}`, formula: `n = ${formatMeasured('turns', r.value, 0.25, locale)}` });
+        out.push({ id: `wc:${i}`, title: uk ? 'за оберт — довжина кола' : 'a turn — the circumference', formula: 'n = l / (π·d)', numbers: `${cm(amount)} / (3,14 · ${cm(d)}) ≈ ${n(amount / (Math.PI * d), 3)}`.replace('3,14', uk ? '3,14' : '3.14') });
+      } else {
+        out.push({ id: `wm:${i}`, title: uk ? `${what}: ${amount} обертів ручки` : `${what}: ${amount} turns of the handle`, formula: `h = ${cm(r.value)}` });
+        out.push({ id: `wc:${i}`, title: uk ? 'за оберт — довжина кола' : 'a turn — the circumference', formula: 'l = π·d·n', numbers: `3,14 · ${cm(d)} · ${amount} ≈ ${cm(Math.PI * d * amount)}`.replace('3,14', uk ? '3,14' : '3.14') });
+      }
+      return;
+    }
     // The relativity of motion: the time, the bottle's shift, the bubble's speed relative to the bottle and to the table.
     if (c.type === 'lab.carry') {
       const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
