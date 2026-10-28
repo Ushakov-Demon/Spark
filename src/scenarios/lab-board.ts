@@ -4,6 +4,7 @@ import { tr } from '../knowledge/i18n.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { bounceBallName, type BounceBall } from './bounce-bench.js';
 import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
+import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -444,6 +445,16 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const title = tr(liftPhaseText(phase as LiftPhase).plan, locale);
       const acc = phase === 'fall' ? (uk ? 'вільне падіння' : 'free fall') : a === 0 ? (uk ? 'без прискорення' : 'no acceleration') : `a = ${n(Math.abs(a), 2)} ${uk ? 'м/с²' : 'm/s²'} ${a > 0 ? '↑' : '↓'}`;
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
+      return;
+    }
+    // A stroboscopic photo: the gaps measured on it, five times that in life; the speeds (hidden till the answer).
+    if (c.type === 'lab.strobe') {
+      const g = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null).map((x) => x.value!);
+      const table = c['photo'] === 'table';
+      const cm = (x: number) => `${n(x * STROBE_SCALE * 100, 2)} ${uk ? 'см' : 'cm'}`;
+      const where = table ? (uk ? 'на столі' : 'on the table') : uk ? 'на жолобі' : 'in the groove';
+      out.push({ id: `sg:${i}`, title: `${where}: ${g.map((x) => Math.round(x * 1000)).join(', ')} ${uk ? 'мм на фото' : 'mm on the photo'}`, formula: `l = ${STROBE_SCALE} · l_${uk ? 'фото' : 'photo'}`, numbers: g.map(cm).join(', ') });
+      out.push({ id: `sv:${i}`, title: uk ? 'за 0,25 с між спалахами' : 'in 0.25 s between the flashes', formula: 'v = l / t', numbers: g.map((x) => `${n((x * STROBE_SCALE) / STROBE_INTERVAL, 2)}`).join(', ') + (uk ? ' м/с' : ' m/s') });
       return;
     }
     // The wind's speed: the day's signs, v = l / t, and the Beaufort force the speed falls in.

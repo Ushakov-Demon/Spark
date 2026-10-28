@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.strobe': { uk: 'Спалахи один за одним — кулька лишає зображення…', en: 'Flash after flash — the ball leaves its images…' },
   'lab.wind': { uk: 'Бульбашка летить — секундомір іде…', en: 'The bubble flies — the stopwatch is running…' },
   'lab.winch': { uk: 'Котушка крутиться — рахую оберти…', en: 'The spool is turning — counting the turns…' },
   'lab.carry': { uk: 'Бульбашка спливає — веду пляшку рівномірно…', en: 'The bubble rises — carrying the bottle steadily…' },
@@ -47,6 +48,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'strobe' && next.strobe?.gaps) return strobeRun(next, draw);
   if (next.kind === 'wind' && next.wind?.read && next.run) return windRun(next, next.run, draw);
   if (next.kind === 'winch' && next.winch?.read) return winch(next, draw);
   if (next.kind === 'bounce' && next.bounce?.read) return bounce(next, draw);
@@ -326,6 +328,21 @@ function windRun(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v: 
       const t = clock.value - lead;
       const { read: _r, ...rest } = w;
       draw({ ...next, stopwatch: { display: Math.max(0, t).toFixed(2).replace('.', comma ? ',' : '.') }, wind: { ...rest, at: t * w.speed } });
+    },
+  };
+}
+
+/** A stroboscopic photo: the flashes leave the ball's images one by one (four a second, played at half that), then the ruler is put to it. */
+function strobeRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const st = next.strobe!;
+  const n = st.at.length;
+  const k = new Channel(0, n + 0.6, { kind: 'steady', speed: 2 }, 0.001);
+  return {
+    channels: [k],
+    frame: (done) => {
+      if (done || k.value >= n + 0.5) return draw(next);
+      const { gaps: _g, ...rest } = st;
+      draw({ ...next, strobe: { ...rest, shown: k.value } });
     },
   };
 }

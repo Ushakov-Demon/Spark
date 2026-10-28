@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -951,6 +951,26 @@ const LIST: readonly Preset[] = [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
     ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Як за стробоскопічним фото дізнатися, як рухалася кулька?', en: 'How can a stroboscopic photo tell how the ball moved?' },
+    id: 'strobe-photo',
+    grade: 7,
+    topic: MOTION,
+    title: { uk: 'Стробоскопічне фото: відстані й швидкість', en: 'A stroboscopic photo: distances and speed' },
+    question: {
+      uk: 'Кульку з лабораторної роботи № 1 сфотографували в темряві під стробоскопом: він спалахує 4 рази на секунду, і кожен спалах лишає на фото зображення кульки. Фото в масштабі 1 : 5 — у п’ять разів менше за натуру. Перше фото — кулька котиться по столу, скотившись із жолоба; друге — вона скочується жолобом без початкової швидкості. Прикладаємо лінійку й вимірюємо проміжки між зображеннями. Як за стробоскопічним фото дізнатися, як рухалася кулька?',
+      en: 'The ball of lab work 1 was photographed in the dark under a stroboscope: it flashes four times a second, and each flash leaves an image of the ball on the photo. The photo is 1 : 5 — five times smaller than life. The first photo: the ball rolls along the table, down from the groove; the second: it rolls down the groove from rest. We put a ruler to it and measure the gaps between the images. How can a stroboscopic photo tell how the ball moved?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'strobe',
+    plan: (['table', 'groove'] as const).map((photo) => ({ kind: 'bench', command: { type: 'lab.strobe', photo } }) as const),
+    choices: [ch('gaps', 'За проміжками між зображеннями: рівні — рух рівномірний; а відстань у натурі, поділена на час між спалахами, — це швидкість', 'By the gaps between the images: equal ones — uniform motion; and the real distance over the time between flashes is the speed'), ch('size', 'За розміром зображень: що більші, то швидше рухалася кулька', 'By the images’ size: the bigger, the faster the ball moved'), ch('cant', 'Ніяк: на фото немає часу, потрібен секундомір', 'No way: a photo has no time, a stopwatch is needed')],
+    answerOnBoard: ['sv:'],
+    formulas: ['mechanics.speed'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'вимірювання: … відстаней на планах і картах та стробоскопічних фотографіях' }],
     expect: 'reached',
   },
   {
@@ -1963,7 +1983,7 @@ const LIST: readonly Preset[] = [
  */
 export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
-  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'rotation-period', 'pendulum', 'windlass',
+  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
   'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;

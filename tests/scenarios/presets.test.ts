@@ -322,6 +322,14 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('a stroboscopic photo: equal gaps on the table, growing ones in the groove', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'strobe-photo')!);
+    expect(answer.correct).toBe('gaps');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const lists = [...answer.text.uk.matchAll(/: ([\d, ]+) мм/g)].map((m) => m[1]!.split(', ').map(Number));
+    expect(lists).toEqual([[54, 54, 54, 54], [4, 11, 18, 26]]);
+  }, 60_000);
+
   it('the wind’s speed by soap bubbles: each day’s speed falls in its Beaufort force', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'wind-speed')!);
     expect(answer.correct).toBe('walk');

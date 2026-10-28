@@ -59,6 +59,9 @@ import {
   BOUNCE_BALLS,
   CARRY_BUBBLE,
   WIND_DAYS,
+  strobePositions,
+  STROBE_SCALE,
+  type StrobePhoto,
   WIND_TRACK,
   WINCH_SPOOLS,
   type WinchSpool,
@@ -467,6 +470,15 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // A stroboscopic photo: this step's (or the next one's), the ball's places on it, the gaps once measured.
+  if (kind === 'strobe') {
+    const sc = c?.type === 'lab.strobe' ? (c as unknown as { photo: StrobePhoto }) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.strobe');
+    const photo = sc?.photo ?? (next?.kind === 'bench' ? (next.command as unknown as { photo: StrobePhoto }).photo : 'table');
+    const at = strobePositions(photo).map((x) => (x * 1000) / STROBE_SCALE);
+    const recs = last && sc ? readingsOf([last]).map((x) => x.record) : [];
+    return { ...base, kind, strobe: { photo, at, shown: sc ? at.length : 0, ...(recs.length ? { gaps: recs.map((x) => `${Math.round((x.value ?? 0) * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}`) } : {}) } };
+  }
   // The wind's speed: the day of this step (or the next one), the bubble at the second stake once timed, the speed.
   if (kind === 'wind') {
     const wc = c?.type === 'lab.wind' ? (c as unknown as { day: 1 | 2 | 3 }) : undefined;
@@ -795,6 +807,11 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // A stroboscopic photo: the gaps measured on it.
+  if (m.command.type === 'lab.strobe') {
+    const g = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.strobe')!]).map((x) => Math.round((x.record.value ?? 0) * 1000));
+    return uk ? `Проміжки на фото: ${g.join(', ')} мм.` : `The gaps on the photo: ${g.join(', ')} mm.`;
   }
   // The wind's speed: the time over the 6 m.
   if (m.command.type === 'lab.wind') return uk ? `Бульбашка пролетіла 6 м за ${formatMeasured('time', r.value, 0.01, locale)}.` : `The bubble flew 6 m in ${formatMeasured('time', r.value, 0.01, locale)}.`;
@@ -2609,12 +2626,14 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const sgRecs = c.type === 'lab.strobe' ? readingsOf([e]).map((x) => x.record) : [];
+      const sgShown = sgRecs.length ? `${sgRecs.map((x) => Math.round((x.value ?? 0) * 1000)).join(', ')} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       const wShown = c.type === 'lab.winch' && r.value !== null ? (r.quantity === 'turns' ? formatMeasured('turns', r.value, 0.25, locale) : `${String(Math.round(r.value * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`) : null;
       const cbRecs = c.type === 'lab.carry' ? readingsOf([e]).map((x) => x.record) : [];
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
