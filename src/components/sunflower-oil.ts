@@ -12,6 +12,7 @@ export const SUNFLOWER_OIL = {
   stateAtRoom: 'liquid',
   phases: {
     liquid: {
+      viscosity: sv(0.04914, 'Pa·s', 'unrefined, 25 °C', 'single-source', 0.05, [cite('wikipedia-sunflower-oil', 'Physical properties: viscosity (25 °C), unrefined, 0.04914 kg/(m·s)', '25 °C', 0.04914)], 'Refined oils and lower temperatures differ by tens of per cent.'),
       density: sv(918.8, 'kg/m³', '25 °C', 'single-source', 0.01, [cite('wikipedia-sunflower-oil', 'Physical properties: density', '25 °C', 918.8)], 'Second source not checked yet.'),
       specificHeat: estimate(2000, 'J/(kg·K)', 'room temperature', 1800, 2300, 'Measured values exist (Rojas et al. 2013) but we could not access the numbers; typical for vegetable oils.'),
       conductivity: sv(0.168, 'W/(m·K)', '25 °C', 'single-source', 0.01, [cite('turgut-2009-oils', 'sunflower oil, hot-wire', '25 °C', 0.168)], 'One measurement study (hot-wire method). Second source not checked yet.'),

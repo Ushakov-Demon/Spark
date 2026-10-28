@@ -50,6 +50,8 @@ import {
   SLOPE_LENGTH,
   AMMETER,
   ZERO_METER,
+  sinkLiquidName,
+  type SinkLiquid,
   VOLTMETER,
   stepCommand,
   OPERATIONS,
@@ -242,6 +244,8 @@ let pendingAdds: Added[] = [];
 let doneRecord: Omit<StepRecord, 'adds'> | null = null;
 /** A ready-made experiment in progress: its question and the steps still to do. */
 let preset: Preset | null = null;
+/** Something has been set on the table: an experiment chosen, a thing taken from the shelf, a recording played. Before that it is empty. */
+let tableSet = false;
 /** The ready-made experiment as it was chosen: starting over begins it anew from this (its steps change params on the way). */
 let presetGiven: Preset | null = null;
 /** The values a ready-made experiment was started with (what may be changed in it before the start). */
@@ -432,6 +436,18 @@ function benchView(): BenchView | null {
     const I = recs.find((x) => x.quantity === 'current');
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
+  }
+  // A body in a liquid: the vessel of the liquid this step used (or the next planned), the body at its last mark,
+  // the stopwatch's last reading.
+  if (kind === 'bubble' || kind === 'sink') {
+    const sc = c?.type === 'lab.sink' ? (c as unknown as { body: 'bubble' | 'ball'; liquid: string; diameter: number; marks: number[] }) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.sink');
+    const cmd = sc ?? (next?.kind === 'bench' ? (next.command as unknown as { body: 'bubble' | 'ball'; liquid: string; diameter: number; marks: number[] }) : undefined);
+    const laps = last && sc ? readingsOf([last]).map((x) => x.record).filter((x) => x.quantity === 'time') : [];
+    const lap = laps[laps.length - 1];
+    const color = { 'washing-up': 'rgba(120,200,120,0.55)', glycerol: 'rgba(225,235,245,0.55)', 'sunflower-oil': 'rgba(240,200,80,0.6)', water: 'rgba(120,170,230,0.5)' }[cmd?.liquid ?? 'water'] ?? 'rgba(120,170,230,0.5)';
+    const label = cmd ? (cmd.body === 'bubble' ? `${locale === 'uk' ? 'бульбашка' : 'bubble'} ≈ ${String(cmd.diameter * 1000).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мм' : 'mm'}` : tr({ uk: sinkLiquidName(cmd.liquid as SinkLiquid).uk, en: sinkLiquidName(cmd.liquid as SinkLiquid).en }, locale)) : undefined;
+    return { ...base, kind, ...(lap ? { stopwatch: { display: formatMeasured('time', lap.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: lap.value ?? 0 } } : {}), sink: { body: cmd?.body ?? (kind === 'bubble' ? 'bubble' : 'ball'), color, marks: cmd?.marks ?? [], diameter: cmd?.diameter ?? 0.002, ...(lap ? { at: lap.inputs?.['mark'] ?? 0, speed: lap.inputs?.['speed'] ?? 0 } : {}), ...(label ? { label } : {}) } };
   }
   // Induction: the move this step made, the pole facing the coil, the meter's swing.
   if (kind === 'induct') {
@@ -655,6 +671,16 @@ function measureSay(): string {
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
   }
+  // A body in a liquid: the last mark's time — and the speed it gives.
+  if (m.command.type === 'lab.sink') {
+    const sc = m.command as { body: string };
+    const laps = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.sink').slice(0, 1)).map((x) => x.record).filter((x) => x.quantity === 'time');
+    const lp = laps[laps.length - 1];
+    if (!lp) return '';
+    const s = Math.round((lp.inputs?.['mark'] ?? 0) * 100);
+    const T = formatMeasured('time', lp.value, 0.01, locale);
+    return sc.body === 'bubble' ? (uk ? `Бульбашка пройшла ${s} см за ${T}.` : `The bubble went ${s} cm in ${T}.`) : uk ? `Кулька пройшла ${s} см за ${T}.` : `The ball went ${s} cm in ${T}.`;
+  }
   // Induction: the needle's swing — which way and how far.
   if (m.command.type === 'lab.induct') {
     const ic = m.command as { move: string };
@@ -777,6 +803,7 @@ function closeStep() {
  * the next one starts with the same contents.
  */
 function stepChanged() {
+  tableSet = true;
   replaying = null;
   goOnFreely();
   buildShelf();
@@ -1533,7 +1560,9 @@ function sceneView(): SceneView {
         ? { mood: 'sooty', says: u.prof.smoke }
         : { mood: 'thinking', says: u.prof.failed }
     : !running && stepElapsed() === 0
-      ? labImpossibility(params) && !waitingForPlan()
+      ? !preset && !tableSet
+        ? { mood: 'neutral', says: u.prof.bare }
+        : labImpossibility(params) && !waitingForPlan()
         ? { mood: 'thinking', says: u.prof.impossible }
         : OPERATIONS[params.action].needsAdded && !preset?.guided && !session.result().log.some((e) => e.ok && e.kind === 'matter')
         ? { mood: 'thinking', says: tr(OPERATIONS[params.action].needsAdded!, locale) }
@@ -1567,6 +1596,7 @@ function sceneView(): SceneView {
     : undefined;
   return {
     device,
+    ...(!preset && !tableSet ? { bare: true } : {}),
     ...(preset && !needsThermometer(preset) ? { noThermometer: true } : {}),
     on: params.supply ? (sup?.state.current ?? 0) > 0 : params.heater ? power > 0 : !!params.cooler,
     intensity: params.heater ? Math.min(1, power / maxPower) : 1,
@@ -2093,6 +2123,8 @@ function showOnlyWhatMatters() {
 
 function render() {
   const u = t();
+  // Nothing on the table yet: no step, no instruments, no readings — only the choice.
+  document.body.classList.toggle('table-bare', !preset && !tableSet);
   renderVary();
   document.documentElement.lang = locale;
   document.title = pageTitle();
@@ -2386,6 +2418,8 @@ function renderProtocol() {
       // (The circuit reads two instruments at once: both are written.)
       const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
       // (The black box's milliammeter: milliamperes to a tenth.)
+      // (A body in a liquid: the times at the marks.)
+      const sShown = c.type === 'lab.sink' ? readingsOf([e]).map((x) => x.record).filter((x) => x.quantity === 'time').map((x) => formatMeasured('time', x.value, 0.01, locale)).join(' · ') : null;
       // (Induction: the milliammeter's signed milliamperes.)
       const iShown = c.type === 'lab.induct' ? inductShown(r.value) : null;
       // (The electromagnet: the ammeter and the compass.)
@@ -2401,7 +2435,7 @@ function renderProtocol() {
       const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
-      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
@@ -2491,6 +2525,7 @@ function buildShelf() {
   const scroll = shelf.scrollTop;
   root.innerHTML = '';
   const rebuild = () => {
+    tableSet = true;
     // Another substance or vessel: a new, free experiment (a ready-made one's plan no longer fits).
     preset = null;
     plan = [];
@@ -2538,7 +2573,13 @@ function buildShelf() {
     b.setAttribute('aria-pressed', String(o.selected));
     b.innerHTML = `<span class="card-pic">${o.pic}</span>`;
     b.append(el('span', { className: 'card-name' }, tr(o.name, locale)), ...(o.badge ? [el('span', { className: 'badge' }, o.badge)] : []), ...(o.note ? [el('span', { className: 'card-note' }, o.note)] : []));
-    b.onclick = o.onPick;
+    // Anything picked on the shelf (even what is already chosen) sets the table.
+    b.onclick = () => {
+      const was = tableSet;
+      tableSet = true;
+      o.onPick();
+      if (!was) render();
+    };
     li.append(b);
     if (o.ref) {
       const info = el('button', { type: 'button', className: 'info', title: u.reference }, 'i');
@@ -3573,6 +3614,7 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
     if (onServer) window.history.pushState(null, '', siteHref(pagePath({ page: 'experiment', id: chosen.id }, locale)));
     window.scrollTo(0, 0);
   }
+  tableSet = true;
   presetGiven = chosen;
   presetVals = chosenValues;
   // Built with the values chosen under the scene (its amounts, materials), within its own frame.
@@ -3662,6 +3704,7 @@ function saveRecording(name: string): string {
 
 /** Replay a recording on the page: the first step from a fresh setup, then each from where the last ended. */
 function startReplay(rec: Recording) {
+  tableSet = true;
   preset = null;
   plan = [];
   closeRef();
@@ -3860,6 +3903,7 @@ const labConsole = createConsole({
     if (next.cooler) lastCooler = next.cooler;
     if (next.supply) lastSupply = next.supply;
     if (kind === 'experiment') {
+      tableSet = true;
       // Another substance, vessel or conditions: a new, free experiment.
       preset = null;
       plan = [];
@@ -4068,6 +4112,7 @@ $('#chart').append(chart.element);
 $('#scene').append(scene.element);
 $('#start').onclick = () => ((lookingAt = null), toggleStart());
 function toggleStart() {
+  tableSet = true;
   goOnFreely();
   // A finished step: the next one continues with the same contents (the user may have changed nothing).
   if (finished) {

@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -1480,6 +1480,74 @@ const LIST: readonly Preset[] = [
   },
   varied(
     {
+      id: 'bubble-speed',
+      ask: { uk: 'Чи залежить швидкість бульбашки від її розміру?', en: 'Does a bubble’s speed depend on its size?' },
+      grade: 7,
+      topic: MOTION,
+      title: { uk: 'Бульбашка в пляшці: рівномірний рух', en: 'A bubble in a bottle: uniform motion' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'bubble',
+      choices: [ch('bigger', 'Більша бульбашка спливає швидше', 'A bigger bubble rises faster'), ch('same', 'Не залежить', 'It does not'), ch('smaller', 'Менша бульбашка спливає швидше', 'A smaller bubble rises faster')],
+      choicesAt: 'end',
+      answerOnBoard: ['bv:'],
+      formulas: ['mechanics.speed'],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'Дослідження • виявлення пропорційної залежності між величинами, що описують прямолінійний рівномірний рух', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 8, дослідження: «Знайдіть швидкість її руху. Чи залежить швидкість руху бульбашки від її розмірів?»' } }],
+      expect: 'reached',
+    },
+    {
+      // The liquid: the textbook's washing-up liquid (its viscosity an estimate) or glycerol (a table's).
+      controls: [{ id: 'liquid', label: { uk: 'Рідина в пляшці', en: 'The liquid in the bottle' }, kind: 'choice', options: [ch('washing-up', 'Рідина для миття посуду', 'Washing-up liquid'), ch('glycerol', 'Гліцерин', 'Glycerol')], value: 'washing-up' }],
+      build: (v) => {
+        const liquid = String(v['liquid']) as 'washing-up' | 'glycerol';
+        const marks = [0.03, 0.06, 0.09, 0.12];
+        const what = liquid === 'glycerol' ? { uk: 'гліцерину', en: 'glycerol' } : { uk: 'густої рідини для миття посуду', en: 'thick washing-up liquid' };
+        return {
+          question: {
+            uk: `Прозора пляшка ${what.uk}, на ній — позначки через 3 см. Перевернемо її й стежитимемо за маленькою бульбашкою повітря (≈ 2 мм): запустимо секундомір, коли вона мине нульову позначку, і засікатимемо час на позначках 3, 6, 9 і 12 см. Тоді — те саме з більшою бульбашкою (≈ 4 мм). Чи залежить швидкість бульбашки від її розміру?`,
+            en: `A clear bottle of ${what.en} with marks every 3 cm. We turn it over and watch a small air bubble (≈ 2 mm): start the stopwatch as it passes the zero mark and note the time at 3, 6, 9 and 12 cm. Then the same with a bigger bubble (≈ 4 mm). Does a bubble’s speed depend on its size?`,
+          },
+          plan: [0.002, 0.004].map((diameter) => ({ kind: 'bench', command: { type: 'lab.sink', body: 'bubble', diameter, liquid, marks } }) as const),
+        };
+      },
+    },
+  ),
+  varied(
+    {
+      id: 'ball-in-liquids',
+      ask: { uk: 'У якій рідині кулька тоне найповільніше?', en: 'In which liquid does the ball sink slowest?' },
+      grade: 7,
+      topic: INTERACTION,
+      title: { uk: 'Кулька в рідинах різної густини', en: 'A ball in liquids of different densities' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'sink',
+      choices: [ch('glycerol', 'У гліцерині', 'In glycerol'), ch('sunflower-oil', 'В олії', 'In oil'), ch('water', 'У воді', 'In water')],
+      choicesAt: 'end',
+      answerOnBoard: ['kv:'],
+      formulas: ['mechanics.speed'],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … швидкості руху кульки у рідинах різної густини' }],
+      expect: 'reached',
+    },
+    {
+      // The ball's size: a smaller one goes slower in each liquid (in glycerol — as the square of its size).
+      controls: [{ id: 'diameter', label: { uk: 'Кулька', en: 'The ball' }, kind: 'choice', options: [ch('1', '1 мм', '1 mm'), ch('1.5', '1,5 мм', '1.5 mm')], value: '1.5' }],
+      build: (v) => {
+        const diameter = Number(v['diameter']) / 1000;
+        const marks = [0.05, 0.1, 0.15];
+        const d = String(v['diameter']);
+        return {
+          question: {
+            uk: `Три мірні циліндри: з гліцерином (густина 1261 кг/м³), соняшниковою олією (919 кг/м³) і водою (997 кг/м³), на кожному — позначки через 5 см. Опускатимемо в кожен сталеву кульку діаметром ${d.replace('.', ',')} мм: запустимо секундомір, коли вона мине нульову позначку, і засікатимемо час на позначках 5, 10 і 15 см. Знайдемо швидкість кульки в кожній рідині. У якій рідині кулька тоне найповільніше?`,
+            en: `Three measuring cylinders: of glycerol (density 1261 kg/m³), sunflower oil (919 kg/m³) and water (997 kg/m³), each with marks every 5 cm. We drop a steel ball ${d} mm across into each: start the stopwatch as it passes the zero mark and note the time at 5, 10 and 15 cm. We find the ball’s speed in each liquid. In which liquid does it sink slowest?`,
+          },
+          plan: (['glycerol', 'sunflower-oil', 'water'] as const).map((liquid) => ({ kind: 'bench', command: { type: 'lab.sink', body: 'ball', diameter, liquid, marks } }) as const),
+        };
+      },
+    },
+  ),
+  varied(
+    {
       id: 'electromagnet',
       ask: { uk: 'Що робить електромагніт сильнішим?', en: 'What makes an electromagnet stronger?' },
       grade: 9,
@@ -1729,9 +1797,9 @@ const LIST: readonly Preset[] = [
  */
 export const PRESET_ORDER: readonly string[] = [
   // Grade 7. Mechanical motion.
-  'average-speed', 'rotation-period', 'pendulum',
+  'bubble-speed', 'average-speed', 'rotation-period', 'pendulum',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'lever-balance', 'mystery-metal', 'liquid-density', 'hooke-spring', 'friction-coefficient',
+  'lever-balance', 'mystery-metal', 'liquid-density', 'hooke-spring', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

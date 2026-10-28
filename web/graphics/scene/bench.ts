@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -51,6 +51,8 @@ export interface BenchView {
   readonly press?: { readonly weights: number; readonly pull?: string; readonly pushed: number; readonly read?: string };
   /** The syringe and the barometer: the plunger out by so many mL (0…1), the nozzle shut; the dynamometer's reading, the ruler's; the day's pressure, Pa, and its reading once looked at. */
   readonly atm?: { readonly pulled: number; readonly sealed: boolean; readonly pull?: string; readonly read?: string; readonly air: number; readonly baro?: string };
+  /** A body in a liquid: a bubble in the bottle or a ball in the cylinder; the liquid's colour; its marks (m from the zero one) and where the body is now (m past the zero mark; none — not let go yet); its size, m. */
+  readonly sink?: { readonly body: 'bubble' | 'ball'; readonly color: string; readonly marks: readonly number[]; readonly at?: number; readonly diameter: number; readonly label?: string; readonly speed?: number; readonly turn?: number };
   /** Induction: how the magnet (or the coil) moved and which pole faces the coil; the meter's swing (−1…1 of its scale) and reading. */
   readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
@@ -182,6 +184,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'atm') return atmSvg(v.atm);
   if (v.kind === 'vessels') return vesselsSvg(v.vessels);
   if (v.kind === 'magnet') return magnetSvg(v.magnet);
+  if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
@@ -368,6 +371,43 @@ function circuitSvg(c: BenchView['circuit']): string {
   const resistor = `<rect x="430" y="${y - 6}" width="60" height="20" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${[0, 1, 2].map((k) => `<rect x="${442 + k * 12}" y="${y - 6}" width="4" height="20" style="fill:${['#8b4513', '#222', '#c0392b'][k]}"/>`).join('')}`;
   const wires = W(`M195,${y + 4} H250`) + W(`M280,${y + 4} H340`) + W(`M392,${y + 4} H430`) + W(`M490,${y + 4} H540 V${y + 40} H150 V${y + 4} H155`) + W(`M410,${y + 4} V${top + 40} H${435}`) + W(`M485,${top + 40} H510 V${y + 4}`);
   return `${wires}${source}${key}${meterSvg(366, y + 6, 'A', c?.amps?.share, c?.amps?.text)}${resistor}${meterSvg(460, top + 40, 'V', c?.volts?.share, c?.volts?.text)}`;
+}
+
+/**
+ * A body moving through a liquid: a tall vessel (a bottle turned upside down, or a measuring cylinder) with marks every
+ * few centimetres (8 px to the centimetre, the zero mark near the start); the bubble rises from below, the ball sinks
+ * from above; it stands where the step left it — at the last mark.
+ */
+/** How far before the zero mark the body starts (the bottle's neck, the liquid's surface), m: it has its steady speed by the zero mark. */
+export const SINK_LEAD = 30 / 800;
+
+function sinkSvg(s: BenchView['sink']): string {
+  const k = 800;
+  const x = 400;
+  const bubble = s?.body === 'bubble';
+  const w = bubble ? 60 : 40;
+  const bottom = TABLE - 8;
+  const top = bottom - 200;
+  const zero = bubble ? bottom - 30 : top + 30;
+  const dir = bubble ? -1 : 1;
+  const glass = bubble
+    ? `<path d="M${x - w / 2},${top + 10} V${bottom - 6} q0,6 6,6 H${x + w / 2 - 6} q6,0 6,-6 V${top + 10} q0,-10 -10,-10 H${x - w / 2 + 10} q-10,0 -10,10 Z" style="fill:${s?.color ?? 'rgba(120,200,120,0.5)'};stroke:#8fb8dd;stroke-width:2"/><rect x="${x - 8}" y="${bottom}" width="16" height="6" style="fill:#c0392b"/>`
+    : `<rect x="${x - w / 2}" y="${top}" width="${w}" height="${bottom - top}" style="fill:${s?.color ?? 'rgba(120,170,230,0.5)'};stroke:#8fb8dd;stroke-width:2"/><rect x="${x - w / 2 - 8}" y="${bottom - 4}" width="${w + 16}" height="6" rx="2" style="fill:#8fb8dd"/>`;
+  const marks = [0, ...(s?.marks ?? [])].map((m) => `<path d="M${x + w / 2 - 10},${zero + dir * m * k} h14" style="stroke:#3d3d3d;stroke-width:1.2"/><text x="${x + w / 2 + 8}" y="${zero + dir * m * k + 3}" style="font:600 10px system-ui,sans-serif;fill:#efe9d2">${Math.round(m * 100)}</text>`).join('');
+  const at = s?.at;
+  // (Not to scale: a millimetre ball would be a dot.)
+  const r = Math.max(bubble ? 2.5 : 4.5, (s?.diameter ?? 0.002) * 1000 * (bubble ? 1.6 : 3));
+  // A steel ball: dark, with a highlight (it must not melt into the liquid).
+  const steel = `<defs><radialGradient id="sink-steel" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.25" stop-color="#9aa6b2"/><stop offset="1" stop-color="#1f262d"/></radialGradient></defs>`;
+  const body = at === undefined || s?.turn !== undefined ? '' : bubble ? `<circle cx="${x}" cy="${zero + dir * at * k}" r="${r}" style="fill:rgba(255,255,255,0.85);stroke:#6c8fb0"/>` : `${steel}<circle cx="${x}" cy="${zero + dir * at * k}" r="${r}" style="fill:url(#sink-steel);stroke:#11161b;stroke-width:0.8"/>`;
+  const label = s?.label ? `<text class="bench-reading" x="${x}" y="${top - 10}" text-anchor="middle">${s.label}</text>` : '';
+  // The bottle being turned over (1 — still upright, its air under the cap at the top; 0 — upside down).
+  const turn = s?.turn;
+  if (bubble && turn !== undefined) {
+    const air = turn > 0.5 ? `<rect x="${x - w / 2 + 2}" y="${bottom - 14}" width="${w - 4}" height="8" style="fill:rgba(255,255,255,0.75)"/>` : '';
+    return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
+  }
+  return `${glass}${marks}${body}${label}`;
 }
 
 /**

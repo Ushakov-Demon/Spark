@@ -79,6 +79,8 @@ export interface SceneView {
   readonly ohmmeter?: { readonly display: string };
   /** No thermometer in the vessel: the experiment is not about temperature (a density, a buoyant force). */
   readonly noThermometer?: boolean;
+  /** Nothing set on the table yet (no experiment chosen, nothing taken from the shelf): an empty table. */
+  readonly bare?: boolean;
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
   readonly board?: { readonly empty: string; readonly front: string; readonly back: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers?: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
@@ -392,6 +394,7 @@ export function createScene(): Scene {
         benchShown = v.bench ?? null;
       }
       root.classList.toggle('bench-on', !!v.bench);
+      root.classList.toggle('bare', !!v.bare);
       // The coil in the water and the multimeter beside the beaker, its leads over the rim.
       const ck = v.ohmmeter ? `${v.ohmmeter.display}|${g.left}|${g.bottom}` : '';
       const coil = $<SVGGElement>('sc-coil');

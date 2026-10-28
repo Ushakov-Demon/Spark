@@ -20,6 +20,7 @@ export const GLYCEROL = {
     liquid: {
       density: sv(1261, 'kg/m³', 'liquid, 20 °C', 'cross-checked', 0.005, [cite('wikipedia-glycerol', 'Chembox: density 1.261 g/cm³', '—', 1261), cite('wikidata', 'Q132501 P2054', 'liquid, 20 °C', 1261.3)]),
       specificHeat: sv(2377, 'J/(kg·K)', 'liquid, 25 °C', 'single-source', 0.02, [cite('nist-glycerol', 'Cp,liquid 218.9 J/(mol·K) at 298.15 K (Bastos et al., 1988) ÷ 0.092094 kg/mol', '298.15 K', 2376.9)], 'NIST lists several measurements, 218.9–229.3 J/(mol·K) (the higher one at 40 °C).'),
+      viscosity: sv(1.412, 'Pa·s', 'liquid, 20 °C', 'single-source', 0.02, [cite('wikipedia-glycerol', 'Chembox: viscosity 1.412 Pa·s (20 °C)', '20 °C', 1.412)], 'Falls fast with temperature and with a little water in it.'),
       conductivity: sv(0.285, 'W/(m·K)', 'liquid, 25 °C', 'single-source', 0.01, [cite('wikidata', 'Q132501 P2068', 'liquid, 25 °C', 0.285)], 'Only Wikidata checked; it also gives 0.288…0.296 at 50…100 °C.'),
     },
   },

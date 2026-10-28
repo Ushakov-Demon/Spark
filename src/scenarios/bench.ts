@@ -22,6 +22,7 @@ import { ATM_COMMANDS, ATM_TEXT, type AtmCommand } from './atm-bench.js';
 import { VESSEL_COMMANDS, VESSEL_TEXT, type VesselCommand } from './vessels-bench.js';
 import { MAGNET_COMMANDS, MAGNET_TEXT, type MagnetCommand } from './magnet-bench.js';
 import { INDUCT_COMMANDS, INDUCT_TEXT, type InductCommand } from './induct-bench.js';
+import { SINK_COMMANDS, SINK_TEXT, type SinkCommand } from './sink-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -72,7 +73,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -149,7 +150,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -157,6 +158,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...ELECTRODE_TEXT,
   ...COIL_TEXT,
   ...(PRESS_TEXT as Record<PressCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
+  ...(SINK_TEXT as Record<SinkCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(INDUCT_TEXT as Record<InductCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(MAGNET_TEXT as Record<MagnetCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(VESSEL_TEXT as Record<VesselCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -201,8 +203,10 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct', LocalizedText> = {
+export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink', LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
+  bubble: { uk: 'Прозора пляшка (0,5 л) густої рідини для миття посуду з позначками, лінійка, секундомір', en: 'A clear 0.5 L bottle of thick washing-up liquid with marks, a ruler, a stopwatch' },
+  sink: { uk: 'Мірні циліндри (250 мл) з гліцерином, соняшниковою олією й водою, з позначками; сталева кулька від підшипника, секундомір', en: '250 mL measuring cylinders of glycerol, sunflower oil and water, with marks; a steel bearing ball, a stopwatch' },
   induct: { uk: 'Котушка-моток, штабовий магніт, міліамперметр з нулем посередині, з’єднувальні дроти', en: 'A coil, a bar magnet, a milliammeter with its zero in the middle, connecting wires' },
   magnet: { uk: 'Сталевий цвях, ізольований дріт, джерело струму, ключ, реостат, амперметр, компас, пластикова трубочка', en: 'A steel nail, insulated wire, a source, a key, a rheostat, an ammeter, a compass, a plastic straw' },
   vessels: { uk: 'Прилад Паскаля: підставка з гумовим дном і три посудини різної форми з однаковим дном, рідинний (U-подібний) манометр, мензурка на 500 мл, вода, лінійка', en: 'Pascal’s device: a stand with a rubber bottom and three vessels of different shapes with the same bottom, a liquid (U-tube) manometer, a 500 mL measuring cylinder, water, a ruler' },

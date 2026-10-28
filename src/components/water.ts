@@ -52,6 +52,7 @@ export const WATER = {
         },
     },
     liquid: {
+      viscosity: sv(1.0016e-3, 'Pa·s', 'liquid, 20 °C', 'single-source', 0.01, [cite('wikipedia-viscosity', 'Table: water, 1.0016 mPa·s at 20 °C', '20 °C', 1.0016e-3)], 'About 0.89 mPa·s at 25 °C: it falls with temperature.'),
       density: {
           value: 997.05,
           unit: 'kg/m³',

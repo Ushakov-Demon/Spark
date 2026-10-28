@@ -433,6 +433,22 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // A body in a liquid: its times at the marks, and its speed v = l/t (hidden till the answer).
+    if (c.type === 'lab.sink') {
+      const laps = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'time' && x.value !== null);
+      const last = laps[laps.length - 1];
+      if (!last) return;
+      const bubble = c['body'] === 'bubble';
+      const d = Number(c['diameter']) * 1000;
+      const liquid = { 'washing-up': uk ? 'у рідині для посуду' : 'in washing-up liquid', glycerol: uk ? 'у гліцерині' : 'in glycerol', 'sunflower-oil': uk ? 'в олії' : 'in oil', water: uk ? 'у воді' : 'in water' }[String(c['liquid'])] ?? '';
+      const what = bubble ? (uk ? `бульбашка ≈ ${n(d, 2)} мм` : `a ≈ ${n(d, 2)} mm bubble`) : uk ? `кулька ${liquid}` : `the ball ${liquid}`;
+      const cmT = (m: number) => `${Math.round(m * 100)} ${uk ? 'см' : 'cm'}`;
+      out.push({ id: `st:${i}`, title: uk ? `${what}: час на позначках` : `${what}: the times at the marks`, formula: laps.map((x) => `${cmT(x.inputs?.['mark'] ?? 0)} — ${formatMeasured('time', x.value, 0.01, locale)}`).join('; ') });
+      const s = last.inputs?.['mark'] ?? 0;
+      const v = s / last.value!;
+      out.push({ id: `${bubble ? 'bv' : 'kv'}:${i}`, title: uk ? `${what}: швидкість` : `${what}: the speed`, formula: 'v = l / t', numbers: `${n(s * 100)} ${uk ? 'см' : 'cm'} / ${formatMeasured('time', last.value, 0.01, locale)} ≈ ${v < 0.1 ? `${n(v * 100, 2)} ${uk ? 'см/с' : 'cm/s'}` : `${n(v, 2)} ${uk ? 'м/с' : 'm/s'}`}` });
+      return;
+    }
     // Induction: the milliammeter's swing and the EMF it gives, ε = I·R.
     if (c.type === 'lab.induct') {
       const R = r.inputs?.['resistance'] ?? 0;

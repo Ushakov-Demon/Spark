@@ -38,6 +38,8 @@ export interface PhaseProps {
   readonly density?: SourcedValue; // kg/m³
   readonly specificHeat?: SourcedValue; // J/(kg·K), at constant pressure
   readonly conductivity?: SourcedValue; // W/(m·K)
+  /** Dynamic viscosity, Pa·s (a liquid). */
+  readonly viscosity?: SourcedValue;
 }
 
 /** Vapour pressure model for evaporation below the boiling point (data, so states stay JSON). */

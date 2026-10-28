@@ -294,6 +294,26 @@ describe('ready-made experiments with values to change', () => {
     expect(Math.abs(w1! / w2! - 1)).toBeLessThan(0.15);
   }, 60_000);
 
+  it('a bubble rises uniformly — equal times for equal paths — and a bigger one faster', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'bubble-speed')!);
+    expect(answer.correct).toBe('bigger');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const t = [...answer.text.uk.matchAll(/\d+ см — ([\d,]+) с/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(t).toHaveLength(8);
+    // 3, 6, 9, 12 cm: the times as 1 : 2 : 3 : 4.
+    for (const k of [1, 2, 3]) expect(Math.abs(t[k]! / t[0]! - (k + 1))).toBeLessThan(0.02);
+  }, 60_000);
+
+  it('a ball sinks slowest in glycerol and slower in oil than in water: the viscosity, not the density', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'ball-in-liquids')!);
+    expect(answer.correct).toBe('glycerol');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const t = [...answer.text.uk.matchAll(/за ([\d,]+) с/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(t).toHaveLength(3);
+    expect(t[0]!).toBeGreaterThan(t[1]!);
+    expect(t[1]!).toBeGreaterThan(t[2]!);
+  }, 60_000);
+
   it('induction: a current only while the magnet moves; its sign with the direction and the pole; larger when faster', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'electromagnetic-induction')!);
     expect(answer.correct).toBe('motion');

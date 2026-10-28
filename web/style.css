@@ -958,6 +958,10 @@ footer .library-links a { color: var(--accent); }
 
 /* The mechanics bench (grade 7) replaces the vessel on the table. */
 .scene.bench-on .scene-svg .items, .scene.bench-on #sc-gas, .scene.bench-on #sc-vapour, .scene.bench-on #sc-cloud { display: none; }
+/* An empty table: no experiment chosen, nothing taken from the shelf yet — and nothing about it around the scene. */
+.table-bare .kitchen-head .buttons, .table-bare #setup-line, .table-bare .controls, .table-bare #chart-box, .table-bare #energy, .table-bare #protocol, .table-bare #protocol-hint, .table-bare #expect, .table-bare #add, .table-bare .report-card, .table-bare #messages, .table-bare #offer { display: none; }
+.table-bare #side-body > section:has(#expect), .table-bare #side-body > section:has(#add) { display: none; }
+.scene.bare .scene-svg .items, .scene.bare #sc-gas, .scene.bare #sc-vapour, .scene.bare #sc-cloud, .scene.bare #sc-thermo, .scene.bare #sc-scale, .scene.bare #sc-dyn, .scene.bare #sc-mark, .scene.bare #sc-coil { display: none; }
 .scene .bench-ruler rect { fill: #f4e7b8; stroke: #a8955a; }
 .scene .bench-ruler .ticks path { stroke: #4b4b4b; stroke-width: 0.8; }
 .scene .bench-ruler .labels text { font: 7px system-ui, sans-serif; fill: #333; }

@@ -154,6 +154,16 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
   },
   {
+    id: 'uniform-motion',
+    kind: 'definition',
+    name: { uk: 'Рівномірний рух. Швидкість', en: 'Uniform motion. Speed' },
+    statement: {
+      novice: { uk: 'Тіло рухається рівномірно, якщо за однакові проміжки часу проходить однаковий шлях.', en: 'A body moves uniformly if it covers the same path in equal stretches of time.' },
+      school: { uk: 'Рівномірний прямолінійний рух — рух, під час якого тіло за будь-які рівні інтервали часу здійснює однакові переміщення. Його швидкість v = l/t стала, а шлях l = v·t пропорційний часу.', en: 'Uniform straight-line motion is motion in which a body makes equal displacements in any equal intervals of time. Its speed v = l/t is constant, and the path l = v·t is proportional to the time.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичних величин.', en: 'These are definitions of physical quantities.' } }, citations: [] },
+  },
+  {
     id: 'average-speed',
     kind: 'definition',
     name: { uk: 'Середня швидкість', en: 'Average speed' },

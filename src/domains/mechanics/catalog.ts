@@ -25,6 +25,7 @@ const UA_FLOATING: readonly CurriculumRef[] = [
 
 const UA_HOOKE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Гука.' }];
 const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Коефіцієнт тертя ковзання.' }];
+const UA_UNIFORM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний прямолінійний рух. Швидкість руху.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
@@ -333,6 +334,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.balancedDensity,
     examples: [{ args: [997.05, 0.046, 0.05], expected: 917.286, note: 'water 4.6 cm against 5 cm of oil' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.speed',
+    law: 'uniform-motion',
+    title: { uk: 'Швидкість рівномірного руху', en: 'The speed of uniform motion' },
+    latex: 'v = \\frac{l}{t}',
+    plain: 'v = l / t',
+    argSymbols: ['l', 't'],
+    resultSymbol: 'v',
+    variables: {
+      v: { name: { uk: 'швидкість', en: 'speed' }, unit: 'm/s' },
+      l: { name: { uk: 'шлях', en: 'path' }, unit: 'm' },
+      t: { name: { uk: 'час', en: 'time' }, unit: 's' },
+    },
+    curriculum: UA_UNIFORM,
+    explanation: {
+      novice: { uk: 'Рівномірно — це коли за кожну секунду тіло проходить однаковий шлях. Поділи шлях на час — і дізнаєшся скільки.', en: 'Uniform means the body covers the same path every second. Divide the path by the time — and you know how much.' },
+      school: { uk: 'У рівномірному прямолінійному русі шлях пропорційний часу: удвічі довший час — удвічі довший шлях, а їхнє відношення v = l/t стале.', en: 'In uniform straight-line motion the path is proportional to the time: twice the time — twice the path, and their ratio v = l/t stays the same.' },
+    },
+    compute: f.averageSpeed,
+    examples: [{ args: [0.12, 57.7], expected: 0.00208, note: '12 cm in 57.7 s' }],
     textSource: 'spark',
     reviewed: false,
   }),
