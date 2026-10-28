@@ -445,6 +445,20 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
       return;
     }
+    // The relativity of motion: the time, the bottle's shift, the bubble's speed relative to the bottle and to the table.
+    if (c.type === 'lab.carry') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      const of = (w: number) => recs.find((x) => x.inputs?.['which'] === w)?.value ?? 0;
+      const t = of(0);
+      const u = Number(c['speed']);
+      const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
+      const T = formatMeasured('time', t, 0.01, locale);
+      const v = (l: number) => `${n((l / t) * 100, 2)} ${uk ? 'см/с' : 'cm/s'}`;
+      const how = u === 0 ? (uk ? 'пляшка стоїть' : 'the bottle stands') : uk ? `u = ${n(u * 100, 2)} см/с, зсув ${cm(of(1))}` : `u = ${n(u * 100, 2)} cm/s, moved ${cm(of(1))}`;
+      out.push({ id: `cb:${i}`, title: uk ? `${how}: відносно пляшки` : `${how}: relative to the bottle`, formula: 'v = l / t', numbers: `${cm(0.09)} / ${T} ≈ ${v(0.09)}` });
+      out.push({ id: `ct:${i}`, title: uk ? 'відносно стола' : 'relative to the table', formula: 'v = s / t', numbers: `${cm(of(2))} / ${T} ≈ ${v(of(2))}` });
+      return;
+    }
     // A ball's bounce: how high it rose after this impact and the energy it has there, Eп = m·g·h.
     if (c.type === 'lab.bounce') {
       const m = r.inputs?.['mass'] ?? 0;

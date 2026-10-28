@@ -49,15 +49,21 @@ export function liquidOf(l: SinkLiquid): { density: number; viscosity: number } 
   return { density: liquid.density!.value, viscosity: liquid.viscosity!.value };
 }
 
+/** The body's steady speed in the liquid (the bubble in the bottle, the ball in the cylinder), m/s, and its Reynolds number. */
+export function sinkSpeed(body: 'bubble' | 'ball', diameter: number, l: SinkLiquid): { speed: number; reynolds: number } {
+  const liquid = liquidOf(l);
+  const steel = COMPONENTS.steel.phases.solid!.density!.value;
+  const vessel = body === 'bubble' ? SINK_VESSELS.bottle.value : SINK_VESSELS.cylinder.value;
+  return terminalVelocity({ diameter, bodyDensity: body === 'bubble' ? AIR : steel, density: liquid.density, viscosity: liquid.viscosity, g: G, vessel });
+}
+
 export const sinkCommand: CommandHandler<SinkCommand> = {
   type: 'lab.sink',
   apply(state, c) {
     if (!(c.diameter > 0 && c.diameter <= 0.01)) return err({ uk: 'Тіло має бути до 1 см завбільшки.', en: 'The body has to be under 1 cm across.' });
     if (!c.marks.length || c.marks.some((m) => !(m > 0 && m <= 0.3))) return err({ uk: 'Позначки — до 30 см від нульової.', en: 'The marks are up to 30 cm from the zero one.' });
     const liquid = liquidOf(c.liquid);
-    const steel = COMPONENTS.steel.phases.solid!.density!.value;
-    const vessel = c.body === 'bubble' ? SINK_VESSELS.bottle.value : SINK_VESSELS.cylinder.value;
-    const { speed, reynolds } = terminalVelocity({ diameter: c.diameter, bodyDensity: c.body === 'bubble' ? AIR : steel, density: liquid.density, viscosity: liquid.viscosity, g: G, vessel });
+    const { speed, reynolds } = sinkSpeed(c.body, c.diameter, c.liquid);
     const div = STOPWATCH_DIVISION.value;
     const ruler: MeasurementRecord = { kind: 'measurement', instrument: 'ruler', quantity: 'length', value: Math.round(c.diameter * 1000) / 1000, exact: c.diameter, entities: [], inputs: { which: 0, division: 0.001 } };
     const laps: MeasurementRecord[] = c.marks.map((m) => {

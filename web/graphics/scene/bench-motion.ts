@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.carry': { uk: 'Бульбашка спливає — веду пляшку рівномірно…', en: 'The bubble rises — carrying the bottle steadily…' },
   'lab.bounce': { uk: 'Відпускаю м’ячик — стежимо, куди підскочить…', en: 'Letting the ball go — watch how high it bounces…' },
   'lab.lift': { uk: 'Ліфт їде — стежимо за динамометром…', en: 'The lift is moving — watch the dynamometer…' },
   'lab.rows': { uk: 'Викладаю ряд — по одному…', en: 'Laying the row — one by one…' },
@@ -43,7 +44,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'friction' && next.pull) return pull(next, draw);
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
-  if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink')) return through(next, next.run, next.sink, draw);
+  if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
   if (next.kind === 'bounce' && next.bounce?.read) return bounce(next, draw);
   if (next.kind === 'lift' && next.lift?.read) return lift(prev?.kind === 'lift' ? (prev.lift ?? null) : null, next, draw);
   if (next.kind === 'rows' && next.rows?.read) return row(next, draw);
@@ -91,10 +92,12 @@ function through(next: BenchView, run: NonNullable<BenchView['run']>, s: NonNull
     channels: [clock],
     frame: (done) => {
       const u = clock.value;
-      if (!done && u < flip) return draw({ ...next, stopwatch: { display: lcd(0), fast }, sink: { ...s, turn: 1 - u / flip } });
+      if (!done && u < flip) return draw({ ...next, stopwatch: { display: lcd(0), fast }, sink: { ...s, turn: 1 - u / flip }, ...(next.carry ? { carry: { speed: next.carry.speed, shift: 0 } } : {}) });
       const t = u - flip - lead;
       const sink = { ...s, at: done ? (s.at ?? 0) : t < 0 ? -SINK_LEAD + (u - flip) * v : t * v };
-      return draw({ ...next, stopwatch: { display: done ? (next.stopwatch?.display ?? lcd(t)) : lcd(Math.max(0, t)), fast }, sink });
+      // (The carried bottle: moved from the moment the bubble passes the zero mark; its marks measured at the end.)
+      const carry = next.carry && !done ? { speed: next.carry.speed, shift: next.carry.speed * Math.max(0, t) } : next.carry;
+      return draw({ ...next, stopwatch: { display: done ? (next.stopwatch?.display ?? lcd(t)) : lcd(Math.max(0, t)), fast }, sink, ...(carry ? { carry } : {}) });
     },
   };
 }

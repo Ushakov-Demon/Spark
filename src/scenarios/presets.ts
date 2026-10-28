@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -950,6 +950,28 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Чи однакові траєкторія й шлях бульбашки відносно пляшки та відносно стола?', en: 'Are the bubble’s path and trajectory the same relative to the bottle and to the table?' },
+    id: 'relative-motion',
+    grade: 7,
+    topic: MOTION,
+    title: { uk: 'Відносність руху: бульбашка в пляшці, що їде', en: 'The relativity of motion: a bubble in a moving bottle' },
+    question: {
+      uk: 'Знову перевернута пляшка густої рідини для миття посуду й бульбашка ≈ 4 мм, що спливає від нульової позначки до позначки 9 см. За пляшкою на столі закріплено аркуш паперу: на ньому маркером позначаємо, де бульбашка була на старті й на фініші, і вимірюємо відрізок між позначками. Спершу пляшка стоїть, а потім, поки бульбашка спливає, ведемо пляшку вздовж лінійки — повільно й швидше. Щоразу засікаємо час і вимірюємо, на скільки зсунулася пляшка. Чи однакові траєкторія й шлях бульбашки відносно пляшки та відносно стола?',
+      en: 'The upside-down bottle of thick washing-up liquid again, and a ≈ 4 mm bubble rising from the zero mark to the 9 cm one. A sheet of paper is fixed to the table behind the bottle: we mark on it with a marker where the bubble was at the start and at the finish, and measure the line between. First the bottle stands, then, while the bubble rises, we carry the bottle along a ruler — slowly and faster. Each time we time it and measure how far the bottle moved. Are the bubble’s path and trajectory the same relative to the bottle and to the table?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'carry',
+    plan: [0, 0.005, 0.01].map((speed) => ({ kind: 'bench', command: { type: 'lab.carry', speed } }) as const),
+    choices: [ch('depends', 'Ні: відносно пляшки — та сама вертикаль 9 см, а відносно стола — похила пряма й довший шлях', 'No: relative to the bottle the same 9 cm upright, relative to the table a slanted line and a longer path'), ch('same', 'Так: бульбашка ж спливає так само', 'Yes: the bubble rises just the same'), ch('slower', 'Ні: бульбашка спливає повільніше, коли пляшку ведуть', 'No: the bubble rises slower while the bottle is carried')],
+    formulas: ['mechanics.speed'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'моделювання: відносності руху' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 2. Механічний рух', match: 'related', quote: 'Механічний рух. Відносність руху та спокою. Система відліку.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 7, «Чому механічний рух є відносним?»: «Форма траєкторії руху, шлях і переміщення тіла залежать від того, відносно якої системи відліку розглядають рух»' } },
     ],
     expect: 'reached',
   },
@@ -1897,7 +1919,7 @@ const LIST: readonly Preset[] = [
  */
 export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
-  'small-bodies', 'bubble-speed', 'average-speed', 'rotation-period', 'pendulum',
+  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'rotation-period', 'pendulum',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
   'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;

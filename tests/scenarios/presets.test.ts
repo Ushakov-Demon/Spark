@@ -322,6 +322,14 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('the relativity of motion: the same time each step, a longer path relative to the table the faster the bottle goes', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'relative-motion')!);
+    expect(answer.correct).toBe('depends');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const s = [...answer.text.uk.matchAll(/відносно стола ([\d,]+) см/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(s).toEqual([9, 10.7, 14.7]);
+  }, 60_000);
+
   it('a ball’s bounce: each bounce lower by about the same share, the tennis ball lower still, plasticine not at all', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'ball-bounce')!);
     expect(answer.correct).toBe('heat');

@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -60,6 +60,11 @@ export interface BenchView {
   /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
+  /**
+   * The relativity of motion: the bubble's bottle (in `sink`) carried along the table at `speed` (m/s), moved `shift`
+   * (m) so far; the line on the paper behind, once measured (`path`).
+   */
+  readonly carry?: { readonly speed: number; readonly shift: number; readonly path?: string; readonly rise?: string };
   /**
    * A ball's bounce: the ball, its diameter (m), its bottom's height (m, 1 — the drop height), how squashed it is
    * (0…1; plasticine stays flat), the mechanical energy left (a share of the start's); the tops marked so far; the
@@ -200,6 +205,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'rows') return rowsSvg(v.rows);
   if (v.kind === 'lift') return liftSvg(v.lift);
   if (v.kind === 'bounce') return bounceSvg(v.bounce);
+  if (v.kind === 'carry') return `${carrySvg(v.sink, v.carry)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 585) : ''}`;
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
@@ -424,6 +430,32 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/** Where the carried bottle starts (its axis), units of the drawing; the drawing's scale is the bottle's: 8 to the centimetre. */
+const CARRY_X0 = 360;
+/**
+ * The relativity of motion: a sheet of paper fixed to the table behind the bottle, a ruler on the table in front;
+ * the bottle (sinkSvg's, moved along) with its bubble. On the paper: a dot where the bubble passed the zero mark,
+ * a chalk-red line from it to where the bubble is now — its path relative to the table — and, in the bottle, the
+ * bubble's own way straight up. An arrow shows the bottle's motion.
+ */
+function carrySvg(s: BenchView['sink'], c: BenchView['carry']): string {
+  const k = 800;
+  const bottom = TABLE - 8;
+  const zero = bottom - 30;
+  const dx = (c?.shift ?? 0) * k;
+  const paper = `<rect x="${CARRY_X0 - 50}" y="${bottom - 190}" width="220" height="180" style="fill:#f4f1e8;stroke:#c9c2a8;opacity:0.92"/>`;
+  const ruler = rulerSvg(CARRY_X0 - 20, TABLE + 6, 20, false, 8);
+  const at = s?.at;
+  const on = at !== undefined && at >= 0 && s?.turn === undefined;
+  const start = on ? `<circle cx="${CARRY_X0}" cy="${zero}" r="3" style="fill:#c0392b"/>` : '';
+  const trail = on ? `<path d="M${CARRY_X0},${zero} L${CARRY_X0 + dx},${zero - at * k}" style="stroke:#c0392b;stroke-width:2;stroke-dasharray:5 3"/>` : '';
+  const end = on && c?.path ? `<circle cx="${CARRY_X0 + dx}" cy="${zero - at * k}" r="3" style="fill:#c0392b"/><text class="bench-reading" x="${CARRY_X0 + dx / 2 - 8}" y="${zero - (at * k) / 2 + 16}" text-anchor="end" style="fill:#8e2b20">s = ${c.path}</text>` : '';
+  // The bubble's own way, in the bottle: straight up from the zero mark.
+  const own = on ? `<path d="M${CARRY_X0 + dx - 14},${zero} V${zero - at * k}" style="stroke:#2d6a9f;stroke-width:1.6"/>${c?.rise ? `<text class="bench-reading" x="${CARRY_X0 + dx - 10}" y="${zero - (at * k) / 2 + 4}" style="fill:#1f4f7a">${c.rise}</text>` : ''}` : '';
+  const arrow = c && c.speed > 0 ? `<path class="bench-arrow" d="M${CARRY_X0 + dx - 20},${bottom - 212} h40 m-6,-4 l6,4 l-6,4"/><text class="bench-label" x="${CARRY_X0 + dx}" y="${bottom - 220}" text-anchor="middle">u</text>` : '';
+  return `${paper}${ruler}${start}${trail}<g transform="translate(${CARRY_X0 - 400 + dx},0)">${sinkSvg(s)}</g>${own}${end}${arrow}`;
 }
 
 /**

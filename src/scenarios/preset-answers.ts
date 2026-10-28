@@ -421,6 +421,47 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       }),
     };
   },
+  'relative-motion': (run) => {
+    // Each step: the time, the bottle's shift and the bubble's path on the paper (the records by `which`).
+    const steps = new Map<number, { u: number; t?: number; x?: number; s?: number }>();
+    for (const r of (run.readings ?? []).filter((x) => x.command.type === 'lab.carry' && x.record.value !== null)) {
+      const u = Number(r.command['speed']);
+      const e = steps.get(u) ?? { u };
+      const w = r.record.inputs?.['which'];
+      if (w === 0) e.t = r.record.value!;
+      else if (w === 1) e.x = r.record.value!;
+      else e.s = r.record.value!;
+      steps.set(u, e);
+    }
+    const R = [...steps.values()].sort((a, b) => a.u - b.u);
+    const cm = (x: number, l: Locale) => `${sig(x * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
+    const sec = (x: number, l: Locale) => formatMeasured('time', x, 0.01, l);
+    const longer = R.length > 1 && R.every((x, i) => i === 0 || (x.s ?? 0) > (R[i - 1]!.s ?? 0));
+    const sameTime = R.every((x) => Math.abs((x.t ?? 0) - (R[0]!.t ?? 0)) < 0.05);
+    return {
+      ...(longer && sameTime ? { correct: 'depends' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Рух завжди описують відносно чогось — тіла відліку. Відносно пляшки бульбашка щоразу піднімається вертикально на ті самі 9 см і за той самий час: рідина в пляшці нічого не знає про те, що пляшку ведуть. Але відносно стола бульбашка водночас і піднімається, і їде разом із пляшкою вбік. Два рівномірні рухи складаються в один — уздовж похилої прямої, — і що швидше ведемо пляшку, то довший цей шлях і більша швидкість бульбашки відносно стола. Тож траєкторія, шлях і швидкість залежать від того, відносно чого розглядають рух; а час підйому — ні. Так само яблуко, що впало в автобусі, для пасажира падає прямовисно, а для людини на зупинці — летить по кривій.'
+          : 'Motion is always described relative to something — a body of reference. Relative to the bottle the bubble rises straight up the same 9 cm in the same time each time: the liquid in the bottle knows nothing of the bottle being carried. But relative to the table the bubble at once rises and travels sideways with the bottle. The two uniform motions add up into one — along a slanted straight line — and the faster the bottle is carried, the longer that path and the faster the bubble goes relative to the table. So the trajectory, the path and the speed depend on what the motion is described relative to; the time of the rise does not. In the same way an apple dropped in a bus falls straight down for a passenger, but flies along a curve for someone at the stop.',
+      ),
+      say: both((l) => {
+        const a = R[0];
+        const z = R.at(-1);
+        return a && z && a !== z ? (l === 'uk' ? `Відносно пляшки — щоразу 9 см угору, а відносно стола — від ${cm(a.s ?? 0, l)} до ${cm(z.s ?? 0, l)}, за той самий час.` : `Relative to the bottle — 9 cm up each time; relative to the table — from ${cm(a.s ?? 0, l)} to ${cm(z.s ?? 0, l)}, in the same time.`) : '';
+      }),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts = R.map((x) => {
+          const how = x.u === 0 ? (uk ? 'пляшка стоїть' : 'the bottle stands') : uk ? `пляшку ведуть ${sig(x.u * 100, 2, l)} см/с` : `the bottle carried at ${sig(x.u * 100, 2, l)} cm/s`;
+          const moved = x.u === 0 ? (uk ? 'пляшка не зсунулася' : 'the bottle did not move') : uk ? `пляшка зсунулася на ${cm(x.x ?? 0, l)}` : `the bottle moved ${cm(x.x ?? 0, l)}`;
+          return uk ? `${how}: ${sec(x.t ?? 0, l)}, ${moved}, шлях бульбашки відносно стола ${cm(x.s ?? 0, l)}` : `${how}: ${sec(x.t ?? 0, l)}, ${moved}, the bubble’s path relative to the table ${cm(x.s ?? 0, l)}`;
+        });
+        const s = `${parts.join('; ')}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Відносно пляшки шлях щоразу 9 см.' : ' Relative to the bottle the path is 9 cm each time.');
+      }),
+    };
+  },
   'ball-bounce': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.bounce' && x.record.value !== null).map((x) => ({ ball: String(x.command['ball']) as BounceBall, n: Number(x.command['bounce']), h: x.record.value!, m: x.record.inputs?.['mass'] ?? 0 }));
     const cm = (h: number) => Math.round(h * 100);
