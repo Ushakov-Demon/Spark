@@ -32,3 +32,4 @@ export * from './press-bench.js';
 export * from './atm-bench.js';
 export * from './vessels-bench.js';
 export * from './magnet-bench.js';
+export * from './induct-bench.js';

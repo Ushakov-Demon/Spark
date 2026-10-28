@@ -285,6 +285,20 @@ describe('ready-made experiments with values to change', () => {
     expect(Math.abs(w1! / w2! - 1)).toBeLessThan(0.15);
   }, 60_000);
 
+  it('induction: a current only while the magnet moves; its sign with the direction and the pole; larger when faster', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'electromagnetic-induction')!);
+    expect(answer.correct).toBe('motion');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const I = [...answer.text.uk.matchAll(/— ([+−]?[\d,]+) мА/g)].map((m) => Number(m[1]!.replace('−', '-').replace(',', '.')));
+    expect(I).toHaveLength(6);
+    const [still, out, inFast, inSlow, south, coil] = I as [number, number, number, number, number, number];
+    expect(still).toBe(0);
+    expect(Math.sign(out)).toBe(-Math.sign(inFast));
+    expect(Math.sign(south)).toBe(-Math.sign(inFast));
+    expect(coil).toBe(inFast);
+    expect(Math.abs(inSlow)).toBeLessThan(Math.abs(inFast) / 2);
+  }, 60_000);
+
   it('the electromagnet: the field grows with the current, the nail strengthens it, the reversed current turns the needle back', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'electromagnet')!);
     expect(answer.correct).toBe('both');

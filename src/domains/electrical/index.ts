@@ -11,3 +11,4 @@ export * from './electrochem.js';
 export * from './diode.js';
 export * from './magnet.js';
 export * from './wmm.js';
+export * from './induction.js';

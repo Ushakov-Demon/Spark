@@ -433,6 +433,18 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // Induction: the milliammeter's swing and the EMF it gives, ε = I·R.
+    if (c.type === 'lab.induct') {
+      const R = r.inputs?.['resistance'] ?? 0;
+      const move = String(c['move']);
+      const fast = Number(c['time']) <= 0.5;
+      const pace = fast ? (uk ? 'швидко' : 'fast') : uk ? 'повільно' : 'slowly';
+      const what = move === 'still' ? (uk ? 'магніт нерухомо' : 'the magnet still') : move === 'out' ? (uk ? `витягли ${pace}` : `pulled out ${pace}`) : move === 'coil' ? (uk ? `котушку на магніт ${pace}` : `the coil onto the magnet ${pace}`) : uk ? `${c['pole'] === 'S' ? 'південним' : 'північним'} у котушку ${pace}` : `${c['pole'] === 'S' ? 'south' : 'north'} pole in ${pace}`;
+      const mA = `${r.value > 0 ? '+' : ''}${n(r.value * 1000, 2)} ${uk ? 'мА' : 'mA'}`;
+      if (move === 'still' || r.value === 0) out.push({ id: `iI:${i}`, title: what, formula: `I = ${mA}` });
+      else out.push({ id: `iE:${i}`, title: what, formula: `I = ${mA}, ε = I·R`, numbers: `${n(Math.abs(r.value), 3)} ${uk ? 'А' : 'A'} · ${n(R, 2)} ${uk ? 'Ом' : 'Ω'} ≈ ${n(Math.abs(r.value) * R, 2)} ${uk ? 'В' : 'V'}` });
+      return;
+    }
     // The electromagnet: the compass's turn and the field it gives, B = B_Earth·tg θ.
     if (c.type === 'lab.magnet') {
       const m = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'angle');

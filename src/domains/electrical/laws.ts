@@ -201,6 +201,35 @@ export const ELECTRICAL_LAWS: readonly LawSpec[] = [
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a quantity.' } }, citations: [] },
   },
   {
+    id: 'electromagnetic-induction',
+    kind: 'law',
+    name: { uk: 'Електромагнітна індукція', en: 'Electromagnetic induction' },
+    statement: {
+      novice: { uk: 'Рухай магніт біля котушки — і в ній піде струм. Зупинися — струм зникне. Що швидше рух, то більший струм.', en: 'Move a magnet near a coil — and a current flows in it. Stop — the current is gone. The faster the motion, the larger the current.' },
+      school: { uk: 'Коли змінюється магнітний потік через замкнений контур, у ньому виникає індукційний струм (закон Фарадея): ЕРС ε = −N·ΔΦ/Δt — що швидше змінюється потік і що більше витків, то вона більша. Напрям індукційного струму такий, що його магнітне поле протидіє зміні потоку (правило Ленца): тому магніт, який вводять і виводять, або повернутий іншим полюсом, дає струм у різні боки.', en: 'When the magnetic flux through a closed loop changes, an induced current flows in it (Faraday’s law): the EMF ε = −N·ΔΦ/Δt — the faster the flux changes and the more turns, the larger it is. The induced current flows so that its field opposes the change of the flux (Lenz’s law): so a magnet pushed in and pulled out, or turned the other pole first, drives the current opposite ways.' },
+    },
+    history: {
+      people: [FARADAY, HENRY, LENZ],
+      role: 'discovered',
+      when: '1831–1834',
+      story: {
+        school: {
+          uk: '29 серпня 1831 року Майкл Фарадей записав у робочому журналі перший дослід з електромагнітної індукції. Незалежно від нього Джозеф Генрі помітив те саме 1832 року, але Фарадей опублікував першим. 1834 року Емілій Ленц сформулював правило, що визначає напрям індукційного струму.',
+          en: 'On 29 August 1831 Michael Faraday wrote down in his notebook the first experiment on electromagnetic induction. Independently, Joseph Henry noticed the same in 1832, but Faraday published first. In 1834 Emil Lenz stated the rule that gives the direction of the induced current.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-faraday-induction', locator: 'History', claim: 'Faraday’s notebook on August 29, 1831 describes the first demonstration of induction' },
+        { source: 'wikipedia-faraday-induction', locator: 'History', claim: 'Joseph Henry made similar observations independently in 1832; Faraday published first' },
+        { source: 'wikipedia-faraday-induction', locator: 'Lenz’s law', claim: 'formulated by Emil Lenz in 1834' },
+        { source: 'wikipedia-faraday-induction', locator: 'Faraday’s law', claim: 'for a coil of N turns, ε = −N·dΦ/dt' },
+      ],
+    },
+    limits: {
+      school: { uk: 'ЕРС залежить від швидкості зміни потоку, а струм — ще й від опору кола: I = ε / R. Більше витків — більша ЕРС, але й більший опір дроту.', en: 'The EMF depends on how fast the flux changes, and the current on the circuit’s resistance too: I = ε / R. More turns — more EMF, but also more resistance of the wire.' },
+    },
+  },
+  {
     id: 'electromagnet',
     kind: 'law',
     name: { uk: 'Магнітне поле струму. Електромагніт', en: 'The magnetic field of a current. The electromagnet' },

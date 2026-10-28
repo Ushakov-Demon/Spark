@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -1517,6 +1517,47 @@ export const PRESETS: readonly Preset[] = [
             ...[0.5, 1, 1.5].map((current) => ({ kind: 'bench', command: { type: 'lab.magnet', current, turns, core: true, ...at } }) as const),
             { kind: 'bench', command: { type: 'lab.magnet', current: 1.5, turns, core: true, reversed: true, ...at } },
             { kind: 'bench', command: { type: 'lab.magnet', current: 1.5, turns, core: false, ...at } },
+          ],
+        };
+      },
+    },
+  ),
+  varied(
+    {
+      id: 'electromagnetic-induction',
+      ask: { uk: 'Коли в котушці виникає струм?', en: 'When does a current flow in the coil?' },
+      grade: 9,
+      topic: ELECTRIC,
+      title: { uk: 'Магніт і котушка: електромагнітна індукція', en: 'A magnet and a coil: electromagnetic induction' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'induct',
+      choices: [ch('motion', 'Коли магніт і котушка рухаються одне відносно одного', 'When the magnet and the coil move against each other'), ch('inside', 'Коли магніт лежить у котушці', 'When the magnet lies in the coil'), ch('never', 'Струму від магніту не буде', 'A magnet makes no current')],
+      choicesAt: 'end',
+      answerOnBoard: ['iE:'],
+      formulas: ['electrical.induced-emf'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 5', topic: 'Тема 2. Магнітні та електромагнітні явища', match: 'same', quote: '№ 5. Дослідження явища електромагнітної індукції.' }],
+      expect: 'reached',
+    },
+    {
+      // The coil's turns: more turns — more EMF, but more wire and so more resistance too.
+      controls: [{ id: 'turns', label: { uk: 'Витків у котушці', en: 'Turns in the coil' }, kind: 'choice', options: [ch('100', '100', '100'), ch('200', '200', '200'), ch('400', '400', '400')], value: '200' }],
+      build: (v) => {
+        const turns = Number(v['turns']);
+        const fast = 0.3;
+        const slow = 1.5;
+        return {
+          question: {
+            uk: `Котушку на ${turns} витків з’єднаємо з міліамперметром, у якого нуль посередині: стрілка відхиляється в той бік, куди йде струм. Покладемо в котушку штабовий магніт; потім швидко витягнемо його й швидко вставимо північним полюсом, потім — повільно, а тоді швидко вставимо південним. Наостанок не рухатимемо магніт, а швидко надінемо на нього котушку. Щоразу запишемо, куди й на скільки відхилилася стрілка. Коли в котушці виникає струм?`,
+            en: `We join a coil of ${turns} turns to a milliammeter with its zero in the middle: the needle swings the way the current goes. We put a bar magnet in the coil; then pull it out fast and push it in fast, north pole first, then slowly, and then push it in fast south pole first. At last we keep the magnet still and slip the coil onto it fast. Each time we note which way and how far the needle swung. When does a current flow in the coil?`,
+          },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.induct', move: 'still', pole: 'N', time: fast, turns } },
+            { kind: 'bench', command: { type: 'lab.induct', move: 'out', pole: 'N', time: fast, turns } },
+            { kind: 'bench', command: { type: 'lab.induct', move: 'in', pole: 'N', time: fast, turns } },
+            { kind: 'bench', command: { type: 'lab.induct', move: 'in', pole: 'N', time: slow, turns } },
+            { kind: 'bench', command: { type: 'lab.induct', move: 'in', pole: 'S', time: fast, turns } },
+            { kind: 'bench', command: { type: 'lab.induct', move: 'coil', pole: 'N', time: fast, turns } },
           ],
         };
       },

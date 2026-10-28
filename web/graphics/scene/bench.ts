@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -51,6 +51,8 @@ export interface BenchView {
   readonly press?: { readonly weights: number; readonly pull?: string; readonly pushed: number; readonly read?: string };
   /** The syringe and the barometer: the plunger out by so many mL (0…1), the nozzle shut; the dynamometer's reading, the ruler's; the day's pressure, Pa, and its reading once looked at. */
   readonly atm?: { readonly pulled: number; readonly sealed: boolean; readonly pull?: string; readonly read?: string; readonly air: number; readonly baro?: string };
+  /** Induction: how the magnet (or the coil) moved and which pole faces the coil; the meter's swing (−1…1 of its scale) and reading. */
+  readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
@@ -180,6 +182,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'atm') return atmSvg(v.atm);
   if (v.kind === 'vessels') return vesselsSvg(v.vessels);
   if (v.kind === 'magnet') return magnetSvg(v.magnet);
+  if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
   if (v.kind === 'spring') {
@@ -365,6 +368,39 @@ function circuitSvg(c: BenchView['circuit']): string {
   const resistor = `<rect x="430" y="${y - 6}" width="60" height="20" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${[0, 1, 2].map((k) => `<rect x="${442 + k * 12}" y="${y - 6}" width="4" height="20" style="fill:${['#8b4513', '#222', '#c0392b'][k]}"/>`).join('')}`;
   const wires = W(`M195,${y + 4} H250`) + W(`M280,${y + 4} H340`) + W(`M392,${y + 4} H430`) + W(`M490,${y + 4} H540 V${y + 40} H150 V${y + 4} H155`) + W(`M410,${y + 4} V${top + 40} H${435}`) + W(`M485,${top + 40} H510 V${y + 4}`);
   return `${wires}${source}${key}${meterSvg(366, y + 6, 'A', c?.amps?.share, c?.amps?.text)}${resistor}${meterSvg(460, top + 40, 'V', c?.volts?.share, c?.volts?.text)}`;
+}
+
+/**
+ * Induction: the coil lying on the table, its axis left–right, wires to a milliammeter with its zero in the middle;
+ * the bar magnet (north red, south blue) at the end of its move — in the coil or out to the left — the pole named
+ * facing the coil; an arrow shows the move.
+ */
+function inductSvg(d: BenchView['induct']): string {
+  const y = TABLE - 70;
+  const cx = 380;
+  const move = d?.move ?? 'none';
+  const coil = `<rect x="${cx - 22}" y="${y - 26}" width="44" height="52" rx="6" style="fill:#b0703a;stroke:#7a4a22"/>${Array.from({ length: 10 }, (_, i) => `<path d="M${cx - 20 + i * 4.4},${y - 26} v52" style="stroke:#d4893a;stroke-width:1.4"/>`).join('')}<ellipse cx="${cx - 22}" cy="${y}" rx="5" ry="20" style="fill:#5a3416"/>`;
+  // The magnet: 100 px long; inside — centred in the coil; out — away to the left.
+  const mx = move === 'out' || move === 'none' ? cx - 150 : cx;
+  const near = d?.pole ?? 'N';
+  const far = near === 'N' ? 'S' : 'N';
+  const color = (p: string) => (p === 'N' ? '#c0392b' : '#2563eb');
+  const magnet = `<rect x="${mx - 50}" y="${y - 8}" width="50" height="16" style="fill:${color(far)}"/><rect x="${mx}" y="${y - 8}" width="50" height="16" style="fill:${color(near)}"/><text class="lever-mark" x="${mx - 40}" y="${y + 4}" style="fill:#fff;font-weight:700;font-size:10px">${far}</text><text class="lever-mark" x="${mx + 38}" y="${y + 4}" style="fill:#fff;font-weight:700;font-size:10px">${near}</text>`;
+  // In the coil the magnet's right half is hidden behind the winding's front.
+  const front = move === 'out' || move === 'none' ? '' : `<rect x="${cx - 22}" y="${y - 26}" width="44" height="52" rx="6" style="fill:#b0703a;opacity:0.85"/>${Array.from({ length: 10 }, (_, i) => `<path d="M${cx - 20 + i * 4.4},${y - 26} v52" style="stroke:#d4893a;stroke-width:1.4;opacity:0.85"/>`).join('')}`;
+  const arrow = move === 'in' ? `<path class="bench-arrow" d="M${cx - 120},${y - 40} H${cx - 40} m-8,-5 l8,5 l-8,5"/>` : move === 'out' ? `<path class="bench-arrow" d="M${cx - 40},${y - 40} H${cx - 120} m8,-5 l-8,5 l8,5"/>` : move === 'coil' ? `<path class="bench-arrow" d="M${cx + 90},${y - 40} H${cx + 30} m8,-5 l-8,5 l8,5"/>` : '';
+  // The milliammeter: zero up in the middle, the needle ±60° over its scale.
+  const gx = 530;
+  const gy = TABLE - 120;
+  const a = (Math.max(-1, Math.min(1, d?.swing ?? 0)) * Math.PI) / 3;
+  const ticks = Array.from({ length: 11 }, (_, k) => {
+    const t = ((k - 5) / 5) * (Math.PI / 3);
+    return `<path d="M${gx + 30 * Math.sin(t)},${gy - 30 * Math.cos(t)} L${gx + (k % 5 === 0 ? 24 : 27) * Math.sin(t)},${gy - (k % 5 === 0 ? 24 : 27) * Math.cos(t)}" style="stroke:#333;stroke-width:0.9"/>`;
+  }).join('');
+  const meter = `<rect x="${gx - 40}" y="${gy - 42}" width="80" height="56" rx="6" style="fill:#f4f1e8;stroke:${DARK};stroke-width:2"/>${ticks}<text class="lever-mark" x="${gx}" y="${gy - 8}" text-anchor="middle" style="font-size:9px">0</text><path d="M${gx},${gy + 4} L${gx + 28 * Math.sin(a)},${gy + 4 - 28 * Math.cos(a)}" style="stroke:#c0392b;stroke-width:1.8"/><circle cx="${gx}" cy="${gy + 4}" r="2.5" style="fill:${DARK}"/><text class="lever-mark" x="${gx}" y="${gy + 11}" text-anchor="middle" style="font-size:8px">mA</text>${d?.read ? `<text class="bench-reading" x="${gx}" y="${gy - 50}" text-anchor="middle">${d.read}</text>` : ''}`;
+  const wire = Math.abs(d?.swing ?? 0) > 0.01 ? '#e2b04a' : '#9aa3ad';
+  const wires = `<path d="M${cx + 18},${y + 26} V${TABLE - 12} H${gx + 20} V${gy + 14}" style="fill:none;stroke:${wire};stroke-width:2"/><path d="M${cx - 18},${y + 26} V${TABLE - 6} H${gx - 20} V${gy + 14}" style="fill:none;stroke:${wire};stroke-width:2"/>`;
+  return `${wires}${coil}${magnet}${front}${arrow}${meter}`;
 }
 
 /**

@@ -49,6 +49,7 @@ import {
   PENDULUM_BALLS,
   SLOPE_LENGTH,
   AMMETER,
+  ZERO_METER,
   VOLTMETER,
   stepCommand,
   OPERATIONS,
@@ -411,6 +412,8 @@ let answerWhenSettled = false;
 let lastMeasure: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
 let measureError = '';
 /** The mechanics bench of a preset, as its last reading left it: the spring with its weights, the block pulled or measured. */
+/** The zero-centre milliammeter's reading: signed milliamperes («+26 мА», «−6 мА»). */
+const inductShown = (v: number | null) => (v === null ? (locale === 'uk' ? 'зашкалює' : 'off the scale') : `${v > 0 ? '+' : ''}${formatMeasured('current', v * 1000, 1, locale).replace(/ (А|A)$/, '').replace('-', '−')} ${locale === 'uk' ? 'мА' : 'mA'}`);
 function benchView(): BenchView | null {
   const kind = preset?.bench;
   if (!kind) return null;
@@ -429,6 +432,12 @@ function benchView(): BenchView | null {
     const I = recs.find((x) => x.quantity === 'current');
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
+  }
+  // Induction: the move this step made, the pole facing the coil, the meter's swing.
+  if (kind === 'induct') {
+    const ic = c?.type === 'lab.induct' ? (c as unknown as { move: 'still' | 'in' | 'out' | 'coil'; pole: 'N' | 'S' }) : undefined;
+    const I = ic && r ? r.value : null;
+    return { ...base, kind, induct: { move: ic?.move ?? 'none', pole: ic?.pole ?? 'N', swing: I === null ? 0 : I / ZERO_METER.max.value, ...(ic && r ? { read: inductShown(r.value) } : {}) } };
   }
   // The electromagnet: the current this step set, the nail in or out, the compass needle.
   if (kind === 'magnet') {
@@ -645,6 +654,13 @@ function measureSay(): string {
     if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+  }
+  // Induction: the needle's swing — which way and how far.
+  if (m.command.type === 'lab.induct') {
+    const ic = m.command as { move: string };
+    const v = r.value ?? 0;
+    if (Math.abs(v) < 1e-9) return ic.move === 'still' ? (uk ? 'Магніт не рухається — стрілка стоїть на нулі.' : 'The magnet does not move — the needle stays at zero.') : uk ? 'Стрілка ледь здригнулася.' : 'The needle hardly twitched.';
+    return uk ? `Стрілка відхилилася ${v > 0 ? 'вправо' : 'вліво'}: ${inductShown(v)}.` : `The needle swung to the ${v > 0 ? 'right' : 'left'}: ${inductShown(v)}.`;
   }
   // The electromagnet: the compass needle's turn — and which way.
   if (m.command.type === 'lab.magnet') {
@@ -2370,6 +2386,8 @@ function renderProtocol() {
       // (The circuit reads two instruments at once: both are written.)
       const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
       // (The black box's milliammeter: milliamperes to a tenth.)
+      // (Induction: the milliammeter's signed milliamperes.)
+      const iShown = c.type === 'lab.induct' ? inductShown(r.value) : null;
       // (The electromagnet: the ammeter and the compass.)
       const mRecs = c.type === 'lab.magnet' ? readingsOf([e]).map((x) => x.record) : [];
       const mShown = c.type === 'lab.magnet' ? mRecs.map((x) => formatMeasured(x.quantity, x.value, x.quantity === 'current' ? 0.01 : 1, locale)).join(' · ') : null;
@@ -2383,7 +2401,7 @@ function renderProtocol() {
       const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
-      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

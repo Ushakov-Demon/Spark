@@ -27,6 +27,7 @@ const UA_FARADAY: readonly CurriculumRef[] = [
   { program: 'ua-nus-2023-holovko', grade: 8, depth: 'qualitative', quote: 'Природа електричного струму в різних середовищах.' },
 ];
 
+const UA_INDUCTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-kreminskyi', grade: 9, depth: 'quantitative', quote: 'Явище електромагнітної індукції.' }];
 const UA_ELECTROMAGNET: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-kreminskyi', grade: 9, depth: 'quantitative', quote: 'Магнітне поле провідника зі струмом. … Індукція магнітного поля. … Електромагніти.' }];
 
 export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
@@ -315,6 +316,32 @@ export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.fieldFromCompass,
     examples: [{ args: [19.4e-6, 32], expected: 12.123e-6, note: 'the needle turned 32° in Kyiv' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'electrical.induced-emf',
+    law: 'electromagnetic-induction',
+    title: { uk: 'ЕРС індукції', en: 'The induced EMF' },
+    latex: '\\varepsilon = -N\\,\\dfrac{\\Delta\\Phi}{\\Delta t} = I\\,(R_\\text{к} + R_\\text{A})',
+    plain: 'ε = −N·ΔΦ/Δt = I·(R_к + R_A)',
+    argSymbols: ['I', 'R'],
+    resultSymbol: 'ε',
+    variables: {
+      'ε': { name: { uk: 'ЕРС індукції', en: 'the induced EMF' }, unit: 'V' },
+      I: { name: { uk: 'індукційний струм', en: 'the induced current' }, unit: 'A' },
+      R: { name: { uk: 'опір кола: котушки й міліамперметра', en: 'the circuit’s resistance: the coil’s and the milliammeter’s' }, unit: 'Ω' },
+    },
+    curriculum: UA_INDUCTION,
+    explanation: {
+      novice: { uk: 'Що швидше рухаєш магніт, то сильніший струм у котушці.', en: 'The faster you move the magnet, the stronger the current in the coil.' },
+      school: {
+        uk: 'ЕРС індукції пропорційна швидкості зміни магнітного потоку й числу витків: ε = −N·ΔΦ/Δt. Струм, який вона жене колом, I = ε / R, — тож з показів міліамперметра ЕРС знаходять як ε = I·R.',
+        en: 'The induced EMF is proportional to how fast the flux changes and to the number of turns: ε = −N·ΔΦ/Δt. The current it drives round the circuit is I = ε / R — so from the milliammeter the EMF is ε = I·R.',
+      },
+    },
+    compute: f.emfFromCurrent,
+    examples: [{ args: [0.024, 7.1], expected: 0.1704, note: '24 mA through a 6 Ω coil and a 1 Ω meter' }],
     textSource: 'spark',
     reviewed: false,
   }),
