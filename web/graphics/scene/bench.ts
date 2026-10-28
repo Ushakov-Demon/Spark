@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -59,6 +59,8 @@ export interface BenchView {
   /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
   /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
+  /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
+  readonly lift?: { readonly phase: string; readonly y: number; readonly force: number; readonly read?: string; readonly fall?: number; readonly rest?: number; readonly diff?: string };
   readonly forces?: { readonly hold: 'one' | 'two' | 'down'; readonly at: number; readonly a: number; readonly b: number; readonly loaded: boolean; readonly readA?: string; readonly readB?: string };
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
@@ -190,6 +192,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'magnet') return magnetSvg(v.magnet);
   if (v.kind === 'forces') return forcesSvg(v.forces);
   if (v.kind === 'rows') return rowsSvg(v.rows);
+  if (v.kind === 'lift') return liftSvg(v.lift);
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
@@ -817,4 +820,70 @@ function rowsSvg(r: BenchView['rows']): string {
   const end = x0 + r.sizes.slice(0, n).reduce((a, d) => a + d * ROW_K, 0);
   const bracket = r.read ? `<path class="bench-mark" d="M${x0},${top - 34} v-6 H${end} v6"/><text class="bench-reading" x="${(x0 + end) / 2}" y="${top - 46}" text-anchor="middle">${r.read}</text>` : '';
   return `${ruler}${parts.join('')}${bracket}`;
+}
+
+/**
+ * Weight in a lift: a shaft with its floors, the cabin on its cable; under its ceiling a dynamometer with four
+ * weights, its hook coming out as the spring stretches (10 units to the newton). Arrows by the shaft: the cabin's
+ * velocity (v) and acceleration (a). Let go, the dynamometer and its weights fall to the cabin's floor.
+ */
+function liftSvg(l: BenchView['lift']): string {
+  const phase = l?.phase ?? 'rest';
+  const left = 430;
+  const right = 550;
+  const x = (left + right) / 2;
+  const trip = 150;
+  const floor = TABLE - 4 - (l?.y ?? 0) * trip;
+  // Tall enough for the dynamometer stretched by the heaviest reading and its four weights.
+  const roof = floor - 175;
+  const shaft = `<rect x="${left - 8}" y="-40" width="${right - left + 16}" height="${TABLE + 40}" style="fill:rgba(20,26,34,0.35)"/><path d="M${left - 6},-40 V${TABLE} M${right + 6},-40 V${TABLE}" style="stroke:${STEEL};stroke-width:3"/>${[0, 1].map((k) => `<path d="M${left - 30},${TABLE - 4 - k * trip} h22" style="stroke:${THREAD};stroke-width:2"/><text class="bench-label" x="${left - 34}" y="${TABLE - 8 - k * trip}" text-anchor="end">${k ? '5' : '1'}</text>`).join('')}`;
+  const cable = `<path d="M${x},-40 V${roof}" style="stroke:${DARK};stroke-width:2.5"/>`;
+  const cabin = `<rect x="${left}" y="${roof}" width="${right - left}" height="${floor - roof}" rx="3" style="fill:#d9dee4;stroke:#7d8791;stroke-width:2"/><rect x="${left + 6}" y="${roof + 6}" width="${right - left - 12}" height="${floor - roof - 12}" style="fill:#eef1f4"/>`;
+  // The dynamometer: from the ceiling's hook, or let go and falling with its weights.
+  const F = l?.force ?? 0;
+  const drop = (l?.fall ?? 0) * (floor - 6 - (roof + 8 + 64 + 40));
+  const top = roof + 8 + drop;
+  const p = top + 8 + F * 10;
+  const tip = top + 64 + F * 10;
+  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - 6},${top + 8 + i * 5} h${i % 2 === 0 ? 6 : 3}"/>`).join('');
+  const dyn = `${l?.fall ? '' : `<path d="M${x},${roof + 6} V${top}" style="stroke:${DARK};stroke-width:1.5"/>`}<rect class="dyn-case" x="${x - 9}" y="${top}" width="18" height="64" rx="5"/><g class="dyn-ticks">${ticks}</g><path d="M${x},${p} V${tip}" style="stroke:${STEEL};stroke-width:2"/><path d="M${x - 7},${p} h14" style="stroke:#c0392b;stroke-width:2"/>${weightsSvg(x, tip + 2, 4)}`;
+  // (Dark: the cabin's wall is light; coloured as the board's bar when it differs from the reading at rest.)
+  const tone = l?.diff ? (l.diff.startsWith('+') ? '#2e8b46' : '#c0502e') : '#1d2733';
+  const read = l?.read ? `<text class="bench-reading" x="${x + 14}" y="${top + 30}" style="fill:${tone}">${l.read}</text>` : '';
+  // The arrows: up is negative y.
+  const up = phase === 'up-start' || phase === 'up' || phase === 'up-stop';
+  const down = phase === 'down-start' || phase === 'down' || phase === 'down-stop';
+  const accUp = phase === 'up-start' || phase === 'down-stop';
+  const accDown = phase === 'up-stop' || phase === 'down-start' || phase === 'fall';
+  const arrow = (ax: number, dir: -1 | 1, label: string, cls: string) => {
+    const y0 = (roof + floor) / 2;
+    return `<path class="${cls}" d="M${ax},${y0 - dir * 22} V${y0 + dir * 22} m-5,${-dir * 7} l5,${dir * 7} l5,${-dir * 7}" style="fill:none;stroke-width:2.5"/><text class="bench-label" x="${ax + 9}" y="${y0 + 4}">${label}</text>`;
+  };
+  const arrows = `${up || down ? arrow(right + 24, up ? -1 : 1, 'v', 'bench-arrow') : ''}${accUp || accDown ? arrow(right + 52, accUp ? -1 : 1, phase === 'fall' ? 'g' : 'a', 'bench-mark') : ''}`;
+  return `${shaft}${cable}${cabin}${dyn}${read}${arrows}${liftZoom(l, x - 9, top + 32)}`;
+}
+
+/**
+ * The dynamometer's scale enlarged, in chalk on the board by the shaft: 0 at the top as on the instrument, a dashed
+ * mark at its reading at rest and a bar from it to the pointer — green when it shows more, red when less — so that
+ * half a newton, five units on the instrument itself, is plain to see. A dashed line leads to the instrument.
+ */
+function liftZoom(l: BenchView['lift'], toX: number, toY: number): string {
+  if (!l?.rest) return '';
+  const x = 395;
+  const y0 = -32;
+  const per = 34;
+  const at = (F: number) => y0 + Math.min(5.2, Math.max(0, F)) * per;
+  const chalk = 'stroke:#f1efe4';
+  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - (i % 2 === 0 ? 10 : 5)},${y0 + i * per / 2} H${x}" style="${chalk};stroke-width:1.5"/>${i % 2 === 0 ? `<text class="bench-label" x="${x + 6}" y="${y0 + i * per / 2 + 4}" style="fill:#f1efe4">${i / 2}</text>` : ''}`).join('');
+  const F = l.force;
+  const more = F - l.rest > 0.02;
+  const less = F - l.rest < -0.02;
+  const colour = more ? '#8fd694' : '#f2a07b';
+  const bar = more || less ? `<rect x="${x - 26}" y="${Math.min(at(F), at(l.rest))}" width="14" height="${Math.abs(at(F) - at(l.rest))}" style="fill:${colour}"/>` : '';
+  const diff = l.diff ? `<text class="bench-reading" x="${x - 32}" y="${(at(F) + at(l.rest)) / 2 + 5}" text-anchor="end" style="fill:${colour}">${l.diff}</text>` : '';
+  const rest = `<path d="M${x - 38},${at(l.rest)} H${x}" style="${chalk};stroke-width:1.5;stroke-dasharray:4 3"/>`;
+  const pointer = `<path d="M${x - 14},${at(F)} H${x + 2}" style="stroke:#ff6b5b;stroke-width:3"/>`;
+  const lead = `<path d="M${x + 22},${at(F)} L${toX},${toY}" style="${chalk};stroke-width:1;stroke-dasharray:2 4;opacity:0.6"/>`;
+  return `<path d="M${x},${y0} V${y0 + 5 * per}" style="${chalk};stroke-width:2"/>${ticks}${bar}${rest}${pointer}${diff}${lead}`;
 }

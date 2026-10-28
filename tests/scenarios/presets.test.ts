@@ -314,6 +314,14 @@ describe('ready-made experiments with values to change', () => {
     expect(t[1]!).toBeGreaterThan(t[2]!);
   }, 60_000);
 
+  it('weight in a lift: more while accelerating up, less while accelerating down, the same moving steadily, zero falling', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'weight-in-lift')!);
+    expect(answer.correct).toBe('accel');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const P = [...answer.text.uk.matchAll(/— ([\d,]+) Н/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
+  }, 60_000);
+
   it('the method of rows: a row gives the size of one to hundredths of a millimetre, near the sources’ sizes', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'small-bodies')!);
     expect(answer.correct).toBe('row');

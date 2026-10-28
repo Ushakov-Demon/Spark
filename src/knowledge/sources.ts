@@ -744,6 +744,13 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'elevator-world-acceleration': source({
+    id: 'elevator-world-acceleration',
+    title: 'Elevator World, «Elevator Car Plunges, Does a = g?»: the industry practice for passenger comfort in normal operation limits the acceleration/deceleration of the speed profile to 1.2 m/s²',
+    url: 'https://elevatorworld.com/?p=111481',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
   'yalcin-2007-pea': source({
     id: 'yalcin-2007-pea',
     title: 'Yalçın İ., Özarslan C., Akbaş T. Physical properties of pea (Pisum sativum) seed. Journal of Food Engineering 79 (2007) 731–735: at 10.06 % moisture (d.b.) length 7.80 mm, width 6.41 mm, thickness 5.55 mm',

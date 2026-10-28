@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.lift': { uk: 'Ліфт їде — стежимо за динамометром…', en: 'The lift is moving — watch the dynamometer…' },
   'lab.rows': { uk: 'Викладаю ряд — по одному…', en: 'Laying the row — one by one…' },
   'lab.forces': { uk: 'Пружини ще коливаються — чекаємо, поки заспокояться…', en: 'The springs are still bouncing — wait until they settle…' },
   'lab.magnet': { uk: 'Стрілка компаса ще гойдається — чекаємо…', en: 'The compass needle is still swinging — wait…' },
@@ -42,6 +43,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'lift' && next.lift?.read) return lift(prev?.kind === 'lift' ? (prev.lift ?? null) : null, next, draw);
   if (next.kind === 'rows' && next.rows?.read) return row(next, draw);
   if (next.kind === 'forces' && next.forces?.loaded) return forces(prev?.kind === 'forces' ? (prev.forces ?? null) : null, next, draw);
   if (next.kind === 'magnet' && next.magnet && prev?.kind === 'magnet' && prev.magnet) return compass(prev.magnet, next, draw);
@@ -211,6 +213,29 @@ function row(next: BenchView, draw: (v: BenchView) => void): Motion {
     frame: (done) => {
       const { read: _r, ...rest } = r;
       draw(done ? next : { ...next, rows: { ...rest, placed: laid.value } });
+    },
+  };
+}
+
+/** Where each phase of the ride starts, 0 — the ground floor, 1 — the top (it ends where the next one starts). */
+const LIFT_FROM: Readonly<Record<string, number>> = { rest: 0, 'up-start': 0, up: 0.25, 'up-stop': 0.75, 'down-start': 1, down: 0.75, 'down-stop': 0.25, fall: 0 };
+/**
+ * The lift's ride: speeding up (the way grows as t²), steady, slowing down (as the square of the time left); the
+ * dynamometer's spring swings to the phase's reading. Let go, the dynamometer falls (t²) and its spring goes slack.
+ */
+function lift(was: BenchView['lift'] | null, next: BenchView, draw: (v: BenchView) => void): Motion {
+  const l = next.lift!;
+  const from = LIFT_FROM[l.phase] ?? l.y;
+  const shape = (k: number) => (l.phase.endsWith('-start') ? k * k : l.phase.endsWith('-stop') ? 1 - (1 - k) ** 2 : k);
+  const k = new Channel(0, 1, { kind: 'steady', speed: l.phase === 'fall' ? 1.6 : 0.45 }, 0.001);
+  const spring = new Channel(was?.force ?? l.force, l.force, { kind: 'damped', period: 0.5, damping: 0.2 }, 0.01);
+  return {
+    channels: [k, spring],
+    frame: (done) => {
+      const { read: _r, diff: _d, ...rest } = l;
+      if (done) return draw(next);
+      if (l.phase === 'fall') return draw({ ...next, lift: { ...rest, y: 0, force: Math.max(0, spring.value), fall: k.value * k.value } });
+      draw({ ...next, lift: { ...rest, y: from + (l.y - from) * shape(k.value), force: Math.max(0, spring.value) } });
     },
   };
 }

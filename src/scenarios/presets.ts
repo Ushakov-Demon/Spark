@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -950,6 +950,28 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Коли динамометр у ліфті показує більше чи менше?', en: 'When does the dynamometer in a lift show more or less?' },
+    id: 'weight-in-lift',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Вага тіла в ліфті', en: 'A body’s weight in a lift' },
+    question: {
+      uk: 'Під стелею кабіни ліфта висить динамометр із чотирма тягарцями по 100 г. Записуватимемо його покази, поки ліфт стоїть, рушає вгору, їде рівномірно, гальмує, а потім так само вниз. Наостанок — дослід із підручника: на мить відпустимо динамометр разом із тягарцями. Коли покази зміняться?',
+      en: 'A dynamometer with four 100 g weights hangs under a lift cabin’s ceiling. We write down its readings while the lift stands, starts up, goes steadily, slows down, and then the same downwards. At last, the textbook’s investigation: we let the dynamometer go for a moment with its weights. When will the readings change?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'lift',
+    plan: (['rest', 'up-start', 'up', 'up-stop', 'down-start', 'down', 'down-stop', 'fall'] as const).map((phase) => ({ kind: 'bench', command: { type: 'lab.lift', phase } }) as const),
+    choices: [ch('accel', 'Лише коли ліфт розганяється чи гальмує', 'Only while the lift speeds up or slows down'), ch('up', 'Більші, поки ліфт їде вгору, менші — поки їде вниз', 'More while the lift goes up, less while it goes down'), ch('same', 'Ніколи: маса тягарців та сама', 'Never: the weights’ mass is the same')],
+    formulas: ['mechanics.weight'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … ваги в ліфтах' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: 'Сили тяжіння та пружності. Вага та невагомість.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 25, дослідження «невагомість», с. 177' } },
     ],
     expect: 'reached',
   },
@@ -1855,7 +1877,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'average-speed', 'rotation-period', 'pendulum',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'friction-coefficient', 'ball-in-liquids',
+  'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

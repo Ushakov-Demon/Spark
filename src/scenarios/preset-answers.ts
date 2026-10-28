@@ -20,6 +20,7 @@ import { AMMETER, VOLTMETER } from './circuit-bench.js';
 import { vesselName, type PascalVessel } from './vessels-bench.js';
 import { sinkLiquidName, type SinkLiquid } from './sink-bench.js';
 import { rowName, type RowBody } from './rows-bench.js';
+import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -391,6 +392,32 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
           ? `${per.map((p) => `Бульбашка ≈ ${sig(p.d * 1000, 2, l)} мм: ${lapList(p, l)}`).join('. ')}. Удвічі довший шлях — удвічі більший час: шлях пропорційний часу, а відношення l/t на кожній позначці те саме (розкид ${sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l)} % — секундомір показує лише соті частки секунди). Отже, рух рівномірний: v ≈ ${small ? cmS(small.v, l) : ''} і ${big ? cmS(big.v, l) : ''}. Більша бульбашка спливала швидше — ≈ в ${sig(ratio, 2, l)} раза.${liquid === 'washing-up' ? ' (Скільки саме — залежить від рідини: різні марки бувають у кілька разів густіші чи рідші; а от рівномірність і «більша — швидша» не залежать.)' : ''}`
           : `${per.map((p) => `A ≈ ${sig(p.d * 1000, 2, l)} mm bubble: ${lapList(p, l)}`).join('. ')}. Twice the path — twice the time: the path is proportional to the time, and l/t is the same at every mark (a spread of ${sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l)} % — the stopwatch shows only hundredths of a second). So the motion is uniform: v ≈ ${small ? cmS(small.v, l) : ''} and ${big ? cmS(big.v, l) : ''}. The bigger bubble rose faster — ≈ ${sig(ratio, 2, l)} times.${liquid === 'washing-up' ? ' (How fast exactly depends on the liquid: makes are several times thicker or thinner; the uniformity and “bigger — faster” do not.)' : ''}`,
       ),
+    };
+  },
+  'weight-in-lift': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.lift' && x.record.value !== null).map((x) => ({ phase: String(x.command['phase']) as LiftPhase, P: x.record.value!, a: x.record.inputs?.['a'] ?? 0 }));
+    const at = (p: LiftPhase) => R.find((x) => x.phase === p)?.P;
+    const rest = at('rest');
+    const steady = R.filter((x) => x.a === 0).every((x) => x.P === rest);
+    const more = R.filter((x) => x.a > 0).every((x) => rest !== undefined && x.P > rest);
+    const less = R.filter((x) => x.a < 0 && x.phase !== 'fall').every((x) => rest !== undefined && x.P < rest);
+    return {
+      ...(steady && more && less ? { correct: 'accel' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Вага — сила, з якою тіло тягне підвіс. Поки ліфт стоїть чи їде рівномірно, пружина лише тримає тягарці: P = m·g, хоч угору, хоч униз. Щоб тягарці розганялися вгору разом із кабіною, пружина мусить тягнути їх сильніше, ніж їх тягне Земля, — вона розтягується більше: вага зростає. Це буває, коли ліфт рушає вгору і коли гальмує, їдучи вниз, — в обох випадках прискорення напрямлене вгору. Коли прискорення напрямлене вниз (ліфт рушає вниз або гальмує нагорі), пружина тягне слабше — вага менша. Важливо не те, куди їде ліфт, а куди він прискорюється. А якщо тягарці падають разом із динамометром, пружині нема чого тримати: вага нуль — це невагомість. Маса ж тягарців увесь час та сама, і сила тяжіння теж. Як порахувати вагу з прискоренням, P = m·(g + a), — у 9 класі.'
+          : 'Weight is the force with which a body pulls on its hanger. While the lift stands or moves steadily, the spring only holds the weights: P = m·g, up or down alike. For the weights to speed up upwards with the cabin, the spring must pull them harder than the Earth does — it stretches more: the weight grows. That happens when the lift starts up and when it slows down on the way down — both times the acceleration points up. When the acceleration points down (starting down, slowing at the top), the spring pulls weaker — the weight is less. What matters is not which way the lift goes, but which way it accelerates. And if the weights fall together with the dynamometer, the spring has nothing to hold: the weight is zero — weightlessness. The weights’ mass stays the same all the time, and so does the force of gravity. How to count the weight with the acceleration, P = m·(g + a), comes in grade 9.',
+      ),
+      say: both((l) => {
+        const up = at('up-start');
+        const down = at('down-start');
+        return rest !== undefined && up !== undefined && down !== undefined ? (l === 'uk' ? `Стоїть чи їде рівно — ${N(rest, l)}; розганяється вгору — ${N(up, l)}, униз — ${N(down, l)}; у падінні — нуль.` : `Standing or going steadily — ${N(rest, l)}; speeding up upwards — ${N(up, l)}, downwards — ${N(down, l)}; falling — zero.`) : '';
+      }),
+      text: both((l) => {
+        const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
+        const s = `${parts.join('; ')}.`;
+        return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
     };
   },
   'small-bodies': (run) => {

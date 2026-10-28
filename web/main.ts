@@ -51,6 +51,9 @@ import {
   AMMETER,
   ZERO_METER,
   sinkLiquidName,
+  BENCH_WEIGHT,
+  LIFT_WEIGHTS,
+  type LiftPhase,
   rowName,
   rowSizes,
   type RowBody,
@@ -451,6 +454,18 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // Weight in a lift: the phase this step took, where it leaves the cabin, the dynamometer's reading.
+  if (kind === 'lift') {
+    const lc = c?.type === 'lab.lift' ? (c as unknown as { phase: LiftPhase }) : undefined;
+    const END: Record<LiftPhase, number> = { rest: 0, 'up-start': 0.25, up: 0.75, 'up-stop': 1, 'down-start': 0.75, down: 0.25, 'down-stop': 0, fall: 0 };
+    // Before the first step the weights already hang: the spring holds m·g.
+    const rest = LIFT_WEIGHTS * BENCH_WEIGHT.value * 9.80665;
+    const F = lc && r ? (r.value ?? 0) : rest;
+    // How much more or less than at rest, in the instrument's tenths.
+    const d = Math.round(F * 10) - Math.round(rest * 10);
+    const diff = lc && r && d !== 0 ? `${d > 0 ? '+' : '−'}${show('force', Math.abs(d) / 10)}` : undefined;
+    return { ...base, kind, lift: { phase: lc?.phase ?? 'rest', y: lc ? END[lc.phase] : 0, force: F, rest, ...(lc && r ? { read: show('force', r.value) } : {}), ...(diff ? { diff } : {}), ...(lc?.phase === 'fall' ? { fall: 1 } : {}) } };
+  }
   // The method of rows: this step's row (or the next planned, not laid yet) and what the ruler shows.
   if (kind === 'rows') {
     type Row = { body: RowBody; count: number };
@@ -718,6 +733,12 @@ function measureSay(): string {
     return sc.body === 'bubble' ? (uk ? `Бульбашка пройшла ${s} см за ${T}.` : `The bubble went ${s} cm in ${T}.`) : uk ? `Кулька пройшла ${s} см за ${T}.` : `The ball went ${s} cm in ${T}.`;
   }
   // Adding forces: what the dynamometers show — one, both, or up and down.
+  // Weight in a lift: what the dynamometer shows now.
+  if (m.command.type === 'lab.lift') {
+    const phase = (m.command as { phase: LiftPhase }).phase;
+    const P = formatMeasured('force', r.value, 0.1, locale);
+    return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
   // The method of rows: the row's length (a single pea — to the ruler's division).
   if (m.command.type === 'lab.rows') {
     const rc = m.command as { body: RowBody; count: number };
