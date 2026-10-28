@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -923,6 +923,34 @@ const LIST: readonly Preset[] = [
     choices: [ch('same', 'Лишиться майже тим самим', 'It stays about the same'), ch('grows', 'Теж зростатиме', 'It grows too'), ch('falls', 'Зменшуватиметься', 'It gets smaller')],
     formulas: ['mechanics.friction', 'mechanics.weight'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 7', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 7. Визначення коефіцієнта тертя ковзання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 27, лабораторна робота № 7, с. 191' } }],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Чому дорівнює рівнодійна сил двох динамометрів?', en: 'What is the resultant of the two dynamometers’ forces?' },
+    id: 'adding-forces',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Додаємо сили: рівнодійна', en: 'Adding forces: the resultant' },
+    question: {
+      uk: 'Два тягарці по 100 г висять на дерев’яній лінійці. Тримаємо цей вантаж одним динамометром, потім двома — за кінці лінійки, тягарці посередині й ближче до краю, — а потім один динамометр тягне вгору, а другий униз. Щоразу записуємо покази. Чому дорівнює рівнодійна сил двох динамометрів?',
+      en: 'Two 100 g weights hang on a wooden ruler. We hold this load by one dynamometer, then by two at the ruler’s ends — the weights in the middle and nearer an end — and then one dynamometer pulls up and the other down. Each time we write down the readings. What is the resultant of the two dynamometers’ forces?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'forces',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.forces', hold: 'one' } },
+      { kind: 'bench', command: { type: 'lab.forces', hold: 'two', at: 0.15 } },
+      { kind: 'bench', command: { type: 'lab.forces', hold: 'two', at: 0.06 } },
+      { kind: 'bench', command: { type: 'lab.forces', hold: 'down', down: 1 } },
+    ],
+    choices: [ch('same', 'Щоразу такій самій силі, як покази одного динамометра', 'Each time the same force as one dynamometer showed'), ch('more', 'Більшій: динамометрів же два', 'More: there are two dynamometers'), ch('less', 'Меншій: кожен тягне слабше', 'Less: each pulls weaker')],
+    answerOnBoard: ['rs:'],
+    formulas: ['mechanics.resultant', 'mechanics.resultant-opposite', 'mechanics.weight'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … рівнодійної сил' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: 'Додавання сил, спрямованих уздовж однієї прямої. Визначення рівнодійної кількох сил.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 22, с. 155–156' } },
+    ],
     expect: 'reached',
   },
   {
@@ -1799,7 +1827,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. Mechanical motion.
   'bubble-speed', 'average-speed', 'rotation-period', 'pendulum',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'lever-balance', 'mystery-metal', 'liquid-density', 'hooke-spring', 'friction-coefficient', 'ball-in-liquids',
+  'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

@@ -448,6 +448,17 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // Adding forces: how this step holds the load (or how the next one will), the dynamometers' forces and readings.
+  if (kind === 'forces') {
+    type Hold = { hold: 'one' | 'two' | 'down'; at?: number };
+    const fc = c?.type === 'lab.forces' ? (c as unknown as Hold) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.forces');
+    const cmd = fc ?? (next?.kind === 'bench' ? (next.command as unknown as Hold) : undefined);
+    const recs = fc && last ? readingsOf([last]).map((x) => x.record) : [];
+    const A = recs.find((x) => (x.inputs?.['which'] ?? 0) === 0);
+    const B = recs.find((x) => x.inputs?.['which'] === 1);
+    return { ...base, kind, forces: { hold: cmd?.hold ?? 'one', at: cmd?.at ?? 0.15, a: A?.value ?? 0, b: B?.value ?? 0, loaded: !!fc, ...(A ? { readA: show('force', A.value) } : {}), ...(B ? { readB: show('force', B.value) } : {}) } };
+  }
   // A body in a liquid: the vessel of the liquid this step used (or the next planned), the body at its last mark,
   // the stopwatch's last reading.
   if (kind === 'bubble' || kind === 'sink') {
@@ -693,6 +704,14 @@ function measureSay(): string {
     const s = Math.round((lp.inputs?.['mark'] ?? 0) * 100);
     const T = formatMeasured('time', lp.value, 0.01, locale);
     return sc.body === 'bubble' ? (uk ? `Бульбашка пройшла ${s} см за ${T}.` : `The bubble went ${s} cm in ${T}.`) : uk ? `Кулька пройшла ${s} см за ${T}.` : `The ball went ${s} cm in ${T}.`;
+  }
+  // Adding forces: what the dynamometers show — one, both, or up and down.
+  if (m.command.type === 'lab.forces') {
+    const fc = m.command as { hold: string };
+    const fs = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.forces').slice(0, 1)).map((x) => formatMeasured('force', x.record.value, 0.1, locale));
+    if (fc.hold === 'one') return uk ? `Один динамометр показує ${fs[0]}.` : `One dynamometer shows ${fs[0]}.`;
+    if (fc.hold === 'two') return uk ? `Лівий показує ${fs[0]}, правий — ${fs[1]}.` : `The left one shows ${fs[0]}, the right one ${fs[1]}.`;
+    return uk ? `Верхній показує ${fs[0]}, нижній тягне вниз із силою ${fs[1]}.` : `The upper one shows ${fs[0]}; the lower one pulls down with ${fs[1]}.`;
   }
   // Induction: the needle's swing — which way and how far.
   if (m.command.type === 'lab.induct') {
@@ -2460,7 +2479,9 @@ function renderProtocol() {
       const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
-      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      // (Two dynamometers: both readings.)
+      const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
+      const shown = fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

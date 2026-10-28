@@ -314,6 +314,16 @@ describe('ready-made experiments with values to change', () => {
     expect(t[1]!).toBeGreaterThan(t[2]!);
   }, 60_000);
 
+  it('adding forces: the two dynamometers’ resultant equals one dynamometer’s reading each time', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'adding-forces')!);
+    expect(answer.correct).toBe('same');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const R = [...answer.text.uk.matchAll(/= ([\d,]+) Н/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(R).toHaveLength(3);
+    expect(new Set(R).size).toBe(1);
+    expect(answer.text.uk).toMatch(/силою 2,2 Н/);
+  }, 60_000);
+
   it('induction: a current only while the magnet moves; its sign with the direction and the pole; larger when faster', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'electromagnetic-induction')!);
     expect(answer.correct).toBe('motion');

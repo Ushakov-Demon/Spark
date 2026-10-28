@@ -433,6 +433,27 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // Adding forces: what the dynamometers show, and their resultant (hidden till the answer).
+    if (c.type === 'lab.forces') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'force' && x.value !== null);
+      const F = (x: MeasurementRecord | undefined) => formatMeasured('force', x?.value ?? 0, 0.1, locale);
+      const [a, b] = recs;
+      if (!a) return;
+      if (c['hold'] === 'one') {
+        out.push({ id: `fw:${i}`, title: uk ? 'вантаж на одному динамометрі' : 'the load on one dynamometer', formula: `F = ${F(a)}` });
+        return;
+      }
+      if (!b) return;
+      if (c['hold'] === 'two') {
+        const at = Math.round(Number(c['at']) * 100);
+        out.push({ id: `ft:${i}`, title: uk ? `два динамометри, тягарці на ${at} см` : `two dynamometers, the weights at ${at} cm`, formula: `F₁ = ${F(a)}; F₂ = ${F(b)}` });
+        out.push({ id: `rs:${i}`, title: uk ? 'рівнодійна: обидві сили вгору' : 'the resultant: both forces up', formula: 'R = F₁ + F₂', numbers: `${F(a)} + ${F(b)} = ${formatMeasured('force', a.value! + b.value!, 0.1, locale)}` });
+        return;
+      }
+      out.push({ id: `fd:${i}`, title: uk ? 'один тягне вгору, другий униз' : 'one pulls up, the other down', formula: `F₁ = ${F(a)} ↑; F₂ = ${F(b)} ↓` });
+      out.push({ id: `rs:${i}`, title: uk ? 'рівнодійна: сили протилежні' : 'the resultant: opposite forces', formula: 'R = F₁ − F₂', numbers: `${F(a)} − ${F(b)} = ${formatMeasured('force', a.value! - b.value!, 0.1, locale)}` });
+      return;
+    }
     // A body in a liquid: its times at the marks, and its speed v = l/t (hidden till the answer).
     if (c.type === 'lab.sink') {
       const laps = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'time' && x.value !== null);

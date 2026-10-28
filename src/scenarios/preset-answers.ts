@@ -392,6 +392,45 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'adding-forces': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.forces' && x.record.value !== null);
+    const of = (hold: string, at?: number) => R.filter((x) => x.command['hold'] === hold && (at === undefined || Math.abs(Number(x.command['at']) - at) < 1e-6)).map((x) => x.record.value!);
+    const [one] = of('one');
+    const twos = [...new Set(R.filter((x) => x.command['hold'] === 'two').map((x) => Number(x.command['at'])))].map((at) => ({ at, f: of('two', at) }));
+    const down = of('down');
+    const round = (x: number) => Math.round(x * 10) / 10;
+    const sums = [...twos.map((x) => round((x.f[0] ?? 0) + (x.f[1] ?? 0))), ...(down.length === 2 ? [round(down[0]! - down[1]!)] : [])];
+    const same = one !== undefined && sums.length > 0 && sums.every((x) => Math.abs(x - one) < 0.15);
+    return {
+      ...(same ? { correct: 'same' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Вантаж висить нерухомо — отже, сили, що на нього діють, зрівноважені: униз його тягне вага тягарців разом із лінійкою, угору — динамометри. Тож рівнодійна сил динамометрів щоразу дорівнює вазі вантажу — тій самій силі, яку показував один динамометр. Тримати можна одним динамометром чи двома, ділити вагу між кінцями лінійки порівну чи ні (кінець, ближчий до тягарців, тримає більше — чому, з’ясуємо в темі про важіль), — разом угору щоразу та сама сила. А коли другий динамометр тягне тягарці вниз, верхньому доводиться тримати і вантаж, і цю силу — він показує більше. Рівнодійна двох протилежних сил — їхня різниця — знову дорівнює вазі вантажу.'
+          : 'The load hangs still — so the forces on it balance: its weight with the ruler pulls it down, the dynamometers pull it up. So the resultant of the dynamometers’ forces equals the load’s weight each time — the very force one dynamometer showed. Hold it by one dynamometer or by two, share the weight between the ruler’s ends equally or not (the end nearer the weights holds more — why, we shall see with the lever), — together upwards it is the same force every time. And when the second dynamometer pulls the weights down, the upper one has to hold both the load and that pull — it shows more. The resultant of the two opposite forces — their difference — again equals the load’s weight.',
+      ),
+      say: both((l) => (one !== undefined ? (l === 'uk' ? `Щоразу R = ${N(sums[0] ?? one, l)} — стільки ж, скільки показував один динамометр.` : `Each time R = ${N(sums[0] ?? one, l)} — as much as one dynamometer showed.`) : '')),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts = [
+          ...(one !== undefined ? [uk ? `Один динамометр тримав вантаж із силою ${N(one, l)}` : `One dynamometer held the load with ${N(one, l)}`] : []),
+          ...twos.map((x) =>
+            uk
+              ? `два, тягарці на ${Math.round(x.at * 100)} см: ${N(x.f[0] ?? 0, l)} + ${N(x.f[1] ?? 0, l)} = ${N(round((x.f[0] ?? 0) + (x.f[1] ?? 0)), l)}`
+              : `two, the weights at ${Math.round(x.at * 100)} cm: ${N(x.f[0] ?? 0, l)} + ${N(x.f[1] ?? 0, l)} = ${N(round((x.f[0] ?? 0) + (x.f[1] ?? 0)), l)}`,
+          ),
+          ...(down.length === 2 ? [uk ? `вгору ${N(down[0]!, l)}, униз ${N(down[1]!, l)}: ${N(down[0]!, l)} − ${N(down[1]!, l)} = ${N(round(down[0]! - down[1]!), l)}` : `up ${N(down[0]!, l)}, down ${N(down[1]!, l)}: ${N(down[0]!, l)} − ${N(down[1]!, l)} = ${N(round(down[0]! - down[1]!), l)}`] : []),
+        ];
+        const tail = same
+          ? uk
+            ? ' Покази динамометрів змінювалися, а рівнодійна — ні: щоразу вона дорівнює вазі вантажу.'
+            : ' The dynamometers’ readings changed, the resultant did not: each time it equals the load’s weight.'
+          : uk
+            ? ' Різниця в одну поділку (0,1 Н) — від округлення показів до поділки.'
+            : ' A difference of one division (0.1 N) comes from rounding the readings to the division.';
+        return `${parts.join('; ')}.${tail}`;
+      }),
+    };
+  },
   'ball-in-liquids': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.sink' && x.record.value !== null);
     const liquids = ['glycerol', 'sunflower-oil', 'water'] as const;

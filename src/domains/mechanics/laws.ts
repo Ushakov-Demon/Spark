@@ -164,6 +164,16 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичних величин.', en: 'These are definitions of physical quantities.' } }, citations: [] },
   },
   {
+    id: 'adding-forces',
+    kind: 'definition',
+    name: { uk: 'Додавання сил. Рівнодійна', en: 'Adding forces. The resultant' },
+    statement: {
+      novice: { uk: 'Кілька сил, що діють на тіло, можна замінити однією — рівнодійною. В один бік сили додаються, у протилежні — віднімаються.', en: 'Several forces on a body can be replaced by one — the resultant. The same way the forces add, opposite ways they subtract.' },
+      school: { uk: 'Рівнодійна — сила, яка здійснює на тіло таку саму дію, як кілька сил, що діють одночасно. Для двох сил уздовж однієї прямої: в один бік R = F₁ + F₂, у протилежні R = F₁ − F₂ (у бік більшої). Якщо тіло в спокої, рівнодійна всіх сил на нього дорівнює нулю.', en: 'The resultant is the force that does to a body what several forces acting at once do. For two forces along one line: the same way R = F₁ + F₂, opposite ways R = F₁ − F₂ (towards the larger). If the body is at rest, the resultant of all the forces on it is zero.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
+  },
+  {
     id: 'average-speed',
     kind: 'definition',
     name: { uk: 'Середня швидкість', en: 'Average speed' },

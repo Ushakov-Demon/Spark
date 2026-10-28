@@ -37,6 +37,10 @@ export const balancedDensity = (rho1: number, h1: number, h2: number): number =>
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 
+/** Two forces along one line: the same way they add, R = F₁ + F₂; opposite ways — the larger less the smaller, R = F₁ − F₂. */
+export const resultantSame = (f1: number, f2: number): number => f1 + f2;
+export const resultantOpposite = (f1: number, f2: number): number => f1 - f2;
+
 /** Period of a repeating motion: the time of N turns (or swings) over N, T = t / N. */
 export const period = (time: number, count: number): number => time / count;
 

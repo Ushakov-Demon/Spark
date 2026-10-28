@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -56,6 +56,8 @@ export interface BenchView {
   /** Induction: how the magnet (or the coil) moved and which pole faces the coil; the meter's swing (−1…1 of its scale) and reading. */
   readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
+  /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
+  readonly forces?: { readonly hold: 'one' | 'two' | 'down'; readonly at: number; readonly a: number; readonly b: number; readonly loaded: boolean; readonly readA?: string; readonly readB?: string };
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
   readonly vessels?: { readonly shape?: 'straight' | 'wide' | 'narrow'; readonly height: number; readonly dh: number; readonly read?: string; readonly poured?: string };
@@ -184,6 +186,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'atm') return atmSvg(v.atm);
   if (v.kind === 'vessels') return vesselsSvg(v.vessels);
   if (v.kind === 'magnet') return magnetSvg(v.magnet);
+  if (v.kind === 'forces') return forcesSvg(v.forces);
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
@@ -713,4 +716,54 @@ function pairSvg(kind: 'series' | 'parallel', p: BenchView['pair']): string {
   const branch = (yy: number, ohms: number, metered: boolean) => (metered ? W(`M${fx},${yy} H${ax - 26} M${ax + 26},${yy} H410`) : W(`M${fx},${yy} H410`)) + resistorSvg(410, yy, ohms) + W(`M466,${yy} H${jx}`);
   const vy = TABLE - 175;
   return `${W(`M180,${y} H${main ? ax - 26 : fx}`)}${main ? W(`M${ax + 26},${y} H${fx}`) : ''}${W(`M${fx},${b1} V${b2} M${jx},${b1} V${b2} M${jx},${y} H560 V${y + 44} H145 V${y + 14}`)}${branch(b1, 2, at === 'r1')}${branch(b2, 4, at === 'r2')}${W(`M${fx},${b1} V${vy + 14} H${400 - 26} M${400 + 26},${vy + 14} H${jx} V${b1}`)}${source}${amm(ax, ay)}${volt(400, vy)}`;
+}
+
+/**
+ * Adding forces: a stand with a long arm; school dynamometers (10 units to the newton) hang from it, their hooks
+ * coming out as the spring stretches, so a ruler held by two of them tilts when they pull differently. Under the
+ * load, for "down", a third position: a dynamometer turned over, its ring tied to a clamp on the table, its hook
+ * pulling the weights down.
+ */
+const FORCES_K = 600;
+function forcesSvg(f: BenchView['forces']): string {
+  const hold = f?.hold ?? 'one';
+  const loaded = !!f?.loaded;
+  const armY = 40;
+  const top = armY + 6;
+  // To the right: the board's writing on the left stays readable.
+  const xC = 480;
+  const half = (0.3 * FORCES_K) / 2;
+  const PER_N = 10;
+  // A dynamometer hanging from (x, top): its pointer and hook go down by the force; returns the drawing and where the hook ends.
+  const hanging = (x: number, F: number, read: string | undefined, left: boolean): [string, number] => {
+    const p = top + 8 + F * PER_N;
+    const tip = top + 64 + F * PER_N;
+    const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - 6},${top + 8 + i * 5} h${i % 2 === 0 ? 6 : 3}"/>`).join('');
+    const label = read ? `<text class="bench-reading" x="${x + 13}" y="${top + (left ? 24 : 40)}">${read}</text>` : '';
+    return [`<path d="M${x},${armY + 3} V${top}" style="stroke:${THREAD};stroke-width:1.5"/><rect class="dyn-case" x="${x - 9}" y="${top}" width="18" height="64" rx="5"/><g class="dyn-ticks">${ticks}</g><path d="M${x},${p} V${tip}" style="stroke:${STEEL};stroke-width:2"/><path d="M${x - 7},${p} h14" style="stroke:#c0392b;stroke-width:2"/><path d="M${x},${tip} q0,6 -5,5" style="stroke:${THREAD};stroke-width:1.5;fill:none"/>${label}`, tip + 4];
+  };
+  const ruler = (x1: number, y1: number, x2: number, y2: number) => `<path d="M${x1},${y1} L${x2},${y2}" style="stroke:${WOOD_EDGE};stroke-width:7;stroke-linecap:round"/><path d="M${x1},${y1} L${x2},${y2}" style="stroke:${WOOD};stroke-width:5;stroke-linecap:round"/>`;
+  const load = (x: number, y: number) => `<path d="M${x},${y} v12" style="stroke:${THREAD};stroke-width:1.5"/>${weightsSvg(x, y + 12, 2)}`;
+  const stand = standSvg(345, 610, armY);
+  if (!loaded) {
+    // Not hung yet: the dynamometers empty, the ruler and the weights on the table.
+    const xs = hold === 'two' ? [xC - half, xC + half] : [xC];
+    return `${stand}${xs.map((x, i) => hanging(x, 0, undefined, i === 0 && xs.length > 1)[0]).join('')}${ruler(xC - half - 30, TABLE - 4, xC + half - 30, TABLE - 4)}${weightsSvg(xC + half + 10, TABLE - 20, 2)}`;
+  }
+  if (hold === 'two') {
+    const [l, yl] = hanging(xC - half, f!.a, f!.readA, true);
+    const [r, yr] = hanging(xC + half, f!.b, f!.readB, false);
+    const k = Math.max(0, Math.min(1, f!.at / 0.3));
+    return `${stand}${l}${r}${ruler(xC - half, yl, xC + half, yr)}${load(xC - half + k * 2 * half, yl + (yr - yl) * k)}`;
+  }
+  const [a, y] = hanging(xC, f!.a, f!.readA, false);
+  const body = `${ruler(xC - half, y, xC + half, y)}${load(xC, y)}`;
+  if (hold === 'one') return `${stand}${a}${body}`;
+  // The lower one, turned over: its hook in the weights' bottom, pulled out by the force; its ring tied to a clamp.
+  const hook = y + 12 + 20 + 2;
+  const bt = hook + 6 + f!.b * PER_N;
+  const p = bt + 56 - f!.b * PER_N;
+  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${xC - 6},${bt + 56 - i * 5} h${i % 2 === 0 ? 6 : 3}"/>`).join('');
+  const lower = `<path d="M${xC},${hook} V${p}" style="stroke:${STEEL};stroke-width:2"/><rect class="dyn-case" x="${xC - 9}" y="${bt}" width="18" height="64" rx="5"/><g class="dyn-ticks">${ticks}</g><path d="M${xC - 7},${p} h14" style="stroke:#c0392b;stroke-width:2"/><path d="M${xC},${bt + 64} V${TABLE - 10}" style="stroke:${THREAD};stroke-width:1.5"/><rect x="${xC - 14}" y="${TABLE - 10}" width="28" height="10" rx="2" style="fill:${DARK}"/>${f!.readB ? `<text class="bench-reading" x="${xC + 16}" y="${bt + 36}">${f!.readB}</text>` : ''}`;
+  return `${stand}${a}${body}${lower}`;
 }

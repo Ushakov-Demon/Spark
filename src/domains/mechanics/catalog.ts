@@ -26,6 +26,7 @@ const UA_FLOATING: readonly CurriculumRef[] = [
 const UA_HOOKE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Гука.' }];
 const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Коефіцієнт тертя ковзання.' }];
 const UA_UNIFORM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний прямолінійний рух. Швидкість руху.' }];
+const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Взаємодія тіл. Сила. Додавання сил. Рівнодійна.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
@@ -357,6 +358,52 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.averageSpeed,
     examples: [{ args: [0.12, 57.7], expected: 0.00208, note: '12 cm in 57.7 s' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.resultant',
+    law: 'adding-forces',
+    title: { uk: 'Рівнодійна двох сил, напрямлених в один бік', en: 'The resultant of two forces the same way' },
+    latex: 'R = F_1 + F_2',
+    plain: 'R = F₁ + F₂',
+    argSymbols: ['F₁', 'F₂'],
+    resultSymbol: 'R',
+    variables: {
+      R: { name: { uk: 'рівнодійна', en: 'resultant' }, unit: 'N' },
+      'F₁': { name: { uk: 'перша сила', en: 'the first force' }, unit: 'N' },
+      'F₂': { name: { uk: 'друга сила', en: 'the second force' }, unit: 'N' },
+    },
+    curriculum: UA_FORCES,
+    explanation: {
+      novice: { uk: 'Дві сили тягнуть в один бік — разом вони діють, як одна сила, що дорівнює їхній сумі.', en: 'Two forces pull the same way — together they act like one force equal to their sum.' },
+      school: { uk: 'Рівнодійна — сила, що діє на тіло так само, як кілька сил разом. Якщо дві сили напрямлені вздовж однієї прямої в один бік, рівнодійна напрямлена так само, а її значення R = F₁ + F₂.', en: 'The resultant is the force that acts on a body as several forces do together. If two forces act along one line the same way, the resultant points the same way, and R = F₁ + F₂.' },
+    },
+    compute: f.resultantSame,
+    examples: [{ args: [3, 5], expected: 8, note: 'the textbook’s cart pulled by 3 N and 5 N the same way' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.resultant-opposite',
+    law: 'adding-forces',
+    title: { uk: 'Рівнодійна двох протилежних сил', en: 'The resultant of two opposite forces' },
+    latex: 'R = F_1 - F_2',
+    plain: 'R = F₁ − F₂',
+    argSymbols: ['F₁', 'F₂'],
+    resultSymbol: 'R',
+    variables: {
+      R: { name: { uk: 'рівнодійна', en: 'resultant' }, unit: 'N' },
+      'F₁': { name: { uk: 'більша сила', en: 'the larger force' }, unit: 'N' },
+      'F₂': { name: { uk: 'менша сила', en: 'the smaller force' }, unit: 'N' },
+    },
+    curriculum: UA_FORCES,
+    explanation: {
+      novice: { uk: 'Дві сили тягнуть у різні боки — «перемагає» більша, але лише на різницю між ними.', en: 'Two forces pull opposite ways — the larger one “wins”, but only by the difference.' },
+      school: { uk: 'Якщо дві сили напрямлені вздовж однієї прямої протилежно, рівнодійна напрямлена в бік більшої, а її значення R = F₁ − F₂. Рівні протилежні сили зрівноважують одна одну: R = 0.', en: 'If two forces act along one line opposite ways, the resultant points the way of the larger, and R = F₁ − F₂. Equal opposite forces balance each other: R = 0.' },
+    },
+    compute: f.resultantOpposite,
+    examples: [{ args: [5, 3], expected: 2, note: 'the textbook’s cart pulled by 5 N and 3 N opposite ways' }],
     textSource: 'spark',
     reviewed: false,
   }),

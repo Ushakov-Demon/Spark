@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.forces': { uk: 'Пружини ще коливаються — чекаємо, поки заспокояться…', en: 'The springs are still bouncing — wait until they settle…' },
   'lab.magnet': { uk: 'Стрілка компаса ще гойдається — чекаємо…', en: 'The compass needle is still swinging — wait…' },
   /** (The step that takes the nail out of the coil.) */
   'lab.magnet.pull': { uk: 'Повільно витягую цвях із котушки…', en: 'Slowly pulling the nail out of the coil…' },
@@ -40,6 +41,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'forces' && next.forces?.loaded) return forces(prev?.kind === 'forces' ? (prev.forces ?? null) : null, next, draw);
   if (next.kind === 'magnet' && next.magnet && prev?.kind === 'magnet' && prev.magnet) return compass(prev.magnet, next, draw);
   return null;
 }
@@ -168,6 +170,31 @@ function compass(was: NonNullable<BenchView['magnet']>, next: BenchView, draw: (
       if (pulling) needle.target = was.angle + (m.angle - was.angle) * smooth(out.value);
       const { read: _r, ...rest } = m;
       draw(done ? next : { ...next, magnet: { ...rest, ...(pulling ? { core: true, pull: smooth(out.value) } : {}), angle: needle.value } });
+    },
+  };
+}
+
+/**
+ * Adding forces: the springs take the load and bounce to their readings (the drawing's period); moved along the
+ * ruler, the weights slide to their new place and the readings follow. Pulled down, the lower dynamometer is
+ * drawn out slowly by hand, and the upper one takes on that pull as well.
+ */
+function forces(was: BenchView['forces'] | null, next: BenchView, draw: (v: BenchView) => void): Motion {
+  const f = next.forces!;
+  const same = !!was?.loaded && was.hold === f.hold;
+  const spring = { kind: 'damped', period: 0.6, damping: 0.18 } as const;
+  const pulling = f.hold === 'down';
+  const load = f.a - f.b;
+  const a = new Channel(same ? was!.a : 0, pulling ? load : f.a, spring, 0.01);
+  const b = new Channel(same ? was!.b : 0, f.b, pulling ? { kind: 'steady', speed: 0.5 } : spring, 0.01);
+  const at = new Channel(same ? was!.at : f.at, f.at, { kind: 'steady', speed: 0.04 }, 0.0005);
+  return {
+    channels: [a, b, at],
+    frame: (done) => {
+      // The upper one holds the load and whatever the lower one pulls by now.
+      if (pulling) a.target = load + Math.max(0, b.value);
+      const { readA: _a, readB: _b, ...rest } = f;
+      draw(done ? next : { ...next, forces: { ...rest, a: Math.max(0, a.value), b: Math.max(0, b.value), at: at.value } });
     },
   };
 }
