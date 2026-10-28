@@ -470,6 +470,14 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // A snail: the surface of this step (or the next one), how far it went, the stopwatch.
+  if (kind === 'snail') {
+    const sc = c?.type === 'lab.snail' ? (c as unknown as { surface: string }) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.snail');
+    const surface = sc?.surface ?? (next?.kind === 'bench' ? (next.command as unknown as { surface: string }).surface : 'flat');
+    const done = sc && r && r.value !== null;
+    return { ...base, kind, snail: { surface, at: done ? r.value! : 0, ...(done ? { read: `${Math.round(r.value! * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.inputs?.['time'] ?? 30, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.inputs?.['time'] ?? 30 } } : {}) };
+  }
   // A stroboscopic photo: this step's (or the next one's), the ball's places on it, the gaps once measured.
   if (kind === 'strobe') {
     const sc = c?.type === 'lab.strobe' ? (c as unknown as { photo: StrobePhoto }) : undefined;
@@ -808,6 +816,8 @@ function measureSay(): string {
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
   }
+  // A snail: the distance in 30 s.
+  if (m.command.type === 'lab.snail') return uk ? `За 30 с равлик проповз ${Math.round((r.value ?? 0) * 1000)} мм.` : `In 30 s the snail went ${Math.round((r.value ?? 0) * 1000)} mm.`;
   // A stroboscopic photo: the gaps measured on it.
   if (m.command.type === 'lab.strobe') {
     const g = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.strobe')!]).map((x) => Math.round((x.record.value ?? 0) * 1000));
@@ -2626,6 +2636,7 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const snShown = c.type === 'lab.snail' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       const sgRecs = c.type === 'lab.strobe' ? readingsOf([e]).map((x) => x.record) : [];
       const sgShown = sgRecs.length ? `${sgRecs.map((x) => Math.round((x.value ?? 0) * 1000)).join(', ')} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       const wShown = c.type === 'lab.winch' && r.value !== null ? (r.quantity === 'turns' ? formatMeasured('turns', r.value, 0.25, locale) : `${String(Math.round(r.value * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`) : null;
@@ -2633,7 +2644,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

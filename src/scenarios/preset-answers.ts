@@ -25,6 +25,7 @@ import { BOUNCE_FROM, bounceBallName, type BounceBall } from './bounce-bench.js'
 import { winchSpoolName, type WinchSpool } from './winch-bench.js';
 import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
+import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -421,6 +422,25 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
         const s = `${parts.join('; ')}.`;
         return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
+    };
+  },
+  'snail-speed': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.snail' && x.record.value !== null).map((x) => ({ surface: String(x.command['surface']) as SnailSurface, l: x.record.value!, t: x.record.inputs?.['time'] ?? SNAIL_TIME }));
+    const slowest = [...R].sort((a, b) => a.l - b.l)[0];
+    const mm = (x: number) => Math.round(x * 1000);
+    const v = (x: { l: number; t: number }, l: Locale) => `${sig((x.l * 1000) / x.t, 2, l)} ${l === 'uk' ? 'мм/с' : 'mm/s'}`;
+    return {
+      ...(slowest ? { correct: slowest.surface === 'sandpaper' ? 'sandpaper' : slowest.surface } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Равлик повзе на одній «нозі»: м’язи в ній по черзі скорочуються, і вздовж підошви біжать хвилі. Під підошвою — тонкий шар слизу, і ці хвилі, відштовхуючись через нього від поверхні, штовхають равлика вперед. Слиз незвичайний: у спокої тримає, як клей, а під натиском тече, як рідина. На шорсткому наждаку равлик повзе майже вдвічі повільніше: дослідники припускають, що шорсткість заважає слизу триматися й равлику доводиться виділяти його більше. Угору по стінці він ще й тримає власну вагу, тож трохи повільніший; на мокрому вода, ймовірно, розріджує слиз. Це середні значення для 87 равликів із дослідження: окремі равлики повзуть швидше чи повільніше. 1,5 мм/с — це близько 5 метрів за годину.'
+          : 'A snail crawls on a single «foot»: its muscles contract in turn, and waves run along the sole. Under the sole is a thin layer of mucus, and the waves, pushing off the surface through it, move the snail forward. The mucus is unusual: at rest it holds like glue, under stress it flows like a liquid. On rough sandpaper the snail crawls almost half as fast: the researchers suggest the roughness keeps the mucus from holding, and the snail has to make more of it. Up a wall it also holds its own weight, so it is a little slower; on a wet sheet water likely thins the mucus. These are the means of 87 snails in the study: single snails crawl faster or slower. 1.5 mm/s is about 5 metres an hour.',
+      ),
+      say: both((l) => (slowest ? (l === 'uk' ? `Найповільніше — ${tr(snailSurfaceName(slowest.surface), l)}: ${mm(slowest.l)} мм за 30 с, ${v(slowest, l)}.` : `Slowest — ${tr(snailSurfaceName(slowest.surface), l)}: ${mm(slowest.l)} mm in 30 s, ${v(slowest, l)}.`) : '')),
+      text: both((l) => {
+        const s = `${R.map((x) => `${tr(snailSurfaceName(x.surface), l)} — ${mm(x.l)} ${l === 'uk' ? 'мм за 30 с' : 'mm in 30 s'}, ${v(x, l)}`).join('; ')}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1) + (l === 'uk' ? ' Середні з дослідження Pembury Smith і Ruxton (2021).' : ' The means from Pembury Smith and Ruxton’s study (2021).');
       }),
     };
   },

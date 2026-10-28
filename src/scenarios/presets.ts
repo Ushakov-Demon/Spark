@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -951,6 +951,25 @@ const LIST: readonly Preset[] = [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
     ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Де равлик повзе найповільніше?', en: 'Where does the snail crawl slowest?' },
+    id: 'snail-speed',
+    grade: 7,
+    topic: MOTION,
+    title: { uk: 'Рух тварин: як швидко повзе равлик', en: 'How animals move: how fast a snail crawls' },
+    question: {
+      uk: 'Садовий равлик повзе поруч із лінійкою, а ми знімаємо його на телефон 30 секунд — так роблять і дослідники. Потім за відео дізнаємося, скільки міліметрів він проповз. Чотири поверхні: горизонтальний пластиковий аркуш, той самий аркуш вертикально (равлик повзе вгору), мокрий аркуш і шорсткий наждачний папір. Де равлик повзе найповільніше?',
+      en: 'A garden snail crawls beside a ruler, and we film it on a phone for 30 seconds — as researchers do. Then the video tells how many millimetres it went. Four surfaces: a horizontal plastic sheet, the same sheet upright (the snail crawls up), the sheet wet, and rough sandpaper. Where does the snail crawl slowest?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'snail',
+    plan: (['flat', 'wall', 'wet', 'sandpaper'] as const).map((surface) => ({ kind: 'bench', command: { type: 'lab.snail', surface } }) as const),
+    choices: [ch('sandpaper', 'На шорсткому наждачному папері', 'On rough sandpaper'), ch('wall', 'Угору по вертикальній стінці', 'Up the vertical wall'), ch('wet', 'По мокрому аркушу', 'On the wet sheet')],
+    formulas: ['mechanics.speed'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'related', quote: 'моделювання: відносності руху; реальних природних рухів; рухів тварин і рослин' }],
     expect: 'reached',
   },
   {
@@ -1983,7 +2002,7 @@ const LIST: readonly Preset[] = [
  */
 export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
-  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'rotation-period', 'pendulum', 'windlass',
+  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
   'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;

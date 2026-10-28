@@ -751,6 +751,13 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'pembury-smith-2021-snail': source({
+    id: 'pembury-smith-2021-snail',
+    title: 'Pembury Smith M. Q. R., Ruxton G. D. How fast is a snail’s pace? The influences of size and substrate on gastropod speed of locomotion. Journal of Zoology (2021), accepted manuscript: Cornu aspersum, 87 snails filmed beside a ruler, speed in cm per 30 s — horizontal PVC 4.47 ± 0.12; vertical PVC −0.41; sandpaper P120 −2.01; wet PVC −0.65 (Table 1)',
+    url: 'https://research-repository.st-andrews.ac.uk/handle/10023/24786',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
   'wikipedia-beaufort': source({
     id: 'wikipedia-beaufort',
     title: 'Wikipedia, Beaufort scale: 1 Light air 0.3–1.5 m/s «Direction shown by smoke drift but not by wind vanes»; 2 Light breeze 1.6–3.3 m/s «Wind felt on face; leaves rustle; wind vane moved by wind»; 3 Gentle breeze 3.4–5.4 m/s «Leaves and small twigs in constant motion; light flags extended»',

@@ -5,6 +5,7 @@ import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { bounceBallName, type BounceBall } from './bounce-bench.js';
 import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
+import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -445,6 +446,12 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const title = tr(liftPhaseText(phase as LiftPhase).plan, locale);
       const acc = phase === 'fall' ? (uk ? 'вільне падіння' : 'free fall') : a === 0 ? (uk ? 'без прискорення' : 'no acceleration') : `a = ${n(Math.abs(a), 2)} ${uk ? 'м/с²' : 'm/s²'} ${a > 0 ? '↑' : '↓'}`;
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
+      return;
+    }
+    // A snail: the surface, the distance in 30 s and the speed.
+    if (c.type === 'lab.snail') {
+      const t = r.inputs?.['time'] ?? SNAIL_TIME;
+      out.push({ id: `sn:${i}`, title: tr(snailSurfaceName(String(c['surface']) as SnailSurface), locale), formula: 'v = l / t', numbers: `${Math.round(r.value * 1000)} ${uk ? 'мм' : 'mm'} / ${t} ${uk ? 'с' : 's'} ≈ ${n((r.value * 1000) / t, 2)} ${uk ? 'мм/с' : 'mm/s'}` });
       return;
     }
     // A stroboscopic photo: the gaps measured on it, five times that in life; the speeds (hidden till the answer).

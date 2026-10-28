@@ -322,6 +322,14 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('a snail’s speed: the study’s distances in 30 s, slowest on sandpaper', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'snail-speed')!);
+    expect(answer.correct).toBe('sandpaper');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const l = [...answer.text.uk.matchAll(/— (\d+) мм за 30 с/g)].map((m) => Number(m[1]));
+    expect(l).toEqual([45, 41, 38, 25]);
+  }, 60_000);
+
   it('a stroboscopic photo: equal gaps on the table, growing ones in the groove', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'strobe-photo')!);
     expect(answer.correct).toBe('gaps');

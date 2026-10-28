@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.snail': { uk: 'Равлик повзе — знімаємо 30 секунд…', en: 'The snail crawls — filming for 30 seconds…' },
   'lab.strobe': { uk: 'Спалахи один за одним — кулька лишає зображення…', en: 'Flash after flash — the ball leaves its images…' },
   'lab.wind': { uk: 'Бульбашка летить — секундомір іде…', en: 'The bubble flies — the stopwatch is running…' },
   'lab.winch': { uk: 'Котушка крутиться — рахую оберти…', en: 'The spool is turning — counting the turns…' },
@@ -48,6 +49,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
   if (next.kind === 'strobe' && next.strobe?.gaps) return strobeRun(next, draw);
   if (next.kind === 'wind' && next.wind?.read && next.run) return windRun(next, next.run, draw);
   if (next.kind === 'winch' && next.winch?.read) return winch(next, draw);
@@ -343,6 +345,22 @@ function strobeRun(next: BenchView, draw: (v: BenchView) => void): Motion {
       if (done || k.value >= n + 0.5) return draw(next);
       const { gaps: _g, ...rest } = st;
       draw({ ...next, strobe: { ...rest, shown: k.value } });
+    },
+  };
+}
+
+/** A snail: its 30 s played some eight times faster, the stopwatch running with it. */
+function snailRun(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v: BenchView) => void): Motion {
+  const sn = next.snail!;
+  const fast = 8;
+  const comma = (next.stopwatch?.display ?? ',').includes(',');
+  const clock = new Channel(0, run.seconds, { kind: 'steady', speed: fast }, 1e-4);
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      const { read: _r, ...rest } = sn;
+      draw({ ...next, stopwatch: { display: clock.value.toFixed(2).replace('.', comma ? ',' : '.'), fast }, snail: { ...rest, at: (sn.at * clock.value) / run.seconds } });
     },
   };
 }
