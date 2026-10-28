@@ -962,6 +962,43 @@ footer .library-links a { color: var(--accent); }
 .table-bare .kitchen-head .buttons, .table-bare #setup-line, .table-bare .controls, .table-bare #chart-box, .table-bare #energy, .table-bare #protocol, .table-bare #protocol-hint, .table-bare #expect, .table-bare #add, .table-bare .report-card, .table-bare #messages, .table-bare #offer { display: none; }
 .table-bare #side-body > section:has(#expect), .table-bare #side-body > section:has(#add) { display: none; }
 .scene.bare .scene-svg .items, .scene.bare #sc-gas, .scene.bare #sc-vapour, .scene.bare #sc-cloud, .scene.bare #sc-thermo, .scene.bare #sc-scale, .scene.bare #sc-dyn, .scene.bare #sc-mark, .scene.bare #sc-coil { display: none; }
+/* Being set up over the table: what is not on it yet is not drawn (it flies down when chosen). */
+.scene .items > .device, .scene .items > .vessel, .scene #sc-thermo { transition: opacity 0.25s; }
+.scene.away-device .items > .device, .scene.away-vessel .items > .vessel, .scene.away-vessel #sc-thermo, .scene.away-vessel #sc-pieces { opacity: 0; }
+/* The row of things to choose over the table: the middle one large, its neighbours small at the sides. */
+.chooser { position: absolute; z-index: 4; left: 50%; top: 2%; transform: translateX(-50%); width: min(600px, 86%); height: 64%; display: flex; flex-direction: column; color: #f1efe4; }
+.chooser[hidden] { display: none; }
+.chooser { transition: opacity 0.25s; }
+.chooser.flying { opacity: 0; pointer-events: none; }
+/* (The row is where the Professor's bubble is: he waits quietly meanwhile.) */
+.scene-stage.choosing .bubble { visibility: hidden; }
+/* Just the board behind the row: what is written on it would show through. */
+.scene-stage.choosing .board-lines, .scene-stage.choosing .board-empty { visibility: hidden; }
+.ch-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px 0 16px; }
+.ch-title { font-weight: 600; flex: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.ch-steps { display: flex; gap: 5px; }
+.ch-steps i { width: 8px; height: 8px; border-radius: 50%; background: rgba(241,239,228,0.3); }
+.ch-steps i.done { background: rgba(241,239,228,0.7); }
+.ch-steps i.on { background: #ffd166; }
+.ch-close { border: 0; background: none; color: rgba(241,239,228,0.75); font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.ch-close:hover { color: #fff; background: rgba(255,255,255,0.12); }
+.ch-stage { flex: 1; min-height: 0; display: flex; align-items: center; gap: 4px; padding: 0 6px; }
+.ch-row { position: relative; flex: 1; height: 100%; overflow: hidden; touch-action: pan-y; }
+.ch-item { position: absolute; left: 50%; top: 4%; width: 38%; height: 92%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding: 4px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; cursor: pointer; transition: transform 0.35s ease, opacity 0.35s ease; }
+.ch-item.mid { background: none; }
+.ch-item:focus-visible { outline: 2px solid var(--accent); }
+.ch-pic { flex: 1; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.ch-pic > svg, .ch-ghost > svg { width: 100%; height: 100%; }
+.ch-pic .ic, .ch-ghost .ic { width: 52%; height: 52%; }
+.ch-name { font-size: 0.86rem; font-weight: 600; text-align: center; line-height: 1.2; }
+.ch-note { font-size: 0.74rem; color: rgba(241,239,228,0.75); text-align: center; }
+.ch-item:not(.mid) .ch-note { visibility: hidden; }
+.ch-arrow { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(241,239,228,0.5); background: rgba(0,0,0,0.15); color: #f1efe4; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.ch-arrow:disabled { opacity: 0.3; cursor: default; }
+.ch-foot { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 4px 10px 10px; flex-wrap: wrap; }
+.ch-error { margin: 0; color: #ffb4a8; font-size: 0.82rem; }
+.ch-ghost { position: absolute; z-index: 5; pointer-events: none; display: flex; align-items: flex-end; justify-content: center; transform-origin: 50% 50%; }
+@media (max-width: 700px) { .chooser { width: 96%; top: 2%; height: 88%; } .ch-head { padding: 2px 4px 0 10px; font-size: 0.8rem; } .ch-close { padding: 2px 6px; } .ch-arrow { width: 26px; height: 26px; font-size: 1rem; } .ch-item { width: 46%; top: 0; height: 100%; padding: 2px; } .ch-name { font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } .ch-note { display: none; } .ch-foot { padding: 2px 6px 6px; } .ch-go { font-size: 0.8rem; padding: 4px 12px; min-height: 0; } }
 .scene .bench-ruler rect { fill: #f4e7b8; stroke: #a8955a; }
 .scene .bench-ruler .ticks path { stroke: #4b4b4b; stroke-width: 0.8; }
 .scene .bench-ruler .labels text { font: 7px system-ui, sans-serif; fill: #333; }

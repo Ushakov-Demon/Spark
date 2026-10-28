@@ -137,6 +137,10 @@ import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
 import { BUSY, SLIDE } from './graphics/scene/bench-motion.js';
 import { filterLibrary, LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute } from './library.js';
+import { createChooser, fly, type ChooserStage } from './chooser.js';
+import { deviceSvg } from './graphics/scene/devices.js';
+import { baseFor, vesselGeom } from './graphics/scene/vessels.js';
+import { H, W } from './graphics/scene/constants.js';
 import { createScene, incandescent, liquidColor, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
@@ -203,7 +207,8 @@ const DT = seconds(0.5);
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: DT });
 const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS);
 
-let params: LabParams = {
+/** The sandbox as it starts (and starts again when the panel switches tabs). */
+const SANDBOX_START: LabParams = {
   action: 'boil',
   substance: 'water',
   liters: 1,
@@ -215,6 +220,7 @@ let params: LabParams = {
   heater: { id: 'electric-hotplate', rating: 2000, knob: 0.7 },
   roomTemp: 20,
 };
+let params: LabParams = SANDBOX_START;
 /** Remembered while the action switches between heating and cooling. */
 let lastHeater: NonNullable<LabParams['heater']> = params.heater!;
 let lastCooler: NonNullable<LabParams['cooler']> = { id: 'freezer', setpoint: -18 };
@@ -244,6 +250,11 @@ let pendingAdds: Added[] = [];
 let doneRecord: Omit<StepRecord, 'adds'> | null = null;
 /** A ready-made experiment in progress: its question and the steps still to do. */
 let preset: Preset | null = null;
+/** Setting the table up over it, thing by thing (see «choosing over the table»). */
+type AssemblyStage = 'device' | 'vessel' | 'substance';
+let assembly: { readonly stages: readonly AssemblyStage[]; at: number; readonly placed: Set<'device' | 'vessel' | 'liquid'> } | null = null;
+/** The row of things to add during the experiment is shown. */
+let adding = false;
 /** Something has been set on the table: an experiment chosen, a thing taken from the shelf, a recording played. Before that it is empty. */
 let tableSet = false;
 /** The ready-made experiment as it was chosen: starting over begins it anew from this (its steps change params on the way). */
@@ -991,6 +1002,8 @@ $('#sound').onclick = () => {
 };
 // The newspaper on the table: read it any time (he also brings it himself when bored).
 const newsButton = el('button', { type: 'button', className: 'news-button' });
+const addOverButton = el('button', { type: 'button', className: 'news-button add-over' });
+addOverButton.onclick = () => openAdding();
 newsButton.onclick = () => byTheWay(performance.now(), true);
 $('#paper-more').onclick = () => {
   $('#paper-body').innerHTML = `<p class="paper-loading">${t().byTheWay.loading}</p>`;
@@ -1234,10 +1247,12 @@ let addError = '';
 /** Pick what to add, with sensible amounts: a metal block from boiling water, a small wooden block, a pinch of salt… */
 function chooseAdd(id: SubstanceId) {
   addSub = id;
+  ({ frozen: addFrozen, temp: addTemp, grams: addGrams } = addDefaults(id));
+}
+function addDefaults(id: SubstanceId): { frozen: boolean; temp: number; grams: number } {
   const sub = SUBSTANCES[id];
-  if (!canFreezeHere(sub)) addFrozen = false;
-  addTemp = sub.category === 'solid.metal' ? 100 : addFrozen ? -18 : 20;
-  addGrams = sub.category === 'solid.metal' ? 100 : sub.category.startsWith('solid.') ? 10 : 30;
+  const frozen = addFrozen && canFreezeHere(sub);
+  return { frozen, temp: sub.category === 'solid.metal' ? 100 : frozen ? -18 : 20, grams: sub.category === 'solid.metal' ? 100 : sub.category.startsWith('solid.') ? 10 : 30 };
 }
 /** A guided procedure stands between its steps: nothing has run yet, the next step will set the device. */
 const waitingForPlan = () => !!preset?.guided && plan.some((s) => s.kind === 'operation') && !running && stepElapsed() === 0;
@@ -1465,7 +1480,7 @@ function phaseNote(): { text: string; pct: number } | null {
 // ---------- rendering ----------
 const chart = createChart();
 const scene = createScene();
-scene.element.querySelector('.table-buttons')!.prepend(newsButton);
+scene.element.querySelector('.table-buttons')!.prepend(addOverButton, newsButton);
 // Turning the bubble's page: the Professor reads the page now shown (cutting the one before).
 scene.onTurn((page) => {
   hush();
@@ -1606,7 +1621,9 @@ function sceneView(): SceneView {
     lid: params.lid,
     liquid,
     ...(tintOf(mix) ? { tint: tintOf(mix)! } : {}),
-    fill: Math.min(1, usedVolume() / params.size),
+    // Being set up over the table: what is not on it yet is not drawn, the liquid not yet poured.
+    ...(assembly ? { away: { device: !assembly.placed.has('device'), vessel: !assembly.placed.has('vessel') } } : {}),
+    fill: assembly && !assembly.placed.has('liquid') ? 0 : Math.min(1, usedVolume() / params.size),
     temperature: T,
     solid: mix && mix.water <= 1e-9 ? 0 : s,
     crystals: mix && mix.salt > 0 ? mix.crystals / mix.salt : 0,
@@ -2116,6 +2133,7 @@ function showOnlyWhatMatters() {
   // The prediction / goal card is put aside for now (it confused more than it helped).
   document.querySelector('#expect')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', true);
   document.querySelector('#add')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', bench);
+  hide('.add-over', bench || (!preset && !tableSet) || !!assembly);
   const somethingToExplain = stepsSoFar().some((x) => x.result.final.time > x.result.initial.time) || allReadings().length > 0;
   // (Not while an instrument is still on its way to its reading: that reading belongs in the explanation.)
   document.querySelector('#explain')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', !somethingToExplain || instrumentBusy);
@@ -2210,6 +2228,8 @@ function render() {
   renderSound();
   renderVoice();
   newsButton.textContent = u.byTheWay.button;
+  addOverButton.textContent = `➕ ${u.choose.add}`;
+  addOverButton.title = u.choose.open;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
   scaleSel.setAttribute('aria-label', u.weigh.scales);
@@ -2506,6 +2526,135 @@ $('#look-back').addEventListener('click', (e) => {
   render();
 });
 
+// ---------- choosing over the table ----------
+/**
+ * Setting the table up thing by thing: the action chosen, its device, then the vessel, then the
+ * substance are offered in a row over the table; each chosen one flies down to its place. Under way,
+ * only the device (the vessel and its contents stay). What is not placed yet is not drawn.
+ */
+const stage = scene.element.querySelector<HTMLElement>('.scene-stage')!;
+const chooser = createChooser(stage, () => ({ prev: t().choose.prev, next: t().choose.next, close: t().choose.close }));
+
+/** The picture over the table: the device as it is drawn on the table, an empty vessel, a bottle or a block. */
+function choicePic(c: Choice): string {
+  if ('device' in c.look) {
+    if (c.look.device === 'none') return `<span class="dev-pic">${icon(c.look.icon, 'ic huge')}</span>`;
+    const shape = (vesselItem().look ?? 'pot') as VesselShape;
+    const g = vesselGeom(shape, baseFor(c.look.device, shape));
+    // (Without the ids: those belong to the drawing on the table.)
+    return `<svg data-fit viewBox="0 0 ${W} ${H}" aria-hidden="true"><g>${deviceSvg(c.look.device, g).replace(/ id="[^"]*"/g, '')}</g></svg>`;
+  }
+  if ('vessel' in c.look) return vesselPreview(c.look.vessel, c.look.material, liquidKindOf(substance()), 0);
+  return shelfPic(c.look.substance);
+}
+
+function startAssembly() {
+  adding = false;
+  scene.read(false);
+  const started = experimentStarted();
+  assembly = { stages: started ? ['device'] : ['device', 'vessel', 'substance'], at: 0, placed: new Set(started ? ['vessel', 'liquid'] : []) };
+  render();
+  showAssembly();
+}
+function showAssembly() {
+  const a = assembly;
+  if (!a) return;
+  const u = t();
+  const at = a.stages[a.at]!;
+  const flat = (gs: readonly ChoiceGroup[]) => gs.flatMap((g) => g.items);
+  const devices = at === 'device' ? deviceChoices() : null;
+  const choices = devices ? flat(devices.groups) : at === 'vessel' ? flat(vesselChoices()) : flat(substanceChoices()).filter((x) => x.sample);
+  if (!choices.length) return nextAssembly();
+  const view: ChooserStage = {
+    title: devices ? devices.title : at === 'vessel' ? u.vessel : u.substance,
+    step: { at: a.at, of: a.stages.length },
+    start: Math.max(0, choices.findIndex((x) => x.selected)),
+    cards: choices.map((x) => ({
+      key: x.key,
+      name: tr(x.name, locale),
+      note: x.note,
+      pic: choicePic(x),
+      action: 'substance' in x.look ? (x.look.substance.category.startsWith('liquid.') ? u.choose.pour : u.choose.putIn) : u.choose.put,
+    })),
+  };
+  chooser.show(view, (card, pic) => void place(choices.find((x) => x.key === card.key)!, pic, at), endAssembly);
+}
+/** The chosen thing is set on the table (still not drawn), flies to where it now stands, and shows. */
+async function place(x: Choice, pic: HTMLElement, at: AssemblyStage) {
+  x.pick();
+  if (!assembly) return;
+  await fly(stage, pic, scene.rectOf(at === 'device' ? 'device' : 'vessel'), at === 'substance');
+  if (!assembly) return;
+  assembly.placed.add(at === 'substance' ? 'liquid' : at);
+  render();
+  nextAssembly();
+}
+function nextAssembly() {
+  if (!assembly) return;
+  assembly.at++;
+  if (assembly.at >= assembly.stages.length) return endAssembly();
+  showAssembly();
+}
+/** Closed or done: everything chosen stands on the table. */
+function endAssembly() {
+  assembly = null;
+  chooser.hide();
+  render();
+}
+/** Something taken from the shelf directly: no row over the table any more. */
+function closeChooser() {
+  if (!assembly && !adding) return;
+  assembly = null;
+  adding = false;
+  chooser.hide();
+}
+
+/** What can be put into the contents now, in a row over the table; the chosen one is dropped (or poured) in. */
+function openAdding(error?: string) {
+  assembly = null;
+  adding = true;
+  scene.read(false);
+  const u = t();
+  const addable = new Set(addableTo(session.state, commands).map((x) => x.id));
+  const list = SUBSTANCE_FAMILIES.flatMap((f) => Object.values(SUBSTANCES).filter((x) => f.categories.includes(x.category) && addable.has(x.id)));
+  const g = (x: number) => `${sig(x, 3, locale)} ${locale === 'uk' ? 'г' : 'g'}`;
+  // The one chosen in the "add" panel keeps its settings there; another comes with its usual ones.
+  const portion = (id: SubstanceId) => (id === addSub ? { frozen: addFrozen, temp: addTemp, grams: addGrams } : addDefaults(id));
+  chooser.show(
+    {
+      title: u.addTitle,
+      start: Math.max(0, list.findIndex((x) => x.id === addSub)),
+      ...(error ? { error } : {}),
+      cards: list.map((x) => {
+        const p = portion(x.id as SubstanceId);
+        // Frozen — a piece of ice, not the bottle.
+        const pic = p.frozen ? blockSvg('#dff1ff', formulaOf(x)) : shelfPic(x);
+        return { key: x.id, name: tr(x.name, locale), note: `${g(p.grams)} · ${String(p.temp).replace('-', '−')} °C${p.frozen ? ` · ${u.addFrozen}` : ''}`, pic, action: u.choose.add };
+      }),
+    },
+    (card, pic) => void dropIn(card.key as SubstanceId, pic),
+    () => {
+      adding = false;
+      render();
+    },
+  );
+  render();
+}
+async function dropIn(id: SubstanceId, pic: HTMLElement) {
+  if (id !== addSub) chooseAdd(id);
+  const sub = SUBSTANCES[id];
+  // A liquid or a powder is poured from its bottle; a block or ice is dropped in.
+  const pour = !addFrozen && !(sub.category.startsWith('solid.') && !dissolves(sub));
+  await fly(stage, pic, scene.rectOf('vessel'), pour);
+  if (!adding) return;
+  const error = addPortion(addSub, addGrams, addTemp, addFrozen);
+  buildAdd();
+  if (error) return openAdding(error);
+  adding = false;
+  chooser.hide();
+  render();
+}
+
 // ---------- shelf (left panel) ----------
 /** Which group is open in each shelf section (substances, devices, vessels, instruments) — by its label. */
 const openFamilies: Record<string, string> = (() => {
@@ -2524,14 +2673,7 @@ function buildShelf() {
   const shelf = $('#shelf');
   const scroll = shelf.scrollTop;
   root.innerHTML = '';
-  const rebuild = () => {
-    tableSet = true;
-    // Another substance or vessel: a new, free experiment (a ready-made one's plan no longer fits).
-    preset = null;
-    plan = [];
-    buildShelf();
-    newSession();
-  };
+  const rebuild = freshSetup;
   const matches = (name: LocalizedText) => !query || name.uk.toLowerCase().includes(query) || name.en.toLowerCase().includes(query);
 
   const section = (id: string, title: string, chosen: string, ...content: HTMLElement[]) => {
@@ -2577,6 +2719,7 @@ function buildShelf() {
     b.onclick = () => {
       const was = tableSet;
       tableSet = true;
+      closeChooser();
       o.onPick();
       if (!was) render();
     };
@@ -2634,15 +2777,11 @@ function buildShelf() {
   };
   const volume = (l: number) => (l < 1 ? `${Math.round(l * 1000)} ${u.ml}` : `${num(l)} ${u.liters}`);
   const num = (x: number) => sig(x, 4, locale);
-  const hasEstimate = (vals: readonly ({ verification: string } | undefined)[]) => vals.some((v) => v?.verification === 'estimate');
   /** Once the experiment is under way, the vessel and its contents stay: only what fits them is offered. */
   const started = experimentStarted();
   const sub = substance();
   const v = vesselItem();
-  const pick = (next: LabParams, after: () => void) => {
-    params = fitChoices(next);
-    after();
-  };
+  const pick = pickParams;
 
   /**
    * A carousel: `perPage` items at a time, arrows and page dots; it opens on the page with item `start`.
@@ -2680,7 +2819,11 @@ function buildShelf() {
     const b = el('button', { type: 'button', className: `tile${a === params.action ? ' selected' : ''}` });
     b.innerHTML = `${icon(OPERATIONS[a].icon, 'ic big')}<span>${tr(OPERATIONS[a].label, locale)}</span>`;
     b.setAttribute('aria-pressed', String(a === params.action));
-    b.onclick = () => setAction(a);
+    // The action chosen, its things are chosen over the table one by one.
+    b.onclick = () => {
+      setAction(a);
+      startAssembly();
+    };
     return el('li', { className: 'car-li' }, b);
   });
   const actionContent: HTMLElement[] = carousel(tiles, 2, actions.indexOf(params.action));
@@ -2694,30 +2837,13 @@ function buildShelf() {
   if (!query) section('action', u.action, tr(op.label, locale), ...actionContent);
 
   // 2. The device — it decides which vessels can be used.
-  const uses = actionUses(params.action);
   const devPic = (look: string | undefined) => `<span class="dev-pic">${icon(look, 'ic huge')}</span>`;
-  const roomCard = (selected: boolean, onPick: () => void) =>
-    matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? [card({ name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, pic: devPic('room'), note: `${params.roomTemp} °C`, selected, onPick })] : [];
+  const asCard = (c: Choice, pic: string) => card({ name: c.name, note: c.note, ...(c.badge ? { badge: c.badge } : {}), ...(c.ref ? { ref: c.ref } : {}), selected: c.selected, pic, onPick: c.pick });
+  const shelfPicOf = (c: Choice) => ('device' in c.look ? devPic(c.look.icon) : 'vessel' in c.look ? vesselPreview(c.look.vessel, c.look.material, liquidKindOf(sub)) : shelfPic(c.look.substance));
+  const cardsOf = (groups: readonly ChoiceGroup[]) => groups.map((g) => ({ label: g.label, cards: g.items.map((c) => asCard(c, shelfPicOf(c))) }));
+  const devices = deviceChoices(matches);
+  const uses = actionUses(params.action);
   if (uses === 'supply') {
-    const groups = childrenOf('device.power').map((c) => ({
-      label: tr(c.name, locale),
-      cards: Object.values(SUPPLIES)
-        .filter((x) => x.category === c.id && matches(x.name))
-        .map((x) =>
-          card({
-            name: x.name,
-            pic: devPic(x.look),
-            ref: `equipment:${x.id}`,
-            note: `${x.spec.voltage.min === x.spec.voltage.max ? `${x.spec.voltage.max} ${u.volts}` : `${x.spec.voltage.min}–${x.spec.voltage.max} ${u.volts}`} · ≤ ${sig(x.spec.currentLimit.value, 3, locale)} ${u.amps}`,
-            ...([x.spec.currentLimit, x.spec.internalResistance].some((d) => d?.verification === 'estimate') ? { badge: u.estimateBadge } : {}),
-            selected: x.id === params.supply?.id,
-            onPick: () => {
-              lastSupply = { id: x.id as SupplyId, knob: lastSupply.knob, ...(lastSupply.electrodes ? { electrodes: lastSupply.electrodes } : {}) };
-              pick({ ...params, supply: lastSupply }, stepChanged);
-            },
-          }),
-        ),
-    }));
     // What the electrodes are made of: graphite does not react; a steel anode dissolves.
     const electrodeChips = params.supply
       ? [el('span', { className: 'muted small' }, u.electrodes), chips(ELECTRODE_MATERIALS.map((m) => [m, tr(COMPONENTS[m].name, locale)] as const), params.supply.electrodes ?? 'graphite', (m) => {
@@ -2725,67 +2851,9 @@ function buildShelf() {
           pick({ ...params, supply: lastSupply }, stepChanged);
         })]
       : [];
-    section('device', u.supplyWhat, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...familyShelf('device', groups, electrodeChips));
+    section('device', devices.title, params.supply ? tr(SUPPLIES[params.supply.id].name, locale) : '—', ...familyShelf('device', cardsOf(devices.groups), electrodeChips));
   } else if (uses === 'heater' || uses === 'either') {
     const h = params.heater ? HEATERS[params.heater.id] : undefined;
-    const groups = childrenOf('device.heater').map((c) => ({
-      label: tr(c.name, locale),
-      cards: itemsUnder(c.id)
-        .filter((x): x is NonNullable<ReturnType<typeof heaterItem>> => x.kind === 'heater' && matches(x.name))
-        // During an experiment the vessel stays: only heaters that work with it.
-        .filter((x) => !started || canHeat(x, v, params.material, params.size).ok)
-        .map((x) =>
-          card({
-            name: x.name,
-            pic: devPic(x.look),
-            ref: `equipment:${x.id}`,
-            note: x.spec.ratings.map((r) => formatQuantity(r, 'W', { locale, level: 'school' })).join(' / '),
-            ...(x.spec.ratingData.verification === 'estimate' ? { badge: u.estimateBadge } : {}),
-            selected: x.id === params.heater?.id,
-            onPick: () => {
-              lastHeater = { id: x.id as HeaterId, rating: x.spec.defaultRating, knob: x.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 };
-              // A flame instead of a furnace.
-              const { cooler: _c, ...rest } = params;
-              void _c;
-              pick({ ...rest, heater: lastHeater }, stepChanged);
-            },
-          }),
-        ),
-    }));
-    if (uses === 'either') {
-      groups.unshift({
-        label: locale === 'uk' ? 'Без нагрівача' : 'No heater',
-        cards: roomCard(!params.heater && !params.cooler, () => {
-          const { heater: _h, cooler: _c, ...rest } = params;
-          void _h;
-          void _c;
-          pick(rest, stepChanged);
-        }),
-      });
-      // Hot surroundings instead of a flame: a muffle furnace holds its temperature around the vessel.
-      for (const c of childrenOf('device.furnace')) {
-        groups.push({
-          label: tr(c.name, locale),
-          cards: itemsUnder(c.id)
-            .filter((x): x is (typeof COOLERS)[CoolerId] => x.kind === 'cooler' && matches(x.name))
-            .map((x) =>
-              card({
-                name: x.name,
-                pic: devPic(x.look),
-                ref: `equipment:${x.id}`,
-                note: `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C`,
-                selected: x.id === params.cooler?.id,
-                onPick: () => {
-                  const { heater: _h, ...rest } = params;
-                  void _h;
-                  // (Not remembered as "the cooler": cooling down in a furnace makes no sense.)
-                  pick({ ...rest, cooler: { id: x.id as CoolerId, setpoint: x.spec.setpoint.default } }, stepChanged);
-                },
-              }),
-            ),
-        });
-      }
-    }
     const furnace = params.cooler && COOLERS[params.cooler.id].spec.hot ? COOLERS[params.cooler.id] : undefined;
     const furnaceDetail = furnace
       ? [number(`${u.furnaceSetpoint} (${furnace.spec.setpoint.min}…${furnace.spec.setpoint.max})`, params.cooler!.setpoint, furnace.spec.setpoint.min, furnace.spec.setpoint.max, 10, (sp) => {
@@ -2798,50 +2866,19 @@ function buildShelf() {
           pick({ ...params, heater: lastHeater }, stepChanged);
         })]
       : [];
-    section('device', uses === 'either' ? u.meltWith : u.device, h ? tr(h.name, locale) : furnace ? tr(furnace.name, locale) : u.justRoom, ...familyShelf('device', groups, detail));
+    section('device', devices.title, h ? tr(h.name, locale) : furnace ? tr(furnace.name, locale) : u.justRoom, ...familyShelf('device', cardsOf(devices.groups), detail));
   } else {
     const cool = params.cooler ? COOLERS[params.cooler.id] : undefined;
-    const groups = [
-      {
-        label: locale === 'uk' ? 'Без охолоджувача' : 'No cooler',
-        cards: roomCard(!params.cooler, () => {
-          const { cooler: _c, ...rest } = params;
-          void _c;
-          pick(rest, stepChanged);
-        }),
-      },
-      ...childrenOf('device.cooler').map((c) => ({
-        label: tr(c.name, locale),
-        cards: itemsUnder(c.id)
-          .filter((x): x is (typeof COOLERS)[CoolerId] => x.kind === 'cooler' && matches(x.name))
-          .map((x) =>
-            card({
-              name: x.name,
-              pic: devPic(x.look),
-              ref: `equipment:${x.id}`,
-              note: x.spec.setpoint.max > x.spec.setpoint.min ? `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C` : `${x.spec.setpoint.default} °C`,
-              selected: x.id === params.cooler?.id,
-              onPick: () => {
-                lastCooler = { id: x.id as CoolerId, setpoint: x.spec.setpoint.default };
-                pick({ ...params, cooler: lastCooler }, stepChanged);
-              },
-            }),
-          ),
-      })),
-    ];
     const detail = cool && cool.spec.setpoint.max > cool.spec.setpoint.min
       ? [number(`${u.setpoint} (${cool.spec.setpoint.min}…${cool.spec.setpoint.max})`, params.cooler!.setpoint, cool.spec.setpoint.min, cool.spec.setpoint.max, 1, (sp) => {
           lastCooler = { ...params.cooler!, setpoint: sp };
           params = { ...params, cooler: lastCooler };
         }, stepChanged)]
       : [];
-    section('device', u.coolWhere, cool ? tr(cool.name, locale) : u.justRoom, ...familyShelf('device', groups, detail));
+    section('device', devices.title, cool ? tr(cool.name, locale) : u.justRoom, ...familyShelf('device', cardsOf(devices.groups), detail));
   }
 
   // 3. Substance — only what the chosen operation can be done with.
-  const accepted = new Set(substancesFor(params.action).map((x) => x.id));
-  /** A solid this action can take as the sample itself (salt heated dry, tin melted in a crucible). */
-  const asSample = (x: SubstanceItem) => !started && accepted.has(x.id) && isDrySample(x);
   const small = params.size < 0.1;
   section(
     'substance',
@@ -2851,38 +2888,7 @@ function buildShelf() {
     el('div', { className: 'item-detail item-about' }, ...describe(sub)),
     ...familyShelf(
       'substance',
-      // Everything in the catalog, by family. A liquid is poured into the vessel as the sample (before
-      // the start, and only what the chosen action can do something with); a solid — a block, salt —
-      // is put into the liquid or hung on the dynamometer: picking it gets it ready in the "add" panel.
-      SUBSTANCE_FAMILIES.map((f) => ({
-        label: tr(f.name, locale),
-        cards: Object.values(SUBSTANCES)
-          .filter((x) => f.categories.includes(x.category) && matches(x.name))
-          .filter((x) => (x.category.startsWith('liquid.') ? !started && accepted.has(x.id) : true))
-          .map((x) =>
-            x.category.startsWith('liquid.')
-              ? card({
-                  name: x.name,
-                  pic: shelfPic(x),
-                  ref: `substance:${x.id}`,
-                  note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
-                  ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
-                  selected: x.id === params.substance,
-                  // From a dry sample back to a liquid: a usual amount of it.
-                  onPick: () => pick({ ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x), ...(isDrySample(sub) ? { liters: Math.round(params.size * 0.7 * 1000) / 1000 } : {}) }, rebuild),
-                })
-              : card({
-                  name: x.name,
-                  pic: shelfPic(x),
-                  ref: `substance:${x.id}`,
-                  note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${dissolves(x) ? u.dissolves : u.putIn}`,
-                  ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),
-                  // Heating or melting it dry: it becomes the sample itself; otherwise it is put into the liquid.
-                  selected: asSample(x) ? x.id === params.substance : x.id === addSub && $<HTMLDetailsElement>('#add').open,
-                  onPick: () => (asSample(x) ? pick({ ...params, substance: x.id as SubstanceId, liters: Math.min(params.size * 0.8, DRY_GRAMS / x.liquid.density.value), startTemp: OPERATIONS[params.action].startTemp(x) }, rebuild) : prepareAdd(x.id as SubstanceId)),
-                }),
-          ),
-      })),
+      cardsOf(substanceChoices(matches)),
       [
         ...(started
           ? [el('p', { className: 'muted small' }, u.lockedDuringExperiment)]
@@ -2897,36 +2903,14 @@ function buildShelf() {
   );
 
   // 4. Vessel — only what the chosen device can work with.
-  const fits = vesselsFor(params);
-  const fit = fits.find((f) => f.vessel.id === params.vessel);
+  const fit = vesselsFor(params).find((f) => f.vessel.id === params.vessel);
   section(
     'vessel',
     u.vessel,
     `${tr(v.name, locale)}, ${volume(params.size)}`,
     ...familyShelf(
       'vessel',
-      childrenOf('vessel').map((c) => ({
-        label: tr(c.name, locale),
-        cards: fits
-          .filter((f) => f.vessel.category === c.id && matches(f.vessel.name))
-          .filter(() => !started)
-          .map((f) =>
-            card({
-              name: f.vessel.name,
-              pic: vesselPreview((f.vessel.look ?? 'pot') as VesselShape, f.vessel.id === params.vessel ? params.material : f.materials[0]!, liquidKindOf(sub)),
-              ref: `equipment:${f.vessel.id}`,
-              note: `${f.materials.map((m) => u.materials[m] ?? m).join(', ')} · ${volume(f.sizes[0]!)}${f.sizes.length > 1 ? `–${volume(f.sizes.at(-1)!)}` : ''}`,
-              selected: f.vessel.id === params.vessel,
-              onPick: () => {
-                const size = f.sizes.includes(f.vessel.spec.defaultSize) ? f.vessel.spec.defaultSize : f.sizes[0]!;
-                const material = f.materials.includes(f.vessel.spec.defaultMaterial) ? f.vessel.spec.defaultMaterial : f.materials[0]!;
-                const q = { ...params, vessel: f.vessel.id as VesselId, size, material, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
-                delete (q as { vesselMass?: number }).vesselMass;
-                pick(q, rebuild);
-              },
-            }),
-          ),
-      })),
+      cardsOf(vesselChoices(matches)),
       started || !fit
         ? [el('p', { className: 'muted small' }, started ? u.lockedDuringExperiment : '')]
         : [
@@ -2993,6 +2977,241 @@ function buildShelf() {
   if (!query) section('conditions', locale === 'uk' ? 'Умови' : 'Conditions', `${params.roomTemp} °C`, number(u.room, params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x })));
 
   shelf.scrollTop = scroll;
+}
+
+/** Another substance or vessel: a new, free experiment (a ready-made one's plan no longer fits). */
+function freshSetup() {
+  tableSet = true;
+  preset = null;
+  plan = [];
+  buildShelf();
+  newSession();
+}
+const pickParams = (next: LabParams, after: () => void) => {
+  params = fitChoices(next);
+  after();
+};
+
+/**
+ * A thing to choose for the table — on the shelf a card, over the table a picture that flies down
+ * onto it. The shelf and the row over the table offer the same things, made here.
+ */
+interface Choice {
+  readonly key: string;
+  readonly name: LocalizedText;
+  readonly note?: string | undefined;
+  readonly badge?: string;
+  readonly ref?: string;
+  readonly selected: boolean;
+  /** How it looks: a device (its drawing on the table, its shelf icon), a vessel, a substance. */
+  readonly look: { readonly device: DeviceKind; readonly icon: string | undefined } | { readonly vessel: VesselShape; readonly material: string } | { readonly substance: SubstanceItem };
+  /** A substance that becomes the sample (a liquid poured in, salt heated dry) — not one put into it. */
+  readonly sample?: boolean;
+  readonly pick: () => void;
+}
+interface ChoiceGroup {
+  readonly label: string;
+  readonly items: readonly Choice[];
+}
+type Matches = (name: LocalizedText) => boolean;
+const everything: Matches = () => true;
+
+/** The devices the action works with (a heater, a cooler, a power supply — or just the room), in their families. */
+function deviceChoices(matches: Matches = everything): { title: string; groups: ChoiceGroup[] } {
+  const u = t();
+  const uses = actionUses(params.action);
+  const started = experimentStarted();
+  const v = vesselItem();
+  const room = (selected: boolean, pick: () => void): Choice[] =>
+    matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? [{ key: 'room', name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, look: { device: 'none', icon: 'room' }, note: `${params.roomTemp} °C`, selected, pick }] : [];
+  if (uses === 'supply') {
+    return {
+      title: u.supplyWhat,
+      groups: childrenOf('device.power').map((c) => ({
+        label: tr(c.name, locale),
+        items: Object.values(SUPPLIES)
+          .filter((x) => x.category === c.id && matches(x.name))
+          .map((x) => ({
+            key: x.id,
+            name: x.name,
+            look: { device: 'supply', icon: x.look },
+            ref: `equipment:${x.id}`,
+            note: `${x.spec.voltage.min === x.spec.voltage.max ? `${x.spec.voltage.max} ${u.volts}` : `${x.spec.voltage.min}–${x.spec.voltage.max} ${u.volts}`} · ≤ ${sig(x.spec.currentLimit.value, 3, locale)} ${u.amps}`,
+            ...([x.spec.currentLimit, x.spec.internalResistance].some((d) => d?.verification === 'estimate') ? { badge: u.estimateBadge } : {}),
+            selected: x.id === params.supply?.id,
+            pick: () => {
+              lastSupply = { id: x.id as SupplyId, knob: lastSupply.knob, ...(lastSupply.electrodes ? { electrodes: lastSupply.electrodes } : {}) };
+              pickParams({ ...params, supply: lastSupply }, stepChanged);
+            },
+          })),
+      })),
+    };
+  }
+  if (uses === 'heater' || uses === 'either') {
+    const groups: ChoiceGroup[] = childrenOf('device.heater').map((c) => ({
+      label: tr(c.name, locale),
+      items: itemsUnder(c.id)
+        .filter((x): x is NonNullable<ReturnType<typeof heaterItem>> => x.kind === 'heater' && matches(x.name))
+        // During an experiment the vessel stays: only heaters that work with it.
+        .filter((x) => !started || canHeat(x, v, params.material, params.size).ok)
+        .map((x) => ({
+          key: x.id,
+          name: x.name,
+          look: { device: x.look as DeviceKind, icon: x.look },
+          ref: `equipment:${x.id}`,
+          note: x.spec.ratings.map((r) => formatQuantity(r, 'W', { locale, level: 'school' })).join(' / '),
+          ...(x.spec.ratingData.verification === 'estimate' ? { badge: u.estimateBadge } : {}),
+          selected: x.id === params.heater?.id,
+          pick: () => {
+            lastHeater = { id: x.id as HeaterId, rating: x.spec.defaultRating, knob: x.spec.control === 'switch' ? 0 : lastHeater.knob || 0.7 };
+            // A flame instead of a furnace.
+            const { cooler: _c, ...rest } = params;
+            void _c;
+            pickParams({ ...rest, heater: lastHeater }, stepChanged);
+          },
+        })),
+    }));
+    if (uses === 'either') {
+      groups.unshift({
+        label: locale === 'uk' ? 'Без нагрівача' : 'No heater',
+        items: room(!params.heater && !params.cooler, () => {
+          const { heater: _h, cooler: _c, ...rest } = params;
+          void _h;
+          void _c;
+          pickParams(rest, stepChanged);
+        }),
+      });
+      // Hot surroundings instead of a flame: a muffle furnace holds its temperature around the vessel.
+      for (const c of childrenOf('device.furnace')) {
+        groups.push({
+          label: tr(c.name, locale),
+          items: itemsUnder(c.id)
+            .filter((x): x is (typeof COOLERS)[CoolerId] => x.kind === 'cooler' && matches(x.name))
+            .map((x) => ({
+              key: x.id,
+              name: x.name,
+              look: { device: x.look as DeviceKind, icon: x.look },
+              ref: `equipment:${x.id}`,
+              note: `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C`,
+              selected: x.id === params.cooler?.id,
+              pick: () => {
+                const { heater: _h, ...rest } = params;
+                void _h;
+                // (Not remembered as "the cooler": cooling down in a furnace makes no sense.)
+                pickParams({ ...rest, cooler: { id: x.id as CoolerId, setpoint: x.spec.setpoint.default } }, stepChanged);
+              },
+            })),
+        });
+      }
+    }
+    return { title: uses === 'either' ? u.meltWith : u.device, groups };
+  }
+  return {
+    title: u.coolWhere,
+    groups: [
+      {
+        label: locale === 'uk' ? 'Без охолоджувача' : 'No cooler',
+        items: room(!params.cooler, () => {
+          const { cooler: _c, ...rest } = params;
+          void _c;
+          pickParams(rest, stepChanged);
+        }),
+      },
+      ...childrenOf('device.cooler').map((c) => ({
+        label: tr(c.name, locale),
+        items: itemsUnder(c.id)
+          .filter((x): x is (typeof COOLERS)[CoolerId] => x.kind === 'cooler' && matches(x.name))
+          .map((x): Choice => ({
+            key: x.id,
+            name: x.name,
+            look: { device: x.look as DeviceKind, icon: x.look },
+            ref: `equipment:${x.id}`,
+            note: x.spec.setpoint.max > x.spec.setpoint.min ? `${x.spec.setpoint.min}…${x.spec.setpoint.max} °C` : `${x.spec.setpoint.default} °C`,
+            selected: x.id === params.cooler?.id,
+            pick: () => {
+              lastCooler = { id: x.id as CoolerId, setpoint: x.spec.setpoint.default };
+              pickParams({ ...params, cooler: lastCooler }, stepChanged);
+            },
+          })),
+      })),
+    ],
+  };
+}
+
+/** The vessels the device can work with (none once the experiment is under way: the vessel stays). */
+function vesselChoices(matches: Matches = everything): ChoiceGroup[] {
+  const u = t();
+  const volume = (l: number) => (l < 1 ? `${Math.round(l * 1000)} ${u.ml}` : `${sig(l, 4, locale)} ${u.liters}`);
+  const fits = experimentStarted() ? [] : vesselsFor(params);
+  return childrenOf('vessel').map((c) => ({
+    label: tr(c.name, locale),
+    items: fits
+      .filter((f) => f.vessel.category === c.id && matches(f.vessel.name))
+      .map((f) => ({
+        key: f.vessel.id,
+        name: f.vessel.name,
+        look: { vessel: (f.vessel.look ?? 'pot') as VesselShape, material: f.vessel.id === params.vessel ? params.material : f.materials[0]! },
+        ref: `equipment:${f.vessel.id}`,
+        note: `${f.materials.map((m) => u.materials[m] ?? m).join(', ')} · ${volume(f.sizes[0]!)}${f.sizes.length > 1 ? `–${volume(f.sizes.at(-1)!)}` : ''}`,
+        selected: f.vessel.id === params.vessel,
+        pick: () => {
+          const size = f.sizes.includes(f.vessel.spec.defaultSize) ? f.vessel.spec.defaultSize : f.sizes[0]!;
+          const material = f.materials.includes(f.vessel.spec.defaultMaterial) ? f.vessel.spec.defaultMaterial : f.materials[0]!;
+          const q = { ...params, vessel: f.vessel.id as VesselId, size, material, lid: false, liters: round(size * 0.7, size < 0.1 ? 3 : 2) };
+          delete (q as { vesselMass?: number }).vesselMass;
+          pickParams(q, freshSetup);
+        },
+      })),
+  }));
+}
+
+/**
+ * Everything in the catalog, by family. A liquid is poured into the vessel as the sample (before the
+ * start, and only what the chosen action can do something with); a solid — a block, salt — is put into
+ * the liquid or hung on the dynamometer: picking it gets it ready in the "add" panel.
+ */
+function substanceChoices(matches: Matches = everything): ChoiceGroup[] {
+  const u = t();
+  const num = (x: number) => sig(x, 4, locale);
+  const hasEstimate = (vals: readonly ({ verification: string } | undefined)[]) => vals.some((v) => v?.verification === 'estimate');
+  const started = experimentStarted();
+  const sub = substance();
+  const accepted = new Set(substancesFor(params.action).map((x) => x.id));
+  /** A solid this action can take as the sample itself (salt heated dry, tin melted in a crucible). */
+  const asSample = (x: SubstanceItem) => !started && accepted.has(x.id) && isDrySample(x);
+  return SUBSTANCE_FAMILIES.map((f) => ({
+    label: tr(f.name, locale),
+    items: Object.values(SUBSTANCES)
+      .filter((x) => f.categories.includes(x.category) && matches(x.name))
+      .filter((x) => (x.category.startsWith('liquid.') ? !started && accepted.has(x.id) : true))
+      .map((x): Choice =>
+        x.category.startsWith('liquid.')
+          ? {
+              key: x.id,
+              name: x.name,
+              look: { substance: x },
+              ref: `substance:${x.id}`,
+              note: [x.freezing ? `${u.meltLine} ${num(x.freezing.point.value)} °C` : null, x.boiling ? `${u.boilLine} ${num(x.boiling.point.value)} °C` : null].filter(Boolean).join(' · ') || undefined,
+              ...(hasEstimate([x.liquid.specificHeat, x.freezing?.point, x.boiling?.point]) ? { badge: u.estimateBadge } : {}),
+              selected: x.id === params.substance,
+              sample: true,
+              // From a dry sample back to a liquid: a usual amount of it.
+              pick: () => pickParams({ ...params, substance: x.id as SubstanceId, startTemp: OPERATIONS[params.action].startTemp(x), ...(isDrySample(sub) ? { liters: Math.round(params.size * 0.7 * 1000) / 1000 } : {}) }, freshSetup),
+            }
+          : {
+              key: x.id,
+              name: x.name,
+              look: { substance: x },
+              ref: `substance:${x.id}`,
+              note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${dissolves(x) ? u.dissolves : u.putIn}`,
+              ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),
+              // Heating or melting it dry: it becomes the sample itself; otherwise it is put into the liquid.
+              selected: asSample(x) ? x.id === params.substance : x.id === addSub && $<HTMLDetailsElement>('#add').open,
+              sample: asSample(x),
+              pick: () => (asSample(x) ? pickParams({ ...params, substance: x.id as SubstanceId, liters: Math.min(params.size * 0.8, DRY_GRAMS / x.liquid.density.value), startTemp: OPERATIONS[params.action].startTemp(x) }, freshSetup) : prepareAdd(x.id as SubstanceId)),
+            },
+      ),
+  }));
 }
 
 function setAction(a: LabAction) {
@@ -3464,8 +3683,10 @@ function buildShelfTabs() {
     const b = el('button', { type: 'button', className: `shelf-tab${id === shelfTab ? ' selected' : ''}`, role: 'tab' }, u.shelfTabs[id]);
     b.setAttribute('aria-selected', String(id === shelfTab));
     b.onclick = () => {
+      if (id === shelfTab) return;
       shelfTab = id;
       store.set('shelfTab', id);
+      clearTable();
       buildShelfTabs();
     };
     tabs.append(b);
@@ -3479,12 +3700,34 @@ function buildShelfTabs() {
 }
 // On a phone the panel stands below the scene: a button in the header goes down to the experiments.
 $('#shelf-jump').onclick = () => {
+  if (shelfTab !== 'experiments') clearTable();
   shelfTab = 'experiments';
   store.set('shelfTab', shelfTab);
   if (store.get('shelf') === 'folded') store.set('shelf', 'open'), renderSide();
   buildShelfTabs();
   $('#shelf').scrollIntoView({ behavior: 'smooth' });
 };
+/**
+ * From the ready-made experiments to the sandbox or back: the table is cleared — no experiment, nothing
+ * on it, the sandbox's choices as at the start, no report.
+ */
+function clearTable() {
+  closeChooser();
+  tableSet = false;
+  preset = null;
+  presetGiven = null;
+  presetVals = {};
+  prediction = null;
+  plan = [];
+  planTotal = 0;
+  params = SANDBOX_START;
+  lastHeater = params.heater!;
+  speed = OPERATIONS[params.action].speed;
+  $<HTMLSelectElement>('#speed').value = String(speed);
+  $('#report').innerHTML = '';
+  buildShelf();
+  newSession();
+}
 function buildPresets() {
   const u = t();
   const tabs = $('#presets-tabs');
@@ -3606,6 +3849,7 @@ $('#lab-sheet').addEventListener('click', (e) => {
 });
 
 function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
+  closeChooser();
   // (A place's example follows the language: Kyiv, New York.)
   const values = { ...defaultValues(chosen, locale), ...chosenValues };
   // Chosen in the catalogue: to the lab, on the experiment's address (the browser's "back" returns to the catalogue).
@@ -3704,6 +3948,7 @@ function saveRecording(name: string): string {
 
 /** Replay a recording on the page: the first step from a fresh setup, then each from where the last ended. */
 function startReplay(rec: Recording) {
+  closeChooser();
   tableSet = true;
   preset = null;
   plan = [];

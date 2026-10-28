@@ -217,6 +217,8 @@ export interface UiText {
   boilLine: string;
   targetLine: string;
   addTitle: string;
+  /** Choosing things over the table: a picture in the middle, its neighbours at the sides; the chosen one goes on the table. */
+  choose: { put: string; pour: string; putIn: string; add: string; close: string; prev: string; next: string; open: string };
   addButton: string;
   addLiquid: string;
   addFrozen: string;
@@ -518,6 +520,16 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boilLine: 'кипіння',
     targetLine: 'ціль',
     addTitle: 'Додати під час досліду',
+    choose: {
+      put: 'Поставити на стіл',
+      pour: 'Налити в посудину',
+      putIn: 'Покласти в посудину',
+      add: 'Додати',
+      close: 'Закрити',
+      prev: 'Попереднє',
+      next: 'Наступне',
+      open: 'Додати над столом',
+    },
     addButton: 'Додати',
     addLiquid: 'рідина',
     addFrozen: 'заморожене',
@@ -812,6 +824,16 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     boilLine: 'boiling',
     targetLine: 'target',
     addTitle: 'Add during the experiment',
+    choose: {
+      put: 'Put it on the table',
+      pour: 'Pour it in',
+      putIn: 'Put it in',
+      add: 'Add',
+      close: 'Close',
+      prev: 'Previous',
+      next: 'Next',
+      open: 'Add over the table',
+    },
     addButton: 'Add',
     addLiquid: 'liquid',
     addFrozen: 'frozen',

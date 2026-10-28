@@ -81,6 +81,8 @@ export interface SceneView {
   readonly noThermometer?: boolean;
   /** Nothing set on the table yet (no experiment chosen, nothing taken from the shelf): an empty table. */
   readonly bare?: boolean;
+  /** Being set up over the table: what is not on it yet (the device, the vessel with its thermometer). */
+  readonly away?: { readonly device?: boolean; readonly vessel?: boolean };
   /** The blackboard on the wall: formulas of the current step with its numbers (latest last). */
   readonly board?: { readonly empty: string; readonly front: string; readonly back: string; readonly lines: readonly { readonly id: string; readonly title: string; readonly formula: string; readonly numbers?: string }[] };
   /** The vessel was just weighed: the scales on the table and what their display shows. */
@@ -108,6 +110,8 @@ export interface Scene {
   /** Someone turned the bubble's page (Далі / Назад): `say` gets the page now shown, to read it out. */
   onTurn(say: (page: string) => void): void;
   render(view: SceneView): void;
+  /** Where the device or the vessel stands on the screen (none drawn — null). */
+  rectOf(what: 'device' | 'vessel'): DOMRect | null;
 }
 
 
@@ -212,7 +216,7 @@ export function createScene(): Scene {
       <rect class="table" x="-800" y="${TABLE}" width="${W + 1600}" height="${H - TABLE + 200}"/>
       <path class="table-edge" d="M-800,${TABLE} H${W + 800}"/>
       <g class="items">
-      ${front ? '' : deviceSvg(v.device, g)}
+      ${front ? '' : `<g class="device">${deviceSvg(v.device, g)}</g>`}
       <g class="vessel ${glass ? 'glass' : 'metal'}">
         ${glass ? '' : `<path d="${g.outer}" style="${wallStyle}" stroke-width="2"/>`}
         <g clip-path="url(#sc-in)">
@@ -233,7 +237,7 @@ export function createScene(): Scene {
         ${v.device === 'bunsen' || v.device === 'spirit' ? g.extras : g.extras.replace(/<path class="clay-triangle"[^>]*\/>/, '')}
         ${v.lid && g.lidPath ? `<path class="lid" d="${g.lidPath}" style="fill:${metal.fill};stroke:${metal.edge}"/>` : ''}
       </g>
-      ${front ? deviceSvg(v.device, g) : ''}
+      ${front ? `<g class="device">${deviceSvg(v.device, g)}</g>` : ''}
       <g id="sc-gas" class="gas-bubbles">${Array.from({ length: 10 }, (_, i) => {
         const a = g.mouth.l + (g.mouth.r - g.mouth.l) * (i % 2 ? 0.75 : 0.25);
         return `<circle ${i % 2 ? '' : 'class="at-anode" '}cx="${a + (i % 3) * 3 - 3}" cy="${g.bottom - 14}" r="${1.5 + (i % 2)}" style="animation-delay:${(i * 0.23) % 1.4}s"/>`;
@@ -309,6 +313,10 @@ export function createScene(): Scene {
         fillAnim = requestAnimationFrame(tick);
       }
       draw({ ...v, fill: shownFill });
+    },
+    rectOf(what) {
+      const r = svg.querySelector(`.items > .${what}`)?.getBoundingClientRect();
+      return r && r.width > 0 ? r : null;
     },
   };
 
@@ -395,6 +403,8 @@ export function createScene(): Scene {
       }
       root.classList.toggle('bench-on', !!v.bench);
       root.classList.toggle('bare', !!v.bare);
+      root.classList.toggle('away-device', !!v.away?.device);
+      root.classList.toggle('away-vessel', !!v.away?.vessel);
       // The coil in the water and the multimeter beside the beaker, its leads over the rim.
       const ck = v.ohmmeter ? `${v.ohmmeter.display}|${g.left}|${g.bottom}` : '';
       const coil = $<SVGGElement>('sc-coil');
