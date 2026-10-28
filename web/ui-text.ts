@@ -218,7 +218,7 @@ export interface UiText {
   targetLine: string;
   addTitle: string;
   /** Choosing things over the table: a picture in the middle, its neighbours at the sides; the chosen one goes on the table. */
-  choose: { put: string; pour: string; putIn: string; add: string; close: string; prev: string; next: string; open: string };
+  choose: { put: string; pour: string; putIn: string; pick: string; add: string; change: string; what: string; build: string; close: string; prev: string; next: string; open: string };
   addButton: string;
   addLiquid: string;
   addFrozen: string;
@@ -524,6 +524,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       put: 'Поставити на стіл',
       pour: 'Налити в посудину',
       putIn: 'Покласти в посудину',
+      pick: 'Обрати',
+      change: 'Змінити',
+      what: 'Що змінити?',
+      build: 'Зібрати дослід',
       add: 'Додати',
       close: 'Закрити',
       prev: 'Попереднє',
@@ -828,6 +832,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       put: 'Put it on the table',
       pour: 'Pour it in',
       putIn: 'Put it in',
+      pick: 'Choose',
+      change: 'Change',
+      what: 'What to change?',
+      build: 'Set up an experiment',
       add: 'Add',
       close: 'Close',
       prev: 'Previous',

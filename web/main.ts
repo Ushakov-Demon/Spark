@@ -137,7 +137,7 @@ import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
 import { BUSY, SLIDE } from './graphics/scene/bench-motion.js';
 import { filterLibrary, LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute } from './library.js';
-import { createChooser, fly, type ChooserStage } from './chooser.js';
+import { createChooser, fly, type ChoiceCard, type ChooserStage } from './chooser.js';
 import { deviceSvg } from './graphics/scene/devices.js';
 import { baseFor, vesselGeom } from './graphics/scene/vessels.js';
 import { H, W } from './graphics/scene/constants.js';
@@ -251,8 +251,8 @@ let doneRecord: Omit<StepRecord, 'adds'> | null = null;
 /** A ready-made experiment in progress: its question and the steps still to do. */
 let preset: Preset | null = null;
 /** Setting the table up over it, thing by thing (see «choosing over the table»). */
-type AssemblyStage = 'device' | 'vessel' | 'substance';
-let assembly: { readonly stages: readonly AssemblyStage[]; at: number; readonly placed: Set<'device' | 'vessel' | 'liquid'> } | null = null;
+type AssemblyStage = 'what' | 'action' | 'device' | 'vessel' | 'material' | 'substance';
+let assembly: { readonly stages: readonly AssemblyStage[]; at: number; readonly placed: Set<'device' | 'vessel' | 'liquid'>; readonly edit: boolean } | null = null;
 /** The row of things to add during the experiment is shown. */
 let adding = false;
 /** Something has been set on the table: an experiment chosen, a thing taken from the shelf, a recording played. Before that it is empty. */
@@ -621,7 +621,9 @@ function measureSay(): string {
   }
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
-  if (instrumentBusy && BUSY[m.command.type]) return tr(BUSY[m.command.type]!, locale);
+  // (Taking the nail out of the coil has its own words.)
+  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type;
+  if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   if (m.command.type === 'lab.stretch') {
     const n = (m.command as { weights: number }).weights;
@@ -2134,6 +2136,8 @@ function showOnlyWhatMatters() {
   document.querySelector('#expect')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', true);
   document.querySelector('#add')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', bench);
   hide('.add-over', bench || (!preset && !tableSet) || !!assembly);
+  hide('.edit-table', bench || !!preset || $('#setup').hidden || !!assembly || adding);
+  scene.element.classList.toggle('editable', !bench && sandboxOpen() && !assembly && !adding);
   const somethingToExplain = stepsSoFar().some((x) => x.result.final.time > x.result.initial.time) || allReadings().length > 0;
   // (Not while an instrument is still on its way to its reading: that reading belongs in the explanation.)
   document.querySelector('#explain')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', !somethingToExplain || instrumentBusy);
@@ -2229,6 +2233,7 @@ function render() {
   renderVoice();
   newsButton.textContent = u.byTheWay.button;
   addOverButton.textContent = `➕ ${u.choose.add}`;
+  editButton.textContent = !preset && !tableSet ? `🛠 ${u.choose.build}` : `✎ ${u.choose.change}`;
   addOverButton.title = u.choose.open;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
   const scaleSel = $<HTMLSelectElement>('#scale');
@@ -2528,12 +2533,15 @@ $('#look-back').addEventListener('click', (e) => {
 
 // ---------- choosing over the table ----------
 /**
- * Setting the table up thing by thing: the action chosen, its device, then the vessel, then the
- * substance are offered in a row over the table; each chosen one flies down to its place. Under way,
- * only the device (the vessel and its contents stay). What is not placed yet is not drawn.
+ * Setting the table up thing by thing: the action, its device, the vessel, its material, the substance
+ * are offered in a row over the table; each chosen one flies down to its place. Under way, only the action
+ * and the device (the vessel and its contents stay). What is being chosen is not drawn until it lands.
+ * Afterwards «✎ Змінити» (or a click on the device or the vessel) changes one of them.
  */
 const stage = scene.element.querySelector<HTMLElement>('.scene-stage')!;
 const chooser = createChooser(stage, () => ({ prev: t().choose.prev, next: t().choose.next, close: t().choose.close }));
+/** Where each stage's choice stands on the table (the action and "what to change" stand nowhere). */
+const TARGET: Partial<Record<AssemblyStage, 'device' | 'vessel' | 'liquid'>> = { device: 'device', vessel: 'vessel', material: 'vessel', substance: 'liquid' };
 
 /** The picture over the table: the device as it is drawn on the table, an empty vessel, a bottle or a block. */
 function choicePic(c: Choice): string {
@@ -2545,15 +2553,72 @@ function choicePic(c: Choice): string {
     return `<svg data-fit viewBox="0 0 ${W} ${H}" aria-hidden="true"><g>${deviceSvg(c.look.device, g).replace(/ id="[^"]*"/g, '')}</g></svg>`;
   }
   if ('vessel' in c.look) return vesselPreview(c.look.vessel, c.look.material, liquidKindOf(substance()), 0);
+  if ('action' in c.look) return `<span class="dev-pic">${icon(OPERATIONS[c.look.action].icon, 'ic huge')}</span>`;
   return shelfPic(c.look.substance);
 }
 
-function startAssembly() {
+/** The actions (under way — only those that can be done with what is in the vessel). */
+function actionChoices(): Choice[] {
+  const started = experimentStarted();
+  const sub = substance();
+  return LAB_ACTIONS.filter((a) => !started || (OPERATIONS[a].accepts?.(sub) ?? true)).map((a) => ({ key: a, name: OPERATIONS[a].label, look: { action: a }, selected: a === params.action, pick: () => setAction(a) }));
+}
+/** The vessel's materials, if it is made of more than one. */
+function materialChoices(): Choice[] {
+  const fit = experimentStarted() ? undefined : vesselsFor(params).find((f) => f.vessel.id === params.vessel);
+  if (!fit || fit.materials.length < 2) return [];
+  const shape = (fit.vessel.look ?? 'pot') as VesselShape;
+  return fit.materials.map((m) => ({ key: m, name: { uk: UI.uk.materials[m] ?? m, en: UI.en.materials[m] ?? m }, look: { vessel: shape, material: m }, selected: m === params.material, pick: () => pickParams({ ...params, material: m }, freshSetup) }));
+}
+const flat = (gs: readonly ChoiceGroup[]) => gs.flatMap((g) => g.items);
+function choicesFor(at: Exclude<AssemblyStage, 'what'>): { title: string; choices: Choice[] } {
+  const u = t();
+  if (at === 'action') return { title: u.action, choices: actionChoices() };
+  if (at === 'device') {
+    const d = deviceChoices();
+    return { title: d.title, choices: flat(d.groups) };
+  }
+  if (at === 'vessel') {
+    // Each vessel in each of its materials: chosen and put down at once.
+    const fits = experimentStarted() ? [] : vesselsFor(params);
+    const volume = (l: number) => (l < 1 ? `${Math.round(l * 1000)} ${u.ml}` : `${sig(l, 4, locale)} ${u.liters}`);
+    const choices = flat(vesselChoices()).flatMap((c) => {
+      const f = fits.find((x) => x.vessel.id === c.key);
+      if (!f || !('vessel' in c.look)) return [c];
+      const shape = c.look.vessel;
+      return f.materials.map((m): Choice => ({
+        ...c,
+        key: `${c.key}|${m}`,
+        // (The material in the name: the pictures at the sides show no notes.)
+        name: f.materials.length > 1 ? { uk: `${c.name.uk} (${UI.uk.materials[m] ?? m})`, en: `${c.name.en} (${UI.en.materials[m] ?? m})` } : c.name,
+        note: `${volume(f.sizes[0]!)}${f.sizes.length > 1 ? `–${volume(f.sizes.at(-1)!)}` : ''}`,
+        look: { vessel: shape, material: m },
+        selected: c.selected && m === params.material,
+        pick: () => {
+          c.pick();
+          if (params.material !== m) pickParams({ ...params, material: m }, freshSetup);
+        },
+      }));
+    });
+    return { title: u.vessel, choices };
+  }
+  if (at === 'material') return { title: u.material, choices: materialChoices() };
+  return { title: u.substance, choices: flat(substanceChoices()).filter((x) => x.sample) };
+}
+
+/**
+ * Start choosing over the table: from the action (a new setup), or from the stage after it. `edit` — one
+ * thing is changed on a set table: only it (and what follows from it: an action brings its device, a vessel
+ * its material) is chosen; the rest stays drawn.
+ */
+function startAssembly(from: AssemblyStage = 'action', edit = false) {
   adding = false;
   scene.read(false);
   const started = experimentStarted();
-  assembly = { stages: started ? ['device'] : ['device', 'vessel', 'substance'], at: 0, placed: new Set(started ? ['vessel', 'liquid'] : []) };
-  render();
+  const all: AssemblyStage[] = started ? ['action', 'device'] : ['action', 'device', 'vessel', 'substance'];
+  const follow: Partial<Record<AssemblyStage, AssemblyStage[]>> = { what: ['what'], action: ['action', 'device'] };
+  const stages = edit ? (follow[from] ?? [from]) : all.slice(Math.max(0, all.indexOf(from)));
+  assembly = { stages, at: 0, placed: new Set(edit || started ? ['device', 'vessel', 'liquid'] : []), edit };
   showAssembly();
 }
 function showAssembly() {
@@ -2561,31 +2626,50 @@ function showAssembly() {
   if (!a) return;
   const u = t();
   const at = a.stages[a.at]!;
-  const flat = (gs: readonly ChoiceGroup[]) => gs.flatMap((g) => g.items);
-  const devices = at === 'device' ? deviceChoices() : null;
-  const choices = devices ? flat(devices.groups) : at === 'vessel' ? flat(vesselChoices()) : flat(substanceChoices()).filter((x) => x.sample);
+  if (at === 'what') return showWhat();
+  const { title, choices } = choicesFor(at);
   if (!choices.length) return nextAssembly();
+  // What is being chosen leaves the table until the new one lands.
+  const target = TARGET[at];
+  if (target) a.placed.delete(target);
+  render();
   const view: ChooserStage = {
-    title: devices ? devices.title : at === 'vessel' ? u.vessel : u.substance,
-    step: { at: a.at, of: a.stages.length },
+    title,
+    ...(a.stages.length > 1 ? { step: { at: a.at, of: a.stages.length } } : {}),
     start: Math.max(0, choices.findIndex((x) => x.selected)),
     cards: choices.map((x) => ({
       key: x.key,
       name: tr(x.name, locale),
       note: x.note,
       pic: choicePic(x),
-      action: 'substance' in x.look ? (x.look.substance.category.startsWith('liquid.') ? u.choose.pour : u.choose.putIn) : u.choose.put,
+      action: 'substance' in x.look ? (x.look.substance.category.startsWith('liquid.') ? u.choose.pour : u.choose.putIn) : at === 'action' ? u.choose.pick : u.choose.put,
     })),
   };
   chooser.show(view, (card, pic) => void place(choices.find((x) => x.key === card.key)!, pic, at), endAssembly);
+}
+/** "What to change?": the action, the device, the vessel, its material, the substance — each as it is now. */
+function showWhat() {
+  const u = t();
+  const now = (at: Exclude<AssemblyStage, 'what'>): ChoiceCard | null => {
+    const { title, choices } = choicesFor(at);
+    const x = choices.find((c) => c.selected);
+    // (Nothing to change it to — under way, a vessel with one material.)
+    return x && choices.length > 1 ? { key: at, name: title, note: tr(x.name, locale), pic: choicePic(x), action: u.choose.change } : null;
+  };
+  const cards = (['action', 'device', 'vessel', 'material', 'substance'] as const).map(now).filter((c): c is ChoiceCard => !!c);
+  render();
+  chooser.show({ title: u.choose.what, start: 0, cards }, (card) => startAssembly(card.key as AssemblyStage, true), endAssembly);
 }
 /** The chosen thing is set on the table (still not drawn), flies to where it now stands, and shows. */
 async function place(x: Choice, pic: HTMLElement, at: AssemblyStage) {
   x.pick();
   if (!assembly) return;
-  await fly(stage, pic, scene.rectOf(at === 'device' ? 'device' : 'vessel'), at === 'substance');
-  if (!assembly) return;
-  assembly.placed.add(at === 'substance' ? 'liquid' : at);
+  const target = TARGET[at];
+  if (target) {
+    await fly(stage, pic, scene.rectOf(target === 'device' ? 'device' : 'vessel'), target === 'liquid');
+    if (!assembly) return;
+    assembly.placed.add(target);
+  }
   render();
   nextAssembly();
 }
@@ -2601,6 +2685,32 @@ function endAssembly() {
   chooser.hide();
   render();
 }
+/** Set up the table (an empty one), or change something on it. */
+const editButton = el('button', { type: 'button', className: 'news-button edit-table' });
+editButton.onclick = () => (!preset && !tableSet ? startAssembly('action') : startAssembly('what', true));
+scene.element.querySelector('.table-buttons')!.prepend(editButton);
+/** In the sandbox the device and the vessel on the table can be clicked: changed over the table. */
+const sandboxOpen = () => !$('#setup').hidden && !preset && tableSet;
+// (The blackboard's layer lies over the whole drawing: the thing under the pointer is found by where it stands.)
+const thingAt = (e: MouseEvent): 'device' | 'vessel' | null => {
+  if (!scene.element.classList.contains('editable') || (e.target as Element).closest?.('button, .chooser, .bubble')) return null;
+  const inside = (r: DOMRect | null) => !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  return inside(scene.rectOf('vessel')) ? 'vessel' : inside(scene.rectOf('device')) ? 'device' : null;
+};
+scene.element.addEventListener(
+  'click',
+  (e) => {
+    const at = thingAt(e);
+    if (!at) return;
+    e.stopPropagation();
+    startAssembly(at, true);
+  },
+  true,
+);
+scene.element.addEventListener('mousemove', (e) => {
+  const at = thingAt(e);
+  scene.element.dataset['over'] = at ?? '';
+});
 /** Something taken from the shelf directly: no row over the table any more. */
 function closeChooser() {
   if (!assembly && !adding) return;
@@ -2822,7 +2932,7 @@ function buildShelf() {
     // The action chosen, its things are chosen over the table one by one.
     b.onclick = () => {
       setAction(a);
-      startAssembly();
+      startAssembly('device');
     };
     return el('li', { className: 'car-li' }, b);
   });
@@ -2839,7 +2949,7 @@ function buildShelf() {
   // 2. The device — it decides which vessels can be used.
   const devPic = (look: string | undefined) => `<span class="dev-pic">${icon(look, 'ic huge')}</span>`;
   const asCard = (c: Choice, pic: string) => card({ name: c.name, note: c.note, ...(c.badge ? { badge: c.badge } : {}), ...(c.ref ? { ref: c.ref } : {}), selected: c.selected, pic, onPick: c.pick });
-  const shelfPicOf = (c: Choice) => ('device' in c.look ? devPic(c.look.icon) : 'vessel' in c.look ? vesselPreview(c.look.vessel, c.look.material, liquidKindOf(sub)) : shelfPic(c.look.substance));
+  const shelfPicOf = (c: Choice) => ('device' in c.look ? devPic(c.look.icon) : 'vessel' in c.look ? vesselPreview(c.look.vessel, c.look.material, liquidKindOf(sub)) : 'action' in c.look ? devPic(OPERATIONS[c.look.action].icon) : shelfPic(c.look.substance));
   const cardsOf = (groups: readonly ChoiceGroup[]) => groups.map((g) => ({ label: g.label, cards: g.items.map((c) => asCard(c, shelfPicOf(c))) }));
   const devices = deviceChoices(matches);
   const uses = actionUses(params.action);
@@ -3004,7 +3114,7 @@ interface Choice {
   readonly ref?: string;
   readonly selected: boolean;
   /** How it looks: a device (its drawing on the table, its shelf icon), a vessel, a substance. */
-  readonly look: { readonly device: DeviceKind; readonly icon: string | undefined } | { readonly vessel: VesselShape; readonly material: string } | { readonly substance: SubstanceItem };
+  readonly look: { readonly device: DeviceKind; readonly icon: string | undefined } | { readonly vessel: VesselShape; readonly material: string } | { readonly substance: SubstanceItem } | { readonly action: LabAction };
   /** A substance that becomes the sample (a liquid poured in, salt heated dry) — not one put into it. */
   readonly sample?: boolean;
   readonly pick: () => void;
@@ -3688,6 +3798,8 @@ function buildShelfTabs() {
       store.set('shelfTab', id);
       clearTable();
       buildShelfTabs();
+      // The sandbox starts with what we do: chosen over the table.
+      if (id === 'sandbox') startAssembly('action');
     };
     tabs.append(b);
   }

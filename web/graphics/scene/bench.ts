@@ -56,7 +56,7 @@ export interface BenchView {
   /** Induction: how the magnet (or the coil) moved and which pole faces the coil; the meter's swing (−1…1 of its scale) and reading. */
   readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
-  readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string };
+  readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
   readonly vessels?: { readonly shape?: 'straight' | 'wide' | 'narrow'; readonly height: number; readonly dh: number; readonly read?: string; readonly poured?: string };
   /** The U-tube: water poured (or not yet), the oil's and the water's columns above their boundary, m; what the ruler read. */
@@ -459,7 +459,11 @@ function magnetSvg(m: BenchView['magnet']): string {
   const rheostat = `<rect x="322" y="${low - 14}" width="56" height="16" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${Array.from({ length: 9 }, (_, i) => `<path d="M${326 + i * 6},${low - 14} v16" style="stroke:#8a6d33;stroke-width:0.8"/>`).join('')}<path d="M${340 + Math.min(1, (m?.current ?? 0) / 2) * 30},${low - 22} v8" style="stroke:${DARK};stroke-width:3"/>`;
   // The coil: 60 px of windings on a 100 px nail (or the straw), centred at cx.
   const cx = 440;
-  const rod = m?.core === false ? `<rect x="${cx - 52}" y="${y - 5}" width="104" height="10" rx="3" style="fill:rgba(230,236,242,0.6);stroke:#9aa3ad"/>` : `<rect x="${cx - 50}" y="${y - 4}" width="100" height="8" style="fill:#8a96a3;stroke:#59636e"/><path d="M${cx - 50},${y - 6} v12" style="stroke:#59636e;stroke-width:5"/>`;
+  const straw = `<rect x="${cx - 52}" y="${y - 5}" width="104" height="10" rx="3" style="fill:rgba(230,236,242,0.6);stroke:#9aa3ad"/>`;
+  // The nail, its head on the left; pulled out by the head, it slides left out of the winding (the straw stays in it).
+  const nail = (dx: number) => `<g transform="translate(${dx} 0)"><rect x="${cx - 50}" y="${y - 4}" width="100" height="8" style="fill:#8a96a3;stroke:#59636e"/><path d="M${cx - 50},${y - 6} v12" style="stroke:#59636e;stroke-width:5"/></g>`;
+  // Taken out, it lies where it was pulled to.
+  const rod = m?.pull !== undefined ? straw + nail(-95 * m.pull) : m?.core === false ? straw + nail(-95) : nail(0);
   const turns = Array.from({ length: 16 }, (_, i) => `<path d="M${cx - 30 + i * 4},${y - 8} l2,16" style="stroke:${on ? '#d4893a' : '#b0703a'};stroke-width:2.2"/>`).join('');
   const leads = W(`M244,${low - 6} H282`) + W(`M308,${low - 6} H322`) + W(`M378,${low - 6} H${cx - 32} V${y + 8}`) + W(`M${cx + 32},${y + 8} V${back} H212 V${low - 6}`);
   const ammeter = meterSvg(330, back - 2, 'A', on ? (m?.current ?? 0) / 2 : 0, m?.amps);

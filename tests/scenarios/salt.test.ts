@@ -83,7 +83,8 @@ describe('salt water: a mix of water and salt', () => {
     const b = sampleOf(result.final);
     expect(b.state.solidFraction!).toBeGreaterThan(0.5);
     expect(b.state.solidFraction!).toBeLessThan(1);
-  });
+    // (Hours of model time: slow when every test file runs at once.)
+  }, 60_000);
 
   it('sea water "made by hand": distilled water + table salt', () => {
     const p: LabParams = { ...SEA, substance: 'water', action: 'boil' };
