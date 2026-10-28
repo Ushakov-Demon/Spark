@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -60,6 +60,13 @@ export interface BenchView {
   /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
+  /**
+   * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
+   * dropped below the card (m), its tilt (°), and the slow motion's label.
+   */
+  /** Inertia's motion: the card's speed, the coin's drag (μ·g), when the card leaves it, whether it slipped and dropped in. */
+  readonly coinRun?: { readonly v: number; readonly a: number; readonly exit: number; readonly slipped: boolean; readonly inGlass: boolean; readonly slow?: string };
+  readonly coin?: { readonly card: number; readonly x: number; readonly drop: number; readonly tilt: number; readonly slow?: string; readonly read?: string };
   /** A snail: the surface it crawls on, how far it has gone (m), the distance read. */
   readonly snail?: { readonly surface: string; readonly at: number; readonly read?: string };
   /**
@@ -219,6 +226,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'rows') return rowsSvg(v.rows);
   if (v.kind === 'lift') return liftSvg(v.lift);
   if (v.kind === 'bounce') return bounceSvg(v.bounce);
+  if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
   if (v.kind === 'strobe') return strobeSvg(v.strobe);
   if (v.kind === 'wind') return `${windSvg(v.wind)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 450) : ''}`;
@@ -448,6 +456,32 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/** The coin on the card: 12 units to the centimetre; the glass's axis. */
+const COIN_K = 1200;
+const COIN_X = 400;
+/**
+ * Inertia: a glass on the table (10 cm tall, 6.5 cm across the mouth), the postcard over it and the coin on the card
+ * above the mouth — side on. The card goes off to the right; the coin rides with it, or stays and drops in, or hits
+ * the rim and falls beside.
+ */
+function coinSvg(c: BenchView['coin']): string {
+  if (!c) return '';
+  const k = COIN_K;
+  const mouth = TABLE - 0.1 * k;
+  const half = 0.0325 * k;
+  const glass = `<path d="M${COIN_X - half - 3},${mouth} L${COIN_X - half + 4},${TABLE - 2} H${COIN_X + half - 4} L${COIN_X + half + 3},${mouth}" style="fill:rgba(200,225,245,0.25);stroke:#bfe3ff;stroke-width:3"/><path d="M${COIN_X - half + 6},${TABLE - 6} H${COIN_X + half - 6}" style="stroke:#bfe3ff;stroke-width:4"/>`;
+  const cardY = mouth - 3;
+  const cardX = COIN_X - 0.075 * k + c.card * k;
+  const card = c.card < 0.2 ? `<rect x="${cardX}" y="${cardY}" width="${0.15 * k}" height="3" style="fill:#f4f1e8;stroke:#c9c2a8"/>` : '';
+  // The coin: 2.6 cm across, 2 mm thick (drawn 4), its centre where it is.
+  const cx = COIN_X + c.x * k;
+  const cy = cardY - 2 + c.drop * k;
+  const coin = `<g transform="rotate(${c.tilt} ${cx} ${cy})"><rect x="${cx - 0.013 * k}" y="${cy - 2}" width="${0.026 * k}" height="4" rx="1.5" style="fill:#d9b44a;stroke:#8a6a1f"/></g>`;
+  const slow = c.slow ? `<text class="bench-label" x="${COIN_X}" y="${mouth - 70}" text-anchor="middle">${c.slow}</text>` : '';
+  const read = c.read ? `<text class="bench-reading" x="${COIN_X}" y="${mouth - 40}" text-anchor="middle">${c.read}</text>` : '';
+  return `${glass}${card}${coin}${slow}${read}`;
 }
 
 /** The snail's drawing: the ruler's millimetres, units (the snail and its way some 3½ times larger than life). */

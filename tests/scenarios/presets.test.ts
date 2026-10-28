@@ -322,6 +322,15 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('inertia: the faster the card goes, the less the coin moves; snatched, it drops into the glass', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'coin-inertia')!);
+    expect(answer.correct).toBe('inertia');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const s = [...answer.text.uk.matchAll(/зсув (\d+) мм/g)].map((m) => Number(m[1]));
+    expect(s).toEqual([150, 32, 8, 1]);
+    expect(answer.text.uk.match(/впала в склянку/g)).toHaveLength(2);
+  }, 60_000);
+
   it('a snail’s speed: the study’s distances in 30 s, slowest on sandpaper', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'snail-speed')!);
     expect(answer.correct).toBe('sandpaper');

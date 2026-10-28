@@ -425,6 +425,31 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       }),
     };
   },
+  'coin-inertia': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.coin' && x.record.value !== null).map((x) => ({ pull: String(x.command['pull']), s: x.record.value!, v: x.record.inputs?.['speed'] ?? 0, t: x.record.inputs?.['time'] ?? 0, slipped: x.record.inputs?.['slipped'] === 1, inGlass: x.record.inputs?.['inGlass'] === 1 }));
+    const fastIn = R.filter((x) => x.v >= 1).every((x) => x.inGlass);
+    const slowOut = R.some((x) => !x.inGlass);
+    const mm = (x: number) => Math.round(x * 1000);
+    const where = (x: (typeof R)[number], l: Locale) => (l === 'uk' ? (x.inGlass ? 'монета впала в склянку' : x.slipped ? 'монета вдарилася об край склянки й упала поруч' : 'монета поїхала разом із карткою') : x.inGlass ? 'the coin dropped into the glass' : x.slipped ? 'the coin hit the rim and fell beside' : 'the coin went with the card');
+    return {
+      ...(fastIn && slowOut ? { correct: 'inertia' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Інерція — це явище зберігання швидкості руху тіла за відсутності або скомпенсованості дії на нього інших тіл. Монета лежала нерухомо, і щоб вона поїхала, її має розігнати картка — силою тертя. Але тертя слабке й не може розігнати монету швидко. Коли картку тягнуть повільно, тертя встигає: монета їде разом із карткою. Коли картку висмикують, вона виходить з-під монети за соті частки секунди — тертя за цей час ледь зрушує монету, і та, залишившись майже на місці, падає в склянку. Що швидше рух картки, то менше зсувається монета. Так само, коли автобус різко рушає, пасажири відхиляються назад.'
+          : 'Inertia is the keeping of a body’s speed when no other bodies act on it, or their actions balance. The coin lay still, and for it to move the card has to speed it up — by friction. But friction is weak and cannot speed the coin up fast. When the card is drawn slowly, friction keeps up: the coin goes with the card. When the card is snatched, it leaves from under the coin in hundredths of a second — in that time friction hardly moves the coin, and it, staying almost where it was, drops into the glass. The faster the card goes, the less the coin moves. In the same way, when a bus starts sharply, the passengers lean back.',
+      ),
+      say: both((l) => {
+        const snap = R.find((x) => x.pull === 'snap');
+        return snap ? (l === 'uk' ? `Клацання: картка вийшла за ${sig(snap.t, 2, l)} с, монета зсунулася лише на ${mm(snap.s)} мм — і впала в склянку.` : `The flick: the card went in ${sig(snap.t, 2, l)} s, the coin moved just ${mm(snap.s)} mm — and dropped into the glass.`) : '';
+      }),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const how: Record<string, string> = uk ? { slow: 'повільно', push: 'штовхнули (0,5 м/с)', flick: 'різко (1 м/с)', snap: 'клацнули (3 м/с)' } : { slow: 'slowly', push: 'pushed (0.5 m/s)', flick: 'sharply (1 m/s)', snap: 'flicked (3 m/s)' };
+        const s = `${R.map((x) => `${how[x.pull] ?? x.pull}: ${uk ? 'зсув' : 'moved'} ${mm(x.s)} ${uk ? 'мм' : 'mm'} — ${where(x, l)}`).join('; ')}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Щоб упасти в склянку, монета мала зсунутися менш ніж на 19 мм.' : ' To drop into the glass, the coin had to move less than 19 mm.');
+      }),
+    };
+  },
   'snail-speed': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.snail' && x.record.value !== null).map((x) => ({ surface: String(x.command['surface']) as SnailSurface, l: x.record.value!, t: x.record.inputs?.['time'] ?? SNAIL_TIME }));
     const slowest = [...R].sort((a, b) => a.l - b.l)[0];

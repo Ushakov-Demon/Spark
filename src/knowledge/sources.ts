@@ -751,6 +751,13 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'physics-factbook-paper-friction': source({
+    id: 'physics-factbook-paper-friction',
+    title: 'The Physics Factbook (ed. G. Elert), «Coefficient of Friction of Paper», Arthurs K., Anthony M., Christopher N., 2005: on paper taped to a plank raised till the object slips, μs = tan θ — penny 0.29 (16.11°), nickel 0.28 (15.58°)',
+    url: 'https://hypertextbook.com/facts/2005/paper.shtml',
+    license: 'facts-only',
+    retrieved: '2026-10-29',
+  }),
   'pembury-smith-2021-snail': source({
     id: 'pembury-smith-2021-snail',
     title: 'Pembury Smith M. Q. R., Ruxton G. D. How fast is a snail’s pace? The influences of size and substrate on gastropod speed of locomotion. Journal of Zoology (2021), accepted manuscript: Cornu aspersum, 87 snails filmed beside a ruler, speed in cm per 30 s — horizontal PVC 4.47 ± 0.12; vertical PVC −0.41; sandpaper P120 −2.01; wet PVC −0.65 (Table 1)',

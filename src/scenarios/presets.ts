@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -950,6 +950,28 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Чому монета падає в склянку, коли картку різко висмикнути?', en: 'Why does the coin drop into the glass when the card is snatched away?' },
+    id: 'coin-inertia',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Інерція: монета на картці', en: 'Inertia: a coin on a card' },
+    question: {
+      uk: 'Склянку накрито листівкою, на листівці над отвором склянки — монета. Виймаємо листівку вбік чотирма способами: тягнемо повільно й плавно, штовхаємо пальцем, штовхаємо різко й клацаємо по ній. Знімаємо на телефон і за кадрами міряємо, на скільки зсунулася монета, поки листівка виходила з-під неї. Чому монета падає в склянку, коли картку різко висмикнути?',
+      en: 'A glass is covered with a postcard, a coin on the card over the glass’s mouth. We take the card out sideways in four ways: draw it slowly and smoothly, push it with a finger, push it sharply and flick it. We film it on a phone and measure by the frames how far the coin moved while the card went from under it. Why does the coin drop into the glass when the card is snatched away?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'coin',
+    plan: (['slow', 'push', 'flick', 'snap'] as const).map((pull) => ({ kind: 'bench', command: { type: 'lab.coin', pull } }) as const),
+    choices: [ch('inertia', 'Монета зберігає свій стан спокою: картка виходить так швидко, що тертя не встигає зрушити монету', 'The coin keeps its state of rest: the card goes so fast that friction has no time to move the coin'), ch('heavy', 'Монета важча за картку, тому одразу падає вниз', 'The coin is heavier than the card, so it drops straight down'), ch('air', 'Монету притискає до склянки повітря', 'The air presses the coin to the glass')],
+    formulas: ['mechanics.speed'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Дослідження • інерції' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: 'Явище інерції. Інертність і маса тіла', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 15 «Явище інерції»: «Інерція — це явище зберігання швидкості руху тіла за відсутності або скомпенсованості дії на нього інших тіл»' } },
     ],
     expect: 'reached',
   },
@@ -2004,7 +2026,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
+  'coin-inertia', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

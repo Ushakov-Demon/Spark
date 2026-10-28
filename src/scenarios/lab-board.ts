@@ -448,6 +448,15 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
       return;
     }
+    // Inertia: how fast the card went and how soon it left the coin; how far the coin moved.
+    if (c.type === 'lab.coin') {
+      const v = r.inputs?.['speed'] ?? 0;
+      const slipped = r.inputs?.['slipped'] === 1;
+      const inGlass = r.inputs?.['inGlass'] === 1;
+      const res = inGlass ? (uk ? 'у склянці' : 'in the glass') : slipped ? (uk ? 'повз склянку' : 'missed the glass') : uk ? 'поїхала з карткою' : 'went with the card';
+      out.push({ id: `cn:${i}`, title: uk ? `картка ${n(v, 2)} м/с: монета зсунулася на ${Math.round(r.value * 1000)} мм — ${res}` : `the card at ${n(v, 2)} m/s: the coin moved ${Math.round(r.value * 1000)} mm — ${res}`, formula: 't = l / v', numbers: `${n(slipped ? 0.075 : 0.15, 2)} ${uk ? 'м' : 'm'} / ${n(v, 2)} ${uk ? 'м/с' : 'm/s'} ≈ ${n(r.inputs?.['time'] ?? 0, 2)} ${uk ? 'с' : 's'}` });
+      return;
+    }
     // A snail: the surface, the distance in 30 s and the speed.
     if (c.type === 'lab.snail') {
       const t = r.inputs?.['time'] ?? SNAIL_TIME;

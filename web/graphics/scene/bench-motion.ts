@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.coin': { uk: 'Знімаємо — дивимося покадрово…', en: 'Filming — watching frame by frame…' },
   'lab.snail': { uk: 'Равлик повзе — знімаємо 30 секунд…', en: 'The snail crawls — filming for 30 seconds…' },
   'lab.strobe': { uk: 'Спалахи один за одним — кулька лишає зображення…', en: 'Flash after flash — the ball leaves its images…' },
   'lab.wind': { uk: 'Бульбашка летить — секундомір іде…', en: 'The bubble flies — the stopwatch is running…' },
@@ -49,6 +50,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
   if (next.kind === 'strobe' && next.strobe?.gaps) return strobeRun(next, draw);
   if (next.kind === 'wind' && next.wind?.read && next.run) return windRun(next, next.run, draw);
@@ -361,6 +363,46 @@ function snailRun(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v:
       if (done) return draw(next);
       const { read: _r, ...rest } = sn;
       draw({ ...next, stopwatch: { display: clock.value.toFixed(2).replace('.', comma ? ',' : '.'), fast }, snail: { ...rest, at: (sn.at * clock.value) / run.seconds } });
+    },
+  };
+}
+
+/**
+ * Inertia, frame by frame: the card goes at its speed; slipping, the coin is dragged at μ·g until the card's edge
+ * leaves it (t = l / v), then falls (g) — to the glass's bottom, or onto the rim and off it beside the glass. Drawn
+ * smoothly, the coin rides with the card. A quick pull is played four times slower (a flick still looks like one:
+ * 0.1 s on the screen); the fall after it at 0.4 of real time.
+ */
+/** How much slower the card's quick pulls are played. */
+export const COIN_SLOW = 4;
+function coinRun(next: BenchView, run: NonNullable<BenchView['coinRun']>, draw: (v: BenchView) => void): Motion {
+  const c = next.coin!;
+  const { v, a, exit, slipped, inGlass } = run;
+  const g = 9.81;
+  const pull = slipped ? exit * COIN_SLOW : 0.15 / v;
+  // Falling: into the glass, to its bottom (10 cm less the coin); off the rim — 4 mm, then off it onto the table.
+  const depth = inGlass ? 0.095 : 0.004;
+  const fall = Math.sqrt((2 * depth) / g);
+  const fallShown = slipped ? fall / 0.4 : 0;
+  const off = inGlass || !slipped ? 0 : 0.5;
+  const clock = new Channel(0, pull + fallShown + off, { kind: 'steady', speed: 1 }, 1e-4);
+  const { read: _r, slow: _s, ...rest } = c;
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      const T = clock.value;
+      if (!slipped) return draw({ ...next, coin: { ...rest, card: v * T, x: v * T, drop: 0, tilt: 0 } });
+      const slowed = run.slow && T < pull ? { slow: run.slow } : {};
+      // The real time: the card's part slowed COIN_SLOW times; then the fall at 0.4.
+      const t = T < pull ? (T / pull) * exit : exit + Math.min(fall, (T - pull) * 0.4);
+      if (T < pull) return draw({ ...next, coin: { ...rest, ...slowed, card: v * t, x: (a * t * t) / 2, drop: 0, tilt: 0 } });
+      const x1 = (a * exit * exit) / 2 + a * exit * (t - exit);
+      const drop = (g * (t - exit) ** 2) / 2;
+      if (T < pull + fallShown) return draw({ ...next, coin: { ...rest, card: 1, x: x1, drop, tilt: 0 } });
+      // Off the rim: tipping over it and down beside the glass.
+      const u = Math.min(1, (T - pull - fallShown) / off);
+      draw({ ...next, coin: { ...rest, card: 1, x: x1 + (c.x - x1) * u, drop: depth + (c.drop - depth) * u * u, tilt: 70 * Math.sin(Math.PI * u) } });
     },
   };
 }
