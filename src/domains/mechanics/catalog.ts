@@ -26,6 +26,7 @@ const UA_FLOATING: readonly CurriculumRef[] = [
 const UA_HOOKE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Гука.' }];
 const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Коефіцієнт тертя ковзання.' }];
 const UA_UNIFORM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний прямолінійний рух. Швидкість руху.' }];
+const UA_ROWS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' }];
 const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Взаємодія тіл. Сила. Додавання сил. Рівнодійна.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
@@ -358,6 +359,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.averageSpeed,
     examples: [{ args: [0.12, 57.7], expected: 0.00208, note: '12 cm in 57.7 s' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.row-size',
+    law: 'row-method',
+    title: { uk: 'Розмір малого тіла методом рядів', en: 'A small body’s size by the method of rows' },
+    latex: 'd = \\frac{L}{N}',
+    plain: 'd = L / N',
+    argSymbols: ['L', 'N'],
+    resultSymbol: 'd',
+    variables: {
+      d: { name: { uk: 'розмір одного тіла', en: 'the size of one body' }, unit: 'm' },
+      L: { name: { uk: 'довжина ряду', en: 'the row’s length' }, unit: 'm' },
+      N: { name: { uk: 'кількість тіл у ряду', en: 'the number of bodies in the row' }, unit: '' },
+    },
+    curriculum: UA_ROWS,
+    explanation: {
+      novice: { uk: 'Одне зернятко замале для лінійки. Виклади багато в ряд, виміряй увесь ряд і поділи на кількість — вийде розмір одного.', en: 'One grain is too small for a ruler. Lay many in a row, measure the whole row and divide by how many — you get the size of one.' },
+      school: { uk: 'Похибка лінійки — пів поділки — одна на весь ряд; поділена на N, вона в N разів менша для кожного тіла. Так само усереднюються й відмінності між тілами.', en: 'The ruler’s error — half a division — is one for the whole row; divided by N, it is N times smaller for each body. The differences between the bodies average out the same way.' },
+    },
+    compute: f.rowSize,
+    examples: [{ args: [0.065, 30], expected: 0.002167, note: '30 millet grains in 65 mm' }],
     textSource: 'spark',
     reviewed: false,
   }),

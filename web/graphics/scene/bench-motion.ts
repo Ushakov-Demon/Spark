@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.rows': { uk: 'Викладаю ряд — по одному…', en: 'Laying the row — one by one…' },
   'lab.forces': { uk: 'Пружини ще коливаються — чекаємо, поки заспокояться…', en: 'The springs are still bouncing — wait until they settle…' },
   'lab.magnet': { uk: 'Стрілка компаса ще гойдається — чекаємо…', en: 'The compass needle is still swinging — wait…' },
   /** (The step that takes the nail out of the coil.) */
@@ -41,6 +42,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'rows' && next.rows?.read) return row(next, draw);
   if (next.kind === 'forces' && next.forces?.loaded) return forces(prev?.kind === 'forces' ? (prev.forces ?? null) : null, next, draw);
   if (next.kind === 'magnet' && next.magnet && prev?.kind === 'magnet' && prev.magnet) return compass(prev.magnet, next, draw);
   return null;
@@ -195,6 +197,20 @@ function forces(was: BenchView['forces'] | null, next: BenchView, draw: (v: Benc
       if (pulling) a.target = load + Math.max(0, b.value);
       const { readA: _a, readB: _b, ...rest } = f;
       draw(done ? next : { ...next, forces: { ...rest, a: Math.max(0, a.value), b: Math.max(0, b.value), at: at.value } });
+    },
+  };
+}
+
+/** The method of rows: the bodies are laid one by one (each drops in), or the thread is wound turn by turn — in about three seconds. */
+function row(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const r = next.rows!;
+  const n = r.sizes.length;
+  const laid = new Channel(0, n, { kind: 'steady', speed: Math.max(3, n / 3) }, 0.001);
+  return {
+    channels: [laid],
+    frame: (done) => {
+      const { read: _r, ...rest } = r;
+      draw(done ? next : { ...next, rows: { ...rest, placed: laid.value } });
     },
   };
 }

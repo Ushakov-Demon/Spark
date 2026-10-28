@@ -433,6 +433,19 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // The method of rows: the row's length and the size of one, d = L/N.
+    if (c.type === 'lab.rows') {
+      const N = Number(c['count']);
+      const body = String(c['body']);
+      const L = `${Math.round(r.value * 1000)} ${uk ? 'мм' : 'mm'}`;
+      const what = { pea: uk ? 'горошин' : 'peas', millet: uk ? 'зерняток пшона' : 'millet grains', thread: uk ? 'витків нитки' : 'turns of thread' }[body] ?? '';
+      if (N === 1) {
+        out.push({ id: `r1:${i}`, title: uk ? 'одна горошина: лінійкою до поділки' : 'one pea: by the ruler to a division', formula: `d = ${L} ± 0,5 ${uk ? 'мм' : 'mm'}`.replace('0,5', uk ? '0,5' : '0.5') });
+        return;
+      }
+      out.push({ id: `rw:${i}`, title: uk ? `${N} ${what}: ${body === 'thread' ? 'ширина намотки' : 'довжина ряду'} ${L}` : `${N} ${what}: ${body === 'thread' ? 'the winding’s width' : 'the row’s length'} ${L}`, formula: 'd = L / N', numbers: `${L} / ${N} ≈ ${(r.value / N * 1000).toFixed(2).replace('.', uk ? ',' : '.')} ${uk ? 'мм' : 'mm'}` });
+      return;
+    }
     // Adding forces: what the dynamometers show, and their resultant (hidden till the answer).
     if (c.type === 'lab.forces') {
       const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'force' && x.value !== null);

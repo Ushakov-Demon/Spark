@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -185,6 +185,7 @@ const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'El
 const FUN: LocalizedText = { uk: 'Цікаві досліди', en: 'Curious experiments' };
 const SOLUTIONS: LocalizedText = { uk: 'Розчини', en: 'Solutions' };
 // The physics topics as the programmes name them (grade 7: Holovko's four; 9: Kreminskyi's), in their order.
+const INTRO: LocalizedText = { uk: 'Фізика як природнича наука. Пізнання природи', en: 'Physics as a natural science. Knowing nature' };
 const MOTION: LocalizedText = { uk: 'Механічний рух', en: 'Mechanical motion' };
 const INTERACTION: LocalizedText = { uk: 'Взаємодія тіл. Сила', en: 'Interaction of bodies. Force' };
 const PRESSURE: LocalizedText = { uk: 'Тиск твердих тіл, рідин і газів', en: 'Pressure of solids, liquids and gases' };
@@ -923,6 +924,33 @@ const LIST: readonly Preset[] = [
     choices: [ch('same', 'Лишиться майже тим самим', 'It stays about the same'), ch('grows', 'Теж зростатиме', 'It grows too'), ch('falls', 'Зменшуватиметься', 'It gets smaller')],
     formulas: ['mechanics.friction', 'mechanics.weight'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 7', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 7. Визначення коефіцієнта тертя ковзання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 27, лабораторна робота № 7, с. 191' } }],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Як виміряти зернятко пшона точніше, ніж до міліметра?', en: 'How to measure a millet grain better than to a millimetre?' },
+    id: 'small-bodies',
+    grade: 7,
+    topic: INTRO,
+    title: { uk: 'Вимірюємо малі тіла методом рядів', en: 'Measuring small bodies by the method of rows' },
+    question: {
+      uk: 'У лінійки поділки по 1 мм, а пшоняне зернятко — завбільшки лише з дві поділки, горошина — із шість-сім. Виміряємо одну горошину, потім ряд горошин, ряд пшона, а ще намотаємо нитку на стрижень. Як виміряти зернятко точніше, ніж до міліметра?',
+      en: 'The ruler’s divisions are 1 mm, and a millet grain is only about two divisions across, a pea six or seven. We measure one pea, then a row of peas, a row of millet, and wind a thread on a rod. How to measure a grain better than to a millimetre?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'rows',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.rows', body: 'pea', count: 1 } },
+      { kind: 'bench', command: { type: 'lab.rows', body: 'pea', count: 15 } },
+      { kind: 'bench', command: { type: 'lab.rows', body: 'millet', count: 40 } },
+      { kind: 'bench', command: { type: 'lab.rows', body: 'thread', count: 30 } },
+    ],
+    choices: [ch('row', 'Викласти багато зерняток у ряд і поділити довжину ряду на їх кількість', 'Lay many grains in a row and divide the row’s length by their number'), ch('one', 'Уважно виміряти одне зернятко', 'Measure one grain very carefully'), ch('cant', 'Ніяк: точніше за поділку лінійка не виміряє', 'No way: a ruler measures no better than its division')],
+    formulas: ['mechanics.row-size'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
+    ],
     expect: 'reached',
   },
   {
@@ -1824,8 +1852,8 @@ const LIST: readonly Preset[] = [
  * (a test checks): a new one is put in its place.
  */
 export const PRESET_ORDER: readonly string[] = [
-  // Grade 7. Mechanical motion.
-  'bubble-speed', 'average-speed', 'rotation-period', 'pendulum',
+  // Grade 7. The introduction: measuring; mechanical motion.
+  'small-bodies', 'bubble-speed', 'average-speed', 'rotation-period', 'pendulum',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
   'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;

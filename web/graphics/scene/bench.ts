@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -57,6 +57,8 @@ export interface BenchView {
   readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
   /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
+  /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
+  readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   readonly forces?: { readonly hold: 'one' | 'two' | 'down'; readonly at: number; readonly a: number; readonly b: number; readonly loaded: boolean; readonly readA?: string; readonly readB?: string };
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
@@ -187,6 +189,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'vessels') return vesselsSvg(v.vessels);
   if (v.kind === 'magnet') return magnetSvg(v.magnet);
   if (v.kind === 'forces') return forcesSvg(v.forces);
+  if (v.kind === 'rows') return rowsSvg(v.rows);
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
@@ -766,4 +769,52 @@ function forcesSvg(f: BenchView['forces']): string {
   const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${xC - 6},${bt + 56 - i * 5} h${i % 2 === 0 ? 6 : 3}"/>`).join('');
   const lower = `<path d="M${xC},${hook} V${p}" style="stroke:${STEEL};stroke-width:2"/><rect class="dyn-case" x="${xC - 9}" y="${bt}" width="18" height="64" rx="5"/><g class="dyn-ticks">${ticks}</g><path d="M${xC - 7},${p} h14" style="stroke:#c0392b;stroke-width:2"/><path d="M${xC},${bt + 64} V${TABLE - 10}" style="stroke:${THREAD};stroke-width:1.5"/><rect x="${xC - 14}" y="${TABLE - 10}" width="28" height="10" rx="2" style="fill:${DARK}"/>${f!.readB ? `<text class="bench-reading" x="${xC + 16}" y="${bt + 36}">${f!.readB}</text>` : ''}`;
   return `${stand}${a}${body}${lower}`;
+}
+
+/**
+ * The method of rows, seen from the front, 4 units to the millimetre (larger than life): a ruler with millimetre
+ * marks lying on the table, the row laid along it from its zero — peas or millet grains, pressed between two
+ * toothpicks — or a pen refill with the thread wound on it turn to turn; a bracket with the row's length.
+ */
+const ROW_K = 4000;
+function rowsSvg(r: BenchView['rows']): string {
+  // (Clear of the Professor on the left.)
+  const x0 = 180;
+  const top = TABLE - 16;
+  const mmTicks = Array.from({ length: 111 }, (_, i) => `<path d="M${x0 + i * 4},${top} v${i % 10 === 0 ? 8 : i % 5 === 0 ? 6 : 3}"/>`).join('');
+  const labels = Array.from({ length: 12 }, (_, i) => `<text x="${x0 + i * 40}" y="${top + 15}" text-anchor="middle">${i}</text>`).join('');
+  const ruler = `<g class="bench-ruler"><rect x="${x0 - 10}" y="${top}" width="${460}" height="16" rx="2"/><g class="ticks">${mmTicks}</g><g class="labels">${labels}</g></g>`;
+  if (!r) return ruler;
+  const n = Math.floor(r.placed);
+  const falling = r.placed - n;
+  let x = x0;
+  const parts: string[] = [];
+  if (r.body === 'thread') {
+    // The refill lies along the ruler; the turns go on from its zero, one after another.
+    const total = r.sizes.reduce((a, d) => a + d, 0) * ROW_K;
+    parts.push(`<rect x="${x0 - 30}" y="${top - 9}" width="${Math.max(120, total + 60)}" height="7" rx="3" style="fill:#5d8fc9;stroke:#33557e"/>`);
+    r.sizes.slice(0, n).forEach((d, i) => {
+      const w = d * ROW_K;
+      parts.push(`<rect x="${x}" y="${top - 11}" width="${w}" height="11" style="fill:${i % 2 ? '#f4e9c8' : '#ffffff'};stroke:#9b8b5d;stroke-width:0.3"/>`);
+      x += w;
+    });
+  } else {
+    const color = r.body === 'pea' ? '#b9c45a' : '#f0c53c';
+    const edge = r.body === 'pea' ? '#6f7a26' : '#a7801d';
+    r.sizes.forEach((d, i) => {
+      const rad = (d * ROW_K) / 2;
+      if (i < n || (i === n && falling > 0)) {
+        // The one being laid drops in from above.
+        const lift = i === n ? (1 - falling) * 50 : 0;
+        parts.push(`<circle cx="${x + rad}" cy="${top - rad - lift}" r="${rad}" style="fill:${color};stroke:${edge};stroke-width:0.8"/>`);
+      }
+      x += rad * 2;
+    });
+    // The toothpicks press the row from both ends (once it is all laid).
+    x = x0 + r.sizes.slice(0, n).reduce((a, d) => a + d * ROW_K, 0);
+    if (n > 1) parts.push(`<rect x="${x0 - 3}" y="${top - 26}" width="3" height="26" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/><rect x="${x}" y="${top - 26}" width="3" height="26" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/>`);
+  }
+  const end = x0 + r.sizes.slice(0, n).reduce((a, d) => a + d * ROW_K, 0);
+  const bracket = r.read ? `<path class="bench-mark" d="M${x0},${top - 34} v-6 H${end} v6"/><text class="bench-reading" x="${(x0 + end) / 2}" y="${top - 46}" text-anchor="middle">${r.read}</text>` : '';
+  return `${ruler}${parts.join('')}${bracket}`;
 }

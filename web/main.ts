@@ -51,6 +51,9 @@ import {
   AMMETER,
   ZERO_METER,
   sinkLiquidName,
+  rowName,
+  rowSizes,
+  type RowBody,
   type SinkLiquid,
   VOLTMETER,
   stepCommand,
@@ -448,6 +451,15 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // The method of rows: this step's row (or the next planned, not laid yet) and what the ruler shows.
+  if (kind === 'rows') {
+    type Row = { body: RowBody; count: number };
+    const rc = c?.type === 'lab.rows' ? (c as unknown as Row) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.rows');
+    const cmd = rc ?? (next?.kind === 'bench' ? (next.command as unknown as Row) : undefined);
+    const sizes = cmd ? rowSizes(cmd.body, cmd.count) : [];
+    return { ...base, kind, rows: { body: cmd?.body ?? 'pea', sizes, placed: rc ? sizes.length : 0, ...(rc && r ? { read: `${Math.round((r.value ?? 0) * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` } : {}) } };
+  }
   // Adding forces: how this step holds the load (or how the next one will), the dynamometers' forces and readings.
   if (kind === 'forces') {
     type Hold = { hold: 'one' | 'two' | 'down'; at?: number };
@@ -706,6 +718,14 @@ function measureSay(): string {
     return sc.body === 'bubble' ? (uk ? `Бульбашка пройшла ${s} см за ${T}.` : `The bubble went ${s} cm in ${T}.`) : uk ? `Кулька пройшла ${s} см за ${T}.` : `The ball went ${s} cm in ${T}.`;
   }
   // Adding forces: what the dynamometers show — one, both, or up and down.
+  // The method of rows: the row's length (a single pea — to the ruler's division).
+  if (m.command.type === 'lab.rows') {
+    const rc = m.command as { body: RowBody; count: number };
+    const L = `${Math.round((r.value ?? 0) * 1000)} ${uk ? 'мм' : 'mm'}`;
+    if (rc.count === 1) return uk ? `Одна горошина — ${L}. Але й поділка лінійки — 1 мм: точніше не скажеш.` : `One pea — ${L}. But the ruler’s division is 1 mm too: no better than that.`;
+    const what = tr(rowName(rc.body, rc.count), locale);
+    return rc.body === 'thread' ? (uk ? `${what} — намотка завширшки ${L}.` : `${what} — a winding ${L} wide.`) : uk ? `Ряд: ${what} — ${L}.` : `The row: ${what} — ${L}.`;
+  }
   if (m.command.type === 'lab.forces') {
     const fc = m.command as { hold: string };
     const fs = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.forces').slice(0, 1)).map((x) => formatMeasured('force', x.record.value, 0.1, locale));
@@ -2480,8 +2500,10 @@ function renderProtocol() {
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
       // (Two dynamometers: both readings.)
+      // (The method of rows: millimetres.)
+      const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

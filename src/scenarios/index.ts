@@ -35,3 +35,4 @@ export * from './magnet-bench.js';
 export * from './induct-bench.js';
 export * from './sink-bench.js';
 export * from './forces-bench.js';
+export * from './rows-bench.js';

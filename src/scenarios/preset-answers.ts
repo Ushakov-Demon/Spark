@@ -19,6 +19,7 @@ import { formatMeasured } from './measuring.js';
 import { AMMETER, VOLTMETER } from './circuit-bench.js';
 import { vesselName, type PascalVessel } from './vessels-bench.js';
 import { sinkLiquidName, type SinkLiquid } from './sink-bench.js';
+import { rowName, type RowBody } from './rows-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -390,6 +391,35 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
           ? `${per.map((p) => `Бульбашка ≈ ${sig(p.d * 1000, 2, l)} мм: ${lapList(p, l)}`).join('. ')}. Удвічі довший шлях — удвічі більший час: шлях пропорційний часу, а відношення l/t на кожній позначці те саме (розкид ${sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l)} % — секундомір показує лише соті частки секунди). Отже, рух рівномірний: v ≈ ${small ? cmS(small.v, l) : ''} і ${big ? cmS(big.v, l) : ''}. Більша бульбашка спливала швидше — ≈ в ${sig(ratio, 2, l)} раза.${liquid === 'washing-up' ? ' (Скільки саме — залежить від рідини: різні марки бувають у кілька разів густіші чи рідші; а от рівномірність і «більша — швидша» не залежать.)' : ''}`
           : `${per.map((p) => `A ≈ ${sig(p.d * 1000, 2, l)} mm bubble: ${lapList(p, l)}`).join('. ')}. Twice the path — twice the time: the path is proportional to the time, and l/t is the same at every mark (a spread of ${sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l)} % — the stopwatch shows only hundredths of a second). So the motion is uniform: v ≈ ${small ? cmS(small.v, l) : ''} and ${big ? cmS(big.v, l) : ''}. The bigger bubble rose faster — ≈ ${sig(ratio, 2, l)} times.${liquid === 'washing-up' ? ' (How fast exactly depends on the liquid: makes are several times thicker or thinner; the uniformity and “bigger — faster” do not.)' : ''}`,
       ),
+    };
+  },
+  'small-bodies': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.rows' && x.record.value !== null).map((x) => ({ body: String(x.command['body']), n: Number(x.command['count']), L: x.record.value! }));
+    const mm = (x: number, l: Locale, d = 3) => `${sig(x * 1000, d, l)} ${l === 'uk' ? 'мм' : 'mm'}`;
+    // The size of one: to hundredths of a millimetre (0,40 — not 0,4).
+    const d2 = (x: number, l: Locale) => `${(x * 1000).toFixed(2).replace('.', l === 'uk' ? ',' : '.')} ${l === 'uk' ? 'мм' : 'mm'}`;
+    const one = R.find((x) => x.n === 1);
+    const rows = R.filter((x) => x.n > 1);
+    const name = (b: string, n: number, l: Locale) => tr(rowName(b as RowBody, n), l);
+    return {
+      correct: 'row',
+      why: both((l) =>
+        l === 'uk'
+          ? 'Лінійка дає довжину лише до поділки: її похибка — пів поділки, 0,5 мм, хоч що вимірюй. Для горошини завбільшки 6–7 мм це вже кілька відсотків, а зернятко пшона чи нитку однією лінійкою не виміряти взагалі. Але коли вимірюємо ряд із N однакових тіл, ці пів міліметра припадають на весь ряд — на одне тіло лише 0,5/N мм. Тож що довший ряд, то точніше d = L/N. Так само усереднюються й відмінності між горошинами: виходить середній розмір. Так вимірюють товщину аркуша (пачку), дроту (намотку), навіть розміри молекул — у збільшенні.'
+          : 'A ruler gives a length only to a division: its error is half a division, 0.5 mm, whatever you measure. For a 6–7 mm pea that is several per cent already, and a millet grain or a thread cannot be measured by one ruler at all. But when we measure a row of N alike bodies, that half millimetre is for the whole row — just 0.5/N mm per body. So the longer the row, the better d = L/N. The differences between the peas average out the same way: we get the mean size. This is how the thickness of a sheet (a stack), of a wire (a winding) are measured — even molecules, magnified.',
+      ),
+      say: both((l) => {
+        const millet = rows.find((x) => x.body === 'millet');
+        return millet ? (l === 'uk' ? `Зернятко пшона — ${d2(millet.L / millet.n, l)}: ряд із ${millet.n} зерняток дав соті частки міліметра.` : `A millet grain is ${d2(millet.L / millet.n, l)}: a row of ${millet.n} grains gave hundredths of a millimetre.`) : '';
+      }),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts = [
+          ...(one ? [uk ? `Одна горошина — ${mm(one.L, l, 2)} ± 0,5 мм: похибка близько ${Math.round((0.0005 / one.L) * 100)} %` : `One pea — ${mm(one.L, l, 2)} ± 0.5 mm: an error of about ${Math.round((0.0005 / one.L) * 100)} %`] : []),
+          ...rows.map((x) => (uk ? `${name(x.body, x.n, l)} — ${mm(x.L, l, 3)}, d = ${mm(x.L, l, 3)} / ${x.n} ≈ ${d2(x.L / x.n, l)} (± ${sig(0.5 / x.n, 1, l)} мм)` : `${name(x.body, x.n, l)} — ${mm(x.L, l, 3)}, d = ${mm(x.L, l, 3)} / ${x.n} ≈ ${d2(x.L / x.n, l)} (± ${sig(0.5 / x.n, 1, l)} mm)`)),
+        ];
+        return `${parts.join('; ')}.${uk ? ' Ряд ділить похибку лінійки на кількість тіл: нитку, тоншу за поділку, вдалося виміряти до сотих міліметра.' : ' A row divides the ruler’s error by the number of bodies: the thread, thinner than a division, came out to hundredths of a millimetre.'}`.replace(/^./, (ch) => ch.toUpperCase());
+      }),
     };
   },
   'adding-forces': (run) => {

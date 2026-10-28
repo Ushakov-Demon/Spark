@@ -314,6 +314,20 @@ describe('ready-made experiments with values to change', () => {
     expect(t[1]!).toBeGreaterThan(t[2]!);
   }, 60_000);
 
+  it('the method of rows: a row gives the size of one to hundredths of a millimetre, near the sources’ sizes', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'small-bodies')!);
+    expect(answer.correct).toBe('row');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const d = [...answer.text.uk.matchAll(/≈ ([\d,]+) мм/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(d).toHaveLength(3);
+    const [pea, millet, thread] = d as [number, number, number];
+    expect(pea).toBeGreaterThan(6.2);
+    expect(pea).toBeLessThan(6.9);
+    expect(millet).toBeGreaterThan(2.07);
+    expect(millet).toBeLessThan(2.27);
+    expect(thread).toBeCloseTo(0.4, 2);
+  }, 60_000);
+
   it('adding forces: the two dynamometers’ resultant equals one dynamometer’s reading each time', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'adding-forces')!);
     expect(answer.correct).toBe('same');

@@ -38,6 +38,10 @@ export const balancedDensity = (rho1: number, h1: number, h2: number): number =>
 export const averageSpeed = (path: number, time: number): number => path / time;
 
 /** Two forces along one line: the same way they add, R = F₁ + F₂; opposite ways — the larger less the smaller, R = F₁ − F₂. */
+/** The method of rows: a small body's size from a row of N of them, d = L / N. */
+export const rowSize = (length: number, count: number): number => length / count;
+
+/** Two forces along one line: the same way they add, R = F₁ + F₂; opposite ways — the larger less the smaller, R = F₁ − F₂. */
 export const resultantSame = (f1: number, f2: number): number => f1 + f2;
 export const resultantOpposite = (f1: number, f2: number): number => f1 - f2;
 

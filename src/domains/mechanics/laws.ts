@@ -164,6 +164,16 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичних величин.', en: 'These are definitions of physical quantities.' } }, citations: [] },
   },
   {
+    id: 'row-method',
+    kind: 'definition',
+    name: { uk: 'Метод рядів', en: 'The method of rows' },
+    statement: {
+      novice: { uk: 'Щоб виміряти щось дуже мале, беруть багато однакових тіл, складають у ряд, вимірюють увесь ряд і ділять на їх кількість.', en: 'To measure something very small, take many alike, lay them in a row, measure the whole row and divide by how many.' },
+      school: { uk: 'Розмір малого тіла d = L/N, де L — довжина ряду з N тіл (ширина намотки з N витків). Похибка вимірювання ряду ділиться на N: що довший ряд, то точніший результат.', en: 'A small body’s size d = L/N, where L is the length of a row of N bodies (the width of a winding of N turns). The row’s measuring error is divided by N: the longer the row, the better the result.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це спосіб вимірювання.', en: 'This is a way of measuring.' } }, citations: [] },
+  },
+  {
     id: 'adding-forces',
     kind: 'definition',
     name: { uk: 'Додавання сил. Рівнодійна', en: 'Adding forces. The resultant' },

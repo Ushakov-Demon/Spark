@@ -744,6 +744,20 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'yalcin-2007-pea': source({
+    id: 'yalcin-2007-pea',
+    title: 'Yalçın İ., Özarslan C., Akbaş T. Physical properties of pea (Pisum sativum) seed. Journal of Food Engineering 79 (2007) 731–735: at 10.06 % moisture (d.b.) length 7.80 mm, width 6.41 mm, thickness 5.55 mm',
+    url: 'https://agris.fao.org/search/en/records/65dff8a20f3e94b9e5de3037',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
+  'singh-2018-proso-millet': source({
+    id: 'singh-2018-proso-millet',
+    title: 'Singh K. P., Chandel N. S., Potdar R. R. et al. Assessment of engineering properties of proso millet (Panicum miliaceum). Journal of Agricultural Engineering (India) 55(2), 2018: grain length 2.22–2.36 mm, width 2.08–2.24 mm, thickness 1.93–2.21 mm, geometric mean diameter 2.07–2.27 mm',
+    url: 'https://pub.isae.in/index.php/jae/article/view/321',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
   'arxiv-surfactant-bubble': source({
     id: 'arxiv-surfactant-bubble',
     title: 'arXiv:2502.06373, Stress field in the vicinity of a bubble/sphere moving in a dilute surfactant solution: even a few ppm of surfactant can make the drag on a bubble comparable to a rigid sphere’s (Stokes 6πμRU instead of Hadamard–Rybczynski 4πμRU)',
