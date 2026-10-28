@@ -259,7 +259,7 @@ describe('ready-made experiments with values to change', () => {
 
   // Every control at each end of its range (or each option), the others at their defaults; when there are only a
   // few of them, every combination (the circuit's resistor with each set of voltages: the smallest current and the largest).
-  const values = (c: PresetControl) => (c.kind === 'number' ? [c.min, c.max] : c.options.map((o) => o.id));
+  const values = (c: PresetControl) => (c.kind === 'number' ? [c.min, c.max] : c.kind === 'place' ? [c.value, c.en, 'Reykjavík|64.1355|-21.8954'] : c.options.map((o) => o.id));
   const cases = PRESETS.filter((p) => p.vary).flatMap((p) => {
     const cs = p.vary!.controls;
     const all = cs.reduce<Record<string, number | string>[]>((acc, c) => acc.flatMap((v) => values(c).map((x) => ({ ...v, [c.id]: x }))), [{}]);
@@ -283,6 +283,17 @@ describe('ready-made experiments with values to change', () => {
     if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
     const [w1, w2] = [...answer.text.uk.matchAll(/≈ ([\d,]+) Дж/g)].map((m) => Number(m[1]!.replace(',', '.')));
     expect(Math.abs(w1! / w2! - 1)).toBeLessThan(0.15);
+  }, 60_000);
+
+  it('the electromagnet: the field grows with the current, the nail strengthens it, the reversed current turns the needle back', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'electromagnet')!);
+    expect(answer.correct).toBe('both');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const fields = [...answer.text.uk.matchAll(/B ≈ ([\d,]+) мкТл/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(fields).toHaveLength(3);
+    expect(fields[2]! / fields[0]!).toBeGreaterThan(2.5);
+    expect(fields[2]! / fields[0]!).toBeLessThan(3.5);
+    expect(answer.text.uk).toMatch(/відхилилася на \d+°, але в інший бік/);
   }, 60_000);
 
   it('the hydrostatic paradox: the same force on the bottom, the water poured several times different', () => {

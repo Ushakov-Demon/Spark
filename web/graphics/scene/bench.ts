@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -51,6 +51,8 @@ export interface BenchView {
   readonly press?: { readonly weights: number; readonly pull?: string; readonly pushed: number; readonly read?: string };
   /** The syringe and the barometer: the plunger out by so many mL (0…1), the nozzle shut; the dynamometer's reading, the ruler's; the day's pressure, Pa, and its reading once looked at. */
   readonly atm?: { readonly pulled: number; readonly sealed: boolean; readonly pull?: string; readonly read?: string; readonly air: number; readonly baro?: string };
+  /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
+  readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
   readonly vessels?: { readonly shape?: 'straight' | 'wide' | 'narrow'; readonly height: number; readonly dh: number; readonly read?: string; readonly poured?: string };
   /** The U-tube: water poured (or not yet), the oil's and the water's columns above their boundary, m; what the ruler read. */
@@ -177,6 +179,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'press') return pressSvg(v.press);
   if (v.kind === 'atm') return atmSvg(v.atm);
   if (v.kind === 'vessels') return vesselsSvg(v.vessels);
+  if (v.kind === 'magnet') return magnetSvg(v.magnet);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
   if (v.kind === 'spring') {
@@ -362,6 +365,36 @@ function circuitSvg(c: BenchView['circuit']): string {
   const resistor = `<rect x="430" y="${y - 6}" width="60" height="20" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${[0, 1, 2].map((k) => `<rect x="${442 + k * 12}" y="${y - 6}" width="4" height="20" style="fill:${['#8b4513', '#222', '#c0392b'][k]}"/>`).join('')}`;
   const wires = W(`M195,${y + 4} H250`) + W(`M280,${y + 4} H340`) + W(`M392,${y + 4} H430`) + W(`M490,${y + 4} H540 V${y + 40} H150 V${y + 4} H155`) + W(`M410,${y + 4} V${top + 40} H${435}`) + W(`M485,${top + 40} H510 V${y + 4}`);
   return `${wires}${source}${key}${meterSvg(366, y + 6, 'A', c?.amps?.share, c?.amps?.text)}${resistor}${meterSvg(460, top + 40, 'V', c?.volts?.share, c?.volts?.text)}`;
+}
+
+/**
+ * The electromagnet, seen from above: the source, the key, the rheostat and the ammeter on the left; the coil wound on
+ * the nail (or on a plastic straw) lying east–west; the compass on its axis to the right, «N» up, its needle turned by θ.
+ */
+function magnetSvg(m: BenchView['magnet']): string {
+  const on = (m?.current ?? 0) > 0;
+  const wire = on ? '#e2b04a' : '#9aa3ad';
+  const W = (d: string) => `<path d="${d}" style="fill:none;stroke:${wire};stroke-width:2.2"/>`;
+  const y = TABLE - 170;
+  const low = TABLE - 90;
+  const back = TABLE - 40;
+  const source = `<rect x="200" y="${low - 24}" width="56" height="36" rx="5" style="fill:${DARK}"/><circle cx="212" cy="${low - 6}" r="3" style="fill:#c0392b"/><circle cx="244" cy="${low - 6}" r="3" style="fill:#222"/>`;
+  const key = `<circle cx="282" cy="${low - 6}" r="3" style="fill:${DARK}"/><circle cx="308" cy="${low - 6}" r="3" style="fill:${DARK}"/><path d="M282,${low - 6} L${on ? 308 : 304},${on ? low - 6 : low - 20}" style="stroke:${DARK};stroke-width:3;stroke-linecap:round"/>`;
+  const rheostat = `<rect x="322" y="${low - 14}" width="56" height="16" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${Array.from({ length: 9 }, (_, i) => `<path d="M${326 + i * 6},${low - 14} v16" style="stroke:#8a6d33;stroke-width:0.8"/>`).join('')}<path d="M${340 + Math.min(1, (m?.current ?? 0) / 2) * 30},${low - 22} v8" style="stroke:${DARK};stroke-width:3"/>`;
+  // The coil: 60 px of windings on a 100 px nail (or the straw), centred at cx.
+  const cx = 440;
+  const rod = m?.core === false ? `<rect x="${cx - 52}" y="${y - 5}" width="104" height="10" rx="3" style="fill:rgba(230,236,242,0.6);stroke:#9aa3ad"/>` : `<rect x="${cx - 50}" y="${y - 4}" width="100" height="8" style="fill:#8a96a3;stroke:#59636e"/><path d="M${cx - 50},${y - 6} v12" style="stroke:#59636e;stroke-width:5"/>`;
+  const turns = Array.from({ length: 16 }, (_, i) => `<path d="M${cx - 30 + i * 4},${y - 8} l2,16" style="stroke:${on ? '#d4893a' : '#b0703a'};stroke-width:2.2"/>`).join('');
+  const leads = W(`M244,${low - 6} H282`) + W(`M308,${low - 6} H322`) + W(`M378,${low - 6} H${cx - 32} V${y + 8}`) + W(`M${cx + 32},${y + 8} V${back} H212 V${low - 6}`);
+  const ammeter = meterSvg(330, back - 2, 'A', on ? (m?.current ?? 0) / 2 : 0, m?.amps);
+  // The compass on the axis, 15 cm away (scaled down): N up; the needle's north end red.
+  const kx = 552;
+  const r = 28;
+  const a = ((m?.angle ?? 0) * Math.PI) / 180;
+  const tip = (s: number) => `${kx + s * (r - 5) * Math.sin(a)},${y - s * (r - 5) * Math.cos(a)}`;
+  const side = (s: number) => `${kx + s * 4 * Math.cos(a)},${y + s * 4 * Math.sin(a)}`;
+  const compass = `<path d="M${cx + 52},${y} H${kx - r - 4}" class="bench-mark" style="stroke-dasharray:3 4"/><circle cx="${kx}" cy="${y}" r="${r + 4}" style="fill:#c9a96e;stroke:#7a5a2a;stroke-width:2"/><circle cx="${kx}" cy="${y}" r="${r}" style="fill:#f4f1e8"/><text class="lever-mark" x="${kx}" y="${y - r + 10}" text-anchor="middle" style="font-size:9px;font-weight:700">N</text><path d="M${tip(1)} L${side(1)} L${tip(-1)} L${side(-1)} Z" style="fill:#c9ccd1"/><path d="M${tip(1)} L${side(1)} L${kx},${y} L${side(-1)} Z" style="fill:#c0392b"/><circle cx="${kx}" cy="${y}" r="2" style="fill:${DARK}"/>${m?.read ? `<text class="bench-reading" x="${kx}" y="${y + r + 22}" text-anchor="middle">θ = ${m.read}</text>` : ''}`;
+  return `${leads}${source}${key}${rheostat}${ammeter}${rod}${turns}${compass}`;
 }
 
 /**

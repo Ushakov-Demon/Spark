@@ -26,6 +26,11 @@ export interface UiText {
   /** The conditions of a ready-made experiment, changeable before the start. */
   varyTitle: string;
   varyReset: string;
+  /** A city for the Earth's field: the example's mark, the field's hint, nothing found, whose search it is. */
+  placeExample: string;
+  placeHint: string;
+  placeNone: string;
+  placeCredit: string;
   boiledOff(g: string): string;
   surroundings: string;
   supplyWhat: string;
@@ -337,6 +342,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     supersaturated: 'пересичений',
     varyTitle: 'Умови:',
     varyReset: 'Як у досліді',
+    placeExample: 'для прикладу — впиши своє місто',
+    placeHint: 'Почни вводити назву міста',
+    placeNone: 'Такого міста не знайшлося (чи немає інтернету)',
+    placeCredit: 'Пошук міст: Open-Meteo, дані GeoNames (CC BY 4.0)',
     boiledOff: (g) => `випарувалося ${g}`,
     surroundings: 'Навколо',
     supplyWhat: 'Джерело струму',
@@ -626,6 +635,10 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     supersaturated: 'supersaturated',
     varyTitle: 'Conditions:',
     varyReset: 'As in the experiment',
+    placeExample: 'for example — type your own city',
+    placeHint: 'Start typing a city’s name',
+    placeNone: 'No such city found (or no internet)',
+    placeCredit: 'City search: Open-Meteo, GeoNames data (CC BY 4.0)',
     boiledOff: (g) => `evaporated ${g}`,
     surroundings: 'Around it',
     supplyWhat: 'Power source',

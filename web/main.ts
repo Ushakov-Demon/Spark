@@ -55,6 +55,7 @@ import {
   BENCH_TEXT,
   BENCH_SETUP,
   defaultValues,
+  parsePlace,
   withValues,
   type PresetValues,
   balanceWeights,
@@ -124,6 +125,7 @@ import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplie
 import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
+import { searchPlaces } from './place-search.js';
 import { catalogHtml, catalogUi, pagePath, parsePath, presetDescription, SITE, type Route } from './site.js';
 import { labSheetHtml as labSheetHtmlIn, planStepLabel as planStepLabelIn, predictsFirst, TOPIC_NUMBER, unspoiledSteps } from './experiment-sheet.js';
 import { createKnob } from './knob.js';
@@ -428,6 +430,14 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // The electromagnet: the current this step set, the nail in or out, the compass needle.
+  if (kind === 'magnet') {
+    const mc = c?.type === 'lab.magnet' ? (c as unknown as { current: number; core: boolean }) : undefined;
+    const recs = last && mc ? readingsOf([last]).map((x) => x.record) : [];
+    const I = recs.find((x) => x.quantity === 'current');
+    const th = recs.find((x) => x.quantity === 'angle');
+    return { ...base, kind, magnet: { current: mc?.current ?? 0, core: mc?.core ?? true, angle: th?.value ?? 0, ...(I ? { amps: formatMeasured('current', I.value, 0.01, locale) } : {}), ...(th ? { read: formatMeasured('angle', th.value, 1, locale) } : {}) } };
+  }
   // Pascal's device: the vessel this step screwed on (or the next planned one), its water, the manometer.
   if (kind === 'vessels') {
     const vc = c?.type === 'lab.vessel' ? (c as unknown as { step: string; shape?: 'straight' | 'wide' | 'narrow'; height?: number }) : undefined;
@@ -635,6 +645,16 @@ function measureSay(): string {
     if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+  }
+  // The electromagnet: the compass needle's turn — and which way.
+  if (m.command.type === 'lab.magnet') {
+    const mc = m.command as { current: number; core: boolean; reversed?: boolean };
+    const th = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.magnet').slice(0, 1)).map((x) => x.record).find((x) => x.quantity === 'angle');
+    const deg = Math.abs(th?.value ?? 0);
+    if (mc.current === 0) return uk ? 'Струму немає — стрілка дивиться на північ.' : 'No current — the needle looks north.';
+    if (!mc.core) return uk ? `Без цвяха стрілка ${deg < 2 ? 'майже не ворухнулася' : `відхилилася лише на ${deg}°`}.` : `Without the nail the needle ${deg < 2 ? 'hardly moved' : `turned only ${deg}°`}.`;
+    if (mc.reversed) return uk ? `Стрілка відхилилася на ${deg}° — але в інший бік!` : `The needle turned ${deg}° — but the other way!`;
+    return uk ? `Стрілка компаса відхилилася на ${deg}°.` : `The compass needle turned ${deg}°.`;
   }
   // Pascal's device: the bottom; the water each vessel took and the manometer's reading.
   if (m.command.type === 'lab.vessel') {
@@ -1772,12 +1792,18 @@ function renderVary() {
   if (box.dataset['k'] === key) return;
   box.dataset['k'] = key;
   const u = t();
-  const vals = { ...defaultValues(chosen), ...presetVals };
-  const changed = JSON.stringify(vals) !== JSON.stringify(defaultValues(chosen));
+  const vals = { ...defaultValues(chosen, locale), ...presetVals };
+  const changed = JSON.stringify(vals) !== JSON.stringify(defaultValues(chosen, locale));
   const controls = chosen.vary.controls
     .map((c) => {
       const label = `<span>${tr(c.label, locale)}</span>`;
       const unit = c.kind === 'number' ? (locale === 'uk' ? c.unit : c.unit.replace('мл', 'mL').replace(/^г$/, 'g')) : '';
+      // A city: typed with suggestions (the Earth's field is worked out for it); the default is an example.
+      if (c.kind === 'place') {
+        const pl = parsePlace(vals[c.id]);
+        const example = vals[c.id] === c.value || vals[c.id] === c.en;
+        return `<label class="vary-item vary-place">${label}<input type="text" data-vary-place="${c.id}" list="vary-places" value="${escAttr(pl?.name ?? '')}" placeholder="${escAttr(u.placeHint)}" autocomplete="off" spellcheck="false"/><datalist id="vary-places"></datalist></label><span class="vary-note muted" data-place-note="1">${example ? u.placeExample : ''}</span><span class="vary-credit muted">${u.placeCredit}</span>`;
+      }
       return c.kind === 'number'
         ? `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${vals[c.id]}"/><span class="muted">${unit}</span></label>`
         : `<label class="vary-item">${label}<select data-vary="${c.id}">${c.options.map((o) => `<option value="${o.id}"${o.id === vals[c.id] ? ' selected' : ''}>${tr(o.label, locale)}</option>`).join('')}</select></label>`;
@@ -1786,14 +1812,44 @@ function renderVary() {
   box.innerHTML = `<span class="vary-title">${u.varyTitle}</span>${controls}${changed ? `<button type="button" class="vary-reset" data-vary-reset="1" title="${u.varyReset}" aria-label="${u.varyReset}">↺</button>` : ''}`;
 }
 $('#vary').addEventListener('change', (e) => {
+  const place = (e.target as HTMLElement).closest<HTMLInputElement>('[data-vary-place]');
+  if (place) {
+    void choosePlace(place, place.dataset['varyPlace']!);
+    return;
+  }
   const el = (e.target as HTMLElement).closest<HTMLInputElement | HTMLSelectElement>('[data-vary]');
   if (!el || !presetGiven?.vary) return;
   const c = presetGiven.vary.controls.find((x) => x.id === el.dataset['vary']);
-  if (!c) return;
+  if (!c || c.kind === 'place') return;
   // A number is kept within the experiment's frame (and on its step).
   const value = c.kind === 'number' ? Math.min(c.max, Math.max(c.min, Math.round(Number(el.value) / c.step) * c.step)) : el.value;
   startPreset(presetGiven, { ...presetVals, [c.id]: Number.isFinite(value as number) || typeof value === 'string' ? value : c.value });
 });
+// The city field: suggestions as one types (from three letters, a moment after the last key), the place once chosen.
+const placeFound = new Map<string, string>();
+let placeTimer = 0;
+$('#vary').addEventListener('input', (e) => {
+  const el = (e.target as HTMLElement).closest<HTMLInputElement>('[data-vary-place]');
+  if (!el) return;
+  window.clearTimeout(placeTimer);
+  placeTimer = window.setTimeout(async () => {
+    const found = await searchPlaces(el.value, locale);
+    for (const f of found) placeFound.set(f.label, f.value);
+    const list = $('#vary-places');
+    list.innerHTML = found.map((f) => `<option value="${escAttr(f.label)}"></option>`).join('');
+  }, 300);
+});
+async function choosePlace(el: HTMLInputElement, id: string) {
+  if (!presetGiven) return;
+  const text = el.value.trim();
+  const value = placeFound.get(text) ?? (await searchPlaces(text, locale))[0]?.value;
+  const note = $('#vary').querySelector<HTMLElement>('[data-place-note]');
+  if (!value) {
+    if (note) note.textContent = t().placeNone;
+    return;
+  }
+  startPreset(presetGiven, { ...presetVals, [id]: value });
+}
 $('#vary').addEventListener('click', (e) => {
   if (!(e.target as HTMLElement).closest('[data-vary-reset]') || !presetGiven) return;
   startPreset(presetGiven);
@@ -2314,6 +2370,9 @@ function renderProtocol() {
       // (The circuit reads two instruments at once: both are written.)
       const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
       // (The black box's milliammeter: milliamperes to a tenth.)
+      // (The electromagnet: the ammeter and the compass.)
+      const mRecs = c.type === 'lab.magnet' ? readingsOf([e]).map((x) => x.record) : [];
+      const mShown = c.type === 'lab.magnet' ? mRecs.map((x) => formatMeasured(x.quantity, x.value, x.quantity === 'current' ? 0.01 : 1, locale)).join(' · ') : null;
       // (Pascal's device: the water poured and the manometer.)
       const vRecs = c.type === 'lab.vessel' ? readingsOf([e]).map((x) => x.record) : [];
       const vShown = c.type === 'lab.vessel' && vRecs.length === 2 ? `${formatMeasured('volume', vRecs[0]!.value, 5e-6, locale)} · Δh ${formatMeasured('length', vRecs[1]!.value, 0.001, locale)}` : null;
@@ -2324,7 +2383,7 @@ function renderProtocol() {
       const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
-      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
@@ -3487,7 +3546,9 @@ $('#lab-sheet').addEventListener('click', (e) => {
   }
 });
 
-function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen)) {
+function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
+  // (A place's example follows the language: Kyiv, New York.)
+  const values = { ...defaultValues(chosen, locale), ...chosenValues };
   // Chosen in the catalogue: to the lab, on the experiment's address (the browser's "back" returns to the catalogue).
   if (onCatalog) {
     onCatalog = false;
@@ -3495,7 +3556,7 @@ function startPreset(chosen: Preset, values: PresetValues = defaultValues(chosen
     window.scrollTo(0, 0);
   }
   presetGiven = chosen;
-  presetVals = values;
+  presetVals = chosenValues;
   // Built with the values chosen under the scene (its amounts, materials), within its own frame.
   const given = withValues(chosen, values);
   // Led step by step: what goes in first, the operation, the rest — no "Start" (see guidedPlan).

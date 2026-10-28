@@ -360,6 +360,42 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  electromagnet: (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.magnet' && x.record.quantity === 'angle' && x.record.value !== null);
+    const at = (current: number, core: boolean, reversed = false) => R.find((x) => Number(x.command['current']) === current && !!x.command['core'] === core && !!x.command['reversed'] === reversed)?.record;
+    const earth = R[0]?.record.inputs?.['earth'] ?? 19.4e-6;
+    const B = (deg: number) => earth * Math.tan((deg * Math.PI) / 180);
+    const steps = [0.5, 1, 1.5].map((I) => ({ I, deg: at(I, true)?.value ?? 0 }));
+    const back = at(1.5, true, true)?.value ?? 0;
+    const bare = at(1.5, false)?.value ?? 0;
+    const full = steps[2]!.deg;
+    // A change counts if it is more than a compass division.
+    const div = R[0]?.record.inputs?.['division'] ?? 2;
+    const byCurrent = full - steps[0]!.deg > div;
+    const byCore = full - bare > div;
+    const correct = !R.length ? undefined : byCurrent && byCore ? 'both' : byCurrent ? 'current' : byCore ? 'core' : undefined;
+    const deg = (x: number) => `${x}°`;
+    const uT = (x: number, l: Locale) => `${sig(x * 1e6, 2, l)} ${l === 'uk' ? 'мкТл' : 'µT'}`;
+    const A = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'А' : 'A'}`;
+    const list = (l: Locale) => steps.map((x) => `${A(x.I, l)} — ${deg(x.deg)} (B ≈ ${uT(B(x.deg), l)})`).join('; ');
+    const turns = Number(R[0]?.command['turns'] ?? 100);
+    const place = String(R[0]?.command['place'] ?? 'Київ');
+    const where = (l: Locale) => `${place}${R[0]?.command['example'] ? (l === 'uk' ? ', для прикладу' : ', for example') : ''}`;
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Струм у дроті створює магнітне поле, і поле кожного витка додається до поля інших — тому воно пропорційне силі струму й числу витків. Але сама котушка — слабкий магніт. Залізо ж складається з крихітних «магнітиків», які в полі котушки повертаються вздовж нього й додають своє поле — у десятки разів сильніше. Звідси й сила електромагніта. Змінимо напрям струму — поле котушки, а з ним і цвяха, повернеться навпаки: північний і південний полюси поміняються місцями.'
+          : 'The current in the wire makes a magnetic field, and each turn’s field adds to the others’ — so it is proportional to the current and to the number of turns. But the coil alone is a weak magnet. Iron, though, is made of tiny “magnets” that turn along the coil’s field and add their own — tens of times stronger. That is where the electromagnet’s strength comes from. Reverse the current — the coil’s field, and the nail’s with it, turns the other way: the north and south poles swap.',
+      ),
+      say: both((l) => (correct === 'both' ? (l === 'uk' ? `Струм утричі більший — поле втричі сильніше, а без цвяха стрілка ледь ворухнулася!` : `Three times the current — three times the field, and without the nail the needle hardly moved!`) : l === 'uk' ? 'Подивімося, що показав компас.' : 'Let us look at the compass.')),
+      text: both((l) =>
+        l === 'uk'
+          ? `${turns} витків на цвяху. Без струму стрілка дивилася на північ. Зі струмом: ${list(l)} — поле B = B_З·tg θ (B_З ≈ ${uT(earth, l)}: ${where(l)}) зростало пропорційно силі струму, хоч кут — ні. Струм в інший бік — стрілка відхилилася на ${deg(Math.abs(back))}${back < 0 ? ', але в інший бік' : ''}: полюси електромагніта помінялися місцями. Без цвяха за того самого струму ${A(1.5, l)} стрілка ${Math.abs(bare) < div ? `майже не ворухнулася (${deg(Math.abs(bare))})` : `відхилилася лише на ${deg(Math.abs(bare))}`}: залізне осердя підсилює поле в десятки разів.`
+          : `${turns} turns on the nail. With no current the needle looked north. With a current: ${list(l)} — the field B = B_E·tg θ (B_E ≈ ${uT(earth, l)}: ${where(l)}) grew in proportion to the current, though the angle did not. The current reversed — the needle turned ${deg(Math.abs(back))}${back < 0 ? ', but the other way' : ''}: the electromagnet’s poles swapped. Without the nail at the same ${A(1.5, l)} the needle ${Math.abs(bare) < div ? `hardly moved (${deg(Math.abs(bare))})` : `turned only ${deg(Math.abs(bare))}`}: the iron core strengthens the field tens of times.`,
+      ),
+    };
+  },
   'hydrostatic-paradox': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.vessel' && x.record.value !== null);
     const d = R.find((x) => x.command['step'] === 'bottom')?.record.value ?? 0;

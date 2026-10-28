@@ -29,4 +29,6 @@ export const seriesVoltage = (u1: number, u2: number): number => u1 + u2;
 export const parallelCurrent = (i1: number, i2: number): number => i1 + i2;
 
 /** Power of a consumer: the voltage across it times the current through it, P = U · I. */
+/** A field across the Earth's horizontal one, from the compass needle's turn: B = B_Earth·tg θ (θ in degrees). */
+export const fieldFromCompass = (earth: number, degrees: number): number => earth * Math.tan((degrees * Math.PI) / 180);
 export const electricPower = (voltage: number, current: number): number => voltage * current;

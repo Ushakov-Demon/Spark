@@ -433,6 +433,23 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
+    // The electromagnet: the compass's turn and the field it gives, B = B_Earth·tg θ.
+    if (c.type === 'lab.magnet') {
+      const m = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'angle');
+      if (!m || m.value === null) return;
+      const I = Number(c['current']);
+      const earth = m.inputs?.['earth'] ?? 19.4e-6;
+      const what = I === 0 ? (uk ? 'без струму' : 'no current') : `${n(I, 2)} ${uk ? 'А' : 'A'}${c['reversed'] ? (uk ? ', струм в інший бік' : ', reversed') : ''}${c['core'] ? '' : uk ? ', без цвяха' : ', no nail'}`;
+      if (I === 0) {
+        const where = c['place'] ? ` (${String(c['place'])}${c['example'] ? (uk ? ', для прикладу' : ', for example') : ''})` : '';
+        out.push({ id: 'm0', title: uk ? `компас ${what}` : `the compass, ${what}`, formula: `θ = ${m.value}°` });
+        out.push({ id: 'mE', title: uk ? `поле Землі${where}` : `the Earth’s field${where}`, formula: `B_З ≈ ${n(earth * 1e6)} ${uk ? 'мкТл' : 'µT'}` });
+        return;
+      }
+      const key = `${I}${c['reversed'] ? 'r' : ''}${c['core'] ? '' : 'n'}`;
+      out.push({ id: `mB:${key}`, title: uk ? `поле електромагніта: ${what}` : `the electromagnet’s field: ${what}`, formula: `θ = ${n(m.value)}°, B = B_З·tg θ`, numbers: `${n(earth * 1e6)} ${uk ? 'мкТл' : 'µT'} · tg ${n(m.value)}° ≈ ${n(earth * Math.tan((m.value * Math.PI) / 180) * 1e6, 2)} ${uk ? 'мкТл' : 'µT'}` });
+      return;
+    }
     // Pascal's device: the bottom's area; for each vessel the water's weight and the force on the bottom.
     if (c.type === 'lab.vessel') {
       const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');

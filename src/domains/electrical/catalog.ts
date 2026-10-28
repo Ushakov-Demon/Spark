@@ -27,6 +27,8 @@ const UA_FARADAY: readonly CurriculumRef[] = [
   { program: 'ua-nus-2023-holovko', grade: 8, depth: 'qualitative', quote: 'Природа електричного струму в різних середовищах.' },
 ];
 
+const UA_ELECTROMAGNET: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-kreminskyi', grade: 9, depth: 'quantitative', quote: 'Магнітне поле провідника зі струмом. … Індукція магнітного поля. … Електромагніти.' }];
+
 export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
   defineFormula({
     id: 'electrical.resistance-temperature',
@@ -287,6 +289,32 @@ export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.electricPower,
     examples: [{ args: [3, 0.6], expected: 1.8, note: '3 V and 0.6 A' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'electrical.compass-field',
+    law: 'electromagnet',
+    title: { uk: 'Поле за відхиленням компаса', en: 'A field from a compass’s turn' },
+    latex: 'B = B_{\\text{З}}\\,\\operatorname{tg}\\theta',
+    plain: 'B = B_З·tg θ',
+    argSymbols: ['B_З', 'θ'],
+    resultSymbol: 'B',
+    variables: {
+      B: { name: { uk: 'індукція поля електромагніта біля компаса', en: 'the electromagnet’s field at the compass' }, unit: 'T' },
+      'B_З': { name: { uk: 'горизонтальна складова поля Землі', en: 'the horizontal part of the Earth’s field' }, unit: 'T' },
+      'θ': { name: { uk: 'кут, на який повернулася стрілка', en: 'the angle the needle turned' }, unit: '°' },
+    },
+    curriculum: UA_ELECTROMAGNET,
+    explanation: {
+      novice: { uk: 'Земля тягне стрілку на північ, електромагніт — убік. Що сильніший електромагніт, то більше стрілка відхиляється.', en: 'The Earth pulls the needle north, the electromagnet sideways. The stronger the electromagnet, the farther the needle turns.' },
+      school: {
+        uk: 'Поле електромагніта B спрямоване впоперек горизонтальної складової поля Землі B_З; стрілка стає вздовж їхньої суми, тож tg θ = B / B_З. Поле Землі в Києві ≈ 19 мкТл (модель WMM-2025).',
+        en: 'The electromagnet’s field B is across the Earth’s horizontal field B_E; the needle lines up with their sum, so tg θ = B / B_E. The Earth’s field in Kyiv ≈ 19 µT (the WMM-2025 model).',
+      },
+    },
+    compute: f.fieldFromCompass,
+    examples: [{ args: [19.4e-6, 32], expected: 12.123e-6, note: 'the needle turned 32° in Kyiv' }],
     textSource: 'spark',
     reviewed: false,
   }),

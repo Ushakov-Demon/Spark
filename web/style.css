@@ -974,7 +974,10 @@ footer .library-links a { color: var(--accent); }
 .vary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 2px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 0.85rem; }
 .vary-title { font-weight: 600; color: var(--muted); }
 .vary-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.vary-item input { width: 3.4em; min-height: 30px; padding: 3px 6px; }
+.vary-item input { width: 4.2em; min-height: 30px; padding: 3px 6px; }
 .vary-item select { min-height: 30px; padding: 3px 6px; }
+.vary-place input { width: 11em; }
+.vary-note { font-size: 0.85rem; }
+.vary-credit { order: 10; flex-basis: 100%; font-size: 0.72rem; }
 .vary-reset { min-height: 28px; padding: 1px 8px; font-size: 0.95rem; margin-left: auto; }
 .vary-item { gap: 4px; }

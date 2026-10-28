@@ -1,4 +1,4 @@
-import type { LocalizedText } from '../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
@@ -7,6 +7,7 @@ import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.
 import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './motion-bench.js';
 import { slopeLoad } from './lever-bench.js';
 import { LAB_RESISTOR, SET_RESISTORS } from './circuit-bench.js';
+import { earthField, modelYear } from '../domains/electrical/wmm.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -56,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -80,7 +81,23 @@ export interface Preset {
 export type PresetControl = { readonly id: string; readonly label: LocalizedText } & (
   | { readonly kind: 'number'; readonly unit: string; readonly min: number; readonly max: number; readonly step: number; readonly value: number }
   | { readonly kind: 'choice'; readonly options: readonly Choice[]; readonly value: string }
+  // A place on the Earth, as «name|latitude|longitude»: the default for Ukrainian, another for English (an example each).
+  | { readonly kind: 'place'; readonly value: string; readonly en: string }
 );
+export interface Place {
+  readonly name: string;
+  readonly lat: number;
+  readonly lon: number;
+}
+/** «Київ|50.45|30.52» → the place (null — not a place). */
+export function parsePlace(s: unknown): Place | null {
+  if (typeof s !== 'string') return null;
+  const [name, a, b] = s.split('|');
+  const lat = Number(a);
+  const lon = Number(b);
+  return name && Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { name, lat, lon } : null;
+}
+export const placeValue = (p: Place): string => `${p.name.replace(/\|/g, ' ')}|${p.lat.toFixed(4)}|${p.lon.toFixed(4)}`;
 export type PresetValues = Readonly<Record<string, number | string>>;
 export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices'>>;
 export interface PresetVary {
@@ -89,7 +106,7 @@ export interface PresetVary {
 }
 
 /** The values a preset starts with. */
-export const defaultValues = (p: Preset): PresetValues => Object.fromEntries((p.vary?.controls ?? []).map((c) => [c.id, c.value]));
+export const defaultValues = (p: Preset, locale: Locale = 'uk'): PresetValues => Object.fromEntries((p.vary?.controls ?? []).map((c) => [c.id, c.kind === 'place' && locale === 'en' ? c.en : c.value]));
 /** The preset with these values: its setup, plan, question and choices built from them. */
 export function withValues(p: Preset, v: PresetValues): Preset {
   if (!p.vary) return p;
@@ -99,6 +116,7 @@ export function withValues(p: Preset, v: PresetValues): Preset {
     p.vary.controls.map((c) => {
       const x = all[c.id];
       if (c.kind === 'number') return [c.id, typeof x === 'number' && x >= c.min && x <= c.max ? x : c.value];
+      if (c.kind === 'place') return [c.id, parsePlace(x) ? String(x) : c.value];
       return [c.id, typeof x === 'string' && c.options.some((o) => o.id === x) ? x : c.value];
     }),
   );
@@ -209,6 +227,10 @@ const voltsText = (volts: readonly number[], l: 'uk' | 'en') => {
   return `${n.slice(0, -1).join(', ')} ${l === 'uk' ? 'і' : 'and'} ${n[n.length - 1]} ${l === 'uk' ? 'В' : 'V'}`;
 };
 const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
+
+/** The electromagnet's examples: where the Earth's field is taken unless another city is given. */
+const MAGNET_KYIV = 'Київ|50.4500|30.5200';
+const MAGNET_NEW_YORK = 'New York|40.7128|-74.0060';
 
 export const PRESETS: readonly Preset[] = [
   // ---------------------------------------------------------------- 7 grade, mechanics
@@ -1454,6 +1476,52 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
     expect: 'reached',
   },
+  varied(
+    {
+      id: 'electromagnet',
+      ask: { uk: 'Що робить електромагніт сильнішим?', en: 'What makes an electromagnet stronger?' },
+      grade: 9,
+      topic: ELECTRIC,
+      title: { uk: 'Робимо електромагніт', en: 'Making an electromagnet' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'magnet',
+      choices: [ch('both', 'І більший струм, і залізне осердя', 'Both a larger current and an iron core'), ch('current', 'Лише більший струм', 'Only a larger current'), ch('core', 'Лише залізне осердя', 'Only an iron core')],
+      choicesAt: 'end',
+      answerOnBoard: ['mB:'],
+      formulas: ['electrical.compass-field'],
+      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 4', topic: 'Тема 2. Магнітні та електромагнітні явища', match: 'same', quote: '№ 4. Виготовлення електромагніта та вивчення його магнітного поля.' }],
+      expect: 'reached',
+    },
+    {
+      // How many turns are wound on the nail: the field grows with them as with the current. Where the lab is: the
+      // Earth's field that holds the needle north differs from place to place (Kyiv and New York — examples).
+      controls: [
+        { id: 'turns', label: { uk: 'Витків на цвяху', en: 'Turns on the nail' }, kind: 'number', unit: '', min: 50, max: 150, step: 50, value: 100 },
+        { id: 'place', label: { uk: 'Місто', en: 'City' }, kind: 'place', value: MAGNET_KYIV, en: MAGNET_NEW_YORK },
+      ],
+      build: (v) => {
+        const turns = Number(v['turns']);
+        const place = parsePlace(v['place']) ?? parsePlace(MAGNET_KYIV)!;
+        const example = v['place'] === MAGNET_KYIV || v['place'] === MAGNET_NEW_YORK;
+        const earth = earthField(place.lat, place.lon, modelYear(new Date())).h;
+        const uT = (l: 'uk' | 'en') => (earth * 1e6).toFixed(1).replace('.', l === 'uk' ? ',' : '.');
+        const at = { place: place.name, earth, ...(example ? { example: true } : {}) };
+        return {
+          question: {
+            uk: `Намотаємо на сталевий цвях ${turns} витків ізольованого дроту й увімкнемо котушку в коло з джерелом, ключем, реостатом і амперметром. Котушку покладемо віссю зі сходу на захід, а на її осі, за 15 см від середини, поставимо компас: без струму його стрілка дивиться на північ — її тримає поле Землі (${place.name}${example ? ', для прикладу' : ''}: його горизонтальна складова ≈ ${uT('uk')} мкТл). Пускатимемо струм 0,5, 1 і 1,5 А й записуватимемо, на скільки градусів відхилилася стрілка. Тоді змінимо напрям струму, а наостанок витягнемо цвях. Що робить електромагніт сильнішим?`,
+            en: `We wind ${turns} turns of insulated wire on a steel nail and connect the coil into a circuit with a source, a key, a rheostat and an ammeter. The coil lies with its axis east–west, and on its axis, 15 cm from its middle, stands a compass: with no current its needle looks north — the Earth’s field holds it there (${place.name}${example ? ', for example' : ''}: its horizontal part ≈ ${uT('en')} µT). We let 0.5, 1 and 1.5 A through and write down how many degrees the needle turned. Then we reverse the current, and at last pull the nail out. What makes an electromagnet stronger?`,
+          },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.magnet', current: 0, turns, core: true, ...at } },
+            ...[0.5, 1, 1.5].map((current) => ({ kind: 'bench', command: { type: 'lab.magnet', current, turns, core: true, ...at } }) as const),
+            { kind: 'bench', command: { type: 'lab.magnet', current: 1.5, turns, core: true, reversed: true, ...at } },
+            { kind: 'bench', command: { type: 'lab.magnet', current: 1.5, turns, core: false, ...at } },
+          ],
+        };
+      },
+    },
+  ),
   {
     id: 'diode-black-box',
     ask: { uk: 'Що сховано в «чорній скриньці»?', en: 'What is hidden in the “black box”?' },

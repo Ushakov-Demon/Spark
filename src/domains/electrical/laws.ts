@@ -4,6 +4,9 @@ const OHM: Person = { name: { uk: 'Георг Симон Ом', en: 'Georg Simon
 const JOULE: Person = { name: { uk: 'Джеймс Прескотт Джоуль', en: 'James Prescott Joule' }, born: 1818, died: 1889, wikidata: 'Q8962' };
 const KIRCHHOFF: Person = { name: { uk: 'Густав Кірхгоф', en: 'Gustav Kirchhoff' }, born: 1824, died: 1887, wikidata: 'Q76508' };
 const LENZ: Person = { name: { uk: 'Генріх (Емілій) Ленц', en: 'Heinrich (Emil) Lenz' }, born: 1804, died: 1865, wikidata: 'Q154325' };
+const OERSTED: Person = { name: { uk: 'Ганс Крістіан Ерстед', en: 'Hans Christian Ørsted' }, born: 1777, died: 1851, wikidata: 'Q44412' };
+const STURGEON: Person = { name: { uk: 'Вільям Стерджен', en: 'William Sturgeon' }, born: 1783, died: 1850, wikidata: 'Q472515' };
+const HENRY: Person = { name: { uk: 'Джозеф Генрі', en: 'Joseph Henry' }, born: 1797, died: 1878, wikidata: 'Q157043' };
 const FARADAY: Person = { name: { uk: 'Майкл Фарадей', en: 'Michael Faraday' }, born: 1791, died: 1867, wikidata: 'Q8750' };
 
 /**
@@ -196,5 +199,34 @@ export const ELECTRICAL_LAWS: readonly LawSpec[] = [
       school: { uk: 'Потужність споживача P = U·I — добуток напруги на ньому й сили струму в ньому; вимірюють у ватах (1 Вт = 1 В·А). Для резистора, за законом Ома, P = I²·R = U²/R.', en: 'A consumer’s power P = U·I — the voltage across it times the current in it, in watts (1 W = 1 V·A). For a resistor, by Ohm’s law, P = I²·R = U²/R.' },
     },
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a quantity.' } }, citations: [] },
+  },
+  {
+    id: 'electromagnet',
+    kind: 'law',
+    name: { uk: 'Магнітне поле струму. Електромагніт', en: 'The magnetic field of a current. The electromagnet' },
+    statement: {
+      novice: { uk: 'Дріт зі струмом — це магніт: він повертає стрілку компаса. Намотай дріт котушкою на залізний цвях — і магніт стане набагато сильнішим.', en: 'A wire with a current is a magnet: it turns a compass needle. Wind the wire as a coil on an iron nail — and the magnet gets much stronger.' },
+      school: { uk: 'Електричний струм створює магнітне поле. Поле котушки пропорційне силі струму й числу витків, а залізне осердя підсилює його в десятки й сотні разів. Змінимо напрям струму — полюси електромагніта поміняються місцями.', en: 'An electric current makes a magnetic field. A coil’s field is proportional to the current and to the number of turns, and an iron core strengthens it tens and hundreds of times. Reverse the current — and the electromagnet’s poles swap.' },
+    },
+    history: {
+      people: [OERSTED, STURGEON, HENRY],
+      role: 'discovered',
+      when: '1820–1830',
+      story: {
+        school: {
+          uk: '1820 року данський учений Ганс Крістіан Ерстед відкрив, що електричний струм створює магнітне поле: стрілка компаса біля дроту зі струмом повертається. 1824 року англієць Вільям Стерджен зробив перший електромагніт — котушку на залізному осерді. Від 1830 року американець Джозеф Генрі намотував багато шарів ізольованого дроту — тисячі витків — і отримував дуже сильні електромагніти.',
+          en: 'In 1820 the Danish scientist Hans Christian Ørsted found that an electric current makes a magnetic field: a compass needle by a wire with a current turns. In 1824 the Englishman William Sturgeon made the first electromagnet — a coil on an iron core. From 1830 the American Joseph Henry wound many layers of insulated wire — thousands of turns — and got very strong electromagnets.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-electromagnet', locator: 'History', claim: 'Ørsted discovered in 1820 that electric currents create magnetic fields' },
+        { source: 'wikipedia-electromagnet', locator: 'History', claim: 'William Sturgeon invented the electromagnet in 1824' },
+        { source: 'wikipedia-electromagnet', locator: 'History', claim: 'from 1830 Joseph Henry wound multiple layers of insulated wire, magnets with thousands of turns' },
+        { source: 'wikipedia-electromagnet', locator: 'lead; Physics', claim: 'the field is proportional to the current and to the number of turns; a core can increase it to thousands of times that of the coil alone' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Пропорційність — доки залізо далеке від насичення (поле в ньому значно менше за 1,5 Тл); далі сильніший струм майже не підсилює осердя. Наскільки підсилює осердя, залежить і від сталі, і від форми: короткий товстий стрижень підсилює менше, ніж довгий тонкий.', en: 'Proportional — while the iron is far from saturation (its field well under 1.5 T); beyond that more current hardly strengthens the core. How much the core strengthens depends both on the steel and on the shape: a short thick rod less than a long thin one.' },
+    },
   },
 ];

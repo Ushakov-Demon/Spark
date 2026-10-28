@@ -9,3 +9,5 @@ export * from './catalog.js';
 export * from './laws.js';
 export * from './electrochem.js';
 export * from './diode.js';
+export * from './magnet.js';
+export * from './wmm.js';
