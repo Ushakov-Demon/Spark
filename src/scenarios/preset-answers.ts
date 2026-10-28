@@ -21,6 +21,7 @@ import { vesselName, type PascalVessel } from './vessels-bench.js';
 import { sinkLiquidName, type SinkLiquid } from './sink-bench.js';
 import { rowName, type RowBody } from './rows-bench.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
+import { BOUNCE_FROM, bounceBallName, type BounceBall } from './bounce-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -417,6 +418,35 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
         const s = `${parts.join('; ')}.`;
         return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
+    };
+  },
+  'ball-bounce': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.bounce' && x.record.value !== null).map((x) => ({ ball: String(x.command['ball']) as BounceBall, n: Number(x.command['bounce']), h: x.record.value!, m: x.record.inputs?.['mass'] ?? 0 }));
+    const cm = (h: number) => Math.round(h * 100);
+    const pp = R.filter((x) => x.ball === 'pingpong').sort((a, b) => a.n - b.n);
+    const lower = pp.length > 1 && pp.every((x, i) => x.h < (i === 0 ? BOUNCE_FROM : pp[i - 1]!.h));
+    // The energy at a top, millijoules: Eп = m·g·h.
+    const mJ = (m: number, h: number, l: Locale) => `${sig(m * G * h * 1000, 2, l)} ${l === 'uk' ? 'мДж' : 'mJ'}`;
+    return {
+      ...(lower ? { correct: 'heat' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Нагорі м’ячик має потенціальну енергію Eп = m·g·h. Падаючи, він розганяється: потенціальна енергія переходить у кінетичну. Ударившись об плиту, м’ячик на мить сплющується, а тоді розпрямляється й відштовхується — і, піднімаючись, знову міняє кінетичну енергію на потенціальну. Але сплющення повертає не все: частина енергії йде на нагрівання м’ячика й плити (стає внутрішньою енергією), частина — на звук удару. Тому механічної енергії щоразу менше, і м’ячик піднімається нижче: висота показує, яку частку енергії він зберіг. Енергія не зникає — вона лише переходить в інші види: це закон збереження енергії. Пружний м’ячик для настільного тенісу зберігає близько 80 % за удар, тенісний м’яч — трохи більше половини, а пластилін, сплющившись, лишається на плиті: уся його механічна енергія стала внутрішньою. Земля ж притягує м’ячик однаково на будь-якій із цих висот.'
+          : 'At the top the ball has potential energy Eп = m·g·h. Falling, it speeds up: potential energy turns into kinetic. Hitting the plate, the ball is squashed for a moment, then straightens and pushes off — and, rising, trades kinetic energy back for potential. But the squashing does not give everything back: part of the energy warms the ball and the plate (becomes internal energy), part goes as the sound of the impact. So there is less mechanical energy each time, and the ball rises lower: the height shows the share of energy it kept. Energy does not vanish — it only turns into other forms: this is the conservation of energy. A springy table tennis ball keeps about 80 % per impact, a tennis ball a little over half, and plasticine, squashed, stays on the plate: all its mechanical energy became internal. The Earth pulls the ball just the same at any of these heights.',
+      ),
+      say: both((l) => {
+        const a = pp[0];
+        return a ? (l === 'uk' ? `З метра м’ячик для настільного тенісу підскочив на ${cm(a.h)} см — зберіг ${cm(a.h)} % енергії; щоразу — приблизно стільки ж від попередньої.` : `From a metre the table tennis ball bounced to ${cm(a.h)} cm — it kept ${cm(a.h)} % of its energy; each time about the same share of the one before.`) : '';
+      }),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts = [
+          ...(pp.length ? [uk ? `М’ячик для настільного тенісу з 1 м: ${pp.map((x) => `${cm(x.h)} см`).join(', ')} — енергія ${mJ(pp[0]!.m, BOUNCE_FROM, l)} нагорі, ${pp.map((x) => mJ(x.m, x.h, l)).join(', ')} після ударів` : `The table tennis ball from 1 m: ${pp.map((x) => `${cm(x.h)} cm`).join(', ')} — an energy of ${mJ(pp[0]!.m, BOUNCE_FROM, l)} at the top, ${pp.map((x) => mJ(x.m, x.h, l)).join(', ')} after the impacts`] : []),
+          ...R.filter((x) => x.ball !== 'pingpong').map((x) => `${tr(bounceBallName(x.ball), l)} — ${cm(x.h)} ${uk ? 'см' : 'cm'}${x.h > 0 ? (uk ? `, зберіг ${cm(x.h)} % енергії` : `, it kept ${cm(x.h)} % of its energy`) : uk ? ': уся енергія стала внутрішньою' : ': all the energy became internal'}`),
+        ];
+        const s = `${parts.join('; ')}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Частки — з випробувань м’ячів за правилами ITTF і ITF; опір повітря не враховано.' : ' The shares are from the balls’ tests under the ITTF and ITF rules; the air’s drag is left out.');
       }),
     };
   },

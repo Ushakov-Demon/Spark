@@ -322,6 +322,14 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('a ball’s bounce: each bounce lower by about the same share, the tennis ball lower still, plasticine not at all', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'ball-bounce')!);
+    expect(answer.correct).toBe('heat');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const h = [...answer.text.uk.matchAll(/(\d+) см/g)].map((m) => Number(m[1]!));
+    expect(h).toEqual([82, 67, 55, 56, 0]);
+  }, 60_000);
+
   it('the method of rows: a row gives the size of one to hundredths of a millimetre, near the sources’ sizes', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'small-bodies')!);
     expect(answer.correct).toBe('row');

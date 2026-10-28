@@ -37,9 +37,11 @@ export const balancedDensity = (rho1: number, h1: number, h2: number): number =>
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 
-/** Two forces along one line: the same way they add, R = F₁ + F₂; opposite ways — the larger less the smaller, R = F₁ − F₂. */
 /** The method of rows: a small body's size from a row of N of them, d = L / N. */
 export const rowSize = (length: number, count: number): number => length / count;
+
+/** The potential energy of a body raised by h: Eп = m·g·h. */
+export const potentialEnergy = (mass: number, g: number, height: number): number => mass * g * height;
 
 /** Two forces along one line: the same way they add, R = F₁ + F₂; opposite ways — the larger less the smaller, R = F₁ − F₂. */
 export const resultantSame = (f1: number, f2: number): number => f1 + f2;

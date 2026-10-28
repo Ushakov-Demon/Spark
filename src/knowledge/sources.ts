@@ -751,6 +751,27 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'ittf-t3-ball': source({
+    id: 'ittf-t3-ball',
+    title: 'ITTF Technical Leaflet T3: The Ball (Version for 40mm Balls), BoD Approval 2014: Law 2.03.02 «The ball shall weigh 2.7g»; B.7 Bounce Conformity — «All 24 balls must rebound to a height of not less than 240mm and not more than 260mm when dropped from a height of 305mm on to a standard steel block»',
+    url: 'https://nttc.nl/wp-content/uploads/2015/05/ITTF_T3.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
+  'itf-rules-2026-ball': source({
+    id: 'itf-rules-2026-ball',
+    title: 'ITF Rules of Tennis 2026, Appendix I «The Ball»: Type 2 (medium) — mass 56.0–59.4 grams, rebound 135–147 cm',
+    url: 'https://www.itftennis.com/media/7221/2026-rules-of-tennis-english.pdf',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
+  'wikipedia-tennis-ball': source({
+    id: 'wikipedia-tennis-ball',
+    title: 'Wikipedia, Tennis ball: «A ball is tested for bounce by dropping it from a height of 254 cm (100 inches) onto concrete; a bounce between 135 and 147 cm … is acceptable»',
+    url: 'https://en.wikipedia.org/wiki/Tennis_ball',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
   'yalcin-2007-pea': source({
     id: 'yalcin-2007-pea',
     title: 'Yalçın İ., Özarslan C., Akbaş T. Physical properties of pea (Pisum sativum) seed. Journal of Food Engineering 79 (2007) 731–735: at 10.06 % moisture (d.b.) length 7.80 mm, width 6.41 mm, thickness 5.55 mm',

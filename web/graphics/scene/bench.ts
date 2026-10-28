@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -60,6 +60,12 @@ export interface BenchView {
   /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
+  /**
+   * A ball's bounce: the ball, its diameter (m), its bottom's height (m, 1 — the drop height), how squashed it is
+   * (0…1; plasticine stays flat), the mechanical energy left (a share of the start's); the tops marked so far; the
+   * last top's reading; the energy bars' labels (potential, kinetic, heat and sound).
+   */
+  readonly bounce?: { readonly ball: string; readonly size: number; readonly y: number; readonly squash: number; readonly mech: number; readonly marks: readonly number[]; readonly read?: string; readonly labels: readonly [string, string, string] };
   readonly lift?: { readonly phase: string; readonly y: number; readonly force: number; readonly read?: string; readonly fall?: number; readonly rest?: number; readonly diff?: string };
   readonly forces?: { readonly hold: 'one' | 'two' | 'down'; readonly at: number; readonly a: number; readonly b: number; readonly loaded: boolean; readonly readA?: string; readonly readB?: string };
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
@@ -193,6 +199,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'forces') return forcesSvg(v.forces);
   if (v.kind === 'rows') return rowsSvg(v.rows);
   if (v.kind === 'lift') return liftSvg(v.lift);
+  if (v.kind === 'bounce') return bounceSvg(v.bounce);
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
@@ -820,6 +827,50 @@ function rowsSvg(r: BenchView['rows']): string {
   const end = x0 + r.sizes.slice(0, n).reduce((a, d) => a + d * ROW_K, 0);
   const bracket = r.read ? `<path class="bench-mark" d="M${x0},${top - 34} v-6 H${end} v6"/><text class="bench-reading" x="${(x0 + end) / 2}" y="${top - 46}" text-anchor="middle">${r.read}</text>` : '';
   return `${ruler}${parts.join('')}${bracket}`;
+}
+
+/** The bounce's drawing: a metre above the plate is this many units. */
+const BOUNCE_K = 280;
+const BOUNCE_LOOK: Readonly<Record<string, { fill: string; edge: string }>> = {
+  pingpong: { fill: '#f7f6ef', edge: '#a9a89c' },
+  tennis: { fill: '#d4e157', edge: '#8a9a1c' },
+  clay: { fill: '#e0603f', edge: '#8e2b20' },
+};
+/**
+ * A ball's bounce: a steel plate on the table, a metre stick beside it (a tick every 5 cm, a number every 10), the
+ * ball (drawn larger than life) squashed at the impact; a chalk mark at each top it reached, the last one read.
+ * On the board to the right, three chalk bars: the potential and kinetic energy and what went into heat and sound —
+ * together always the energy it was let go with.
+ */
+function bounceSvg(b: BenchView['bounce']): string {
+  if (!b) return '';
+  const plate = TABLE - 6;
+  const bx = 455;
+  const sx = 500;
+  const Y = (h: number) => plate - h * BOUNCE_K;
+  const look = BOUNCE_LOOK[b.ball] ?? BOUNCE_LOOK['pingpong']!;
+  const r = Math.max(8, b.size * BOUNCE_K * 0.8);
+  const stick = `<rect x="${sx}" y="${Y(1) - 6}" width="16" height="${plate - Y(1) + 6}" style="fill:#e8c98f;stroke:${WOOD_EDGE}"/>${Array.from({ length: 21 }, (_, i) => `<path d="M${sx},${Y(i / 20)} h${i % 2 === 0 ? 8 : 4}" style="stroke:${DARK};stroke-width:1"/>${i % 2 === 0 ? `<text class="lever-mark" x="${sx + 15}" y="${Y(i / 20) + 3}" text-anchor="end" style="font-size:7px">${i * 5}</text>` : ''}`).join('')}`;
+  const base = `<rect x="${bx - 34}" y="${plate}" width="68" height="6" rx="1" style="fill:#9aa3ab;stroke:${STEEL}"/>${stick}`;
+  const marks = b.marks.map((h, i) => `<path d="M${bx - 16},${Y(h)} H${sx}" style="stroke:#f1efe4;stroke-width:1.5;stroke-dasharray:3 3;opacity:${i === b.marks.length - 1 ? 0.95 : 0.4}"/>`).join('');
+  const read = b.read && b.marks.length ? `<text class="bench-reading" x="${bx - 22}" y="${Y(b.marks.at(-1)!) - 6}" text-anchor="end">h = ${b.read}</text>` : '';
+  // Squashed: wider and lower, resting on the plate.
+  const rx = r * (1 + 0.5 * b.squash);
+  const ry = r * (1 - 0.55 * b.squash);
+  const cy = Y(b.y) - ry;
+  const seam = b.ball === 'tennis' ? `<path d="M${bx - rx * 0.8},${cy - ry * 0.4} q${rx * 0.8},${ry * 0.9} ${rx * 1.6},0" style="fill:none;stroke:#f4f6e0;stroke-width:1.6"/>` : '';
+  const ball = `<ellipse cx="${bx}" cy="${cy}" rx="${rx}" ry="${ry}" style="fill:${look.fill};stroke:${look.edge};stroke-width:1.2"/>${seam}`;
+  // The energy bars: shares of the start's energy.
+  const ep = Math.max(0, Math.min(b.y, b.mech));
+  const bars = [ep, Math.max(0, b.mech - ep), 1 - b.mech];
+  const colours = ['#7fb8e6', '#f5c04a', '#f08a6c'];
+  const H = 170;
+  const foot = 292;
+  const bar = bars.map((v, i) => {
+    const x = 540 + i * 26;
+    return `<rect x="${x}" y="${foot - H}" width="18" height="${H}" style="fill:none;stroke:#f1efe4;stroke-width:1;opacity:0.35"/><rect x="${x}" y="${foot - H * v}" width="18" height="${H * v}" style="fill:${colours[i]}"/><text class="bench-label" x="${x + 9}" y="${foot + 13}" text-anchor="middle" style="fill:#f1efe4;font-size:9px">${b.labels[i]}</text>`;
+  }).join('');
+  return `${base}${marks}${ball}${read}${bar}`;
 }
 
 /**

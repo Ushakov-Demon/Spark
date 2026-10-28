@@ -2,6 +2,8 @@ import type { ExperimentLogEntry } from '../core/experiment.js';
 import type { SystemState } from '../core/state.js';
 import { tr } from '../knowledge/i18n.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
+import { bounceBallName, type BounceBall } from './bounce-bench.js';
+import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';
@@ -441,6 +443,18 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const title = tr(liftPhaseText(phase as LiftPhase).plan, locale);
       const acc = phase === 'fall' ? (uk ? 'вільне падіння' : 'free fall') : a === 0 ? (uk ? 'без прискорення' : 'no acceleration') : `a = ${n(Math.abs(a), 2)} ${uk ? 'м/с²' : 'm/s²'} ${a > 0 ? '↑' : '↓'}`;
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
+      return;
+    }
+    // A ball's bounce: how high it rose after this impact and the energy it has there, Eп = m·g·h.
+    if (c.type === 'lab.bounce') {
+      const m = r.inputs?.['mass'] ?? 0;
+      const k = Number(c['bounce']);
+      const what = tr(bounceBallName(String(c['ball']) as BounceBall), locale);
+      const h = `${Math.round(r.value * 100)} ${uk ? 'см' : 'cm'}`;
+      const title = uk ? `${k}-й відскок: h = ${h}` : `bounce ${k}: h = ${h}`;
+      // (Its energy before the drop: the first bounce of each ball.)
+      if (k === 1) out.push({ id: `b0:${i}`, title: uk ? `${what} нагорі: h₀ = 1 м` : `${what} at the top: h₀ = 1 m`, formula: 'Eп = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · 1 ${uk ? 'м' : 'm'} ≈ ${n(m * G * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
+      out.push({ id: `bn:${i}`, title, formula: 'Eп = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · ${n(r.value, 2)} ${uk ? 'м' : 'm'} ≈ ${n(m * G * r.value * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
       return;
     }
     // The method of rows: the row's length and the size of one, d = L/N.

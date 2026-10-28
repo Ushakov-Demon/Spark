@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -976,6 +976,28 @@ const LIST: readonly Preset[] = [
     expect: 'reached',
   },
   {
+    ask: { uk: 'Чому м’ячик щоразу підскакує нижче?', en: 'Why does the ball bounce lower each time?' },
+    id: 'ball-bounce',
+    grade: 7,
+    topic: WORK,
+    title: { uk: 'Перетворення механічної енергії: відскок м’яча', en: 'Mechanical energy changing form: a ball’s bounce' },
+    question: {
+      uk: 'Поруч зі стальною плитою стоїть метрова лінійка. Відпускаємо м’ячик для настільного тенісу з висоти 1 м і помічаємо, на яку висоту він підскочить, — після першого удару, другого, третього. Потім так само тенісний м’яч і пластилінову кульку. Нагорі в м’ячика потенціальна енергія Eп = m·g·h, а вона пропорційна висоті. Чому м’ячик щоразу підскакує нижче?',
+      en: 'A metre stick stands by a steel plate. We let a table tennis ball go from 1 m and mark how high it bounces — after the first impact, the second, the third. Then the same with a tennis ball and a plasticine ball. At the top the ball has potential energy Eп = m·g·h, proportional to the height. Why does the ball bounce lower each time?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'bounce',
+    plan: ([['pingpong', 1], ['pingpong', 2], ['pingpong', 3], ['tennis', 1], ['clay', 1]] as const).map(([ball, bounce]) => ({ kind: 'bench', command: { type: 'lab.bounce', ball, bounce } }) as const),
+    choices: [ch('heat', 'Під час удару частина енергії стає внутрішньою: м’ячик і плита трохи нагріваються, ще частина йде на звук', 'At each impact part of the energy becomes internal: the ball and the plate warm a little, and part goes as sound'), ch('gone', 'Під час удару частина енергії просто зникає', 'At each impact part of the energy simply vanishes'), ch('gravity', 'Земля щоразу притягує м’ячик сильніше', 'The Earth pulls the ball harder each time')],
+    formulas: ['mechanics.potential-energy'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 4. Механічна робота, потужність, енергія', match: 'same', quote: 'виявлення зміни і перетворення механічної енергії' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 8, topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'related', quote: 'Механічна енергія та її види. Закон збереження та перетворення енергії.' },
+    ],
+    expect: 'reached',
+  },
+  {
     ask: { uk: 'Чому дорівнює рівнодійна сил двох динамометрів?', en: 'What is the resultant of the two dynamometers’ forces?' },
     id: 'adding-forces',
     grade: 7,
@@ -1881,8 +1903,8 @@ export const PRESET_ORDER: readonly string[] = [
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',
-  // Mechanical work and energy (Kreminskyi: grade 8, lab works 1–2).
-  'lever-moments', 'slope-efficiency',
+  // Mechanical work and energy: energy changing form; the lever and the slope (Kreminskyi: grade 8, lab works 1–2).
+  'ball-bounce', 'lever-moments', 'slope-efficiency',
   // Chemistry, grade 9, topic 1: solutions.
   'mass-fraction', 'grow-crystals', 'heat-of-solution', 'supersaturated',
   // Grade 8. Thermal phenomena: heat balance (lab work 3), specific heat (4), melting (5), then solidifying,

@@ -27,6 +27,7 @@ const UA_HOOKE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gr
 const UA_FRICTION: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Коефіцієнт тертя ковзання.' }];
 const UA_UNIFORM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний прямолінійний рух. Швидкість руху.' }];
 const UA_ROWS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' }];
+const UA_ENERGY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна енергія та її види. Закон збереження енергії в механічних процесах' }];
 const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Взаємодія тіл. Сила. Додавання сил. Рівнодійна.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
@@ -382,6 +383,30 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.rowSize,
     examples: [{ args: [0.065, 30], expected: 0.002167, note: '30 millet grains in 65 mm' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.potential-energy',
+    law: 'mechanical-energy',
+    title: { uk: 'Потенціальна енергія піднятого тіла', en: 'The potential energy of a raised body' },
+    latex: 'E_п = m \\cdot g \\cdot h',
+    plain: 'Eп = m · g · h',
+    argSymbols: ['m', 'g', 'h'],
+    resultSymbol: 'Eп',
+    variables: {
+      'Eп': { name: { uk: 'потенціальна енергія', en: 'potential energy' }, unit: 'J' },
+      m: { name: { uk: 'маса', en: 'mass' }, unit: 'kg' },
+      g: { name: { uk: 'прискорення вільного падіння', en: 'gravitational acceleration' }, unit: 'N/kg' },
+      h: { name: { uk: 'висота', en: 'height' }, unit: 'm' },
+    },
+    curriculum: UA_ENERGY,
+    explanation: {
+      novice: { uk: 'Що вище підняли тіло і що воно важче, то більше роботи воно виконає, падаючи.', en: 'The higher a body is raised and the heavier it is, the more work it can do as it falls.' },
+      school: { uk: 'Щоб підняти тіло на висоту h, треба виконати роботу P·h = m·g·h; стільки енергії тіло й запасає. Падаючи, воно віддає її: потенціальна енергія переходить у кінетичну.', en: 'Raising a body by h takes the work P·h = m·g·h; that much energy the body stores. Falling, it gives it back: potential energy turns into kinetic.' },
+    },
+    compute: f.potentialEnergy,
+    examples: [{ args: [0.0027, 9.80665, 1], expected: 0.026478, note: 'a table tennis ball 1 m up' }],
     textSource: 'spark',
     reviewed: false,
   }),

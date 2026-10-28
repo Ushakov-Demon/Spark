@@ -56,6 +56,10 @@ import {
   type LiftPhase,
   rowName,
   rowSizes,
+  BOUNCE_BALLS,
+  bounceTops,
+  bounceBallName,
+  type BounceBall,
   type RowBody,
   type SinkLiquid,
   VOLTMETER,
@@ -454,6 +458,17 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // A ball's bounce: this step's ball (or the next planned one, held at the metre), the tops it reached, the last one read.
+  if (kind === 'bounce') {
+    type Drop = { ball: BounceBall; bounce: number };
+    const bc = c?.type === 'lab.bounce' ? (c as unknown as Drop) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.bounce');
+    const ball = bc?.ball ?? (next?.kind === 'bench' ? (next.command as unknown as Drop).ball : 'pingpong');
+    const marks = bc ? bounceTops(bc.ball, bc.bounce).slice(1) : [];
+    const end = marks.at(-1) ?? 1;
+    const labels: [string, string, string] = locale === 'uk' ? ['Eп', 'Eк', 'тепло'] : ['Eп', 'Eк', 'heat'];
+    return { ...base, kind, bounce: { ball, size: BOUNCE_BALLS[ball].size, y: end, squash: bc && end === 0 ? 1 : 0, mech: end, marks, labels, ...(bc && r ? { read: `${Math.round((r.value ?? 0) * 100)} ${locale === 'uk' ? 'см' : 'cm'}` } : {}) } };
+  }
   // Weight in a lift: the phase this step took, where it leaves the cabin, the dynamometer's reading.
   if (kind === 'lift') {
     const lc = c?.type === 'lab.lift' ? (c as unknown as { phase: LiftPhase }) : undefined;
@@ -738,6 +753,13 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // A ball's bounce: how high it rose this time.
+  if (m.command.type === 'lab.bounce') {
+    const bc = m.command as { ball: BounceBall; bounce: number };
+    const h = Math.round((r.value ?? 0) * 100);
+    if (h === 0) return uk ? `${tr(bounceBallName(bc.ball), locale).replace(/^./, (x) => x.toUpperCase())} сплющилася й лишилася на плиті — не підскочила зовсім.` : `${tr(bounceBallName(bc.ball), locale).replace(/^./, (x) => x.toUpperCase())} flattened and stayed on the plate — no bounce at all.`;
+    return uk ? `${bc.bounce === 1 ? 'Підскочив' : `${bc.bounce}-й відскок`} — на ${h} см.` : `${bc.bounce === 1 ? 'It bounced' : `Bounce ${bc.bounce}`} — to ${h} cm.`;
   }
   // The method of rows: the row's length (a single pea — to the ruler's division).
   if (m.command.type === 'lab.rows') {
@@ -2523,8 +2545,10 @@ function renderProtocol() {
       // (Two dynamometers: both readings.)
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
+      // (A ball's bounce: whole centimetres.)
+      const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

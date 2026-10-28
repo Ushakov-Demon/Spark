@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.bounce': { uk: 'Відпускаю м’ячик — стежимо, куди підскочить…', en: 'Letting the ball go — watch how high it bounces…' },
   'lab.lift': { uk: 'Ліфт їде — стежимо за динамометром…', en: 'The lift is moving — watch the dynamometer…' },
   'lab.rows': { uk: 'Викладаю ряд — по одному…', en: 'Laying the row — one by one…' },
   'lab.forces': { uk: 'Пружини ще коливаються — чекаємо, поки заспокояться…', en: 'The springs are still bouncing — wait until they settle…' },
@@ -43,6 +44,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'bounce' && next.bounce?.read) return bounce(next, draw);
   if (next.kind === 'lift' && next.lift?.read) return lift(prev?.kind === 'lift' ? (prev.lift ?? null) : null, next, draw);
   if (next.kind === 'rows' && next.rows?.read) return row(next, draw);
   if (next.kind === 'forces' && next.forces?.loaded) return forces(prev?.kind === 'forces' ? (prev.forces ?? null) : null, next, draw);
@@ -236,6 +238,51 @@ function lift(was: BenchView['lift'] | null, next: BenchView, draw: (v: BenchVie
       if (done) return draw(next);
       if (l.phase === 'fall') return draw({ ...next, lift: { ...rest, y: 0, force: Math.max(0, spring.value), fall: k.value * k.value } });
       draw({ ...next, lift: { ...rest, y: from + (l.y - from) * shape(k.value), force: Math.max(0, spring.value) } });
+    },
+  };
+}
+
+/** g for the bounce's timing, m/s². */
+const BOUNCE_G = 9.81;
+/** The ball is squashed within this much of the plate, m (drawn larger than life). */
+const SQUASH_NEAR = 0.03;
+/**
+ * A ball's bounce, played at under half the real speed: it falls from the metre (the way grows as t²), and after
+ * each impact rises to the next top and falls again, squashed near the plate; at the last top it stops — as a
+ * photo would catch it. Plasticine lands and flattens. The energy bars follow: the potential share is the height,
+ * the rest of the mechanical energy is kinetic, and each impact moves a share into heat and sound.
+ */
+function bounce(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const b = next.bounce!;
+  const tops = [1, ...b.marks];
+  const flat = tops.at(-1)! === 0;
+  // The segments: falling from a top, rising to the next one; the time of each, √(2h/g).
+  const legs: { from: number; to: number; time: number; mech: number; marks: number }[] = [];
+  tops.forEach((h, j) => {
+    if (j > 0 && h > 0) legs.push({ from: 0, to: h, time: Math.sqrt((2 * h) / BOUNCE_G), mech: h, marks: j - 1 });
+    if (j < tops.length - 1) legs.push({ from: h, to: 0, time: Math.sqrt((2 * h) / BOUNCE_G), mech: j === 0 ? 1 : h, marks: j });
+  });
+  const FLATTEN = 0.15;
+  const total = legs.reduce((a, x) => a + x.time, 0) + (flat ? FLATTEN : 0);
+  const clock = new Channel(0, total, { kind: 'steady', speed: 0.4 }, 1e-4);
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      let t = clock.value;
+      const { read: _r, ...rest } = b;
+      for (const leg of legs) {
+        if (t <= leg.time) {
+          const k = t / leg.time;
+          // Falling: the way grows as t²; rising: the way left shrinks as the time left squared.
+          const y = leg.to === 0 ? leg.from * (1 - k * k) : leg.to * (1 - (1 - k) ** 2);
+          const squash = flat ? 0 : Math.max(0, 1 - y / SQUASH_NEAR) * 0.6;
+          return draw({ ...next, bounce: { ...rest, y, squash, mech: leg.mech, marks: b.marks.slice(0, leg.marks) } });
+        }
+        t -= leg.time;
+      }
+      // Plasticine on the plate: it flattens, and all its energy is heat now.
+      draw({ ...next, bounce: { ...rest, y: 0, squash: Math.min(1, t / FLATTEN), mech: 0, marks: [] } });
     },
   };
 }

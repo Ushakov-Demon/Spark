@@ -37,3 +37,4 @@ export * from './sink-bench.js';
 export * from './forces-bench.js';
 export * from './rows-bench.js';
 export * from './lift-bench.js';
+export * from './bounce-bench.js';
