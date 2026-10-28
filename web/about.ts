@@ -23,12 +23,18 @@ export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: strin
   en: { about: 'About', bug: 'Found a mistake', close: 'Close', madeBy: 'Developed by' },
 };
 
+/** The page's first paragraph (also its description for search engines and link previews). */
+export const ABOUT_INTRO: Record<Locale, string> = {
+  uk: 'Тут можна поставити дослід і побачити, що відбувається і чому, — зі справжніми числами й формулами. Поки що можна нагрівати й заморожувати, плавити й розчиняти, зважувати, пропускати струм. Це лише початок.',
+  en: 'An experiment you can do here — and see what happens and why, with real numbers and formulas. For now you can heat and freeze, melt and dissolve, weigh, pass a current. This is only the beginning.',
+};
+
 export function aboutHtml(l: Locale): string {
   const dev = link(DEVELOPER.url, DEVELOPER.name);
   if (l === 'en') {
     return `<article class="about">
       <h2>Spark — a virtual science lab</h2>
-      <p class="about-lead">An experiment you can do here — and see what happens and why, with real numbers and formulas. For now you can heat and freeze, melt and dissolve, weigh, pass a current. This is only the beginning.</p>
+      <p class="about-lead">${esc(ABOUT_INTRO.en)}</p>
       <div class="about-warning" role="note"><strong>⚠ ${esc(SAFETY_LINE.en)}</strong> Do not repeat them on your own: real experiments only under the supervision of a teacher, in a laboratory, with protective equipment and safety rules.</div>
 
       <h3>Who it is for</h3>
@@ -69,7 +75,7 @@ export function aboutHtml(l: Locale): string {
   }
   return `<article class="about">
     <h2>Spark — віртуальна лабораторія природничих наук</h2>
-    <p class="about-lead">Тут можна поставити дослід і побачити, що відбувається і чому, — зі справжніми числами й формулами. Поки що можна нагрівати й заморожувати, плавити й розчиняти, зважувати, пропускати струм. Це лише початок.</p>
+    <p class="about-lead">${esc(ABOUT_INTRO.uk)}</p>
     <div class="about-warning" role="note"><strong>⚠ ${esc(SAFETY_LINE.uk)}</strong> Не повторюй їх самостійно: справжні досліди — лише під наглядом учителя, у лабораторії, із засобами захисту й за правилами техніки безпеки.</div>
 
     <h3>Для кого</h3>

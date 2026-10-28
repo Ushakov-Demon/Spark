@@ -146,7 +146,7 @@ import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LIN
 import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
 import { BUSY, SLIDE } from './graphics/scene/bench-motion.js';
-import { filterLibrary, LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute } from './library.js';
+import { LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute, type LibraryPage } from './library.js';
 import { createChooser, fly, type ChoiceCard, type ChooserStage } from './chooser.js';
 import { deviceSvg } from './graphics/scene/devices.js';
 import { baseFor, vesselGeom } from './graphics/scene/vessels.js';
@@ -1015,7 +1015,7 @@ let boredScenes = 0;
 const paper = $<HTMLDialogElement>('#paper');
 let paperToken = 0;
 /** The newspaper comes on its own only to the lab page itself, and not over another window (the notebook page, «Про проєкт»…). */
-const mayInterrupt = () => !libraryRoute(location.hash) && !aboutRoute() && !document.querySelector('dialog[open]');
+const mayInterrupt = () => !libraryTab && !onAbout && !document.querySelector('dialog[open]');
 /** He exclaims, the newspaper opens when its article has come (from Wikipedia, or a story offline). */
 function byTheWay(now = performance.now(), asked = false) {
   const u = t();
@@ -3456,11 +3456,14 @@ function buildInfo() {
   $('#about-open-2').textContent = a.about;
   $('#bug-open-2').textContent = a.bug;
   const lib = LIBRARY_UI[locale];
-  $('#library-open').textContent = `📚 ${lib.open}`;
-  $('#library-links').innerHTML = [`<a href="${siteHref(pagePath({ page: 'catalog' }, locale))}" data-catalog="1">${catalogUi(locale).title}</a>`, ...LIBRARY_PAGES.map((p) => `<a href="#${p}">${lib.tabs[p]}</a>`)].join('');
+  const libOpen = $<HTMLAnchorElement>('#library-open');
+  libOpen.textContent = `📚 ${lib.open}`;
+  libOpen.href = siteHref(pagePath({ page: 'library', tab: 'glossary' }, locale));
+  $('#library-links').innerHTML = [`<a href="${siteHref(pagePath({ page: 'catalog' }, locale))}">${catalogUi(locale).title}</a>`, ...LIBRARY_PAGES.map((p) => `<a href="${siteHref(pagePath({ page: 'library', tab: p }, locale))}">${lib.tabs[p]}</a>`)].join('');
   $('#safety').textContent = `⚠ ${SAFETY_LINE[locale]}`;
   $('#made-by').innerHTML = `${a.madeBy} <a href="${DEVELOPER.url}" target="_blank" rel="noopener">${DEVELOPER.name}</a>`;
   $('#about-back').textContent = lib.back;
+  $<HTMLAnchorElement>('#about-back').href = siteHref(pagePath({ page: 'lab' }, locale));
   $('#bug-close').setAttribute('aria-label', a.close);
   $('#about-body').innerHTML = aboutHtml(locale);
   $('#bug-title').textContent = b.title;
@@ -3497,7 +3500,7 @@ function bugReportNow(): ReturnType<typeof bugReport> | null {
   }
   return bugReport(what, $<HTMLInputElement>('#bug-attach').checked ? bugContext() : null);
 }
-$('#about-open').onclick = $('#about-open-2').onclick = () => (location.hash = 'about');
+$('#about-open').onclick = $('#about-open-2').onclick = () => go({ page: 'about' });
 $('#bug-open').onclick = $('#bug-open-2').onclick = openBug;
 $('#bug-close').onclick = () => $<HTMLDialogElement>('#bug').close();
 $<HTMLInputElement>('#bug-attach').onchange = () => ($('#bug-context').textContent = $<HTMLInputElement>('#bug-attach').checked ? bugContext() : '');
@@ -3516,31 +3519,53 @@ $('#bug-copy').onclick = async () => {
     $('#bug-error').textContent = `${r.title}\n\n${r.body}`;
   }
 };
-/** "About the project" is a page of its own (…/#about), like the library: the lab steps aside. */
-function aboutRoute(): boolean {
-  return location.hash === '#about';
-}
+/** "About the project" is a page of its own (/about/), like the library: the lab steps aside. */
 function renderAbout() {
-  const on = aboutRoute();
-  const was = document.body.classList.contains('in-about');
-  document.body.classList.toggle('in-about', on);
-  $('#about-page').hidden = !on;
-  if (on && !was) window.scrollTo(0, 0);
+  document.body.classList.toggle('in-about', onAbout);
+  $('#about-page').hidden = !onAbout;
 }
-window.addEventListener('hashchange', () => renderAbout());
 
 // ---------- the site: all the experiments, an experiment's own address, sharing it ----------
 /** A link within the site: the same under a folder, on a server and in dev. */
 const siteHref = (path: string) => `${where.root}${path}`;
 /** Served (not a file opened from the disk): the address can follow what is on the screen. */
 const onServer = /^https?:$/.test(location.protocol);
+/**
+ * The page on the screen besides the lab: all the experiments, a page of the library, about the project — one at a
+ * time, each at an address of its own (/experiments/, /glossary/, /about/…); none — the lab.
+ */
 let onCatalog = where.route.page === 'catalog';
-/** The page as it is now: the catalogue, the chosen experiment, or the lab. */
-const siteRoute = (): Route => (onCatalog ? { page: 'catalog' } : preset && presetGiven ? { page: 'experiment', id: presetGiven.id } : { page: 'lab' });
+let libraryTab: LibraryPage | null = where.route.page === 'library' ? where.route.tab : null;
+let onAbout = where.route.page === 'about';
+// An old address: the library and «about» were once on the lab's page (#glossary/cathode, #about).
+{
+  const old = libraryRoute(location.hash);
+  if (old || location.hash === '#about') {
+    if (old) libraryTab = old.page;
+    else onAbout = true;
+    if (onServer) window.history.replaceState(null, '', `${siteHref(pagePath(old ? { page: 'library', tab: old.page } : { page: 'about' }, locale))}${old?.item ? `#${encodeURIComponent(old.item)}` : ''}`);
+  }
+}
+/** The page as it is now: one of the site's, the chosen experiment, or the lab. */
+const siteRoute = (): Route => (onAbout ? { page: 'about' } : libraryTab ? { page: 'library', tab: libraryTab } : onCatalog ? { page: 'catalog' } : preset && presetGiven ? { page: 'experiment', id: presetGiven.id } : { page: 'lab' });
+/** To a page of the site (or back to the lab), as a page of its own: the browser's "back" returns; `item` — a place on it (a term). */
+function go(r: Route, item = '') {
+  onCatalog = r.page === 'catalog';
+  libraryTab = r.page === 'library' ? r.tab : null;
+  onAbout = r.page === 'about';
+  if (onServer) window.history.pushState(null, '', `${siteHref(pagePath(siteRoute(), locale))}${item ? `#${encodeURIComponent(item)}` : ''}`);
+  showPage(!item);
+}
+/** Shows the page the state names. */
+function showPage(toTop = true) {
+  render();
+  renderLibrary(toTop);
+  renderAbout();
+  if (toTop && !libraryTab) window.scrollTo(0, 0);
+}
 function pageTitle(): string {
-  const lib = libraryRoute(location.hash);
-  if (lib) return `${LIBRARY_UI[locale].tabs[lib.page]} · Spark`;
-  if (aboutRoute()) return `${ABOUT_UI[locale].about} · Spark`;
+  if (libraryTab) return `${LIBRARY_UI[locale].tabs[libraryTab]} · Spark`;
+  if (onAbout) return `${ABOUT_UI[locale].about} · Spark`;
   const r = siteRoute();
   if (r.page === 'catalog') return `${catalogUi(locale).title} · ${SITE.name}`;
   if (r.page === 'experiment') return `${tr(presetGiven!.title, locale)} · ${SITE.name}`;
@@ -3579,24 +3604,20 @@ function renderSite() {
     if (want !== `${location.pathname}${location.search}${location.hash}`) window.history.replaceState(window.history.state, '', want);
   }
 }
-/** To the catalogue, or from it: a page of its own (the browser's "back" returns). */
-function showCatalog(on: boolean) {
-  if (onCatalog === on) return;
-  onCatalog = on;
-  if (onServer) window.history.pushState(null, '', siteHref(pagePath(siteRoute(), locale)));
-  render();
-  window.scrollTo(0, 0);
-}
-const toCatalog = (e: Event) => {
+/**
+ * A link to a page of the site opens it here, without loading the lab again (the links stay real addresses — for
+ * robots, and for "open in a new tab"). A link within the page (#letter-А, #cathode) stays the browser's.
+ */
+document.addEventListener('click', (e) => {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
+  const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href]');
+  if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+  const url = new URL(a.href, location.href);
+  if (url.origin !== location.origin || (url.pathname === location.pathname && url.hash)) return;
+  const to = parsePath(url.pathname);
+  if (to.root !== where.root || to.route.page === 'experiment') return;
   e.preventDefault();
-  if (location.hash) window.history.replaceState(window.history.state, '', location.pathname + location.search);
-  renderLibrary();
-  renderAbout();
-  showCatalog(true);
-};
-$('#catalog-open').addEventListener('click', toCatalog);
-$('#library-links').addEventListener('click', (e) => {
-  if ((e.target as HTMLElement).closest('[data-catalog]')) toCatalog(e);
+  go(to.route, decodeURIComponent(url.hash.slice(1)));
 });
 /** What the catalogue's filters are set to; the cards (and then empty groups) that do not fit are hidden. */
 const catalogFilter = { subject: '', grade: '', program: '', query: '' };
@@ -3659,13 +3680,15 @@ $('#catalog').addEventListener('click', (e) => {
   if (to.page === 'catalog') return;
   e.preventDefault();
   if (to.page === 'experiment') startPreset(byId(to.id)!);
-  else showCatalog(false);
+  else go(to);
 });
 window.addEventListener('popstate', () => {
   const to = parsePath(location.pathname).route;
   onCatalog = to.page === 'catalog';
+  libraryTab = to.page === 'library' ? to.tab : null;
+  onAbout = to.page === 'about';
   if (to.page === 'experiment' && presetGiven?.id !== to.id) startPreset(PRESETS.find((p) => p.id === to.id)!);
-  else render();
+  else showPage(false);
 });
 /** Share an experiment's link: on a phone, the system's own "share" (messengers, mail…); elsewhere the link is copied, and the button says so. */
 async function shareExperiment(p: Preset, button: HTMLButtonElement) {
@@ -4052,9 +4075,13 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
   closeChooser();
   // (A place's example follows the language: Kyiv, New York.)
   const values = { ...defaultValues(chosen, locale), ...chosenValues };
-  // Chosen in the catalogue: to the lab, on the experiment's address (the browser's "back" returns to the catalogue).
-  if (onCatalog) {
+  // Chosen on a page of the site (the catalogue, the library): to the lab, on the experiment's address (the browser's "back" returns there).
+  if (onCatalog || libraryTab || onAbout) {
     onCatalog = false;
+    libraryTab = null;
+    onAbout = false;
+    renderLibrary();
+    renderAbout();
     if (onServer) window.history.pushState(null, '', siteHref(pagePath({ page: 'experiment', id: chosen.id }, locale)));
     window.scrollTo(0, 0);
   }
@@ -4078,8 +4105,6 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
   expectKind = 'none';
   speed = OPERATIONS[p.params.action].speed;
   $<HTMLSelectElement>('#speed').value = String(speed);
-  // Chosen from the library page: back to the lab.
-  if (libraryRoute(location.hash)) location.hash = '';
   buildShelf();
   buildPresets();
   buildExpect();
@@ -4617,7 +4642,7 @@ $<HTMLInputElement>('#search').addEventListener('input', (e) => {
 }
 
 // Footnotes on terms (катод, розчинність…): the first mention in each text block is underlined, a tap shows the definition.
-installFootnotes(() => locale);
+installFootnotes(() => locale, (id) => `${siteHref(pagePath({ page: 'library', tab: 'glossary' }, locale))}#${id}`);
 {
   const roots = ['#messages', '#offer', '#quiz', '#report', '#ref-body', '#sc-says', '#about-body', '#paper-body'];
   let queued = false;
@@ -4641,11 +4666,28 @@ installFootnotes(() => locale);
   schedule();
 }
 
-// ---------- the library: a page of its own (#glossary, #substances, #equipment) ----------
+/** Search: hides the entries (and then empty groups) that do not contain the text, in either language's name. */
+function filterLibrary(root: Element, query: string): void {
+  const q = query.trim().toLowerCase();
+  let shown = 0;
+  root.querySelectorAll<HTMLElement>('.lib-entry').forEach((e) => {
+    const hit = !q || (e.textContent ?? '').toLowerCase().includes(q);
+    e.hidden = !hit;
+    if (hit) shown++;
+  });
+  root.querySelectorAll<HTMLElement>('.lib-group').forEach((g) => (g.hidden = !g.querySelector('.lib-entry:not([hidden])')));
+  const bar = root.querySelector<HTMLElement>('.lib-letters');
+  if (bar) bar.hidden = !!q;
+  const none = root.querySelector<HTMLElement>('.lib-nothing');
+  if (none) none.hidden = shown > 0;
+}
+
+// ---------- the library: a page of its own (/glossary/, /substances/, /equipment/) ----------
 let libraryShown = '';
-/** Shows the library page the address names (or the lab), and scrolls to the item in it: #glossary/cathode. */
+/** Shows the library's page (or nothing), and scrolls to the item the address names in it: /glossary/#cathode. */
 function renderLibrary(toTop = true) {
-  const route = libraryRoute(location.hash);
+  const item = location.hash.length > 1 ? decodeURIComponent(location.hash.slice(1)) : undefined;
+  const route = libraryTab ? { page: libraryTab, item } : null;
   const lib = $('#library');
   document.body.classList.toggle('in-library', !!route);
   lib.hidden = !route;
@@ -4658,7 +4700,7 @@ function renderLibrary(toTop = true) {
   if (key !== libraryShown) {
     const query = libraryShown.startsWith(`${route.page}|`) ? (lib.querySelector<HTMLInputElement>('.lib-search')?.value ?? '') : '';
     libraryShown = key;
-    lib.innerHTML = libraryHtml(route.page, { locale, level, picOf: shelfPic });
+    lib.innerHTML = libraryHtml(route.page, { locale, level, picOf: shelfPic, iconOf: (look) => icon(look, 'ic huge'), href: (to) => siteHref(pagePath(to === 'lab' ? { page: 'lab' } : { page: 'library', tab: to }, locale)) });
     // Terms inside the definitions are footnotes too — except the term being defined.
     lib.querySelectorAll('.lib-desc').forEach((el) => annotate(el, locale, el.closest<HTMLElement>('[data-term-id]')?.dataset['termId']));
     const search = lib.querySelector<HTMLInputElement>('.lib-search')!;
@@ -4666,7 +4708,6 @@ function renderLibrary(toTop = true) {
     search.oninput = () => filterLibrary(lib, search.value);
     filterLibrary(lib, query);
   }
-  const item = route.item;
   const target = item ? (document.getElementById(item.startsWith('letter-') ? item : `term-${item}`) ?? document.getElementById(`item-${item}`)) : null;
   lib.querySelectorAll('.lib-flash').forEach((e) => e.classList.remove('lib-flash'));
   if (target) {

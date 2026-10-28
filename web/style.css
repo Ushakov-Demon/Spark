@@ -883,7 +883,7 @@ footer { padding-bottom: 72px; }
 /* ---------- the library page (#glossary, #substances, #equipment) ---------- */
 .library-open { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 6px 10px; min-height: 40px; box-sizing: border-box; font-size: 0.85rem; color: var(--text); text-decoration: none; white-space: nowrap; }
 .library-open:hover { border-color: var(--accent); color: var(--accent); }
-body.in-library .library-open { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+body.in-library #library-open { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
 body.in-library .app, body.in-library .console-dock, body.in-library .console-fab { display: none; }
 /* "About the project": a page of its own, the lab hidden while it is read. */
 body.in-about .app, body.in-about .console-dock, body.in-about .console-fab { display: none; }

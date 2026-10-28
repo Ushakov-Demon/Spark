@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { PRESETS } from '../src/scenarios/index.js';
-import { catalogHtml, headHtml, pageMeta, pagePath, parsePath, SITE } from '../web/site.js';
+import { catalogHtml, headHtml, LIBRARY_TABS, pageMeta, pagePath, parsePath, SITE } from '../web/site.js';
 
 describe('the site: addresses, what a page says of itself, the catalogue', () => {
   afterEach(() => (SITE.url = ''));
@@ -14,6 +14,21 @@ describe('the site: addresses, what a page says of itself, the catalogue', () =>
     // An experiment that is not there: the lab.
     expect(parsePath('/experiments/no-such-thing/').route).toEqual({ page: 'lab' });
     for (const p of PRESETS) for (const l of ['uk', 'en'] as const) expect(parsePath(`/${pagePath({ page: 'experiment', id: p.id }, l)}`).route).toEqual({ page: 'experiment', id: p.id });
+  });
+
+  it('the library’s pages and «about» are pages of their own, each with its title', () => {
+    expect(parsePath('/glossary/')).toEqual({ root: '/', locale: null, route: { page: 'library', tab: 'glossary' } });
+    expect(parsePath('/Spark/en/equipment/index.html')).toEqual({ root: '/Spark/', locale: 'en', route: { page: 'library', tab: 'equipment' } });
+    expect(parsePath('/about/').route).toEqual({ page: 'about' });
+    expect(parsePath('/en/about').route).toEqual({ page: 'about' });
+    expect(parsePath('/glossary/cathode/').route).toEqual({ page: 'lab' });
+    for (const l of ['uk', 'en'] as const) {
+      for (const tab of LIBRARY_TABS) {
+        expect(parsePath(`/${pagePath({ page: 'library', tab }, l)}`).route).toEqual({ page: 'library', tab });
+        expect(pageMeta({ page: 'library', tab }, l).description.length).toBeGreaterThan(20);
+      }
+      expect(pageMeta({ page: 'about' }, l).title).toContain(l === 'uk' ? 'Про проєкт' : 'About');
+    }
   });
 
   it('every experiment page has its own title and description, in both languages, no longer than a preview shows', () => {

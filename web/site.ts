@@ -15,6 +15,8 @@ import type { Subject } from '../src/knowledge/types.js';
 import { PRESETS, presetAsk, presetGradesIn, presetPrograms, presetSubjects, type Preset } from '../src/scenarios/index.js';
 import { esc, presetEquipment, presetLabNumber, presetTopic } from './experiment-sheet.js';
 import { UI } from './ui-text.js';
+import { LIBRARY_UI } from './library.js';
+import { ABOUT_UI, ABOUT_INTRO } from './about.js';
 
 export const SITE: { name: string; url: string; image: string; readonly description: Readonly<Record<Locale, string>> } = {
   name: 'Spark',
@@ -78,22 +80,35 @@ const CATALOG_UI: Record<Locale, { title: string; intro: string; all: string; ba
 export const catalogUi = (l: Locale) => CATALOG_UI[l];
 
 // ---------- addresses ----------
-export type Route = { readonly page: 'lab' } | { readonly page: 'catalog' } | { readonly page: 'experiment'; readonly id: string };
-/** A page's path from the site's root, in a language: '', 'experiments/', 'en/experiments/melt-ice/'. */
+/** The library's pages: the glossary, the substances, the equipment. */
+export const LIBRARY_TABS = ['glossary', 'substances', 'equipment'] as const;
+export type LibraryTab = (typeof LIBRARY_TABS)[number];
+export type Route = { readonly page: 'lab' } | { readonly page: 'catalog' } | { readonly page: 'experiment'; readonly id: string } | { readonly page: 'library'; readonly tab: LibraryTab } | { readonly page: 'about' };
+/** A page's path from the site's root, in a language: '', 'experiments/', 'en/experiments/melt-ice/', 'glossary/', 'en/about/'. */
 export function pagePath(r: Route, l: Locale): string {
   const lang = l === 'uk' ? '' : `${l}/`;
-  return r.page === 'lab' ? lang : r.page === 'catalog' ? `${lang}experiments/` : `${lang}experiments/${r.id}/`;
+  return r.page === 'lab' ? lang : r.page === 'catalog' ? `${lang}experiments/` : r.page === 'experiment' ? `${lang}experiments/${r.id}/` : r.page === 'library' ? `${lang}${r.tab}/` : `${lang}about/`;
 }
 /**
  * Where an address points: the site's root (the site may live in a folder), the language it names (none for
  * Ukrainian) and the page. Unknown experiments are the lab.
  */
 export function parsePath(pathname: string): { readonly root: string; readonly locale: Locale | null; readonly route: Route } {
-  const m = /^(.*?\/)(?:(en)\/)?(?:experiments\/(?:([a-z0-9-]+)\/?)?)?(?:index\.html)?$/.exec(pathname);
+  const m = /^(.*?\/)(?:(en)\/)?(?:(experiments|glossary|substances|equipment|about)(?:\/(?:([a-z0-9-]+)\/?)?)?)?(?:index\.html)?$/.exec(pathname);
   if (!m) return { root: '/', locale: null, route: { page: 'lab' } };
-  const [, root = '/', lang, id] = m;
-  const inCatalog = /experiments\/?(?:index\.html)?$/.test(pathname) || id !== undefined;
-  const route: Route = id && PRESETS.some((p) => p.id === id) ? { page: 'experiment', id } : inCatalog && !id ? { page: 'catalog' } : { page: 'lab' };
+  const [, root = '/', lang, section, id] = m;
+  const route: Route =
+    section === 'experiments'
+      ? id === undefined
+        ? { page: 'catalog' }
+        : PRESETS.some((p) => p.id === id)
+          ? { page: 'experiment', id }
+          : { page: 'lab' }
+      : section === 'about' && id === undefined
+        ? { page: 'about' }
+        : (LIBRARY_TABS as readonly string[]).includes(section ?? '') && id === undefined
+          ? { page: 'library', tab: section as LibraryTab }
+          : { page: 'lab' };
   return { root, locale: lang === 'en' ? 'en' : null, route };
 }
 const absolute = (path: string) => (SITE.url ? `${SITE.url.replace(/\/$/, '')}/${path}` : '');
@@ -164,6 +179,15 @@ export function pageMeta(route: Route, l: Locale): PageMeta {
         itemListElement: PRESETS.map((p, i) => ({ '@type': 'ListItem', position: i + 1, name: tr(p.title, l), url: absolute(pagePath({ page: 'experiment', id: p.id }, l)) || `/${pagePath({ page: 'experiment', id: p.id }, l)}` })),
       },
     };
+  }
+  if (route.page === 'library') {
+    const u = LIBRARY_UI[l];
+    const name = `${u.tabs[route.tab]} · ${u.title}`;
+    return { title: `${name} · ${SITE.name}`, description: clip(u.intro[route.tab]), locale: l, route, type: 'website', jsonLd: { '@context': 'https://schema.org', '@type': 'CollectionPage', name, description: clip(u.intro[route.tab]), inLanguage: l, url: absolute(pagePath(route, l)) || undefined, isPartOf: site } };
+  }
+  if (route.page === 'about') {
+    const name = ABOUT_UI[l].about;
+    return { title: `${name} · ${SITE.name}`, description: clip(ABOUT_INTRO[l]), locale: l, route, type: 'website', jsonLd: { '@context': 'https://schema.org', '@type': 'AboutPage', name, description: clip(ABOUT_INTRO[l]), inLanguage: l, url: absolute(pagePath(route, l)) || undefined, isPartOf: site } };
   }
   return {
     title: `${SITE.name} — ${l === 'uk' ? 'віртуальна лабораторія фізики та хімії' : 'a virtual physics and chemistry lab'}`,

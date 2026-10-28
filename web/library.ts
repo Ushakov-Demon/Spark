@@ -1,24 +1,23 @@
 /**
  * The lab's library ("Довідник"): a page of its own beside the lab, with a link for each part —
- * #glossary (every term the footnotes explain), #substances (everything on the shelf),
- * #equipment (every device and vessel). Read from the same data the lab uses: a new term,
+ * /glossary/ (every term the footnotes explain), /substances/ (everything on the shelf),
+ * /equipment/ (every device and vessel). Read from the same data the lab uses: a new term,
  * substance or device appears here by itself. A card opens the full reference card.
  */
 import { COMPONENTS, type ComponentId } from '../src/components/index.js';
 import { EQUIPMENT } from '../src/equipment/catalog.js';
 import { CATEGORIES } from '../src/equipment/taxonomy.js';
-import type { CategoryId } from '../src/equipment/types.js';
+import type { CategoryId, EquipmentItem } from '../src/equipment/types.js';
 import { tr, type Locale } from '../src/knowledge/i18n.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
 import { SUBSTANCE_FAMILIES, SUBSTANCES } from '../src/substances/catalog.js';
 import type { SubstanceItem } from '../src/substances/types.js';
-import { icon } from './graphics/icons/index.js';
 
 export const LIBRARY_PAGES = ['glossary', 'substances', 'equipment'] as const;
 export type LibraryPage = (typeof LIBRARY_PAGES)[number];
 
-/** "#glossary/cathode" → the page and the item on it; anything else — the lab (null). */
+/** An old address, "#glossary/cathode" (the library was once on the lab's page) → the page and the item on it; anything else — null. */
 export function libraryRoute(hash: string): { page: LibraryPage; item?: string } | null {
   const [page, item] = hash.replace(/^#/, '').split('/') as [string, string | undefined];
   if (!(LIBRARY_PAGES as readonly string[]).includes(page)) return null;
@@ -67,6 +66,10 @@ interface Ctx {
   readonly level: Level;
   /** The shelf's picture of a substance (bottle, block, ball). */
   readonly picOf: (s: SubstanceItem) => string;
+  /** A device's icon (drawn by the lab: the icons come with its build). */
+  readonly iconOf: (look: EquipmentItem['look']) => string;
+  /** The addresses of the library's pages and of the lab. */
+  readonly href: (to: LibraryPage | 'lab') => string;
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -77,14 +80,14 @@ function glossaryHtml(c: Ctx): string {
   const u = LIBRARY_UI[c.locale];
   const terms = [...LAB_GLOSSARY].sort((a, b) => tr(a.name, c.locale).localeCompare(tr(b.name, c.locale), c.locale));
   const letters = [...new Set(terms.map((x) => tr(x.name, c.locale)[0]!.toUpperCase()))];
-  const bar = `<nav class="lib-letters">${letters.map((l) => `<a href="#glossary/letter-${encodeURIComponent(l)}">${esc(l)}</a>`).join('')}</nav>`;
+  const bar = `<nav class="lib-letters">${letters.map((l) => `<a href="#letter-${encodeURIComponent(l)}">${esc(l)}</a>`).join('')}</nav>`;
   const groups = letters
     .map((l) => {
       const items = terms
         .filter((x) => tr(x.name, c.locale)[0]!.toUpperCase() === l)
         .map(
           (x) => `<article class="lib-term lib-entry" id="term-${x.id}" data-term-id="${x.id}">
-  <h3><a href="#glossary/${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> <span class="muted lib-other" lang="${other(c.locale)}">${esc(tr(x.name, other(c.locale)))}</span>${x.law ? ` <span class="lib-badge">${esc(u.law)}</span>` : ''}</h3>
+  <h3><a href="#${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> <span class="muted lib-other" lang="${other(c.locale)}">${esc(tr(x.name, other(c.locale)))}</span>${x.law ? ` <span class="lib-badge">${esc(u.law)}</span>` : ''}</h3>
   <p class="lib-desc">${esc(tr(x.text, c.locale))}</p>${x.more ? `<p class="lib-desc lib-more">${esc(tr(x.more, c.locale))}</p>` : ''}
 </article>`,
         )
@@ -137,7 +140,7 @@ function equipmentHtml(c: Ctx): string {
       const cards = EQUIPMENT.filter((i) => i.category === (cat.id as CategoryId))
         .map(
           (i) => `<article class="lib-card lib-entry" id="item-${i.id}">
-  <div class="lib-pic">${icon(i.look, 'ic huge')}</div>
+  <div class="lib-pic">${c.iconOf(i.look)}</div>
   <div class="lib-body">
     <h3>${esc(tr(i.name, c.locale))}</h3>
     <p class="lib-desc">${esc(tr(textFor(i.description, c.level), c.locale))}</p>
@@ -160,30 +163,14 @@ const COUNT: Record<LibraryPage, () => number> = {
 /** The whole page: head with tabs and search, then the chosen part. */
 export function libraryHtml(page: LibraryPage, c: Ctx): string {
   const u = LIBRARY_UI[c.locale];
-  const tabs = LIBRARY_PAGES.map((p) => `<a href="#${p}" class="chip${p === page ? ' selected' : ''}"${p === page ? ' aria-current="page"' : ''}>${esc(u.tabs[p])}</a>`).join('');
+  const tabs = LIBRARY_PAGES.map((p) => `<a href="${esc(c.href(p))}" class="chip${p === page ? ' selected' : ''}"${p === page ? ' aria-current="page"' : ''}>${esc(u.tabs[p])}</a>`).join('');
   const body = page === 'glossary' ? glossaryHtml(c) : page === 'substances' ? substancesHtml(c) : equipmentHtml(c);
   return `<div class="lib-head">
-  <a href="#" class="lib-back">${esc(u.back)}</a>
+  <a href="${esc(c.href('lab'))}" class="lib-back">${esc(u.back)}</a>
   <h1>${esc(u.title)}</h1>
   <nav class="chips lib-tabs" aria-label="${esc(u.title)}">${tabs}</nav>
   <p class="muted">${esc(u.intro[page])} <span class="small">(${esc(u.count(COUNT[page]()))})</span></p>
   <input type="search" class="search lib-search" placeholder="${esc(u.search)}" aria-label="${esc(u.search)}" autocomplete="off" />
 </div>
 <div class="lib-content">${body}<p class="muted lib-nothing" hidden>${esc(u.nothing)}</p></div>`;
-}
-
-/** Search: hides the entries (and then empty groups) that do not contain the text, in either language's name. */
-export function filterLibrary(root: Element, query: string): void {
-  const q = query.trim().toLowerCase();
-  let shown = 0;
-  root.querySelectorAll<HTMLElement>('.lib-entry').forEach((e) => {
-    const hit = !q || (e.textContent ?? '').toLowerCase().includes(q);
-    e.hidden = !hit;
-    if (hit) shown++;
-  });
-  root.querySelectorAll<HTMLElement>('.lib-group').forEach((g) => (g.hidden = !g.querySelector('.lib-entry:not([hidden])')));
-  const bar = root.querySelector<HTMLElement>('.lib-letters');
-  if (bar) bar.hidden = !!q;
-  const none = root.querySelector<HTMLElement>('.lib-nothing');
-  if (none) none.hidden = shown > 0;
 }

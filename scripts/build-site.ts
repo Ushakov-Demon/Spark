@@ -1,6 +1,6 @@
 /**
  * Writes the site's pages from the built lab (dist-web/index.html): the lab itself, the catalogue of all
- * experiments and one page per experiment, in Ukrainian and in English (/en/…), each with its own title,
+ * experiments and one page per experiment, the library's three pages and «about», in Ukrainian and in English (/en/…), each with its own title,
  * description, link preview (Open Graph) and structured data — and the description itself in the HTML.
  * Search engines and the previews of shared links read the HTML as it comes and run no scripts; people
  * get the same lab, the experiment chosen. Plus sitemap.xml and robots.txt.
@@ -12,7 +12,9 @@ import { dirname, join } from 'node:path';
 import { LOCALES, type Locale } from '../src/knowledge/i18n.js';
 import { PRESETS } from '../src/scenarios/index.js';
 import { labSheetHtml, predictsFirst } from '../web/experiment-sheet.js';
-import { catalogHtml, headHtml, pageMeta, pagePath, SITE, type Route } from '../web/site.js';
+import { catalogHtml, headHtml, LIBRARY_TABS, pageMeta, pagePath, SITE, type Route } from '../web/site.js';
+import { LIBRARY_UI, libraryHtml } from '../web/library.js';
+import { aboutHtml } from '../web/about.js';
 
 const OUT = 'dist-web';
 if (process.env['SPARK_SITE_URL']) SITE.url = process.env['SPARK_SITE_URL'];
@@ -32,10 +34,23 @@ function page(route: Route, l: Locale): string {
   html = swap(html, /<html lang="[^"]*">/, `<html lang="${l}">`);
   // The header's link to all the experiments, from here and in this page's language (the lab sets it again, the same).
   html = swap(html, '<a id="catalog-open" class="library-open" href="/experiments/">', `<a id="catalog-open" class="library-open" href="${up}${pagePath({ page: 'catalog' }, l)}">`);
+  html = swap(html, '<a id="library-open" class="library-open" href="/glossary/">', `<a id="library-open" class="library-open" href="${up}${pagePath({ page: 'library', tab: 'glossary' }, l)}">📚 ${LIBRARY_UI[l].open}`);
   html = swap(html, /<!--site:head-->[\s\S]*?<!--\/site:head-->/, headHtml(pageMeta(route, l)));
   if (route.page === 'catalog') {
     html = swap(html, '<body>', '<body class="in-catalog">');
     html = swap(html, '<section id="catalog" class="catalog" hidden><!--site:catalog-->', `<section id="catalog" class="catalog">${catalogHtml(l, (to) => `${up}${to}`)}`);
+  }
+  // The library's pages and «about»: their text in the HTML too (the pictures of the substances — the lab draws them).
+  if (route.page === 'library') {
+    html = swap(html, '<body>', '<body class="in-library">');
+    const lib = libraryHtml(route.tab, { locale: l, level: 'school', picOf: () => '', iconOf: () => '', href: (to) => `${up}${pagePath(to === 'lab' ? { page: 'lab' } : { page: 'library', tab: to }, l)}` });
+    html = swap(html, '<section id="library" class="library" hidden></section>', `<section id="library" class="library">${lib}</section>`);
+  }
+  if (route.page === 'about') {
+    html = swap(html, '<body>', '<body class="in-about">');
+    html = swap(html, '<section id="about-page" class="about-page" hidden>', '<section id="about-page" class="about-page">');
+    html = swap(html, '<a id="about-back" href="#" class="lib-back"></a>', `<a id="about-back" href="${up}${pagePath({ page: 'lab' }, l)}" class="lib-back">${LIBRARY_UI[l].back}</a>`);
+    html = swap(html, '<div id="about-body"></div>', `<div id="about-body">${aboutHtml(l)}</div>`);
   }
   if (route.page === 'experiment') {
     const p = PRESETS.find((x) => x.id === route.id)!;
@@ -46,7 +61,7 @@ function page(route: Route, l: Locale): string {
   return html;
 }
 
-const routes: Route[] = [{ page: 'lab' }, { page: 'catalog' }, ...PRESETS.map((p) => ({ page: 'experiment', id: p.id }) as const)];
+const routes: Route[] = [{ page: 'lab' }, { page: 'catalog' }, ...PRESETS.map((p) => ({ page: 'experiment', id: p.id }) as const), ...LIBRARY_TABS.map((tab) => ({ page: 'library', tab }) as const), { page: 'about' }];
 let count = 0;
 for (const l of LOCALES) {
   for (const r of routes) {

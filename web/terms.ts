@@ -55,7 +55,8 @@ export function annotate(root: Element, l: Locale, skip?: string): void {
 const ALL_TERMS: Record<Locale, string> = { uk: 'Відкрити в глосарії →', en: 'Open in the glossary →' };
 
 /** The footnote card: one for the page, placed next to the term; hover, focus or tap shows it. */
-export function installFootnotes(locale: () => Locale): void {
+/** `glossary` — the address of a term on the glossary's page. */
+export function installFootnotes(locale: () => Locale, glossary: (id: string) => string): void {
   const card = document.createElement('div');
   card.className = 'term-card';
   card.setAttribute('role', 'tooltip');
@@ -68,7 +69,7 @@ export function installFootnotes(locale: () => Locale): void {
     const t = termById(el.dataset['term'] ?? '', LAB_GLOSSARY);
     if (!t) return;
     current = el;
-    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p><a href="#glossary/${t.id}" class="term-more">${ALL_TERMS[locale()]}</a>`;
+    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p><a href="${glossary(t.id)}" class="term-more">${ALL_TERMS[locale()]}</a>`;
     card.hidden = false;
     const r = el.getBoundingClientRect();
     const w = Math.min(320, window.innerWidth - 24);
