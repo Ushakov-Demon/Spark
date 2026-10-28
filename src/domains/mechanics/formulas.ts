@@ -27,6 +27,8 @@ export const pressure = (force: number, area: number): number => force / area;
 export const hydrostaticPressure = (density: number, g: number, depth: number): number => density * g * depth;
 /** The air's pressure from the force on a syringe's plunger: its area from the scale, S = V / l, so p = F·l / V. */
 export const syringePressure = (force: number, length: number, volume: number): number => (force * length) / volume;
+/** The force of a liquid on a flat bottom: its pressure there over the bottom's area, F = ρ·g·h·S — whatever the vessel's shape. */
+export const bottomForce = (density: number, g: number, depth: number, area: number): number => density * g * depth * area;
 /** A hydraulic machine: the same pressure under both pistons, F₂ = F₁·S₂ / S₁. */
 export const hydraulicForce = (f1: number, s1: number, s2: number): number => (f1 * s2) / s1;
 /** Two liquids balanced in communicating vessels (heights above their boundary): ρ₁·h₁ = ρ₂·h₂, so ρ₂ = ρ₁·h₁ / h₂. */

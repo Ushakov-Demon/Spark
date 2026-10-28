@@ -428,6 +428,16 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // Pascal's device: the vessel this step screwed on (or the next planned one), its water, the manometer.
+  if (kind === 'vessels') {
+    const vc = c?.type === 'lab.vessel' ? (c as unknown as { step: string; shape?: 'straight' | 'wide' | 'narrow'; height?: number }) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.vessel' && 'shape' in s.command);
+    const shape = vc?.shape ?? (next?.kind === 'bench' ? (next.command as { shape?: 'straight' | 'wide' | 'narrow' }).shape : undefined);
+    const recs = last && vc?.step === 'fill' ? readingsOf([last]).map((x) => x.record) : [];
+    const V = recs.find((x) => x.quantity === 'volume');
+    const M = recs.find((x) => x.quantity === 'length');
+    return { ...base, kind, vessels: { ...(shape ? { shape } : {}), height: vc?.step === 'fill' ? (vc.height ?? 0) : 0, dh: M?.value ?? 0, ...(M ? { read: show('length', M.value) } : {}), ...(V ? { poured: formatMeasured('volume', V.value, 5e-6, locale) } : {}) } };
+  }
   // The syringe: how far its plunger is out and whether its nozzle is shut; the barometer once it has been read.
   if (kind === 'atm') {
     const ac = c?.type === 'lab.atm' ? (c as unknown as { step: string; pulled?: number; air: number }) : undefined;
@@ -625,6 +635,15 @@ function measureSay(): string {
     if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+  }
+  // Pascal's device: the bottom; the water each vessel took and the manometer's reading.
+  if (m.command.type === 'lab.vessel') {
+    const vc = m.command as { step: string; shape?: 'straight' | 'wide' | 'narrow' };
+    if (vc.step === 'bottom') return uk ? `Дно — ${cm(r.value ?? 0)} у діаметрі, однакове в усіх посудин.` : `The bottom is ${cm(r.value ?? 0)} across, the same for all the vessels.`;
+    const recs = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.vessel').slice(0, 1)).map((x) => x.record);
+    const V = formatMeasured('volume', recs.find((x) => x.quantity === 'volume')?.value ?? 0, 5e-6, locale);
+    const dh = cm(recs.find((x) => x.quantity === 'length')?.value ?? 0);
+    return uk ? `Пішло ${V} води, а манометр показує ${dh}.` : `${V} of water went in, and the manometer shows ${dh}.`;
   }
   // The syringe: its scale, the barometer, the force on its plunger — and the pressure it gives.
   if (m.command.type === 'lab.atm') {
@@ -2295,6 +2314,9 @@ function renderProtocol() {
       // (The circuit reads two instruments at once: both are written.)
       const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
       // (The black box's milliammeter: milliamperes to a tenth.)
+      // (Pascal's device: the water poured and the manometer.)
+      const vRecs = c.type === 'lab.vessel' ? readingsOf([e]).map((x) => x.record) : [];
+      const vShown = c.type === 'lab.vessel' && vRecs.length === 2 ? `${formatMeasured('volume', vRecs[0]!.value, 5e-6, locale)} · Δh ${formatMeasured('length', vRecs[1]!.value, 0.001, locale)}` : null;
       // (The pistons' two diameters.)
       const pRecs = c.type === 'lab.press' ? readingsOf([e]).map((x) => x.record) : [];
       const pShown = c.type === 'lab.press' && pRecs.length === 2 ? `${formatMeasured('length', pRecs[0]!.value, 0.001, locale)} · ${formatMeasured('length', pRecs[1]!.value, 0.001, locale)}` : null;
@@ -2302,7 +2324,7 @@ function renderProtocol() {
       const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
       const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
-      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

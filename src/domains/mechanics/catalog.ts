@@ -31,6 +31,7 @@ const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko',
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
+const UA_PARADOX: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_PASCAL: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Закон Паскаля. … Гідравлічна машина.' }];
 const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' }];
 const UA_EFFICIENCY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Корисна й затрачена робота. Коефіцієнт корисної дії.' }];
@@ -223,6 +224,34 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.hydrostaticPressure,
     examples: [{ args: [997.05, 9.81, 0.09], expected: 880.39515, note: 'water, 9 cm deep' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.bottom-force',
+    law: 'hydrostatic-paradox',
+    title: { uk: 'Сила тиску рідини на дно', en: 'The force of a liquid on the bottom' },
+    latex: 'F = \\rho\\,g\\,h\\,S',
+    plain: 'F = ρ·g·h·S',
+    argSymbols: ['ρ', 'g', 'h', 'S'],
+    resultSymbol: 'F',
+    variables: {
+      F: { name: { uk: 'сила тиску на дно', en: 'the force on the bottom' }, unit: 'N' },
+      'ρ': { name: { uk: 'густина рідини', en: 'the liquid’s density' }, unit: 'kg/m³' },
+      g: { name: { uk: 'прискорення вільного падіння', en: 'the free-fall acceleration' }, unit: 'm/s²' },
+      h: { name: { uk: 'висота рідини над дном', en: 'the liquid’s height above the bottom' }, unit: 'm' },
+      S: { name: { uk: 'площа дна', en: 'the bottom’s area' }, unit: 'm²' },
+    },
+    curriculum: UA_PARADOX,
+    explanation: {
+      novice: { uk: 'Скільки б води не було в посудині, на дно вона тисне так, ніби над дном стоїть лише прямий стовпчик води.', en: 'However much water is in the vessel, it presses on the bottom as if only a straight column of water stood over the bottom.' },
+      school: {
+        uk: 'Тиск на дні p = ρ·g·h, сила тиску на дно F = p·S = ρ·g·h·S — вага прямого стовпа рідини над дном. Від форми посудини вона не залежить.',
+        en: 'The pressure at the bottom p = ρ·g·h, the force on the bottom F = p·S = ρ·g·h·S — the weight of the straight column over the bottom. It does not depend on the vessel’s shape.',
+      },
+    },
+    compute: f.bottomForce,
+    examples: [{ args: [1000, 9.81, 0.1, 1.2566e-3], expected: 1.2327, note: '10 cm of water over a 4 cm bottom' }],
     textSource: 'spark',
     reviewed: false,
   }),

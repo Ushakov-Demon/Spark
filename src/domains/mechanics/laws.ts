@@ -7,6 +7,7 @@ const GALILEO: Person = { name: { uk: 'Галілео Галілей', en: 'Gali
 const HUYGENS: Person = { name: { uk: 'Крістіан Гюйгенс', en: 'Christiaan Huygens' }, born: 1629, died: 1695, wikidata: 'Q39599' };
 const ARCHIMEDES: Person = { name: { uk: 'Архімед', en: 'Archimedes' }, born: -287, died: -212, wikidata: 'Q8739' };
 const TORRICELLI: Person = { name: { uk: 'Еванджеліста Торрічеллі', en: 'Evangelista Torricelli' }, born: 1608, died: 1647, wikidata: 'Q102490' };
+const STEVIN: Person = { name: { uk: 'Симон Стевін', en: 'Simon Stevin' }, born: 1548, died: 1620, wikidata: 'Q23696' };
 const PASCAL: Person = { name: { uk: 'Блез Паскаль', en: 'Blaise Pascal' }, born: 1623, died: 1662, wikidata: 'Q1290' };
 
 /**
@@ -255,6 +256,33 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     },
     limits: {
       school: { uk: 'Так — для рідини, що стоїть (тиск її власної ваги тут додається окремо, ρ·g·h), і для поршнів без тертя: у справжніх шприцах частина сили йде на тертя.', en: 'So — for a liquid at rest (the pressure of its own weight adds separately, ρ·g·h) and for pistons without friction: in real syringes some of the force goes into friction.' },
+    },
+  },
+  {
+    id: 'hydrostatic-paradox',
+    kind: 'law',
+    name: { uk: 'Гідростатичний парадокс', en: 'The hydrostatic paradox' },
+    statement: {
+      novice: { uk: 'Вода тисне на дно лише залежно від того, яка вона заввишки, — а не від того, скільки її в посудині.', en: 'Water presses on the bottom only by how high it stands — not by how much of it is in the vessel.' },
+      school: { uk: 'Сила тиску рідини на дно F = ρ·g·h·S залежить від висоти рідини й площі дна, але не від форми посудини. Тож у посудині, що розширюється догори, вона менша за вагу рідини (решту тримають стінки), а в тій, що звужується, — більша (стінки самі тиснуть на рідину вниз).', en: 'The force of a liquid on the bottom, F = ρ·g·h·S, depends on the liquid’s height and the bottom’s area, not on the vessel’s shape. So in a vessel widening upwards it is less than the liquid’s weight (the walls hold the rest), and in a narrowing one more (the walls themselves press the liquid down).' },
+    },
+    history: {
+      people: [STEVIN],
+      role: 'discovered',
+      when: { uk: 'кінець XVI ст. (праця про гідростатику — 1586)', en: 'the late 16th century (his work on hydrostatics — 1586)' },
+      story: {
+        school: {
+          uk: 'Фламандський математик та інженер Симон Стевін відкрив, що тиск у рідині не залежить від форми посудини й площі дна, а лише від висоти рідини. 1586 року вийшла його праця про гідростатику «Основи ваги води».',
+          en: 'The Flemish mathematician and engineer Simon Stevin found that the pressure in a liquid depends not on the vessel’s shape or the bottom’s area but only on the liquid’s height. His work on hydrostatics, «The Principles of the Weight of Water», came out in 1586.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-stevin', locator: 'Mechanics', claim: 'Stevin discovered the hydrostatic paradox: the pressure in a liquid is independent of the shape of the vessel and the area of the base, but depends solely on its height' },
+        { source: 'wikipedia-stevin', locator: 'Publications', claim: 'De Beghinselen des Waterwichts (Principles on the weight of water), 1586, on hydrostatics' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Так — для рідини, що стоїть; тиск повітря над нею додається однаково до всіх посудин.', en: 'So — for a liquid at rest; the air’s pressure above it adds alike in all the vessels.' },
     },
   },
   {

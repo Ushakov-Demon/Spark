@@ -56,7 +56,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -630,6 +630,42 @@ export const PRESETS: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Сполучені посудини. … моделювання: сполучених посудин' }],
     expect: 'reached',
   },
+  varied(
+    {
+      id: 'hydrostatic-paradox',
+      ask: { uk: 'У якій посудині вода тисне на дно найсильніше?', en: 'In which vessel does the water press on the bottom hardest?' },
+      grade: 7,
+      topic: PRESSURE,
+      title: { uk: 'Гідростатичний парадокс: прилад Паскаля', en: 'The hydrostatic paradox: Pascal’s device' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'vessels',
+      choices: [ch('same', 'Однаково в усіх трьох', 'Alike in all three'), ch('wide', 'Найсильніше — у тій, що розширюється догори', 'Hardest in the one widening upwards'), ch('narrow', 'Найсильніше — у тій, що звужується догори', 'Hardest in the one narrowing upwards')],
+      choicesAt: 'end',
+      answerOnBoard: ['vF:'],
+      formulas: ['mechanics.bottom-force', 'mechanics.hydrostatic-pressure'],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }],
+      expect: 'reached',
+    },
+    {
+      // How high the water stands: the manometer follows it, the shapes do not matter.
+      controls: [{ id: 'height', label: { uk: 'Висота води в посудинах', en: 'The water’s height in the vessels' }, kind: 'number', unit: 'см', min: 6, max: 12, step: 2, value: 10 }],
+      build: (v) => {
+        const cm = Number(v['height']);
+        const height = cm / 100;
+        return {
+          question: {
+            uk: `Прилад Паскаля: на підставку, дно якої — гумова плівка з трубкою до манометра, по черзі закручують три скляні посудини: пряму, ту, що розширюється догори, і ту, що звужується. Дно в усіх однакове — виміряємо його. У кожну наллємо з мензурки води до висоти ${cm} см, запишемо, скільки води пішло, і що показує манометр. У якій посудині вода тисне на дно найсильніше?`,
+            en: `Pascal’s device: three glass vessels — a straight one, one widening upwards and one narrowing — are screwed in turn onto a stand whose bottom is a rubber film with a tube to a manometer. All have the same bottom — we measure it. Into each we pour water from a measuring cylinder up to ${cm} cm and write down how much water went in and what the manometer shows. In which vessel does the water press on the bottom hardest?`,
+          },
+          plan: [
+            { kind: 'bench', command: { type: 'lab.vessel', step: 'bottom' } },
+            ...(['straight', 'wide', 'narrow'] as const).map((shape) => ({ kind: 'bench', command: { type: 'lab.vessel', step: 'fill', shape, height } }) as const),
+          ],
+        };
+      },
+    },
+  ),
   varied(
     {
       id: 'atmospheric-pressure',

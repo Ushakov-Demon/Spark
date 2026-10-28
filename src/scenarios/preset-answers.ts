@@ -10,13 +10,14 @@ import { cellReading } from '../domains/electrical/conductivity.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { FARADAY, GAS_CONSTANT } from '../domains/electrical/gases.js';
 import { formatDuration, formatQuantity, sig } from '../explain/format.js';
-import type { Locale, LocalizedText } from '../knowledge/i18n.js';
+import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
 import { LAB_VESSEL_ID, sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
 import { formatReading, weigh } from './weighing.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { formatMeasured } from './measuring.js';
 import { AMMETER, VOLTMETER } from './circuit-bench.js';
+import { vesselName, type PascalVessel } from './vessels-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -356,6 +357,43 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         l === 'uk'
           ? `Діаметри поршнів ${cm(d1, l)} і ${cm(d2, l)}: широкий більший у ${sig(diam, 2, l)} раза, а його площа — у (d₂/d₁)² ≈ ${sig(areas, 2, l)} раза. ${list(l)}: широкий поршень щоразу піднімав вантаж у ≈ ${sig(gain, 2, l)} раза важчий за силу, якою тиснули на вузький, — як відношення площ, а не діаметрів. Зате коли вузький поршень опустили на ${cm(push, l)}, широкий піднявся лише на ${cm(rise, l)}: робота F₁·l₁ ≈ ${sig((lastLift?.F1 ?? 0) * push, 2, l)} Дж і F₂·l₂ ≈ ${sig((lastLift?.F2 ?? 0) * rise, 2, l)} Дж — майже однакові, у роботі виграшу немає. (Тертя поршнів не враховано: зі справжніми шприцами тиснути доводиться трохи сильніше.)`
           : `The pistons are ${cm(d1, l)} and ${cm(d2, l)} across: the wide one is ${sig(diam, 2, l)} times wider, and its area (d₂/d₁)² ≈ ${sig(areas, 2, l)} times larger. ${list(l)}: each time the wide piston lifted a load ≈ ${sig(gain, 2, l)} times the force on the narrow one — the ratio of the areas, not of the diameters. But when the narrow piston went ${cm(push, l)} down, the wide one rose only ${cm(rise, l)}: the work F₁·l₁ ≈ ${sig((lastLift?.F1 ?? 0) * push, 2, l)} J and F₂·l₂ ≈ ${sig((lastLift?.F2 ?? 0) * rise, 2, l)} J — almost the same, no gain in work. (The pistons’ friction is left out: with real syringes one has to push a little harder.)`,
+      ),
+    };
+  },
+  'hydrostatic-paradox': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.vessel' && x.record.value !== null);
+    const d = R.find((x) => x.command['step'] === 'bottom')?.record.value ?? 0;
+    const S = Math.PI * (d / 2) ** 2;
+    const shapes = (['straight', 'wide', 'narrow'] as const).flatMap((shape) => {
+      const recs = R.filter((x) => x.command['shape'] === shape);
+      const V = recs.find((x) => x.record.quantity === 'volume')?.record;
+      const M = recs.find((x) => x.record.quantity === 'length')?.record;
+      if (!V || !M) return [];
+      const rho = M.inputs?.['rho'] ?? 1000;
+      const g = M.inputs?.['g'] ?? 9.81;
+      return [{ shape, V: V.value!, dh: M.value!, F: rho * g * M.value! * S, P: rho * g * V.value! }];
+    });
+    // Alike if the manometer's readings differ by no more than half its division.
+    const dhs = shapes.map((x) => x.dh);
+    const top = [...shapes].sort((a, b) => b.dh - a.dh)[0];
+    const correct = !shapes.length ? undefined : Math.max(...dhs) - Math.min(...dhs) <= 0.0005 ? 'same' : top!.shape === 'straight' ? undefined : top!.shape;
+    const N = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'Н' : 'N'}`;
+    const ml = (x: number, l: Locale) => formatMeasured('volume', x, 5e-6, l);
+    const name = (s: string, l: Locale) => tr(vesselName(s as PascalVessel), l);
+    const list = (l: Locale) => shapes.map((x) => (l === 'uk' ? `${name(x.shape, l)}: води ${ml(x.V, l)} (вага ≈ ${N(x.P, l)}), манометр ${formatMeasured('length', x.dh, 0.001, l)}` : `${name(x.shape, l)}: ${ml(x.V, l)} of water (weight ≈ ${N(x.P, l)}), the manometer ${formatMeasured('length', x.dh, 0.001, l)}`)).join('; ').replace(/^./, (x) => x.toUpperCase());
+    const F = shapes[0]?.F ?? 0;
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Тиск рідини на якійсь глибині створює вага стовпчика рідини над цим місцем, p = ρ·g·h, — і він однаковий на тій самій глибині, хоч би якою широкою чи вузькою була посудина вище. На дні глибина однакова — отже, однаковий і тиск, і сила тиску на однакове дно. А куди ж дівається решта ваги води в широкій посудині? Її тримають похилі стінки: вода тисне на них, і вони — на підставку. У вузькій навпаки: похилі стінки самі тиснуть на воду вниз, тож на дно припадає більше, ніж важить вода.'
+          : 'The pressure at some depth in a liquid comes from the weight of the column above that place, p = ρ·g·h, — and it is the same at the same depth however wide or narrow the vessel is higher up. At the bottom the depth is alike — so the pressure is alike too, and the force on an equal bottom. Where, then, does the rest of the water’s weight go in the wide vessel? The sloping walls hold it: the water presses on them, and they on the stand. In the narrow one it is the other way: the sloping walls themselves press the water down, so the bottom gets more than the water weighs.',
+      ),
+      say: both((l) => (correct === 'same' ? (l === 'uk' ? `Манометр щоразу показував те саме — на дно тисне ≈ ${N(F, l)}, хоч води й різна кількість!` : `The manometer showed the same each time — ≈ ${N(F, l)} on the bottom, though the water differed!`) : l === 'uk' ? 'Подивімося, що показав манометр.' : 'Let us look at the manometer.')),
+      text: both((l) =>
+        l === 'uk'
+          ? `Дно ${formatMeasured('length', d, 0.001, l)} у діаметрі, площа S ≈ ${sig(S * 1e4, 3, l)} см². ${list(l)}. Тиск на дні p = ρ·g·Δh${correct === 'same' ? ' однаковий' : ''}, а сила тиску на дно F = p·S ≈ ${N(F, l)}${correct === 'same' ? ' в усіх трьох' : ''}. Води ж пішло в кілька разів різна кількість: у посудині, що розширюється, вода важить більше, ніж тисне на дно, а в тій, що звужується, — менше. Тиск на дно залежить від висоти води й площі дна, а не від форми посудини й не від того, скільки води налито, — це й є гідростатичний парадокс.`
+          : `The bottom is ${formatMeasured('length', d, 0.001, l)} across, its area S ≈ ${sig(S * 1e4, 3, l)} cm². ${list(l)}. The pressure at the bottom p = ρ·g·Δh${correct === 'same' ? ' is alike' : ''}, and the force on the bottom F = p·S ≈ ${N(F, l)}${correct === 'same' ? ' in all three' : ''}. Yet the water poured differed several times: in the widening vessel the water weighs more than it presses on the bottom, in the narrowing one less. The pressure on the bottom depends on the water’s height and the bottom’s area, not on the vessel’s shape or on how much water was poured — that is the hydrostatic paradox.`,
       ),
     };
   },

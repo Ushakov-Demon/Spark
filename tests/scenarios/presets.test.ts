@@ -285,6 +285,15 @@ describe('ready-made experiments with values to change', () => {
     expect(Math.abs(w1! / w2! - 1)).toBeLessThan(0.15);
   }, 60_000);
 
+  it('the hydrostatic paradox: the same force on the bottom, the water poured several times different', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'hydrostatic-paradox')!);
+    expect(answer.correct).toBe('same');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk);
+    const ml = [...answer.text.uk.matchAll(/води ([^м]+) мл/g)].map((m) => Number(m[1]!.replace(/\D/g, '')));
+    expect(ml).toHaveLength(3);
+    expect(ml[1]! / ml[2]!).toBeGreaterThan(3);
+  }, 60_000);
+
   it('the atmospheric pressure: the syringe shows a little less than the barometer, nearer as the plunger goes out', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'atmospheric-pressure')!);
     expect(answer.correct).toBe('less');

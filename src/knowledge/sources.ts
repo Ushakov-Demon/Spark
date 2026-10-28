@@ -646,6 +646,13 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-27',
   }),
+  'wikipedia-stevin': source({
+    id: 'wikipedia-stevin',
+    title: 'Wikipedia, Simon Stevin (1548–1620): Stevin discovered the hydrostatic paradox — the pressure in a liquid is independent of the shape of the vessel and the area of the base, but depends solely on its height; De Beghinselen des Waterwichts (1586), on hydrostatics',
+    url: 'https://en.wikipedia.org/wiki/Simon_Stevin',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-27',
+  }),
   'wikipedia-pascal-law': source({
     id: 'wikipedia-pascal-law',
     title: 'Wikipedia, Pascal’s law: a pressure change at any point in a confined incompressible fluid is transmitted throughout the fluid; established by Blaise Pascal in 1653, published in 1663; it underlies the hydraulic press, F₂/F₁ = A₂/A₁',

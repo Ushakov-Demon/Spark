@@ -322,6 +322,7 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   let tapePath: number | null = null;
   let pressAreas: number | null = null;
   let atmScale: number | null = null;
+  let vesselArea: number | null = null;
   const pair: Partial<Record<'r1' | 'r2' | 'both', { I: number; U: number }>> = {};
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
@@ -430,6 +431,25 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const Nm = uk ? 'Н·м' : 'N·m';
       out.push({ id: `M1:${i}`, title: uk ? `момент сили ліворуч (${F2(F1)} на ${cm(l1)})` : `the moment on the left (${F2(F1)} at ${cm(l1)})`, formula: 'M₁ = F₁·l₁', numbers: `${F2(F1)} · ${n(l1)} ${uk ? 'м' : 'm'} ≈ ${n(F1 * l1, 3)} ${Nm}` });
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
+      return;
+    }
+    // Pascal's device: the bottom's area; for each vessel the water's weight and the force on the bottom.
+    if (c.type === 'lab.vessel') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
+      if (c['step'] === 'bottom') {
+        vesselArea = Math.PI * (r.value / 2) ** 2;
+        out.push({ id: 'vS', title: uk ? 'площа дна' : 'the bottom’s area', formula: 'S = π·d² / 4', numbers: `${n(Math.PI)} · (${n(r.value * 100)} ${uk ? 'см' : 'cm'})² / 4 ≈ ${n(vesselArea * 1e4)} ${uk ? 'см²' : 'cm²'}` });
+        return;
+      }
+      const V = recs.find((x) => x.quantity === 'volume');
+      const M = recs.find((x) => x.quantity === 'length');
+      if (!V || !M || V.value === null || M.value === null) return;
+      const rho = M.inputs?.['rho'] ?? 1000;
+      const g = M.inputs?.['g'] ?? 9.81;
+      const shape = String(c['shape']);
+      const what = { straight: uk ? 'пряма посудина' : 'the straight vessel', wide: uk ? 'посудина, що розширюється' : 'the widening vessel', narrow: uk ? 'посудина, що звужується' : 'the narrowing vessel' }[shape] ?? shape;
+      out.push({ id: `vP:${shape}`, title: uk ? `${what}: вага води` : `${what}: the water’s weight`, formula: 'P = ρ·g·V', numbers: `${n(rho, 4)} · ${n(g)} · ${n(V.value * 1e6)}·10⁻⁶ ≈ ${n(rho * g * V.value, 2)} ${uk ? 'Н' : 'N'}` });
+      if (vesselArea) out.push({ id: `vF:${shape}`, title: uk ? `${what}: сила тиску на дно` : `${what}: the force on the bottom`, formula: 'F = ρ·g·Δh·S', numbers: `${n(rho, 4)} · ${n(g)} · ${n(M.value, 3)} · ${n(vesselArea * 1e4)}·10⁻⁴ ≈ ${n(rho * g * M.value * vesselArea, 2)} ${uk ? 'Н' : 'N'}` });
       return;
     }
     // The syringe: the plunger's area from its scale, the barometer, and the pressure each pull gives.

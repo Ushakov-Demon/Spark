@@ -30,3 +30,4 @@ export * from './depth-bench.js';
 export * from './utube-bench.js';
 export * from './press-bench.js';
 export * from './atm-bench.js';
+export * from './vessels-bench.js';

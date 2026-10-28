@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -51,6 +51,8 @@ export interface BenchView {
   readonly press?: { readonly weights: number; readonly pull?: string; readonly pushed: number; readonly read?: string };
   /** The syringe and the barometer: the plunger out by so many mL (0…1), the nozzle shut; the dynamometer's reading, the ruler's; the day's pressure, Pa, and its reading once looked at. */
   readonly atm?: { readonly pulled: number; readonly sealed: boolean; readonly pull?: string; readonly read?: string; readonly air: number; readonly baro?: string };
+  /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
+  readonly vessels?: { readonly shape?: 'straight' | 'wide' | 'narrow'; readonly height: number; readonly dh: number; readonly read?: string; readonly poured?: string };
   /** The U-tube: water poured (or not yet), the oil's and the water's columns above their boundary, m; what the ruler read. */
   readonly utube?: { readonly water: boolean; readonly oil: number; readonly over: number; readonly read?: string };
   /** The pressure at a depth: the funnel's depth, m (0 — above the liquid), sideways; the manometer's Δh, m; the liquid's colour. */
@@ -174,6 +176,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'utube') return utubeSvg(v.utube);
   if (v.kind === 'press') return pressSvg(v.press);
   if (v.kind === 'atm') return atmSvg(v.atm);
+  if (v.kind === 'vessels') return vesselsSvg(v.vessels);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
   if (v.kind === 'spring') {
@@ -359,6 +362,43 @@ function circuitSvg(c: BenchView['circuit']): string {
   const resistor = `<rect x="430" y="${y - 6}" width="60" height="20" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${[0, 1, 2].map((k) => `<rect x="${442 + k * 12}" y="${y - 6}" width="4" height="20" style="fill:${['#8b4513', '#222', '#c0392b'][k]}"/>`).join('')}`;
   const wires = W(`M195,${y + 4} H250`) + W(`M280,${y + 4} H340`) + W(`M392,${y + 4} H430`) + W(`M490,${y + 4} H540 V${y + 40} H150 V${y + 4} H155`) + W(`M410,${y + 4} V${top + 40} H${435}`) + W(`M485,${top + 40} H510 V${y + 4}`);
   return `${wires}${source}${key}${meterSvg(366, y + 6, 'A', c?.amps?.share, c?.amps?.text)}${resistor}${meterSvg(460, top + 40, 'V', c?.volts?.share, c?.volts?.text)}`;
+}
+
+/**
+ * Pascal's device (10 px to the centimetre): a stand with the vessel screwed on — straight, widening or narrowing,
+ * all with the same 4 cm bottom — water in it to its height; a tube from the stand's rubber bottom to a U-tube
+ * manometer on the right, its levels apart by Δh.
+ */
+function vesselsSvg(v: BenchView['vessels']): string {
+  const k = 1000;
+  const x = 380;
+  const base = TABLE - 34;
+  const half = 20;
+  const topHalf = { straight: 20, wide: 40, narrow: 10 }[v?.shape ?? 'straight'];
+  // The walls are straight lines from the bottom to their width 10 cm up; the vessel is 12 cm tall.
+  const at = (h: number) => half + ((topHalf - half) * h) / 0.1;
+  const H = 0.12;
+  const stand = `<rect x="${x - 36}" y="${base}" width="72" height="34" rx="4" style="fill:#59636e"/><rect x="${x - half - 4}" y="${base - 6}" width="${2 * half + 8}" height="6" style="fill:#3d3d3d"/><path d="M${x - half},${base - 1} H${x + half}" style="stroke:#b03a2e;stroke-width:2.5"/>`;
+  const glass = v?.shape ? `<path d="M${x - half},${base - 6} L${x - at(H)},${base - 6 - H * k} M${x + half},${base - 6} L${x + at(H)},${base - 6 - H * k}" style="fill:none;stroke:#8fb8dd;stroke-width:2.5"/>` : '';
+  const h = v?.shape ? v.height : 0;
+  const water = h > 0 ? `<path d="M${x - half},${base - 6} L${x - at(h)},${base - 6 - h * k} H${x + at(h)} L${x + half},${base - 6} Z" style="fill:rgba(120,170,230,0.55)"/>` : '';
+  const ticks = Array.from({ length: 13 }, (_, i) => `<path d="M${x - 62},${base - 6 - i * 10} h${i % 5 === 0 ? 8 : 5}" style="stroke:#5b4a2a;stroke-width:1"/>`).join('');
+  const ruler = `<rect x="${x - 66}" y="${base - 6 - H * k - 4}" width="12" height="${H * k + 4}" style="fill:#f1e3b0;stroke:#a8945a"/>${ticks}`;
+  const poured = v?.poured ? `<text class="bench-reading" x="${x}" y="${base - 6 - H * k - 14}" text-anchor="middle">V = ${v.poured}</text>` : '';
+  // The manometer: its arms at mx and mx + 40, the water's rest level in the middle; the joined arm goes down by Δh/2.
+  const mx = 500;
+  const mTop = TABLE - 250;
+  const mBot = TABLE - 60;
+  const rest = (mTop + mBot) / 2 + 10;
+  const d = Math.min(80, ((v?.dh ?? 0) * k) / 2);
+  const left = rest + d;
+  const right = rest - d;
+  const tube = `<path d="M${x + 36},${base + 14} H${mx - 30} V${mTop - 14} H${mx} V${mTop}" style="fill:none;stroke:#7b8a99;stroke-width:3"/>`;
+  const arm = (ax: number) => `<rect x="${ax - 5}" y="${mTop}" width="10" height="${mBot - mTop}" style="fill:rgba(220,235,250,0.35);stroke:#8fb8dd"/>`;
+  const mw = `<rect x="${mx - 4}" y="${left}" width="8" height="${mBot - left}" style="fill:#3b82c4"/><rect x="${mx + 36}" y="${right}" width="8" height="${mBot - right}" style="fill:#3b82c4"/><path d="M${mx - 5},${mBot} q0,16 25,16 q25,0 25,-16" style="fill:none;stroke:#3b82c4;stroke-width:9"/>`;
+  const board = `<rect x="${mx - 18}" y="${mTop - 10}" width="76" height="${mBot - mTop + 32}" rx="4" style="fill:#e9dfc4;stroke:#a8945a"/>`;
+  const marks = d > 1 ? `<path class="bench-mark" d="M${mx - 12},${left} H${mx + 52} M${mx - 12},${right} H${mx + 52}"/>${v?.read ? `<text class="bench-reading" x="${mx + 20}" y="${mBot + 40}" text-anchor="middle">Δh = ${v.read}</text>` : ''}` : '';
+  return `${ruler}${stand}${water}${glass}${poured}${board}${tube}${arm(mx)}${arm(mx + 40)}${mw}${marks}`;
 }
 
 /**
