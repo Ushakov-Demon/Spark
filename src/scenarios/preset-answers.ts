@@ -23,6 +23,7 @@ import { rowName, type RowBody } from './rows-bench.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { BOUNCE_FROM, bounceBallName, type BounceBall } from './bounce-bench.js';
 import { winchSpoolName, type WinchSpool } from './winch-bench.js';
+import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -419,6 +420,31 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
         const s = `${parts.join('; ')}.`;
         return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
+    };
+  },
+  'wind-speed': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.wind' && x.record.value !== null).map((x) => ({ day: Number(x.command['day']) as 1 | 2 | 3, t: x.record.value!, l: x.record.inputs?.['track'] ?? WIND_TRACK }));
+    const v = (x: { t: number; l: number }) => x.l / x.t;
+    const ms = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'м/с' : 'm/s'}`;
+    const leaves = R.find((x) => x.day === 2);
+    return {
+      ...(leaves && v(leaves) >= 2 && v(leaves) <= 3 ? { correct: 'walk' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Повітря невидиме, тож стежимо за чимось, що рухається разом із ним. Мильна бульбашка — тонка плівка з повітрям усередині, вона майже нічого не важить, і вітер одразу несе її зі своєю швидкістю. Тоді v = l / t: 6 м поділити на час між позначками. Швидкість вітру вимірюють і метеорологи — анемометрами, а моряки здавна оцінювали її за прикметами: шкала Бофорта (1805 р.) зіставляє кожну силу вітру з тим, що він робить. Коли шелестить листя й вітер відчуваєш обличчям, це 2 бали — від 1,6 до 3,4 м/с. Засікати час рукою — похибка близько 0,2 с, тож для сильнішого вітру краще брати довшу відстань і пускати кілька бульбашок: вітер ще й поривчастий.'
+          : 'Air cannot be seen, so we watch something that moves with it. A soap bubble is a thin film with air inside; it weighs next to nothing, and the wind at once carries it at its own speed. Then v = l / t: 6 m divided by the time between the marks. Meteorologists measure the wind’s speed too — with anemometers — and sailors long judged it by its signs: the Beaufort scale (1805) matches each force of wind with what it does. When leaves rustle and the wind is felt on the face, that is force 2 — 1.6 to 3.4 m/s. Timing by hand has an error of about 0.2 s, so for a stronger wind a longer distance is better, and several bubbles: the wind comes in gusts, too.',
+      ),
+      say: both((l) => (leaves ? (l === 'uk' ? `Шелестить листя — повітря рухається зі швидкістю ${ms(v(leaves), l)}: 2 бали, «легкий» вітер.` : `Leaves rustle — the air moves at ${ms(v(leaves), l)}: force 2, a light breeze.`) : '')),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts = R.map((x) => {
+          const b = BEAUFORT[x.day];
+          const f = beaufortOf(v(x));
+          return uk ? `${b.signs.uk}: 6 м за ${formatMeasured('time', x.t, 0.01, l)}, v ≈ ${ms(v(x), l)} — ${f} ${f === 1 ? 'бал' : 'бали'}, «${tr(BEAUFORT[f as 1 | 2 | 3]?.name ?? b.name, l)}»` : `${b.signs.en}: 6 m in ${formatMeasured('time', x.t, 0.01, l)}, v ≈ ${ms(v(x), l)} — force ${f}, a ${tr(BEAUFORT[f as 1 | 2 | 3]?.name ?? b.name, l)}`;
+        });
+        const s = `${parts.join('; ')}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Сила вітру за швидкістю збіглася з прикметами (шкала Бофорта).' : ' The wind’s force by its speed matched its signs (the Beaufort scale).');
       }),
     };
   },

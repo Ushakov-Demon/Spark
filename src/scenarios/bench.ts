@@ -29,6 +29,7 @@ import { LIFT_COMMANDS, LIFT_TEXT, type LiftCommand } from './lift-bench.js';
 import { BOUNCE_COMMANDS, BOUNCE_TEXT, type BounceCommand } from './bounce-bench.js';
 import { CARRY_COMMANDS, CARRY_TEXT, type CarryCommand } from './carry-bench.js';
 import { WINCH_COMMANDS, WINCH_TEXT, type WinchCommand } from './winch-bench.js';
+import { WIND_COMMANDS, WIND_TEXT, type WindCommand } from './wind-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -79,7 +80,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -156,7 +157,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -171,6 +172,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...(BOUNCE_TEXT as Record<BounceCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(CARRY_TEXT as Record<CarryCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(WINCH_TEXT as Record<WinchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
+  ...(WIND_TEXT as Record<WindCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(INDUCT_TEXT as Record<InductCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(MAGNET_TEXT as Record<MagnetCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(VESSEL_TEXT as Record<VesselCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -215,8 +217,9 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch', LocalizedText> = {
+export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind', LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
+  wind: { uk: 'Подвір’я в три вітряні дні: дві позначки за 6 м уздовж вітру (рулетка), мильні бульбашки, секундомір', en: 'A yard on three windy days: two marks 6 m apart along the wind (a tape measure), soap bubbles, a stopwatch' },
   winch: { uk: 'Ворот на штативі: вісь із ручкою, котушка від ниток (d = 2 см) або олівець (d = 8 мм), нитка з вантажем, лінійка', en: 'A windlass on a stand: an axis with a handle, a cotton reel (d = 2 cm) or a pencil (d = 8 mm), a thread with a load, a ruler' },
   carry: { uk: 'Перевернута пляшка густої рідини для миття посуду з позначками, лінійка на столі, аркуш паперу за пляшкою, маркер, секундомір', en: 'An upside-down bottle of thick washing-up liquid with marks, a ruler on the table, a sheet of paper behind the bottle, a marker, a stopwatch' },
   bounce: { uk: 'Метрова лінійка на штативі, стальна плита, м’ячик для настільного тенісу, тенісний м’яч, пластилінова кулька', en: 'A metre stick on a stand, a steel plate, a table tennis ball, a tennis ball, a plasticine ball' },

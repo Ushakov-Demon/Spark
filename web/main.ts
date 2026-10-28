@@ -58,6 +58,8 @@ import {
   rowSizes,
   BOUNCE_BALLS,
   CARRY_BUBBLE,
+  WIND_DAYS,
+  WIND_TRACK,
   WINCH_SPOOLS,
   type WinchSpool,
   CARRY_RISE,
@@ -465,6 +467,15 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // The wind's speed: the day of this step (or the next one), the bubble at the second stake once timed, the speed.
+  if (kind === 'wind') {
+    const wc = c?.type === 'lab.wind' ? (c as unknown as { day: 1 | 2 | 3 }) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.wind');
+    const day = wc?.day ?? (next?.kind === 'bench' ? (next.command as unknown as { day: 1 | 2 | 3 }).day : 1);
+    const done = wc && r && r.value;
+    const v = done ? WIND_TRACK / r.value! : 0;
+    return { ...base, kind, wind: { day, speed: WIND_DAYS[day].value, ...(done ? { at: WIND_TRACK, read: `${String(Math.round(v * 10) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'м/с' : 'm/s'}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.value! } } : {}) };
+  }
   // A windlass: the spool of this step (or the next one), how far it turned, where the load is, what was read.
   if (kind === 'winch') {
     type Winch = { spool: WinchSpool; mode: 'lower' | 'turn'; amount: number };
@@ -785,6 +796,8 @@ function measureSay(): string {
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
   }
+  // The wind's speed: the time over the 6 m.
+  if (m.command.type === 'lab.wind') return uk ? `Бульбашка пролетіла 6 м за ${formatMeasured('time', r.value, 0.01, locale)}.` : `The bubble flew 6 m in ${formatMeasured('time', r.value, 0.01, locale)}.`;
   // A windlass: the turns counted, or how far the load rose.
   if (m.command.type === 'lab.winch') {
     const wc = m.command as { spool: WinchSpool; mode: 'lower' | 'turn'; amount: number };

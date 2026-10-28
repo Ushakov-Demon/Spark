@@ -3,6 +3,7 @@ import type { SystemState } from '../core/state.js';
 import { tr } from '../knowledge/i18n.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { bounceBallName, type BounceBall } from './bounce-bench.js';
+import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -443,6 +444,16 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const title = tr(liftPhaseText(phase as LiftPhase).plan, locale);
       const acc = phase === 'fall' ? (uk ? 'вільне падіння' : 'free fall') : a === 0 ? (uk ? 'без прискорення' : 'no acceleration') : `a = ${n(Math.abs(a), 2)} ${uk ? 'м/с²' : 'm/s²'} ${a > 0 ? '↑' : '↓'}`;
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
+      return;
+    }
+    // The wind's speed: the day's signs, v = l / t, and the Beaufort force the speed falls in.
+    if (c.type === 'lab.wind') {
+      const day = Number(c['day']) as 1 | 2 | 3;
+      const l = r.inputs?.['track'] ?? WIND_TRACK;
+      const v = l / r.value;
+      const f = beaufortOf(v);
+      const name = BEAUFORT[f as 1 | 2 | 3]?.name;
+      out.push({ id: `wd:${i}`, title: tr(BEAUFORT[day].signs, locale), formula: 'v = l / t', numbers: `${n(l, 2)} ${uk ? 'м' : 'm'} / ${formatMeasured('time', r.value, 0.01, locale)} ≈ ${n(v, 2)} ${uk ? 'м/с' : 'm/s'}${name ? (uk ? ` — ${f} ${f === 1 ? 'бал' : 'бали'}, ${name.uk}` : ` — force ${f}, ${name.en}`) : ''}` });
       return;
     }
     // A windlass: what was counted or measured; how it follows from the circumference (hidden till the answer).

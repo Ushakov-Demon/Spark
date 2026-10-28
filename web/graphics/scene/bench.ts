@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -60,6 +60,8 @@ export interface BenchView {
   /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
+  /** The wind's speed: the day (1–3, its Beaufort force), the wind (m/s), where the bubble is (m past the first mark; none — not blown yet), the speed found. */
+  readonly wind?: { readonly day: number; readonly speed: number; readonly at?: number; readonly read?: string };
   /**
    * A windlass: the spool and its diameter (m); how far it has turned (turns, + — the way letting the load down
    * turns it); the load's depth below the spool (m); what was counted or measured.
@@ -210,6 +212,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'rows') return rowsSvg(v.rows);
   if (v.kind === 'lift') return liftSvg(v.lift);
   if (v.kind === 'bounce') return bounceSvg(v.bounce);
+  if (v.kind === 'wind') return `${windSvg(v.wind)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 450) : ''}`;
   if (v.kind === 'winch') return winchSvg(v.winch);
   if (v.kind === 'carry') return `${carrySvg(v.sink, v.carry)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 585) : ''}`;
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
@@ -436,6 +439,34 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/** The yard: the first and the second mark (6 m apart), units of the drawing. */
+const WIND_MARKS = [340, 560] as const;
+/**
+ * The wind's speed: a yard drawn on the table — two stakes 6 m apart with the tape measure between them (the
+ * stopwatch between them), a flag on a pole that flies the more the stronger the wind (hanging at force 1, out at force 3), and the soap bubble carried
+ * from the first stake to the second.
+ */
+function windSvg(w: BenchView['wind']): string {
+  if (!w) return '';
+  const ground = TABLE - 6;
+  const [a, b] = WIND_MARKS;
+  const per = (b - a) / 6;
+  const stake = (x: number, label: string) => `<path d="M${x},${ground} V${ground - 46}" style="stroke:#8a5a2b;stroke-width:4"/><text class="bench-label" x="${x}" y="${ground - 52}" text-anchor="middle">${label}</text>`;
+  const tape = `<path d="M${a},${ground - 3} H${b}" style="stroke:#f2c94c;stroke-width:4"/>${Array.from({ length: 7 }, (_, i) => `<path d="M${a + i * per},${ground - 7} v8" style="stroke:${DARK};stroke-width:1"/>`).join('')}`;
+  // The flag: its droop from the pole, by the wind (down at force 1, out at force 3).
+  const pole = 592;
+  const top = ground - 180;
+  const droop = Math.max(8, 75 - 15 * w.speed) * (Math.PI / 180);
+  const fx = 50 * Math.cos(droop);
+  const fy = 50 * Math.sin(droop);
+  const flag = `<path d="M${pole},${ground} V${top}" style="stroke:${STEEL};stroke-width:3"/><path d="M${pole},${top} L${pole + fx * 0.8},${top + fy * 0.8} L${pole + fx * 0.8 - 14 * Math.sin(droop)},${top + fy * 0.8 + 26 * Math.cos(droop) - 4} L${pole},${top + 26} Z" style="fill:#e05a47;stroke:#8e2b20"/>`;
+  const by = ground - 96;
+  const bubble = w.at === undefined ? '' : `<circle cx="${a + w.at * per}" cy="${by + 6 * Math.sin(w.at * 1.7)}" r="11" style="fill:rgba(190,230,255,0.35);stroke:#bfe3ff;stroke-width:1.5"/><path d="M${a + w.at * per - 5},${by + 6 * Math.sin(w.at * 1.7) - 5} a6,6 0 0 1 6,-3" style="fill:none;stroke:#fff;stroke-width:1.5"/>`;
+  const read = w.read ? `<text class="bench-reading" x="${b}" y="${by - 22}" text-anchor="middle">v ≈ ${w.read}</text>` : '';
+  const arrow = `<path class="bench-arrow" d="M${a + 40},${top + 10} h${30 + 12 * w.speed} m-6,-4 l6,4 l-6,4"/>`;
+  return `${tape}${stake(a, '0')}${stake(b, '6 м')}${flag}${arrow}${bubble}${read}`;
 }
 
 /** The windlass's drawing: its axis, and the load's way down the ruler (6 units to the centimetre, as the other rulers). */

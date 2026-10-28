@@ -751,6 +751,20 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'wikipedia-beaufort': source({
+    id: 'wikipedia-beaufort',
+    title: 'Wikipedia, Beaufort scale: 1 Light air 0.3–1.5 m/s «Direction shown by smoke drift but not by wind vanes»; 2 Light breeze 1.6–3.3 m/s «Wind felt on face; leaves rustle; wind vane moved by wind»; 3 Gentle breeze 3.4–5.4 m/s «Leaves and small twigs in constant motion; light flags extended»',
+    url: 'https://en.wikipedia.org/wiki/Beaufort_scale',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
+  'wikipedia-uk-beaufort': source({
+    id: 'wikipedia-uk-beaufort',
+    title: 'Вікіпедія, Шкала Бофорта: 1 бал «тихий», 0,3–1,5 м/с — «Дим «пливе». Флюгер не обертається»; 2 бали «легкий», 1,6–3,4 м/с — «Рух повітря відчувається обличчям. Шелестить листя»; 3 бали «слабкий», 3,4–5,4 м/с — «Тріпоче листя, хитаються дрібні гілки. Майорять прапори»',
+    url: 'https://uk.wikipedia.org/wiki/Шкала_Бофорта',
+    license: 'facts-only',
+    retrieved: '2026-10-28',
+  }),
   'ittf-t3-ball': source({
     id: 'ittf-t3-ball',
     title: 'ITTF Technical Leaflet T3: The Ball (Version for 40mm Balls), BoD Approval 2014: Law 2.03.02 «The ball shall weigh 2.7g»; B.7 Bounce Conformity — «All 24 balls must rebound to a height of not less than 240mm and not more than 260mm when dropped from a height of 305mm on to a standard steel block»',

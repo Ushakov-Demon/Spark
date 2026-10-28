@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -951,6 +951,25 @@ const LIST: readonly Preset[] = [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
     ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Як швидко рухається повітря, коли шелестить листя?', en: 'How fast does the air move when leaves rustle?' },
+    id: 'wind-speed',
+    grade: 7,
+    topic: MOTION,
+    title: { uk: 'Вимірюємо швидкість вітру мильними бульбашками', en: 'Measuring the wind’s speed with soap bubbles' },
+    question: {
+      uk: 'Мильна бульбашка така легка, що летить разом із повітрям: її швидкість — це швидкість вітру. На подвір’ї рулеткою відміряємо 6 м уздовж вітру й ставимо дві позначки. Три дні з різним вітром: видуваємо бульбашку біля першої позначки й засікаємо, коли вона мине другу, — і порівнюємо швидкість із прикметами вітру за шкалою Бофорта. Як швидко рухається повітря, коли шелестить листя?',
+      en: 'A soap bubble is so light that it flies with the air: its speed is the wind’s. In the yard we measure 6 m along the wind with a tape measure and set two marks. Three days with different winds: we blow a bubble at the first mark and time it to the second — and compare the speed with the wind’s signs on the Beaufort scale. How fast does the air move when leaves rustle?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'wind',
+    plan: ([1, 2, 3] as const).map((day) => ({ kind: 'bench', command: { type: 'lab.wind', day } }) as const),
+    choices: [ch('walk', '2–3 метри за секунду', '2–3 metres a second'), ch('slow', 'Близько пів метра за секунду', 'About half a metre a second'), ch('fast', 'Близько 10 метрів за секунду', 'About 10 metres a second')],
+    formulas: ['mechanics.speed'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'вимірювання: середньої швидкості тіл, що здійснюють рівномірний і нерівномірний рухи; швидкості руху повітря' }],
     expect: 'reached',
   },
   {
@@ -1944,7 +1963,7 @@ const LIST: readonly Preset[] = [
  */
 export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
-  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'rotation-period', 'pendulum', 'windlass',
+  'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
   'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;

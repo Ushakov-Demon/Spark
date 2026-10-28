@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.wind': { uk: 'Бульбашка летить — секундомір іде…', en: 'The bubble flies — the stopwatch is running…' },
   'lab.winch': { uk: 'Котушка крутиться — рахую оберти…', en: 'The spool is turning — counting the turns…' },
   'lab.carry': { uk: 'Бульбашка спливає — веду пляшку рівномірно…', en: 'The bubble rises — carrying the bottle steadily…' },
   'lab.bounce': { uk: 'Відпускаю м’ячик — стежимо, куди підскочить…', en: 'Letting the ball go — watch how high it bounces…' },
@@ -46,6 +47,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'wind' && next.wind?.read && next.run) return windRun(next, next.run, draw);
   if (next.kind === 'winch' && next.winch?.read) return winch(next, draw);
   if (next.kind === 'bounce' && next.bounce?.read) return bounce(next, draw);
   if (next.kind === 'lift' && next.lift?.read) return lift(prev?.kind === 'lift' ? (prev.lift ?? null) : null, next, draw);
@@ -307,6 +309,23 @@ function winch(next: BenchView, draw: (v: BenchView) => void): Motion {
       if (done) return draw(next);
       const { read: _r, ...rest } = w;
       draw({ ...next, winch: { ...rest, drop: from + (w.drop - from) * k.value, turned: w.turned * k.value } });
+    },
+  };
+}
+
+/** The wind's speed: the bubble, blown a little before the first stake, flies with the wind; the stopwatch runs from the first stake to the second (in real time). */
+function windRun(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v: BenchView) => void): Motion {
+  const w = next.wind!;
+  const lead = 0.6 / w.speed;
+  const comma = (next.stopwatch?.display ?? ',').includes(',');
+  const clock = new Channel(0, lead + run.seconds, { kind: 'steady', speed: 1 }, 1e-6);
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      const t = clock.value - lead;
+      const { read: _r, ...rest } = w;
+      draw({ ...next, stopwatch: { display: Math.max(0, t).toFixed(2).replace('.', comma ? ',' : '.') }, wind: { ...rest, at: t * w.speed } });
     },
   };
 }

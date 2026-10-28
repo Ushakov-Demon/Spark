@@ -322,6 +322,14 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('the wind’s speed by soap bubbles: each day’s speed falls in its Beaufort force', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'wind-speed')!);
+    expect(answer.correct).toBe('walk');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const v = [...answer.text.uk.matchAll(/v ≈ ([\d,]+) м\/с — (\d) бал/g)].map((m) => [Number(m[1]!.replace(',', '.')), Number(m[2])]);
+    expect(v).toEqual([[1, 1], [2.5, 2], [4.4, 3]]);
+  }, 60_000);
+
   it('a windlass: the turns are the length over the circumference, and a turn winds π·d', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'windlass')!);
     expect(answer.correct).toBe('circle');

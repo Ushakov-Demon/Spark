@@ -40,3 +40,4 @@ export * from './lift-bench.js';
 export * from './bounce-bench.js';
 export * from './carry-bench.js';
 export * from './winch-bench.js';
+export * from './wind-bench.js';
