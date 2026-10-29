@@ -28,6 +28,9 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The planets set going; the way out to Voyager.) */
   'lab.planets.kepler': { uk: 'Планети біжать по орбітах — дивимося…', en: 'The planets run round their orbits — watch…' },
   'lab.planets.voyager': { uk: 'Ідемо туди, де був «Вояджер-1»…', en: 'Walking out to where Voyager 1 was…' },
+  'lab.rubber': { uk: 'Закручую гумку — і відпускаю…', en: 'Winding the band — and letting go…' },
+  /** (The band stretched on the dynamometer.) */
+  'lab.rubber.band': { uk: 'Розтягую гумку на динамометрі…', en: 'Stretching the band on the dynamometer…' },
   'lab.dyno': { uk: 'Пружина ще коливається — чекаємо, поки заспокоїться…', en: 'The spring is still bouncing — wait until it settles…' },
   /** (The scale being drawn.) */
   'lab.dyno.scale': { uk: 'Наношу поділки — через 0,1 Н…', en: 'Drawing the divisions — every 0.1 N…' },
@@ -82,6 +85,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'calendar' && next.calendar?.anim) return calendarRun(next, draw);
   if (next.kind === 'scales' && next.scales?.anim) return scalesRun(next, draw);
   if (next.kind === 'dyno' && next.dyno?.anim) return dynoRun(next, draw);
+  if (next.kind === 'rubber' && next.rubber?.anim) return rubberRun(next, draw);
   if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
   if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
@@ -560,6 +564,38 @@ function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   return {
     channels: [climb],
     frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
+  };
+}
+
+/**
+ * The rubber motor: the band pulled down on the dynamometer (1.5 s); or the car — wound (the back wheels turned back,
+ * the coil growing, 1.5 s), then let go: it speeds off and slows to its stop (constant slowing, 2.5 s), the band
+ * unwinding on the way.
+ */
+function rubberRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const r = next.rubber!;
+  const anim = r.anim!;
+  const length = anim === 'band' ? 1.5 : 4.4;
+  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
+  const { anim: _a, read: _r, ...rest } = r;
+  const wheelR = 0.03;
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw({ ...next, rubber: { ...rest, ...(r.read ? { read: r.read } : {}) } });
+      const t = Number.isFinite(clock.value) ? clock.value : 0;
+      if (anim === 'band') {
+        const { read: _b, ...b } = r.band!;
+        const u = Math.min(1, t / 1.2);
+        return draw({ ...next, rubber: { ...rest, band: { ...b, stretch: b.stretch * u } } });
+      }
+      const N = r.turns ?? 0;
+      if (t < 1.5) return draw({ ...next, rubber: { ...rest, x: 0, wound: (N * t) / 1.5, spin: (-N * t) / 1.5 } });
+      // Let go: s(u) = S·(1 − (1 − u)²) — fast at first, slowing to the stop.
+      const u = Math.min(1, (t - 1.5) / 2.5);
+      const x = r.x * (1 - (1 - u) ** 2);
+      draw({ ...next, rubber: { ...rest, x, wound: Math.max(0, N * (1 - u * 2)), spin: -N + x / (2 * Math.PI * wheelR) } });
+    },
   };
 }
 

@@ -34,6 +34,7 @@ import { AIRSHIP, airPlace, type AirWhere } from './air-bench.js';
 import { modelScale, planetIds } from './planets-bench.js';
 import { SHEET, scalesSequence } from './scales-bench.js';
 import { DYNO_DIVISION } from './dyno-bench.js';
+import { BAND_STRETCH, turnsText } from './rubber-bench.js';
 import { CALENDARS, daysText, dateText, equinoxDate, EQUINOX } from './calendar-bench.js';
 import { touchPlan, touchSeen, type TouchCase } from './touch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
@@ -435,6 +436,41 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       }),
     };
   },
+  'rubber-motor': (run) => {
+    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.rubber' && x.record.value !== null);
+    const band = recs.find((x) => x.command['step'] === 'band')?.record;
+    const runs = recs.filter((x) => x.command['step'] === 'run').map((x) => ({ n: Number(x.command['turns']), s: x.record.value! }));
+    const at = (n: number) => runs.find((r) => r.n === n)?.s;
+    const s3 = at(3);
+    const s6 = at(6);
+    const ratio = s3 && s6 ? s6 / s3 : null;
+    const correct = ratio === null ? undefined : ratio > 3 ? 'four' : ratio > 1.4 ? 'twice' : 'same';
+    const m = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'м' : 'm'}`;
+    // «у 4 рази», «у 8,9 раза», «у 5 разів».
+    const times = (x: number, l: Locale) => {
+      const v = sig(x, 2, l);
+      if (l !== 'uk') return `${v} times`;
+      const k = Number(v.replace(',', '.'));
+      return `у ${v} ${!Number.isInteger(k) ? 'раза' : k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 12 || k % 100 > 14) ? 'рази' : 'разів'}`;
+    };
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Кожен оберт намотує на олівець ще шматок гумки. Удвічі більше обертів — гумка розтягнута вдвічі більше, тож і тягне вдвічі сильніше (закон Гука). А тягне вона, поки не розмотається, — теж удвічі довшу дорогу. Удвічі сильніше та ще й удвічі довше — учетверо далі; утричі більше обертів — уподев’ятеро. Справжня гумка віддає трохи менше, ніж у моделі, але правило видно й так.\n\nГумовий двигун — один із найстаріших. 1871 року француз Альфонс Пено запустив у паризькому саду Тюїльрі модель літака з закрученою гумкою — «планофор»: вона пролетіла 40 м за 11 секунд. А 1878 року батько приніс синам, Вілбуру й Орвілу Райтам, іграшковий гелікоптер за винаходом Пено — з паперу, бамбука й корка, гвинт крутила гумка. Брати гралися ним, поки не зламали, а тоді змайстрували власний. Згодом вони казали: з цієї іграшки й почалося їхнє захоплення польотами.'
+          : 'Each turn winds another piece of band onto the pencil. Twice the turns — the band is stretched twice as far, so it pulls twice as hard (Hooke’s law). And it pulls until it unwinds — over a way twice as long too. Twice as hard and twice as long — four times as far; three times the turns — nine times. A real band gives back a little less than the model, but the rule shows all the same.\n\nThe rubber motor is one of the oldest. In 1871 the Frenchman Alphonse Pénaud flew a model aeroplane driven by a twisted rubber band — the “Planophore” — in the Tuileries Gardens in Paris: it went 40 m in 11 seconds. And in 1878 their father brought his sons, Wilbur and Orville Wright, a toy helicopter after Pénaud’s invention — of paper, bamboo and cork, its rotor turned by a rubber band. The brothers played with it until it broke, then built their own. Later they said that toy was where their passion for flying began.',
+      ),
+      say: both((l) => (ratio === null ? '' : l === 'uk' ? `Удвічі більше обертів — ${times(ratio, l)} далі!` : `Twice the turns — ${times(ratio, l)} as far!`)),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts: string[] = [];
+        if (band) parts.push(uk ? `Гумка, розтягнута на ${sig(BAND_STRETCH * 100, 2, l)} см, тягне з силою ${sig(band.value!, 2, l)} Н: її жорсткість k = F/x ≈ ${sig(band.value! / BAND_STRETCH, 2, l)} Н/м.` : `The band stretched ${sig(BAND_STRETCH * 100, 2, l)} cm pulls with ${sig(band.value!, 2, l)} N: its stiffness k = F/x ≈ ${sig(band.value! / BAND_STRETCH, 2, l)} N/m.`);
+        if (runs.length) parts.push(uk ? `Машинка проїхала: ${runs.map((r) => `${turnsText(r.n, true)} — ${m(r.s, l)}`).join(', ')}.` : `The car went: ${runs.map((r) => `${turnsText(r.n, false)} — ${m(r.s, l)}`).join(', ')}.`);
+        if (ratio !== null) parts.push(uk ? `Удвічі більше обертів — ${times(ratio, l)} далі${at(9) ? `, утричі більше — ${times(at(9)! / s3!, l)}` : ''}: відстань росте як квадрат кількості обертів.` : `Twice the turns — ${times(ratio, l)} as far${at(9) ? `, three times — ${times(at(9)! / s3!, l)}` : ''}: the distance grows as the square of the turns.`);
+        return parts.join(' ');
+      }),
+    };
+  },
   'dyno-diy': (run) => {
     const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.dyno' && x.record.value !== null);
     const of = (step: string) => recs.filter((x) => x.command['step'] === step).map((x) => x.record);
@@ -480,8 +516,8 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ...(egg ? { correct: 'known' } : {}),
       why: both((l) =>
         l === 'uk'
-          ? 'Плечі в лінійки однакові, а Земля притягує однакові маси однаково — тож лінійка стоїть рівно, коли маси в стаканчиках рівні. Гирею може бути будь-що, чия маса відома: аркуш паперу, вода зі шприца. Як із набором гир, кладемо спершу великі, а тоді дрібні.\n\nА гирі колись перевіряли так само — водою. 1795 року грам визначили як масу кубічного сантиметра води. 1889 року головною гирею світу став «Великий К» (Le Grand K) — циліндр зі сплаву платини й іридію заввишки 39 мм, який зберігають під Парижем. Його копії звіряли з ним на терезах — і за століття вони розійшлися приблизно на 50 мікрограмів. Тому з 20 травня 2019 року кілограм визначають через сталу Планка, а зважують на терезах Кіббла: там гирю заміняє електричний струм.'
-          : 'The ruler’s arms are equal, and the Earth pulls equal masses equally — so the ruler stays level when the masses in the cups are equal. Anything of known mass can be a weight: a sheet of paper, water from a syringe. As with a set of weights, the big ones go first, then the small.\n\nAnd weights were once checked the same way — with water. In 1795 the gram was defined as the mass of a cubic centimetre of water. In 1889 the world’s chief weight became Le Grand K — a cylinder of platinum and iridium 39 mm tall, kept near Paris. Its copies were compared with it on scales — and over a century they drifted apart by about 50 micrograms. So since 20 May 2019 the kilogram has been defined by the Planck constant and weighed on Kibble balances: there an electric current takes the place of the weight.',
+          ? 'Плечі в лінійки однакові, а Земля притягує однакові маси однаково — тож лінійка стоїть рівно, коли маси в стаканчиках рівні. Гирею може бути будь-що, чия маса відома: аркуш паперу, вода зі шприца. Як із набором гир, кладемо спершу великі, а тоді дрібні.\n\nТерези — один із найдавніших приладів, і їм здавна вірили як найчеснішому судді: плечі рівні, жодна шалька не має переваги. У давньоєгипетській «Книзі мертвих» (її сувої писали приблизно з 1550 по 50 рік до н. е.) серце людини кладуть на терези проти пера Маат — богині істини й справедливості. Зважує бог Анубіс, записує бог Тот, і якщо терези рівні — людина жила чесно.\n\nА гирі колись перевіряли так само — водою. 1795 року грам визначили як масу кубічного сантиметра води. 1889 року головною гирею світу став «Великий К» (Le Grand K) — циліндр зі сплаву платини й іридію заввишки 39 мм, який зберігають під Парижем. Його копії звіряли з ним на терезах — і за століття вони розійшлися приблизно на 50 мікрограмів. Тому з 20 травня 2019 року кілограм визначають через сталу Планка, а зважують на терезах Кіббла: там гирю заміняє електричний струм.'
+          : 'The ruler’s arms are equal, and the Earth pulls equal masses equally — so the ruler stays level when the masses in the cups are equal. Anything of known mass can be a weight: a sheet of paper, water from a syringe. As with a set of weights, the big ones go first, then the small.\n\nScales are among the oldest instruments, and they were long trusted as the fairest of judges: the arms are equal, neither pan has the advantage. In the ancient Egyptian Book of the Dead (its scrolls were written from about 1550 to 50 BC) a person’s heart is laid on the scales against the feather of Maat — the goddess of truth and justice. The god Anubis weighs, the god Thoth writes it down, and if the scales balance, the person lived honestly.\n\nAnd weights were once checked the same way — with water. In 1795 the gram was defined as the mass of a cubic centimetre of water. In 1889 the world’s chief weight became Le Grand K — a cylinder of platinum and iridium 39 mm tall, kept near Paris. Its copies were compared with it on scales — and over a century they drifted apart by about 50 micrograms. So since 20 May 2019 the kilogram has been defined by the Planck constant and weighed on Kibble balances: there an electric current takes the place of the weight.',
       ),
       say: both((l) => (egg ? (l === 'uk' ? `Яйце — ${g(egg.value!, l)}, і жодної гирі!` : `The egg — ${g(egg.value!, l)}, and not a single weight!`) : '')),
       text: both((l) => {

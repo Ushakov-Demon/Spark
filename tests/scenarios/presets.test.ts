@@ -341,6 +341,16 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('за 871 м');
   }, 60_000);
 
+  it('rubber motor: the band 20 N/m; 3, 6, 9 turns — 0.44, 1.74, 3.92 m: twice the turns, four times as far', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'rubber-motor')!);
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.correct).toBe('four');
+    expect(answer.text.uk).toContain('k = F/x ≈ 20 Н/м');
+    expect(answer.text.uk).toContain('3 оберти — 0,44 м, 6 обертів — 1,74 м, 9 обертів — 3,92 м');
+    expect(answer.say.uk).toContain('у 4 рази далі');
+    expect(answer.text.uk).toContain('утричі більше — у 8,9 раза');
+  });
+
   it('home-made dynamometer: even marks 39, 78, 118 mm; 40 mm to the newton; the apple 1 N, the egg 0.6 N', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'dyno-diy')!);
     if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);

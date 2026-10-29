@@ -43,6 +43,7 @@ import { PLANETS_COMMANDS, PLANETS_TEXT, type PlanetsCommand } from './planets-b
 import { CALENDAR_COMMANDS, CALENDAR_TEXT, type CalendarCommand } from './calendar-bench.js';
 import { SCALES_COMMANDS, SCALES_TEXT, type ScalesCommand } from './scales-bench.js';
 import { DYNO_COMMANDS, DYNO_TEXT, type DynoCommand } from './dyno-bench.js';
+import { RUBBER_COMMANDS, RUBBER_TEXT, type RubberCommand } from './rubber-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -99,7 +100,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand | CartsCommand | DragCommand | TowerCommand | GnomonCommand | AirCommand | PlanetsCommand | CalendarCommand | ScalesCommand | DynoCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand | CartsCommand | DragCommand | TowerCommand | GnomonCommand | AirCommand | PlanetsCommand | CalendarCommand | ScalesCommand | DynoCommand | RubberCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -178,7 +179,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS, ...CARTS_COMMANDS, ...DRAG_COMMANDS, ...TOWER_COMMANDS, ...GNOMON_COMMANDS, ...AIR_COMMANDS, ...PLANETS_COMMANDS, ...CALENDAR_COMMANDS, ...SCALES_COMMANDS, ...DYNO_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS, ...CARTS_COMMANDS, ...DRAG_COMMANDS, ...TOWER_COMMANDS, ...GNOMON_COMMANDS, ...AIR_COMMANDS, ...PLANETS_COMMANDS, ...CALENDAR_COMMANDS, ...SCALES_COMMANDS, ...DYNO_COMMANDS, ...RUBBER_COMMANDS] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -207,6 +208,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...(CALENDAR_TEXT as Record<CalendarCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(SCALES_TEXT as Record<ScalesCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(DYNO_TEXT as Record<DynoCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
+  ...(RUBBER_TEXT as Record<RubberCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(INDUCT_TEXT as Record<InductCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(MAGNET_TEXT as Record<MagnetCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(VESSEL_TEXT as Record<VesselCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -264,8 +266,9 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno', LocalizedText> = {
+export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber', LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
+  rubber: { uk: 'Машинка з картону: дві осі (задня — олівець), колеса з кришечок, офісна гумка; саморобний динамометр, рулетка, довгий коридор', en: 'A cardboard car: two axles (the back one a pencil), bottle-cap wheels, an office rubber band; the home-made dynamometer, a tape measure, a long corridor' },
   dyno: { uk: 'Дощечка зі смужкою паперу, цвях, пружина з набору (25 Н/м), дротяна стрілка, гачок зі скріпки, три тягарці по 100 г, лінійка й олівець; невелике яблуко, яйце в пакетику', en: 'A board with a strip of paper, a nail, a spring of the set (25 N/m), a wire pointer, a paper-clip hook, three 100 g weights, a ruler and a pencil; a small apple, an egg in a little bag' },
   scales: { uk: 'Лінійка 30 см, нитка, два стаканчики від йогурту, пластилін, аркуші офісного паперу A4 (80 г/м²), шприц на 10 мл і склянка води, куряче яйце', en: 'A 30 cm ruler, thread, two yoghurt cups, plasticine, sheets of A4 office paper (80 g/m²), a 10 mL syringe and a glass of water, a hen’s egg' },
   calendar: { uk: 'Таблиця календарів (тривалість року в кожному), довжина року за Сонцем — від рівнодення до рівнодення, лічильник років; аркуші календарів 1582 і 1616 років', en: 'A table of calendars (the length of the year in each), the length of the year by the Sun — from equinox to equinox, a counter of years; calendar sheets of 1582 and 1616' },

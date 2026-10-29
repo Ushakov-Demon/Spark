@@ -9,7 +9,7 @@ import { scalesMasses, scalesTilt, type ScalesLoad } from '../../../src/scenario
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -74,11 +74,17 @@ export interface BenchView {
    * how far the frame has gone dark, `dot` — the pale blue dot showing).
    */
   /**
+   * The rubber motor: the band on the home-made dynamometer (`band` — the dynamometer's view); or the car in the
+   * corridor — at `x` m along the tape, its back axle `wound` turns wound (the band's coil), its wheels turned by
+   * `spin` turns; the earlier runs' stops (`stops`); the tape shows `range` m.
+   */
+  readonly rubber?: { readonly mode: 'band' | 'car'; readonly band?: BenchView['dyno']; readonly x: number; readonly wound: number; readonly spin: number; readonly stops: readonly { readonly x: number; readonly label: string }[]; readonly range: number; readonly unit: string; readonly read?: string; /** The step just done, to be played: the band; the car's run of so many turns. */ readonly anim?: 'band' | 'run'; readonly turns?: number };
+  /**
    * A home-made dynamometer: what hangs on it (`weights` 100 g each, or the apple, or the egg in its bag), the pointer
    * `stretch` m below the zero, the pencil `marks` (m), the scale once divided (`newton` — its length, m; `drawn` 0…1 —
    * how much of it is drawn so far); `unit` — «Н».
    */
-  readonly dyno?: { readonly weights: number; readonly hang?: 'apple' | 'egg'; readonly stretch: number; readonly marks: readonly number[]; readonly newton?: number; readonly drawn?: number; readonly unit: string; readonly read?: string; /** The step just done, to be played. */ readonly anim?: 'marks' | 'scale' | 'apple' | 'egg' };
+  readonly dyno?: { readonly weights: number; readonly hang?: 'apple' | 'egg' | 'band'; readonly stretch: number; readonly marks: readonly number[]; readonly newton?: number; readonly drawn?: number; readonly unit: string; readonly read?: string; /** The step just done, to be played. */ readonly anim?: 'marks' | 'scale' | 'apple' | 'egg' };
   /**
    * Home-made scales: what lies in the cups (`load`), the beam's tilt (degrees, + — the left cup down; without it, from
    * the masses), the syringe over the right cup while water goes in; `units` — «г», «мл».
@@ -290,6 +296,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'calendar') return calendarSvg(v.calendar);
   if (v.kind === 'scales') return scalesSvg(v.scales);
   if (v.kind === 'dyno') return dynoSvg(v.dyno);
+  if (v.kind === 'rubber') return v.rubber?.mode === 'band' ? dynoSvg(v.rubber.band) : rubberSvg(v.rubber);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -572,6 +579,37 @@ function planetsSvg(p: BenchView['planets']): string {
   return `${field}${dots}${scale}`;
 }
 
+/**
+ * The rubber-motor car in a corridor: the floor with a tape from the start, the car (not to scale) with bottle-cap
+ * wheels, the band from the front axle to the coil on the back one; chalk marks where the earlier runs stopped.
+ */
+function rubberSvg(r: BenchView['rubber']): string {
+  if (!r) return '';
+  // (The floor well above the table's edge: the buttons under the scene cover its bottom.)
+  const floor = TABLE - 60;
+  const x0 = 200;
+  const x1 = 530;
+  const at = (m: number) => x0 + (m / r.range) * (x1 - x0);
+  const metres = Array.from({ length: Math.floor(r.range) + 1 }, (_, k) => `<path d="M${at(k)},${floor + 1} v6" style="stroke:#5a4a14;stroke-width:0.8"/><text x="${at(k)}" y="${floor + 17}" text-anchor="middle" style="font:600 9px system-ui,sans-serif;fill:#f1d36b">${k} ${r.unit}</text>`).join('');
+  const tape = `<rect x="${x0}" y="${floor + 1}" width="${x1 - x0}" height="5" style="fill:#f1d36b;stroke:#a88a2c;stroke-width:0.5"/>${metres}`;
+  const stops = r.stops.map((s, k) => `<path d="M${at(s.x)},${floor - 60} v60" style="stroke:#ffffff;stroke-width:1.4;stroke-dasharray:3 2"/><text class="bench-label" x="${at(s.x)}" y="${floor - 66 - 14 * (k % 2)}" text-anchor="middle">${s.label}</text>`).join('');
+  // The car: its back axle at the car's place; 56 units long.
+  const cx = at(r.x);
+  const back = cx - 6;
+  const front = cx + 60;
+  const wr = 14;
+  const wy = floor - wr;
+  const wheel = (x: number, turns: number) => {
+    const a = turns * 2 * Math.PI;
+    return `<circle cx="${x}" cy="${wy}" r="${wr}" style="fill:#e8e2d5;stroke:#5a636c;stroke-width:1.4"/><path d="M${x - wr * Math.cos(a)},${wy - wr * Math.sin(a)} L${x + wr * Math.cos(a)},${wy + wr * Math.sin(a)}" style="stroke:#5a636c;stroke-width:1.2"/>`;
+  };
+  const body = `<rect x="${back - 14}" y="${wy - 26}" width="${front - back + 28}" height="18" rx="3" style="fill:#d9b26a;stroke:#9a6b33"/><path d="M${back},${wy} H${front}" style="stroke:${DARK};stroke-width:1"/>`;
+  const coil = Math.min(9, 2.5 + r.wound * 0.7);
+  const band = `<path d="M${back},${wy - coil} L${front},${wy}" style="stroke:#b5651d;stroke-width:1.8"/><circle cx="${back}" cy="${wy}" r="${coil}" style="fill:none;stroke:#b5651d;stroke-width:${r.wound > 0.1 ? 2.2 : 0}"/>`;
+  const car = `${body}${wheel(back, r.spin)}${wheel(front, r.spin * 1)}${band}`;
+  return `${tape}${stops}${car}${r.read ? `<text class="bench-reading" x="${cx + 27}" y="${wy - 36}" text-anchor="middle">${r.read}</text>` : ''}`;
+}
+
 /** The home-made dynamometer: 12 units of the drawing to a centimetre; the zero's height. */
 const DYNO_K = 1200;
 const DYNO_ZERO = 130;
@@ -599,6 +637,7 @@ function dynoSvg(d: BenchView['dyno']): string {
   let load = '';
   if (d.weights) load = `<path d="M${x},${hook} v4" style="stroke:${THREAD};stroke-width:1.4"/>${weightsSvg(x, hook + 4, d.weights)}`;
   else if (d.hang === 'apple') load = `<path d="M${x},${hook} v6" style="stroke:#6b4a2a;stroke-width:2"/><ellipse cx="${x + 6}" cy="${hook + 4}" rx="6" ry="3" style="fill:#5aa04a"/><circle cx="${x}" cy="${hook + 20}" r="14" style="fill:#d64535;stroke:#9c2a1e"/><path d="M${x - 6},${hook + 12} q3,-3 7,-2" style="stroke:rgba(255,255,255,0.5);stroke-width:2;fill:none"/>`;
+  else if (d.hang === 'band') load = `<path d="M${x - 3},${hook} L${x - 3},${TABLE - 10} M${x + 3},${hook} L${x + 3},${TABLE - 10}" style="stroke:#b5651d;stroke-width:2;fill:none"/><rect x="${x - 10}" y="${TABLE - 12}" width="20" height="12" rx="2" style="fill:${DARK}"/>`;
   else if (d.hang === 'egg') load = `<path d="M${x},${hook} L${x - 13},${hook + 12} M${x},${hook} L${x + 13},${hook + 12}" style="stroke:rgba(230,230,230,0.8);stroke-width:1"/><ellipse cx="${x}" cy="${hook + 26}" rx="12" ry="16" style="fill:#f3e2c4;stroke:#c9a874"/><path d="M${x - 15},${hook + 12} Q${x - 18},${hook + 40} ${x},${hook + 44} Q${x + 18},${hook + 40} ${x + 15},${hook + 12} Z" style="fill:rgba(240,245,250,0.3);stroke:rgba(230,230,230,0.8)"/>`;
   return `${board}${zero}${marks}${scale}${spring}${pointer}${load}${d.read ? `<text class="bench-reading" x="${x + 76}" y="${y + 4}">${d.read}</text>` : ''}`;
 }

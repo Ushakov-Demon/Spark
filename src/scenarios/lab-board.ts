@@ -474,6 +474,21 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
       return;
     }
+    // The rubber motor: the band's stiffness; each run — the band wound on, the distance; the ratio to the first run.
+    if (c.type === 'lab.rubber') {
+      const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      if (!r) return;
+      if (String(c['step']) === 'band') {
+        out.push({ id: `rk:${i}`, title: uk ? 'гумка на динамометрі' : 'the band on the dynamometer', formula: 'k = F / x', numbers: `${n(r.value!, 2)} ${uk ? 'Н' : 'N'} / ${n(r.inputs?.['stretch'] ?? 0, 2)} ${uk ? 'м' : 'm'} = ${n(r.value! / (r.inputs?.['stretch'] ?? 1), 2)} ${uk ? 'Н/м' : 'N/m'}` });
+        return;
+      }
+      const N = Number(c['turns']);
+      out.push({ id: `rn:${i}`, title: uk ? `${N} об.` : `${N} turns`, formula: `x = N·π·d ≈ ${n((r.inputs?.['wound'] ?? 0) * 100, 2)} ${uk ? 'см' : 'cm'}`, numbers: `s = ${n(r.value!, 3)} ${uk ? 'м' : 'm'}` });
+      const first = log.slice(0, i).find((x) => x.ok && x.command.type === 'lab.rubber' && (x.command as unknown as { step: string }).step === 'run');
+      const s1 = first?.ok ? first.trace.find((x): x is MeasurementRecord => x.kind === 'measurement')?.value : undefined;
+      if (first && s1 && N === 6) out.push({ id: `rr:${i}`, title: uk ? 'удвічі більше обертів' : 'twice the turns', formula: 's₆ / s₃', numbers: `${n(r.value!, 3)} / ${n(s1, 3)} ≈ ${n(r.value! / s1, 2)}` });
+      return;
+    }
     // A home-made dynamometer: the weights' forces and marks; the newton's length; the apple and the egg.
     if (c.type === 'lab.dyno') {
       const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);

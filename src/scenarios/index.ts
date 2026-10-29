@@ -55,3 +55,4 @@ export * from './planets-bench.js';
 export * from './calendar-bench.js';
 export * from './scales-bench.js';
 export * from './dyno-bench.js';
+export * from './rubber-bench.js';

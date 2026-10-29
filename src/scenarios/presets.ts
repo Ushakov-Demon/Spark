@@ -1,6 +1,7 @@
 import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
+import { RUBBER_TURNS } from './rubber-bench.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
@@ -62,7 +63,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -1037,6 +1038,27 @@ const LIST: readonly Preset[] = [
     answerOnBoard: ['da:'],
     formulas: ['mechanics.weight', 'mechanics.hooke'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра' }],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Удвічі більше обертів гумки — у скільки разів далі проїде машинка?', en: 'Twice the turns of the band — how many times further does the car go?' },
+    id: 'rubber-motor',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Машинка на гумовому двигуні', en: 'A car on a rubber-band motor' },
+    question: {
+      uk: 'Змайструємо машинку з гумовим двигуном: гумка зачеплена за передню вісь і намотується на задню. Закрутимо її на 3 оберти, відпустимо й поміряємо, скільки проїде. А тоді — на 6 обертів, удвічі більше. У скільки разів далі проїде машинка?',
+      en: 'We make a car with a rubber-band motor: the band is hooked to the front axle and winds round the back one. We wind it 3 turns, let go and measure how far it goes. Then 6 turns — twice as many. How many times further will the car go?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'rubber',
+    plan: [{ kind: 'bench', command: { type: 'lab.rubber', step: 'band' } }, ...RUBBER_TURNS.map((turns) => ({ kind: 'bench', command: { type: 'lab.rubber', step: 'run', turns } }) as const)],
+    choices: [ch('twice', 'Удвічі: удвічі більше обертів — удвічі далі', 'Twice: twice the turns, twice as far'), ch('four', 'Учетверо', 'Four times'), ch('same', 'Так само: гумка та сама', 'The same: it is the same band')],
+    trick: { uk: 'Більшість думає, що вдвічі більше обертів — це вдвічі далі.', en: 'Most people think twice the turns means twice as far.' },
+    answerOnBoard: ['rr:'],
+    formulas: ['mechanics.hooke'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра; механізму на «гумовому двигуні»' }],
     expect: 'reached',
   },
   {
@@ -2294,7 +2316,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars', 'scales-diy', 'dyno-diy',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars', 'scales-diy', 'dyno-diy', 'rubber-motor',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',
