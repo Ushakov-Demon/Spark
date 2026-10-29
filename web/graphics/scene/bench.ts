@@ -9,7 +9,7 @@ import { scalesMasses, scalesTilt, type ScalesLoad } from '../../../src/scenario
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -73,6 +73,12 @@ export interface BenchView {
    * the field shows `range` metres); the orbits seen from above, the planets `years` on; Voyager's view back (`dark` —
    * how far the frame has gone dark, `dot` — the pale blue dot showing).
    */
+  /**
+   * A home-made dynamometer: what hangs on it (`weights` 100 g each, or the apple, or the egg in its bag), the pointer
+   * `stretch` m below the zero, the pencil `marks` (m), the scale once divided (`newton` — its length, m; `drawn` 0…1 —
+   * how much of it is drawn so far); `unit` — «Н».
+   */
+  readonly dyno?: { readonly weights: number; readonly hang?: 'apple' | 'egg'; readonly stretch: number; readonly marks: readonly number[]; readonly newton?: number; readonly drawn?: number; readonly unit: string; readonly read?: string; /** The step just done, to be played. */ readonly anim?: 'marks' | 'scale' | 'apple' | 'egg' };
   /**
    * Home-made scales: what lies in the cups (`load`), the beam's tilt (degrees, + — the left cup down; without it, from
    * the masses), the syringe over the right cup while water goes in; `units` — «г», «мл».
@@ -283,6 +289,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'planets') return planetsSvg(v.planets);
   if (v.kind === 'calendar') return calendarSvg(v.calendar);
   if (v.kind === 'scales') return scalesSvg(v.scales);
+  if (v.kind === 'dyno') return dynoSvg(v.dyno);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -563,6 +570,37 @@ function planetsSvg(p: BenchView['planets']): string {
     return `${field}${dots}${scale}<rect x="18" y="12" width="586" height="${ground - 4}" style="fill:rgba(4,6,10,${0.96 * d})"/>${beam(380, 34, 0.18)}${beam(470, 60, 0.26)}${beam(560, 22, 0.14)}${dot}${p.dot && p.note ? `<text class="bench-label" x="440" y="${ground - 20}" style="fill:rgba(200,215,230,${p.dot})">${p.note}</text>` : ''}`;
   }
   return `${field}${dots}${scale}`;
+}
+
+/** The home-made dynamometer: 12 units of the drawing to a centimetre; the zero's height. */
+const DYNO_K = 1200;
+const DYNO_ZERO = 130;
+/**
+ * The home-made dynamometer: a board with a strip of paper, the spring from a nail, a wire pointer over the paper,
+ * a hook below with the load; pencil marks on the paper; once divided, the scale in newtons.
+ */
+function dynoSvg(d: BenchView['dyno']): string {
+  if (!d) return '';
+  const x = 452;
+  const top = 64;
+  const y = DYNO_ZERO + d.stretch * DYNO_K;
+  const board = `<rect x="${x - 34}" y="${top - 14}" width="104" height="${TABLE - top + 4}" rx="3" style="fill:${WOOD};stroke:${WOOD_EDGE}"/><rect x="${x + 18}" y="${top + 30}" width="40" height="${TABLE - top - 50}" style="fill:#fbf8ef;stroke:#d8d0bb;stroke-width:0.8"/><circle cx="${x}" cy="${top}" r="3" style="fill:${DARK}"/>`;
+  const zero = `<path d="M${x + 18},${DYNO_ZERO} h12" style="stroke:#555;stroke-width:1.2"/><text x="${x + 34}" y="${DYNO_ZERO + 4}" style="font:600 10px system-ui,sans-serif;fill:#2b2f36">0</text>`;
+  const marks = d.marks.map((m) => `<path d="M${x + 18},${DYNO_ZERO + m * DYNO_K} h14" style="stroke:#6b6f75;stroke-width:1.3"/>`).join('');
+  let scale = '';
+  if (d.newton) {
+    const tenth = (d.newton * DYNO_K) / 10;
+    const count = Math.floor(((TABLE - 40 - DYNO_ZERO) / tenth) * (d.drawn ?? 1));
+    scale = Array.from({ length: count + 1 }, (_, k) => `<path d="M${x + 18},${DYNO_ZERO + k * tenth} h${k % 10 === 0 ? 12 : k % 5 === 0 ? 8 : 5}" style="stroke:#2b2f36;stroke-width:${k % 10 === 0 ? 1.2 : 0.7}"/>${k % 10 === 0 && k ? `<text x="${x + 34}" y="${DYNO_ZERO + k * tenth + 4}" style="font:600 10px system-ui,sans-serif;fill:#2b2f36">${k / 10} ${d.unit}</text>` : ''}`).join('');
+  }
+  const spring = springSvg(x, top, y - top);
+  const pointer = `<path d="M${x},${y} H${x + 30}" style="stroke:#c0392b;stroke-width:1.8"/><path d="M${x},${y} v10" style="stroke:${THREAD};stroke-width:1.4"/>`;
+  const hook = y + 10;
+  let load = '';
+  if (d.weights) load = `<path d="M${x},${hook} v4" style="stroke:${THREAD};stroke-width:1.4"/>${weightsSvg(x, hook + 4, d.weights)}`;
+  else if (d.hang === 'apple') load = `<path d="M${x},${hook} v6" style="stroke:#6b4a2a;stroke-width:2"/><ellipse cx="${x + 6}" cy="${hook + 4}" rx="6" ry="3" style="fill:#5aa04a"/><circle cx="${x}" cy="${hook + 20}" r="14" style="fill:#d64535;stroke:#9c2a1e"/><path d="M${x - 6},${hook + 12} q3,-3 7,-2" style="stroke:rgba(255,255,255,0.5);stroke-width:2;fill:none"/>`;
+  else if (d.hang === 'egg') load = `<path d="M${x},${hook} L${x - 13},${hook + 12} M${x},${hook} L${x + 13},${hook + 12}" style="stroke:rgba(230,230,230,0.8);stroke-width:1"/><ellipse cx="${x}" cy="${hook + 26}" rx="12" ry="16" style="fill:#f3e2c4;stroke:#c9a874"/><path d="M${x - 15},${hook + 12} Q${x - 18},${hook + 40} ${x},${hook + 44} Q${x + 18},${hook + 40} ${x + 15},${hook + 12} Z" style="fill:rgba(240,245,250,0.3);stroke:rgba(230,230,230,0.8)"/>`;
+  return `${board}${zero}${marks}${scale}${spring}${pointer}${load}${d.read ? `<text class="bench-reading" x="${x + 76}" y="${y + 4}">${d.read}</text>` : ''}`;
 }
 
 /**

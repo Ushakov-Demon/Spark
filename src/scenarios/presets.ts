@@ -62,7 +62,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -1016,6 +1016,27 @@ const LIST: readonly Preset[] = [
     answerOnBoard: ['sg:'],
     formulas: ['mechanics.density', 'mechanics.weight'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез' }],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Скільки покаже динамометр, якщо почепити невелике яблуко?', en: 'What will a dynamometer show with a small apple on it?' },
+    id: 'dyno-diy',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Саморобний динамометр', en: 'A dynamometer of our own' },
+    question: {
+      uk: 'Змайструємо динамометр: дощечка, смужка паперу, пружина, стрілка з дроту й гачок зі скріпки. Шкалу нанесемо самі — за тягарцями по 100 г. А тоді почепимо на нього невелике яблуко, грамів на сто. Що покаже динамометр?',
+      en: 'We make a dynamometer: a board, a strip of paper, a spring, a wire pointer and a paper-clip hook. We draw the scale ourselves — by 100 g weights. Then we hang a small apple, about a hundred grams, on it. What will the dynamometer show?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'dyno',
+    plan: (['marks', 'scale', 'apple', 'egg'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.dyno', step } }) as const),
+    choices: [ch('one', 'Близько 1 Н', 'About 1 N'), ch('hundred', 'Близько 100 Н — яблуко ж важить 100 г', 'About 100 N — the apple is 100 g, after all'), ch('tenth', 'Близько 0,1 Н', 'About 0.1 N')],
+    trick: { uk: 'Багато хто плутає грами з ньютонами: маса — не сила.', en: 'Many mix up grams and newtons: mass is not force.' },
+    answerOnBoard: ['da:'],
+    formulas: ['mechanics.weight', 'mechanics.hooke'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра' }],
     expect: 'reached',
   },
   {
@@ -2273,7 +2294,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars', 'scales-diy',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars', 'scales-diy', 'dyno-diy',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

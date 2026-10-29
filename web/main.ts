@@ -510,6 +510,21 @@ function benchView(): BenchView | null {
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
   }
+  // The home-made dynamometer: the marks so far, the scale once divided, what hangs on it now.
+  if (kind === 'dyno') {
+    type Step = 'marks' | 'scale' | 'apple' | 'egg';
+    const done = log.filter((e) => e.ok && e.command.type === 'lab.dyno');
+    const stepOf = (e: (typeof done)[number]) => (e.command as unknown as { step: Step }).step;
+    const recOf = (s: Step) => { const e = done.find((x) => stepOf(x) === s); return e ? readingsOf([e]).map((x) => x.record) : []; };
+    const marks = recOf('marks').map((r) => r.value ?? 0);
+    const newton = recOf('scale')[0]?.value ?? undefined;
+    const lastStep = done.length ? stepOf(done[done.length - 1]!) : undefined;
+    const hangRec = lastStep === 'apple' || lastStep === 'egg' ? recOf(lastStep)[0] : undefined;
+    const cs = c?.type === 'lab.dyno' ? (c as unknown as { step: Step }).step : undefined;
+    const unit = locale === 'uk' ? 'Н' : 'N';
+    const read = hangRec && cs ? formatMeasured('force', hangRec.value, 0.1, locale) : undefined;
+    return { ...base, kind, dyno: { weights: lastStep === 'marks' ? 3 : 0, ...(hangRec ? { hang: lastStep as 'apple' | 'egg' } : {}), stretch: lastStep === 'marks' ? marks[2] ?? 0 : hangRec?.inputs?.['pointer'] ?? 0, marks, ...(newton ? { newton } : {}), unit, ...(read ? { read } : {}), ...(cs ? { anim: cs } : {}) } };
+  }
   // Home-made scales: the cups as the last step left them (empty and uneven before the first).
   if (kind === 'scales') {
     type Step = 'zero' | 'check' | 'egg';
@@ -900,6 +915,15 @@ function allReadings() {
 }
 const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
 /** What the Professor says about the latest level or dynamometer reading. */
+/** A step of the home-made dynamometer, in words: the marks, the newton's length, the reading. */
+function dynoShown(step: string, recs: readonly MeasurementRecord[]): string {
+  const uk = locale === 'uk';
+  const mm = (x: number | null) => `${Math.round((x ?? 0) * 1000)} ${uk ? 'мм' : 'mm'}`;
+  if (step === 'marks') return uk ? `риски — ${recs.map((r) => mm(r.value)).join(', ')} від нуля` : `the marks — ${recs.map((r) => mm(r.value)).join(', ')} from zero`;
+  if (step === 'scale') return uk ? `1 Н — ${mm(recs[0]?.value ?? 0)}, поділка 0,1 Н — ${Math.round((recs[0]?.value ?? 0) * 1000) / 10} мм`.replace('.', ',') : `1 N — ${mm(recs[0]?.value ?? 0)}, a 0.1 N division — ${Math.round((recs[0]?.value ?? 0) * 1000) / 10} mm`;
+  const F = formatMeasured('force', recs[0]?.value ?? null, 0.1, locale);
+  return step === 'apple' ? (uk ? `яблуко — ${F}` : `the apple — ${F}`) : uk ? `яйце — ${F}` : `the egg — ${F}`;
+}
 /** A step of the home-made scales, in words: «Лінійка рівно», «5 мл води — 5 г». */
 function scalesShown(step: string, r: MeasurementRecord): string {
   const uk = locale === 'uk';
@@ -968,7 +992,7 @@ function measureSay(): string {
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
   // (Taking the nail out of the coil has its own words.)
-  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type === 'lab.calendar' && ['gregorian', 'bard'].includes((m.command as unknown as { step: string }).step) ? `lab.calendar.${(m.command as unknown as { step: string }).step}` : m.command.type === 'lab.planets' && ['kepler', 'voyager'].includes((m.command as unknown as { step: string }).step) ? `lab.planets.${(m.command as unknown as { step: string }).step}` : m.command.type;
+  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type === 'lab.dyno' && (m.command as unknown as { step: string }).step === 'scale' ? 'lab.dyno.scale' : m.command.type === 'lab.calendar' && ['gregorian', 'bard'].includes((m.command as unknown as { step: string }).step) ? `lab.calendar.${(m.command as unknown as { step: string }).step}` : m.command.type === 'lab.planets' && ['kepler', 'voyager'].includes((m.command as unknown as { step: string }).step) ? `lab.planets.${(m.command as unknown as { step: string }).step}` : m.command.type;
   if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   if (m.command.type === 'lab.stretch') {
@@ -1049,6 +1073,12 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // The home-made dynamometer: the marks, the scale, the apple, the egg.
+  if (m.command.type === 'lab.dyno') {
+    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.dyno')!]).map((x) => x.record);
+    const shown = dynoShown((m.command as { step: string }).step, recs);
+    return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
   }
   // Home-made scales: level; the sheet against water; the egg.
   if (m.command.type === 'lab.scales') return scalesShown((m.command as { step: string }).step, r);
@@ -2944,6 +2974,7 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const dyShown = c.type === 'lab.dyno' ? dynoShown(String(c['step']), readingsOf([e]).map((x) => x.record)) : null;
       const scShown = c.type === 'lab.scales' ? scalesShown(String(c['step']), r).replace(/\.$/, '') : null;
       const clShown = c.type === 'lab.calendar' ? calendarShown(String(c['step']), readingsOf([e]).map((x) => x.record)) : null;
       const plShown = c.type === 'lab.planets' ? planetsShown(c as unknown as { step: string }, readingsOf([e]).map((x) => x.record)) : null;
@@ -2964,7 +2995,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = scShown ?? clShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = dyShown ?? scShown ?? clShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

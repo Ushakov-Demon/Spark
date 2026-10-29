@@ -28,6 +28,9 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The planets set going; the way out to Voyager.) */
   'lab.planets.kepler': { uk: 'Планети біжать по орбітах — дивимося…', en: 'The planets run round their orbits — watch…' },
   'lab.planets.voyager': { uk: 'Ідемо туди, де був «Вояджер-1»…', en: 'Walking out to where Voyager 1 was…' },
+  'lab.dyno': { uk: 'Пружина ще коливається — чекаємо, поки заспокоїться…', en: 'The spring is still bouncing — wait until it settles…' },
+  /** (The scale being drawn.) */
+  'lab.dyno.scale': { uk: 'Наношу поділки — через 0,1 Н…', en: 'Drawing the divisions — every 0.1 N…' },
   'lab.scales': { uk: 'Кладу по одному — дивимося на лінійку…', en: 'Adding one at a time — watching the ruler…' },
   'lab.calendar': { uk: 'Роки біжать — стежимо, де рівнодення…', en: 'The years run on — watching where the equinox falls…' },
   /** (The reform: the days struck out; Shakespeare's date carried over.) */
@@ -78,6 +81,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'planets' && next.planets?.anim) return planetsRun(next, draw);
   if (next.kind === 'calendar' && next.calendar?.anim) return calendarRun(next, draw);
   if (next.kind === 'scales' && next.scales?.anim) return scalesRun(next, draw);
+  if (next.kind === 'dyno' && next.dyno?.anim) return dynoRun(next, draw);
   if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
   if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
@@ -556,6 +560,37 @@ function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   return {
     channels: [climb],
     frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
+  };
+}
+
+/**
+ * The home-made dynamometer: a load hung on — the pointer drops and bounces about its new place (1.8 s), the
+ * weights one after another, a pencil mark each time; the scale drawn division by division (2 s).
+ */
+function dynoRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const d = next.dyno!;
+  const anim = d.anim!;
+  const per = 1.8;
+  const length = anim === 'marks' ? 3 * per : anim === 'scale' ? 2 : per;
+  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
+  const { anim: _a, read: _r, ...rest } = d;
+  // A drop from x0 to x: a damped bounce, 0.55 s a swing.
+  const bounce = (x0: number, x: number, t: number) => x - (x - x0) * Math.exp(-t / 0.4) * Math.cos((2 * Math.PI * t) / 0.55);
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw({ ...next, dyno: { ...rest, ...(d.read ? { read: d.read } : {}) } });
+      const t = Number.isFinite(clock.value) ? clock.value : 0;
+      if (anim === 'scale') return draw({ ...next, dyno: { ...rest, drawn: Math.min(1, t / 2) } });
+      if (anim === 'marks') {
+        const k = Math.min(2, Math.floor(t / per));
+        const u = t - k * per;
+        const from = k === 0 ? 0 : d.marks[k - 1]!;
+        // (The mark goes on once the spring has settled.)
+        return draw({ ...next, dyno: { ...rest, weights: k + 1, stretch: bounce(from, d.marks[k]!, u), marks: d.marks.slice(0, k + (u > per - 0.4 ? 1 : 0)) } });
+      }
+      draw({ ...next, dyno: { ...rest, stretch: bounce(0, d.stretch, t) } });
+    },
   };
 }
 

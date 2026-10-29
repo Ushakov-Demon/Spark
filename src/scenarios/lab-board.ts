@@ -474,6 +474,16 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
       return;
     }
+    // A home-made dynamometer: the weights' forces and marks; the newton's length; the apple and the egg.
+    if (c.type === 'lab.dyno') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      const step = String(c['step']);
+      const mm = (x: number) => `${Math.round(x * 1000)} ${uk ? 'мм' : 'mm'}`;
+      if (step === 'marks') out.push({ id: `dm:${i}`, title: uk ? 'тягарці по 100 г: F = n·m·g' : '100 g weights: F = n·m·g', formula: recs.map((r) => `${n(r.inputs?.['force'] ?? 0, 3)} ${uk ? 'Н' : 'N'}`).join(' · '), numbers: recs.map((r) => mm(r.value!)).join(' · ') });
+      else if (step === 'scale') out.push({ id: `ds:${i}`, title: uk ? 'шкала: міліметрів на ньютон' : 'the scale: millimetres to the newton', formula: 'l₁ = x / F', numbers: `${mm(recs[0]!.value!)} / 1 ${uk ? 'Н' : 'N'}` });
+      else out.push({ id: `${step === 'apple' ? 'da' : 'de'}:${i}`, title: uk ? (step === 'apple' ? 'яблуко, 100 г' : 'яйце, 58 г') : step === 'apple' ? 'the apple, 100 g' : 'the egg, 58 g', formula: 'F = m·g', numbers: `${n(recs[0]!.inputs?.['mass'] ?? 0, 3)} · ${n(recs[0]!.inputs?.['g'] ?? 0, 3)} ≈ ${n(recs[0]!.exact, 2)} ${uk ? 'Н' : 'N'}` });
+      return;
+    }
     // Home-made scales: the sheet against water; the egg — sheets and water.
     if (c.type === 'lab.scales') {
       const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);

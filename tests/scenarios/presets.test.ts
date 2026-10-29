@@ -341,6 +341,16 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('за 871 м');
   }, 60_000);
 
+  it('home-made dynamometer: even marks 39, 78, 118 mm; 40 mm to the newton; the apple 1 N, the egg 0.6 N', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'dyno-diy')!);
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.correct).toBe('one');
+    expect(answer.text.uk).toContain('39 мм, 78 мм, 118 мм');
+    expect(answer.text.uk).toContain('На 1 Н припадає 40 мм, на поділку 0,1 Н — 4 мм');
+    expect(answer.text.uk).toContain('Яблуко масою 100 г — 1,0 Н');
+    expect(answer.text.uk).toContain('Яйце — 0,6 Н; на саморобних терезах воно важило 58 г');
+  });
+
   it('home-made scales: a sheet of A4 against 5 mL of water; the egg — 11 sheets and 3 mL, 58 g', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'scales-diy')!);
     if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
