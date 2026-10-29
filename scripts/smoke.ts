@@ -21,10 +21,10 @@ const opt = (name: string): string | undefined => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 
-/** Two runs' bench drawings (`.svg`; with --png the screenshots too): the same files, the same bytes? */
+/** Two runs' bench drawings and words (`.svg`, `.txt`; with --png the screenshots too): the same files, the same bytes? */
 function compare(a: string, b: string): number {
   const hash = (f: string) => createHash('sha1').update(readFileSync(f)).digest('hex');
-  const kinds = args.includes('--png') ? ['.svg', '.png'] : ['.svg'];
+  const kinds = args.includes('--png') ? ['.svg', '.txt', '.png'] : ['.svg', '.txt'];
   const names = new Set([...readdirSync(a), ...readdirSync(b)].filter((f) => kinds.some((k) => f.endsWith(k))));
   let differ = 0;
   for (const n of [...names].sort()) {
@@ -35,7 +35,7 @@ function compare(a: string, b: string): number {
     else continue;
     differ++;
   }
-  console.log(differ ? `${differ} of ${names.size} drawings differ` : `all ${names.size} drawings the same`);
+  console.log(differ ? `${differ} of ${names.size} files differ` : `all ${names.size} files the same`);
   return differ;
 }
 
@@ -94,6 +94,11 @@ async function smoke(browser: Browser, base: string, id: string, shots: string |
         // The bench's drawing itself: the same markup — the same picture (the board's chalk and the Professor move on
         // their own time, so the screenshots alone differ between runs).
         writeFileSync(`${name}.svg`, (await page.locator('#sc-bench').innerHTML().catch(() => '')) + '\n');
+        // What the Professor says, the protocol's lines and the board: the words of the step.
+        const says = await page.locator('#sc-says').textContent().catch(() => '');
+        const protocol = await page.locator('#protocol').innerText().catch(() => '');
+        const board = await page.locator('#sc-board').textContent().catch(() => '');
+        writeFileSync(`${name}.txt`, `${says ?? ''}\n---\n${protocol}\n---\n${board ?? ''}\n`);
       }
       if (state === 'end') break;
       if (state === 'stuck') {

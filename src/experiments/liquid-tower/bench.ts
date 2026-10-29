@@ -1,10 +1,10 @@
-import type { CommandHandler } from '../core/commands.js';
-import { ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { COMPONENTS } from '../components/index.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { COMPONENTS } from '../../components/index.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * Bodies and liquids of different densities in one cylinder (grade 7): 50 mL each of glycerol, water, sunflower oil

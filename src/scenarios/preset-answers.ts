@@ -26,11 +26,7 @@ import { winchSpoolName, type WinchSpool } from './winch-bench.js';
 import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
-import { DRAG_COEFFICIENTS, DRAG_MASS, DRAG_START, DRAG_TRACK, dragBody, dragShapeName, mediumDensity, framesText, type DragShape } from './drag-bench.js';
-import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidIn, towerLiquidName, type TowerBody } from './tower-bench.js';
-import { clockText, equalShadowsNoon, gnomonClock, gnomonPlace, GNOMON_HEIGHT, latitudeFrom, sunOf } from './gnomon-bench.js';
 import { offsetText } from './place-time.js';
-import { AIRSHIP, airPlace, type AirWhere } from './air-bench.js';
 import { EXPERIMENTS } from '../experiments/index.js';
 import { touchPlan, touchSeen, type TouchCase } from './touch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
@@ -433,184 +429,6 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
     };
   },
 
-  'air-column': (run) => {
-    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.air' && x.record.value !== null);
-    const at = (w: AirWhere) => recs.find((x) => x.command['where'] === w)?.record ?? null;
-    const town = airPlace(String(recs[0]?.command['place'] ?? ''));
-    const p1 = at('ground');
-    const p2 = at('ninth');
-    const p3 = at('airship');
-    const p4 = at('high');
-    const g = p1?.inputs?.['g'] ?? 9.80665;
-    const m = p1 ? p1.value! / g : null;
-    const correct = m === null ? undefined : m > 5000 ? 'tonnes' : m > 300 ? 'car' : 'nothing';
-    const hPa = (x: number, l: Locale) => `${sig(x / 100, 6, l)} ${l === 'uk' ? 'гПа' : 'hPa'}`;
-    const rho = p1 && p2 ? (p1.value! - p2.value!) / (g * ((p2.inputs?.['height'] ?? 0) - (p1.inputs?.['height'] ?? 0))) : null;
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? `Повітря — це речовина, і Земля притягує її, як і все інше. Якби не тяжіння, гази розлетілися б у космос; а так повітря лежить на Землі шаром, і кожен шар тисне на ті, що під ним, своєю вагою. Тому тиск повітря біля землі — це вага всього стовпа повітря над кожним квадратним метром: p = m·g / S. Що вище піднятися, то менше повітря лишається над головою — і то менший тиск; у місті високо в горах його менше вже на землі. Повітря внизу стиснуте вагою верхніх шарів, тому воно й густіше. Ми не відчуваємо цих тонн, бо повітря тисне на нас з усіх боків однаково, і так само тиснуть зсередини гази й рідини нашого тіла. А раз повітря має вагу, на тіла в ньому діє архімедова сила — вона й тримає дирижабль: гелій у його оболонці легший за повітря, яке він витісняє. (Звідси й жарт, від якого пішла назва гурту Led Zeppelin: «злетить, як свинцевий дирижабль» — свинець набагато густіший за повітря.)\n\nТиск тут розраховано для стандартної атмосфери — дня з «середньою» погодою; у справжній день барометр покаже на кілька гектопаскалів більше або менше, але різниця між висотами майже не зміниться. Висоту поверху (2,8 м) взято як оцінку: від неї залежить і обчислена густина.`
-          : `Air is matter, and the Earth pulls it as it pulls everything. Without gravity the gases would fly off into space; as it is, the air lies on the Earth in a layer, and each layer presses with its weight on the ones beneath. So the air's pressure near the ground is the weight of the whole column of air above each square metre: p = m·g / S. The higher you go, the less air is left above — and the lower the pressure; a town high in the mountains has less of it on the ground already. The air below is squeezed by the weight of the layers above, so it is denser. We do not feel these tonnes because the air presses on us equally from every side, and the gases and liquids of our body press back from within. And since air has weight, bodies in it feel a buoyant force — that is what holds an airship up: the helium in its envelope is lighter than the air it pushes aside. (Hence the joke that named the band Led Zeppelin: “it would go over like a lead balloon” — lead is far denser than air.)\n\nThe pressure here is the standard atmosphere's — a day of "average" weather; on a real day the barometer shows a few hectopascals more or less, but the difference between heights hardly changes. The storey's height (2.8 m) is an estimate: the density worked out depends on it.`,
-      ),
-      say: both((l) => (m === null ? '' : l === 'uk' ? `Над кожним квадратним метром — ≈ ${sig(m / 1000, 2, l)} т повітря!` : `Above each square metre — ≈ ${sig(m / 1000, 2, l)} t of air!`)),
-      text: both((l) => {
-        if (!p1) return '';
-        const uk = l === 'uk';
-        const parts: string[] = [uk ? `${town.name}, ${Math.round(town.elevation ?? 0)} м над морем. На 1-му поверсі барометр показав ${hPa(p1.value!, l)} = ${sig(p1.value!, 5, l)} Па. Це вага повітря над кожним квадратним метром: m = p·S / g ≈ ${sig(m!, 3, l)} кг.` : `${town.name}, ${Math.round(town.elevation ?? 0)} m above the sea. On the ground floor the barometer showed ${hPa(p1.value!, l)} = ${sig(p1.value!, 5, l)} Pa. That is the weight of the air above each square metre: m = p·S / g ≈ ${sig(m!, 3, l)} kg.`];
-        if (p2 && rho !== null) {
-          const dp = p1.value! - p2.value!;
-          const dh = (p2.inputs?.['height'] ?? 0) - (p1.inputs?.['height'] ?? 0);
-          parts.push(uk ? `На 9-му поверсі, на ${sig(dh, 3, l)} м вище, — ${hPa(p2.value!, l)}: менше на ${sig(dp / 100, 3, l)} гПа. Стільки важить шар повітря завтовшки ${sig(dh, 3, l)} м, тож його густина ρ = Δp / (g·Δh) ≈ ${sig(rho, 3, l)} кг/м³ — кубометр повітря важить близько кілограма.` : `On the ninth floor, ${sig(dh, 3, l)} m higher, — ${hPa(p2.value!, l)}: ${sig(dp / 100, 3, l)} hPa less. That is the weight of a ${sig(dh, 3, l)} m layer of air, so its density ρ = Δp / (g·Δh) ≈ ${sig(rho, 3, l)} kg/m³ — a cubic metre of air weighs about a kilogram.`);
-        }
-        if (p3) parts.push(uk ? `З дирижабля на 300 м — ${hPa(p3.value!, l)}.` : `From the airship at 300 m — ${hPa(p3.value!, l)}.`);
-        if (p4) parts.push(uk ? `На 2 км — ${hPa(p4.value!, l)}: ${sig(((p1.value! - p4.value!) / p1.value!) * 100, 2, l)} % повітря над містом лишилося внизу.` : `At 2 km — ${hPa(p4.value!, l)}: ${sig(((p1.value! - p4.value!) / p1.value!) * 100, 2, l)} % of the air above the town is left below.`);
-        if (rho !== null) parts.push(uk ? `Дирижабль на зразок Zeppelin NT витісняє ${sig(AIRSHIP.volume.value, 4, l)} м³ повітря — за нашою густиною це ≈ ${sig((AIRSHIP.volume.value * rho) / 1000, 2, l)} т; така й архімедова сила, що його тримає.` : `An airship like the Zeppelin NT pushes aside ${sig(AIRSHIP.volume.value, 4, l)} m³ of air — by our density ≈ ${sig((AIRSHIP.volume.value * rho) / 1000, 2, l)} t; such is the buoyant force that holds it.`);
-        return parts.join(' ');
-      }),
-    };
-  },
-  'solar-noon': (run) => {
-    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.gnomon' && x.record.value !== null);
-    const place = gnomonPlace(String(recs[0]?.command['place'] ?? ''));
-    const shadows = recs.map((x) => ({ time: x.record.inputs?.['time'] ?? 0, length: x.record.value! }));
-    const found = shadows.length ? equalShadowsNoon(shadows) : null;
-    const noon = found?.noon ?? null;
-    const correct = noon === null ? undefined : Math.abs(noon - 720) < 1 ? 'noon' : noon > 720 ? 'later' : 'earlier';
-    const { zone, summer } = gnomonClock(place);
-    const standard = summer ? zone - 1 : zone;
-    const meridian = 15 * standard;
-    const byLon = 4 * (meridian - place.lon);
-    const eq = sunOf(720, zone).eqtime;
-    const south = recs[0]?.record.inputs?.['south'] === 1;
-    const L = shadows.length ? Math.min(...shadows.map((x) => x.length)) : 0;
-    const h = L ? Math.atan(GNOMON_HEIGHT / L) / (Math.PI / 180) : 0;
-    const d = sunOf(noon ?? 720, zone).decl;
-    const phi = latitudeFrom(h, d, south);
-    const min = (x: number, l: Locale) => `${sig(Math.abs(x), 2, l)} ${l === 'uk' ? 'хв' : 'min'}`;
-    const deg = (x: number, l: Locale, k = 3) => `${sig(x, k, l).replace('-', '−')}°`;
-    const lonText = (x: number, l: Locale) => `${sig(Math.abs(x), 3, l)}° ${x >= 0 ? (l === 'uk' ? 'сх. д.' : 'E') : l === 'uk' ? 'зх. д.' : 'W'}`;
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? `Сонце за добу обходить небо, бо Земля обертається: 360° за 24 години, тобто 1° за 4 хвилини. Справжній полудень настає, коли Сонце найвище над саме твоїм місцем, — тому в кожному меридіані він свій. Щоб не мати в кожному місті свого часу, годинники цілої зони йдуть за одним меридіаном: на кожну годину від Гринвіча — 15°. Місто, що лежить на схід від свого меридіана, бачить полудень раніше, на захід — пізніше, на 4 хвилини на кожен градус. Ще кілька хвилин додає рівняння часу: Земля обходить Сонце нерівномірно (орбіта — еліпс) і з нахиленою віссю, тож справжня сонячна доба протягом року то трохи довша, то коротша за 24 години; на початку весни сонячний полудень запізнюється на 7–8 хвилин. А де годинники переводять на літній час, полудень за годинником настає ще на годину пізніше.\n\nЗ тієї самої тіні знаходять і широту. У полудень Сонце найвище: h = arctg(H/L). У день рівнодення воно над екватором, і його висота опівдні дорівнює 90° мінус широта; в інші дні — поправка на схилення δ. На північ від тропіків полуденна тінь падає на північ, у південній півкулі — на південь. Так мореплавці визначали широту за полуденним Сонцем.`
-          : `The Sun goes round the sky in a day because the Earth turns: 360° in 24 hours, 1° in 4 minutes. The true noon comes when the Sun is highest over your very place — so each meridian has its own. Not to have a time of its own in every town, a whole zone's clocks keep one meridian: 15° for each hour from Greenwich. A town east of its meridian sees noon earlier, west of it later, by 4 minutes a degree. A few more minutes come from the equation of time: the Earth goes round the Sun unevenly (the orbit is an ellipse) and with its axis tilted, so the true solar day is a little longer or shorter than 24 hours through the year; in early spring the solar noon is 7–8 minutes late. And where the clocks go to summer time, noon by the clock comes an hour later still.\n\nThe same shadow gives the latitude. At noon the Sun is highest: h = arctan(H/L). On an equinox it stands over the equator, and its noon height is 90° less the latitude; on other days, a correction for the declination δ. North of the tropics the noon shadow points north, in the southern hemisphere south. That is how sailors found their latitude by the noon Sun.`,
-      ),
-      say: both((l) => (noon === null ? '' : l === 'uk' ? `Справжній полудень (${place.name}) — о ${clockText(noon)} за годинником!` : `The true noon (${place.name}) — at ${clockText(noon)} by the clock!`)),
-      text: both((l) => {
-        if (noon === null || !found) return '';
-        const uk = l === 'uk';
-        const p0 = found.pairs[0]!;
-        const lonPart = Math.abs(byLon) < 0.5 ? (uk ? 'майже на ньому самому' : 'almost on it') : uk ? `${byLon < 0 ? 'на схід' : 'на захід'} від нього на ${deg(Math.abs(meridian - place.lon), l, 2)} — полудень ${byLon < 0 ? 'раніше' : 'пізніше'} на ${min(byLon, l)}` : `${byLon < 0 ? 'east' : 'west'} of it by ${deg(Math.abs(meridian - place.lon), l, 2)} — noon ${byLon < 0 ? 'earlier' : 'later'} by ${min(byLon, l)}`;
-        const total = byLon + (summer ? 60 : 0) - eq;
-        return uk
-          ? `Найкоротша тінь — ${sig(L, 3, l)} м, на ${south ? 'південь' : 'північ'}. Рівні тіні: ${clockText(p0.t1)} і ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} м), посередині — ${clockText((p0.t1 + p0.t2) / 2)}; у середньому з ${found.pairs.length} пар полудень настав о ${clockText(noon)}. Годинники тут показують ${offsetText(zone)}${summer ? ' — літній час, на годину вперед' : ''}; поясний меридіан — ${lonText(meridian, l)}, а місто (${lonText(place.lon, l)}) — ${lonPart}. Рівняння часу 20 березня додає ще ${min(eq, l)} (за формулою NOAA). Разом: 12:00 ${total >= 0 ? '+' : '−'} ${min(total, l)} ≈ ${clockText(720 + total)}. Висота Сонця опівдні h = arctg(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, широта ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); насправді — ${deg(place.lat, l, 4)}.`
-          : `The shortest shadow — ${sig(L, 3, l)} m, pointing ${south ? 'south' : 'north'}. Equal shadows: ${clockText(p0.t1)} and ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} m), midway — ${clockText((p0.t1 + p0.t2) / 2)}; the mean of ${found.pairs.length} pairs puts noon at ${clockText(noon)}. The clocks here keep ${offsetText(zone)}${summer ? ' — summer time, an hour on' : ''}; the zone's meridian is ${lonText(meridian, l)}, and the town (${lonText(place.lon, l)}) lies ${lonPart}. The equation of time on 20 March adds ${min(eq, l)} more (NOAA's formula). Together: 12:00 ${total >= 0 ? '+' : '−'} ${min(total, l)} ≈ ${clockText(720 + total)}. The Sun's noon height h = arctan(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, the latitude ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); in fact ${deg(place.lat, l, 4)}.`;
-      }),
-    };
-  },
-  'liquid-tower': (run) => {
-    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.tower' && x.command['step'] === 'drop' && x.record.value !== null);
-    const at = (b: TowerBody) => recs.find((x) => x.command['body'] === b)?.record ?? null;
-    const acr = at('acrylic');
-    const lower = acr?.inputs?.['lower'];
-    const correct = acr ? (lower === -1 ? 'bottom' : lower === 0 ? 'glycerol' : lower === 1 ? 'oil' : undefined) : undefined;
-    const d = TOWER_LIQUIDS.map(towerLiquidDensity);
-    const R = (x: number) => String(Math.round(x));
-    const pc = (x: number, l: Locale) => `${sig(x * 100, 2, l)} %`;
-    const place = (b: TowerBody, l: Locale) => {
-      const r = at(b);
-      if (!r) return '';
-      const uk = l === 'uk';
-      const lw = r.inputs?.['lower'] ?? -1;
-      const share = r.inputs?.['share'] ?? 0;
-      const nm = (k: number) => tr(towerLiquidName(TOWER_LIQUIDS[k]!), l);
-      const inn = (k: number) => tr(towerLiquidIn(TOWER_LIQUIDS[k]!), l);
-      const name = tr(TOWER_BODIES[b].name, l);
-      const N = name.charAt(0).toUpperCase() + name.slice(1);
-      const rho = R(r.inputs?.['density'] ?? 0);
-      if (lw < 0) return uk ? `${N} (${rho} кг/м³) густіша за всі рідини — лягла на дно.` : `${N} (${rho} kg/m³) is denser than every liquid — it went to the bottom.`;
-      if (r.inputs?.['top'] === 1) return uk ? `${N} (${rho} кг/м³) легший за всі рідини — плаває у спирті, занурений на ${pc(share, l)}.` : `${N} (${rho} kg/m³) is lighter than every liquid — it floats in the ethanol, ${pc(share, l)} under.`;
-      return uk ? `${N} (${rho} кг/м³) пройшов крізь легші рідини й зупинився на межі «${nm(lw)} — ${nm(lw + 1)}»: ${pc(share, l)} його об’єму ${inn(lw)}, решта — ${inn(lw + 1)}.` : `${N} (${rho} kg/m³) went through the lighter liquids and stopped at the ${nm(lw)} — ${nm(lw + 1)} boundary: ${pc(share, l)} of it ${inn(lw)}, the rest ${inn(lw + 1)}.`;
-    };
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? `Рідини лягли шарами в порядку густини: важча рідина опускається під легшу, як і тверде тіло. Кожне тіло тоне, доки довкола нього рідина легша за нього, — сила тяжіння більша за архімедову. Щойно воно доходить до рідини, густішої за себе, архімедова сила стає більшою за вагу, і тіло спливає на ній. Тож тіло зупиняється на межі двох рідин: частково в нижній, частково у верхній — так, щоб архімедові сили від обох рідин разом урівноважили вагу. Що ближча густина тіла до густини нижньої рідини, то глибше воно в неї занурене. Тому «тоне у воді» ще не означає «ляже на дно»: оргскло тоне у воді, але гліцерин його тримає.\n\nГліцерин і вода насправді змішуються: якщо наливати обережно, межа між ними тримається якийсь час, а потім розмивається. Спирт теж змішався б із водою, але між ними — олія. Об’єми рідин тут вважаємо такими, що просто додаються.`
-          : `The liquids lay in layers by density: a denser liquid goes under a lighter one, as a solid body does. Each body sinks while the liquid round it is lighter than itself — gravity outweighs the buoyant force. As soon as it reaches a liquid denser than itself, the buoyant force exceeds the weight, and the body floats on it. So the body stops at the boundary of two liquids: partly in the lower, partly in the upper — so that the buoyant forces of both together balance the weight. The closer the body's density to the lower liquid's, the deeper it sits in it. That is why "sinks in water" does not yet mean "goes to the bottom": acrylic glass sinks in water, but the glycerol holds it up.\n\nGlycerol and water do mix: poured with care, the boundary between them holds for a while and then blurs. Ethanol would mix with water too, but the oil is between them. The liquids' volumes are taken to simply add up.`,
-      ),
-      say: both((l) => (l === 'uk' ? 'Кожне тіло зупинилося там, де рідина під ним густіша за нього!' : 'Every body stopped where the liquid beneath it is denser than itself!')),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const layers = uk ? `Шари знизу вгору: гліцерин (${R(d[0]!)} кг/м³), вода (${R(d[1]!)}), олія (${R(d[2]!)}), спирт (${R(d[3]!)}).` : `Layers from the bottom: glycerol (${R(d[0]!)} kg/m³), water (${R(d[1]!)}), oil (${R(d[2]!)}), ethanol (${R(d[3]!)}).`;
-        return [layers, ...(['nut', 'acrylic', 'hdpe', 'pine'] as const).map((b) => place(b, l))].filter(Boolean).join(' ');
-      }),
-    };
-  },
-  'drag-form': (run) => {
-    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.drag' && x.record.value !== null);
-    const of = (shape: DragShape, medium: 'water' | 'air') => recs.find((x) => x.command['shape'] === shape && x.command['medium'] === medium)?.record ?? null;
-    const water = (['ball', 'cube', 'plate'] as const).map((shape) => ({ shape, r: of(shape, 'water') })).filter((x) => x.r !== null);
-    const air = of('ball', 'air');
-    const slowest = water.length === 3 ? water.reduce((a, b) => (b.r!.value! > a.r!.value! ? b : a)).shape : undefined;
-    const fr = (r: { value: number | null; inputs?: Record<string, number> }, l: Locale) => `${framesText(r.inputs?.['frames'] ?? 0, l === 'uk')} (${formatMeasured('time', r.value!, 0.01, l)}, v ≈ ${sig(DRAG_TRACK / r.value!, 2, l)} ${l === 'uk' ? 'м/с' : 'm/s'})`;
-    const { volume } = dragBody('ball');
-    const rhoW = mediumDensity('water');
-    const Fd = DRAG_MASS * G - rhoW * G * volume;
-    const free = Math.sqrt((2 * (DRAG_START + DRAG_TRACK)) / G) - Math.sqrt((2 * DRAG_START) / G);
-    const ratio = rhoW / mediumDensity('air');
-    const cd = (s: DragShape, l: Locale) => sig(DRAG_COEFFICIENTS[s].value, 3, l);
-    return {
-      ...(slowest === 'plate' ? { correct: 'plate' } : slowest === 'ball' ? { correct: 'ball' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? `Рухаючись, тіло мусить розштовхувати воду перед собою, а позаду нього закручуються вихори. Що швидше тіло, то більша сила опору — за таких швидкостей вона зростає пропорційно квадрату швидкості. Тіло розганяється, доки опір не зрівняється з вагою мінус архімедова сила, а далі йде рівномірно. Маса й об’єм у трьох тіл однакові, тож і рівномірно вони йдуть за однакової сили опору — різниться лише швидкість, за якої вона настає. Кулька обтічна: вода плавно огинає її, вихорів позаду мало, і перетин у неї невеликий. Кубик пласкою гранню вперед зриває потік на ребрах, і вихорів більше: він підставляє воді навіть меншу площу, ніж кулька, а проте повільніший — тут вирішує саме форма. Пластинка плазом підставляє воді найбільшу площу — тому вона найповільніша. Інша річ — середовище: що воно густіше, то більшу масу тіло мусить щомиті відштовхнути, тож за тієї самої швидкості вода опирається в ≈ ${sig(ratio, 2, l)} разів сильніше, ніж повітря, — у стільки ж разів вона густіша.\n\nМодель спрощена: насправді пластинка гойдається й зісковзує вбік, а кубик може перекинутися, тож у справжньому досліді час буде трохи іншим. Коефіцієнти опору виміряні для гладких тіл; пластилінові, зліплені руками, відрізнятимуться.`
-          : `Moving, a body has to push the water in front of it aside, and behind it eddies swirl. The faster the body, the greater the drag — at these speeds it grows as the square of the speed. The body speeds up until the drag equals its weight less the buoyant force, and then goes steadily. The three bodies have the same mass and volume, so they go steadily under the same drag — only the speed at which it is reached differs. The ball is streamlined: the water flows smoothly round it, few eddies behind it, and its cross-section is small. The cube, a flat face first, breaks the flow at its edges, and there are more eddies: it shows the water even less area than the ball, and yet it is slower — here the form alone decides. The plate, lying flat, shows the water the largest area — so it is the slowest. The medium is another matter: the denser it is, the more mass the body has to push aside each second, so at the same speed water resists ≈ ${sig(ratio, 2, l)} times more than air — as many times as it is denser.\n\nThe model is simplified: in truth the plate rocks and slides aside, and the cube may tip over, so in a real experiment the times come out a little different. The drag coefficients were measured for smooth bodies; hand-moulded plasticine ones will differ.`,
-      ),
-      say: both((l) => (l === 'uk' ? 'Та сама маса — а швидкість різна: усе вирішують форма й середовище!' : 'The same mass — different speeds: the form and the medium decide!')),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = water.map((x) => `${dragShapeName(x.shape)[l]} — ${fr(x.r!, l)}`).join('; ');
-        const a = air ? (uk ? ` У повітрі та сама кулька пролетіла 20 см за ${fr(air, l)} — майже як у вільному падінні (${formatMeasured('time', free, 0.001, l)}): опір повітря тут мізерний.` : ` In the air the same ball covered 20 cm in ${fr(air, l)} — nearly as in free fall (${formatMeasured('time', free, 0.001, l)}): the air hardly resists here.`) : '';
-        return uk
-          ? `У воді між позначками: ${parts}. Вага всіх тіл однакова, архімедова сила теж, тож, рухаючись рівномірно, кожне зазнає однакової сили опору: F = m·g − ρ·g·V ≈ ${sig(Fd, 2, l)} Н. Але пластинка набирає її вже за малої швидкості, а кулька — лише за найбільшої.${a} Сила опору F = C·ρ·v²·S / 2 залежить від форми тіла (коефіцієнт опору C: кулька ${cd('ball', l)}, кубик ${cd('cube', l)}, пластинка ${cd('plate', l)}), площі S, яку тіло підставляє зустрічному потоку, і густини середовища ρ.`
-          : `In water between the marks: ${parts}. All bodies weigh the same, the buoyant force too, so moving steadily each meets the same drag: F = m·g − ρ·g·V ≈ ${sig(Fd, 2, l)} N. But the plate reaches it at a low speed already, the ball only at the highest.${a} The drag F = C·ρ·v²·S / 2 depends on the body’s form (the drag coefficient C: ball ${cd('ball', l)}, cube ${cd('cube', l)}, plate ${cd('plate', l)}), the area S it shows to the oncoming flow, and the medium’s density ρ.`;
-      }),
-    };
-  },
-  'carts-mass': (run) => {
-    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.carts' && x.record.value !== null);
-    const pushes = [0, 1, 2].map((w) => recs.filter((x) => x.command['mode'] === 'push' && Number(x.command['weights']) === w).map((x) => x.record.value!)).filter((x) => x.length === 2) as [number, number][];
-    const P = (cart: number) => recs.find((x) => x.command['mode'] === 'weigh' && Number(x.command['cart']) === cart)?.record.value ?? null;
-    const P1 = P(1);
-    const P2 = P(2);
-    const cm = (x: number, l: Locale) => `${sig(x * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-    const ratio = (x: number, l: Locale) => sig(x, 2, l);
-    // «у 3 рази», but «у 2,9 раза».
-    const times = (x: number, l: Locale) => (l === 'uk' ? `у ${ratio(x, l)} ${/[,.]/.test(ratio(x, l)) ? 'раза' : 'рази'}` : `${ratio(x, l)} times`);
-    const slower = pushes.length === 3 && pushes.every(([a, b], w) => Math.abs(a / b - (1 + w)) < 0.1);
-    return {
-      ...(slower ? { correct: 'speeds' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Пружина діє на обидва візки однаково, але важчий візок інертніший — він повільніше набирає швидкість, тож розганяється менше. Тому в скільки разів його швидкість менша, у стільки разів його маса більша: m₂ / m₁ = v₁ / v₂. Візки рушили одночасно й їхали однаковий час, тож відношення шляхів — це відношення швидкостей. Так масу можна виміряти без терезів — за інертністю. А динамометр показує, що й сила тяжіння в стільки ж разів більша: P = m·g. Тож маса — міра і інертності тіла, і його притягання до Землі. Тертя коліс за ці 0,5 с не враховано.'
-          : 'The spring acts on both carts alike, but the heavier cart is more inert — it gathers speed more slowly, so it ends up slower. So as many times smaller its speed, so many times greater its mass: m₂ / m₁ = v₁ / v₂. The carts set off together and went for the same time, so the ratio of the paths is the ratio of the speeds. This way mass can be measured without scales — by inertia. And the dynamometer shows that the force of gravity is as many times greater too: P = m·g. So mass measures both a body’s inertia and its pull to the Earth. The wheels’ friction over these 0.5 s is left out.',
-      ),
-      say: both((l) => {
-        const last = pushes[2];
-        return last && P1 !== null && P2 !== null ? (l === 'uk' ? `Візок утричі важчий проїхав ${times(last[0] / last[1], l)} менше — і сила тяжіння на нього ${times(P2 / P1, l)} більша.` : `The cart three times heavier went ${times(last[0] / last[1], l)} less — and gravity on it is ${times(P2 / P1, l)} greater.`) : '';
-      }),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = pushes.map(([a, b], w) => (uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w === 1 ? 'один тягарець' : 'два тягарці'}`}: ${cm(a, l)} і ${cm(b, l)}, l₁ / l₂ ≈ ${ratio(a / b, l)}` : `${w === 0 ? 'alike carts' : `cart 2 + ${w === 1 ? 'one weight' : 'two weights'}`}: ${cm(a, l)} and ${cm(b, l)}, l₁ / l₂ ≈ ${ratio(a / b, l)}`));
-        const weigh = P1 !== null && P2 !== null ? (uk ? `; на динамометрі: візок 1 — ${N(P1, l)}, візок 2 з двома тягарцями — ${N(P2, l)}, ${times(P2 / P1, l)} більше` : `; on the dynamometer: cart 1 — ${N(P1, l)}, cart 2 with two weights — ${N(P2, l)}, ${times(P2 / P1, l)} more`) : '';
-        const s = `${parts.join('; ')}${weigh}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' (2,9 Н, а не 3,0 — бо динамометр показує до десятих: 2,94 Н.)' : ' (2.9 N, not 3.0 — the dynamometer reads to tenths: 2.94 N.)');
-      }),
-    };
-  },
   'contact-forces': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.touch').map((x) => ({ c: String(x.command['case']) as TouchCase, acts: x.record.inputs?.['acts'] === 1, touch: x.record.inputs?.['touch'] === 1 }));
     const farOk = R.filter((x) => x.c !== 'lifted').every((x) => x.acts && !x.touch);
@@ -808,7 +626,7 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
       why: both((l) =>
         l === 'uk'
           ? 'Нагорі м’ячик має потенціальну енергію Eп = m·g·h. Падаючи, він розганяється: потенціальна енергія переходить у кінетичну. Ударившись об плиту, м’ячик на мить сплющується, а тоді розпрямляється й відштовхується — і, піднімаючись, знову міняє кінетичну енергію на потенціальну. Але сплющення повертає не все: частина енергії йде на нагрівання м’ячика й плити (стає внутрішньою енергією), частина — на звук удару. Тому механічної енергії щоразу менше, і м’ячик піднімається нижче: висота показує, яку частку енергії він зберіг. Енергія не зникає — вона лише переходить в інші види: це закон збереження енергії. Пружний м’ячик для настільного тенісу зберігає близько 80 % за удар, тенісний м’яч — трохи більше половини, а пластилін, сплющившись, лишається на плиті: уся його механічна енергія стала внутрішньою. Земля ж притягує м’ячик однаково на будь-якій із цих висот.'
-          : 'At the top the ball has potential energy Eп = m·g·h. Falling, it speeds up: potential energy turns into kinetic. Hitting the plate, the ball is squashed for a moment, then straightens and pushes off — and, rising, trades kinetic energy back for potential. But the squashing does not give everything back: part of the energy warms the ball and the plate (becomes internal energy), part goes as the sound of the impact. So there is less mechanical energy each time, and the ball rises lower: the height shows the share of energy it kept. Energy does not vanish — it only turns into other forms: this is the conservation of energy. A springy table tennis ball keeps about 80 % per impact, a tennis ball a little over half, and plasticine, squashed, stays on the plate: all its mechanical energy became internal. The Earth pulls the ball just the same at any of these heights.',
+          : 'At the top the ball has potential energy Eₚ = m·g·h. Falling, it speeds up: potential energy turns into kinetic. Hitting the plate, the ball is squashed for a moment, then straightens and pushes off — and, rising, trades kinetic energy back for potential. But the squashing does not give everything back: part of the energy warms the ball and the plate (becomes internal energy), part goes as the sound of the impact. So there is less mechanical energy each time, and the ball rises lower: the height shows the share of energy it kept. Energy does not vanish — it only turns into other forms: this is the conservation of energy. A springy table tennis ball keeps about 80 % per impact, a tennis ball a little over half, and plasticine, squashed, stays on the plate: all its mechanical energy became internal. The Earth pulls the ball just the same at any of these heights.',
       ),
       say: both((l) => {
         const a = pp[0];

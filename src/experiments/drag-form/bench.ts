@@ -1,12 +1,12 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { COMPONENTS } from '../components/index.js';
-import { G } from '../domains/mechanics/constants.js';
-import { AIR_DENSITY } from '../domains/thermal/evaporation.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { COMPONENTS } from '../../components/index.js';
+import { G } from '../../domains/mechanics/constants.js';
+import { AIR_DENSITY } from '../../domains/thermal/evaporation.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * The form of a body, the medium, and the drag (grade 7): three bodies moulded from the same 5 g of plasticine — a

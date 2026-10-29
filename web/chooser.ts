@@ -118,6 +118,8 @@ export function createChooser(host: HTMLElement, words: () => { prev: string; ne
         prev.disabled = at === 0;
         next.disabled = at === count - 1;
         go.textContent = stage.cards[at]?.action ?? '';
+        // (No words — no button: the card in the middle is chosen by itself.)
+        go.hidden = !go.textContent;
       };
       const turn = (by: number) => {
         if (busy) return;

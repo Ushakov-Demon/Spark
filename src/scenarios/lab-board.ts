@@ -7,10 +7,6 @@ import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
 import { TOUCH_CASES, touchSeen, type TouchCase } from './touch-bench.js';
-import { DRAG_MASS, dragBody, dragShapeName, framesText, type DragShape } from './drag-bench.js';
-import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidName, type TowerBody } from './tower-bench.js';
-import { clockText, equalShadowsNoon, GNOMON_HEIGHT, latitudeFrom, sunOf } from './gnomon-bench.js';
-import { airPlaceName, type AirWhere } from './air-bench.js';
 import { experimentOf } from '../experiments/index.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
@@ -465,104 +461,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
       return;
     }
-    // Carts: the paths in 0.5 s and their ratio — the masses' (hidden till the answer); a cart's weight.
-    if (c.type === 'lab.carts') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      if (c['mode'] === 'weigh') {
-        out.push({ id: `cw:${i}`, title: uk ? `візок ${c['cart']} на динамометрі` : `cart ${c['cart']} on the dynamometer`, formula: `P = ${formatMeasured('force', recs[0]?.value ?? 0, 0.1, locale)}` });
-        return;
-      }
-      const [a, b] = recs.map((x) => x.value!);
-      const w = Number(c['weights']);
-      const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
-      out.push({ id: `cl:${i}`, title: uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w} × 100 г`}: за 0,5 с` : `${w === 0 ? 'alike carts' : `cart 2 + ${w} × 100 g`}: in 0.5 s`, formula: `l₁ = ${cm(a ?? 0)}, l₂ = ${cm(b ?? 0)}` });
-      out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
-      return;
-    }
-    // The air: each reading; up the stairs — the density from Δp = ρ·g·Δh; on the ground — the air above each m²;
-    // on Hoverla — how much of the air is below.
-    if (c.type === 'lab.air') {
-      const where = String(c['where']);
-      const h = r.inputs?.['height'] ?? 0;
-      const g = r.inputs?.['g'] ?? 9.81;
-      const hPa = (x: number) => `${n(x / 100, 6)} ${uk ? 'гПа' : 'hPa'}`;
-      baro[where] = { p: r.value, h };
-      out.push({ id: `ap:${i}`, title: uk ? `${tr(airPlaceName(where as AirWhere), locale)}, ${Math.round(h)} м над морем` : `${tr(airPlaceName(where as AirWhere), locale)}, ${Math.round(h)} m above the sea`, formula: `p = ${hPa(r.value)}` });
-      const ground = baro['ground'];
-      if (where === 'ground') out.push({ id: `am:${i}`, title: uk ? 'маса повітря над 1 м² — його вагу й показує барометр' : 'the mass of air above 1 m² — its weight is what the barometer shows', formula: 'm = p·S / g', numbers: `${n(r.value, 5)} ${uk ? 'Па' : 'Pa'} · 1 ${uk ? 'м²' : 'm²'} / ${n(g, 3)} ≈ ${n(r.value / g, 3)} ${uk ? 'кг' : 'kg'}` });
-      if (where === 'ninth' && ground) {
-        const dp = ground.p - r.value;
-        const dh = h - ground.h;
-        out.push({ id: `ad:${i}`, title: uk ? `на ${n(dh, 3)} м вище — тиск менший на ${n(dp / 100, 3)} гПа: густина повітря` : `${n(dh, 3)} m higher — the pressure ${n(dp / 100, 3)} hPa less: the air's density`, formula: 'ρ = Δp / (g·Δh)', numbers: `${n(dp, 3)} ${uk ? 'Па' : 'Pa'} / (${n(g, 3)} · ${n(dh, 3)} ${uk ? 'м' : 'm'}) ≈ ${n(dp / (g * dh), 3)} ${uk ? 'кг/м³' : 'kg/m³'}` });
-      }
-      if (where === 'high' && ground) out.push({ id: `ah:${i}`, title: uk ? 'яка частка повітря над містом лишилася під дирижаблем' : 'how much of the air above the town is below the airship', formula: '(p₁ − p) / p₁', numbers: `(${hPa(ground.p)} − ${hPa(r.value)}) / ${hPa(ground.p)} ≈ ${n(((ground.p - r.value) / ground.p) * 100, 2)} %` });
-      return;
-    }
-    // The gnomon: the shadows of a series; after the afternoon — the noon by equal shadows, the Sun's height, the latitude.
-    if (c.type === 'lab.gnomon') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      const m = uk ? 'м' : 'm';
-      for (const x of recs) shadows.push({ time: x.inputs?.['time'] ?? 0, length: x.value! });
-      const series = String(c['series']);
-      const times = recs.map((x) => clockText(x.inputs?.['time'] ?? 0)).join(', ');
-      out.push({ id: `gs:${i}`, title: uk ? `тінь метрової палиці о ${times}` : `the metre stick’s shadow at ${times}`, formula: `L: ${recs.map((x) => Math.round(x.value! * 100)).join(', ')} ${uk ? 'см' : 'cm'}` });
-      if (series !== 'afternoon') return;
-      const found = equalShadowsNoon(shadows);
-      if (found) {
-        const p0 = found.pairs[0]!;
-        out.push({ id: `gn:${i}`, title: uk ? `полудень — посередині між рівними тінями (${n(p0.length, 3)} ${m})` : `noon — midway between equal shadows (${n(p0.length, 3)} ${m})`, formula: 't₀ = (t₁ + t₂) / 2', numbers: `(${clockText(p0.t1)} + ${clockText(p0.t2)}) / 2 ≈ ${clockText((p0.t1 + p0.t2) / 2)}${found.pairs.length > 1 ? (uk ? `; у середньому з ${found.pairs.length} пар — ${clockText(found.noon)}` : `; the mean of ${found.pairs.length} pairs — ${clockText(found.noon)}`) : ''}` });
-      }
-      const L = Math.min(...shadows.map((x) => x.length));
-      const h = Math.atan(GNOMON_HEIGHT / L) / (Math.PI / 180);
-      const zone = recs[0]?.inputs?.['zone'] ?? 2;
-      const south = recs[0]?.inputs?.['south'] === 1;
-      const d = sunOf(found?.noon ?? 720, zone).decl;
-      const phi = latitudeFrom(h, d, south);
-      const sd = (x: number) => `${x < 0 ? '−' : '+'} ${n(Math.abs(x), 1)}°`;
-      out.push({ id: `gh:${i}`, title: uk ? `висота Сонця опівдні — з найкоротшої тіні (тінь — на ${south ? 'південь' : 'північ'})` : `the Sun’s height at noon — from the shortest shadow (pointing ${south ? 'south' : 'north'})`, formula: 'h = arctg(H / L)', numbers: `arctg(1 ${m} / ${n(L, 3)} ${m}) ≈ ${n(h, 3)}°` });
-      out.push({ id: `gl:${i}`, title: uk ? `широта місця (схилення Сонця δ ≈ ${n(d, 1)}° — за формулою NOAA${south ? '; південна широта — зі знаком «−»' : ''})` : `the latitude (the Sun’s declination δ ≈ ${n(d, 1)}° — by NOAA’s formula${south ? '; south latitude — negative' : ''})`, formula: south ? 'φ = δ − (90° − h)' : 'φ = 90° − h + δ', numbers: south ? `${n(d, 1)}° − (90° − ${n(h, 3)}°) ≈ ${n(phi, 3)}°` : `90° − ${n(h, 3)}° ${sd(d)} ≈ ${n(phi, 3)}°` });
-      return;
-    }
-    // The liquid tower: the layers by their densities; each body — between which liquids, and how much of it in the lower one.
-    if (c.type === 'lab.tower') {
-      const d = TOWER_LIQUIDS.map(towerLiquidDensity);
-      const kg = uk ? 'кг/м³' : 'kg/m³';
-      const ml = uk ? 'мл' : 'mL';
-      const nm = (k: number) => tr(towerLiquidName(TOWER_LIQUIDS[k]!), locale);
-      if (c['step'] === 'pour') {
-        out.push({ id: `tl:${i}`, title: uk ? 'шари знизу вгору: гліцерин, вода, олія, спирт (по 50 мл)' : 'layers from the bottom: glycerol, water, oil, ethanol (50 mL each)', formula: 'ρ_гл > ρ_в > ρ_ол > ρ_сп'.replace(/_гл|_в|_ол|_сп/g, (m) => (uk ? m : { _гл: '_g', _в: '_w', _ол: '_o', _сп: '_e' }[m]!)), numbers: `${d.map((x) => Math.round(x)).join(' > ')} ${kg}` });
-        return;
-      }
-      const body = c['body'] as TowerBody;
-      const rho = r.inputs?.['density'] ?? 0;
-      const lower = r.inputs?.['lower'] ?? -1;
-      const share = r.inputs?.['share'] ?? 0;
-      const made = tr(TOWER_BODIES[body].made, locale);
-      const R = (x: number) => String(Math.round(x));
-      if (lower < 0) out.push({ id: `tw:${i}`, title: uk ? `${made}: на дні` : `${made}: on the bottom`, formula: uk ? 'ρ_т > ρ_гл' : 'ρ_b > ρ_g', numbers: `${R(rho)} > ${R(d[0]!)} ${kg}` });
-      else if (r.inputs?.['top'] === 1) out.push({ id: `tw:${i}`, title: uk ? `${made}: плаває в спирті, позначка ${n(r.value * 1e6, 3)} ${ml}` : `${made}: floats in the ethanol, the ${n(r.value * 1e6, 3)} ${ml} mark`, formula: uk ? 'V_зан / V = ρ_т / ρ_сп' : 'V_sub / V = ρ_b / ρ_e', numbers: `${R(rho)} / ${R(d[lower]!)} ≈ ${n(share, 2)}` });
-      else out.push({ id: `tw:${i}`, title: uk ? `${made}: межа «${nm(lower)} — ${nm(lower + 1)}», ${n(r.value * 1e6, 3)} ${ml}; частка в нижній` : `${made}: the ${nm(lower)} — ${nm(lower + 1)} boundary, ${n(r.value * 1e6, 3)} ${ml}; share in the lower`, formula: uk ? 'V₁ / V = (ρ_т − ρ₂) / (ρ₁ − ρ₂)' : 'V₁ / V = (ρ_b − ρ₂) / (ρ₁ − ρ₂)', numbers: `(${R(rho)} − ${R(d[lower + 1]!)}) / (${R(d[lower]!)} − ${R(d[lower + 1]!)}) ≈ ${n(share, 2)}` });
-      return;
-    }
-    // The drag: the frames between the marks, the time and the speed; in water, the drag once it moves steadily.
-    if (c.type === 'lab.drag') {
-      const frames = r.inputs?.['frames'] ?? 0;
-      const fps = r.inputs?.['fps'] ?? 30;
-      const track = r.inputs?.['track'] ?? 0.2;
-      const shape = dragShapeName(c['shape'] as DragShape)[uk ? 'uk' : 'en'];
-      const air = c['medium'] === 'air';
-      const t = formatMeasured('time', r.value, 0.01, locale);
-      out.push({ id: `dt:${i}`, title: uk ? `${shape} ${air ? 'в повітрі' : 'у воді'}: ${framesText(frames, true)} між позначками` : `${shape} ${air ? 'in the air' : 'in water'}: ${framesText(frames, false)} between the marks`, formula: `t = ${frames} / ${fps} ${uk ? 'с' : 's'} ≈ ${t}` });
-      out.push({ id: `dv:${i}`, title: uk ? 'швидкість між позначками' : 'the speed between the marks', formula: 'v = s / t', numbers: `${n(track, 2)} ${uk ? 'м' : 'm'} / ${t} ≈ ${n(track / r.value, 2)} ${uk ? 'м/с' : 'm/s'}` });
-      if (c['shape'] === 'ball' && !air) {
-        const { volume } = dragBody('ball');
-        const rho = r.inputs?.['rho'] ?? 1000;
-        const P = DRAG_MASS * G;
-        const Fa = rho * G * volume;
-        out.push({ id: `df:${i}`, title: uk ? 'тіло йде рівномірно: сила опору = вага − архімедова сила' : 'the body goes steadily: the drag = the weight − the buoyant force', formula: uk ? 'F_оп = m·g − ρ_в·g·V' : 'F_d = m·g − ρ_w·g·V', numbers: `${n(P, 2)} − ${n(Fa, 2)} ≈ ${n(P - Fa, 2)} ${uk ? 'Н' : 'N'}` });
-      }
-      return;
-    }
     // Contact and non-contact forces: what was seen, and whether the force acted without touching (no numbers).
     if (c.type === 'lab.touch') {
       const k = String(c['case']) as TouchCase;
@@ -642,8 +540,8 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const h = `${Math.round(r.value * 100)} ${uk ? 'см' : 'cm'}`;
       const title = uk ? `${k}-й відскок: h = ${h}` : `bounce ${k}: h = ${h}`;
       // (Its energy before the drop: the first bounce of each ball.)
-      if (k === 1) out.push({ id: `b0:${i}`, title: uk ? `${what} нагорі: h₀ = 1 м` : `${what} at the top: h₀ = 1 m`, formula: 'Eп = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · 1 ${uk ? 'м' : 'm'} ≈ ${n(m * G * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
-      out.push({ id: `bn:${i}`, title, formula: 'Eп = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · ${n(r.value, 2)} ${uk ? 'м' : 'm'} ≈ ${n(m * G * r.value * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
+      if (k === 1) out.push({ id: `b0:${i}`, title: uk ? `${what} нагорі: h₀ = 1 м` : `${what} at the top: h₀ = 1 m`, formula: uk ? 'Eп = m·g·h' : 'Eₚ = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · 1 ${uk ? 'м' : 'm'} ≈ ${n(m * G * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
+      out.push({ id: `bn:${i}`, title, formula: uk ? 'Eп = m·g·h' : 'Eₚ = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · ${n(r.value, 2)} ${uk ? 'м' : 'm'} ≈ ${n(m * G * r.value * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
       return;
     }
     // The method of rows: the row's length and the size of one, d = L/N.

@@ -1,4 +1,4 @@
-import type { Locale, LocalizedText } from '../knowledge/i18n.js';
+import type { LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
 import { EXPERIMENTS, type ExperimentKind } from '../experiments/index.js';
@@ -68,7 +68,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | ExperimentKind;
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -97,6 +97,8 @@ export type PresetControl = { readonly id: string; readonly label: LocalizedText
 );
 export { parsePlace, placeValue, type Place } from './place.js';
 import { parsePlace } from './place.js';
+import { defaultValues, varied } from './preset-kit.js';
+export { defaultValues };
 export type PresetValues = Readonly<Record<string, number | string>>;
 export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices'>>;
 export interface PresetVary {
@@ -104,8 +106,6 @@ export interface PresetVary {
   readonly build: (v: PresetValues) => PresetVariant;
 }
 
-/** The values a preset starts with. */
-export const defaultValues = (p: Preset, locale: Locale = 'uk'): PresetValues => Object.fromEntries((p.vary?.controls ?? []).map((c) => [c.id, c.kind === 'place' && locale === 'en' ? c.en : c.value]));
 /** The preset with these values: its setup, plan, question and choices built from them. */
 export function withValues(p: Preset, v: PresetValues): Preset {
   if (!p.vary) return p;
@@ -121,11 +121,6 @@ export function withValues(p: Preset, v: PresetValues): Preset {
   );
   return { ...p, ...p.vary.build(clean) };
 }
-/** Define a preset whose setup depends on values: it is built with the defaults, and keeps how to rebuild it. */
-const varied = (base: Omit<Preset, 'params' | 'question'> & Partial<Preset>, vary: PresetVary): Preset => {
-  const p = { ...base, vary } as Preset;
-  return { ...p, ...vary.build(defaultValues(p)) };
-};
 
 export interface PresetProgram {
   /** Id in CURRICULA. */
@@ -233,9 +228,6 @@ const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 /** The electromagnet's examples: where the Earth's field is taken unless another city is given. */
 const MAGNET_KYIV = 'Київ|50.4500|30.5200';
 const MAGNET_NEW_YORK = 'New York|40.7128|-74.0060';
-/** The defaults where the height and the clock matter: Kyiv (179 m — Вікіпедія), New York (10 m — GeoNames). */
-const PLACE_KYIV = 'Київ|50.4500|30.5233|179|Europe/Kyiv';
-const PLACE_NEW_YORK = 'New York|40.7143|-74.0060|10|America/New_York';
 
 const LIST: readonly Preset[] = [
   // ---------------------------------------------------------------- 7 grade, mechanics
@@ -985,146 +977,6 @@ const LIST: readonly Preset[] = [
     expect: 'reached',
   },
 
-  varied(
-    {
-      ask: { uk: 'Скільки важить повітря над кожним квадратним метром землі?', en: 'How much does the air above each square metre of ground weigh?' },
-      id: 'air-column',
-      grade: 7,
-      topic: INTERACTION,
-      title: { uk: 'Земля тримає повітря: тиск угорі й унизу', en: 'The Earth holds the air: the pressure up and down' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'air',
-      choices: [ch('nothing', 'Майже нічого: повітря ж легке', 'Next to nothing: air is light'), ch('car', 'Близько тонни', 'About a tonne'), ch('tonnes', 'Близько 10 тонн', 'About 10 tonnes')],
-      answerOnBoard: ['am:'],
-      formulas: ['mechanics.pressure', 'mechanics.hydrostatic-pressure'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'впливу земного тяжіння на організми, газову оболонку Землі' }],
-      expect: 'reached',
-    },
-    {
-      // The town: its height above the sea sets the readings (the higher the town, the less air above it).
-      controls: [{ id: 'place', label: { uk: 'Місто', en: 'City' }, kind: 'place', value: PLACE_KYIV, en: PLACE_NEW_YORK }],
-      build: (v) => {
-        const value = String(v['place']);
-        const name = parsePlace(value)?.name ?? 'Київ';
-        return {
-          question: {
-            uk: `Чому повітря не розлітається в космос? Його тягне до себе Земля — і кожен шар повітря тисне на ті, що під ним. Візьмемо смартфон із барометром: подивимося тиск на 1-му поверсі багатоповерхівки (${name}), потім на 9-му, а тоді — з дирижабля над містом. Скільки ж важить стовп повітря над кожним квадратним метром землі?`,
-            en: `Why does the air not fly off into space? The Earth pulls it — and each layer of air presses on the ones beneath. We take a smartphone with a barometer: read the pressure on the ground floor of a block of flats (${name}), then on the ninth floor, and then from an airship over the town. How much does the column of air above each square metre of ground weigh?`,
-          },
-          plan: (['ground', 'ninth', 'airship', 'high'] as const).map((where) => ({ kind: 'bench', command: { type: 'lab.air', place: value, where } }) as const),
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'solar-noon',
-      ask: { uk: 'О котрій годині за годинником настає справжній полудень?', en: 'At what time by the clock does the true noon come?' },
-      grade: 7,
-      topic: INTERACTION,
-      title: { uk: 'Гномон: полудень, годинник і широта', en: 'A gnomon: the noon, the clock and the latitude' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'gnomon',
-      choices: [ch('noon', 'Рівно о 12:00 — на те він і полудень', 'At 12:00 sharp — that is what noon is'), ch('later', 'Пізніше 12:00', 'Later than 12:00'), ch('earlier', 'Раніше 12:00', 'Earlier than 12:00')],
-      answerOnBoard: ['gn:'],
-      formulas: ['mechanics.noon-latitude'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'закономірностей руху небесних тіл і обліком часу' }],
-      expect: 'reached',
-    },
-    {
-      // The place: any town (by its name): its longitude, latitude and clock decide the noon and the shadow.
-      controls: [{ id: 'place', label: { uk: 'Місто', en: 'City' }, kind: 'place', value: PLACE_KYIV, en: PLACE_NEW_YORK }],
-      build: (v) => {
-        const value = String(v['place']);
-        const name = parsePlace(value)?.name ?? 'Київ';
-        return {
-          question: {
-            uk: `20 березня 2026 року — день весняного рівнодення. На шкільному подвір’ї (${name}) ставимо прямовисно метрову палицю — гномон — і рулеткою щопівгодини міряємо її тінь, за місцевим годинником. Найкоротша тінь — справжній полудень: Сонце стоїть найвище за день. О котрій годині за годинником він настане?`,
-            en: `20 March 2026 is the spring equinox. In a school yard (${name}) we stand a metre stick — a gnomon — upright and measure its shadow with a tape every half hour by the local clock. The shortest shadow is the true noon: the Sun stands highest of the day. At what time by the clock will it come?`,
-          },
-          plan: (['morning', 'noon', 'afternoon'] as const).map((series) => ({ kind: 'bench', command: { type: 'lab.gnomon', place: value, series } }) as const),
-        };
-      },
-    },
-  ),
-  {
-    ask: { uk: 'Де в циліндрі з чотирма рідинами зупиниться шматочок оргскла?', en: 'Where in a cylinder of four liquids does a piece of acrylic glass stop?' },
-    id: 'liquid-tower',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Тіла й рідини різної густини в одному циліндрі', en: 'Bodies and liquids of different densities in one cylinder' },
-    question: {
-      uk: 'У мірний циліндр по черзі наливаємо по 50 мл гліцерину, води, соняшникової олії та спирту — повільно, по стінці. Потім опускаємо сталеву гайку, шматочок оргскла, шматочок поліетилену й сосновий кубик. Оргскло у воді тоне. Де воно зупиниться в нашому циліндрі?',
-      en: 'Into a measuring cylinder we pour in turn 50 mL each of glycerol, water, sunflower oil and ethanol — slowly, down the wall. Then we let in a steel nut, a piece of acrylic glass, a piece of polyethylene and a pine cube. Acrylic glass sinks in water. Where will it stop in our cylinder?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'tower',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.tower', step: 'pour' } },
-      ...(['nut', 'acrylic', 'hdpe', 'pine'] as const).map((body) => ({ kind: 'bench', command: { type: 'lab.tower', step: 'drop', body } }) as const),
-    ],
-    choices: [ch('bottom', 'На дні: у воді ж воно тоне', 'On the bottom: it sinks in water after all'), ch('glycerol', 'На межі гліцерину й води', 'At the boundary of glycerol and water'), ch('oil', 'На межі води й олії', 'At the boundary of water and oil')],
-    trick: { uk: 'Більшість думає, що тіло, яке тоне у воді, неодмінно ляже на дно.', en: 'Most people think a body that sinks in water is bound to end up on the bottom.' },
-    formulas: ['mechanics.density', 'mechanics.submerged-share'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'взаємного розташуванням тіл і рідин різної густини у циліндричному посуді' },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Яке тіло з тієї самої грудки пластиліну тонутиме найповільніше?', en: 'Which body from the same lump of plasticine sinks slowest?' },
-    id: 'drag-form',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Форма тіла, середовище й сила опору', en: 'The form of a body, the medium and the drag' },
-    question: {
-      uk: 'З тієї самої грудки пластиліну (5 г) ліпимо по черзі кульку, кубик і пласку квадратну пластинку й відпускаємо біля поверхні води в акваріумі. На склі дві позначки на відстані 20 см, перша — на 5 см нижче поверхні. Знімаємо телефоном (30 кадрів за секунду) й за кадрами рахуємо, скільки часу тіло йде між позначками. Наостанок ту саму кульку відпускаємо в повітрі. Яке тіло тонутиме у воді найповільніше?',
-      en: 'From the same lump of plasticine (5 g) we mould in turn a ball, a cube and a flat square plate and let each go at the water’s surface in an aquarium. On the glass are two marks 20 cm apart, the first 5 cm below the surface. We film it with a phone (30 frames a second) and count by the frames how long the body takes between the marks. At last the same ball is let go in the air. Which body sinks slowest in the water?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'drag',
-    plan: [
-      ...(['ball', 'cube', 'plate'] as const).map((shape) => ({ kind: 'bench', command: { type: 'lab.drag', shape, medium: 'water' } }) as const),
-      { kind: 'bench', command: { type: 'lab.drag', shape: 'ball', medium: 'air' } },
-    ],
-    choices: [ch('plate', 'Пластинка', 'The plate'), ch('ball', 'Кулька', 'The ball'), ch('same', 'Усі однаково: маса ж та сама', 'All alike: the mass is the same')],
-    formulas: ['mechanics.speed'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'між формою тіла, густиною середовища і силою опору середовища' },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Як порівняти маси двох візків, не зважуючи їх?', en: 'How can two carts’ masses be compared without weighing them?' },
-    id: 'carts-mass',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Маса — міра інертності й тяжіння: візки', en: 'Mass as the measure of inertia and gravity: carts' },
-    question: {
-      uk: 'Два легкі візки по 100 г стоять на столі, між ними стиснута пружина, зв’язана ниткою. Перепалюємо нитку — пружина розштовхує візки, а ми за кадрами відео міряємо, хто скільки проїхав за 0,5 с. Спершу візки однакові, потім на другий ставимо один, а тоді два тягарці по 100 г. Наостанок вішаємо обидва візки на динамометр. Як порівняти маси двох візків, не зважуючи їх?',
-      en: 'Two light 100 g carts stand on the table with a squeezed spring between them, tied by a thread. We burn the thread — the spring pushes the carts apart, and by the video’s frames we measure how far each went in 0.5 s. First the carts are alike, then one and then two 100 g weights go on the second. At last both carts hang on a dynamometer. How can two carts’ masses be compared without weighing them?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'carts',
-    plan: [
-      ...[0, 1, 2].map((weights) => ({ kind: 'bench', command: { type: 'lab.carts', mode: 'push', weights } }) as const),
-      { kind: 'bench', command: { type: 'lab.carts', mode: 'weigh', weights: 2, cart: 1 } },
-      { kind: 'bench', command: { type: 'lab.carts', mode: 'weigh', weights: 2, cart: 2 } },
-    ],
-    choices: [ch('speeds', 'За швидкостями після поштовху: у скільки разів візок повільніший, у стільки разів його маса більша', 'By the speeds after the push: as many times slower a cart is, so many times greater its mass'), ch('same', 'Ніяк: одна пружина штовхає обидва візки однаково, тож вони поїдуть однаково', 'No way: one spring pushes both carts alike, so they go alike'), ch('faster', 'Важчий візок поїде швидше — він сильніше розганяється', 'The heavier cart goes faster — it gathers more speed')],
-    answerOnBoard: ['cr:'],
-    formulas: ['mechanics.speed', 'mechanics.weight'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'залежності між масою тіла та його інертними та гравітаційними властивостями; … між масою і силою тяжіння' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: 'Явище інерції. Інертність і маса тіла', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 16 «Інертність тіла. Маса»: візки зі стиснутими пружинами, m₂ / m₁ = v₁ / v₂' } },
-    ],
-    expect: 'reached',
-  },
   {
     ask: { uk: 'Які сили діють без дотику?', en: 'Which forces act without touching?' },
     id: 'contact-forces',
@@ -1303,7 +1155,7 @@ const LIST: readonly Preset[] = [
     title: { uk: 'Перетворення механічної енергії: відскок м’яча', en: 'Mechanical energy changing form: a ball’s bounce' },
     question: {
       uk: 'Поруч зі стальною плитою стоїть метрова лінійка. Відпускаємо м’ячик для настільного тенісу з висоти 1 м і помічаємо, на яку висоту він підскочить, — після першого удару, другого, третього. Потім так само тенісний м’яч і пластилінову кульку. Нагорі в м’ячика потенціальна енергія Eп = m·g·h, а вона пропорційна висоті. Чому м’ячик щоразу підскакує нижче?',
-      en: 'A metre stick stands by a steel plate. We let a table tennis ball go from 1 m and mark how high it bounces — after the first impact, the second, the third. Then the same with a tennis ball and a plasticine ball. At the top the ball has potential energy Eп = m·g·h, proportional to the height. Why does the ball bounce lower each time?',
+      en: 'A metre stick stands by a steel plate. We let a table tennis ball go from 1 m and mark how high it bounces — after the first impact, the second, the third. Then the same with a tennis ball and a plasticine ball. At the top the ball has potential energy Eₚ = m·g·h, proportional to the height. Why does the ball bounce lower each time?',
     },
     params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
     guided: true,

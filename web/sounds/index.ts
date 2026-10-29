@@ -185,7 +185,8 @@ const GIGGLE: Voice = { ...TOON, low: 230, high: 290, step: 0.13, glide: 0.92, v
 export const VOICE_IDS: readonly VoiceId[] = ['toon', 'speech', 'none'];
 /** Consonants as short noise bursts: centre frequency, Hz, and length, s (с, ш, т, к, п/б, м/н — a soft hum). */
 const CONSONANTS: readonly (readonly [number, number])[] = [[6000, 0.05], [3000, 0.05], [4000, 0.018], [1800, 0.02], [900, 0.015], [300, 0.03]];
-let voice: VoiceId = 'toon';
+// Silent unless a voice is chosen in the header.
+let voice: VoiceId = 'none';
 export const currentVoice = (): VoiceId => voice;
 export function setVoice(v: VoiceId): void {
   voice = v;

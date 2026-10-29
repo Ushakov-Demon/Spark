@@ -1,6 +1,5 @@
 import { BENCH_SPRING_K, BENCH_WEIGHT, WEIGHT_SET } from '../../../src/scenarios/bench.js';
 import type { LocalizedText } from '../../../src/knowledge/i18n.js';
-import { DRAG_FPS, DRAG_START, DRAG_TRACK, dragFall } from '../../../src/scenarios/drag-bench.js';
 import { Channel, type Motion, type ProcedureStep } from '../../motion.js';
 import { SINK_LEAD, type BenchView } from './bench.js';
 import { sceneOf } from '../../experiments/index.js';
@@ -27,15 +26,8 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The planets set going; the way out to Voyager.) */
   /** (The band stretched on the dynamometer.) */
   /** (The scale being drawn.) */
-  'lab.air': { uk: 'Тиск на екрані ще змінюється — чекаємо…', en: 'The pressure on the screen is still changing — wait…' },
   /** (The airship climbing to 2 km.) */
-  'lab.air.high': { uk: 'Дирижабль набирає висоту…', en: 'The airship is climbing…' },
-  'lab.gnomon': { uk: 'Сонце йде небом — міряємо тінь…', en: 'The Sun moves across the sky — measuring the shadow…' },
-  'lab.tower': { uk: 'Наливаю повільно, по стінці…', en: 'Pouring slowly, down the wall…' },
   /** (A body let into the tower.) */
-  'lab.tower.drop': { uk: 'Опускається… дивимося, де зупиниться…', en: 'Going down… where will it stop…' },
-  'lab.drag': { uk: 'Тіло тоне — телефон знімає…', en: 'The body sinks — the phone is filming…' },
-  'lab.carts': { uk: 'Нитка перегоріла — візки роз’їжджаються…', en: 'The thread burnt — the carts roll apart…' },
   'lab.touch': { uk: 'Дивимося…', en: 'Watching…' },
   'lab.coin': { uk: 'Знімаємо — дивимося покадрово…', en: 'Filming — watching frame by frame…' },
   'lab.snail': { uk: 'Равлик повзе — знімаємо 30 секунд…', en: 'The snail crawls — filming for 30 seconds…' },
@@ -67,12 +59,6 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
-  if (next.kind === 'carts' && next.carts?.mode === 'push' && next.carts.read) return cartsRun(next, draw);
-  if (next.kind === 'drag' && next.drag?.read) return dragRun(next, draw);
-  if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
-  if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
-  if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
-  if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
   if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
@@ -445,112 +431,10 @@ function touchRun(next: BenchView, draw: (v: BenchView) => void): Motion {
   };
 }
 
-/** Carts: the thread burns, then both roll apart steadily for their 0.5 s, played three times slower. */
-function cartsRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const c = next.carts!;
-  const burn = 0.5;
-  const ride = 1.5;
-  const clock = new Channel(0, burn + ride, { kind: 'steady', speed: 1 }, 1e-4);
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      const T = clock.value;
-      const { read: _r, ...rest } = c;
-      if (T < burn) return draw({ ...next, carts: { ...rest, x1: 0, x2: 0, flame: T / burn } });
-      const k = (T - burn) / ride;
-      draw({ ...next, carts: { ...rest, x1: c.x1 * k, x2: c.x2 * k, moving: true } });
-    },
-  };
-}
 
-/** The drag: the body played slowed DRAG_SLOW times, falling as the model has it; the frames counted between the marks. */
-export const DRAG_SLOW = 2;
-function dragRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const d = next.drag!;
-  const f = dragFall(d.shape, d.medium);
-  const end = f.timeTo(0.3);
-  const t0 = f.timeTo(DRAG_START);
-  const t1 = f.timeTo(DRAG_START + DRAG_TRACK);
-  const clock = new Channel(0, end, { kind: 'steady', speed: 1 / DRAG_SLOW }, 1e-5);
-  const { read: _r, count: _c, ...rest } = d;
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      const t = clock.value;
-      const frames = t < t0 ? 0 : Math.floor((Math.min(t, t1) - t0) * DRAG_FPS);
-      draw({ ...next, drag: { ...rest, at: f.at(t), moving: true, ...(t >= t0 ? { count: String(frames) } : {}) } });
-    },
-  };
-}
 
-/** The tower: the four liquids poured one after another; or the last body let in from above, slowing to where it rests. */
-function towerRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const t = next.tower!;
-  const pour = t.anim === 'pour';
-  const clock = new Channel(0, 1, { kind: 'steady', speed: pour ? 1 / 4 : 1 / 1.6 }, 1e-4);
-  const last = t.bodies[t.bodies.length - 1];
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      const u = clock.value;
-      if (pour) return draw({ ...next, tower: { ...t, poured: 4 * u } });
-      // (From above the cylinder's top, fast through the light layers, slowing down: an ease-out.)
-      const at = last ? 280 + (last.at - 280) * (1 - (1 - u) ** 3) : 0;
-      draw({ ...next, tower: { ...t, bodies: [...t.bodies.slice(0, -1), ...(last ? [{ ...last, at }] : [])] } });
-    },
-  };
-}
 
-/** The gnomon: the series' shadows one after another — the Sun moves, the shadow turns to its length, a chalk tick. */
-function gnomonRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const g = next.gnomon!;
-  const n = Math.min(g.anim ?? 0, g.tips.length);
-  if (!n) return { channels: [], frame: () => draw(next) };
-  const before = g.tips.slice(0, g.tips.length - n);
-  const fresh = g.tips.slice(g.tips.length - n);
-  const each = 1.1;
-  const clock = new Channel(0, n * each, { kind: 'steady', speed: 1 }, 1e-4);
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      // (Before the first tick the channel has no value yet.)
-      const u = (Number.isFinite(clock.value) ? clock.value : 0) / each;
-      const k = Math.max(0, Math.min(n - 1, Math.floor(u)));
-      const f = Math.min(1, (u - k) / 0.6);
-      const from = k > 0 ? fresh[k - 1]! : (before[before.length - 1] ?? fresh[0]!);
-      const to = fresh[k]!;
-      const length = from.length + (to.length - from.length) * f;
-      draw({ ...next, gnomon: { tips: [...before, ...fresh.slice(0, f >= 1 ? k + 1 : k)], now: { length, time: to.time, ...(f >= 1 ? { read: to.read } : {}) } } });
-    },
-  };
-}
 
-/** The lift going up from the ground floor to the ninth; the barometer read once it stops. */
-function liftUp(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const a = next.air!;
-  const ride = new Channel(1, 9, { kind: 'steady', speed: 3 }, 1e-3);
-  const { read: _r, ...rest } = a;
-  return {
-    channels: [ride],
-    frame: (done) => draw(done ? next : { ...next, air: { ...rest, floor: Number.isFinite(ride.value) ? ride.value : 1 } }),
-  };
-}
-
-/** The airship climbing — from the ground to 300 m, or on to 2 km: the town shrinking below; the barometer read once it is there. */
-function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const a = next.air!;
-  const from = a.where === 'high' ? 1 : 0;
-  const climb = new Channel(from, from + 1, { kind: 'steady', speed: 0.45 }, 1e-3);
-  const { read: _r, ...rest } = a;
-  return {
-    channels: [climb],
-    frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
-  };
-}
 
 
 

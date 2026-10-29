@@ -1,5 +1,5 @@
 import { TABLE } from './constants.js';
-import { CM, WOOD, WOOD_EDGE, STEEL, DARK, THREAD, weightsSvg, springSvg, rulerSvg, dynamometerSvg, stopwatchSvg, ballSvg, PLASTICINE } from './kit.js';
+import { CM, WOOD, WOOD_EDGE, STEEL, DARK, THREAD, weightsSvg, springSvg, standSvg, rulerSvg, dynamometerSvg, stopwatchSvg, ballSvg } from './kit.js';
 import type { ExperimentKind } from '../../../src/experiments/index.js';
 import { sceneOf } from '../../experiments/index.js';
 
@@ -10,7 +10,7 @@ import { sceneOf } from '../../experiments/index.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | ExperimentKind;
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | ExperimentKind;
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -66,31 +66,6 @@ export interface BenchView {
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   /** An experiment module's own view (web/experiments), drawn by its scene. */
   readonly scene?: unknown;
-  /**
-   * The air: where the phone is — on the ground floor, on the ninth (`floor` between them while the lift goes), or in
-   * the airship over the town; its barometer's reading; the labels.
-   */
-  readonly air?: { readonly where: 'ground' | 'ninth' | 'airship' | 'high'; readonly floor: number; /** How far the camera has risen with the airship: 0 — on the ground, 1 — 300 m, 2 — 2 km. */ readonly zoom?: number; readonly read?: string; readonly label: string; readonly air: string };
-  /**
-   * The gnomon: the shadows measured so far (their tips chalked on the ground, the clock time by each), the one being
-   * measured now (its length, m, and the clock); `anim` — how many of the last ones to play one by one.
-   */
-  readonly gnomon?: { readonly tips: readonly { readonly length: number; readonly time: string; readonly read: string }[]; readonly now?: { readonly length: number; readonly time: string; readonly read?: string }; readonly anim?: number };
-  /**
-   * The liquid tower: how many layers are poured (2.5 — the third half-way); the bodies in the cylinder, each
-   * where it is (mL mark of its bottom… or resting: `share` of it below the mark), the names of the liquids.
-   */
-  readonly tower?: { readonly poured: number; readonly bodies: readonly { readonly body: 'nut' | 'acrylic' | 'hdpe' | 'pine'; readonly at: number }[]; readonly names: readonly string[]; readonly ml: string; /** What has just happened, to be played: the pouring, or the last body going in. */ readonly anim?: 'pour' | 'drop' };
-  /**
-   * The drag: the plasticine body (its form) let go in the aquarium's water or in the air; `at` — how far it has
-   * fallen from where it was let go (m); `count` — the frames counted between the marks so far; `read` — the result.
-   */
-  readonly drag?: { readonly shape: 'ball' | 'cube' | 'plate'; readonly medium: 'water' | 'air'; readonly at: number; readonly size: number; readonly count?: string; readonly read?: string; readonly slow?: string; readonly moving?: boolean; readonly air: string };
-  /**
-   * Carts: pushed apart — the weights on cart 2, how far each has gone (m), the burning thread (0…1), the paths read;
-   * weighed — which cart hangs on the dynamometer, with its weights, and the reading.
-   */
-  readonly carts?: { readonly mode: string; readonly weights: number; readonly x1: number; readonly x2: number; readonly flame?: number; readonly cart?: number; readonly read?: readonly string[]; readonly slow?: string; readonly moving?: boolean };
   /** Contact and non-contact forces: the case shown and how far it has played (0 — before, 1 — done). */
   readonly touch?: { readonly case: string; readonly k: number; readonly read?: string };
   /** Inertia's motion: the card's speed, the coin's drag (μ·g), when the card leaves it, whether it slipped and dropped in. */
@@ -150,10 +125,6 @@ function blockSvg(x: number, base: number, block: readonly [number, number, numb
   return `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" rx="1.5" style="fill:${WOOD};stroke:${WOOD_EDGE}"/><path d="M${x + 6},${base - h + 6} h${w - 20} M${x + 10},${base - h / 2} h${w - 26}" style="stroke:rgba(154,107,51,0.45)"/>`;
 }
 
-/** The stand: a heavy base on the table, a rod, a clamp arm reaching to x (to the right or to the left of the rod). */
-function standSvg(rodX: number, armX: number, armY: number): string {
-  return `<rect x="${rodX - 40}" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="${rodX - 3}" y="${armY - 20}" width="6" height="${TABLE - 8 - armY + 20}" style="fill:${STEEL}"/><rect x="${rodX - 7}" y="${armY - 6}" width="14" height="12" rx="2" style="fill:${DARK}"/><rect x="${Math.min(rodX, armX - 6)}" y="${armY - 3}" width="${Math.abs(armX - rodX) + 6}" height="6" rx="2" style="fill:${STEEL}"/>`;
-}
 
 /** A dynamometer hanging from the stand with the block on its hook (weighing the block). */
 function hangingBlock(display: string, block: readonly [number, number, number]): string {
@@ -221,11 +192,6 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'rows') return rowsSvg(v.rows);
   if (v.kind === 'lift') return liftSvg(v.lift);
   if (v.kind === 'bounce') return bounceSvg(v.bounce);
-  if (v.kind === 'carts') return cartsSvg(v.carts);
-  if (v.kind === 'drag') return dragSvg(v.drag);
-  if (v.kind === 'tower') return towerSvg(v.tower);
-  if (v.kind === 'gnomon') return gnomonSvg(v.gnomon);
-  if (v.kind === 'air') return airSvg(v.air);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -456,167 +422,7 @@ function sinkSvg(s: BenchView['sink']): string {
 
 
 
-/**
- * The air: a band of air beside, thick at the bottom and thinning upwards; a nine-storey block with its lift, the phone
- * on the floor it is on — or a mountain with the phone on its top. The phone's screen shows the barometer.
- */
-function airSvg(a: BenchView['air']): string {
-  if (!a) return '';
-  const ground = TABLE - 2;
-  const band = `<defs><linearGradient id="air-thin" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="rgba(140,200,255,0.55)"/><stop offset="1" stop-color="rgba(140,200,255,0.04)"/></linearGradient></defs><rect x="592" y="20" width="22" height="${ground - 20}" style="fill:url(#air-thin)"/><text class="bench-label" x="603" y="14" text-anchor="middle">${a.air}</text>`;
-  const phone = (x: number, y: number) => `<rect x="${x - 9}" y="${y - 30}" width="18" height="30" rx="3" style="fill:#2b2f36"/><rect x="${x - 7}" y="${y - 27}" width="14" height="22" rx="1" style="fill:#cfe3f3"/>${a.read ? `<text class="bench-reading" x="${x - 14}" y="${y - 12}" text-anchor="end">${a.read}</text>` : ''}`;
-  // A block of `n` storeys, 22 units each, its foot at (x, ground): the windows two to a storey.
-  const storey = 22;
-  const w = 80;
-  const block = (x: number, n: number, numbers: boolean) => Array.from({ length: n }, (_, i) => `<rect x="${x}" y="${ground - (i + 1) * storey}" width="${w}" height="${storey}" style="fill:#c9b79c;stroke:#8c7a5e"/><rect x="${x + 10}" y="${ground - (i + 1) * storey + 6}" width="14" height="10" style="fill:#7fa7c9"/><rect x="${x + 34}" y="${ground - (i + 1) * storey + 6}" width="14" height="10" style="fill:#7fa7c9"/>${numbers ? `<text x="${x - 6}" y="${ground - i * storey - 7}" text-anchor="end" style="font:10px sans-serif;fill:#d8e2ea">${i + 1}</text>` : ''}`).join('');
-  const x0 = 470;
-  const label = `<text class="bench-label" x="${x0 - 14}" y="${ground - 9 * storey + 4}" text-anchor="end">${a.label}</text>`;
-  if (a.where === 'airship' || a.where === 'high') {
-    // The camera flies with the airship: it stays big in the frame, and the town below shrinks — at 300 m to a fifth,
-    // at 2 km to a speck among its neighbours, all to the left of it so none leaves the board (`zoom`: 0 — on the
-    // ground, 1 — 300 m, 2 — 2 km).
-    const z = a.zoom ?? (a.where === 'high' ? 2 : 1);
-    const sc = z <= 1 ? 1 - 0.78 * z : 0.22 - 0.17 * (z - 1);
-    const cx = x0 + w / 2;
-    const town = `<g transform="translate(${cx},${ground}) scale(${sc}) translate(${-cx},${-ground})">${block(x0 - 4 * (w + 14), 14, false)}${block(x0 - 3 * (w + 14), 7, false)}${block(x0 - 2 * (w + 14), 5, false)}${block(x0 - (w + 14), 12, false)}${block(x0, 9, false)}</g>`;
-    const sy = 110;
-    // (On its envelope a registration in the German airships' manner, D-LZ…: an invented one.)
-    const ship = `<g transform="translate(${cx},${sy}) scale(1.25)"><ellipse cx="0" cy="0" rx="46" ry="14" style="fill:#d9dde2;stroke:#7d858d;stroke-width:1.2"/><path d="M40,-4 l14,-9 v26 l-14,-9 Z" style="fill:#b9c0c8;stroke:#7d858d"/><rect x="-12" y="12" width="24" height="7" rx="2" style="fill:#5a636c"/><text x="-4" y="4" text-anchor="middle" style="font:700 10px sans-serif;fill:#3a4652;letter-spacing:1px">D-LZUA</text></g>`;
-    return `${band}${town}${ship}${phone(cx, sy + 44)}<text class="bench-label" x="${cx}" y="${ground - 6}" text-anchor="middle">${a.label}</text>`;
-  }
-  const y = ground - (a.floor - 1) * storey;
-  const lift = `<rect x="${x0 + w - 22}" y="${y - storey + 2}" width="18" height="${storey - 3}" style="fill:#e8e2d5;stroke:#555"/>`;
-  return `${band}${block(x0, 9, true)}${lift}${phone(x0 + w - 13, y - 2)}${label}`;
-}
 
-/** The gnomon in the yard: 100 units to the metre; the stick's foot here, its shadow along the tape to the right. */
-const GNOMON_X = 420;
-const GNOMON_K = 80;
-/**
- * The yard: the metre stick upright, its shadow on the ground along a tape, the Sun on the line through the stick's
- * top and the shadow's end (so the picture keeps the true angle), the clock; chalk ticks where the shadows ended.
- */
-function gnomonSvg(g: BenchView['gnomon']): string {
-  if (!g) return '';
-  const ground = TABLE - 4;
-  const top = ground - GNOMON_K;
-  const tape = `<rect x="${GNOMON_X}" y="${ground + 1}" width="${2 * GNOMON_K}" height="6" style="fill:#f1d36b;stroke:#a88a2c;stroke-width:0.6"/>${Array.from({ length: 21 }, (_, i) => `<path d="M${GNOMON_X + i * 8},${ground + 1} v${i % 5 ? 2.5 : 5}" style="stroke:#5a4a14;stroke-width:0.6"/>`).join('')}`;
-  const stick = `<rect x="${GNOMON_X - 2.5}" y="${top}" width="5" height="${GNOMON_K}" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/>`;
-  const ticks = g.tips.map((t) => `<path d="M${GNOMON_X + t.length * GNOMON_K},${ground - 6} v8" style="stroke:#ffffff;stroke-width:1.6"/>`).join('');
-  let now = '';
-  if (g.now) {
-    const L = g.now.length * GNOMON_K;
-    // The Sun on the ray from the shadow's end through the stick's top, 105 units beyond the top.
-    const dx = -L;
-    const dy = -GNOMON_K;
-    const r = Math.hypot(dx, dy);
-    const sx = GNOMON_X + (dx / r) * 105;
-    const sy = top + (dy / r) * 105;
-    now = `<path d="M${sx},${sy} L${GNOMON_X + L},${ground}" style="stroke:#ffd54a;stroke-width:1;stroke-dasharray:3 4;opacity:0.7"/><circle cx="${sx}" cy="${sy}" r="13" style="fill:#ffd54a;stroke:#f0a500;stroke-width:2"/><path d="M${GNOMON_X},${ground - 1} H${GNOMON_X + L}" style="stroke:rgba(20,25,30,0.75);stroke-width:5;stroke-linecap:round"/>${g.now.read ? `<text class="bench-reading" x="${GNOMON_X + L}" y="${ground - 12}" text-anchor="middle">${g.now.read}</text>` : ''}`;
-  }
-  const clock = g.now ? `<rect x="${GNOMON_X + 100}" y="${top - 60}" width="64" height="26" rx="4" style="fill:#1d2a36;stroke:#56687a"/><text x="${GNOMON_X + 132}" y="${top - 41}" text-anchor="middle" style="font:700 15px monospace;fill:#7cf29a">${g.now.time}</text>` : '';
-  return `${tape}${ticks}${now}${stick}${clock}`;
-}
-
-/** The tower's cylinder: 11 units to the centimetre; 250 mL across 3.8 cm inside — 50 mL is 4.4 cm of it. */
-const TOWER_X = 500;
-export const TOWER_PX_PER_ML = (11 * 4.41) / 50;
-const TOWER_COLORS = ['rgba(240,214,140,0.85)', 'rgba(74,144,217,0.75)', 'rgba(232,197,71,0.85)', 'rgba(224,108,140,0.7)'];
-/** The bodies: a grey hexagon nut; a clear bluish square; a white piece; a wooden cube — 1 cm or so, side by side. */
-const TOWER_BODY: Record<'nut' | 'acrylic' | 'hdpe' | 'pine', { dx: number; h: number; svg: (x: number, y: number) => string }> = {
-  nut: { dx: 0, h: 7, svg: (x, y) => `<rect x="${x - 8}" y="${y - 7}" width="16" height="7" rx="1" style="fill:#7d858d;stroke:#3a3f46"/><path d="M${x - 3},${y - 7} v7 M${x + 3},${y - 7} v7" style="stroke:#3a3f46;stroke-width:0.8"/>` },
-  acrylic: { dx: -9, h: 9, svg: (x, y) => `<rect x="${x - 5}" y="${y - 9}" width="10" height="9" rx="1" style="fill:rgba(200,235,255,0.85);stroke:#1f6fa8;stroke-width:1.2"/>` },
-  hdpe: { dx: 9, h: 6, svg: (x, y) => `<rect x="${x - 6}" y="${y - 6}" width="12" height="6" rx="1" style="fill:#fafafa;stroke:#555;stroke-width:1"/>` },
-  pine: { dx: 0, h: 11, svg: (x, y) => `<rect x="${x - 6}" y="${y - 11}" width="12" height="11" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/>` },
-};
-/** Where a body's bottom is drawn when it rests: `share` of it below the mark (on the bottom: on the glass). */
-export const towerBodyHeight = (b: 'nut' | 'acrylic' | 'hdpe' | 'pine') => TOWER_BODY[b].h;
-function towerSvg(t: BenchView['tower']): string {
-  if (!t) return '';
-  const w = 44;
-  const bottom = TABLE - 14;
-  const k = TOWER_PX_PER_ML;
-  const x0 = TOWER_X - w / 2;
-  const top = bottom - 250 * k;
-  const layers = TOWER_COLORS.map((c, i) => {
-    const fill = Math.max(0, Math.min(1, t.poured - i));
-    if (!fill) return '';
-    const y1 = bottom - 50 * k * (i + fill);
-    return `<rect x="${x0 + 2}" y="${y1}" width="${w - 4}" height="${50 * k * fill}" style="fill:${c}"/>`;
-  }).join('');
-  const names = t.names.map((n, i) => (t.poured >= i + 1 ? `<text class="bench-label" x="${x0 - 8}" y="${bottom - 50 * k * (i + 0.5) + 4}" text-anchor="end">${n}</text>` : '')).join('');
-  const marks = [50, 100, 150, 200, 250].map((m) => `<path d="M${x0 + w - 10},${bottom - m * k} h10" style="stroke:#d8e2ea;stroke-width:1"/><text class="bench-label" x="${x0 + w + 6}" y="${bottom - m * k + 4}">${m}</text>`).join('');
-  const bodies = t.bodies.map((b) => TOWER_BODY[b.body].svg(TOWER_X + TOWER_BODY[b.body].dx, Math.min(bottom, bottom - b.at * k))).join('');
-  const glass = `<rect x="${x0}" y="${top - 6}" width="${w}" height="${bottom - top + 6}" rx="3" style="fill:none;stroke:#9fb4c4;stroke-width:2.5"/><rect x="${x0 - 14}" y="${bottom}" width="${w + 28}" height="8" rx="2" style="fill:${DARK}"/>`;
-  return `${layers}${bodies}${glass}${marks}<text class="bench-label" x="${x0 + w + 6}" y="${top - 10}">${t.ml}</text>${names}`;
-}
-
-/** The aquarium: its water's surface, 8 units to the centimetre down from it; the marks at 5 and 25 cm. */
-export const DRAG_TOP = 62;
-export const DRAG_K = 800;
-const DRAG_X = 508;
-/**
- * The drag: an aquarium on the table (water, or empty — the air), two marks on its glass 20 cm apart, the
- * plasticine body falling; a phone filming from the side, its count of frames between the marks.
- */
-function dragSvg(d: BenchView['drag']): string {
-  if (!d) return '';
-  const w = 100;
-  const bottom = TABLE - 6;
-  const x0 = DRAG_X - w / 2;
-  const glass = `<rect x="${x0}" y="${DRAG_TOP - 22}" width="${w}" height="${bottom - DRAG_TOP + 22}" rx="3" style="fill:none;stroke:#9fb4c4;stroke-width:2.5"/><rect x="${x0 - 4}" y="${bottom}" width="${w + 8}" height="6" rx="2" style="fill:${DARK}"/>`;
-  const water = d.medium === 'water' ? `<rect x="${x0 + 1.5}" y="${DRAG_TOP}" width="${w - 3}" height="${bottom - DRAG_TOP}" style="fill:rgba(90,160,220,0.32)"/><path d="M${x0 + 1.5},${DRAG_TOP} h${w - 3}" style="stroke:#5a9fd8;stroke-width:1.5"/>` : `<text class="bench-label" x="${DRAG_X}" y="${DRAG_TOP + 2}" text-anchor="middle">${d.air}</text>`;
-  const m1 = DRAG_TOP + 0.05 * DRAG_K;
-  const m2 = DRAG_TOP + 0.25 * DRAG_K;
-  const marks = `<path d="M${x0 - 10},${m1} h${w + 20} M${x0 - 10},${m2} h${w + 20}" style="stroke:#c0392b;stroke-width:1.5;stroke-dasharray:5 3"/><text class="bench-label" x="${x0 - 14}" y="${m1 + 4}" text-anchor="end">0</text><text class="bench-label" x="${x0 - 14}" y="${m2 + 4}" text-anchor="end">20 см</text>`;
-  const px = d.size * 100 * 8;
-  const y = Math.min(DRAG_TOP + d.at * DRAG_K, bottom - (d.shape === 'plate' ? 2 : px / 2));
-  const body = d.shape === 'ball' ? `<circle cx="${DRAG_X}" cy="${y}" r="${px / 2}" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : d.shape === 'cube' ? `<rect x="${DRAG_X - px / 2}" y="${y - px / 2}" width="${px}" height="${px}" rx="1.5" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : `<rect x="${DRAG_X - px / 2}" y="${y - 2}" width="${px}" height="4" rx="1" style="fill:${PLASTICINE};stroke:#8a3a12"/>`;
-  // The phone on a stand beside the aquarium, its lens to the marks; the count of frames on its screen.
-  const px0 = x0 + w + 14;
-  const phone = `<rect x="${px0}" y="${m1 + 30}" width="34" height="62" rx="5" style="fill:#2b2f36"/><rect x="${px0 + 3}" y="${m1 + 36}" width="28" height="48" rx="2" style="fill:#cfe3f3"/><circle cx="${px0 + 17}" cy="${m1 + 33}" r="1.6" style="fill:#9aa"/><path d="M${px0 + 17},${m1 + 92} V${bottom + 6}" style="stroke:${STEEL};stroke-width:3"/>`;
-  const count = d.count ? `<text x="${px0 + 17}" y="${m1 + 65}" text-anchor="middle" style="font:700 14px sans-serif;fill:#1d2a36">${d.count}</text>` : '';
-  const read = d.read && !d.moving ? `<text class="bench-reading" x="${DRAG_X + 10}" y="${DRAG_TOP - 30}" text-anchor="middle">${d.read}</text>` : '';
-  const slow = d.slow && d.moving ? `<text class="bench-label" x="${DRAG_X}" y="${DRAG_TOP - 30}" text-anchor="middle">${d.slow}</text>` : '';
-  return `${water}${marks}${body}${glass}${phone}${count}${read}${slow}`;
-}
-
-/** The carts on the table: 5 units to the centimetre; where they stand, touching through the spring. */
-const CARTS_K = 500;
-const CARTS_X = 440;
-/** A light cart: a body on two wheels, its weights on top. */
-function cartSvg(x: number, base: number, weights: number, colour: string): string {
-  return `<rect x="${x - 25}" y="${base - 26}" width="50" height="18" rx="3" style="fill:${colour};stroke:#3a3f46"/><circle cx="${x - 14}" cy="${base - 5}" r="5" style="fill:#3a3f46"/><circle cx="${x + 14}" cy="${base - 5}" r="5" style="fill:#3a3f46"/>${weights ? weightsSvg(x, base - 26 - 9 * weights, weights, 18, 9) : ''}`;
-}
-/**
- * Carts: pushed apart — the two carts on the table with the spring between them, held by a thread that burns, a
- * ruler along the table, the paths read; weighed — a cart hanging on the dynamometer from the stand.
- */
-function cartsSvg(c: BenchView['carts']): string {
-  if (!c) return '';
-  const base = TABLE;
-  if (c.mode === 'weigh') {
-    const x = 470;
-    const top = 40;
-    const two = c.cart === 2;
-    const hook = top + 3 + 80;
-    const cart = `<path d="M${x},${hook} v18 M${x - 18},${hook + 34} L${x},${hook + 18} L${x + 18},${hook + 34}" style="fill:none;stroke:${THREAD};stroke-width:1.3"/>${cartSvg(x, hook + 60, two ? c.weights : 0, two ? '#5b8dd6' : '#d65b5b')}`;
-    return `${standSvg(x - 110, x, top)}${dynamometerSvg(x, top + 3, false, c.read?.[0] ?? '')}${cart}`;
-  }
-  const x1 = CARTS_X - 30 - c.x1 * CARTS_K;
-  const x2 = CARTS_X + 30 + c.x2 * CARTS_K;
-  const together = c.x1 === 0 && c.x2 === 0;
-  // The spring: squeezed between the carts until they part; then each keeps a little of it.
-  const spring = together ? `<path d="M${x1 + 25},${base - 17} ${Array.from({ length: 6 }, (_, i) => `l1.7,${i % 2 ? 6 : -6}`).join(' ')}" style="fill:none;stroke:#8d949c;stroke-width:1.6"/>` : '';
-  const thread = together && (c.flame ?? 0) < 1 ? `<path d="M${x1 + 20},${base - 22} H${x2 - 20}" style="stroke:${THREAD};stroke-width:1"/>` : '';
-  const flame = c.flame !== undefined && c.flame > 0 && c.flame < 1 ? `<path d="M${CARTS_X},${base - 24} q-5,-8 0,-18 q5,10 0,18 Z" style="fill:#ffb347;opacity:${1 - c.flame}"/>` : '';
-  // The ruler lies along the table behind the carts; red marks where they stood.
-  const ruler = rulerSvg(CARTS_X - 150, base - 22, 60, false, 5);
-  const marks = `<path d="M${CARTS_X - 30},${base - 24} v-8 M${CARTS_X + 30},${base - 24} v-8" style="stroke:#c0392b;stroke-width:2"/>`;
-  const read = c.read ? `<text class="bench-reading" x="${x1}" y="${base - 60}" text-anchor="middle">${c.read[0]}</text><text class="bench-reading" x="${x2}" y="${base - 60 - 9 * c.weights}" text-anchor="middle">${c.read[1]}</text>` : '';
-  const slow = c.slow && c.moving ? `<text class="bench-label" x="${CARTS_X}" y="${base - 110}" text-anchor="middle">${c.slow}</text>` : '';
-  return `${ruler}${marks}${cartSvg(x1, base, 0, '#d65b5b')}${cartSvg(x2, base, c.weights, '#5b8dd6')}${spring}${thread}${flame}${read}${slow}`;
-}
 
 /**
  * Contact and non-contact forces, one scene a case: the paper clip on its thread leaning to the magnet (across air,

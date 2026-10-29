@@ -126,11 +126,11 @@ export const ELECTRICAL_FORMULAS: readonly FormulaSpec[] = [
       },
       school: {
         uk: 'Закон Ома: I = U/R. У рідині частина напруги йде на те, щоб розкласти її на електродах (Uр), а ще частина «губиться» всередині батарейки (r). Тому струм рахуємо від того, що лишилося.',
-        en: 'Ohm’s law: I = U/R. In a liquid part of the voltage goes into splitting it at the electrodes (Uр) and part is “lost” inside the battery (r), so the current is counted from what is left.',
+        en: 'Ohm’s law: I = U/R. In a liquid part of the voltage goes into splitting it at the electrodes (U_d) and part is “lost” inside the battery (r), so the current is counted from what is left.',
       },
       expert: {
         uk: 'Uр — термодинамічний мінімум зі стандартних потенціалів; перенапруги на електродах не враховано, тож модель трохи завищує струм за малих напруг.',
-        en: 'Uр is the thermodynamic minimum from standard potentials; electrode overpotentials are ignored, so the model somewhat overestimates the current at low voltages.',
+        en: 'U_d is the thermodynamic minimum from standard potentials; electrode overpotentials are ignored, so the model somewhat overestimates the current at low voltages.',
       },
     },
     compute: f.cellCurrentOhm,

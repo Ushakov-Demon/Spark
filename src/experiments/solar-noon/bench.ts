@@ -1,9 +1,9 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import { parsePlace, type Place } from './place.js';
-import { zoneOffset } from './place-time.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import { parsePlace, type Place } from '../../scenarios/place.js';
+import { zoneOffset } from '../../scenarios/place-time.js';
 
 /**
  * The Sun's motion and the keeping of time (grade 7): on 20 March 2026 — the spring equinox — a 1 m stick (a gnomon)

@@ -142,19 +142,6 @@ import {
   noProgress,
   stallFixes,
   type LabFix,
-  dragBody,
-  dragShapeName,
-  framesText,
-  type DragShape,
-  TOWER_BODIES,
-  TOWER_LIQUIDS,
-  towerLiquidName,
-  towerLiquidIn,
-  type TowerBody,
-  clockText,
-  airPlace,
-  airPlaceName,
-  type AirWhere,
   experimentOf,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
@@ -173,8 +160,8 @@ import { labSheetHtml as labSheetHtmlIn, planStepLabel as planStepLabelIn, predi
 import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
-import { TOWER_PX_PER_ML, towerBodyHeight, type BenchView } from './graphics/scene/bench.js';
-import { BUSY, COIN_SLOW, DRAG_SLOW, SLIDE } from './graphics/scene/bench-motion.js';
+import type { BenchView } from './graphics/scene/bench.js';
+import { BUSY, COIN_SLOW, SLIDE } from './graphics/scene/bench-motion.js';
 import { LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute, type LibraryPage } from './library.js';
 import { createChooser, fly, type ChoiceCard, type ChooserStage } from './chooser.js';
 import { deviceSvg } from './graphics/scene/devices.js';
@@ -493,65 +480,6 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
-  // Carts: this step (or the next one): pushed apart — where they ended; weighed — which cart and the reading.
-  if (kind === 'carts') {
-    type Carts = { mode: 'push' | 'weigh'; weights: number; cart?: 1 | 2 };
-    const cc = c?.type === 'lab.carts' ? (c as unknown as Carts) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.carts');
-    const cmd = cc ?? (next?.kind === 'bench' ? (next.command as unknown as Carts) : { mode: 'push' as const, weights: 0 });
-    const recs = last && cc ? readingsOf([last]).map((x) => x.record) : [];
-    const cm = (x: number | null) => `${String(Math.round((x ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`;
-    if (cmd.mode === 'weigh') return { ...base, kind, carts: { mode: 'weigh', weights: cmd.weights, x1: 0, x2: 0, cart: cmd.cart ?? 1, ...(recs[0] ? { read: [formatMeasured('force', recs[0].value, 0.1, locale)] } : {}) } };
-    const done = recs.length === 2;
-    return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
-  }
-  // The air: where the phone is (this step's, or the next one's) and what its barometer shows; the town and its height.
-  if (kind === 'air') {
-    const ac = c?.type === 'lab.air' ? (c as unknown as { place: string; where: AirWhere }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.air');
-    const cmd = ac ?? (next?.kind === 'bench' ? (next.command as unknown as { place: string; where: AirWhere }) : { place: '', where: 'ground' as const });
-    const town = airPlace(cmd.place);
-    const uk = locale === 'uk';
-    const label = `${town.name}, ${Math.round(town.elevation ?? 0)} ${uk ? 'м над морем' : 'm above the sea'}`;
-    // (The ninth floor before its reading: the phone still waits on the ground floor; the climb to 2 km — from 300 m.)
-    // (Before the airship's first reading: still on the ninth floor.)
-    const where = !ac && cmd.where === 'ninth' ? 'ground' : !ac && cmd.where === 'high' ? 'airship' : !ac && cmd.where === 'airship' ? 'ninth' : cmd.where;
-    return { ...base, kind, air: { where, floor: where === 'ninth' ? 9 : 1, label, air: uk ? 'повітря' : 'air', ...(ac && r ? { read: formatMeasured('pressure', r.value, 1, locale) } : {}) } };
-  }
-  // The gnomon: every shadow measured so far chalked; the last one with the Sun and the clock; the last series played.
-  if (kind === 'gnomon') {
-    const done = log.filter((e) => e.command.type === 'lab.gnomon');
-    const tips = done.flatMap((e) => readingsOf([e]).map((x) => ({ length: x.record.value ?? 0, time: clockText(x.record.inputs?.['time'] ?? 0), read: formatMeasured('length', x.record.value, 0.01, locale) })));
-    const last = tips[tips.length - 1];
-    const fresh = c?.type === 'lab.gnomon' && r ? readingsOf([[...done].pop()!]).length : 0;
-    return { ...base, kind, gnomon: { tips, ...(last ? { now: { length: last.length, time: last.time, read: last.read } } : {}), ...(fresh ? { anim: fresh } : {}) } };
-  }
-  // The liquid tower: the layers once poured,  // The liquid tower: the layers once poured, every body let in so far where it rests; the step just done is played.
-  if (kind === 'tower') {
-    const done = log.filter((e) => e.command.type === 'lab.tower');
-    const poured = done.some((e) => (e.command as unknown as { step: string }).step === 'pour') ? 4 : 0;
-    const bodies = done
-      .filter((e) => (e.command as unknown as { step: string }).step === 'drop')
-      .map((e) => {
-        const body = (e.command as unknown as { body: TowerBody }).body;
-        const rec = readingsOf([e])[0]!.record;
-        const h = towerBodyHeight(body) / TOWER_PX_PER_ML;
-        return { body, at: (rec.value ?? 0) * 1e6 - (rec.inputs?.['share'] ?? 0) * h };
-      });
-    const lastTower = c?.type === 'lab.tower' ? (c as unknown as { step: 'pour' | 'drop' }).step : undefined;
-    const names = TOWER_LIQUIDS.map((l) => tr(towerLiquidName(l), locale));
-    return { ...base, kind, tower: { poured, bodies, names, ml: locale === 'uk' ? 'мл' : 'mL', ...(lastTower ? { anim: lastTower } : {}) } };
-  }
-  // The drag: this step's body (or the next one's, not let go yet): held at the surface, or at the bottom with its frames.
-  if (kind === 'drag') {
-    type Drag = { shape: DragShape; medium: 'water' | 'air' };
-    const dc = c?.type === 'lab.drag' ? (c as unknown as Drag) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.drag');
-    const cmd = dc ?? (next?.kind === 'bench' ? (next.command as unknown as Drag) : { shape: 'ball' as const, medium: 'water' as const });
-    const frames = dc && r ? (r.inputs?.['frames'] ?? 0) : null;
-    const air = locale === 'uk' ? 'повітря' : 'air';
-    return { ...base, kind, drag: { shape: cmd.shape, medium: cmd.medium, size: dragBody(cmd.shape).across, at: frames !== null ? 1 : 0, air, ...(frames !== null ? { count: String(frames), read: `${framesText(frames, locale === 'uk')} ≈ ${formatMeasured('time', r!.value, 0.01, locale)}`, slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×${DRAG_SLOW}` } : {}) } };
-  }
   // Contact and non-contact forces: this step's case (or the next one's, not played yet), and what was seen.
   if (kind === 'touch') {
     const tc = c?.type === 'lab.touch' ? (c as unknown as { case: TouchCase }) : undefined;
@@ -829,19 +757,6 @@ function allReadings() {
   return [...history.map((h) => h.result.log), session.result().log].flatMap((l) => readingsOf(l));
 }
 const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
-/** Where a body let into the tower stopped, in words (its reading: the mark, the lower layer, the share in it). */
-function towerPlace(body: TowerBody, r: { value: number | null; inputs?: Record<string, number> }): string {
-  const uk = locale === 'uk';
-  const lower = r.inputs?.['lower'] ?? -1;
-  const fem = TOWER_BODIES[body].fem === true;
-  const name = tr(TOWER_BODIES[body].name, locale);
-  const N = name.charAt(0).toUpperCase() + name.slice(1);
-  const nm = (k: number) => tr(towerLiquidName(TOWER_LIQUIDS[k]!), locale);
-  if (lower < 0) return uk ? `${N} ${fem ? 'лягла' : 'ліг'} на дно.` : `${N} went to the bottom.`;
-  if (r.inputs?.['top'] === 1) return uk ? `${N} плаває ${tr(towerLiquidIn(TOWER_LIQUIDS[lower]!), locale)}, на поверхні.` : `${N} floats ${tr(towerLiquidIn(TOWER_LIQUIDS[lower]!), locale)}, at the top.`;
-  const mark = `${Math.round((r.value ?? 0) * 1e6)} ${uk ? 'мл' : 'mL'}`;
-  return uk ? `${N} ${fem ? 'зупинилася' : 'зупинився'} на межі «${nm(lower)} — ${nm(lower + 1)}», біля позначки ${mark}.` : `${N} stopped at the ${nm(lower)} — ${nm(lower + 1)} boundary, by the ${mark} mark.`;
-}
 function measureSay(): string {
   const u = t().measure;
   const m = showingMeasure();
@@ -858,7 +773,7 @@ function measureSay(): string {
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
   // (Taking the nail out of the coil has its own words.)
-  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type;
+  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type;
   if (instrumentBusy && experimentOf(m.command.type)) return tr(experimentOf(m.command.type)!.busy(m.command as never), locale);
   if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
@@ -941,44 +856,13 @@ function measureSay(): string {
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
   }
-  // Home-made scales: level; the sheet against water; the egg.
   // An experiment module: its own words for the step.
   const mod = experimentOf(m.command.type);
   if (mod) {
-    const shown = mod.shown(m.command as never, readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === m.command.type)!]).map((x) => x.record), locale);
+    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === m.command.type)!]).map((x) => x.record);
+    if (mod.say) return mod.say(m.command as never, recs, locale);
+    const shown = mod.shown(m.command as never, recs, locale);
     return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
-  }
-  // The air: the barometer's reading at the place.
-  if (m.command.type === 'lab.air') {
-    const name = tr(airPlaceName((m.command as { where: AirWhere }).where), locale);
-    return uk ? `${name.charAt(0).toUpperCase()}${name.slice(1)}: барометр показує ${formatMeasured('pressure', r.value, 1, locale)}.` : `${name.charAt(0).toUpperCase()}${name.slice(1)}: the barometer shows ${formatMeasured('pressure', r.value, 1, locale)}.`;
-  }
-  // The gnomon: the series' shadows.
-  if (m.command.type === 'lab.gnomon') {
-    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.gnomon')!]).map((x) => x.record);
-    const list = recs.map((x) => `${clockText(x.inputs?.['time'] ?? 0)} — ${formatMeasured('length', x.value, 0.01, locale)}`).join(', ');
-    return uk ? `Тінь: ${list}.` : `The shadow: ${list}.`;
-  }
-  // The liquid tower: the layers; where a body stopped.
-  if (m.command.type === 'lab.tower') {
-    const tc = m.command as { step: string; body?: TowerBody };
-    if (tc.step === 'pour') return uk ? 'Рідини лягли шарами: гліцерин унизу, над ним вода, олія, а вгорі — спирт. Межі шарів — на позначках 50, 100 і 150 мл.' : 'The liquids lay in layers: glycerol at the bottom, above it water, oil, and ethanol on top. The boundaries are at the 50, 100 and 150 mL marks.';
-    return towerPlace(tc.body ?? 'nut', r);
-  }
-  // The drag: the frames between the marks, the time.
-  if (m.command.type === 'lab.drag') {
-    const dc = m.command as { shape: DragShape; medium: string };
-    const name = tr(dragShapeName(dc.shape), locale);
-    const f = framesText(r.inputs?.['frames'] ?? 0, uk);
-    const t = formatMeasured('time', r.value, 0.01, locale);
-    return uk ? `${name.charAt(0).toUpperCase()}${name.slice(1)} ${dc.medium === 'air' ? 'в повітрі' : 'у воді'} ${dc.shape === 'cube' ? 'пройшов' : 'пройшла'} між позначками за ${f} — ${t}.` : `${name.charAt(0).toUpperCase()}${name.slice(1)} ${dc.medium === 'air' ? 'in the air' : 'in water'} went between the marks in ${f} — ${t}.`;
-  }
-  // Carts: the two paths, or the weight.
-  if (m.command.type === 'lab.carts') {
-    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.carts')!]).map((x) => x.record);
-    if ((m.command as { mode: string }).mode === 'weigh') return uk ? `Динамометр показує ${formatMeasured('force', recs[0]?.value ?? null, 0.1, locale)}.` : `The dynamometer shows ${formatMeasured('force', recs[0]?.value ?? null, 0.1, locale)}.`;
-    const cm = (x: number | null) => `${String(Math.round((x ?? 0) * 1000) / 10).replace('.', uk ? ',' : '.')} ${uk ? 'см' : 'cm'}`;
-    return uk ? `За 0,5 с: перший візок — ${cm(recs[0]?.value ?? null)}, другий — ${cm(recs[1]?.value ?? null)}.` : `In 0.5 s: the first cart — ${cm(recs[0]?.value ?? null)}, the second — ${cm(recs[1]?.value ?? null)}.`;
   }
   // Contact and non-contact forces: what was seen.
   if (m.command.type === 'lab.touch') {
@@ -2514,7 +2398,6 @@ function render() {
   document.documentElement.lang = locale;
   document.title = pageTitle();
   $('#title').textContent = u.title;
-  $('#subtitle').textContent = u.subtitle;
   $('#lbl-language').textContent = u.language;
   $('#lbl-level').textContent = u.level;
   // A ready-made experiment is named: «2. Дослід: Як розтягується пружина?»
@@ -2836,13 +2719,6 @@ function renderProtocol() {
       // (A ball's bounce: whole centimetres.)
       // (An experiment module's own words for the step.)
       const modShown = experimentOf(c.type)?.shown(c as never, readingsOf([e]).map((x) => x.record), locale) ?? null;
-      const arShown = c.type === 'lab.air' && r.value !== null ? formatMeasured('pressure', r.value, 1, locale) : null;
-      const gnRecs = c.type === 'lab.gnomon' ? readingsOf([e]).map((x) => x.record) : [];
-      const gnShown = gnRecs.length ? gnRecs.map((x) => formatMeasured('length', x.value, 0.01, locale)).join(' · ') : null;
-      const twShown = c.type === 'lab.tower' && r.value !== null ? (c['step'] === 'pour' ? `50 · 100 · 150 · 200 ${locale === 'uk' ? 'мл' : 'mL'}` : towerPlace(c['body'] as TowerBody, r).replace(/\.$/, '')) : null;
-      const dgShown = c.type === 'lab.drag' && r.value !== null ? `${framesText(r.inputs?.['frames'] ?? 0, locale === 'uk')} ≈ ${formatMeasured('time', r.value, 0.01, locale)}` : null;
-      const ctRecs = c.type === 'lab.carts' && c['mode'] === 'push' ? readingsOf([e]).map((x) => x.record) : [];
-      const ctShown = ctRecs.length === 2 ? ctRecs.map((x) => `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`).join(' · ') : null;
       const tcShown = c.type === 'lab.touch' ? (r.inputs?.['acts'] === 1 ? (locale === 'uk' ? 'діє без дотику' : 'acts without touching') : locale === 'uk' ? 'без дотику не діє' : 'no force without touching') : null;
       const cnShown = c.type === 'lab.coin' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       const snShown = c.type === 'lab.snail' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
@@ -2853,7 +2729,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = modShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = modShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);
@@ -3035,7 +2911,7 @@ function showAssembly() {
       name: tr(x.name, locale),
       note: x.note,
       pic: choicePic(x),
-      action: 'substance' in x.look ? (x.look.substance.category.startsWith('liquid.') ? u.choose.pour : u.choose.putIn) : at === 'action' ? u.choose.pick : u.choose.put,
+      action: 'substance' in x.look ? (x.look.substance.category.startsWith('liquid.') ? u.choose.pour : u.choose.putIn) : at === 'action' ? '' : u.choose.put,
     })),
   };
   chooser.show(view, (card, pic) => void place(choices.find((x) => x.key === card.key)!, pic, at), endAssembly);
@@ -4304,6 +4180,8 @@ function buildPresets() {
       topic = heading;
       list.append(el('h3', { className: 'presets-topic' }, topic));
     }
+    // The question with this language's defaults (in English the example city is another).
+    const question = tr(withValues(p, defaultValues(p, locale)).question, locale);
     // Where it is in the programme: the formulas' curriculum quotes (newest programme first).
     const quotes = [...new Set(p.formulas.flatMap((id) => (formulas.get(id)?.curriculum ?? []).filter((c) => c.program === 'ua-nus-2023-holovko' && (!p.quoteHas || c.quote.includes(p.quoteHas))).map((c) => c.quote)))];
     // Which programmes it is in: a chip each (the exact wording on hover); "≈" — the same idea, another substance.
@@ -4319,12 +4197,13 @@ function buildPresets() {
     // The topic of the programme it is in (of this subject first): «Тема 3. Взаємодія тіл. Сили в природі».
     const progs = presetPrograms(p).filter((x) => x.match !== 'related');
     const topicOf = (x: (typeof progs)[number]) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined);
-    const topicLine = [...progs.filter((x) => getCurriculum(x.program)?.subject === presetSubject), ...progs].map(topicOf).find(Boolean)?.replace(TOPIC_NUMBER, '');
+    // (The programmes' wording is Ukrainian only: in another language — the experiment's own topic.)
+    const topicLine = locale === 'uk' ? [...progs.filter((x) => getCurriculum(x.program)?.subject === presetSubject), ...progs].map(topicOf).find(Boolean)?.replace(TOPIC_NUMBER, '') : tr(p.topic, locale);
     // The programmes in one line, cut with «…»; opened — each with its topic and the textbook's page.
     const programLine = presetPrograms(p).map((x) => `${tr(getCurriculum(x.program)!.short ?? getCurriculum(x.program)!.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}`).join(', ');
     const card = el('article', { className: `preset${preset && presetGiven?.id === p.id ? ' current' : ''}` });
     card.innerHTML = `<div class="preset-side"><div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div><button type="button" class="preset-more-btn" aria-haspopup="dialog" title="${escAttr(u.presetMore)}" aria-label="${escAttr(u.presetMore)}">ⓘ</button></div>
-      <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(tr(p.question, locale))}">${tr(p.question, locale)}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${topicLine ? `<p class="preset-topic small"><span class="muted">${u.topic}:</span> ${escAttr(topicLine)}</p>` : ''}${programs ? `<details class="programs"><summary><span class="muted">${u.programs}:</span> <span class="programs-line">${escAttr(programLine)}</span></summary><div class="programs-all">${programs}</div></details>` : ''}</div>`;
+      <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(question)}">${question}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${topicLine ? `<p class="preset-topic small"><span class="muted">${u.topic}:</span> ${escAttr(topicLine)}</p>` : ''}${programs ? `<details class="programs"><summary><span class="muted">${u.programs}:</span> <span class="programs-line">${escAttr(programLine)}</span></summary><div class="programs-all">${programs}</div></details>` : ''}</div>`;
     const go = el('button', { type: 'button', className: 'primary preset-go' }, u.presetStart);
     go.onclick = () => startPreset(p);
     card.append(go);

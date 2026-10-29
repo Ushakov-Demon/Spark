@@ -221,7 +221,7 @@ export interface UiText {
   targetLine: string;
   addTitle: string;
   /** Choosing things over the table: a picture in the middle, its neighbours at the sides; the chosen one goes on the table. */
-  choose: { put: string; pour: string; putIn: string; pick: string; add: string; change: string; what: string; build: string; close: string; prev: string; next: string; open: string };
+  choose: { put: string; pour: string; putIn: string; add: string; change: string; what: string; build: string; close: string; prev: string; next: string; open: string };
   addButton: string;
   addLiquid: string;
   addFrozen: string;
@@ -241,7 +241,6 @@ export interface UiText {
   expectHint: string;
   computing: string;
   title: string;
-  subtitle: string;
   language: string;
   level: string;
   setup: string;
@@ -529,7 +528,6 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       put: 'Поставити на стіл',
       pour: 'Налити в посудину',
       putIn: 'Покласти в посудину',
-      pick: 'Обрати',
       change: 'Змінити',
       what: 'Що змінити?',
       build: 'Зібрати дослід',
@@ -558,7 +556,6 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     expectHint: 'Спробуй передбачити, скільки часу займе дослід, — або постав ціль. Після досліду буде розбір.',
     computing: 'Рахую, що можна змінити…',
     title: 'Spark · Лабораторія',
-    subtitle: 'Нагрівай і охолоджуй, кип’яти й заморожуй: обери речовину, посуд і прилад — дивись, що відбувається, і дізнайся чому.',
     language: 'Мова',
     level: 'Рівень пояснень',
     setup: 'Установка',
@@ -839,7 +836,6 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       put: 'Put it on the table',
       pour: 'Pour it in',
       putIn: 'Put it in',
-      pick: 'Choose',
       change: 'Change',
       what: 'What to change?',
       build: 'Set up an experiment',
@@ -868,7 +864,6 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     expectHint: 'Try to predict how long the experiment will take — or set a goal. A debrief follows the experiment.',
     computing: 'Working out what could be changed…',
     title: 'Spark · Lab',
-    subtitle: 'Heat and cool, boil and freeze: pick a substance, a vessel and a device — watch what happens and find out why.',
     language: 'Language',
     level: 'Explanation level',
     setup: 'Setup',
