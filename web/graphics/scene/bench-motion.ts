@@ -23,6 +23,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.gnomon': { uk: 'Сонце йде небом — міряємо тінь…', en: 'The Sun moves across the sky — measuring the shadow…' },
   'lab.tower': { uk: 'Наливаю повільно, по стінці…', en: 'Pouring slowly, down the wall…' },
   /** (A body let into the tower.) */
   'lab.tower.drop': { uk: 'Опускається… дивимося, де зупиниться…', en: 'Going down… where will it stop…' },
@@ -60,6 +61,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'carts' && next.carts?.mode === 'push' && next.carts.read) return cartsRun(next, draw);
   if (next.kind === 'drag' && next.drag?.read) return dragRun(next, draw);
   if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
+  if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
   if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
@@ -487,6 +489,31 @@ function towerRun(next: BenchView, draw: (v: BenchView) => void): Motion {
       // (From above the cylinder's top, fast through the light layers, slowing down: an ease-out.)
       const at = last ? 280 + (last.at - 280) * (1 - (1 - u) ** 3) : 0;
       draw({ ...next, tower: { ...t, bodies: [...t.bodies.slice(0, -1), ...(last ? [{ ...last, at }] : [])] } });
+    },
+  };
+}
+
+/** The gnomon: the series' shadows one after another — the Sun moves, the shadow turns to its length, a chalk tick. */
+function gnomonRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const g = next.gnomon!;
+  const n = Math.min(g.anim ?? 0, g.tips.length);
+  if (!n) return { channels: [], frame: () => draw(next) };
+  const before = g.tips.slice(0, g.tips.length - n);
+  const fresh = g.tips.slice(g.tips.length - n);
+  const each = 1.1;
+  const clock = new Channel(0, n * each, { kind: 'steady', speed: 1 }, 1e-4);
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      // (Before the first tick the channel has no value yet.)
+      const u = (Number.isFinite(clock.value) ? clock.value : 0) / each;
+      const k = Math.max(0, Math.min(n - 1, Math.floor(u)));
+      const f = Math.min(1, (u - k) / 0.6);
+      const from = k > 0 ? fresh[k - 1]! : (before[before.length - 1] ?? fresh[0]!);
+      const to = fresh[k]!;
+      const length = from.length + (to.length - from.length) * f;
+      draw({ ...next, gnomon: { tips: [...before, ...fresh.slice(0, f >= 1 ? k + 1 : k)], now: { length, time: to.time, ...(f >= 1 ? { read: to.read } : {}) } } });
     },
   };
 }

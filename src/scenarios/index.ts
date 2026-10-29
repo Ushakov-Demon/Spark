@@ -48,3 +48,4 @@ export * from './touch-bench.js';
 export * from './carts-bench.js';
 export * from './drag-bench.js';
 export * from './tower-bench.js';
+export * from './gnomon-bench.js';

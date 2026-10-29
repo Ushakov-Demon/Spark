@@ -29,6 +29,7 @@ const UA_UNIFORM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', 
 const UA_ROWS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' }];
 const UA_ENERGY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна енергія та її види. Закон збереження енергії в механічних процесах' }];
 const UA_WINCH: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'конструювання механізмів, що перетворюють прямолінійний рух на обертальний і навпаки' }];
+const UA_SUN_TIME: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'закономірностей руху небесних тіл і обліком часу' }];
 const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Взаємодія тіл. Сила. Додавання сил. Рівнодійна.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
@@ -407,6 +408,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.woundLength,
     examples: [{ args: [0.02, 5], expected: 0.314159, note: '5 turns of a 2 cm reel' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.noon-latitude',
+    law: 'sun-and-time',
+    title: { uk: 'Широта за полуденним Сонцем', en: 'The latitude from the noon Sun' },
+    latex: '\\varphi = 90^\\circ - h + \\delta',
+    plain: 'φ = 90° − h + δ',
+    argSymbols: ['h', 'δ'],
+    resultSymbol: 'φ',
+    variables: {
+      'φ': { name: { uk: 'географічна широта місця', en: 'the place’s latitude' }, unit: '°' },
+      h: { name: { uk: 'висота Сонця над горизонтом опівдні', en: 'the Sun’s height above the horizon at noon' }, unit: '°' },
+      'δ': { name: { uk: 'схилення Сонця (у дні рівнодення ≈ 0°)', en: 'the Sun’s declination (≈ 0° at an equinox)' }, unit: '°' },
+    },
+    curriculum: UA_SUN_TIME,
+    explanation: {
+      novice: { uk: 'Що далі на північ, то нижче Сонце опівдні — і довша тінь.', en: 'The further north, the lower the noon Sun — and the longer the shadow.' },
+      school: { uk: 'У день рівнодення Сонце над екватором: на екваторі опівдні воно в зеніті (90°), а з кожним градусом широти на північ стоїть на градус нижче. В інші дні Сонце зміщене від екватора на схилення δ. Висоту знаходять за тінню палиці: h = arctg(H/L).', en: 'On an equinox the Sun stands over the equator: there at noon it is overhead (90°), and each degree of latitude north it stands a degree lower. On other days it is off the equator by its declination δ. The height comes from a stick’s shadow: h = arctan(H/L).' },
+    },
+    compute: f.noonLatitude,
+    examples: [{ args: [39.1, -0.49], expected: 50.41, note: 'Kyiv at the March equinox' }],
     textSource: 'spark',
     reviewed: false,
   }),

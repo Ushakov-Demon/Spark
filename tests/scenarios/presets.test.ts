@@ -331,6 +331,19 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('візок 1 — 1,0 Н, візок 2 з двома тягарцями — 2,9 Н');
   }, 60_000);
 
+  it('gnomon: the noon by equal shadows is 12:06 in Kyiv, later in Lviv, earlier in Kharkiv; the latitude from the noon shadow', async () => {
+    const { withValues } = await import('../../src/scenarios/index.js');
+    const at = (city: string) => run(withValues(PRESETS.find((x) => x.id === 'solar-noon')!, { city })).answer;
+    const kyiv = at('kyiv');
+    if (process.env['SHOW_ANSWERS']) console.log(kyiv.text.uk, '\n', kyiv.say.uk);
+    expect(kyiv.correct).toBe('later');
+    expect(kyiv.say.uk).toMatch(/о 12:0[5-7] за годинником/);
+    expect(at('lviv').say.uk).toMatch(/о 12:3[0-4]/);
+    expect(at('kharkiv').correct).toBe('earlier');
+    const phi = Number(/широта φ = 90° − h \+ δ ≈ ([\d,]+)°/.exec(kyiv.text.uk)![1]!.replace(',', '.'));
+    expect(Math.abs(phi - 50.45)).toBeLessThan(0.5);
+  }, 60_000);
+
   it('liquid tower: the nut on the bottom, acrylic on the glycerol, polyethylene on the water, pine in the ethanol', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'liquid-tower')!);
     expect(answer.correct).toBe('glycerol');

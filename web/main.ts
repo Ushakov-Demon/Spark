@@ -150,6 +150,7 @@ import {
   towerLiquidName,
   towerLiquidIn,
   type TowerBody,
+  clockText,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
 import type { SystemState } from '../src/core/state.js';
@@ -494,7 +495,15 @@ function benchView(): BenchView | null {
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
   }
-  // The liquid tower: the layers once poured, every body let in so far where it rests; the step just done is played.
+  // The gnomon: every shadow measured so far chalked; the last one with the Sun and the clock; the last series played.
+  if (kind === 'gnomon') {
+    const done = log.filter((e) => e.command.type === 'lab.gnomon');
+    const tips = done.flatMap((e) => readingsOf([e]).map((x) => ({ length: x.record.value ?? 0, time: clockText(x.record.inputs?.['time'] ?? 0), read: formatMeasured('length', x.record.value, 0.01, locale) })));
+    const last = tips[tips.length - 1];
+    const fresh = c?.type === 'lab.gnomon' && r ? readingsOf([[...done].pop()!]).length : 0;
+    return { ...base, kind, gnomon: { tips, ...(last ? { now: { length: last.length, time: last.time, read: last.read } } : {}), ...(fresh ? { anim: fresh } : {}) } };
+  }
+  // The liquid tower: the layers once poured,  // The liquid tower: the layers once poured, every body let in so far where it rests; the step just done is played.
   if (kind === 'tower') {
     const done = log.filter((e) => e.command.type === 'lab.tower');
     const poured = done.some((e) => (e.command as unknown as { step: string }).step === 'pour') ? 4 : 0;
@@ -908,6 +917,12 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // The gnomon: the series' shadows.
+  if (m.command.type === 'lab.gnomon') {
+    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.gnomon')!]).map((x) => x.record);
+    const list = recs.map((x) => `${clockText(x.inputs?.['time'] ?? 0)} — ${formatMeasured('length', x.value, 0.01, locale)}`).join(', ');
+    return uk ? `Тінь: ${list}.` : `The shadow: ${list}.`;
   }
   // The liquid tower: the layers; where a body stopped.
   if (m.command.type === 'lab.tower') {
@@ -2780,6 +2795,8 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const gnRecs = c.type === 'lab.gnomon' ? readingsOf([e]).map((x) => x.record) : [];
+      const gnShown = gnRecs.length ? gnRecs.map((x) => formatMeasured('length', x.value, 0.01, locale)).join(' · ') : null;
       const twShown = c.type === 'lab.tower' && r.value !== null ? (c['step'] === 'pour' ? `50 · 100 · 150 · 200 ${locale === 'uk' ? 'мл' : 'mL'}` : towerPlace(c['body'] as TowerBody, r).replace(/\.$/, '')) : null;
       const dgShown = c.type === 'lab.drag' && r.value !== null ? `${framesText(r.inputs?.['frames'] ?? 0, locale === 'uk')} ≈ ${formatMeasured('time', r.value, 0.01, locale)}` : null;
       const ctRecs = c.type === 'lab.carts' && c['mode'] === 'push' ? readingsOf([e]).map((x) => x.record) : [];
@@ -2794,7 +2811,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

@@ -62,7 +62,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -987,6 +987,38 @@ const LIST: readonly Preset[] = [
     ],
     expect: 'reached',
   },
+  varied(
+    {
+      id: 'solar-noon',
+      ask: { uk: 'О котрій годині за годинником настає справжній полудень?', en: 'At what time by the clock does the true noon come?' },
+      grade: 7,
+      topic: INTERACTION,
+      title: { uk: 'Гномон: полудень, годинник і широта', en: 'A gnomon: the noon, the clock and the latitude' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'gnomon',
+      choices: [ch('noon', 'Рівно о 12:00 — на те він і полудень', 'At 12:00 sharp — that is what noon is'), ch('later', 'Пізніше 12:00', 'Later than 12:00'), ch('earlier', 'Раніше 12:00', 'Earlier than 12:00')],
+      answerOnBoard: ['gn:'],
+      formulas: ['mechanics.noon-latitude'],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'закономірностей руху небесних тіл і обліком часу' }],
+      expect: 'reached',
+    },
+    {
+      // The city: east of the zone's 30° meridian the noon comes earlier, west of it later (4 minutes a degree).
+      controls: [{ id: 'city', label: { uk: 'Місто', en: 'The city' }, kind: 'choice', options: [ch('kyiv', 'Київ', 'Kyiv'), ch('lviv', 'Львів', 'Lviv'), ch('kharkiv', 'Харків', 'Kharkiv')], value: 'kyiv' }],
+      build: (v) => {
+        const city = String(v['city']) as 'kyiv' | 'lviv' | 'kharkiv';
+        const name = { kyiv: ['у Києві', 'in Kyiv'], lviv: ['у Львові', 'in Lviv'], kharkiv: ['у Харкові', 'in Kharkiv'] }[city];
+        return {
+          question: {
+            uk: `20 березня 2026 року — день весняного рівнодення; годинники ще показують зимовий київський час. На шкільному подвір’ї ${name[0]} ставимо прямовисно метрову палицю — гномон — і рулеткою міряємо її тінь щопівгодини з 10:00 до 15:00. Найкоротша тінь — справжній полудень: Сонце стоїть точно на півдні, найвище за день. О котрій годині за годинником він настане?`,
+            en: `20 March 2026 is the spring equinox; the clocks still keep Kyiv winter time. In a school yard ${name[1]} we stand a metre stick — a gnomon — upright and measure its shadow with a tape every half hour from 10:00 to 15:00. The shortest shadow is the true noon: the Sun stands due south, highest of the day. At what time by the clock will it come?`,
+          },
+          plan: (['morning', 'noon', 'afternoon'] as const).map((series) => ({ kind: 'bench', command: { type: 'lab.gnomon', city, series } }) as const),
+        };
+      },
+    },
+  ),
   {
     ask: { uk: 'Де в циліндрі з чотирма рідинами зупиниться шматочок оргскла?', en: 'Where in a cylinder of four liquids does a piece of acrylic glass stop?' },
     id: 'liquid-tower',
@@ -2157,7 +2189,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

@@ -184,6 +184,16 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це спосіб будови механізмів.', en: 'This is a way of building mechanisms.' } }, citations: [] },
   },
   {
+    id: 'sun-and-time',
+    kind: 'definition',
+    name: { uk: 'Видимий рух Сонця й лік часу', en: 'The Sun’s apparent motion and the keeping of time' },
+    statement: {
+      novice: { uk: 'Земля обертається, тож Сонце за добу обходить небо; опівдні воно на півдні й найвище, а тінь — найкоротша.', en: 'The Earth turns, so the Sun goes round the sky in a day; at noon it is due south and highest, and shadows are shortest.' },
+      school: { uk: 'Земля обертається на 360° за 24 год — на 1° за 4 хв. Справжній полудень у кожному меридіані свій; годинники країни йдуть за одним (київський час — 30° сх. д.), тож полудень за годинником зсунутий на 4 хв на кожен градус довготи, плюс рівняння часу. Висота полуденного Сонця залежить від широти: φ = 90° − h + δ.', en: 'The Earth turns 360° in 24 h — 1° in 4 min. Each meridian has its own true noon; a country’s clocks keep one (Kyiv time — 30° E), so noon by the clock is shifted 4 min per degree of longitude, plus the equation of time. The noon Sun’s height depends on the latitude: φ = 90° − h + δ.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Гномон — один із найдавніших астрономічних приладів: за його тінню знаходили полудень, пори року й широту.', en: 'The gnomon is one of the oldest astronomical instruments: by its shadow noon, the seasons and the latitude were found.' } }, citations: [] },
+  },
+  {
     id: 'mechanical-energy',
     kind: 'definition',
     name: { uk: 'Механічна енергія та її перетворення', en: 'Mechanical energy and how it changes form' },

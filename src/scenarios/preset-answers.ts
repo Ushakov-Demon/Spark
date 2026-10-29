@@ -28,6 +28,7 @@ import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
 import { DRAG_COEFFICIENTS, DRAG_MASS, DRAG_START, DRAG_TRACK, dragBody, dragShapeName, mediumDensity, framesText, type DragShape } from './drag-bench.js';
 import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidIn, towerLiquidName, type TowerBody } from './tower-bench.js';
+import { clockText, equalShadowsNoon, GNOMON_CITIES, GNOMON_HEIGHT, sunOf, type GnomonCity } from './gnomon-bench.js';
 import { touchPlan, touchSeen, type TouchCase } from './touch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
@@ -425,6 +426,42 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
         const s = `${parts.join('; ')}.`;
         return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
+    };
+  },
+  'solar-noon': (run) => {
+    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.gnomon' && x.record.value !== null);
+    const city = (recs[0]?.command['city'] ?? 'kyiv') as GnomonCity;
+    const shadows = recs.map((x) => ({ time: x.record.inputs?.['time'] ?? 0, length: x.record.value! }));
+    const found = shadows.length ? equalShadowsNoon(shadows) : null;
+    const noon = found?.noon ?? null;
+    const correct = noon === null ? undefined : Math.abs(noon - 720) < 1 ? 'noon' : noon > 720 ? 'later' : 'earlier';
+    const c = GNOMON_CITIES[city];
+    const lon = c.lon.value;
+    const byLon = 4 * (30 - lon);
+    const eq = sunOf(720).eqtime;
+    const L = shadows.length ? Math.min(...shadows.map((x) => x.length)) : 0;
+    const h = L ? Math.atan(GNOMON_HEIGHT / L) / (Math.PI / 180) : 0;
+    const d = sunOf(noon ?? 720).decl;
+    const phi = 90 - h + d;
+    const min = (x: number, l: Locale) => `${sig(Math.abs(x), 2, l)} ${l === 'uk' ? 'хв' : 'min'}`;
+    const deg = (x: number, l: Locale, k = 3) => `${sig(x, k, l)}°`;
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? `Сонце за добу обходить небо, бо Земля обертається: 360° за 24 години, тобто 1° за 4 хвилини. Справжній полудень настає, коли Сонце над південною стороною саме твого місця, — тому в кожному меридіані він свій. Щоб не мати в кожному місті свого часу, годинники всієї країни йдуть за одним меридіаном — для київського часу це 30° східної довготи. Місто, що лежить на схід від нього, бачить полудень раніше, на захід — пізніше, на 4 хвилини на кожен градус. Ще кілька хвилин додає рівняння часу: Земля обходить Сонце не рівномірно (орбіта — еліпс) і з нахиленою віссю, тож справжня сонячна доба протягом року то трохи довша, то коротша за 24 години. На початку весни сонячний полудень запізнюється приблизно на 7–8 хвилин. А влітку годинники переводять на годину вперед — і полудень за годинником настає близько 13-ї.\n\nЗ тієї самої тіні знаходять і широту. У полудень Сонце найвище: h = arctg(H/L). У день рівнодення воно над екватором, і його висота опівдні дорівнює 90° мінус широта; в інші дні — поправка на схилення δ. Так мореплавці визначали широту за полуденним Сонцем.`
+          : `The Sun goes round the sky in a day because the Earth turns: 360° in 24 hours, 1° in 4 minutes. The true noon comes when the Sun stands over the south of your very place — so each meridian has its own. Not to have a time of its own in every town, the whole country's clocks keep one meridian — for Kyiv time it is 30° East. A town east of it sees noon earlier, west of it later, by 4 minutes a degree. A few more minutes come from the equation of time: the Earth goes round the Sun unevenly (the orbit is an ellipse) and with its axis tilted, so the true solar day is a little longer or shorter than 24 hours through the year. In early spring the solar noon is about 7–8 minutes late. And in summer the clocks go an hour forward — and noon by the clock comes about 1 p.m.\n\nThe same shadow gives the latitude. At noon the Sun is highest: h = arctan(H/L). On an equinox it stands over the equator, and its noon height is 90° less the latitude; on other days, a correction for the declination δ. That is how sailors found their latitude by the noon Sun.`,
+      ),
+      say: both((l) => (noon === null ? '' : l === 'uk' ? `Справжній полудень ${tr(c.in, l)} — о ${clockText(noon)} за годинником!` : `The true noon ${tr(c.in, l)} — at ${clockText(noon)} by the clock!`)),
+      text: both((l) => {
+        if (noon === null || !found) return '';
+        const uk = l === 'uk';
+        const p0 = found.pairs[0]!;
+        const lonPart = Math.abs(byLon) < 0.5 ? (uk ? 'майже на 30-му меридіані' : 'almost on the 30th meridian') : uk ? `${byLon < 0 ? 'на схід' : 'на захід'} від 30-го меридіана на ${deg(Math.abs(30 - lon), l, 2)} — полудень ${byLon < 0 ? 'раніше' : 'пізніше'} на ${min(byLon, l)}` : `${byLon < 0 ? 'east' : 'west'} of the 30th meridian by ${deg(Math.abs(30 - lon), l, 2)} — noon ${byLon < 0 ? 'earlier' : 'later'} by ${min(byLon, l)}`;
+        return uk
+          ? `Найкоротша тінь — ${sig(L, 3, l)} м. Рівні тіні: ${clockText(p0.t1)} і ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} м), посередині — ${clockText((p0.t1 + p0.t2) / 2)}; у середньому з ${found.pairs.length} пар полудень настав о ${clockText(noon)}. ${c.name.uk} — ${lonPart}; рівняння часу 20 березня додає ще ${min(eq, l)} (за формулою NOAA). Разом: 12:00 ${byLon - eq >= 0 ? '+' : '−'} ${min(byLon - eq, l)} ≈ ${clockText(720 + byLon - eq)}. Висота Сонця опівдні h = arctg(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, широта φ = 90° − h + δ ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); у Вікіпедії — ${deg(c.lat.value, l, 4)}.`
+          : `The shortest shadow — ${sig(L, 3, l)} m. Equal shadows: ${clockText(p0.t1)} and ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} m), midway — ${clockText((p0.t1 + p0.t2) / 2)}; the mean of ${found.pairs.length} pairs puts noon at ${clockText(noon)}. ${c.name.en} lies ${lonPart}; the equation of time on 20 March adds ${min(eq, l)} more (NOAA's formula). Together: 12:00 ${byLon - eq >= 0 ? '+' : '−'} ${min(byLon - eq, l)} ≈ ${clockText(720 + byLon - eq)}. The Sun's noon height h = arctan(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, the latitude φ = 90° − h + δ ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); Wikipedia gives ${deg(c.lat.value, l, 4)}.`;
       }),
     };
   },

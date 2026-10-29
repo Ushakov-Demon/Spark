@@ -9,6 +9,7 @@ import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.j
 import { TOUCH_CASES, touchSeen, type TouchCase } from './touch-bench.js';
 import { DRAG_MASS, dragBody, dragShapeName, framesText, type DragShape } from './drag-bench.js';
 import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidName, type TowerBody } from './tower-bench.js';
+import { clockText, equalShadowsNoon, GNOMON_HEIGHT, sunOf } from './gnomon-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -316,6 +317,8 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   let body: { m?: number; v?: number } = {};
   const airByBody = new Map<string, number>();
   let springL0: number | null = null;
+  // (The gnomon's shadows so far, all series: the noon is found once the afternoon ones are in.)
+  const shadows: { time: number; length: number }[] = [];
   // A liquid weighed on the balance (empty vessel, then with the liquid) and its volume read by the marks: its density.
   let emptyVessel: number | null = null;
   let liquidMass: number | null = null;
@@ -464,6 +467,27 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
       out.push({ id: `cl:${i}`, title: uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w} × 100 г`}: за 0,5 с` : `${w === 0 ? 'alike carts' : `cart 2 + ${w} × 100 g`}: in 0.5 s`, formula: `l₁ = ${cm(a ?? 0)}, l₂ = ${cm(b ?? 0)}` });
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
+      return;
+    }
+    // The gnomon: the shadows of a series; after the afternoon — the noon by equal shadows, the Sun's height, the latitude.
+    if (c.type === 'lab.gnomon') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      const m = uk ? 'м' : 'm';
+      for (const x of recs) shadows.push({ time: x.inputs?.['time'] ?? 0, length: x.value! });
+      const series = String(c['series']);
+      const times = recs.map((x) => clockText(x.inputs?.['time'] ?? 0)).join(', ');
+      out.push({ id: `gs:${i}`, title: uk ? `тінь метрової палиці о ${times}` : `the metre stick’s shadow at ${times}`, formula: `L: ${recs.map((x) => Math.round(x.value! * 100)).join(', ')} ${uk ? 'см' : 'cm'}` });
+      if (series !== 'afternoon') return;
+      const found = equalShadowsNoon(shadows);
+      if (found) {
+        const p0 = found.pairs[0]!;
+        out.push({ id: `gn:${i}`, title: uk ? `полудень — посередині між рівними тінями (${n(p0.length, 3)} ${m})` : `noon — midway between equal shadows (${n(p0.length, 3)} ${m})`, formula: 't₀ = (t₁ + t₂) / 2', numbers: `(${clockText(p0.t1)} + ${clockText(p0.t2)}) / 2 ≈ ${clockText((p0.t1 + p0.t2) / 2)}${found.pairs.length > 1 ? (uk ? `; у середньому з ${found.pairs.length} пар — ${clockText(found.noon)}` : `; the mean of ${found.pairs.length} pairs — ${clockText(found.noon)}`) : ''}` });
+      }
+      const L = Math.min(...shadows.map((x) => x.length));
+      const h = Math.atan(GNOMON_HEIGHT / L) / (Math.PI / 180);
+      const d = sunOf(found?.noon ?? 720).decl;
+      out.push({ id: `gh:${i}`, title: uk ? 'висота Сонця опівдні — з найкоротшої тіні' : 'the Sun’s height at noon — from the shortest shadow', formula: 'h = arctg(H / L)', numbers: `arctg(1 ${m} / ${n(L, 3)} ${m}) ≈ ${n(h, 3)}°` });
+      out.push({ id: `gl:${i}`, title: uk ? `широта місця (схилення Сонця δ ≈ ${n(d, 1)}° — за формулою NOAA)` : `the latitude (the Sun’s declination δ ≈ ${n(d, 1)}° — by NOAA’s formula)`, formula: 'φ = 90° − h + δ', numbers: `90° − ${n(h, 3)}° ${d < 0 ? '−' : '+'} ${n(Math.abs(d), 1)}° ≈ ${n(90 - h + d, 3)}°` });
       return;
     }
     // The liquid tower: the layers by their densities; each body — between which liquids, and how much of it in the lower one.

@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -66,6 +66,11 @@ export interface BenchView {
    * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
    * dropped below the card (m), its tilt (°), and the slow motion's label.
    */
+  /**
+   * The gnomon: the shadows measured so far (their tips chalked on the ground, the clock time by each), the one being
+   * measured now (its length, m, and the clock); `anim` — how many of the last ones to play one by one.
+   */
+  readonly gnomon?: { readonly tips: readonly { readonly length: number; readonly time: string; readonly read: string }[]; readonly now?: { readonly length: number; readonly time: string; readonly read?: string }; readonly anim?: number };
   /**
    * The liquid tower: how many layers are poured (2.5 — the third half-way); the bodies in the cylinder, each
    * where it is (mL mark of its bottom… or resting: `share` of it below the mark), the names of the liquids.
@@ -248,6 +253,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'carts') return cartsSvg(v.carts);
   if (v.kind === 'drag') return dragSvg(v.drag);
   if (v.kind === 'tower') return towerSvg(v.tower);
+  if (v.kind === 'gnomon') return gnomonSvg(v.gnomon);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -480,6 +486,35 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/** The gnomon in the yard: 100 units to the metre; the stick's foot here, its shadow along the tape to the right. */
+const GNOMON_X = 420;
+const GNOMON_K = 80;
+/**
+ * The yard: the metre stick upright, its shadow on the ground along a tape, the Sun on the line through the stick's
+ * top and the shadow's end (so the picture keeps the true angle), the clock; chalk ticks where the shadows ended.
+ */
+function gnomonSvg(g: BenchView['gnomon']): string {
+  if (!g) return '';
+  const ground = TABLE - 4;
+  const top = ground - GNOMON_K;
+  const tape = `<rect x="${GNOMON_X}" y="${ground + 1}" width="${2 * GNOMON_K}" height="6" style="fill:#f1d36b;stroke:#a88a2c;stroke-width:0.6"/>${Array.from({ length: 21 }, (_, i) => `<path d="M${GNOMON_X + i * 8},${ground + 1} v${i % 5 ? 2.5 : 5}" style="stroke:#5a4a14;stroke-width:0.6"/>`).join('')}`;
+  const stick = `<rect x="${GNOMON_X - 2.5}" y="${top}" width="5" height="${GNOMON_K}" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/>`;
+  const ticks = g.tips.map((t) => `<path d="M${GNOMON_X + t.length * GNOMON_K},${ground - 6} v8" style="stroke:#ffffff;stroke-width:1.6"/>`).join('');
+  let now = '';
+  if (g.now) {
+    const L = g.now.length * GNOMON_K;
+    // The Sun on the ray from the shadow's end through the stick's top, 105 units beyond the top.
+    const dx = -L;
+    const dy = -GNOMON_K;
+    const r = Math.hypot(dx, dy);
+    const sx = GNOMON_X + (dx / r) * 105;
+    const sy = top + (dy / r) * 105;
+    now = `<path d="M${sx},${sy} L${GNOMON_X + L},${ground}" style="stroke:#ffd54a;stroke-width:1;stroke-dasharray:3 4;opacity:0.7"/><circle cx="${sx}" cy="${sy}" r="13" style="fill:#ffd54a;stroke:#f0a500;stroke-width:2"/><path d="M${GNOMON_X},${ground - 1} H${GNOMON_X + L}" style="stroke:rgba(20,25,30,0.75);stroke-width:5;stroke-linecap:round"/>${g.now.read ? `<text class="bench-reading" x="${GNOMON_X + L}" y="${ground - 12}" text-anchor="middle">${g.now.read}</text>` : ''}`;
+  }
+  const clock = g.now ? `<rect x="${GNOMON_X + 100}" y="${top - 60}" width="64" height="26" rx="4" style="fill:#1d2a36;stroke:#56687a"/><text x="${GNOMON_X + 132}" y="${top - 41}" text-anchor="middle" style="font:700 15px monospace;fill:#7cf29a">${g.now.time}</text>` : '';
+  return `${tape}${ticks}${now}${stick}${clock}`;
 }
 
 /** The tower's cylinder: 11 units to the centimetre; 250 mL across 3.8 cm inside — 50 mL is 4.4 cm of it. */
