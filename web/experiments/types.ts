@@ -18,7 +18,7 @@ export interface SceneContext {
 
 /**
  * The picture of an experiment module (src/experiments): its view from the run, the drawing, and the motion of the
- * step just done. Every step the module says it is busy with must have a motion — or the next button never comes.
+ * step just done. Every step the module says it is busy with (its `busy` not null) must have a motion — or the next button never comes.
  */
 export interface ExperimentScene<V, K extends string = string> {
   readonly kind: K;

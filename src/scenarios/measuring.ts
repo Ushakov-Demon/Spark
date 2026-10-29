@@ -188,6 +188,16 @@ export function readingsOf<C extends { type: string }>(log: readonly ExperimentL
   return out;
 }
 
+/** A reading in the protocol, by what it measures (the usual divisions: 1 hPa, 0.01 g, 1 mm, 0.01 s, the cylinder's own, 0.1 N). */
+export function readingText(r: MeasurementRecord, locale: 'uk' | 'en'): string {
+  if (r.quantity === 'pressure') return formatMeasured('pressure', r.value, 100, locale);
+  if (r.quantity === 'mass') return formatMeasured('mass', r.value, 0.00001, locale);
+  if (r.quantity === 'length') return formatMeasured('length', r.value, 0.001, locale);
+  if (r.quantity === 'time') return formatMeasured('time', r.value, 0.01, locale);
+  if (r.quantity === 'volume') return formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale);
+  return formatMeasured('force', r.value, 0.1, locale);
+}
+
 /** A reading as an instrument shows it: "1 657 г", "62 мл", "0,6 Н"; null — out of range. */
 export function formatMeasured(quantity: MeasurementRecord['quantity'], value: number | null, division: number, locale: 'uk' | 'en'): string {
   const uk = locale === 'uk';

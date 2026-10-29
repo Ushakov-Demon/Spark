@@ -8,7 +8,6 @@ import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.
 import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './motion-bench.js';
 import { slopeLoad } from './lever-bench.js';
 import { LAB_RESISTOR, SET_RESISTORS } from './circuit-bench.js';
-import { earthField, modelYear } from '../domains/electrical/wmm.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -70,7 +69,7 @@ export interface Preset {
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
   /** What stands on the table, when it is not the bench's usual (one bench, another set: a bubble in washing-up liquid). */
   readonly benchSetup?: LocalizedText;
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | ExperimentKind;
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -99,7 +98,7 @@ export type PresetControl = { readonly id: string; readonly label: LocalizedText
 );
 export { parsePlace, placeValue, type Place } from './place.js';
 import { parsePlace } from './place.js';
-import { defaultValues, varied } from './preset-kit.js';
+import { defaultValues, MEDIA, varied } from './preset-kit.js';
 export { defaultValues };
 export type PresetValues = Readonly<Record<string, number | string>>;
 export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices'>>;
@@ -186,8 +185,6 @@ const MOTION: LocalizedText = { uk: 'Механічний рух', en: 'Mechanic
 const INTERACTION: LocalizedText = { uk: 'Взаємодія тіл. Сила', en: 'Interaction of bodies. Force' };
 const PRESSURE: LocalizedText = { uk: 'Тиск твердих тіл, рідин і газів', en: 'Pressure of solids, liquids and gases' };
 const WORK: LocalizedText = { uk: 'Механічна робота. Механічна енергія', en: 'Mechanical work. Mechanical energy' };
-const MEDIA: LocalizedText = { uk: 'Електричний струм у різних середовищах', en: 'Electric current in different media' };
-const MAGNETIC: LocalizedText = { uk: 'Магнітні та електромагнітні явища', en: 'Magnetic and electromagnetic phenomena' };
 
 const room = { roomTemp: 20, lid: false } as const;
 /** Metals for the specific-heat lab work: what a school set of calorimeter cylinders has. */
@@ -227,9 +224,6 @@ const voltsText = (volts: readonly number[], l: 'uk' | 'en') => {
 };
 const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 
-/** The electromagnet's examples: where the Earth's field is taken unless another city is given. */
-const MAGNET_KYIV = 'Київ|50.4500|30.5200';
-const MAGNET_NEW_YORK = 'New York|40.7128|-74.0060';
 
 const LIST: readonly Preset[] = [
   // ---------------------------------------------------------------- 7 grade, mechanics
@@ -605,104 +599,6 @@ const LIST: readonly Preset[] = [
     quoteHas: 'густини',
     expect: 'reached',
   },
-  {
-    id: 'hydraulic-press',
-    ask: { uk: 'У скільки разів гідравлічна машина виграє в силі?', en: 'How many times does a hydraulic machine gain in force?' },
-    grade: 7,
-    topic: PRESSURE,
-    title: { uk: 'Гідравлічна машина зі шприців', en: 'A hydraulic machine of syringes' },
-    question: {
-      uk: 'Два шприци — вузький і широкий — з’єднані трубкою, усе заповнене водою. Виміряємо діаметри поршнів. Ставитимемо на широкий поршень 2, 4 і 6 тягарців по 100 г і тиснутимемо динамометром на вузький, поки вантаж не почне підніматися. А наостанок опустимо вузький поршень на 6 см і подивимося, на скільки підніметься широкий. У скільки разів така машина виграє в силі?',
-      en: 'Two syringes — a narrow and a wide one — are joined by a tube, all full of water. We measure the pistons’ diameters. We put 2, 4 and 6 weights of 100 g on the wide piston and push the narrow one with the dynamometer until the load starts to rise. At last we push the narrow piston 6 cm down and see how far the wide one rises. How many times does such a machine gain in force?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'press',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.press', step: 'diameters' } },
-      ...[2, 4, 6].map((weights) => ({ kind: 'bench', command: { type: 'lab.press', step: 'lift', weights } }) as const),
-      { kind: 'bench', command: { type: 'lab.press', step: 'travel', weights: 6 } },
-    ],
-    choices: [ch('areas', 'У стільки, у скільки площа широкого поршня більша за площу вузького', 'As many times as the wide piston’s area is larger than the narrow one’s'), ch('diameters', 'У стільки, у скільки більший діаметр', 'As many times as the diameter is larger'), ch('none', 'Ні в скільки — сила та сама', 'Not at all — the force is the same')],
-    choicesAt: 'end',
-    answerOnBoard: ['gain:'],
-    formulas: ['mechanics.hydraulic', 'mechanics.pressure'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Закон Паскаля. … Гідравлічна машина. … Дослідження: … передавання тиску рідинами й газами' }],
-    expect: 'reached',
-  },
-  varied(
-    {
-      id: 'hydrostatic-paradox',
-      ask: { uk: 'У якій посудині вода тисне на дно найсильніше?', en: 'In which vessel does the water press on the bottom hardest?' },
-      grade: 7,
-      topic: PRESSURE,
-      title: { uk: 'Гідростатичний парадокс: прилад Паскаля', en: 'The hydrostatic paradox: Pascal’s device' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'vessels',
-      choices: [ch('same', 'Однаково в усіх трьох', 'Alike in all three'), ch('wide', 'Найсильніше — у тій, що розширюється догори', 'Hardest in the one widening upwards'), ch('narrow', 'Найсильніше — у тій, що звужується догори', 'Hardest in the one narrowing upwards')],
-      choicesAt: 'end',
-      answerOnBoard: ['vF:'],
-      formulas: ['mechanics.bottom-force', 'mechanics.hydrostatic-pressure'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }],
-      expect: 'reached',
-    },
-    {
-      // How high the water stands: the manometer follows it, the shapes do not matter.
-      controls: [{ id: 'height', label: { uk: 'Висота води в посудинах', en: 'The water’s height in the vessels' }, kind: 'number', unit: 'см', min: 6, max: 12, step: 2, value: 10 }],
-      build: (v) => {
-        const cm = Number(v['height']);
-        const height = cm / 100;
-        return {
-          question: {
-            uk: `Прилад Паскаля: на підставку, дно якої — гумова плівка з трубкою до манометра, по черзі закручують три скляні посудини: пряму, ту, що розширюється догори, і ту, що звужується. Дно в усіх однакове — виміряємо його. У кожну наллємо з мензурки води до висоти ${cm} см, запишемо, скільки води пішло, і що показує манометр. У якій посудині вода тисне на дно найсильніше?`,
-            en: `Pascal’s device: three glass vessels — a straight one, one widening upwards and one narrowing — are screwed in turn onto a stand whose bottom is a rubber film with a tube to a manometer. All have the same bottom — we measure it. Into each we pour water from a measuring cylinder up to ${cm} cm and write down how much water went in and what the manometer shows. In which vessel does the water press on the bottom hardest?`,
-          },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.vessel', step: 'bottom' } },
-            ...(['straight', 'wide', 'narrow'] as const).map((shape) => ({ kind: 'bench', command: { type: 'lab.vessel', step: 'fill', shape, height } }) as const),
-          ],
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'atmospheric-pressure',
-      ask: { uk: 'Чи покаже шприц такий самий тиск повітря, як барометр?', en: 'Will a syringe show the same air pressure as the barometer?' },
-      grade: 7,
-      topic: PRESSURE,
-      title: { uk: 'Вимірюємо атмосферний тиск шприцом', en: 'Measuring the atmospheric pressure with a syringe' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'atm',
-      choices: [ch('less', 'Менший, ніж барометр', 'Less than the barometer'), ch('same', 'Такий самий, як барометр', 'The same as the barometer'), ch('more', 'Більший, ніж барометр', 'More than the barometer')],
-      choicesAt: 'end',
-      answerOnBoard: ['pa:'],
-      formulas: ['mechanics.atmosphere-syringe', 'mechanics.pressure'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'вимірювання й визначення: атмосферного й гідростатичного тиску' }],
-      expect: 'reached',
-    },
-    {
-      // The weather: the barometer, and so the force on the plunger, differ from day to day.
-      controls: [{ id: 'air', label: { uk: 'Погода (тиск повітря)', en: 'The weather (air pressure)' }, kind: 'choice', options: [ch('99000', 'Циклон: 990 гПа', 'A cyclone: 990 hPa'), ch('101300', 'Звичайний день: 1013 гПа', 'An ordinary day: 1013 hPa'), ch('103500', 'Антициклон: 1035 гПа', 'An anticyclone: 1035 hPa')], value: '101300' }],
-      build: (v) => {
-        const air = Number(v['air']);
-        return {
-          question: {
-            uk: 'Шприц на 1 мл, динамометр, лінійка й барометр-анероїд. Виміряємо, яку довжину займає шкала шприца від 0 до 1 мл, і подивимося на барометр. Спершу витягнемо поршень динамометром із відкритим носиком, потім — закривши носик ковпачком: до позначок 0,25, 0,5 і 1 мл. Тиск повітря дасть сила, поділена на площу поршня. Чи покаже шприц такий самий тиск, як барометр?',
-            en: 'A 1 mL syringe, a dynamometer, a ruler and an aneroid barometer. We measure how long the syringe’s scale from 0 to 1 mL is and look at the barometer. First we pull the plunger out with the dynamometer with the nozzle open, then with the nozzle shut by a cap: to the 0.25, 0.5 and 1 mL marks. The force over the plunger’s area gives the air’s pressure. Will the syringe show the same pressure as the barometer?',
-          },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.atm', step: 'scale', air } },
-            { kind: 'bench', command: { type: 'lab.atm', step: 'barometer', air } },
-            { kind: 'bench', command: { type: 'lab.atm', step: 'open', air } },
-            ...[0.25, 0.5, 1].map((pulled) => ({ kind: 'bench', command: { type: 'lab.atm', step: 'sealed', air, pulled } }) as const),
-          ],
-        };
-      },
-    },
-  ),
   {
     id: 'floating-conditions',
     ask: { uk: 'За якої умови тіло тоне, плаває всередині рідини, спливає?', en: 'When does a body sink, float inside a liquid, come up?' },
@@ -1446,114 +1342,6 @@ const LIST: readonly Preset[] = [
     choices: [ch('copper', 'Шар міді', 'A layer of copper'), ch('hydrogen', 'Бульбашки водню', 'Bubbles of hydrogen'), ch('chlorine', 'Хлор', 'Chlorine')],
     formulas: ['electrical.faraday-moles'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
-    expect: 'reached',
-  },
-  varied(
-    {
-      id: 'electromagnet',
-      ask: { uk: 'Що робить електромагніт сильнішим?', en: 'What makes an electromagnet stronger?' },
-      grade: 9,
-      topic: MAGNETIC,
-      title: { uk: 'Робимо електромагніт', en: 'Making an electromagnet' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'magnet',
-      choices: [ch('both', 'І більший струм, і залізне осердя', 'Both a larger current and an iron core'), ch('current', 'Лише більший струм', 'Only a larger current'), ch('core', 'Лише залізне осердя', 'Only an iron core')],
-      choicesAt: 'end',
-      answerOnBoard: ['mB:'],
-      formulas: ['electrical.compass-field'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 4', topic: 'Тема 2. Магнітні та електромагнітні явища', match: 'same', quote: '№ 4. Виготовлення електромагніта та вивчення його магнітного поля.' }],
-      expect: 'reached',
-    },
-    {
-      // How many turns are wound on the nail: the field grows with them as with the current. Where the lab is: the
-      // Earth's field that holds the needle north differs from place to place (Kyiv and New York — examples).
-      controls: [
-        { id: 'turns', label: { uk: 'Витків на цвяху', en: 'Turns on the nail' }, kind: 'number', unit: '', min: 50, max: 150, step: 50, value: 100 },
-        { id: 'place', label: { uk: 'Місто', en: 'City' }, kind: 'place', value: MAGNET_KYIV, en: MAGNET_NEW_YORK },
-      ],
-      build: (v) => {
-        const turns = Number(v['turns']);
-        const place = parsePlace(v['place']) ?? parsePlace(MAGNET_KYIV)!;
-        const example = v['place'] === MAGNET_KYIV || v['place'] === MAGNET_NEW_YORK;
-        const earth = earthField(place.lat, place.lon, modelYear(new Date())).h;
-        const uT = (l: 'uk' | 'en') => (earth * 1e6).toFixed(1).replace('.', l === 'uk' ? ',' : '.');
-        const at = { place: place.name, earth, ...(example ? { example: true } : {}) };
-        return {
-          question: {
-            uk: `Намотаємо на сталевий цвях ${turns} витків ізольованого дроту й увімкнемо котушку в коло з джерелом, ключем, реостатом і амперметром. Котушку покладемо віссю зі сходу на захід, а на її осі, за 15 см від середини, поставимо компас: без струму його стрілка дивиться на північ — її тримає поле Землі (${place.name}${example ? ', для прикладу' : ''}: його горизонтальна складова ≈ ${uT('uk')} мкТл). Пускатимемо струм 0,5, 1 і 1,5 А й записуватимемо, на скільки градусів відхилилася стрілка. Тоді змінимо напрям струму, а наостанок витягнемо цвях. Що робить електромагніт сильнішим?`,
-            en: `We wind ${turns} turns of insulated wire on a steel nail and connect the coil into a circuit with a source, a key, a rheostat and an ammeter. The coil lies with its axis east–west, and on its axis, 15 cm from its middle, stands a compass: with no current its needle looks north — the Earth’s field holds it there (${place.name}${example ? ', for example' : ''}: its horizontal part ≈ ${uT('en')} µT). We let 0.5, 1 and 1.5 A through and write down how many degrees the needle turned. Then we reverse the current, and at last pull the nail out. What makes an electromagnet stronger?`,
-          },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.magnet', current: 0, turns, core: true, ...at } },
-            ...[0.5, 1, 1.5].map((current) => ({ kind: 'bench', command: { type: 'lab.magnet', current, turns, core: true, ...at } }) as const),
-            { kind: 'bench', command: { type: 'lab.magnet', current: 1.5, turns, core: true, reversed: true, ...at } },
-            { kind: 'bench', command: { type: 'lab.magnet', current: 1.5, turns, core: false, ...at } },
-          ],
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'electromagnetic-induction',
-      ask: { uk: 'Коли в котушці виникає струм?', en: 'When does a current flow in the coil?' },
-      grade: 9,
-      topic: MAGNETIC,
-      title: { uk: 'Магніт і котушка: електромагнітна індукція', en: 'A magnet and a coil: electromagnetic induction' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'induct',
-      choices: [ch('motion', 'Коли магніт і котушка рухаються одне відносно одного', 'When the magnet and the coil move against each other'), ch('inside', 'Коли магніт лежить у котушці', 'When the magnet lies in the coil'), ch('never', 'Струму від магніту не буде', 'A magnet makes no current')],
-      choicesAt: 'end',
-      answerOnBoard: ['iE:'],
-      formulas: ['electrical.induced-emf'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 5', topic: 'Тема 2. Магнітні та електромагнітні явища', match: 'same', quote: '№ 5. Дослідження явища електромагнітної індукції.' }],
-      expect: 'reached',
-    },
-    {
-      // The coil's turns: more turns — more EMF, but more wire and so more resistance too.
-      controls: [{ id: 'turns', label: { uk: 'Витків у котушці', en: 'Turns in the coil' }, kind: 'choice', options: [ch('100', '100', '100'), ch('200', '200', '200'), ch('400', '400', '400')], value: '200' }],
-      build: (v) => {
-        const turns = Number(v['turns']);
-        const fast = 0.3;
-        const slow = 1.5;
-        return {
-          question: {
-            uk: `Котушку на ${turns} витків з’єднаємо з міліамперметром, у якого нуль посередині: стрілка відхиляється в той бік, куди йде струм. Покладемо в котушку штабовий магніт; потім швидко витягнемо його й швидко вставимо північним полюсом, потім — повільно, а тоді швидко вставимо південним. Наостанок не рухатимемо магніт, а швидко надінемо на нього котушку. Щоразу запишемо, куди й на скільки відхилилася стрілка. Коли в котушці виникає струм?`,
-            en: `We join a coil of ${turns} turns to a milliammeter with its zero in the middle: the needle swings the way the current goes. We put a bar magnet in the coil; then pull it out fast and push it in fast, north pole first, then slowly, and then push it in fast south pole first. At last we keep the magnet still and slip the coil onto it fast. Each time we note which way and how far the needle swung. When does a current flow in the coil?`,
-          },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.induct', move: 'still', pole: 'N', time: fast, turns } },
-            { kind: 'bench', command: { type: 'lab.induct', move: 'out', pole: 'N', time: fast, turns } },
-            { kind: 'bench', command: { type: 'lab.induct', move: 'in', pole: 'N', time: fast, turns } },
-            { kind: 'bench', command: { type: 'lab.induct', move: 'in', pole: 'N', time: slow, turns } },
-            { kind: 'bench', command: { type: 'lab.induct', move: 'in', pole: 'S', time: fast, turns } },
-            { kind: 'bench', command: { type: 'lab.induct', move: 'coil', pole: 'N', time: fast, turns } },
-          ],
-        };
-      },
-    },
-  ),
-  {
-    id: 'diode-black-box',
-    ask: { uk: 'Що сховано в «чорній скриньці»?', en: 'What is hidden in the “black box”?' },
-    grade: 9,
-    topic: MEDIA,
-    title: { uk: 'Що в «чорній скриньці»?', en: 'What is in the “black box”?' },
-    question: {
-      uk: 'Перед нами закрита скринька з двома клемами, A і B. Увімкнемо її в коло з джерелом, ключем, захисним резистором на 100 Ом і мультиметром-міліамперметром. Ставитимемо на джерелі 1, 2 і 3 В і записуватимемо силу струму, а тоді перевернемо скриньку — поміняємо клеми місцями — і повторимо. З напруги й струму знайдемо опір кола R = U / I. Що всередині скриньки?',
-      en: 'Here is a closed box with two terminals, A and B. We connect it into a circuit with a source, a key, a 100 Ω protective resistor and a multimeter as a milliammeter. We set the source to 1, 2 and 3 V and write down the current, then turn the box round — swap its terminals — and do the same again. From the voltage and the current we find the circuit’s resistance R = U / I. What is inside the box?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'box',
-    plan: [false, true].flatMap((reversed) => [1, 2, 3].map((source) => ({ kind: 'bench', command: { type: 'lab.box', source, reversed } }) as const)),
-    choices: [ch('resistor', 'Резистор', 'A resistor'), ch('diode', 'Напівпровідниковий діод', 'A semiconductor diode'), ch('open', 'Нічого — коло розірване', 'Nothing — the circuit is broken')],
-    choicesAt: 'end',
-    answerOnBoard: ['boxR:'],
-    formulas: ['electrical.ohm-resistance'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 2', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'same', quote: '№ 2. Дослідження електричного опору кола з напівпровідниковим діодом (дослідження «чорної скриньки»).' }],
     expect: 'reached',
   },
   {

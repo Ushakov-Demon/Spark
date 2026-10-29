@@ -1,5 +1,5 @@
 import { TABLE } from './constants.js';
-import { CM, WOOD, WOOD_EDGE, STEEL, DARK, THREAD, weightsSvg, springSvg, standSvg, rulerSvg, dynamometerSvg, stopwatchSvg, ballSvg } from './kit.js';
+import { CM, WOOD, WOOD_EDGE, STEEL, DARK, THREAD, weightsSvg, springSvg, standSvg, meterSvg, rulerSvg, dynamometerSvg, stopwatchSvg, ballSvg } from './kit.js';
 import type { ExperimentKind } from '../../../src/experiments/index.js';
 import { sceneOf } from '../../experiments/index.js';
 
@@ -10,7 +10,7 @@ import { sceneOf } from '../../experiments/index.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | ExperimentKind;
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | ExperimentKind;
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -52,21 +52,10 @@ export interface BenchView {
   /** The circuit (grade 8): the source's volts; what the ammeter and the voltmeter show (their needles, 0…1 of the scale) — absent, the key is open. */
   readonly circuit?: { readonly source: number; readonly amps?: { readonly text: string; readonly share: number }; readonly volts?: { readonly text: string; readonly share: number } };
   /** Two resistors (grade 8): where the instruments are, and what they show. */
-  /** The hydraulic machine: weights on the wide piston, the dynamometer's reading on the narrow one, how far the pistons moved (0…1 of the push), what the ruler read. */
-  readonly press?: { readonly weights: number; readonly pull?: string; readonly pushed: number; readonly read?: string };
-  /** The syringe and the barometer: the plunger out by so many mL (0…1), the nozzle shut; the dynamometer's reading, the ruler's; the day's pressure, Pa, and its reading once looked at. */
-  readonly atm?: { readonly pulled: number; readonly sealed: boolean; readonly pull?: string; readonly read?: string; readonly air: number; readonly baro?: string };
-  /** Induction: how the magnet (or the coil) moved and which pole faces the coil; the meter's swing (−1…1 of its scale) and reading. */
-  readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
   /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
   /** An experiment module's own view (web/experiments), drawn by its scene. */
   readonly scene?: unknown;
-  readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
-  /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
-  readonly vessels?: { readonly shape?: 'straight' | 'wide' | 'narrow'; readonly height: number; readonly dh: number; readonly read?: string; readonly poured?: string };
-  /** The black box: the source's volts, which way the box stands, what the milliammeter shows (once the key is closed). */
-  readonly box?: { readonly source: number; readonly reversed: boolean; readonly display?: string };
   readonly pair?: { readonly source: number; readonly at: 'r1' | 'r2' | 'both'; readonly amps?: { readonly text: string; readonly share: number }; readonly volts?: { readonly text: string; readonly share: number } };
   /** A timed run to play (the ball rolling, the turns, the swings): how long it took, s; its period, s; how many; the swing, rad. */
   readonly run?: { readonly seconds: number; readonly period?: number; readonly count?: number; readonly amplitude?: number };
@@ -136,12 +125,6 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'lever') return leverSvg(v.lever);
   if (v.kind === 'circuit') return circuitSvg(v.circuit);
   if (v.kind === 'series' || v.kind === 'parallel') return pairSvg(v.kind, v.pair);
-  if (v.kind === 'box') return boxSvg(v.box);
-  if (v.kind === 'press') return pressSvg(v.press);
-  if (v.kind === 'atm') return atmSvg(v.atm);
-  if (v.kind === 'vessels') return vesselsSvg(v.vessels);
-  if (v.kind === 'magnet') return magnetSvg(v.magnet);
-  if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
   if (v.kind === 'spring') {
@@ -294,15 +277,6 @@ function slopeSvg(v: BenchView): string {
   return `${stand}<g transform="translate(${x0},${y0}) rotate(${ang})"><rect x="0" y="0" width="${L}" height="10" rx="2" style="fill:#e3bf86;stroke:${WOOD_EDGE}"/>${blockSvg(at, 0, [v.block[0] * 5 / 6, 0, v.block[2] * 5 / 6])}${(sl.weights ?? 2) > 0 ? weightsSvg(at + w / 2, -h - 9 * (sl.weights ?? 2), sl.weights ?? 2, 18, 9) : ''}${pull}</g>${sl.height > 0 ? `<path class="bench-mark" d="M${x1 + 6},${y1} V${y0}"/><text class="bench-reading" x="${x1 + 10}" y="${(y1 + y0) / 2}">h = ${Math.round(sl.height * 100)} см</text>` : ''}`;
 }
 
-/** A dial instrument (an ammeter, a voltmeter): its letter, the needle at a share of the scale, the reading under it. */
-function meterSvg(x: number, y: number, letter: string, share: number | undefined, text: string | undefined): string {
-  const a = Math.PI * (1.15 - 0.3 - 0.55 * Math.max(0, Math.min(1, share ?? 0)) * 1.6);
-  const ticks = Array.from({ length: 11 }, (_, k) => {
-    const t = Math.PI * (0.85 - 0.07 * k);
-    return `<path d="M${x + 19 * Math.cos(t)},${y - 19 * Math.sin(t)} L${x + (k % 5 === 0 ? 14 : 16) * Math.cos(t)},${y - (k % 5 === 0 ? 14 : 16) * Math.sin(t)}" style="stroke:#333;stroke-width:0.8"/>`;
-  }).join('');
-  return `<g><rect x="${x - 26}" y="${y - 28}" width="52" height="40" rx="5" style="fill:#f4f1e8;stroke:${DARK};stroke-width:2"/>${ticks}<path d="M${x},${y + 2} L${x + 18 * Math.cos(a)},${y + 2 - 18 * Math.sin(a)}" style="stroke:#c0392b;stroke-width:1.6"/><circle cx="${x}" cy="${y + 2}" r="2" style="fill:${DARK}"/><text class="lever-mark" x="${x}" y="${y + 9}" text-anchor="middle" style="font-size:9px;font-weight:700">${letter}</text>${text ? `<text class="bench-reading" x="${x}" y="${y + 28}" text-anchor="middle">${text}</text>` : ''}</g>`;
-}
 
 /**
  * The circuit on the table: the source on the left, the key, the ammeter in series, the resistor; the voltmeter
@@ -337,196 +311,13 @@ function circuitSvg(c: BenchView['circuit']): string {
 
 
 
-/**
- * Induction: the coil lying on the table, its axis left–right, wires to a milliammeter with its zero in the middle;
- * the bar magnet (north red, south blue) at the end of its move — in the coil or out to the left — the pole named
- * facing the coil; an arrow shows the move.
- */
-function inductSvg(d: BenchView['induct']): string {
-  const y = TABLE - 70;
-  const cx = 380;
-  const move = d?.move ?? 'none';
-  const coil = `<rect x="${cx - 22}" y="${y - 26}" width="44" height="52" rx="6" style="fill:#b0703a;stroke:#7a4a22"/>${Array.from({ length: 10 }, (_, i) => `<path d="M${cx - 20 + i * 4.4},${y - 26} v52" style="stroke:#d4893a;stroke-width:1.4"/>`).join('')}<ellipse cx="${cx - 22}" cy="${y}" rx="5" ry="20" style="fill:#5a3416"/>`;
-  // The magnet: 100 px long; inside — centred in the coil; out — away to the left.
-  const mx = move === 'out' || move === 'none' ? cx - 150 : cx;
-  const near = d?.pole ?? 'N';
-  const far = near === 'N' ? 'S' : 'N';
-  const color = (p: string) => (p === 'N' ? '#c0392b' : '#2563eb');
-  const magnet = `<rect x="${mx - 50}" y="${y - 8}" width="50" height="16" style="fill:${color(far)}"/><rect x="${mx}" y="${y - 8}" width="50" height="16" style="fill:${color(near)}"/><text class="lever-mark" x="${mx - 40}" y="${y + 4}" style="fill:#fff;font-weight:700;font-size:10px">${far}</text><text class="lever-mark" x="${mx + 38}" y="${y + 4}" style="fill:#fff;font-weight:700;font-size:10px">${near}</text>`;
-  // In the coil the magnet's right half is hidden behind the winding's front.
-  const front = move === 'out' || move === 'none' ? '' : `<rect x="${cx - 22}" y="${y - 26}" width="44" height="52" rx="6" style="fill:#b0703a;opacity:0.85"/>${Array.from({ length: 10 }, (_, i) => `<path d="M${cx - 20 + i * 4.4},${y - 26} v52" style="stroke:#d4893a;stroke-width:1.4;opacity:0.85"/>`).join('')}`;
-  const arrow = move === 'in' ? `<path class="bench-arrow" d="M${cx - 120},${y - 40} H${cx - 40} m-8,-5 l8,5 l-8,5"/>` : move === 'out' ? `<path class="bench-arrow" d="M${cx - 40},${y - 40} H${cx - 120} m8,-5 l-8,5 l8,5"/>` : move === 'coil' ? `<path class="bench-arrow" d="M${cx + 90},${y - 40} H${cx + 30} m8,-5 l-8,5 l8,5"/>` : '';
-  // The milliammeter: zero up in the middle, the needle ±60° over its scale.
-  const gx = 530;
-  const gy = TABLE - 120;
-  const a = (Math.max(-1, Math.min(1, d?.swing ?? 0)) * Math.PI) / 3;
-  const ticks = Array.from({ length: 11 }, (_, k) => {
-    const t = ((k - 5) / 5) * (Math.PI / 3);
-    return `<path d="M${gx + 30 * Math.sin(t)},${gy - 30 * Math.cos(t)} L${gx + (k % 5 === 0 ? 24 : 27) * Math.sin(t)},${gy - (k % 5 === 0 ? 24 : 27) * Math.cos(t)}" style="stroke:#333;stroke-width:0.9"/>`;
-  }).join('');
-  const meter = `<rect x="${gx - 40}" y="${gy - 42}" width="80" height="56" rx="6" style="fill:#f4f1e8;stroke:${DARK};stroke-width:2"/>${ticks}<text class="lever-mark" x="${gx}" y="${gy - 8}" text-anchor="middle" style="font-size:9px">0</text><path d="M${gx},${gy + 4} L${gx + 28 * Math.sin(a)},${gy + 4 - 28 * Math.cos(a)}" style="stroke:#c0392b;stroke-width:1.8"/><circle cx="${gx}" cy="${gy + 4}" r="2.5" style="fill:${DARK}"/><text class="lever-mark" x="${gx}" y="${gy + 11}" text-anchor="middle" style="font-size:8px">mA</text>${d?.read ? `<text class="bench-reading" x="${gx}" y="${gy - 50}" text-anchor="middle">${d.read}</text>` : ''}`;
-  const wire = Math.abs(d?.swing ?? 0) > 0.01 ? '#e2b04a' : '#9aa3ad';
-  const wires = `<path d="M${cx + 18},${y + 26} V${TABLE - 12} H${gx + 20} V${gy + 14}" style="fill:none;stroke:${wire};stroke-width:2"/><path d="M${cx - 18},${y + 26} V${TABLE - 6} H${gx - 20} V${gy + 14}" style="fill:none;stroke:${wire};stroke-width:2"/>`;
-  return `${wires}${coil}${magnet}${front}${arrow}${meter}`;
-}
-
-/**
- * The electromagnet, seen from above: the source, the key, the rheostat and the ammeter on the left; the coil wound on
- * the nail (or on a plastic straw) lying east–west; the compass on its axis to the right, «N» up, its needle turned by θ.
- */
-function magnetSvg(m: BenchView['magnet']): string {
-  const on = (m?.current ?? 0) > 0;
-  const wire = on ? '#e2b04a' : '#9aa3ad';
-  const W = (d: string) => `<path d="${d}" style="fill:none;stroke:${wire};stroke-width:2.2"/>`;
-  const y = TABLE - 170;
-  const low = TABLE - 90;
-  const back = TABLE - 40;
-  const source = `<rect x="200" y="${low - 24}" width="56" height="36" rx="5" style="fill:${DARK}"/><circle cx="212" cy="${low - 6}" r="3" style="fill:#c0392b"/><circle cx="244" cy="${low - 6}" r="3" style="fill:#222"/>`;
-  const key = `<circle cx="282" cy="${low - 6}" r="3" style="fill:${DARK}"/><circle cx="308" cy="${low - 6}" r="3" style="fill:${DARK}"/><path d="M282,${low - 6} L${on ? 308 : 304},${on ? low - 6 : low - 20}" style="stroke:${DARK};stroke-width:3;stroke-linecap:round"/>`;
-  const rheostat = `<rect x="322" y="${low - 14}" width="56" height="16" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${Array.from({ length: 9 }, (_, i) => `<path d="M${326 + i * 6},${low - 14} v16" style="stroke:#8a6d33;stroke-width:0.8"/>`).join('')}<path d="M${340 + Math.min(1, (m?.current ?? 0) / 2) * 30},${low - 22} v8" style="stroke:${DARK};stroke-width:3"/>`;
-  // The coil: 60 px of windings on a 100 px nail (or the straw), centred at cx.
-  const cx = 440;
-  const straw = `<rect x="${cx - 52}" y="${y - 5}" width="104" height="10" rx="3" style="fill:rgba(230,236,242,0.6);stroke:#9aa3ad"/>`;
-  // The nail, its head on the left; pulled out by the head, it slides left out of the winding (the straw stays in it).
-  const nail = (dx: number) => `<g transform="translate(${dx} 0)"><rect x="${cx - 50}" y="${y - 4}" width="100" height="8" style="fill:#8a96a3;stroke:#59636e"/><path d="M${cx - 50},${y - 6} v12" style="stroke:#59636e;stroke-width:5"/></g>`;
-  // Taken out, it lies where it was pulled to.
-  const rod = m?.pull !== undefined ? straw + nail(-95 * m.pull) : m?.core === false ? straw + nail(-95) : nail(0);
-  const turns = Array.from({ length: 16 }, (_, i) => `<path d="M${cx - 30 + i * 4},${y - 8} l2,16" style="stroke:${on ? '#d4893a' : '#b0703a'};stroke-width:2.2"/>`).join('');
-  const leads = W(`M244,${low - 6} H282`) + W(`M308,${low - 6} H322`) + W(`M378,${low - 6} H${cx - 32} V${y + 8}`) + W(`M${cx + 32},${y + 8} V${back} H212 V${low - 6}`);
-  const ammeter = meterSvg(330, back - 2, 'A', on ? (m?.current ?? 0) / 2 : 0, m?.amps);
-  // The compass on the axis, 15 cm away (scaled down): N up; the needle's north end red.
-  const kx = 552;
-  const r = 28;
-  const a = ((m?.angle ?? 0) * Math.PI) / 180;
-  const tip = (s: number) => `${kx + s * (r - 5) * Math.sin(a)},${y - s * (r - 5) * Math.cos(a)}`;
-  const side = (s: number) => `${kx + s * 4 * Math.cos(a)},${y + s * 4 * Math.sin(a)}`;
-  const compass = `<path d="M${cx + 52},${y} H${kx - r - 4}" class="bench-mark" style="stroke-dasharray:3 4"/><circle cx="${kx}" cy="${y}" r="${r + 4}" style="fill:#c9a96e;stroke:#7a5a2a;stroke-width:2"/><circle cx="${kx}" cy="${y}" r="${r}" style="fill:#f4f1e8"/><text class="lever-mark" x="${kx}" y="${y - r + 10}" text-anchor="middle" style="font-size:9px;font-weight:700">N</text><path d="M${tip(1)} L${side(1)} L${tip(-1)} L${side(-1)} Z" style="fill:#c9ccd1"/><path d="M${tip(1)} L${side(1)} L${kx},${y} L${side(-1)} Z" style="fill:#c0392b"/><circle cx="${kx}" cy="${y}" r="2" style="fill:${DARK}"/>${m?.read ? `<text class="bench-reading" x="${kx}" y="${y + r + 22}" text-anchor="middle">θ = ${m.read}</text>` : ''}`;
-  return `${leads}${source}${key}${rheostat}${ammeter}${rod}${turns}${compass}`;
-}
-
-/**
- * Pascal's device (10 px to the centimetre): a stand with the vessel screwed on — straight, widening or narrowing,
- * all with the same 4 cm bottom — water in it to its height; a tube from the stand's rubber bottom to a U-tube
- * manometer on the right, its levels apart by Δh.
- */
-function vesselsSvg(v: BenchView['vessels']): string {
-  const k = 1000;
-  const x = 380;
-  const base = TABLE - 34;
-  const half = 20;
-  const topHalf = { straight: 20, wide: 40, narrow: 10 }[v?.shape ?? 'straight'];
-  // The walls are straight lines from the bottom to their width 10 cm up; the vessel is 12 cm tall.
-  const at = (h: number) => half + ((topHalf - half) * h) / 0.1;
-  const H = 0.12;
-  const stand = `<rect x="${x - 36}" y="${base}" width="72" height="34" rx="4" style="fill:#59636e"/><rect x="${x - half - 4}" y="${base - 6}" width="${2 * half + 8}" height="6" style="fill:#3d3d3d"/><path d="M${x - half},${base - 1} H${x + half}" style="stroke:#b03a2e;stroke-width:2.5"/>`;
-  const glass = v?.shape ? `<path d="M${x - half},${base - 6} L${x - at(H)},${base - 6 - H * k} M${x + half},${base - 6} L${x + at(H)},${base - 6 - H * k}" style="fill:none;stroke:#8fb8dd;stroke-width:2.5"/>` : '';
-  const h = v?.shape ? v.height : 0;
-  const water = h > 0 ? `<path d="M${x - half},${base - 6} L${x - at(h)},${base - 6 - h * k} H${x + at(h)} L${x + half},${base - 6} Z" style="fill:rgba(120,170,230,0.55)"/>` : '';
-  const ticks = Array.from({ length: 13 }, (_, i) => `<path d="M${x - 62},${base - 6 - i * 10} h${i % 5 === 0 ? 8 : 5}" style="stroke:#5b4a2a;stroke-width:1"/>`).join('');
-  const ruler = `<rect x="${x - 66}" y="${base - 6 - H * k - 4}" width="12" height="${H * k + 4}" style="fill:#f1e3b0;stroke:#a8945a"/>${ticks}`;
-  const poured = v?.poured ? `<text class="bench-reading" x="${x}" y="${base - 6 - H * k - 14}" text-anchor="middle">V = ${v.poured}</text>` : '';
-  // The manometer: its arms at mx and mx + 40, the water's rest level in the middle; the joined arm goes down by Δh/2.
-  const mx = 500;
-  const mTop = TABLE - 250;
-  const mBot = TABLE - 60;
-  const rest = (mTop + mBot) / 2 + 10;
-  const d = Math.min(80, ((v?.dh ?? 0) * k) / 2);
-  const left = rest + d;
-  const right = rest - d;
-  const tube = `<path d="M${x + 36},${base + 14} H${mx - 30} V${mTop - 14} H${mx} V${mTop}" style="fill:none;stroke:#7b8a99;stroke-width:3"/>`;
-  const arm = (ax: number) => `<rect x="${ax - 5}" y="${mTop}" width="10" height="${mBot - mTop}" style="fill:rgba(220,235,250,0.35);stroke:#8fb8dd"/>`;
-  const mw = `<rect x="${mx - 4}" y="${left}" width="8" height="${mBot - left}" style="fill:#3b82c4"/><rect x="${mx + 36}" y="${right}" width="8" height="${mBot - right}" style="fill:#3b82c4"/><path d="M${mx - 5},${mBot} q0,16 25,16 q25,0 25,-16" style="fill:none;stroke:#3b82c4;stroke-width:9"/>`;
-  const board = `<rect x="${mx - 18}" y="${mTop - 10}" width="76" height="${mBot - mTop + 32}" rx="4" style="fill:#e9dfc4;stroke:#a8945a"/>`;
-  const marks = d > 1 ? `<path class="bench-mark" d="M${mx - 12},${left} H${mx + 52} M${mx - 12},${right} H${mx + 52}"/>${v?.read ? `<text class="bench-reading" x="${mx + 20}" y="${mBot + 40}" text-anchor="middle">Δh = ${v.read}</text>` : ''}` : '';
-  return `${ruler}${stand}${water}${glass}${poured}${board}${tube}${arm(mx)}${arm(mx + 40)}${mw}${marks}`;
-}
-
-/**
- * A 1 mL syringe held in a stand's clamp, its nozzle down (a red cap on it when shut); the plunger pulled up by the
- * dynamometer, 2 px to the millimetre of its scale; a ruler beside it. The aneroid barometer on the right: its needle
- * over 960…1060 hPa.
- */
-function atmSvg(a: BenchView['atm']): string {
-  const x = 450;
-  const nozzle = TABLE - 60;
-  const bottom = nozzle - 10;
-  const len = 114;
-  const top = bottom - len - 16;
-  const plunger = bottom - (a?.pulled ?? 0) * len;
-  const stand = `<rect x="350" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="366" y="${TABLE - 250}" width="6" height="242" style="fill:#8a96a3"/><rect x="369" y="${bottom - 60}" width="${x - 369 - 9}" height="6" style="fill:#8a96a3"/><rect x="${x - 11}" y="${bottom - 66}" width="22" height="18" rx="3" style="fill:#59636e"/>`;
-  const barrel = `<rect x="${x - 8}" y="${top}" width="16" height="${bottom - top}" rx="2" style="fill:rgba(220,235,250,0.35);stroke:#8fb8dd;stroke-width:1.5"/><path d="M${x - 3},${bottom} V${nozzle} H${x + 3} V${bottom}" style="fill:rgba(220,235,250,0.35);stroke:#8fb8dd"/>`;
-  const marks = Array.from({ length: 11 }, (_, i) => `<path d="M${x + 8},${bottom - (i * len) / 10} h${i % 5 === 0 ? -7 : -4}" style="stroke:#3d3d3d;stroke-width:0.7"/>`).join('');
-  const cap = a?.sealed ? `<rect x="${x - 5}" y="${nozzle - 2}" width="10" height="9" rx="2" style="fill:#c0392b"/>` : '';
-  const rodTop = top - 40;
-  const piston = `<rect x="${x - 7}" y="${plunger - 6}" width="14" height="6" style="fill:#3d3d3d"/><rect x="${x - 2}" y="${rodTop}" width="4" height="${plunger - 6 - rodTop}" style="fill:#d7dde3;stroke:#8a96a3"/><rect x="${x - 12}" y="${rodTop - 5}" width="24" height="5" rx="2" style="fill:#d7dde3;stroke:#8a96a3"/>`;
-  const dyn = a?.pull ? `<path d="M${x},${rodTop - 5} V${rodTop - 14}" style="stroke:#555;stroke-width:2"/><rect x="${x - 6}" y="${rodTop - 70}" width="12" height="56" rx="3" style="fill:#f4f1e8;stroke:#555"/><path d="M${x - 10},${rodTop - 78} l10,-10 l10,10" style="fill:none;stroke:#c0392b;stroke-width:2"/><text class="bench-reading" x="${x + 16}" y="${rodTop - 40}">F = ${a.pull}</text>` : '';
-  const ticks = Array.from({ length: 13 }, (_, i) => `<path d="M${x - 30},${bottom - i * 10} h${i % 5 === 0 ? 8 : 5}" style="stroke:#5b4a2a;stroke-width:1"/>`).join('');
-  const ruler = `<rect x="${x - 34}" y="${bottom - 124}" width="12" height="128" style="fill:#f1e3b0;stroke:#a8945a"/>${ticks}`;
-  const read = a?.read ? `<text class="bench-reading" x="${x - 40}" y="${bottom - len / 2}" text-anchor="end">${a.read}</text>` : '';
-  // The barometer: a round dial, the needle at the day's pressure.
-  const bx = 548;
-  const by = TABLE - 170;
-  const share = Math.max(0, Math.min(1, ((a?.air ?? 101_300) / 100 - 960) / 100));
-  const ang = Math.PI * (1.25 - 1.5 * share);
-  const dial = Array.from({ length: 11 }, (_, i) => {
-    const t = Math.PI * (1.25 - 0.15 * i);
-    const r0 = i % 5 === 0 ? 26 : 29;
-    return `<path d="M${bx + 33 * Math.cos(t)},${by - 33 * Math.sin(t)} L${bx + r0 * Math.cos(t)},${by - r0 * Math.sin(t)}" style="stroke:#333;stroke-width:0.9"/>`;
-  }).join('');
-  const baro = `<circle cx="${bx}" cy="${by}" r="40" style="fill:#c9a96e;stroke:#7a5a2a;stroke-width:2"/><circle cx="${bx}" cy="${by}" r="35" style="fill:#f4f1e8"/>${dial}<path d="M${bx},${by} L${bx + 28 * Math.cos(ang)},${by - 28 * Math.sin(ang)}" style="stroke:#1f2a36;stroke-width:1.8"/><circle cx="${bx}" cy="${by}" r="2.5" style="fill:#1f2a36"/><text class="lever-mark" x="${bx}" y="${by + 18}" text-anchor="middle" style="font-size:8px">hPa</text>${a?.baro ? `<text class="bench-reading" x="${bx}" y="${by + 58}" text-anchor="middle">p₀ = ${a.baro}</text>` : ''}`;
-  return `${stand}${ruler}${barrel}${marks}${piston}${cap}${dyn}${read}${baro}`;
-}
-
-/**
- * Two syringes standing on the table, their nozzles joined by a tube under them: the narrow one (left) with the
- * dynamometer pressing on its plunger, the wide one (right) with weights on its plunger. Pushed, the narrow plunger
- * goes 6 cm down (60 px) and the wide one comes up by the share of it the areas give.
- */
-function pressSvg(p: BenchView['press']): string {
-  const y0 = TABLE - 30;
-  const k = 1000;
-  const pushed = p?.pushed ?? 0;
-  const syringe = (x: number, w: number, plunger: number) =>
-    `<rect x="${x - w / 2}" y="${y0 - 130}" width="${w}" height="130" rx="3" style="fill:rgba(220,235,250,0.4);stroke:#8fb8dd;stroke-width:1.5"/>` +
-    `<rect x="${x - w / 2 + 2}" y="${plunger}" width="${w - 4}" height="${y0 - plunger}" style="fill:#7fb3e0"/>` +
-    `<rect x="${x - w / 2 + 1}" y="${plunger - 6}" width="${w - 2}" height="6" style="fill:#3d3d3d"/>` +
-    `<rect x="${x - 2}" y="${plunger - 46}" width="4" height="40" style="fill:#d7dde3;stroke:#8a96a3"/>` +
-    `<rect x="${x - w / 2 - 4}" y="${plunger - 52}" width="${w + 8}" height="6" rx="2" style="fill:#d7dde3;stroke:#8a96a3"/>`;
-  const nx = 380;
-  const wx = 500;
-  const nTop = y0 - 100 + pushed * 0.06 * k;
-  const wTop = y0 - 70 - pushed * 0.06 * k * (12 / 26) ** 2;
-  const tube = `<path d="M${nx},${y0} V${y0 + 14} H${wx} V${y0}" style="fill:none;stroke:#7fb3e0;stroke-width:5"/><path d="M${nx},${y0} V${y0 + 14} H${wx} V${y0}" style="fill:none;stroke:#8fb8dd;stroke-width:1;opacity:0.6"/>`;
-  const weights = p && p.weights > 0 ? weightsSvg(wx, wTop - 52 - p.weights * 9, p.weights, 30, 9) : '';
-  // The dynamometer: a tube above the narrow plunger, pressing down, its reading beside it.
-  const dyn = p?.pull ? `<rect x="${nx - 6}" y="${nTop - 108}" width="12" height="56" rx="3" style="fill:#f4f1e8;stroke:#555"/><path d="M${nx},${nTop - 52} V${nTop - 46}" style="stroke:#555;stroke-width:2"/><path d="M${nx - 10},${nTop - 116} l10,10 l10,-10" style="fill:none;stroke:#c0392b;stroke-width:2"/><text class="bench-reading" x="${nx - 14}" y="${nTop - 76}" text-anchor="end">F₁ = ${p.pull}</text>` : '';
-  const read = p?.read ? `<text class="bench-reading" x="${wx + 34}" y="${wTop - 20}">${p.read}</text>` : '';
-  return `${tube}${syringe(nx, 16, nTop)}${syringe(wx, 34, wTop)}${weights}${dyn}${read}`;
-}
 
 
 
-/**
- * The black box on the table: the source, the key, the box with its two terminals (turned round — its marks
- * the other way), the protective resistor and the multimeter as a milliammeter, all in one loop.
- */
-function boxSvg(b: BenchView['box']): string {
-  const on = b?.display !== undefined;
-  const flows = on && b!.display !== '0,0' && b!.display !== '0.0';
-  const wire = flows ? '#e2b04a' : '#9aa3ad';
-  const y = TABLE - 40;
-  const W = (d: string) => `<path d="${d}" style="fill:none;stroke:${wire};stroke-width:2.2"/>`;
-  const source = `<rect x="120" y="${y - 30}" width="70" height="44" rx="5" style="fill:${DARK}"/><rect x="130" y="${y - 22}" width="50" height="16" rx="2" style="fill:#0f2a12"/><text class="sw-text" x="155" y="${y - 10}" text-anchor="middle" style="fill:#7CFC9a">${String(b?.source ?? 0).replace('.', ',')} V</text>`;
-  const key = `<circle cx="225" cy="${y + 4}" r="3" style="fill:${DARK}"/><circle cx="255" cy="${y + 4}" r="3" style="fill:${DARK}"/><path d="M225,${y + 4} L${on ? 255 : 251},${on ? y + 4 : y - 10}" style="stroke:${DARK};stroke-width:3;stroke-linecap:round"/>`;
-  // The box: black, a white «?», its terminals marked A and B — turned round, B comes first.
-  const [l, r] = b?.reversed ? ['B', 'A'] : ['A', 'B'];
-  const box = `<rect x="290" y="${y - 26}" width="74" height="44" rx="4" style="fill:#1b1b1f;stroke:#000"/><text x="327" y="${y + 4}" text-anchor="middle" style="font:700 22px system-ui;fill:#f4f4f4">?</text><circle cx="296" cy="${y + 4}" r="4" style="fill:#c9a227"/><circle cx="358" cy="${y + 4}" r="4" style="fill:#c9a227"/><text x="302" y="${y - 12}" text-anchor="middle" style="font:700 10px system-ui;fill:#e9e9e9">${l}</text><text x="352" y="${y - 12}" text-anchor="middle" style="font:700 10px system-ui;fill:#e9e9e9">${r}</text>`;
-  const resistor = `<rect x="392" y="${y - 6}" width="50" height="20" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${['#8b4513', '#222', '#8b4513'].map((c, k) => `<rect x="${402 + k * 11}" y="${y - 6}" width="4" height="20" style="fill:${c}"/>`).join('')}`;
-  const mx = 470;
-  const meter = `<rect x="${mx}" y="${y - 44}" width="58" height="70" rx="7" style="fill:#f1c40f;stroke:#7d6608;stroke-width:1.5"/><rect x="${mx + 5}" y="${y - 38}" width="48" height="19" rx="2" style="fill:#c9d6a3;stroke:#55603a"/><text class="mm-text" x="${mx + 49}" y="${y - 24}" text-anchor="end">${b?.display ?? '-.-'}</text><text x="${mx + 29}" y="${y - 6}" text-anchor="middle" style="font:700 8px system-ui;fill:#2d2d2d">mA</text><circle cx="${mx + 29}" cy="${y + 8}" r="8" style="fill:#2d2d2d"/>`;
-  const wires = W(`M175,${y + 4} H225`) + W(`M255,${y + 4} H292`) + W(`M362,${y + 4} H392`) + W(`M442,${y + 4} H${mx}`) + W(`M${mx + 58},${y + 4} H545 V${y + 36} H140 V${y + 4} H135`);
-  return `${wires}${source}${key}${box}${resistor}${meter}`;
-}
+
+
+
+
 
 /** A resistor seen from above: its body and colour bands (2 Ω — red-black-gold, 4 Ω — yellow-black-gold). */
 function resistorSvg(x: number, y: number, ohms: number): string {

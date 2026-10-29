@@ -1,11 +1,11 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { COMPONENTS } from '../components/index.js';
-import { peakEmf, type CoilAndMagnet } from '../domains/electrical/induction.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { COMPONENTS } from '../../components/index.js';
+import { peakEmf, type CoilAndMagnet } from '../../domains/electrical/induction.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * Electromagnetic induction (grade 9, lab work 5 — «Дослідження явища електромагнітної індукції»): a coil joined to a

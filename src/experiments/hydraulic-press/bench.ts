@@ -1,12 +1,12 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { G } from '../domains/mechanics/constants.js';
-import { hydraulicForce } from '../domains/mechanics/formulas.js';
-import { SCALES, scaleReading } from '../equipment/scales.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { G } from '../../domains/mechanics/constants.js';
+import { hydraulicForce } from '../../domains/mechanics/formulas.js';
+import { SCALES, scaleReading } from '../../equipment/scales.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * A model of a hydraulic machine (grade 7, «Закон Паскаля. Гідравлічна машина»): two syringes, a narrow and a wide

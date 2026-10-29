@@ -1,11 +1,11 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { CARBON_STEEL_MU, compassDeflection, EARTH_HORIZONTAL, electromagnetField } from '../domains/electrical/magnet.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
-import { AMMETER } from './circuit-bench.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { CARBON_STEEL_MU, compassDeflection, EARTH_HORIZONTAL, electromagnetField } from '../../domains/electrical/magnet.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
+import { AMMETER } from '../../scenarios/circuit-bench.js';
 
 /**
  * An electromagnet (grade 9, lab work 4 — «Виготовлення електромагніта та вивчення його магнітного поля»): insulated

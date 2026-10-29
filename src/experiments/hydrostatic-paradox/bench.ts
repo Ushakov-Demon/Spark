@@ -1,12 +1,12 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { G } from '../domains/mechanics/constants.js';
-import { hydrostaticPressure } from '../domains/mechanics/formulas.js';
-import { SUBSTANCES } from '../substances/catalog.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { G } from '../../domains/mechanics/constants.js';
+import { hydrostaticPressure } from '../../domains/mechanics/formulas.js';
+import { SUBSTANCES } from '../../substances/catalog.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * The hydrostatic paradox (grade 7, «Тиск рідин»): Pascal's device — three glass vessels of different shapes

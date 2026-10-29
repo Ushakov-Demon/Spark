@@ -27,9 +27,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The scale being drawn.) */
   /** (The airship climbing to 2 km.) */
   /** (A body let into the tower.) */
-  'lab.magnet': { uk: 'Стрілка компаса ще гойдається — чекаємо…', en: 'The compass needle is still swinging — wait…' },
   /** (The step that takes the nail out of the coil.) */
-  'lab.magnet.pull': { uk: 'Повільно витягую цвях із котушки…', en: 'Slowly pulling the nail out of the coil…' },
 };
 
 /** A long run (many turns, many swings) is played this much faster than real time: about this many seconds at most. */
@@ -46,7 +44,6 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'friction' && next.pull) return pull(next, draw);
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
-  if (next.kind === 'magnet' && next.magnet && prev?.kind === 'magnet' && prev.magnet) return compass(prev.magnet, next, draw);
   return null;
 }
 
@@ -131,27 +128,6 @@ function slopeUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   };
 }
 
-/**
- * The electromagnet: the compass needle swings to its new turn and settles (its period and damping are the
- * drawing's). The nail taken out: it slides slowly out of the coil by its head, and the needle goes back as
- * it leaves — the field falls most as the last of it leaves the winding.
- */
-function compass(was: NonNullable<BenchView['magnet']>, next: BenchView, draw: (v: BenchView) => void): Motion | null {
-  const m = next.magnet!;
-  const pulling = was.core && !m.core;
-  if (!pulling && Math.abs(was.angle - m.angle) < 0.5) return null;
-  const smooth = (k: number) => k * k * (3 - 2 * k);
-  const out = new Channel(0, pulling ? 1 : 0, { kind: 'steady', speed: 0.4 }, 0.002);
-  const needle = new Channel(was.angle, pulling ? was.angle : m.angle, { kind: 'damped', period: 1.2, damping: 0.22 }, 0.2);
-  return {
-    channels: [out, needle],
-    frame: (done) => {
-      if (pulling) needle.target = was.angle + (m.angle - was.angle) * smooth(out.value);
-      const { read: _r, ...rest } = m;
-      draw(done ? next : { ...next, magnet: { ...rest, ...(pulling ? { core: true, pull: smooth(out.value) } : {}), angle: needle.value } });
-    },
-  };
-}
 
 
 

@@ -10,7 +10,8 @@ export const setup: LocalizedText = { uk: 'Скляна U-подібна тру�
 
 export const text = (c: UtubeCommand): StepText => UTUBE_TEXT['lab.utube'](c);
 
-export const busy = (): LocalizedText => ({ uk: 'Дивимося…', en: 'Watching…' });
+/** No motion: the picture just changes. */
+export const busy = (): LocalizedText | null => null;
 
 const cm = (x: number, locale: Locale) => formatMeasured('length', x, 0.001, locale);
 

@@ -321,9 +321,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   const edges: (number | undefined)[] = [];
   const count = { volume: 0, mass: 0 };
   let tapePath: number | null = null;
-  let pressAreas: number | null = null;
-  let atmScale: number | null = null;
-  let vesselArea: number | null = null;
   const pair: Partial<Record<'r1' | 'r2' | 'both', { I: number; U: number }>> = {};
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
@@ -439,109 +436,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const Nm = uk ? 'Н·м' : 'N·m';
       out.push({ id: `M1:${i}`, title: uk ? `момент сили ліворуч (${F2(F1)} на ${cm(l1)})` : `the moment on the left (${F2(F1)} at ${cm(l1)})`, formula: 'M₁ = F₁·l₁', numbers: `${F2(F1)} · ${n(l1)} ${uk ? 'м' : 'm'} ≈ ${n(F1 * l1, 3)} ${Nm}` });
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
-      return;
-    }
-    // Induction: the milliammeter's swing and the EMF it gives, ε = I·R.
-    if (c.type === 'lab.induct') {
-      const R = r.inputs?.['resistance'] ?? 0;
-      const move = String(c['move']);
-      const fast = Number(c['time']) <= 0.5;
-      const pace = fast ? (uk ? 'швидко' : 'fast') : uk ? 'повільно' : 'slowly';
-      const what = move === 'still' ? (uk ? 'магніт нерухомо' : 'the magnet still') : move === 'out' ? (uk ? `витягли ${pace}` : `pulled out ${pace}`) : move === 'coil' ? (uk ? `котушку на магніт ${pace}` : `the coil onto the magnet ${pace}`) : uk ? `${c['pole'] === 'S' ? 'південним' : 'північним'} у котушку ${pace}` : `${c['pole'] === 'S' ? 'south' : 'north'} pole in ${pace}`;
-      const mA = `${r.value > 0 ? '+' : ''}${n(r.value * 1000, 2)} ${uk ? 'мА' : 'mA'}`;
-      if (move === 'still' || r.value === 0) out.push({ id: `iI:${i}`, title: what, formula: `I = ${mA}` });
-      else out.push({ id: `iE:${i}`, title: what, formula: `I = ${mA}, ε = I·R`, numbers: `${n(Math.abs(r.value), 3)} ${uk ? 'А' : 'A'} · ${n(R, 2)} ${uk ? 'Ом' : 'Ω'} ≈ ${n(Math.abs(r.value) * R, 2)} ${uk ? 'В' : 'V'}` });
-      return;
-    }
-    // The electromagnet: the compass's turn and the field it gives, B = B_Earth·tg θ.
-    if (c.type === 'lab.magnet') {
-      const m = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'angle');
-      if (!m || m.value === null) return;
-      const I = Number(c['current']);
-      const earth = m.inputs?.['earth'] ?? 19.4e-6;
-      const what = I === 0 ? (uk ? 'без струму' : 'no current') : `${n(I, 2)} ${uk ? 'А' : 'A'}${c['reversed'] ? (uk ? ', струм в інший бік' : ', reversed') : ''}${c['core'] ? '' : uk ? ', без цвяха' : ', no nail'}`;
-      if (I === 0) {
-        const where = c['place'] ? ` (${String(c['place'])}${c['example'] ? (uk ? ', для прикладу' : ', for example') : ''})` : '';
-        out.push({ id: 'm0', title: uk ? `компас ${what}` : `the compass, ${what}`, formula: `θ = ${m.value}°` });
-        out.push({ id: 'mE', title: uk ? `поле Землі${where}` : `the Earth’s field${where}`, formula: `B_З ≈ ${n(earth * 1e6)} ${uk ? 'мкТл' : 'µT'}` });
-        return;
-      }
-      const key = `${I}${c['reversed'] ? 'r' : ''}${c['core'] ? '' : 'n'}`;
-      out.push({ id: `mB:${key}`, title: uk ? `поле електромагніта: ${what}` : `the electromagnet’s field: ${what}`, formula: `θ = ${n(m.value)}°, B = B_З·tg θ`, numbers: `${n(earth * 1e6)} ${uk ? 'мкТл' : 'µT'} · tg ${n(m.value)}° ≈ ${n(earth * Math.tan((m.value * Math.PI) / 180) * 1e6, 2)} ${uk ? 'мкТл' : 'µT'}` });
-      return;
-    }
-    // Pascal's device: the bottom's area; for each vessel the water's weight and the force on the bottom.
-    if (c.type === 'lab.vessel') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
-      if (c['step'] === 'bottom') {
-        vesselArea = Math.PI * (r.value / 2) ** 2;
-        out.push({ id: 'vS', title: uk ? 'площа дна' : 'the bottom’s area', formula: 'S = π·d² / 4', numbers: `${n(Math.PI)} · (${n(r.value * 100)} ${uk ? 'см' : 'cm'})² / 4 ≈ ${n(vesselArea * 1e4)} ${uk ? 'см²' : 'cm²'}` });
-        return;
-      }
-      const V = recs.find((x) => x.quantity === 'volume');
-      const M = recs.find((x) => x.quantity === 'length');
-      if (!V || !M || V.value === null || M.value === null) return;
-      const rho = M.inputs?.['rho'] ?? 1000;
-      const g = M.inputs?.['g'] ?? 9.81;
-      const shape = String(c['shape']);
-      const what = { straight: uk ? 'пряма посудина' : 'the straight vessel', wide: uk ? 'посудина, що розширюється' : 'the widening vessel', narrow: uk ? 'посудина, що звужується' : 'the narrowing vessel' }[shape] ?? shape;
-      out.push({ id: `vP:${shape}`, title: uk ? `${what}: вага води` : `${what}: the water’s weight`, formula: 'P = ρ·g·V', numbers: `${n(rho, 4)} · ${n(g)} · ${n(V.value * 1e6)}·10⁻⁶ ≈ ${n(rho * g * V.value, 2)} ${uk ? 'Н' : 'N'}` });
-      if (vesselArea) out.push({ id: `vF:${shape}`, title: uk ? `${what}: сила тиску на дно` : `${what}: the force on the bottom`, formula: 'F = ρ·g·Δh·S', numbers: `${n(rho, 4)} · ${n(g)} · ${n(M.value, 3)} · ${n(vesselArea * 1e4)}·10⁻⁴ ≈ ${n(rho * g * M.value * vesselArea, 2)} ${uk ? 'Н' : 'N'}` });
-      return;
-    }
-    // The syringe: the plunger's area from its scale, the barometer, and the pressure each pull gives.
-    if (c.type === 'lab.atm') {
-      if (c['step'] === 'scale') {
-        atmScale = r.value;
-        out.push({ id: 'atS', title: uk ? 'площа поршня зі шкали (1 мл)' : 'the plunger’s area from the scale (1 mL)', formula: 'S = V / l', numbers: `1 ${uk ? 'мл' : 'mL'} / ${n(r.value * 100)} ${uk ? 'см' : 'cm'} ≈ ${n(1 / (r.value * 100), 3)} ${uk ? 'см²' : 'cm²'}` });
-        return;
-      }
-      if (c['step'] === 'barometer') {
-        out.push({ id: 'atB', title: uk ? 'барометр' : 'the barometer', formula: `p₀ = ${formatMeasured('pressure', r.value, 100, locale)} = ${n(r.value, 4)} ${uk ? 'Па' : 'Pa'}` });
-        return;
-      }
-      if (c['step'] === 'open') {
-        out.push({ id: 'atO', title: uk ? 'носик відкритий' : 'the nozzle open', formula: `F = ${formatMeasured('force', r.value, 0.1, locale)}` });
-        return;
-      }
-      if (atmScale) {
-        const v = Number(c['pulled']);
-        out.push({ id: `pa:${v}`, title: uk ? `носик закритий, поршень до ${n(v)} мл` : `the nozzle shut, the plunger to ${n(v)} mL`, formula: 'p = F·l / V', numbers: `${n(r.value, 2)} ${uk ? 'Н' : 'N'} · ${n(atmScale, 3)} ${uk ? 'м' : 'm'} / 10⁻⁶ ${uk ? 'м³' : 'm³'} ≈ ${n((r.value * atmScale) / 1e-6, 3)} ${uk ? 'Па' : 'Pa'}` });
-      }
-      return;
-    }
-    // The hydraulic machine: the pistons' areas, the force each load needed, the gain; the travel.
-    if (c.type === 'lab.press') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
-      const cmT = (m: number) => `${n(m * 100)} ${uk ? 'см' : 'cm'}`;
-      const N1 = (x: number) => formatMeasured('force', x, 0.1, locale);
-      if (c['step'] === 'diameters') {
-        const d1 = recs.find((x) => x.inputs?.['which'] === 1)?.value ?? 0;
-        const d2 = recs.find((x) => x.inputs?.['which'] === 2)?.value ?? 0;
-        pressAreas = d1 > 0 ? (d2 / d1) ** 2 : null;
-        out.push({ id: 'pd', title: uk ? 'діаметри поршнів' : 'the pistons’ diameters', formula: `d₁ = ${cmT(d1)}, d₂ = ${cmT(d2)}` });
-        if (pressAreas) out.push({ id: 'pS', title: uk ? 'у скільки разів більша площа широкого' : 'how many times larger the wide one’s area', formula: 'S₂ / S₁ = (d₂ / d₁)²', numbers: `(${n(d2 * 100)} / ${n(d1 * 100)})² ≈ ${n(pressAreas, 2)}` });
-        return;
-      }
-      if (c['step'] === 'lift') {
-        const F2 = r.inputs?.['load'] ?? 0;
-        out.push({ id: `pF:${c['weights']}`, title: uk ? `${c['weights']} ${Number(c['weights']) === 1 ? 'тягарець' : Number(c['weights']) < 5 ? 'тягарці' : 'тягарців'} на широкому поршні` : `${c['weights']} weights on the wide piston`, formula: `F₂ = ${N1(F2)}, F₁ = ${N1(r.value)}` });
-        if (r.value > 0) out.push({ id: `gain:${c['weights']}`, title: uk ? 'виграш у силі' : 'the gain in force', formula: 'F₂ / F₁', numbers: `${n(F2, 2)} / ${n(r.value, 2)} ≈ ${n(F2 / r.value, 2)}` });
-        return;
-      }
-      out.push({ id: 'pl', title: uk ? 'вузький поршень на 6 см униз — широкий угору на' : 'the narrow piston 6 cm down — the wide one up by', formula: `l₂ = ${cmT(r.value)}` });
-      return;
-    }
-    // The black box: the current at this voltage, one way or turned round, and the circuit's resistance R = U / I.
-    if (c.type === 'lab.box') {
-      const U = Number(c['source']);
-      const back = !!c['reversed'];
-      const div = r.inputs?.['division'] ?? 0.0001;
-      const mA = `${n(r.value * 1000, 3)} ${uk ? 'мА' : 'mA'}`;
-      const way = back ? (uk ? ', скринька перевернута' : ', the box turned round') : '';
-      out.push({ id: `box:${back ? 'b' : 'a'}${U}`, title: uk ? `струм за ${n(U)} В${way}` : `the current at ${n(U)} V${way}`, formula: `I = ${mA}` });
-      if (r.value >= div) out.push({ id: `boxR:${back ? 'b' : 'a'}${U}`, title: uk ? `опір кола${way}` : `the circuit’s resistance${way}`, formula: 'R = U / I', numbers: `${n(U)} ${uk ? 'В' : 'V'} / ${n(r.value * 1000, 3)} ${uk ? 'мА' : 'mA'} ≈ ${n(U / r.value, 2)} ${uk ? 'Ом' : 'Ω'}` });
-      else out.push({ id: `boxR:${back ? 'b' : 'a'}${U}`, title: uk ? `опір кола${way}` : `the circuit’s resistance${way}`, formula: uk ? 'I ≈ 0 → R дуже великий' : 'I ≈ 0 → R very large' });
       return;
     }
     // The coil in the water on the multimeter: its resistance at this temperature, and — once warmer than at the

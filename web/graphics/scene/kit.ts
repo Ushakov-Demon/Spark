@@ -61,3 +61,13 @@ export const PLASTICINE = '#e8743b';
 export function standSvg(rodX: number, armX: number, armY: number): string {
   return `<rect x="${rodX - 40}" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="${rodX - 3}" y="${armY - 20}" width="6" height="${TABLE - 8 - armY + 20}" style="fill:${STEEL}"/><rect x="${rodX - 7}" y="${armY - 6}" width="14" height="12" rx="2" style="fill:${DARK}"/><rect x="${Math.min(rodX, armX - 6)}" y="${armY - 3}" width="${Math.abs(armX - rodX) + 6}" height="6" rx="2" style="fill:${STEEL}"/>`;
 }
+
+/** A dial instrument (an ammeter, a voltmeter): its letter, the needle at a share of the scale, the reading under it. */
+export function meterSvg(x: number, y: number, letter: string, share: number | undefined, text: string | undefined): string {
+  const a = Math.PI * (1.15 - 0.3 - 0.55 * Math.max(0, Math.min(1, share ?? 0)) * 1.6);
+  const ticks = Array.from({ length: 11 }, (_, k) => {
+    const t = Math.PI * (0.85 - 0.07 * k);
+    return `<path d="M${x + 19 * Math.cos(t)},${y - 19 * Math.sin(t)} L${x + (k % 5 === 0 ? 14 : 16) * Math.cos(t)},${y - (k % 5 === 0 ? 14 : 16) * Math.sin(t)}" style="stroke:#333;stroke-width:0.8"/>`;
+  }).join('');
+  return `<g><rect x="${x - 26}" y="${y - 28}" width="52" height="40" rx="5" style="fill:#f4f1e8;stroke:${DARK};stroke-width:2"/>${ticks}<path d="M${x},${y + 2} L${x + 18 * Math.cos(a)},${y + 2 - 18 * Math.sin(a)}" style="stroke:#c0392b;stroke-width:1.6"/><circle cx="${x}" cy="${y + 2}" r="2" style="fill:${DARK}"/><text class="lever-mark" x="${x}" y="${y + 9}" text-anchor="middle" style="font-size:9px;font-weight:700">${letter}</text>${text ? `<text class="bench-reading" x="${x}" y="${y + 28}" text-anchor="middle">${text}</text>` : ''}</g>`;
+}

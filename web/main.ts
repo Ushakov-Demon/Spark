@@ -37,6 +37,7 @@ import {
   weigh,
   weighingsOf,
   readingsOf,
+  readingText,
   formatMeasured,
   pieceShare,
   floatsInside,
@@ -49,7 +50,6 @@ import {
   PENDULUM_BALLS,
   SLOPE_LENGTH,
   AMMETER,
-  ZERO_METER,
   BENCH_WEIGHT,
   VOLTMETER,
   stepCommand,
@@ -420,7 +420,7 @@ function measureNow(command: LabCommand): string {
     hum(0.3 + amps / 2, 1.6);
   }
   // An instrument that moves on the scene (a balance, a spring, a pulled block): its reading is told once it is at rest.
-  instrumentBusy = entry.ok && (command.type in BUSY || experimentOf(command.type) !== undefined) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  instrumentBusy = entry.ok && (command.type in BUSY || (experimentOf(command.type)?.busy(command as never) ?? null) !== null) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   boardEpoch++;
   render();
   return measureSay();
@@ -432,7 +432,6 @@ let lastMeasure: { readonly at: number; readonly step: ExperimentSession<LabComm
 let measureError = '';
 /** The mechanics bench of a preset, as its last reading left it: the spring with its weights, the block pulled or measured. */
 /** The zero-centre milliammeter's reading: signed milliamperes («+26 мА», «−6 мА»). */
-const inductShown = (v: number | null) => (v === null ? (locale === 'uk' ? 'зашкалює' : 'off the scale') : `${v > 0 ? '+' : ''}${formatMeasured('current', v * 1000, 1, locale).replace(/ (А|A)$/, '').replace('-', '−')} ${locale === 'uk' ? 'мА' : 'mA'}`);
 function benchView(): BenchView | null {
   const kind = preset?.bench;
   if (!kind) return null;
@@ -454,57 +453,6 @@ function benchView(): BenchView | null {
     const I = recs.find((x) => x.quantity === 'current');
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
-  }
-  // Induction: the move this step made, the pole facing the coil, the meter's swing.
-  if (kind === 'induct') {
-    const ic = c?.type === 'lab.induct' ? (c as unknown as { move: 'still' | 'in' | 'out' | 'coil'; pole: 'N' | 'S' }) : undefined;
-    const I = ic && r ? r.value : null;
-    return { ...base, kind, induct: { move: ic?.move ?? 'none', pole: ic?.pole ?? 'N', swing: I === null ? 0 : I / ZERO_METER.max.value, ...(ic && r ? { read: inductShown(r.value) } : {}) } };
-  }
-  // The electromagnet: the current this step set, the nail in or out, the compass needle.
-  if (kind === 'magnet') {
-    const mc = c?.type === 'lab.magnet' ? (c as unknown as { current: number; core: boolean }) : undefined;
-    const recs = last && mc ? readingsOf([last]).map((x) => x.record) : [];
-    const I = recs.find((x) => x.quantity === 'current');
-    const th = recs.find((x) => x.quantity === 'angle');
-    return { ...base, kind, magnet: { current: mc?.current ?? 0, core: mc?.core ?? true, angle: th?.value ?? 0, ...(I ? { amps: formatMeasured('current', I.value, 0.01, locale) } : {}), ...(th ? { read: formatMeasured('angle', th.value, 1, locale) } : {}) } };
-  }
-  // Pascal's device: the vessel this step screwed on (or the next planned one), its water, the manometer.
-  if (kind === 'vessels') {
-    const vc = c?.type === 'lab.vessel' ? (c as unknown as { step: string; shape?: 'straight' | 'wide' | 'narrow'; height?: number }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.vessel' && 'shape' in s.command);
-    const shape = vc?.shape ?? (next?.kind === 'bench' ? (next.command as { shape?: 'straight' | 'wide' | 'narrow' }).shape : undefined);
-    const recs = last && vc?.step === 'fill' ? readingsOf([last]).map((x) => x.record) : [];
-    const V = recs.find((x) => x.quantity === 'volume');
-    const M = recs.find((x) => x.quantity === 'length');
-    return { ...base, kind, vessels: { ...(shape ? { shape } : {}), height: vc?.step === 'fill' ? (vc.height ?? 0) : 0, dh: M?.value ?? 0, ...(M ? { read: show('length', M.value) } : {}), ...(V ? { poured: formatMeasured('volume', V.value, 5e-6, locale) } : {}) } };
-  }
-  // The syringe: how far its plunger is out and whether its nozzle is shut; the barometer once it has been read.
-  if (kind === 'atm') {
-    const ac = c?.type === 'lab.atm' ? (c as unknown as { step: string; pulled?: number; air: number }) : undefined;
-    const any = log.find((e) => e.command.type === 'lab.atm') ?? plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.atm');
-    const air = (any && 'command' in any ? (any.command as unknown as { air: number }).air : undefined) ?? 101_300;
-    const b = log.find((e) => e.command.type === 'lab.atm' && (e.command as unknown as { step: string }).step === 'barometer');
-    const baro = b ? readingsOf([b])[0]?.record.value : undefined;
-    const pull = ac && (ac.step === 'open' || ac.step === 'sealed') && r ? show('force', r.value) : undefined;
-    return { ...base, kind, atm: { pulled: ac?.step === 'sealed' ? (ac.pulled ?? 0) : ac?.step === 'open' ? 1 : 0, sealed: ac?.step === 'sealed', air, ...(pull ? { pull } : {}), ...(ac?.step === 'scale' && r ? { read: `l = ${show('length', r.value)}` } : {}), ...(baro != null ? { baro: formatMeasured('pressure', baro, 100, locale) } : {}) } };
-  }
-  // The hydraulic machine: the load on the wide piston (from this step, or the next one planned), the dynamometer.
-  if (kind === 'press') {
-    const pc = c?.type === 'lab.press' ? (c as unknown as { step: string; weights?: number }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.press' && 'weights' in s.command);
-    const weights = pc?.weights ?? (next?.kind === 'bench' ? ((next.command as { weights?: number }).weights ?? 0) : 0);
-    const recs = last && pc ? readingsOf([last]).map((x) => x.record) : [];
-    const read = pc?.step === 'diameters' ? `d₁ = ${formatMeasured('length', recs[0]?.value ?? 0, 0.001, locale)}, d₂ = ${formatMeasured('length', recs[1]?.value ?? 0, 0.001, locale)}` : pc?.step === 'travel' ? `l₂ = ${formatMeasured('length', recs[0]?.value ?? 0, 0.001, locale)}` : undefined;
-    return { ...base, kind, press: { weights, pushed: pc?.step === 'travel' ? 1 : 0, ...(pc?.step === 'lift' && r ? { pull: show('force', r.value) } : {}), ...(read ? { read } : {}) } };
-  }
-  // The black box: the source, which way the box stands, the milliammeter in mA (a tenth).
-  if (kind === 'box') {
-    const bc = c?.type === 'lab.box' ? (c as unknown as { source: number; reversed: boolean }) : undefined;
-    const planned = preset?.plan?.find((s) => s.kind === 'bench' && s.command.type === 'lab.box');
-    const first = planned?.kind === 'bench' ? (planned.command as { source: number }).source : 0;
-    const mA = bc && r && r.value !== null ? (r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.') : undefined;
-    return { ...base, kind, box: { source: bc?.source ?? first, reversed: !!bc?.reversed, ...(mA !== undefined ? { display: mA } : {}) } };
   }
   // Two resistors: the instruments where this step reads them.
   if (kind === 'series' || kind === 'parallel') {
@@ -603,10 +551,9 @@ function measureSay(): string {
   }
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
-  // (Taking the nail out of the coil has its own words.)
-  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type;
-  if (instrumentBusy && experimentOf(m.command.type)) return tr(experimentOf(m.command.type)!.busy(m.command as never), locale);
-  if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
+  const modBusy = instrumentBusy ? experimentOf(m.command.type)?.busy(m.command as never) : null;
+  if (modBusy) return tr(modBusy, locale);
+  if (instrumentBusy && BUSY[m.command.type]) return tr(BUSY[m.command.type]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   if (m.command.type === 'lab.stretch') {
     const n = (m.command as { weights: number }).weights;
@@ -677,63 +624,6 @@ function measureSay(): string {
     if (mod.say) return mod.say(m.command as never, recs, locale);
     const shown = mod.shown(m.command as never, recs, locale);
     return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
-  }
-  // Induction: the needle's swing — which way and how far.
-  if (m.command.type === 'lab.induct') {
-    const ic = m.command as { move: string };
-    const v = r.value ?? 0;
-    if (Math.abs(v) < 1e-9) return ic.move === 'still' ? (uk ? 'Магніт не рухається — стрілка стоїть на нулі.' : 'The magnet does not move — the needle stays at zero.') : uk ? 'Стрілка ледь здригнулася.' : 'The needle hardly twitched.';
-    return uk ? `Стрілка відхилилася ${v > 0 ? 'вправо' : 'вліво'}: ${inductShown(v)}.` : `The needle swung to the ${v > 0 ? 'right' : 'left'}: ${inductShown(v)}.`;
-  }
-  // The electromagnet: the compass needle's turn — and which way.
-  if (m.command.type === 'lab.magnet') {
-    const mc = m.command as { current: number; core: boolean; reversed?: boolean };
-    const th = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.magnet').slice(0, 1)).map((x) => x.record).find((x) => x.quantity === 'angle');
-    const deg = Math.abs(th?.value ?? 0);
-    if (mc.current === 0) return uk ? 'Струму немає — стрілка дивиться на північ.' : 'No current — the needle looks north.';
-    if (!mc.core) return uk ? `Без цвяха стрілка ${deg < 2 ? 'майже не ворухнулася' : `відхилилася лише на ${deg}°`}.` : `Without the nail the needle ${deg < 2 ? 'hardly moved' : `turned only ${deg}°`}.`;
-    if (mc.reversed) return uk ? `Стрілка відхилилася на ${deg}° — але в інший бік!` : `The needle turned ${deg}° — but the other way!`;
-    return uk ? `Стрілка компаса відхилилася на ${deg}°.` : `The compass needle turned ${deg}°.`;
-  }
-  // Pascal's device: the bottom; the water each vessel took and the manometer's reading.
-  if (m.command.type === 'lab.vessel') {
-    const vc = m.command as { step: string; shape?: 'straight' | 'wide' | 'narrow' };
-    if (vc.step === 'bottom') return uk ? `Дно — ${cm(r.value ?? 0)} у діаметрі, однакове в усіх посудин.` : `The bottom is ${cm(r.value ?? 0)} across, the same for all the vessels.`;
-    const recs = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.vessel').slice(0, 1)).map((x) => x.record);
-    const V = formatMeasured('volume', recs.find((x) => x.quantity === 'volume')?.value ?? 0, 5e-6, locale);
-    const dh = cm(recs.find((x) => x.quantity === 'length')?.value ?? 0);
-    return uk ? `Пішло ${V} води, а манометр показує ${dh}.` : `${V} of water went in, and the manometer shows ${dh}.`;
-  }
-  // The syringe: its scale, the barometer, the force on its plunger — and the pressure it gives.
-  if (m.command.type === 'lab.atm') {
-    const ac = m.command as { step: string; pulled?: number };
-    if (ac.step === 'scale') return uk ? `Шкала від 0 до 1 мл займає ${cm(r.value ?? 0)}.` : `The scale from 0 to 1 mL is ${cm(r.value ?? 0)} long.`;
-    if (ac.step === 'barometer') return uk ? `Барометр показує ${formatMeasured('pressure', r.value, 100, locale)}.` : `The barometer shows ${formatMeasured('pressure', r.value, 100, locale)}.`;
-    const F = formatMeasured('force', r.value, 0.1, locale);
-    if (ac.step === 'open') return uk ? `З відкритим носиком поршень іде легко: ${F}.` : `With the nozzle open the plunger goes easily: ${F}.`;
-    const v = String(ac.pulled ?? 0).replace('.', uk ? ',' : '.');
-    return uk ? `Закритий носик, поршень до ${v} мл — динамометр показує ${F}!` : `The nozzle shut, the plunger to ${v} mL — the dynamometer shows ${F}!`;
-  }
-  // The hydraulic machine: the pistons, the force the load needed, how far the wide piston rose.
-  if (m.command.type === 'lab.press') {
-    const pc = m.command as { step: string; weights?: number };
-    const recs = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.press').slice(0, 1)).map((x) => x.record);
-    if (pc.step === 'diameters') return uk ? `Вузький поршень — ${cm(recs[0]?.value ?? 0)} у діаметрі, широкий — ${cm(recs[1]?.value ?? 0)}.` : `The narrow piston is ${cm(recs[0]?.value ?? 0)} across, the wide one ${cm(recs[1]?.value ?? 0)}.`;
-    if (pc.step === 'lift') {
-      const F2 = r.inputs?.['load'] ?? 0;
-      return uk ? `Вантаж ${formatMeasured('force', F2, 0.1, locale)} пішов угору, коли динамометр показав лише ${formatMeasured('force', r.value, 0.1, locale)}!` : `The ${formatMeasured('force', F2, 0.1, locale)} load went up when the dynamometer showed only ${formatMeasured('force', r.value, 0.1, locale)}!`;
-    }
-    return uk ? `Вузький поршень пройшов 6 см, а широкий піднявся лише на ${cm(r.value ?? 0)}.` : `The narrow piston went 6 cm, and the wide one rose only ${cm(r.value ?? 0)}.`;
-  }
-  // The black box: what the milliammeter shows, one way or turned round.
-  if (m.command.type === 'lab.box') {
-    if (r.value === null) return '';
-    const back = !!(m.command as { reversed?: boolean }).reversed;
-    const mA = `${(r.value * 1000).toFixed(1).replace('.', uk ? ',' : '.')} ${uk ? 'мА' : 'mA'}`;
-    const zero = r.value < (r.inputs?.['division'] ?? 0.0001);
-    return back
-      ? zero ? (uk ? 'Скриньку перевернули — і міліамперметр показує нуль!' : 'The box turned round — and the milliammeter shows zero!') : uk ? `Скриньку перевернули — міліамперметр показує ${mA}.` : `The box turned round — the milliammeter shows ${mA}.`
-      : uk ? `Ключ замкнено: міліамперметр показує ${mA}.` : `The key is closed: the milliammeter shows ${mA}.`;
   }
   // (Only the dynamometer from here on; another instrument without its own line says nothing rather than something wrong.)
   if (m.command.type !== 'lab.hang') return '';
@@ -2433,24 +2323,16 @@ function renderProtocol() {
       // (The black box's milliammeter: milliamperes to a tenth.)
       // (A body in a liquid: the times at the marks.)
       // (Induction: the milliammeter's signed milliamperes.)
-      const iShown = c.type === 'lab.induct' ? inductShown(r.value) : null;
       // (The electromagnet: the ammeter and the compass.)
-      const mRecs = c.type === 'lab.magnet' ? readingsOf([e]).map((x) => x.record) : [];
-      const mShown = c.type === 'lab.magnet' ? mRecs.map((x) => formatMeasured(x.quantity, x.value, x.quantity === 'current' ? 0.01 : 1, locale)).join(' · ') : null;
       // (Pascal's device: the water poured and the manometer.)
-      const vRecs = c.type === 'lab.vessel' ? readingsOf([e]).map((x) => x.record) : [];
-      const vShown = c.type === 'lab.vessel' && vRecs.length === 2 ? `${formatMeasured('volume', vRecs[0]!.value, 5e-6, locale)} · Δh ${formatMeasured('length', vRecs[1]!.value, 0.001, locale)}` : null;
       // (The pistons' two diameters.)
-      const pRecs = c.type === 'lab.press' ? readingsOf([e]).map((x) => x.record) : [];
-      const pShown = c.type === 'lab.press' && pRecs.length === 2 ? `${formatMeasured('length', pRecs[0]!.value, 0.001, locale)} · ${formatMeasured('length', pRecs[1]!.value, 0.001, locale)}` : null;
       // (The U-tube with oil: both columns.)
-      const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
       // (Two dynamometers: both readings.)
       // (The method of rows: millimetres.)
       // (A ball's bounce: whole centimetres.)
       // (An experiment module's own words for the step.)
       const modShown = experimentOf(c.type)?.shown(c as never, readingsOf([e]).map((x) => x.record), locale) ?? null;
-      const shown = modShown ?? both ?? leverShown ?? boxShown ?? pShown ?? vShown ?? mShown ?? iShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = modShown ?? both ?? leverShown ?? readingText(r, locale);
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

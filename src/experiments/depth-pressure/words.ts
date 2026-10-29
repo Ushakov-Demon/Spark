@@ -10,7 +10,8 @@ export const setup: LocalizedText = { uk: 'Хімічний стакан на 1 
 
 export const text = (c: DepthCommand): StepText => DEPTH_TEXT['lab.depth'](c);
 
-export const busy = (): LocalizedText => ({ uk: 'Дивимося…', en: 'Watching…' });
+/** No motion: the picture just changes. */
+export const busy = (): LocalizedText | null => null;
 
 const cm = (x: number, locale: Locale) => formatMeasured('length', x, 0.001, locale);
 
