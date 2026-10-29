@@ -12,6 +12,7 @@ import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidName, type 
 import { clockText, equalShadowsNoon, GNOMON_HEIGHT, latitudeFrom, sunOf } from './gnomon-bench.js';
 import { airPlaceName, type AirWhere } from './air-bench.js';
 import { PLANETS, planetIds, SUN_RADIUS } from './planets-bench.js';
+import { CALENDARS, daysText, SUN_YEAR } from './calendar-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -471,6 +472,26 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
       out.push({ id: `cl:${i}`, title: uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w} × 100 г`}: за 0,5 с` : `${w === 0 ? 'alike carts' : `cart 2 + ${w} × 100 g`}: in 0.5 s`, formula: `l₁ = ${cm(a ?? 0)}, l₂ = ${cm(b ?? 0)}` });
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
+      return;
+    }
+    // Calendars: each one's slide of the equinox, Δ = N·(T☉ − T); the struck-out days; Shakespeare and Cervantes.
+    if (c.type === 'lab.calendar') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      const step = String(c['step']);
+      const T = (x: number) => n(x, 9);
+      const drift = (id: 'egypt' | 'julian' | 'gregorian', r: MeasurementRecord | undefined, key: string) => {
+        if (!r) return;
+        const N = r.inputs?.['years'] ?? 0;
+        out.push({ id: `${key}:${i}`, title: uk ? `${tr(CALENDARS[id].name, locale)}, ${N} років` : `${tr(CALENDARS[id].name, locale)}, ${N} years`, formula: `Δ = N·(${T(SUN_YEAR.value)} − ${T(CALENDARS[id].year.value)})`, numbers: `${N} · ${T(SUN_YEAR.value - CALENDARS[id].year.value)} ≈ ${r.value! > 0 ? '+' : '−'}${daysText(Math.abs(r.value!), uk)}` });
+      };
+      if (step === 'egypt') drift('egypt', recs[0], 'ce');
+      else if (step === 'julian') drift('julian', recs[0], 'cj');
+      else if (step === 'gregorian') {
+        out.push({ id: `cs:${i}`, title: uk ? '1582: чт 4 жовтня → пт 15 жовтня' : '1582: Thu 4 October → Fri 15 October', formula: uk ? 'викреслено 5 … 14 жовтня' : 'struck out 5 … 14 October', numbers: daysText(recs[0]!.value!, uk, 'день') });
+        drift('gregorian', recs[1], 'cg');
+      } else if (step === 'bard') {
+        out.push({ id: `cb:${i}`, title: uk ? 'Сервантес — 22.04 (григ.), Шекспір — 23.04 (юл.)' : 'Cervantes — 22.04 (Greg.), Shakespeare — 23.04 (Jul.)', formula: `${uk ? 'Шекспір' : 'Shakespeare'} = ${[recs[0]!.inputs?.['day'] ?? 0, recs[0]!.inputs?.['month'] ?? 0].map((x) => String(x).padStart(2, '0')).join('.')}.1616 (${uk ? 'григоріанський' : 'Gregorian'})`, numbers: `Δ = ${daysText(recs[0]!.value!, uk)}` });
+      }
       return;
     }
     // The Solar System's model: the scale from the ball; where the planets lie and how big; Kepler's T²/a³; Voyager.

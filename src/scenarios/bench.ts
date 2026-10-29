@@ -40,6 +40,7 @@ import { TOWER_COMMANDS, TOWER_TEXT, type TowerCommand } from './tower-bench.js'
 import { GNOMON_COMMANDS, GNOMON_TEXT, type GnomonCommand } from './gnomon-bench.js';
 import { AIR_COMMANDS, AIR_TEXT, type AirCommand } from './air-bench.js';
 import { PLANETS_COMMANDS, PLANETS_TEXT, type PlanetsCommand } from './planets-bench.js';
+import { CALENDAR_COMMANDS, CALENDAR_TEXT, type CalendarCommand } from './calendar-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -96,7 +97,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand | CartsCommand | DragCommand | TowerCommand | GnomonCommand | AirCommand | PlanetsCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand | CartsCommand | DragCommand | TowerCommand | GnomonCommand | AirCommand | PlanetsCommand | CalendarCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -175,7 +176,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS, ...CARTS_COMMANDS, ...DRAG_COMMANDS, ...TOWER_COMMANDS, ...GNOMON_COMMANDS, ...AIR_COMMANDS, ...PLANETS_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS, ...CARTS_COMMANDS, ...DRAG_COMMANDS, ...TOWER_COMMANDS, ...GNOMON_COMMANDS, ...AIR_COMMANDS, ...PLANETS_COMMANDS, ...CALENDAR_COMMANDS] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -201,6 +202,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...(GNOMON_TEXT as Record<GnomonCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(AIR_TEXT as Record<AirCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(PLANETS_TEXT as Record<PlanetsCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
+  ...(CALENDAR_TEXT as Record<CalendarCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(INDUCT_TEXT as Record<InductCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(MAGNET_TEXT as Record<MagnetCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(VESSEL_TEXT as Record<VesselCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -258,11 +260,12 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets', LocalizedText> = {
+export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar', LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
+  calendar: { uk: 'Таблиця календарів (тривалість року в кожному), довжина року за Сонцем — від рівнодення до рівнодення, лічильник років; аркуші календарів 1582 і 1616 років', en: 'A table of calendars (the length of the year in each), the length of the year by the Sun — from equinox to equinox, a counter of years; calendar sheets of 1582 and 1616' },
   planets: { uk: 'М’яч діаметром 20 см (Сонце), лінійка, рулетка, шкільний стадіон і довга вулиця; таблиця NASA з розмірами, відстанями й періодами планет', en: 'A 20 cm ball (the Sun), a ruler, a tape measure, a school field and a long street; NASA’s table of the planets’ sizes, distances and periods' },
-  air: { uk: 'Смартфон із барометром (застосунок показує тиск до сотих гектопаскаля), ліфт багатоповерхівки, похід на Говерлу', en: 'A smartphone with a barometer (an app shows the pressure to hundredths of a hectopascal), a block of flats with a lift, a hike up Hoverla' },
-  gnomon: { uk: 'Метрова палиця (гномон), виска, щоб поставити її прямовисно, рулетка, годинник (київський час)', en: 'A metre stick (a gnomon), a plumb line to stand it upright, a tape measure, a clock (Kyiv time)' },
+  air: { uk: 'Смартфон із барометром (застосунок показує тиск до сотих гектопаскаля), ліфт багатоповерхівки, політ на дирижаблі', en: 'A smartphone with a barometer (an app shows the pressure to hundredths of a hectopascal), a block of flats with a lift, a flight in an airship' },
+  gnomon: { uk: 'Метрова палиця (гномон), виска, щоб поставити її прямовисно, рулетка, годинник (місцевий час)', en: 'A metre stick (a gnomon), a plumb line to stand it upright, a tape measure, a clock (the local time)' },
   tower: { uk: 'Мірний циліндр на 250 мл, гліцерин, вода, соняшникова олія, спирт (по 50 мл), харчовий барвник, сталева гайка, шматочки оргскла й поліетилену, сосновий кубик', en: 'A 250 mL measuring cylinder, glycerol, water, sunflower oil, ethanol (50 mL each), food colouring, a steel nut, pieces of acrylic glass and polyethylene, a pine cube' },
   drag: { uk: 'Акваріум з водою, на склі — дві позначки на відстані 20 см, 5 г пластиліну, лінійка, камера телефона (30 кадрів за секунду)', en: 'An aquarium of water with two marks 20 cm apart on the glass, 5 g of plasticine, a ruler, a phone camera (30 frames a second)' },
   carts: { uk: 'Два легкі візки по 100 г, пружина між ними, нитка й сірники, тягарці по 100 г, лінійка, камера телефона, динамометр (до 5 Н)', en: 'Two light 100 g carts, a spring between them, a thread and matches, 100 g weights, a ruler, a phone camera, a dynamometer (up to 5 N)' },

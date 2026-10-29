@@ -47,7 +47,7 @@ export interface MeasurementRecord {
   readonly kind: 'measurement';
   /** Equipment id of the instrument. */
   readonly instrument: string;
-  readonly quantity: 'mass' | 'volume' | 'force' | 'length' | 'time' | 'current' | 'voltage' | 'resistance' | 'pressure' | 'angle' | 'turns' | 'ratio';
+  readonly quantity: 'mass' | 'volume' | 'force' | 'length' | 'time' | 'current' | 'voltage' | 'resistance' | 'pressure' | 'angle' | 'turns' | 'ratio' | 'days';
   /** SI units (kg, m³, N) as the instrument shows it; null — out of range (overloaded, overflowing). */
   readonly value: number | null;
   /** The exact model value, for checks and debriefs. */

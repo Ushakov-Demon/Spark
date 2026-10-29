@@ -30,6 +30,7 @@ const UA_ROWS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gra
 const UA_ENERGY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна енергія та її види. Закон збереження енергії в механічних процесах' }];
 const UA_WINCH: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'конструювання механізмів, що перетворюють прямолінійний рух на обертальний і навпаки' }];
 const UA_PLANETS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'моделювання: руху планет' }];
+const UA_CALENDARS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'моделювання: руху планет; календарів' }];
 const UA_SUN_TIME: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'закономірностей руху небесних тіл і обліком часу' }];
 const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Взаємодія тіл. Сила. Додавання сил. Рівнодійна.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
@@ -455,6 +456,30 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.noonLatitude,
     examples: [{ args: [39.1, -0.49], expected: 50.41, note: 'Kyiv at the March equinox' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.calendar-drift',
+    law: 'sun-and-time',
+    title: { uk: 'Як календар відходить від Сонця', en: 'How a calendar drifts from the Sun' },
+    latex: '\\Delta = N\\,(T_\\odot - T)',
+    plain: 'Δ = N·(T☉ − T)',
+    argSymbols: ['N', 'T', 'T☉'],
+    resultSymbol: 'Δ',
+    variables: {
+      'Δ': { name: { uk: 'на скільки діб зсунеться дата рівнодення (+ — пізніше)', en: 'how many days the equinox’s date moves (+ — later)' }, unit: '' },
+      N: { name: { uk: 'скільки років іде календар', en: 'how many years the calendar runs' }, unit: '' },
+      T: { name: { uk: 'середня тривалість року в календарі, доби', en: 'the calendar’s mean year, days' }, unit: '' },
+      'T☉': { name: { uk: 'рік за Сонцем — від рівнодення до рівнодення: 365,24219 доби', en: 'the year by the Sun — equinox to equinox: 365.24219 days' }, unit: '' },
+    },
+    curriculum: UA_CALENDARS,
+    explanation: {
+      novice: { uk: 'Якщо календарний рік коротший за сонячний, свята щороку трохи випереджають пори року; якщо довший — відстають.', en: 'If the calendar year is shorter than the Sun’s, the dates run a little ahead of the seasons every year; if longer — behind.' },
+      school: { uk: 'Щороку різниця T☉ − T додається: за 365 діб — чверть доби на рік, доба за чотири роки; за юліанським (365,25) — доба за 128 років; за григоріанським (365,2425) — доба за понад 3000 років.', en: 'Every year the difference T☉ − T adds up: with 365 days — a quarter of a day a year, a day in four years; with the Julian (365.25) — a day in 128 years; with the Gregorian (365.2425) — a day in over 3000 years.' },
+    },
+    compute: f.calendarDrift,
+    examples: [{ args: [1257, 365.25, 365.24219], expected: -9.817, note: 'Julian, 325–1582' }],
     textSource: 'spark',
     reviewed: false,
   }),

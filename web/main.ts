@@ -156,6 +156,13 @@ import {
   type AirWhere,
   INNER,
   PLANETS,
+  CALENDARS,
+  daysText,
+  dateText,
+  equinoxDate,
+  EQUINOX,
+  NICAEA,
+  REFORM,
   planetIds,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
@@ -501,6 +508,31 @@ function benchView(): BenchView | null {
     if (cmd.mode === 'weigh') return { ...base, kind, carts: { mode: 'weigh', weights: cmd.weights, x1: 0, x2: 0, cart: cmd.cart ?? 1, ...(recs[0] ? { read: [formatMeasured('force', recs[0].value, 0.1, locale)] } : {}) } };
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
+  }
+  // Calendars: the calendar of this step (or the next one) running on; October 1582; Shakespeare and Cervantes.
+  if (kind === 'calendar') {
+    const uk = locale === 'uk';
+    type Step = 'egypt' | 'julian' | 'gregorian' | 'bard';
+    const cc = c?.type === 'lab.calendar' ? (c as unknown as { step: Step }).step : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.calendar');
+    const step: Step = cc ?? (next?.kind === 'bench' ? (next.command as unknown as { step: Step }).step : 'egypt');
+    const recs = cc && last ? readingsOf([last]).map((x) => x.record) : [];
+    const months = uk ? ['січ.', 'лют.', 'бер.', 'квіт.', 'трав.', 'черв.', 'лип.', 'серп.', 'вер.', 'жовт.', 'лист.', 'груд.'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekdays = uk ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    const anim = cc ? { anim: cc } : {};
+    if (step === 'bard') {
+      return { ...base, kind, calendar: { view: 'bard', title: '', months, weekdays, names: uk ? ['Сервантес', 'Шекспір'] : ['Cervantes', 'Shakespeare'], sheets: uk ? ['Мадрид · григоріанський', 'Лондон · юліанський'] : ['Madrid · Gregorian', 'London · Julian'], strip: uk ? '1616 рік за григоріанським календарем' : '1616 by the Gregorian calendar', shift: cc ? 1 : 0, ...(recs[0] ? { read: daysText(recs[0].value ?? 0, uk) } : {}), ...anim } };
+    }
+    const id = step;
+    const r = id === 'gregorian' ? recs[1] : recs[0];
+    const from = id === 'egypt' ? 0 : id === 'julian' ? NICAEA : REFORM;
+    const years = r?.inputs?.['years'] ?? 0;
+    const yearFmt: [string, string] = id === 'egypt' ? [uk ? 'рік ' : 'year ', ''] : uk ? ['', ' р.'] : ['', ''];
+    const Y = CALENDARS[id].year.value;
+    const title = tr(CALENDARS[id].name, locale);
+    const sub = `${uk ? 'рік —' : 'a year of'} ${new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 4 }).format(Y)} ${uk ? (Number.isInteger(Y) ? 'діб' : 'доби') : 'days'}`;
+    const startNote = `21 ${months[2]} · ${yearFmt[0]}${from}${yearFmt[1]}`;
+    return { ...base, kind, calendar: { view: 'drift', title, sub, month: uk ? 'Жовтень 1582 року' : 'October 1582', months, weekdays, year: from + years, yearFmt, start: EQUINOX, sun: EQUINOX + (r?.value ?? 0), startNote, ...(id === 'gregorian' ? { cut: 2 } : {}), ...(r ? { read: `${(r.value ?? 0) >= 0 ? '+' : '−'}${daysText(Math.abs(r.value ?? 0), uk)}` } : {}), ...anim } };
   }
   // The Solar System's model: the planets laid out so far; the orbits once they are set going; Voyager's view back.
   if (kind === 'planets') {
@@ -856,6 +888,23 @@ function allReadings() {
 }
 const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
 /** What the Professor says about the latest level or dynamometer reading. */
+/** A step of the calendars, in words: «за 120 років — на 29,1 доби пізніше», the struck-out days, the two deaths. */
+function calendarShown(step: string, recs: readonly MeasurementRecord[]): string {
+  const uk = locale === 'uk';
+  const slide = (r: MeasurementRecord | undefined) => {
+    if (!r) return '';
+    const v = r.value ?? 0;
+    const when = v >= 0 ? (uk ? 'пізніше' : 'later') : uk ? 'раніше' : 'earlier';
+    return uk ? `за ${r.inputs?.['years']} років рівнодення — на ${daysText(Math.abs(v), true)} ${when}, ${equinoxDate(EQUINOX + v, true)}` : `in ${r.inputs?.['years']} years the equinox — ${daysText(Math.abs(v), false)} ${when}, ${equinoxDate(EQUINOX + v, false)}`;
+  };
+  if (step === 'gregorian') return uk ? `викреслено ${daysText(recs[0]?.value ?? 0, true, 'день')}; ${slide(recs[1])}` : `${daysText(recs[0]?.value ?? 0, false)} struck out; ${slide(recs[1])}`;
+  if (step === 'bard') {
+    const r = recs[0];
+    if (!r) return '';
+    return uk ? `Сервантес — 22 квітня, Шекспір — ${dateText(r.inputs?.['month'] ?? 5, r.inputs?.['day'] ?? 3, true)} за григоріанським: ${daysText(r.value ?? 0, true)}` : `Cervantes — 22 April, Shakespeare — ${dateText(r.inputs?.['month'] ?? 5, r.inputs?.['day'] ?? 3, false)} by the Gregorian: ${daysText(r.value ?? 0, false)}`;
+  }
+  return slide(recs[0]);
+}
 /** A step of the Solar System's model, in words: «Земля — 21,5 м, 1,8 мм; …», the scale, T²/a³, the way to Voyager. */
 function planetsShown(c: { step: string }, recs: readonly MeasurementRecord[]): string {
   const uk = locale === 'uk';
@@ -897,7 +946,7 @@ function measureSay(): string {
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
   // (Taking the nail out of the coil has its own words.)
-  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type === 'lab.planets' && ['kepler', 'voyager'].includes((m.command as unknown as { step: string }).step) ? `lab.planets.${(m.command as unknown as { step: string }).step}` : m.command.type;
+  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type === 'lab.calendar' && ['gregorian', 'bard'].includes((m.command as unknown as { step: string }).step) ? `lab.calendar.${(m.command as unknown as { step: string }).step}` : m.command.type === 'lab.planets' && ['kepler', 'voyager'].includes((m.command as unknown as { step: string }).step) ? `lab.planets.${(m.command as unknown as { step: string }).step}` : m.command.type;
   if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   if (m.command.type === 'lab.stretch') {
@@ -978,6 +1027,11 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // Calendars: where the equinox went, the reform, the two deaths.
+  if (m.command.type === 'lab.calendar') {
+    const shown = calendarShown((m.command as { step: string }).step, readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.calendar')!]).map((x) => x.record));
+    return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
   }
   // The Solar System's model: the scale, the planets' places, Kepler's ratio, the way to Voyager.
   if (m.command.type === 'lab.planets') {
@@ -2866,6 +2920,7 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const clShown = c.type === 'lab.calendar' ? calendarShown(String(c['step']), readingsOf([e]).map((x) => x.record)) : null;
       const plShown = c.type === 'lab.planets' ? planetsShown(c as unknown as { step: string }, readingsOf([e]).map((x) => x.record)) : null;
       const arShown = c.type === 'lab.air' && r.value !== null ? formatMeasured('pressure', r.value, 1, locale) : null;
       const gnRecs = c.type === 'lab.gnomon' ? readingsOf([e]).map((x) => x.record) : [];
@@ -2884,7 +2939,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = clShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

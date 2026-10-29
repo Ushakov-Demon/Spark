@@ -341,6 +341,18 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('за 871 м');
   }, 60_000);
 
+  it('calendars: the equinox slides a month in 120 Egyptian years, ten days by 1582; Shakespeare 11 days after Cervantes', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'calendars')!);
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk, '\n', answer.text.en);
+    expect(answer.correct).toBe('days');
+    expect(answer.text.uk).toContain('на 29,1 доби пізніше — з 21 березня на 19 квітня');
+    expect(answer.text.uk).toContain('на 9,8 доби раніше, на 11 березня');
+    expect(answer.text.uk).toContain('викреслила 10 днів');
+    expect(answer.text.uk).toContain('лише на 0,4 доби');
+    expect(answer.text.uk).toContain('3 травня за григоріанським');
+    expect(answer.say.uk).toContain('11 діб');
+  }, 60_000);
+
   it('the air: about 10 t above each m², a density of 1.2 kg/m³ from two floors, a fifth of it below the airship at 2 km', async () => {
     const { withValues } = await import('../../src/scenarios/index.js');
     const p = PRESETS.find((x) => x.id === 'air-column')!;

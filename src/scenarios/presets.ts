@@ -62,7 +62,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -996,6 +996,27 @@ const LIST: readonly Preset[] = [
     answerOnBoard: ['pe:'],
     formulas: ['mechanics.kepler-third'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет' }],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Шекспір і Сервантес померли 23 квітня 1616 року. Чи в один день?', en: 'Shakespeare and Cervantes died on 23 April 1616. On the same day?' },
+    id: 'calendars',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Давні й сучасні календарі', en: 'Calendars old and new' },
+    question: {
+      uk: 'Календар лічить цілі доби, а пори року задає Сонце: від весняного рівнодення до наступного минає 365,24219 доби — не ціле число. Змоделюємо давні й сучасні календарі й подивимося, як вони встигають за Сонцем. А наостанок загадка: Вільям Шекспір і Мігель де Сервантес обидва померли 23 квітня 1616 року. Чи в один день?',
+      en: 'A calendar counts whole days, and the seasons go by the Sun: from one spring equinox to the next 365.24219 days pass — not a whole number. We model calendars old and new and see how they keep up with the Sun. And at the end, a riddle: William Shakespeare and Miguel de Cervantes both died on 23 April 1616. On the same day?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'calendar',
+    plan: (['egypt', 'julian', 'gregorian', 'bard'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.calendar', step } }) as const),
+    choices: [ch('same', 'Так, в один день — дата ж однакова', 'Yes, on the same day — the date is the same'), ch('hours', 'Майже: різниця — кілька годин, через часові пояси', 'Nearly: a few hours apart, by the time zones'), ch('days', 'Ні, між ними понад десять днів', 'No, more than ten days apart')],
+    trick: { uk: 'Більшість думає, що однакова дата — це той самий день.', en: 'Most people think the same date is the same day.' },
+    answerOnBoard: ['cb:'],
+    formulas: ['mechanics.calendar-drift'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет; календарів' }],
     expect: 'reached',
   },
   varied(
@@ -2232,7 +2253,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

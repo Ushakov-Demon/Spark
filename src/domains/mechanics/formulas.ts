@@ -46,6 +46,8 @@ export const woundLength = (diameter: number, turns: number): number => Math.PI 
 export const keplerConstant = (period: number, distance: number): number => (period * period) / (distance * distance * distance);
 /** The latitude from the Sun's height at noon and its declination, degrees. */
 export const noonLatitude = (height: number, declination: number): number => 90 - height + declination;
+/** How far a calendar moves the equinox's date in N years, days: its year T against the Sun's T☉ (later if shorter). */
+export const calendarDrift = (years: number, calendarYear: number, sunYear: number): number => years * (sunYear - calendarYear);
 
 /** The potential energy of a body raised by h: Eп = m·g·h. */
 export const potentialEnergy = (mass: number, g: number, height: number): number => mass * g * height;

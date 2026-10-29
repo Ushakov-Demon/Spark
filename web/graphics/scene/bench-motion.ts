@@ -27,6 +27,10 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The planets set going; the way out to Voyager.) */
   'lab.planets.kepler': { uk: 'Планети біжать по орбітах — дивимося…', en: 'The planets run round their orbits — watch…' },
   'lab.planets.voyager': { uk: 'Ідемо туди, де був «Вояджер-1»…', en: 'Walking out to where Voyager 1 was…' },
+  'lab.calendar': { uk: 'Роки біжать — стежимо, де рівнодення…', en: 'The years run on — watching where the equinox falls…' },
+  /** (The reform: the days struck out; Shakespeare's date carried over.) */
+  'lab.calendar.gregorian': { uk: 'Викреслюємо дні з жовтня 1582 року…', en: 'Striking the days out of October 1582…' },
+  'lab.calendar.bard': { uk: 'Переводимо лондонську дату в григоріанський календар…', en: 'Carrying the London date over to the Gregorian calendar…' },
   'lab.air': { uk: 'Тиск на екрані ще змінюється — чекаємо…', en: 'The pressure on the screen is still changing — wait…' },
   /** (The airship climbing to 2 km.) */
   'lab.air.high': { uk: 'Дирижабль набирає висоту…', en: 'The airship is climbing…' },
@@ -70,6 +74,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
   if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
   if (next.kind === 'planets' && next.planets?.anim) return planetsRun(next, draw);
+  if (next.kind === 'calendar' && next.calendar?.anim) return calendarRun(next, draw);
   if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
   if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
@@ -548,6 +553,37 @@ function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   return {
     channels: [climb],
     frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
+  };
+}
+
+/**
+ * Calendars: the years running on and the Sun sliding over the days (4 s); the reform — October's days crossed out
+ * one by one, the month closing up, then the Sun back to 21 March and the new calendar's years; 1616 — a pause on the
+ * two sheets, then the London date carried along the Gregorian tape.
+ */
+function calendarRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const c = next.calendar!;
+  const anim = c.anim!;
+  const length = anim === 'gregorian' ? 8 : 4;
+  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
+  const { anim: _a, read: _r, ...rest } = c;
+  const from = c.yearFmt && c.year !== undefined ? (anim === 'gregorian' ? 1582 : anim === 'julian' ? 325 : 0) : 0;
+  const start = c.start ?? 20;
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw({ ...next, calendar: { ...rest, ...(c.read ? { read: c.read } : {}) } });
+      const t = Number.isFinite(clock.value) ? clock.value : 0;
+      if (anim === 'bard') return draw({ ...next, calendar: { ...rest, shift: Math.max(0, Math.min(1, (t - 1) / 2.5)) } });
+      if (anim === 'gregorian' && t < 4) return draw({ ...next, calendar: { ...rest, view: 'october', cut: t < 3 ? t / 3 : 2 } });
+      // (The reform: 1 s for the Sun back to its place, then the years.)
+      const u = anim === 'gregorian' ? t - 4 : t;
+      const back = anim === 'gregorian' ? Math.min(1, u) : 1;
+      const run = anim === 'gregorian' ? Math.max(0, Math.min(1, (u - 1) / 3)) : Math.min(1, u / 4);
+      const year = from + run * ((c.year ?? 0) - from);
+      const sun = (anim === 'gregorian' ? start - 10 + 10 * back : start) + run * ((c.sun ?? start) - start);
+      draw({ ...next, calendar: { ...rest, year, sun } });
+    },
   };
 }
 
