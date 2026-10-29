@@ -23,6 +23,9 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.air': { uk: 'Тиск на екрані ще змінюється — чекаємо…', en: 'The pressure on the screen is still changing — wait…' },
+  /** (The airship climbing to 2 km.) */
+  'lab.air.high': { uk: 'Дирижабль набирає висоту…', en: 'The airship is climbing…' },
   'lab.gnomon': { uk: 'Сонце йде небом — міряємо тінь…', en: 'The Sun moves across the sky — measuring the shadow…' },
   'lab.tower': { uk: 'Наливаю повільно, по стінці…', en: 'Pouring slowly, down the wall…' },
   /** (A body let into the tower.) */
@@ -62,6 +65,8 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'drag' && next.drag?.read) return dragRun(next, draw);
   if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
   if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
+  if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
+  if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
   if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
@@ -515,5 +520,28 @@ function gnomonRun(next: BenchView, draw: (v: BenchView) => void): Motion {
       const length = from.length + (to.length - from.length) * f;
       draw({ ...next, gnomon: { tips: [...before, ...fresh.slice(0, f >= 1 ? k + 1 : k)], now: { length, time: to.time, ...(f >= 1 ? { read: to.read } : {}) } } });
     },
+  };
+}
+
+/** The lift going up from the ground floor to the ninth; the barometer read once it stops. */
+function liftUp(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const a = next.air!;
+  const ride = new Channel(1, 9, { kind: 'steady', speed: 3 }, 1e-3);
+  const { read: _r, ...rest } = a;
+  return {
+    channels: [ride],
+    frame: (done) => draw(done ? next : { ...next, air: { ...rest, floor: Number.isFinite(ride.value) ? ride.value : 1 } }),
+  };
+}
+
+/** The airship climbing — from the ground to 300 m, or on to 2 km: the town shrinking below; the barometer read once it is there. */
+function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const a = next.air!;
+  const from = a.where === 'high' ? 1 : 0;
+  const climb = new Channel(from, from + 1, { kind: 'steady', speed: 0.45 }, 1e-3);
+  const { read: _r, ...rest } = a;
+  return {
+    channels: [climb],
+    frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
   };
 }

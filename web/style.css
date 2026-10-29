@@ -1032,3 +1032,8 @@ footer .library-links a { color: var(--accent); }
 .vary-credit { order: 10; flex-basis: 100%; font-size: 0.72rem; }
 .vary-reset { min-height: 28px; padding: 1px 8px; font-size: 0.95rem; margin-left: auto; }
 .vary-item { gap: 4px; }
+
+/* A term's source: under its footnote and its glossary entry. */
+.term-card .term-source { display: block; margin: 0 0 4px; font-size: 0.82rem; color: var(--muted); }
+.lib-source { margin: 2px 0 0; font-size: 0.85rem; }
+.lib-source a { color: var(--muted); }

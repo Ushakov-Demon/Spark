@@ -49,3 +49,5 @@ export * from './carts-bench.js';
 export * from './drag-bench.js';
 export * from './tower-bench.js';
 export * from './gnomon-bench.js';
+export * from './place-time.js';
+export * from './air-bench.js';

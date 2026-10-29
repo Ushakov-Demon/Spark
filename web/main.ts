@@ -151,6 +151,9 @@ import {
   towerLiquidIn,
   type TowerBody,
   clockText,
+  airPlace,
+  airPlaceName,
+  type AirWhere,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
 import type { SystemState } from '../src/core/state.js';
@@ -495,6 +498,19 @@ function benchView(): BenchView | null {
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
   }
+  // The air: where the phone is (this step's, or the next one's) and what its barometer shows; the town and its height.
+  if (kind === 'air') {
+    const ac = c?.type === 'lab.air' ? (c as unknown as { place: string; where: AirWhere }) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.air');
+    const cmd = ac ?? (next?.kind === 'bench' ? (next.command as unknown as { place: string; where: AirWhere }) : { place: '', where: 'ground' as const });
+    const town = airPlace(cmd.place);
+    const uk = locale === 'uk';
+    const label = `${town.name}, ${Math.round(town.elevation ?? 0)} ${uk ? 'м над морем' : 'm above the sea'}`;
+    // (The ninth floor before its reading: the phone still waits on the ground floor; the climb to 2 km — from 300 m.)
+    // (Before the airship's first reading: still on the ninth floor.)
+    const where = !ac && cmd.where === 'ninth' ? 'ground' : !ac && cmd.where === 'high' ? 'airship' : !ac && cmd.where === 'airship' ? 'ninth' : cmd.where;
+    return { ...base, kind, air: { where, floor: where === 'ninth' ? 9 : 1, label, air: uk ? 'повітря' : 'air', ...(ac && r ? { read: formatMeasured('pressure', r.value, 1, locale) } : {}) } };
+  }
   // The gnomon: every shadow measured so far chalked; the last one with the Sun and the clock; the last series played.
   if (kind === 'gnomon') {
     const done = log.filter((e) => e.command.type === 'lab.gnomon');
@@ -836,7 +852,7 @@ function measureSay(): string {
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
   // (Taking the nail out of the coil has its own words.)
-  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type;
+  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type;
   if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   if (m.command.type === 'lab.stretch') {
@@ -917,6 +933,11 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // The air: the barometer's reading at the place.
+  if (m.command.type === 'lab.air') {
+    const name = tr(airPlaceName((m.command as { where: AirWhere }).where), locale);
+    return uk ? `${name.charAt(0).toUpperCase()}${name.slice(1)}: барометр показує ${formatMeasured('pressure', r.value, 1, locale)}.` : `${name.charAt(0).toUpperCase()}${name.slice(1)}: the barometer shows ${formatMeasured('pressure', r.value, 1, locale)}.`;
   }
   // The gnomon: the series' shadows.
   if (m.command.type === 'lab.gnomon') {
@@ -2795,6 +2816,7 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const arShown = c.type === 'lab.air' && r.value !== null ? formatMeasured('pressure', r.value, 1, locale) : null;
       const gnRecs = c.type === 'lab.gnomon' ? readingsOf([e]).map((x) => x.record) : [];
       const gnShown = gnRecs.length ? gnRecs.map((x) => formatMeasured('length', x.value, 0.01, locale)).join(' · ') : null;
       const twShown = c.type === 'lab.tower' && r.value !== null ? (c['step'] === 'pour' ? `50 · 100 · 150 · 200 ${locale === 'uk' ? 'мл' : 'mL'}` : towerPlace(c['body'] as TowerBody, r).replace(/\.$/, '')) : null;
@@ -2811,7 +2833,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

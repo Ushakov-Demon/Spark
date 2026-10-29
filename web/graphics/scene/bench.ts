@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -66,6 +66,11 @@ export interface BenchView {
    * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
    * dropped below the card (m), its tilt (°), and the slow motion's label.
    */
+  /**
+   * The air: where the phone is — on the ground floor, on the ninth (`floor` between them while the lift goes), or in
+   * the airship over the town; its barometer's reading; the labels.
+   */
+  readonly air?: { readonly where: 'ground' | 'ninth' | 'airship' | 'high'; readonly floor: number; /** How far the camera has risen with the airship: 0 — on the ground, 1 — 300 m, 2 — 2 km. */ readonly zoom?: number; readonly read?: string; readonly label: string; readonly air: string };
   /**
    * The gnomon: the shadows measured so far (their tips chalked on the ground, the clock time by each), the one being
    * measured now (its length, m, and the clock); `anim` — how many of the last ones to play one by one.
@@ -254,6 +259,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'drag') return dragSvg(v.drag);
   if (v.kind === 'tower') return towerSvg(v.tower);
   if (v.kind === 'gnomon') return gnomonSvg(v.gnomon);
+  if (v.kind === 'air') return airSvg(v.air);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -486,6 +492,39 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/**
+ * The air: a band of air beside, thick at the bottom and thinning upwards; a nine-storey block with its lift, the phone
+ * on the floor it is on — or a mountain with the phone on its top. The phone's screen shows the barometer.
+ */
+function airSvg(a: BenchView['air']): string {
+  if (!a) return '';
+  const ground = TABLE - 2;
+  const band = `<defs><linearGradient id="air-thin" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="rgba(140,200,255,0.55)"/><stop offset="1" stop-color="rgba(140,200,255,0.04)"/></linearGradient></defs><rect x="592" y="20" width="22" height="${ground - 20}" style="fill:url(#air-thin)"/><text class="bench-label" x="603" y="14" text-anchor="middle">${a.air}</text>`;
+  const phone = (x: number, y: number) => `<rect x="${x - 9}" y="${y - 30}" width="18" height="30" rx="3" style="fill:#2b2f36"/><rect x="${x - 7}" y="${y - 27}" width="14" height="22" rx="1" style="fill:#cfe3f3"/>${a.read ? `<text class="bench-reading" x="${x - 14}" y="${y - 12}" text-anchor="end">${a.read}</text>` : ''}`;
+  // A block of `n` storeys, 22 units each, its foot at (x, ground): the windows two to a storey.
+  const storey = 22;
+  const w = 80;
+  const block = (x: number, n: number, numbers: boolean) => Array.from({ length: n }, (_, i) => `<rect x="${x}" y="${ground - (i + 1) * storey}" width="${w}" height="${storey}" style="fill:#c9b79c;stroke:#8c7a5e"/><rect x="${x + 10}" y="${ground - (i + 1) * storey + 6}" width="14" height="10" style="fill:#7fa7c9"/><rect x="${x + 34}" y="${ground - (i + 1) * storey + 6}" width="14" height="10" style="fill:#7fa7c9"/>${numbers ? `<text x="${x - 6}" y="${ground - i * storey - 7}" text-anchor="end" style="font:10px sans-serif;fill:#d8e2ea">${i + 1}</text>` : ''}`).join('');
+  const x0 = 470;
+  const label = `<text class="bench-label" x="${x0 - 14}" y="${ground - 9 * storey + 4}" text-anchor="end">${a.label}</text>`;
+  if (a.where === 'airship' || a.where === 'high') {
+    // The camera flies with the airship: it stays big in the frame, and the town below shrinks — at 300 m to a fifth,
+    // at 2 km to a speck among its neighbours, all to the left of it so none leaves the board (`zoom`: 0 — on the
+    // ground, 1 — 300 m, 2 — 2 km).
+    const z = a.zoom ?? (a.where === 'high' ? 2 : 1);
+    const sc = z <= 1 ? 1 - 0.78 * z : 0.22 - 0.17 * (z - 1);
+    const cx = x0 + w / 2;
+    const town = `<g transform="translate(${cx},${ground}) scale(${sc}) translate(${-cx},${-ground})">${block(x0 - 4 * (w + 14), 14, false)}${block(x0 - 3 * (w + 14), 7, false)}${block(x0 - 2 * (w + 14), 5, false)}${block(x0 - (w + 14), 12, false)}${block(x0, 9, false)}</g>`;
+    const sy = 110;
+    // (On its envelope a registration in the German airships' manner, D-LZ…: an invented one.)
+    const ship = `<g transform="translate(${cx},${sy}) scale(1.25)"><ellipse cx="0" cy="0" rx="46" ry="14" style="fill:#d9dde2;stroke:#7d858d;stroke-width:1.2"/><path d="M40,-4 l14,-9 v26 l-14,-9 Z" style="fill:#b9c0c8;stroke:#7d858d"/><rect x="-12" y="12" width="24" height="7" rx="2" style="fill:#5a636c"/><text x="-4" y="4" text-anchor="middle" style="font:700 10px sans-serif;fill:#3a4652;letter-spacing:1px">D-LZUA</text></g>`;
+    return `${band}${town}${ship}${phone(cx, sy + 44)}<text class="bench-label" x="${cx}" y="${ground - 6}" text-anchor="middle">${a.label}</text>`;
+  }
+  const y = ground - (a.floor - 1) * storey;
+  const lift = `<rect x="${x0 + w - 22}" y="${y - storey + 2}" width="18" height="${storey - 3}" style="fill:#e8e2d5;stroke:#555"/>`;
+  return `${band}${block(x0, 9, true)}${lift}${phone(x0 + w - 13, y - 2)}${label}`;
 }
 
 /** The gnomon in the yard: 100 units to the metre; the stick's foot here, its shadow along the tape to the right. */

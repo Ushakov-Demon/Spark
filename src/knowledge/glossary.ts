@@ -22,6 +22,10 @@ export interface Term {
   readonly law?: string;
   /** More about it — shown in the glossary, while a footnote keeps to `text`. */
   readonly more?: LocalizedText;
+  /** Where the facts of the text come from (a source of the lab's knowledge): linked under the footnote and in the glossary. */
+  readonly source?: string;
+  /** A photograph of it (a source too): linked beside the source. */
+  readonly photo?: string;
 }
 
 const t = (id: string, uk: string, en: string, stemsUk: string[], stemsEn: string[], textUk: string, textEn: string): Term => ({ id, name: { uk, en }, stems: { uk: stemsUk, en: stemsEn }, text: { uk: textUk, en: textEn } });
@@ -126,6 +130,15 @@ export const GLOSSARY: readonly Term[] = [
     'Жирна кислота C₁₈H₃₆O₂ — біла воскоподібна речовина, з неї роблять свічки й мило. Плавиться при 69,3 °C, а коли твердне, віддає ≈ 215 кДж/кг прихованої теплоти — тому її беруть для графіка охолодження з «полицею».',
     'A fatty acid, C₁₈H₃₆O₂ — a white waxy substance used for candles and soap. It melts at 69.3 °C and gives off ≈ 215 kJ/kg of latent heat as it sets — which is why it is used for a cooling graph with a flat “shelf”.'),
   // ---------------------------------------------------------------- mechanics
+  { ...t('airship', 'Дирижабль', 'Airship', ['дирижабл'], ['airship', 'zeppelin nt'],
+    'Керований літальний апарат, легший за повітря: його оболонку наповнюють газом, легшим за повітря, і тримає його архімедова сила; рушії й кермо ведуть його, куди треба. Сучасні дирижаблі, як Zeppelin NT, наповнюють негорючим гелієм; зазвичай вони летять на висоті 300 м.',
+    'A steerable aircraft lighter than air: its envelope is filled with a gas lighter than air, and the buoyant force holds it up; engines and rudders take it where it should go. Airships today, like the Zeppelin NT, are filled with non-flammable helium; they usually fly 300 m up.'), source: 'wikipedia-zeppelin-nt' },
+  { ...t('hindenburg', '«Гінденбург»', 'The Hindenburg', ['гінденбург'], ['hindenburg'],
+    'Пасажирський дирижабль, наповнений воднем. 6 травня 1937 року під час посадки в Лейкгерсті (США) він спалахнув і згорів приблизно за пів хвилини.',
+    'A passenger airship filled with hydrogen. On 6 May 1937, landing at Lakehurst (USA), it caught fire and burned in about half a minute.'), source: 'wikipedia-hindenburg-disaster', photo: 'commons-hindenburg-photo' },
+  { ...t('led-zeppelin', 'Led Zeppelin', 'Led Zeppelin', ['led zeppelin'], ['led zeppelin'],
+    'Рок-гурт. На обкладинці його першого альбому (1969) — малюнок Джорджа Гарді за фотографією палаючого «Гінденбурга», яку зробив Сем Шир 6 травня 1937 року. А сама назва — жарт: «злетить, як свинцевий дирижабль» (lead — свинець).',
+    'A rock band. The cover of its first album (1969) is George Hardie’s drawing of Sam Shere’s photograph of the burning Hindenburg, taken on 6 May 1937. The name itself is a joke: “it would go over like a lead balloon”.'), source: 'wikipedia-led-zeppelin-album' },
   t('density', 'Густина', 'Density', ['густин'], ['density'],
     'Маса одиниці об’єму речовини: ρ = m/V. Тіло густіше за рідину тоне, рідше — спливає.',
     'The mass of a unit volume of a substance: ρ = m/V. A body denser than the liquid sinks, a less dense one floats.'),

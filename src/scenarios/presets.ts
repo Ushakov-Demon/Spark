@@ -62,7 +62,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -89,20 +89,8 @@ export type PresetControl = { readonly id: string; readonly label: LocalizedText
   // A place on the Earth, as «name|latitude|longitude»: the default for Ukrainian, another for English (an example each).
   | { readonly kind: 'place'; readonly value: string; readonly en: string }
 );
-export interface Place {
-  readonly name: string;
-  readonly lat: number;
-  readonly lon: number;
-}
-/** «Київ|50.45|30.52» → the place (null — not a place). */
-export function parsePlace(s: unknown): Place | null {
-  if (typeof s !== 'string') return null;
-  const [name, a, b] = s.split('|');
-  const lat = Number(a);
-  const lon = Number(b);
-  return name && Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { name, lat, lon } : null;
-}
-export const placeValue = (p: Place): string => `${p.name.replace(/\|/g, ' ')}|${p.lat.toFixed(4)}|${p.lon.toFixed(4)}`;
+export { parsePlace, placeValue, type Place } from './place.js';
+import { parsePlace } from './place.js';
 export type PresetValues = Readonly<Record<string, number | string>>;
 export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices'>>;
 export interface PresetVary {
@@ -239,6 +227,9 @@ const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 /** The electromagnet's examples: where the Earth's field is taken unless another city is given. */
 const MAGNET_KYIV = 'Київ|50.4500|30.5200';
 const MAGNET_NEW_YORK = 'New York|40.7128|-74.0060';
+/** The defaults where the height and the clock matter: Kyiv (179 m — Вікіпедія), New York (10 m — GeoNames). */
+const PLACE_KYIV = 'Київ|50.4500|30.5233|179|Europe/Kyiv';
+const PLACE_NEW_YORK = 'New York|40.7143|-74.0060|10|America/New_York';
 
 const LIST: readonly Preset[] = [
   // ---------------------------------------------------------------- 7 grade, mechanics
@@ -989,6 +980,38 @@ const LIST: readonly Preset[] = [
   },
   varied(
     {
+      ask: { uk: 'Скільки важить повітря над кожним квадратним метром землі?', en: 'How much does the air above each square metre of ground weigh?' },
+      id: 'air-column',
+      grade: 7,
+      topic: INTERACTION,
+      title: { uk: 'Земля тримає повітря: тиск угорі й унизу', en: 'The Earth holds the air: the pressure up and down' },
+      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+      guided: true,
+      bench: 'air',
+      choices: [ch('nothing', 'Майже нічого: повітря ж легке', 'Next to nothing: air is light'), ch('car', 'Близько тонни', 'About a tonne'), ch('tonnes', 'Близько 10 тонн', 'About 10 tonnes')],
+      answerOnBoard: ['am:'],
+      formulas: ['mechanics.pressure', 'mechanics.hydrostatic-pressure'],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'впливу земного тяжіння на організми, газову оболонку Землі' }],
+      expect: 'reached',
+    },
+    {
+      // The town: its height above the sea sets the readings (the higher the town, the less air above it).
+      controls: [{ id: 'place', label: { uk: 'Місто', en: 'City' }, kind: 'place', value: PLACE_KYIV, en: PLACE_NEW_YORK }],
+      build: (v) => {
+        const value = String(v['place']);
+        const name = parsePlace(value)?.name ?? 'Київ';
+        return {
+          question: {
+            uk: `Чому повітря не розлітається в космос? Його тягне до себе Земля — і кожен шар повітря тисне на ті, що під ним. Візьмемо смартфон із барометром: подивимося тиск на 1-му поверсі багатоповерхівки (${name}), потім на 9-му, а тоді — з дирижабля над містом. Скільки ж важить стовп повітря над кожним квадратним метром землі?`,
+            en: `Why does the air not fly off into space? The Earth pulls it — and each layer of air presses on the ones beneath. We take a smartphone with a barometer: read the pressure on the ground floor of a block of flats (${name}), then on the ninth floor, and then from an airship over the town. How much does the column of air above each square metre of ground weigh?`,
+          },
+          plan: (['ground', 'ninth', 'airship', 'high'] as const).map((where) => ({ kind: 'bench', command: { type: 'lab.air', place: value, where } }) as const),
+        };
+      },
+    },
+  ),
+  varied(
+    {
       id: 'solar-noon',
       ask: { uk: 'О котрій годині за годинником настає справжній полудень?', en: 'At what time by the clock does the true noon come?' },
       grade: 7,
@@ -1004,17 +1027,17 @@ const LIST: readonly Preset[] = [
       expect: 'reached',
     },
     {
-      // The city: east of the zone's 30° meridian the noon comes earlier, west of it later (4 minutes a degree).
-      controls: [{ id: 'city', label: { uk: 'Місто', en: 'The city' }, kind: 'choice', options: [ch('kyiv', 'Київ', 'Kyiv'), ch('lviv', 'Львів', 'Lviv'), ch('kharkiv', 'Харків', 'Kharkiv')], value: 'kyiv' }],
+      // The place: any town (by its name): its longitude, latitude and clock decide the noon and the shadow.
+      controls: [{ id: 'place', label: { uk: 'Місто', en: 'City' }, kind: 'place', value: PLACE_KYIV, en: PLACE_NEW_YORK }],
       build: (v) => {
-        const city = String(v['city']) as 'kyiv' | 'lviv' | 'kharkiv';
-        const name = { kyiv: ['у Києві', 'in Kyiv'], lviv: ['у Львові', 'in Lviv'], kharkiv: ['у Харкові', 'in Kharkiv'] }[city];
+        const value = String(v['place']);
+        const name = parsePlace(value)?.name ?? 'Київ';
         return {
           question: {
-            uk: `20 березня 2026 року — день весняного рівнодення; годинники ще показують зимовий київський час. На шкільному подвір’ї ${name[0]} ставимо прямовисно метрову палицю — гномон — і рулеткою міряємо її тінь щопівгодини з 10:00 до 15:00. Найкоротша тінь — справжній полудень: Сонце стоїть точно на півдні, найвище за день. О котрій годині за годинником він настане?`,
-            en: `20 March 2026 is the spring equinox; the clocks still keep Kyiv winter time. In a school yard ${name[1]} we stand a metre stick — a gnomon — upright and measure its shadow with a tape every half hour from 10:00 to 15:00. The shortest shadow is the true noon: the Sun stands due south, highest of the day. At what time by the clock will it come?`,
+            uk: `20 березня 2026 року — день весняного рівнодення. На шкільному подвір’ї (${name}) ставимо прямовисно метрову палицю — гномон — і рулеткою щопівгодини міряємо її тінь, за місцевим годинником. Найкоротша тінь — справжній полудень: Сонце стоїть найвище за день. О котрій годині за годинником він настане?`,
+            en: `20 March 2026 is the spring equinox. In a school yard (${name}) we stand a metre stick — a gnomon — upright and measure its shadow with a tape every half hour by the local clock. The shortest shadow is the true noon: the Sun stands highest of the day. At what time by the clock will it come?`,
           },
-          plan: (['morning', 'noon', 'afternoon'] as const).map((series) => ({ kind: 'bench', command: { type: 'lab.gnomon', city, series } }) as const),
+          plan: (['morning', 'noon', 'afternoon'] as const).map((series) => ({ kind: 'bench', command: { type: 'lab.gnomon', place: value, series } }) as const),
         };
       },
     },
@@ -2189,7 +2212,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

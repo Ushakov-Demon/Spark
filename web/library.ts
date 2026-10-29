@@ -9,10 +9,18 @@ import { EQUIPMENT } from '../src/equipment/catalog.js';
 import { CATEGORIES } from '../src/equipment/taxonomy.js';
 import type { CategoryId, EquipmentItem } from '../src/equipment/types.js';
 import { tr, type Locale } from '../src/knowledge/i18n.js';
+import { getSource } from '../src/knowledge/sources.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
 import { SUBSTANCE_FAMILIES, SUBSTANCES } from '../src/substances/catalog.js';
 import type { SubstanceItem } from '../src/substances/types.js';
+
+/** A term's source under its text: «Джерело: en.wikipedia.org» (the full title on hover); `photo` — «Фото: …». */
+function sourceLink(id: string | undefined, l: Locale, photo = false): string {
+  const s = id ? getSource(id as never) : undefined;
+  if (!s?.url) return '';
+  return `<p class="lib-source"><a href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(s.title)}">${photo ? (l === 'uk' ? 'Фото' : 'Photo') : l === 'uk' ? 'Джерело' : 'Source'}: ${esc(new URL(s.url).hostname.replace(/^www\./, ''))}</a></p>`;
+}
 
 export const LIBRARY_PAGES = ['glossary', 'substances', 'equipment'] as const;
 export type LibraryPage = (typeof LIBRARY_PAGES)[number];
@@ -88,7 +96,7 @@ function glossaryHtml(c: Ctx): string {
         .map(
           (x) => `<article class="lib-term lib-entry" id="term-${x.id}" data-term-id="${x.id}">
   <h3><a href="#${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> <span class="muted lib-other" lang="${other(c.locale)}">${esc(tr(x.name, other(c.locale)))}</span>${x.law ? ` <span class="lib-badge">${esc(u.law)}</span>` : ''}</h3>
-  <p class="lib-desc">${esc(tr(x.text, c.locale))}</p>${x.more ? `<p class="lib-desc lib-more">${esc(tr(x.more, c.locale))}</p>` : ''}
+  <p class="lib-desc">${esc(tr(x.text, c.locale))}</p>${x.more ? `<p class="lib-desc lib-more">${esc(tr(x.more, c.locale))}</p>` : ''}${sourceLink(x.source, c.locale)}${sourceLink(x.photo, c.locale, true)}
 </article>`,
         )
         .join('');

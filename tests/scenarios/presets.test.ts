@@ -331,17 +331,45 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('візок 1 — 1,0 Н, візок 2 з двома тягарцями — 2,9 Н');
   }, 60_000);
 
-  it('gnomon: the noon by equal shadows is 12:06 in Kyiv, later in Lviv, earlier in Kharkiv; the latitude from the noon shadow', async () => {
+  it('the air: about 10 t above each m², a density of 1.2 kg/m³ from two floors, a fifth of it below the airship at 2 km', async () => {
     const { withValues } = await import('../../src/scenarios/index.js');
-    const at = (city: string) => run(withValues(PRESETS.find((x) => x.id === 'solar-noon')!, { city })).answer;
-    const kyiv = at('kyiv');
+    const p = PRESETS.find((x) => x.id === 'air-column')!;
+    const { answer } = run(withValues(p, { place: 'Київ|50.4500|30.5233|179|Europe/Kyiv' }));
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.correct).toBe('tonnes');
+    expect(answer.text.uk).toMatch(/m = p·S \/ g ≈ 10\s?100 кг/u);
+    expect(answer.text.uk).toContain('ρ = Δp / (g·Δh) ≈ 1,2 кг/м³');
+    expect(answer.text.uk).toMatch(/На 2 км — [\d,]+ гПа: 2[0-9] % повітря/);
+    // High up in Mexico City there is less air above already: about 7.9 t.
+    const mx = run(withValues(p, { place: 'Мехіко|19.4285|-99.1277|2240|America/Mexico_City' })).answer;
+    if (process.env['SHOW_ANSWERS']) console.log(mx.text.uk);
+    expect(mx.say.uk).toContain('≈ 7,9 т');
+  }, 60_000);
+
+  it('gnomon: the noon by equal shadows anywhere — its clock, longitude and hemisphere; the latitude from the noon shadow', async () => {
+    const { withValues } = await import('../../src/scenarios/index.js');
+    const at = (place: string) => run(withValues(PRESETS.find((x) => x.id === 'solar-noon')!, { place })).answer;
+    const kyiv = at('Київ|50.4500|30.5233|179|Europe/Kyiv');
     if (process.env['SHOW_ANSWERS']) console.log(kyiv.text.uk, '\n', kyiv.say.uk);
     expect(kyiv.correct).toBe('later');
     expect(kyiv.say.uk).toMatch(/о 12:0[5-7] за годинником/);
-    expect(at('lviv').say.uk).toMatch(/о 12:3[0-4]/);
-    expect(at('kharkiv').correct).toBe('earlier');
-    const phi = Number(/широта φ = 90° − h \+ δ ≈ ([\d,]+)°/.exec(kyiv.text.uk)![1]!.replace(',', '.'));
-    expect(Math.abs(phi - 50.45)).toBeLessThan(0.5);
+    expect(at('Львів|49.8425|24.0322|296|Europe/Kyiv').say.uk).toMatch(/о 12:3[0-4]/);
+    expect(at('Харків|49.9925|36.2311|152|Europe/Kyiv').correct).toBe('earlier');
+    const lat = (t: string) => Number(/широта ≈ (−?[\d,]+)°/.exec(t)![1]!.replace(',', '.').replace('−', '-'));
+    expect(Math.abs(lat(kyiv.text.uk) - 50.45)).toBeLessThan(0.5);
+    // Summer time in New York from 8 March: the noon by the clock after 13:00.
+    const ny = at('New York|40.7143|-74.0060|10|America/New_York');
+    if (process.env['SHOW_ANSWERS']) console.log(ny.text.uk);
+    expect(ny.say.uk).toMatch(/о 13:\d\d/);
+    expect(ny.text.uk).toContain('UTC−4 — літній час');
+    // The southern hemisphere: the shadow points south, the latitude negative.
+    const sp = at('Сан-Паулу|-23.5475|-46.6361|769|America/Sao_Paulo');
+    if (process.env['SHOW_ANSWERS']) console.log(sp.text.uk);
+    expect(sp.text.uk).toContain('на південь');
+    expect(Math.abs(lat(sp.text.uk) + 23.55)).toBeLessThan(0.5);
+    const mx = at('Мехіко|19.4285|-99.1277|2240|America/Mexico_City');
+    // (Near the tropics the noon shadow is short — about 35 cm — so a centimetre of the tape is worth more.)
+    expect(Math.abs(lat(mx.text.uk) - 19.43)).toBeLessThan(1);
   }, 60_000);
 
   it('liquid tower: the nut on the bottom, acrylic on the glycerol, polyethylene on the water, pine in the ethanol', () => {

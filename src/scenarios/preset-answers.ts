@@ -28,7 +28,9 @@ import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
 import { DRAG_COEFFICIENTS, DRAG_MASS, DRAG_START, DRAG_TRACK, dragBody, dragShapeName, mediumDensity, framesText, type DragShape } from './drag-bench.js';
 import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidIn, towerLiquidName, type TowerBody } from './tower-bench.js';
-import { clockText, equalShadowsNoon, GNOMON_CITIES, GNOMON_HEIGHT, sunOf, type GnomonCity } from './gnomon-bench.js';
+import { clockText, equalShadowsNoon, gnomonClock, gnomonPlace, GNOMON_HEIGHT, latitudeFrom, sunOf } from './gnomon-bench.js';
+import { offsetText } from './place-time.js';
+import { AIRSHIP, airPlace, type AirWhere } from './air-bench.js';
 import { touchPlan, touchSeen, type TouchCase } from './touch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
@@ -429,39 +431,80 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       }),
     };
   },
-  'solar-noon': (run) => {
-    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.gnomon' && x.record.value !== null);
-    const city = (recs[0]?.command['city'] ?? 'kyiv') as GnomonCity;
-    const shadows = recs.map((x) => ({ time: x.record.inputs?.['time'] ?? 0, length: x.record.value! }));
-    const found = shadows.length ? equalShadowsNoon(shadows) : null;
-    const noon = found?.noon ?? null;
-    const correct = noon === null ? undefined : Math.abs(noon - 720) < 1 ? 'noon' : noon > 720 ? 'later' : 'earlier';
-    const c = GNOMON_CITIES[city];
-    const lon = c.lon.value;
-    const byLon = 4 * (30 - lon);
-    const eq = sunOf(720).eqtime;
-    const L = shadows.length ? Math.min(...shadows.map((x) => x.length)) : 0;
-    const h = L ? Math.atan(GNOMON_HEIGHT / L) / (Math.PI / 180) : 0;
-    const d = sunOf(noon ?? 720).decl;
-    const phi = 90 - h + d;
-    const min = (x: number, l: Locale) => `${sig(Math.abs(x), 2, l)} ${l === 'uk' ? 'хв' : 'min'}`;
-    const deg = (x: number, l: Locale, k = 3) => `${sig(x, k, l)}°`;
+  'air-column': (run) => {
+    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.air' && x.record.value !== null);
+    const at = (w: AirWhere) => recs.find((x) => x.command['where'] === w)?.record ?? null;
+    const town = airPlace(String(recs[0]?.command['place'] ?? ''));
+    const p1 = at('ground');
+    const p2 = at('ninth');
+    const p3 = at('airship');
+    const p4 = at('high');
+    const g = p1?.inputs?.['g'] ?? 9.80665;
+    const m = p1 ? p1.value! / g : null;
+    const correct = m === null ? undefined : m > 5000 ? 'tonnes' : m > 300 ? 'car' : 'nothing';
+    const hPa = (x: number, l: Locale) => `${sig(x / 100, 6, l)} ${l === 'uk' ? 'гПа' : 'hPa'}`;
+    const rho = p1 && p2 ? (p1.value! - p2.value!) / (g * ((p2.inputs?.['height'] ?? 0) - (p1.inputs?.['height'] ?? 0))) : null;
     return {
       ...(correct ? { correct } : {}),
       why: both((l) =>
         l === 'uk'
-          ? `Сонце за добу обходить небо, бо Земля обертається: 360° за 24 години, тобто 1° за 4 хвилини. Справжній полудень настає, коли Сонце над південною стороною саме твого місця, — тому в кожному меридіані він свій. Щоб не мати в кожному місті свого часу, годинники всієї країни йдуть за одним меридіаном — для київського часу це 30° східної довготи. Місто, що лежить на схід від нього, бачить полудень раніше, на захід — пізніше, на 4 хвилини на кожен градус. Ще кілька хвилин додає рівняння часу: Земля обходить Сонце не рівномірно (орбіта — еліпс) і з нахиленою віссю, тож справжня сонячна доба протягом року то трохи довша, то коротша за 24 години. На початку весни сонячний полудень запізнюється приблизно на 7–8 хвилин. А влітку годинники переводять на годину вперед — і полудень за годинником настає близько 13-ї.\n\nЗ тієї самої тіні знаходять і широту. У полудень Сонце найвище: h = arctg(H/L). У день рівнодення воно над екватором, і його висота опівдні дорівнює 90° мінус широта; в інші дні — поправка на схилення δ. Так мореплавці визначали широту за полуденним Сонцем.`
-          : `The Sun goes round the sky in a day because the Earth turns: 360° in 24 hours, 1° in 4 minutes. The true noon comes when the Sun stands over the south of your very place — so each meridian has its own. Not to have a time of its own in every town, the whole country's clocks keep one meridian — for Kyiv time it is 30° East. A town east of it sees noon earlier, west of it later, by 4 minutes a degree. A few more minutes come from the equation of time: the Earth goes round the Sun unevenly (the orbit is an ellipse) and with its axis tilted, so the true solar day is a little longer or shorter than 24 hours through the year. In early spring the solar noon is about 7–8 minutes late. And in summer the clocks go an hour forward — and noon by the clock comes about 1 p.m.\n\nThe same shadow gives the latitude. At noon the Sun is highest: h = arctan(H/L). On an equinox it stands over the equator, and its noon height is 90° less the latitude; on other days, a correction for the declination δ. That is how sailors found their latitude by the noon Sun.`,
+          ? `Повітря — це речовина, і Земля притягує її, як і все інше. Якби не тяжіння, гази розлетілися б у космос; а так повітря лежить на Землі шаром, і кожен шар тисне на ті, що під ним, своєю вагою. Тому тиск повітря біля землі — це вага всього стовпа повітря над кожним квадратним метром: p = m·g / S. Що вище піднятися, то менше повітря лишається над головою — і то менший тиск; у місті високо в горах його менше вже на землі. Повітря внизу стиснуте вагою верхніх шарів, тому воно й густіше. Ми не відчуваємо цих тонн, бо повітря тисне на нас з усіх боків однаково, і так само тиснуть зсередини гази й рідини нашого тіла. А раз повітря має вагу, на тіла в ньому діє архімедова сила — вона й тримає дирижабль: гелій у його оболонці легший за повітря, яке він витісняє. (Звідси й жарт, від якого пішла назва гурту Led Zeppelin: «злетить, як свинцевий дирижабль» — свинець набагато густіший за повітря.)\n\nТиск тут розраховано для стандартної атмосфери — дня з «середньою» погодою; у справжній день барометр покаже на кілька гектопаскалів більше або менше, але різниця між висотами майже не зміниться. Висоту поверху (2,8 м) взято як оцінку: від неї залежить і обчислена густина.`
+          : `Air is matter, and the Earth pulls it as it pulls everything. Without gravity the gases would fly off into space; as it is, the air lies on the Earth in a layer, and each layer presses with its weight on the ones beneath. So the air's pressure near the ground is the weight of the whole column of air above each square metre: p = m·g / S. The higher you go, the less air is left above — and the lower the pressure; a town high in the mountains has less of it on the ground already. The air below is squeezed by the weight of the layers above, so it is denser. We do not feel these tonnes because the air presses on us equally from every side, and the gases and liquids of our body press back from within. And since air has weight, bodies in it feel a buoyant force — that is what holds an airship up: the helium in its envelope is lighter than the air it pushes aside. (Hence the joke that named the band Led Zeppelin: “it would go over like a lead balloon” — lead is far denser than air.)\n\nThe pressure here is the standard atmosphere's — a day of "average" weather; on a real day the barometer shows a few hectopascals more or less, but the difference between heights hardly changes. The storey's height (2.8 m) is an estimate: the density worked out depends on it.`,
       ),
-      say: both((l) => (noon === null ? '' : l === 'uk' ? `Справжній полудень ${tr(c.in, l)} — о ${clockText(noon)} за годинником!` : `The true noon ${tr(c.in, l)} — at ${clockText(noon)} by the clock!`)),
+      say: both((l) => (m === null ? '' : l === 'uk' ? `Над кожним квадратним метром — ≈ ${sig(m / 1000, 2, l)} т повітря!` : `Above each square metre — ≈ ${sig(m / 1000, 2, l)} t of air!`)),
+      text: both((l) => {
+        if (!p1) return '';
+        const uk = l === 'uk';
+        const parts: string[] = [uk ? `${town.name}, ${Math.round(town.elevation ?? 0)} м над морем. На 1-му поверсі барометр показав ${hPa(p1.value!, l)} = ${sig(p1.value!, 5, l)} Па. Це вага повітря над кожним квадратним метром: m = p·S / g ≈ ${sig(m!, 3, l)} кг.` : `${town.name}, ${Math.round(town.elevation ?? 0)} m above the sea. On the ground floor the barometer showed ${hPa(p1.value!, l)} = ${sig(p1.value!, 5, l)} Pa. That is the weight of the air above each square metre: m = p·S / g ≈ ${sig(m!, 3, l)} kg.`];
+        if (p2 && rho !== null) {
+          const dp = p1.value! - p2.value!;
+          const dh = (p2.inputs?.['height'] ?? 0) - (p1.inputs?.['height'] ?? 0);
+          parts.push(uk ? `На 9-му поверсі, на ${sig(dh, 3, l)} м вище, — ${hPa(p2.value!, l)}: менше на ${sig(dp / 100, 3, l)} гПа. Стільки важить шар повітря завтовшки ${sig(dh, 3, l)} м, тож його густина ρ = Δp / (g·Δh) ≈ ${sig(rho, 3, l)} кг/м³ — кубометр повітря важить близько кілограма.` : `On the ninth floor, ${sig(dh, 3, l)} m higher, — ${hPa(p2.value!, l)}: ${sig(dp / 100, 3, l)} hPa less. That is the weight of a ${sig(dh, 3, l)} m layer of air, so its density ρ = Δp / (g·Δh) ≈ ${sig(rho, 3, l)} kg/m³ — a cubic metre of air weighs about a kilogram.`);
+        }
+        if (p3) parts.push(uk ? `З дирижабля на 300 м — ${hPa(p3.value!, l)}.` : `From the airship at 300 m — ${hPa(p3.value!, l)}.`);
+        if (p4) parts.push(uk ? `На 2 км — ${hPa(p4.value!, l)}: ${sig(((p1.value! - p4.value!) / p1.value!) * 100, 2, l)} % повітря над містом лишилося внизу.` : `At 2 km — ${hPa(p4.value!, l)}: ${sig(((p1.value! - p4.value!) / p1.value!) * 100, 2, l)} % of the air above the town is left below.`);
+        if (rho !== null) parts.push(uk ? `Дирижабль на зразок Zeppelin NT витісняє ${sig(AIRSHIP.volume.value, 4, l)} м³ повітря — за нашою густиною це ≈ ${sig((AIRSHIP.volume.value * rho) / 1000, 2, l)} т; така й архімедова сила, що його тримає.` : `An airship like the Zeppelin NT pushes aside ${sig(AIRSHIP.volume.value, 4, l)} m³ of air — by our density ≈ ${sig((AIRSHIP.volume.value * rho) / 1000, 2, l)} t; such is the buoyant force that holds it.`);
+        return parts.join(' ');
+      }),
+    };
+  },
+  'solar-noon': (run) => {
+    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.gnomon' && x.record.value !== null);
+    const place = gnomonPlace(String(recs[0]?.command['place'] ?? ''));
+    const shadows = recs.map((x) => ({ time: x.record.inputs?.['time'] ?? 0, length: x.record.value! }));
+    const found = shadows.length ? equalShadowsNoon(shadows) : null;
+    const noon = found?.noon ?? null;
+    const correct = noon === null ? undefined : Math.abs(noon - 720) < 1 ? 'noon' : noon > 720 ? 'later' : 'earlier';
+    const { zone, summer } = gnomonClock(place);
+    const standard = summer ? zone - 1 : zone;
+    const meridian = 15 * standard;
+    const byLon = 4 * (meridian - place.lon);
+    const eq = sunOf(720, zone).eqtime;
+    const south = recs[0]?.record.inputs?.['south'] === 1;
+    const L = shadows.length ? Math.min(...shadows.map((x) => x.length)) : 0;
+    const h = L ? Math.atan(GNOMON_HEIGHT / L) / (Math.PI / 180) : 0;
+    const d = sunOf(noon ?? 720, zone).decl;
+    const phi = latitudeFrom(h, d, south);
+    const min = (x: number, l: Locale) => `${sig(Math.abs(x), 2, l)} ${l === 'uk' ? 'хв' : 'min'}`;
+    const deg = (x: number, l: Locale, k = 3) => `${sig(x, k, l).replace('-', '−')}°`;
+    const lonText = (x: number, l: Locale) => `${sig(Math.abs(x), 3, l)}° ${x >= 0 ? (l === 'uk' ? 'сх. д.' : 'E') : l === 'uk' ? 'зх. д.' : 'W'}`;
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? `Сонце за добу обходить небо, бо Земля обертається: 360° за 24 години, тобто 1° за 4 хвилини. Справжній полудень настає, коли Сонце найвище над саме твоїм місцем, — тому в кожному меридіані він свій. Щоб не мати в кожному місті свого часу, годинники цілої зони йдуть за одним меридіаном: на кожну годину від Гринвіча — 15°. Місто, що лежить на схід від свого меридіана, бачить полудень раніше, на захід — пізніше, на 4 хвилини на кожен градус. Ще кілька хвилин додає рівняння часу: Земля обходить Сонце нерівномірно (орбіта — еліпс) і з нахиленою віссю, тож справжня сонячна доба протягом року то трохи довша, то коротша за 24 години; на початку весни сонячний полудень запізнюється на 7–8 хвилин. А де годинники переводять на літній час, полудень за годинником настає ще на годину пізніше.\n\nЗ тієї самої тіні знаходять і широту. У полудень Сонце найвище: h = arctg(H/L). У день рівнодення воно над екватором, і його висота опівдні дорівнює 90° мінус широта; в інші дні — поправка на схилення δ. На північ від тропіків полуденна тінь падає на північ, у південній півкулі — на південь. Так мореплавці визначали широту за полуденним Сонцем.`
+          : `The Sun goes round the sky in a day because the Earth turns: 360° in 24 hours, 1° in 4 minutes. The true noon comes when the Sun is highest over your very place — so each meridian has its own. Not to have a time of its own in every town, a whole zone's clocks keep one meridian: 15° for each hour from Greenwich. A town east of its meridian sees noon earlier, west of it later, by 4 minutes a degree. A few more minutes come from the equation of time: the Earth goes round the Sun unevenly (the orbit is an ellipse) and with its axis tilted, so the true solar day is a little longer or shorter than 24 hours through the year; in early spring the solar noon is 7–8 minutes late. And where the clocks go to summer time, noon by the clock comes an hour later still.\n\nThe same shadow gives the latitude. At noon the Sun is highest: h = arctan(H/L). On an equinox it stands over the equator, and its noon height is 90° less the latitude; on other days, a correction for the declination δ. North of the tropics the noon shadow points north, in the southern hemisphere south. That is how sailors found their latitude by the noon Sun.`,
+      ),
+      say: both((l) => (noon === null ? '' : l === 'uk' ? `Справжній полудень (${place.name}) — о ${clockText(noon)} за годинником!` : `The true noon (${place.name}) — at ${clockText(noon)} by the clock!`)),
       text: both((l) => {
         if (noon === null || !found) return '';
         const uk = l === 'uk';
         const p0 = found.pairs[0]!;
-        const lonPart = Math.abs(byLon) < 0.5 ? (uk ? 'майже на 30-му меридіані' : 'almost on the 30th meridian') : uk ? `${byLon < 0 ? 'на схід' : 'на захід'} від 30-го меридіана на ${deg(Math.abs(30 - lon), l, 2)} — полудень ${byLon < 0 ? 'раніше' : 'пізніше'} на ${min(byLon, l)}` : `${byLon < 0 ? 'east' : 'west'} of the 30th meridian by ${deg(Math.abs(30 - lon), l, 2)} — noon ${byLon < 0 ? 'earlier' : 'later'} by ${min(byLon, l)}`;
+        const lonPart = Math.abs(byLon) < 0.5 ? (uk ? 'майже на ньому самому' : 'almost on it') : uk ? `${byLon < 0 ? 'на схід' : 'на захід'} від нього на ${deg(Math.abs(meridian - place.lon), l, 2)} — полудень ${byLon < 0 ? 'раніше' : 'пізніше'} на ${min(byLon, l)}` : `${byLon < 0 ? 'east' : 'west'} of it by ${deg(Math.abs(meridian - place.lon), l, 2)} — noon ${byLon < 0 ? 'earlier' : 'later'} by ${min(byLon, l)}`;
+        const total = byLon + (summer ? 60 : 0) - eq;
         return uk
-          ? `Найкоротша тінь — ${sig(L, 3, l)} м. Рівні тіні: ${clockText(p0.t1)} і ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} м), посередині — ${clockText((p0.t1 + p0.t2) / 2)}; у середньому з ${found.pairs.length} пар полудень настав о ${clockText(noon)}. ${c.name.uk} — ${lonPart}; рівняння часу 20 березня додає ще ${min(eq, l)} (за формулою NOAA). Разом: 12:00 ${byLon - eq >= 0 ? '+' : '−'} ${min(byLon - eq, l)} ≈ ${clockText(720 + byLon - eq)}. Висота Сонця опівдні h = arctg(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, широта φ = 90° − h + δ ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); у Вікіпедії — ${deg(c.lat.value, l, 4)}.`
-          : `The shortest shadow — ${sig(L, 3, l)} m. Equal shadows: ${clockText(p0.t1)} and ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} m), midway — ${clockText((p0.t1 + p0.t2) / 2)}; the mean of ${found.pairs.length} pairs puts noon at ${clockText(noon)}. ${c.name.en} lies ${lonPart}; the equation of time on 20 March adds ${min(eq, l)} more (NOAA's formula). Together: 12:00 ${byLon - eq >= 0 ? '+' : '−'} ${min(byLon - eq, l)} ≈ ${clockText(720 + byLon - eq)}. The Sun's noon height h = arctan(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, the latitude φ = 90° − h + δ ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); Wikipedia gives ${deg(c.lat.value, l, 4)}.`;
+          ? `Найкоротша тінь — ${sig(L, 3, l)} м, на ${south ? 'південь' : 'північ'}. Рівні тіні: ${clockText(p0.t1)} і ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} м), посередині — ${clockText((p0.t1 + p0.t2) / 2)}; у середньому з ${found.pairs.length} пар полудень настав о ${clockText(noon)}. Годинники тут показують ${offsetText(zone)}${summer ? ' — літній час, на годину вперед' : ''}; поясний меридіан — ${lonText(meridian, l)}, а місто (${lonText(place.lon, l)}) — ${lonPart}. Рівняння часу 20 березня додає ще ${min(eq, l)} (за формулою NOAA). Разом: 12:00 ${total >= 0 ? '+' : '−'} ${min(total, l)} ≈ ${clockText(720 + total)}. Висота Сонця опівдні h = arctg(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, широта ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); насправді — ${deg(place.lat, l, 4)}.`
+          : `The shortest shadow — ${sig(L, 3, l)} m, pointing ${south ? 'south' : 'north'}. Equal shadows: ${clockText(p0.t1)} and ≈ ${clockText(p0.t2)} (${sig(p0.length, 3, l)} m), midway — ${clockText((p0.t1 + p0.t2) / 2)}; the mean of ${found.pairs.length} pairs puts noon at ${clockText(noon)}. The clocks here keep ${offsetText(zone)}${summer ? ' — summer time, an hour on' : ''}; the zone's meridian is ${lonText(meridian, l)}, and the town (${lonText(place.lon, l)}) lies ${lonPart}. The equation of time on 20 March adds ${min(eq, l)} more (NOAA's formula). Together: 12:00 ${total >= 0 ? '+' : '−'} ${min(total, l)} ≈ ${clockText(720 + total)}. The Sun's noon height h = arctan(1 / ${sig(L, 3, l)}) ≈ ${deg(h, l)}, the latitude ≈ ${deg(phi, l)} (δ ≈ ${deg(d, l, 1)}); in fact ${deg(place.lat, l, 4)}.`;
       }),
     };
   },

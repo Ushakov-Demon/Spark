@@ -6,6 +6,7 @@
  */
 import { termById, termMatcher, type TermMatcher } from '../src/knowledge/glossary.js';
 import { tr, type Locale } from '../src/knowledge/i18n.js';
+import { getSource } from '../src/knowledge/sources.js';
 import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
 
 const matchers = new Map<Locale, TermMatcher>();
@@ -53,6 +54,17 @@ export function annotate(root: Element, l: Locale, skip?: string): void {
 }
 
 const ALL_TERMS: Record<Locale, string> = { uk: 'Відкрити в глосарії →', en: 'Open in the glossary →' };
+const SOURCE: Record<Locale, string> = { uk: 'Джерело', en: 'Source' };
+const PHOTO: Record<Locale, string> = { uk: 'Фото', en: 'Photo' };
+
+/** A term's source as a link: «Джерело: en.wikipedia.org» (opens in a new tab); '' when it has none. `photo` — «Фото: …». */
+export function termSourceHtml(id: string | undefined, l: Locale, photo = false): string {
+  const s = id ? getSource(id as never) : undefined;
+  if (!s?.url) return '';
+  const host = new URL(s.url).hostname.replace(/^www\./, '');
+  const attr = (x: string) => x.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  return `<a class="term-source" href="${attr(s.url)}" target="_blank" rel="noopener" title="${attr(s.title)}">${(photo ? PHOTO : SOURCE)[l]}: ${host}</a>`;
+}
 
 /** The footnote card: one for the page, placed next to the term; hover, focus or tap shows it. */
 /** `glossary` — the address of a term on the glossary's page. */
@@ -69,7 +81,7 @@ export function installFootnotes(locale: () => Locale, glossary: (id: string) =>
     const t = termById(el.dataset['term'] ?? '', LAB_GLOSSARY);
     if (!t) return;
     current = el;
-    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p><a href="${glossary(t.id)}" class="term-more">${ALL_TERMS[locale()]}</a>`;
+    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p>${termSourceHtml(t.source, locale())}${termSourceHtml(t.photo, locale(), true)}<a href="${glossary(t.id)}" class="term-more">${ALL_TERMS[locale()]}</a>`;
     card.hidden = false;
     const r = el.getBoundingClientRect();
     const w = Math.min(320, window.innerWidth - 24);

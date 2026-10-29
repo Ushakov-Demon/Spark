@@ -10,7 +10,7 @@ const API = 'https://geocoding-api.open-meteo.com/v1/search';
 export interface FoundPlace {
   /** «Біла Церква, Київська область, Україна». */
   readonly label: string;
-  /** «Біла Церква|49.7994|30.1165» — a place control's value. */
+  /** «Біла Церква|49.7994|30.1165|180|Europe/Kyiv» — a place control's value (with the height and the time zone). */
   readonly value: string;
 }
 
@@ -20,6 +20,8 @@ interface ApiResult {
   readonly longitude?: number;
   readonly admin1?: string;
   readonly country?: string;
+  readonly elevation?: number;
+  readonly timezone?: string;
 }
 
 let pending: AbortController | null = null;
@@ -38,7 +40,7 @@ export async function searchPlaces(text: string, locale: 'uk' | 'en'): Promise<F
     const seen = new Set<string>();
     return (data.results ?? []).flatMap((r) =>
       r.name && Number.isFinite(r.latitude) && Number.isFinite(r.longitude)
-        ? [{ label: [r.name, r.admin1, r.country].filter((x, i, a) => x && a.indexOf(x) === i).join(', '), value: placeValue({ name: r.name, lat: r.latitude!, lon: r.longitude! }) }]
+        ? [{ label: [r.name, r.admin1, r.country].filter((x, i, a) => x && a.indexOf(x) === i).join(', '), value: placeValue({ name: r.name, lat: r.latitude!, lon: r.longitude!, ...(Number.isFinite(r.elevation) ? { elevation: r.elevation! } : {}), ...(r.timezone ? { zone: r.timezone } : {}) }) }]
         : [],
     ).filter((f) => !seen.has(f.label) && !!seen.add(f.label));
   } catch {

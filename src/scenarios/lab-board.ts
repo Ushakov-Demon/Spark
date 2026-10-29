@@ -9,7 +9,8 @@ import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.j
 import { TOUCH_CASES, touchSeen, type TouchCase } from './touch-bench.js';
 import { DRAG_MASS, dragBody, dragShapeName, framesText, type DragShape } from './drag-bench.js';
 import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidName, type TowerBody } from './tower-bench.js';
-import { clockText, equalShadowsNoon, GNOMON_HEIGHT, sunOf } from './gnomon-bench.js';
+import { clockText, equalShadowsNoon, GNOMON_HEIGHT, latitudeFrom, sunOf } from './gnomon-bench.js';
+import { airPlaceName, type AirWhere } from './air-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -319,6 +320,8 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   let springL0: number | null = null;
   // (The gnomon's shadows so far, all series: the noon is found once the afternoon ones are in.)
   const shadows: { time: number; length: number }[] = [];
+  // (The barometer's readings so far, by where they were taken.)
+  const baro: Partial<Record<string, { p: number; h: number }>> = {};
   // A liquid weighed on the balance (empty vessel, then with the liquid) and its volume read by the marks: its density.
   let emptyVessel: number | null = null;
   let liquidMass: number | null = null;
@@ -469,6 +472,25 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
       return;
     }
+    // The air: each reading; up the stairs — the density from Δp = ρ·g·Δh; on the ground — the air above each m²;
+    // on Hoverla — how much of the air is below.
+    if (c.type === 'lab.air') {
+      const where = String(c['where']);
+      const h = r.inputs?.['height'] ?? 0;
+      const g = r.inputs?.['g'] ?? 9.81;
+      const hPa = (x: number) => `${n(x / 100, 6)} ${uk ? 'гПа' : 'hPa'}`;
+      baro[where] = { p: r.value, h };
+      out.push({ id: `ap:${i}`, title: uk ? `${tr(airPlaceName(where as AirWhere), locale)}, ${Math.round(h)} м над морем` : `${tr(airPlaceName(where as AirWhere), locale)}, ${Math.round(h)} m above the sea`, formula: `p = ${hPa(r.value)}` });
+      const ground = baro['ground'];
+      if (where === 'ground') out.push({ id: `am:${i}`, title: uk ? 'маса повітря над 1 м² — його вагу й показує барометр' : 'the mass of air above 1 m² — its weight is what the barometer shows', formula: 'm = p·S / g', numbers: `${n(r.value, 5)} ${uk ? 'Па' : 'Pa'} · 1 ${uk ? 'м²' : 'm²'} / ${n(g, 3)} ≈ ${n(r.value / g, 3)} ${uk ? 'кг' : 'kg'}` });
+      if (where === 'ninth' && ground) {
+        const dp = ground.p - r.value;
+        const dh = h - ground.h;
+        out.push({ id: `ad:${i}`, title: uk ? `на ${n(dh, 3)} м вище — тиск менший на ${n(dp / 100, 3)} гПа: густина повітря` : `${n(dh, 3)} m higher — the pressure ${n(dp / 100, 3)} hPa less: the air's density`, formula: 'ρ = Δp / (g·Δh)', numbers: `${n(dp, 3)} ${uk ? 'Па' : 'Pa'} / (${n(g, 3)} · ${n(dh, 3)} ${uk ? 'м' : 'm'}) ≈ ${n(dp / (g * dh), 3)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+      }
+      if (where === 'high' && ground) out.push({ id: `ah:${i}`, title: uk ? 'яка частка повітря над містом лишилася під дирижаблем' : 'how much of the air above the town is below the airship', formula: '(p₁ − p) / p₁', numbers: `(${hPa(ground.p)} − ${hPa(r.value)}) / ${hPa(ground.p)} ≈ ${n(((ground.p - r.value) / ground.p) * 100, 2)} %` });
+      return;
+    }
     // The gnomon: the shadows of a series; after the afternoon — the noon by equal shadows, the Sun's height, the latitude.
     if (c.type === 'lab.gnomon') {
       const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
@@ -485,9 +507,13 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       }
       const L = Math.min(...shadows.map((x) => x.length));
       const h = Math.atan(GNOMON_HEIGHT / L) / (Math.PI / 180);
-      const d = sunOf(found?.noon ?? 720).decl;
-      out.push({ id: `gh:${i}`, title: uk ? 'висота Сонця опівдні — з найкоротшої тіні' : 'the Sun’s height at noon — from the shortest shadow', formula: 'h = arctg(H / L)', numbers: `arctg(1 ${m} / ${n(L, 3)} ${m}) ≈ ${n(h, 3)}°` });
-      out.push({ id: `gl:${i}`, title: uk ? `широта місця (схилення Сонця δ ≈ ${n(d, 1)}° — за формулою NOAA)` : `the latitude (the Sun’s declination δ ≈ ${n(d, 1)}° — by NOAA’s formula)`, formula: 'φ = 90° − h + δ', numbers: `90° − ${n(h, 3)}° ${d < 0 ? '−' : '+'} ${n(Math.abs(d), 1)}° ≈ ${n(90 - h + d, 3)}°` });
+      const zone = recs[0]?.inputs?.['zone'] ?? 2;
+      const south = recs[0]?.inputs?.['south'] === 1;
+      const d = sunOf(found?.noon ?? 720, zone).decl;
+      const phi = latitudeFrom(h, d, south);
+      const sd = (x: number) => `${x < 0 ? '−' : '+'} ${n(Math.abs(x), 1)}°`;
+      out.push({ id: `gh:${i}`, title: uk ? `висота Сонця опівдні — з найкоротшої тіні (тінь — на ${south ? 'південь' : 'північ'})` : `the Sun’s height at noon — from the shortest shadow (pointing ${south ? 'south' : 'north'})`, formula: 'h = arctg(H / L)', numbers: `arctg(1 ${m} / ${n(L, 3)} ${m}) ≈ ${n(h, 3)}°` });
+      out.push({ id: `gl:${i}`, title: uk ? `широта місця (схилення Сонця δ ≈ ${n(d, 1)}° — за формулою NOAA${south ? '; південна широта — зі знаком «−»' : ''})` : `the latitude (the Sun’s declination δ ≈ ${n(d, 1)}° — by NOAA’s formula${south ? '; south latitude — negative' : ''})`, formula: south ? 'φ = δ − (90° − h)' : 'φ = 90° − h + δ', numbers: south ? `${n(d, 1)}° − (90° − ${n(h, 3)}°) ≈ ${n(phi, 3)}°` : `90° − ${n(h, 3)}° ${sd(d)} ≈ ${n(phi, 3)}°` });
       return;
     }
     // The liquid tower: the layers by their densities; each body — between which liquids, and how much of it in the lower one.
