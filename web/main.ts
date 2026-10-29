@@ -58,14 +58,6 @@ import {
   rowSizes,
   BOUNCE_BALLS,
   CARRY_BUBBLE,
-  WIND_DAYS,
-  COIN_FRICTION,
-  touchSeen,
-  type TouchCase,
-  strobePositions,
-  STROBE_SCALE,
-  type StrobePhoto,
-  WIND_TRACK,
   WINCH_SPOOLS,
   type WinchSpool,
   CARRY_RISE,
@@ -161,7 +153,7 @@ import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
-import { BUSY, COIN_SLOW, SLIDE } from './graphics/scene/bench-motion.js';
+import { BUSY, SLIDE } from './graphics/scene/bench-motion.js';
 import { LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute, type LibraryPage } from './library.js';
 import { createChooser, fly, type ChoiceCard, type ChooserStage } from './chooser.js';
 import { deviceSvg } from './graphics/scene/devices.js';
@@ -479,54 +471,6 @@ function benchView(): BenchView | null {
     const I = recs.find((x) => x.quantity === 'current');
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
-  }
-  // Contact and non-contact forces: this step's case (or the next one's, not played yet), and what was seen.
-  if (kind === 'touch') {
-    const tc = c?.type === 'lab.touch' ? (c as unknown as { case: TouchCase }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.touch');
-    const which = tc?.case ?? (next?.kind === 'bench' ? (next.command as unknown as { case: TouchCase }).case : 'magnet');
-    const acts = r?.inputs?.['acts'] === 1;
-    return { ...base, kind, touch: { case: which, k: tc ? 1 : 0, ...(tc && r ? { read: acts ? (locale === 'uk' ? 'діє без дотику' : 'acts without touching') : locale === 'uk' ? 'без дотику не діє' : 'no force without touching' } : {}) } };
-  }
-  // Inertia: where the card and the coin ended (in the glass, beside it, on the card), and how the step went.
-  if (kind === 'coin') {
-    const done = c?.type === 'lab.coin' && r && r.value !== null;
-    if (!done) return { ...base, kind, coin: { card: 0, x: 0, drop: 0, tilt: 0 } };
-    const slipped = r.inputs?.['slipped'] === 1;
-    const inGlass = r.inputs?.['inGlass'] === 1;
-    const v = r.inputs?.['speed'] ?? 0;
-    const exit = r.inputs?.['time'] ?? 0;
-    const read = `${locale === 'uk' ? 'зсув' : 'moved'} ${Math.round(r.value! * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}`;
-    const slow = slipped ? `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×${COIN_SLOW}` : undefined;
-    // The end: in the glass on its bottom; off the rim on the table beside it; on the card, 15 cm aside.
-    const coin = inGlass ? { card: 1, x: r.value!, drop: 0.095, tilt: 0 } : slipped ? { card: 1, x: 0.055, drop: 0.1, tilt: 0 } : { card: 0.15, x: 0.15, drop: 0, tilt: 0 };
-    return { ...base, kind, coin: { ...coin, read }, coinRun: { v, a: COIN_FRICTION.value * 9.80665, exit, slipped, inGlass, ...(slow ? { slow } : {}) } };
-  }
-  // A snail: the surface of this step (or the next one), how far it went, the stopwatch.
-  if (kind === 'snail') {
-    const sc = c?.type === 'lab.snail' ? (c as unknown as { surface: string }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.snail');
-    const surface = sc?.surface ?? (next?.kind === 'bench' ? (next.command as unknown as { surface: string }).surface : 'flat');
-    const done = sc && r && r.value !== null;
-    return { ...base, kind, snail: { surface, at: done ? r.value! : 0, ...(done ? { read: `${Math.round(r.value! * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.inputs?.['time'] ?? 30, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.inputs?.['time'] ?? 30 } } : {}) };
-  }
-  // A stroboscopic photo: this step's (or the next one's), the ball's places on it, the gaps once measured.
-  if (kind === 'strobe') {
-    const sc = c?.type === 'lab.strobe' ? (c as unknown as { photo: StrobePhoto }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.strobe');
-    const photo = sc?.photo ?? (next?.kind === 'bench' ? (next.command as unknown as { photo: StrobePhoto }).photo : 'table');
-    const at = strobePositions(photo).map((x) => (x * 1000) / STROBE_SCALE);
-    const recs = last && sc ? readingsOf([last]).map((x) => x.record) : [];
-    return { ...base, kind, strobe: { photo, at, shown: sc ? at.length : 0, ...(recs.length ? { gaps: recs.map((x) => `${Math.round((x.value ?? 0) * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}`) } : {}) } };
-  }
-  // The wind's speed: the day of this step (or the next one), the bubble at the second stake once timed, the speed.
-  if (kind === 'wind') {
-    const wc = c?.type === 'lab.wind' ? (c as unknown as { day: 1 | 2 | 3 }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.wind');
-    const day = wc?.day ?? (next?.kind === 'bench' ? (next.command as unknown as { day: 1 | 2 | 3 }).day : 1);
-    const done = wc && r && r.value;
-    const v = done ? WIND_TRACK / r.value! : 0;
-    return { ...base, kind, wind: { day, speed: WIND_DAYS[day].value, ...(done ? { at: WIND_TRACK, read: `${String(Math.round(v * 10) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'м/с' : 'm/s'}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.value! } } : {}) };
   }
   // A windlass: the spool of this step (or the next one), how far it turned, where the load is, what was read.
   if (kind === 'winch') {
@@ -864,27 +808,6 @@ function measureSay(): string {
     const shown = mod.shown(m.command as never, recs, locale);
     return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
   }
-  // Contact and non-contact forces: what was seen.
-  if (m.command.type === 'lab.touch') {
-    const s = tr(touchSeen((m.command as { case: TouchCase }).case), locale);
-    return `${s.charAt(0).toUpperCase()}${s.slice(1)}.`;
-  }
-  // Inertia: how far the coin moved, and where it ended.
-  if (m.command.type === 'lab.coin') {
-    const inGlass = r.inputs?.['inGlass'] === 1;
-    const slipped = r.inputs?.['slipped'] === 1;
-    const mm = Math.round((r.value ?? 0) * 1000);
-    return uk ? (inGlass ? `Монета зсунулася лише на ${mm} мм — і впала в склянку!` : slipped ? `Монета зсунулася на ${mm} мм, вдарилася об край склянки й упала поруч.` : 'Монета поїхала разом із карткою.') : inGlass ? `The coin moved just ${mm} mm — and dropped into the glass!` : slipped ? `The coin moved ${mm} mm, hit the rim and fell beside.` : 'The coin went with the card.';
-  }
-  // A snail: the distance in 30 s.
-  if (m.command.type === 'lab.snail') return uk ? `За 30 с равлик проповз ${Math.round((r.value ?? 0) * 1000)} мм.` : `In 30 s the snail went ${Math.round((r.value ?? 0) * 1000)} mm.`;
-  // A stroboscopic photo: the gaps measured on it.
-  if (m.command.type === 'lab.strobe') {
-    const g = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.strobe')!]).map((x) => Math.round((x.record.value ?? 0) * 1000));
-    return uk ? `Проміжки на фото: ${g.join(', ')} мм.` : `The gaps on the photo: ${g.join(', ')} mm.`;
-  }
-  // The wind's speed: the time over the 6 m.
-  if (m.command.type === 'lab.wind') return uk ? `Бульбашка пролетіла 6 м за ${formatMeasured('time', r.value, 0.01, locale)}.` : `The bubble flew 6 m in ${formatMeasured('time', r.value, 0.01, locale)}.`;
   // A windlass: the turns counted, or how far the load rose.
   if (m.command.type === 'lab.winch') {
     const wc = m.command as { spool: WinchSpool; mode: 'lower' | 'turn'; amount: number };
@@ -2719,17 +2642,12 @@ function renderProtocol() {
       // (A ball's bounce: whole centimetres.)
       // (An experiment module's own words for the step.)
       const modShown = experimentOf(c.type)?.shown(c as never, readingsOf([e]).map((x) => x.record), locale) ?? null;
-      const tcShown = c.type === 'lab.touch' ? (r.inputs?.['acts'] === 1 ? (locale === 'uk' ? 'діє без дотику' : 'acts without touching') : locale === 'uk' ? 'без дотику не діє' : 'no force without touching') : null;
-      const cnShown = c.type === 'lab.coin' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
-      const snShown = c.type === 'lab.snail' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
-      const sgRecs = c.type === 'lab.strobe' ? readingsOf([e]).map((x) => x.record) : [];
-      const sgShown = sgRecs.length ? `${sgRecs.map((x) => Math.round((x.value ?? 0) * 1000)).join(', ')} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       const wShown = c.type === 'lab.winch' && r.value !== null ? (r.quantity === 'turns' ? formatMeasured('turns', r.value, 0.25, locale) : `${String(Math.round(r.value * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`) : null;
       const cbRecs = c.type === 'lab.carry' ? readingsOf([e]).map((x) => x.record) : [];
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = modShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = modShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

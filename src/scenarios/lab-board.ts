@@ -3,10 +3,6 @@ import type { SystemState } from '../core/state.js';
 import { tr } from '../knowledge/i18n.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { bounceBallName, type BounceBall } from './bounce-bench.js';
-import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
-import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
-import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
-import { TOUCH_CASES, touchSeen, type TouchCase } from './touch-bench.js';
 import { experimentOf } from '../experiments/index.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
@@ -315,10 +311,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   let body: { m?: number; v?: number } = {};
   const airByBody = new Map<string, number>();
   let springL0: number | null = null;
-  // (The gnomon's shadows so far, all series: the noon is found once the afternoon ones are in.)
-  const shadows: { time: number; length: number }[] = [];
-  // (The barometer's readings so far, by where they were taken.)
-  const baro: Partial<Record<string, { p: number; h: number }>> = {};
   // A liquid weighed on the balance (empty vessel, then with the liquid) and its volume read by the marks: its density.
   let emptyVessel: number | null = null;
   let liquidMass: number | null = null;
@@ -459,48 +451,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const title = tr(liftPhaseText(phase as LiftPhase).plan, locale);
       const acc = phase === 'fall' ? (uk ? 'вільне падіння' : 'free fall') : a === 0 ? (uk ? 'без прискорення' : 'no acceleration') : `a = ${n(Math.abs(a), 2)} ${uk ? 'м/с²' : 'm/s²'} ${a > 0 ? '↑' : '↓'}`;
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
-      return;
-    }
-    // Contact and non-contact forces: what was seen, and whether the force acted without touching (no numbers).
-    if (c.type === 'lab.touch') {
-      const k = String(c['case']) as TouchCase;
-      const acts = r.inputs?.['acts'] === 1;
-      out.push({ id: `tc:${i}`, title: tr(touchSeen(k), locale), formula: `${tr(TOUCH_CASES[k].force, locale)}: ${acts ? (uk ? 'діє без дотику' : 'acts without touching') : uk ? 'без дотику не діє' : 'does not act without touching'}` });
-      return;
-    }
-    // Inertia: how fast the card went and how soon it left the coin; how far the coin moved.
-    if (c.type === 'lab.coin') {
-      const v = r.inputs?.['speed'] ?? 0;
-      const slipped = r.inputs?.['slipped'] === 1;
-      const inGlass = r.inputs?.['inGlass'] === 1;
-      const res = inGlass ? (uk ? 'у склянці' : 'in the glass') : slipped ? (uk ? 'повз склянку' : 'missed the glass') : uk ? 'поїхала з карткою' : 'went with the card';
-      out.push({ id: `cn:${i}`, title: uk ? `картка ${n(v, 2)} м/с: монета зсунулася на ${Math.round(r.value * 1000)} мм — ${res}` : `the card at ${n(v, 2)} m/s: the coin moved ${Math.round(r.value * 1000)} mm — ${res}`, formula: 't = l / v', numbers: `${n(slipped ? 0.075 : 0.15, 2)} ${uk ? 'м' : 'm'} / ${n(v, 2)} ${uk ? 'м/с' : 'm/s'} ≈ ${n(r.inputs?.['time'] ?? 0, 2)} ${uk ? 'с' : 's'}` });
-      return;
-    }
-    // A snail: the surface, the distance in 30 s and the speed.
-    if (c.type === 'lab.snail') {
-      const t = r.inputs?.['time'] ?? SNAIL_TIME;
-      out.push({ id: `sn:${i}`, title: tr(snailSurfaceName(String(c['surface']) as SnailSurface), locale), formula: 'v = l / t', numbers: `${Math.round(r.value * 1000)} ${uk ? 'мм' : 'mm'} / ${t} ${uk ? 'с' : 's'} ≈ ${n((r.value * 1000) / t, 2)} ${uk ? 'мм/с' : 'mm/s'}` });
-      return;
-    }
-    // A stroboscopic photo: the gaps measured on it, five times that in life; the speeds (hidden till the answer).
-    if (c.type === 'lab.strobe') {
-      const g = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null).map((x) => x.value!);
-      const table = c['photo'] === 'table';
-      const cm = (x: number) => `${n(x * STROBE_SCALE * 100, 2)} ${uk ? 'см' : 'cm'}`;
-      const where = table ? (uk ? 'на столі' : 'on the table') : uk ? 'на жолобі' : 'in the groove';
-      out.push({ id: `sg:${i}`, title: `${where}: ${g.map((x) => Math.round(x * 1000)).join(', ')} ${uk ? 'мм на фото' : 'mm on the photo'}`, formula: `l = ${STROBE_SCALE} · l_${uk ? 'фото' : 'photo'}`, numbers: g.map(cm).join(', ') });
-      out.push({ id: `sv:${i}`, title: uk ? 'за 0,25 с між спалахами' : 'in 0.25 s between the flashes', formula: 'v = l / t', numbers: g.map((x) => `${n((x * STROBE_SCALE) / STROBE_INTERVAL, 2)}`).join(', ') + (uk ? ' м/с' : ' m/s') });
-      return;
-    }
-    // The wind's speed: the day's signs, v = l / t, and the Beaufort force the speed falls in.
-    if (c.type === 'lab.wind') {
-      const day = Number(c['day']) as 1 | 2 | 3;
-      const l = r.inputs?.['track'] ?? WIND_TRACK;
-      const v = l / r.value;
-      const f = beaufortOf(v);
-      const name = BEAUFORT[f as 1 | 2 | 3]?.name;
-      out.push({ id: `wd:${i}`, title: tr(BEAUFORT[day].signs, locale), formula: 'v = l / t', numbers: `${n(l, 2)} ${uk ? 'м' : 'm'} / ${formatMeasured('time', r.value, 0.01, locale)} ≈ ${n(v, 2)} ${uk ? 'м/с' : 'm/s'}${name ? (uk ? ` — ${f} ${f === 1 ? 'бал' : 'бали'}, ${name.uk}` : ` — force ${f}, ${name.en}`) : ''}` });
       return;
     }
     // A windlass: what was counted or measured; how it follows from the circumference (hidden till the answer).

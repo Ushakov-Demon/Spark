@@ -1,8 +1,8 @@
-import type { CommandHandler } from '../core/commands.js';
-import { ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import { grooveAcceleration, ROLL_PATH } from './motion-bench.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import { grooveAcceleration, ROLL_PATH } from '../../scenarios/motion-bench.js';
 
 /**
  * Distances on stroboscopic photos (grade 7): the ball of lab work 1 photographed in the dark under a stroboscope

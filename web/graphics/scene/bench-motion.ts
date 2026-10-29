@@ -28,11 +28,6 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The scale being drawn.) */
   /** (The airship climbing to 2 km.) */
   /** (A body let into the tower.) */
-  'lab.touch': { uk: 'Дивимося…', en: 'Watching…' },
-  'lab.coin': { uk: 'Знімаємо — дивимося покадрово…', en: 'Filming — watching frame by frame…' },
-  'lab.snail': { uk: 'Равлик повзе — знімаємо 30 секунд…', en: 'The snail crawls — filming for 30 seconds…' },
-  'lab.strobe': { uk: 'Спалахи один за одним — кулька лишає зображення…', en: 'Flash after flash — the ball leaves its images…' },
-  'lab.wind': { uk: 'Бульбашка летить — секундомір іде…', en: 'The bubble flies — the stopwatch is running…' },
   'lab.winch': { uk: 'Котушка крутиться — рахую оберти…', en: 'The spool is turning — counting the turns…' },
   'lab.carry': { uk: 'Бульбашка спливає — веду пляшку рівномірно…', en: 'The bubble rises — carrying the bottle steadily…' },
   'lab.bounce': { uk: 'Відпускаю м’ячик — стежимо, куди підскочить…', en: 'Letting the ball go — watch how high it bounces…' },
@@ -59,11 +54,6 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
-  if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
-  if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
-  if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
-  if (next.kind === 'strobe' && next.strobe?.gaps) return strobeRun(next, draw);
-  if (next.kind === 'wind' && next.wind?.read && next.run) return windRun(next, next.run, draw);
   if (next.kind === 'winch' && next.winch?.read) return winch(next, draw);
   if (next.kind === 'bounce' && next.bounce?.read) return bounce(next, draw);
   if (next.kind === 'lift' && next.lift?.read) return lift(prev?.kind === 'lift' ? (prev.lift ?? null) : null, next, draw);
@@ -329,107 +319,10 @@ function winch(next: BenchView, draw: (v: BenchView) => void): Motion {
   };
 }
 
-/** The wind's speed: the bubble, blown a little before the first stake, flies with the wind; the stopwatch runs from the first stake to the second (in real time). */
-function windRun(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v: BenchView) => void): Motion {
-  const w = next.wind!;
-  const lead = 0.6 / w.speed;
-  const comma = (next.stopwatch?.display ?? ',').includes(',');
-  const clock = new Channel(0, lead + run.seconds, { kind: 'steady', speed: 1 }, 1e-6);
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      const t = clock.value - lead;
-      const { read: _r, ...rest } = w;
-      draw({ ...next, stopwatch: { display: Math.max(0, t).toFixed(2).replace('.', comma ? ',' : '.') }, wind: { ...rest, at: t * w.speed } });
-    },
-  };
-}
 
-/** A stroboscopic photo: the flashes leave the ball's images one by one (four a second, played at half that), then the ruler is put to it. */
-function strobeRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const st = next.strobe!;
-  const n = st.at.length;
-  const k = new Channel(0, n + 0.6, { kind: 'steady', speed: 2 }, 0.001);
-  return {
-    channels: [k],
-    frame: (done) => {
-      if (done || k.value >= n + 0.5) return draw(next);
-      const { gaps: _g, ...rest } = st;
-      draw({ ...next, strobe: { ...rest, shown: k.value } });
-    },
-  };
-}
 
-/** A snail: its 30 s played some eight times faster, the stopwatch running with it. */
-function snailRun(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v: BenchView) => void): Motion {
-  const sn = next.snail!;
-  const fast = 8;
-  const comma = (next.stopwatch?.display ?? ',').includes(',');
-  const clock = new Channel(0, run.seconds, { kind: 'steady', speed: fast }, 1e-4);
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      const { read: _r, ...rest } = sn;
-      draw({ ...next, stopwatch: { display: clock.value.toFixed(2).replace('.', comma ? ',' : '.'), fast }, snail: { ...rest, at: (sn.at * clock.value) / run.seconds } });
-    },
-  };
-}
 
-/**
- * Inertia, frame by frame: the card goes at its speed; slipping, the coin is dragged at μ·g until the card's edge
- * leaves it (t = l / v), then falls (g) — to the glass's bottom, or onto the rim and off it beside the glass. Drawn
- * smoothly, the coin rides with the card. A quick pull is played four times slower (a flick still looks like one:
- * 0.1 s on the screen); the fall after it at 0.4 of real time.
- */
-/** How much slower the card's quick pulls are played. */
-export const COIN_SLOW = 4;
-function coinRun(next: BenchView, run: NonNullable<BenchView['coinRun']>, draw: (v: BenchView) => void): Motion {
-  const c = next.coin!;
-  const { v, a, exit, slipped, inGlass } = run;
-  const g = 9.81;
-  const pull = slipped ? exit * COIN_SLOW : 0.15 / v;
-  // Falling: into the glass, to its bottom (10 cm less the coin); off the rim — 4 mm, then off it onto the table.
-  const depth = inGlass ? 0.095 : 0.004;
-  const fall = Math.sqrt((2 * depth) / g);
-  const fallShown = slipped ? fall / 0.4 : 0;
-  const off = inGlass || !slipped ? 0 : 0.5;
-  const clock = new Channel(0, pull + fallShown + off, { kind: 'steady', speed: 1 }, 1e-4);
-  const { read: _r, slow: _s, ...rest } = c;
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      const T = clock.value;
-      if (!slipped) return draw({ ...next, coin: { ...rest, card: v * T, x: v * T, drop: 0, tilt: 0 } });
-      const slowed = run.slow && T < pull ? { slow: run.slow } : {};
-      // The real time: the card's part slowed COIN_SLOW times; then the fall at 0.4.
-      const t = T < pull ? (T / pull) * exit : exit + Math.min(fall, (T - pull) * 0.4);
-      if (T < pull) return draw({ ...next, coin: { ...rest, ...slowed, card: v * t, x: (a * t * t) / 2, drop: 0, tilt: 0 } });
-      const x1 = (a * exit * exit) / 2 + a * exit * (t - exit);
-      const drop = (g * (t - exit) ** 2) / 2;
-      if (T < pull + fallShown) return draw({ ...next, coin: { ...rest, card: 1, x: x1, drop, tilt: 0 } });
-      // Off the rim: tipping over it and down beside the glass.
-      const u = Math.min(1, (T - pull - fallShown) / off);
-      draw({ ...next, coin: { ...rest, card: 1, x: x1 + (c.x - x1) * u, drop: depth + (c.drop - depth) * u * u, tilt: 70 * Math.sin(Math.PI * u) } });
-    },
-  };
-}
 
-/** Contact and non-contact forces: each case plays in about 1.5 s (the weight's fall in its own 0.4 s or so, slowed). */
-function touchRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const t = next.touch!;
-  const k = new Channel(0, 1, { kind: 'steady', speed: 0.7 }, 0.001);
-  return {
-    channels: [k],
-    frame: (done) => {
-      if (done) return draw(next);
-      const { read: _r, ...rest } = t;
-      draw({ ...next, touch: { ...rest, k: k.value } });
-    },
-  };
-}
 
 
 

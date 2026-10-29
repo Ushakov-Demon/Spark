@@ -1,10 +1,10 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { G } from '../domains/mechanics/constants.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { G } from '../../domains/mechanics/constants.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * Inertia (grade 7): a postcard on a glass, a coin on the card over the glass's mouth. The card is pulled out

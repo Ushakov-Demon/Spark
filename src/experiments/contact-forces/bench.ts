@@ -1,7 +1,7 @@
-import type { CommandHandler } from '../core/commands.js';
-import { ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
 
 /**
  * Contact and non-contact forces (grade 7), watched rather than measured: a magnet pulls a paper clip on a thread

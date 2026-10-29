@@ -1,10 +1,10 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
-import { STOPWATCH_DIVISION } from './motion-bench.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
+import { STOPWATCH_DIVISION } from '../../scenarios/motion-bench.js';
 
 /**
  * Measuring the speed of the air (grade 7): outdoors, on three days with different winds, a soap bubble is blown at

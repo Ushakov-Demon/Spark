@@ -9,10 +9,15 @@ import { solarNoonScene } from './solar-noon/scene.js';
 import { liquidTowerScene } from './liquid-tower/scene.js';
 import { dragFormScene } from './drag-form/scene.js';
 import { cartsMassScene } from './carts-mass/scene.js';
+import { contactForcesScene } from './contact-forces/scene.js';
+import { coinInertiaScene } from './coin-inertia/scene.js';
+import { snailSpeedScene } from './snail-speed/scene.js';
+import { strobePhotoScene } from './strobe-photo/scene.js';
+import { windSpeedScene } from './wind-speed/scene.js';
 import type { ExperimentScene } from './types.js';
 
 /** The pictures of the experiment modules, by kind (one line each, beside src/experiments/index.ts). */
-const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene] as unknown as readonly ExperimentScene<never>[];
+const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene] as unknown as readonly ExperimentScene<never>[];
 
 const BY_KIND = new Map(SCENES.map((s) => [s.kind, s] as const));
 export const sceneOf = (kind: string): ExperimentScene<unknown> | undefined => BY_KIND.get(kind) as ExperimentScene<unknown> | undefined;

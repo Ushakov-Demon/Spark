@@ -6,7 +6,6 @@ import type { ExperimentResult } from '../core/experiment.js';
 import type { Simulation } from '../core/simulation.js';
 import type { SystemState } from '../core/state.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
-import { cellReading } from '../domains/electrical/conductivity.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { FARADAY, GAS_CONSTANT } from '../domains/electrical/gases.js';
 import { formatDuration, formatQuantity, sig } from '../explain/format.js';
@@ -23,12 +22,7 @@ import { rowName, type RowBody } from './rows-bench.js';
 import { liftPhaseText, type LiftPhase } from './lift-bench.js';
 import { BOUNCE_FROM, bounceBallName, type BounceBall } from './bounce-bench.js';
 import { winchSpoolName, type WinchSpool } from './winch-bench.js';
-import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
-import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
-import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
-import { offsetText } from './place-time.js';
 import { EXPERIMENTS } from '../experiments/index.js';
-import { touchPlan, touchSeen, type TouchCase } from './touch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -429,119 +423,6 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
     };
   },
 
-  'contact-forces': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.touch').map((x) => ({ c: String(x.command['case']) as TouchCase, acts: x.record.inputs?.['acts'] === 1, touch: x.record.inputs?.['touch'] === 1 }));
-    const farOk = R.filter((x) => x.c !== 'lifted').every((x) => x.acts && !x.touch);
-    const frictionNeedsTouch = R.some((x) => x.c === 'lifted' && !x.acts);
-    return {
-      ...(farOk && frictionNeedsTouch ? { correct: 'field' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Деякі сили діють на відстані: магніт притягує залізо через повітря й крізь картон, наелектризоване тіло — легкі папірці, а Земля притягує все довкола — тому тягарець і падає, хоч його ніщо не штовхає. Такі тіла діють одне на одне через поле — магнітне, електричне, гравітаційне. А сила тертя й сила пружності — контактні: вони з’являються лише тоді, коли тіла торкаються. Брусок, піднятий над столом, тертя об стіл не відчуває; пружина тягне лише те, що до неї причеплено. Повітря тут нічого не передає: магніт притягує скріпку й у вакуумі.'
-          : 'Some forces act at a distance: a magnet pulls iron across air and through a card, a charged body — light bits of paper, and the Earth pulls everything around — so the weight falls, though nothing pushes it. Such bodies act on each other through a field — magnetic, electric, gravitational. But friction and the elastic force are contact forces: they appear only when bodies touch. The block lifted above the table feels no friction on it; a spring pulls only what is hooked on it. The air passes nothing here: a magnet pulls a clip in a vacuum too.',
-      ),
-      say: both((l) => (l === 'uk' ? 'Без дотику діяли магніт, гребінець і Земля; тертя без дотику зникло.' : 'Without touching acted the magnet, the comb and the Earth; friction vanished without touching.')),
-      text: both((l) => {
-        const s = `${R.map((x) => `${tr(touchPlan(x.c), l)} — ${tr(touchSeen(x.c), l)}`).join('; ')}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1);
-      }),
-    };
-  },
-  'coin-inertia': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.coin' && x.record.value !== null).map((x) => ({ pull: String(x.command['pull']), s: x.record.value!, v: x.record.inputs?.['speed'] ?? 0, t: x.record.inputs?.['time'] ?? 0, slipped: x.record.inputs?.['slipped'] === 1, inGlass: x.record.inputs?.['inGlass'] === 1 }));
-    const fastIn = R.filter((x) => x.v >= 1).every((x) => x.inGlass);
-    const slowOut = R.some((x) => !x.inGlass);
-    const mm = (x: number) => Math.round(x * 1000);
-    const where = (x: (typeof R)[number], l: Locale) => (l === 'uk' ? (x.inGlass ? 'монета впала в склянку' : x.slipped ? 'монета вдарилася об край склянки й упала поруч' : 'монета поїхала разом із карткою') : x.inGlass ? 'the coin dropped into the glass' : x.slipped ? 'the coin hit the rim and fell beside' : 'the coin went with the card');
-    return {
-      ...(fastIn && slowOut ? { correct: 'inertia' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Інерція — це явище зберігання швидкості руху тіла за відсутності або скомпенсованості дії на нього інших тіл. Монета лежала нерухомо, і щоб вона поїхала, її має розігнати картка — силою тертя. Але тертя слабке й не може розігнати монету швидко. Коли картку тягнуть повільно, тертя встигає: монета їде разом із карткою. Коли картку висмикують, вона виходить з-під монети за соті частки секунди — тертя за цей час ледь зрушує монету, і та, залишившись майже на місці, падає в склянку. Що швидше рух картки, то менше зсувається монета. Так само, коли автобус різко рушає, пасажири відхиляються назад.'
-          : 'Inertia is the keeping of a body’s speed when no other bodies act on it, or their actions balance. The coin lay still, and for it to move the card has to speed it up — by friction. But friction is weak and cannot speed the coin up fast. When the card is drawn slowly, friction keeps up: the coin goes with the card. When the card is snatched, it leaves from under the coin in hundredths of a second — in that time friction hardly moves the coin, and it, staying almost where it was, drops into the glass. The faster the card goes, the less the coin moves. In the same way, when a bus starts sharply, the passengers lean back.',
-      ),
-      say: both((l) => {
-        const snap = R.find((x) => x.pull === 'snap');
-        return snap ? (l === 'uk' ? `Клацання: картка вийшла за ${sig(snap.t, 2, l)} с, монета зсунулася лише на ${mm(snap.s)} мм — і впала в склянку.` : `The flick: the card went in ${sig(snap.t, 2, l)} s, the coin moved just ${mm(snap.s)} mm — and dropped into the glass.`) : '';
-      }),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const how: Record<string, string> = uk ? { slow: 'повільно', push: 'штовхнули (0,5 м/с)', flick: 'різко (1 м/с)', snap: 'клацнули (3 м/с)' } : { slow: 'slowly', push: 'pushed (0.5 m/s)', flick: 'sharply (1 m/s)', snap: 'flicked (3 m/s)' };
-        const s = `${R.map((x) => `${how[x.pull] ?? x.pull}: ${uk ? 'зсув' : 'moved'} ${mm(x.s)} ${uk ? 'мм' : 'mm'} — ${where(x, l)}`).join('; ')}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Щоб упасти в склянку, монета мала зсунутися менш ніж на 19 мм.' : ' To drop into the glass, the coin had to move less than 19 mm.');
-      }),
-    };
-  },
-  'snail-speed': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.snail' && x.record.value !== null).map((x) => ({ surface: String(x.command['surface']) as SnailSurface, l: x.record.value!, t: x.record.inputs?.['time'] ?? SNAIL_TIME }));
-    const slowest = [...R].sort((a, b) => a.l - b.l)[0];
-    const mm = (x: number) => Math.round(x * 1000);
-    const v = (x: { l: number; t: number }, l: Locale) => `${sig((x.l * 1000) / x.t, 2, l)} ${l === 'uk' ? 'мм/с' : 'mm/s'}`;
-    return {
-      ...(slowest ? { correct: slowest.surface === 'sandpaper' ? 'sandpaper' : slowest.surface } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Равлик повзе на одній «нозі»: м’язи в ній по черзі скорочуються, і вздовж підошви біжать хвилі. Під підошвою — тонкий шар слизу, і ці хвилі, відштовхуючись через нього від поверхні, штовхають равлика вперед. Слиз незвичайний: у спокої тримає, як клей, а під натиском тече, як рідина. На шорсткому наждаку равлик повзе майже вдвічі повільніше: дослідники припускають, що шорсткість заважає слизу триматися й равлику доводиться виділяти його більше. Угору по стінці він ще й тримає власну вагу, тож трохи повільніший; на мокрому вода, ймовірно, розріджує слиз. Це середні значення для 87 равликів із дослідження: окремі равлики повзуть швидше чи повільніше. 1,5 мм/с — це близько 5 метрів за годину.'
-          : 'A snail crawls on a single «foot»: its muscles contract in turn, and waves run along the sole. Under the sole is a thin layer of mucus, and the waves, pushing off the surface through it, move the snail forward. The mucus is unusual: at rest it holds like glue, under stress it flows like a liquid. On rough sandpaper the snail crawls almost half as fast: the researchers suggest the roughness keeps the mucus from holding, and the snail has to make more of it. Up a wall it also holds its own weight, so it is a little slower; on a wet sheet water likely thins the mucus. These are the means of 87 snails in the study: single snails crawl faster or slower. 1.5 mm/s is about 5 metres an hour.',
-      ),
-      say: both((l) => (slowest ? (l === 'uk' ? `Найповільніше — ${tr(snailSurfaceName(slowest.surface), l)}: ${mm(slowest.l)} мм за 30 с, ${v(slowest, l)}.` : `Slowest — ${tr(snailSurfaceName(slowest.surface), l)}: ${mm(slowest.l)} mm in 30 s, ${v(slowest, l)}.`) : '')),
-      text: both((l) => {
-        const s = `${R.map((x) => `${tr(snailSurfaceName(x.surface), l)} — ${mm(x.l)} ${l === 'uk' ? 'мм за 30 с' : 'mm in 30 s'}, ${v(x, l)}`).join('; ')}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1) + (l === 'uk' ? ' Середні з дослідження Pembury Smith і Ruxton (2021).' : ' The means from Pembury Smith and Ruxton’s study (2021).');
-      }),
-    };
-  },
-  'strobe-photo': (run) => {
-    const gaps = (photo: string) => (run.readings ?? []).filter((x) => x.command.type === 'lab.strobe' && x.command['photo'] === photo && x.record.value !== null).map((x) => x.record.value!);
-    const table = gaps('table');
-    const groove = gaps('groove');
-    const mm = (x: number) => Math.round(x * 1000);
-    const real = (x: number, l: Locale) => `${sig(x * STROBE_SCALE * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-    const ms = (x: number, l: Locale) => `${sig((x * STROBE_SCALE) / STROBE_INTERVAL, 2, l)} ${l === 'uk' ? 'м/с' : 'm/s'}`;
-    const equal = table.length > 1 && table.every((x) => Math.abs(x - table[0]!) < 0.0015);
-    const growing = groove.length > 1 && groove.every((x, i) => i === 0 || x > groove[i - 1]!);
-    return {
-      ...(equal && growing ? { correct: 'gaps' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Стробоскоп спалахує через рівні проміжки часу — тут кожні 0,25 с, — і фото зберігає, де була кулька в кожну з цих миттєвостей. Тож проміжок між сусідніми зображеннями — це шлях за 0,25 с. Фото зменшене в 5 разів: виміряне лінійкою множимо на 5 — і маємо відстань у натурі; поділивши її на 0,25 с, — швидкість. На столі проміжки рівні: кулька рухалася рівномірно. На жолобі вони ростуть — приблизно як 1 : 3 : 5 : 7, — кулька розганялася, і її середня швидкість на кожному проміжку більша за попередню. Так само вимірюють відстані на картах і планах: масштаб 1 : 100 000 означає, що 1 см на карті — це 1 км на місцевості.'
-          : 'The stroboscope flashes at equal intervals — here every 0.25 s — and the photo keeps where the ball was at each of those instants. So the gap between neighbouring images is the path in 0.25 s. The photo is 5 times smaller: what the ruler gives times 5 is the real distance; divided by 0.25 s — the speed. On the table the gaps are equal: the ball moved uniformly. In the groove they grow — about as 1 : 3 : 5 : 7 — the ball was speeding up, its average speed on each gap greater than on the one before. Distances on maps and plans are measured the same way: a scale of 1 : 100 000 means 1 cm on the map is 1 km on the ground.',
-      ),
-      say: both((l) => (table.length ? (l === 'uk' ? `На столі проміжки рівні — по ${mm(table[0]!)} мм на фото, ${real(table[0]!, l)} у натурі за 0,25 с: ${ms(table[0]!, l)}.` : `On the table the gaps are equal — ${mm(table[0]!)} mm on the photo each, ${real(table[0]!, l)} in life in 0.25 s: ${ms(table[0]!, l)}.`) : '')),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const list = (g: number[]) => g.map((x) => `${mm(x)}`).join(', ') + (uk ? ' мм' : ' mm');
-        return uk
-          ? `На столі: ${list(table)} на фото — у натурі по ${real(table[0] ?? 0, l)} за 0,25 с, v ≈ ${ms(table[0] ?? 0, l)}, рух рівномірний. На жолобі: ${list(groove)} — у натурі ${groove.map((x) => real(x, l)).join(', ')}, середня швидкість на проміжках ${groove.map((x) => ms(x, l)).join(', ')}: кулька розганялася.`
-          : `On the table: ${list(table)} on the photo — ${real(table[0] ?? 0, l)} in life each in 0.25 s, v ≈ ${ms(table[0] ?? 0, l)}, uniform motion. In the groove: ${list(groove)} — in life ${groove.map((x) => real(x, l)).join(', ')}, the average speed on the gaps ${groove.map((x) => ms(x, l)).join(', ')}: the ball was speeding up.`;
-      }),
-    };
-  },
-  'wind-speed': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.wind' && x.record.value !== null).map((x) => ({ day: Number(x.command['day']) as 1 | 2 | 3, t: x.record.value!, l: x.record.inputs?.['track'] ?? WIND_TRACK }));
-    const v = (x: { t: number; l: number }) => x.l / x.t;
-    const ms = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'м/с' : 'm/s'}`;
-    const leaves = R.find((x) => x.day === 2);
-    return {
-      ...(leaves && v(leaves) >= 2 && v(leaves) <= 3 ? { correct: 'walk' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Повітря невидиме, тож стежимо за чимось, що рухається разом із ним. Мильна бульбашка — тонка плівка з повітрям усередині, вона майже нічого не важить, і вітер одразу несе її зі своєю швидкістю. Тоді v = l / t: 6 м поділити на час між позначками. Швидкість вітру вимірюють і метеорологи — анемометрами, а моряки здавна оцінювали її за прикметами: шкала Бофорта (1805 р.) зіставляє кожну силу вітру з тим, що він робить. Коли шелестить листя й вітер відчуваєш обличчям, це 2 бали — від 1,6 до 3,4 м/с. Засікати час рукою — похибка близько 0,2 с, тож для сильнішого вітру краще брати довшу відстань і пускати кілька бульбашок: вітер ще й поривчастий.'
-          : 'Air cannot be seen, so we watch something that moves with it. A soap bubble is a thin film with air inside; it weighs next to nothing, and the wind at once carries it at its own speed. Then v = l / t: 6 m divided by the time between the marks. Meteorologists measure the wind’s speed too — with anemometers — and sailors long judged it by its signs: the Beaufort scale (1805) matches each force of wind with what it does. When leaves rustle and the wind is felt on the face, that is force 2 — 1.6 to 3.4 m/s. Timing by hand has an error of about 0.2 s, so for a stronger wind a longer distance is better, and several bubbles: the wind comes in gusts, too.',
-      ),
-      say: both((l) => (leaves ? (l === 'uk' ? `Шелестить листя — повітря рухається зі швидкістю ${ms(v(leaves), l)}: 2 бали, «легкий» вітер.` : `Leaves rustle — the air moves at ${ms(v(leaves), l)}: force 2, a light breeze.`) : '')),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = R.map((x) => {
-          const b = BEAUFORT[x.day];
-          const f = beaufortOf(v(x));
-          return uk ? `${b.signs.uk}: 6 м за ${formatMeasured('time', x.t, 0.01, l)}, v ≈ ${ms(v(x), l)} — ${f} ${f === 1 ? 'бал' : 'бали'}, «${tr(BEAUFORT[f as 1 | 2 | 3]?.name ?? b.name, l)}»` : `${b.signs.en}: 6 m in ${formatMeasured('time', x.t, 0.01, l)}, v ≈ ${ms(v(x), l)} — force ${f}, a ${tr(BEAUFORT[f as 1 | 2 | 3]?.name ?? b.name, l)}`;
-        });
-        const s = `${parts.join('; ')}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Сила вітру за швидкістю збіглася з прикметами (шкала Бофорта).' : ' The wind’s force by its speed matched its signs (the Beaufort scale).');
-      }),
-    };
-  },
   windlass: (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.winch' && x.record.value !== null).map((x) => ({ spool: String(x.command['spool']), mode: String(x.command['mode']), amount: Number(x.command['amount']), v: x.record.value!, d: x.record.inputs?.['diameter'] ?? 0 }));
     const turns = R.filter((x) => x.mode === 'lower');

@@ -68,7 +68,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | ExperimentKind;
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -977,107 +977,6 @@ const LIST: readonly Preset[] = [
     expect: 'reached',
   },
 
-  {
-    ask: { uk: 'Які сили діють без дотику?', en: 'Which forces act without touching?' },
-    id: 'contact-forces',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Контактні й безконтактні сили', en: 'Contact and non-contact forces' },
-    question: {
-      uk: 'Тіла діють одне на одне — але чи завжди для цього треба торкатися? П’ять спостережень: магніт і скріпка на нитці через 2 см повітря, те саме крізь картонку, наелектризований гребінець над шматочками паперу, брусок, підвішений над столом (чи діє тертя?), і тягарець, який відпустили над столом. Які сили діють без дотику?',
-      en: 'Bodies act on each other — but do they always have to touch? Five observations: a magnet and a paper clip on a thread across 2 cm of air, the same through a card, a rubbed comb over bits of paper, a block hung above the table (does friction act?), and a weight let go above the table. Which forces act without touching?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'touch',
-    plan: (['magnet', 'card', 'comb', 'lifted', 'fall'] as const).map((c) => ({ kind: 'bench', command: { type: 'lab.touch', case: c } }) as const),
-    choices: [ch('field', 'Магнітна, електрична й сила тяжіння; тертя й пружність — лише при дотику', 'Magnetic, electric and gravity; friction and elasticity — only when touching'), ch('none', 'Жодна: сили передаються лише через дотик (хоч би через повітря)', 'None: forces pass only by touching (through the air at least)'), ch('magnet', 'Лише магнітна', 'Only the magnetic one')],
-    formulas: ['mechanics.weight'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'контактних і безконтактних сил' },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Чому монета падає в склянку, коли картку різко висмикнути?', en: 'Why does the coin drop into the glass when the card is snatched away?' },
-    id: 'coin-inertia',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Інерція: монета на картці', en: 'Inertia: a coin on a card' },
-    question: {
-      uk: 'Склянку накрито листівкою, на листівці над отвором склянки — монета. Виймаємо листівку вбік чотирма способами: тягнемо повільно й плавно, штовхаємо пальцем, штовхаємо різко й клацаємо по ній. Знімаємо на телефон і за кадрами міряємо, на скільки зсунулася монета, поки листівка виходила з-під неї. Чому монета падає в склянку, коли картку різко висмикнути?',
-      en: 'A glass is covered with a postcard, a coin on the card over the glass’s mouth. We take the card out sideways in four ways: draw it slowly and smoothly, push it with a finger, push it sharply and flick it. We film it on a phone and measure by the frames how far the coin moved while the card went from under it. Why does the coin drop into the glass when the card is snatched away?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'coin',
-    plan: (['slow', 'push', 'flick', 'snap'] as const).map((pull) => ({ kind: 'bench', command: { type: 'lab.coin', pull } }) as const),
-    choices: [ch('inertia', 'Монета зберігає свій стан спокою: картка виходить так швидко, що тертя не встигає зрушити монету', 'The coin keeps its state of rest: the card goes so fast that friction has no time to move the coin'), ch('heavy', 'Монета важча за картку, тому одразу падає вниз', 'The coin is heavier than the card, so it drops straight down'), ch('air', 'Монету притискає до склянки повітря', 'The air presses the coin to the glass')],
-    formulas: ['mechanics.speed'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Дослідження • інерції' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: 'Явище інерції. Інертність і маса тіла', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 15 «Явище інерції»: «Інерція — це явище зберігання швидкості руху тіла за відсутності або скомпенсованості дії на нього інших тіл»' } },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Де равлик повзе найповільніше?', en: 'Where does the snail crawl slowest?' },
-    id: 'snail-speed',
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Рух тварин: як швидко повзе равлик', en: 'How animals move: how fast a snail crawls' },
-    question: {
-      uk: 'Садовий равлик повзе поруч із лінійкою, а ми знімаємо його на телефон 30 секунд — так роблять і дослідники. Потім за відео дізнаємося, скільки міліметрів він проповз. Чотири поверхні: горизонтальний пластиковий аркуш, той самий аркуш вертикально (равлик повзе вгору), мокрий аркуш і шорсткий наждачний папір. Де равлик повзе найповільніше?',
-      en: 'A garden snail crawls beside a ruler, and we film it on a phone for 30 seconds — as researchers do. Then the video tells how many millimetres it went. Four surfaces: a horizontal plastic sheet, the same sheet upright (the snail crawls up), the sheet wet, and rough sandpaper. Where does the snail crawl slowest?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'snail',
-    plan: (['flat', 'wall', 'wet', 'sandpaper'] as const).map((surface) => ({ kind: 'bench', command: { type: 'lab.snail', surface } }) as const),
-    choices: [ch('sandpaper', 'На шорсткому наждачному папері', 'On rough sandpaper'), ch('wall', 'Угору по вертикальній стінці', 'Up the vertical wall'), ch('wet', 'По мокрому аркушу', 'On the wet sheet')],
-    formulas: ['mechanics.speed'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'related', quote: 'моделювання: відносності руху; реальних природних рухів; рухів тварин і рослин' }],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Як за стробоскопічним фото дізнатися, як рухалася кулька?', en: 'How can a stroboscopic photo tell how the ball moved?' },
-    id: 'strobe-photo',
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Стробоскопічне фото: відстані й швидкість', en: 'A stroboscopic photo: distances and speed' },
-    question: {
-      uk: 'Кульку з лабораторної роботи № 1 сфотографували в темряві під стробоскопом: він спалахує 4 рази на секунду, і кожен спалах лишає на фото зображення кульки. Фото в масштабі 1 : 5 — у п’ять разів менше за натуру. Перше фото — кулька котиться по столу, скотившись із жолоба; друге — вона скочується жолобом без початкової швидкості. Прикладаємо лінійку й вимірюємо проміжки між зображеннями. Як за стробоскопічним фото дізнатися, як рухалася кулька?',
-      en: 'The ball of lab work 1 was photographed in the dark under a stroboscope: it flashes four times a second, and each flash leaves an image of the ball on the photo. The photo is 1 : 5 — five times smaller than life. The first photo: the ball rolls along the table, down from the groove; the second: it rolls down the groove from rest. We put a ruler to it and measure the gaps between the images. How can a stroboscopic photo tell how the ball moved?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'strobe',
-    plan: (['table', 'groove'] as const).map((photo) => ({ kind: 'bench', command: { type: 'lab.strobe', photo } }) as const),
-    choices: [ch('gaps', 'За проміжками між зображеннями: рівні — рух рівномірний; а відстань у натурі, поділена на час між спалахами, — це швидкість', 'By the gaps between the images: equal ones — uniform motion; and the real distance over the time between flashes is the speed'), ch('size', 'За розміром зображень: що більші, то швидше рухалася кулька', 'By the images’ size: the bigger, the faster the ball moved'), ch('cant', 'Ніяк: на фото немає часу, потрібен секундомір', 'No way: a photo has no time, a stopwatch is needed')],
-    answerOnBoard: ['sv:'],
-    formulas: ['mechanics.speed'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'вимірювання: … відстаней на планах і картах та стробоскопічних фотографіях' }],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Як швидко рухається повітря, коли шелестить листя?', en: 'How fast does the air move when leaves rustle?' },
-    id: 'wind-speed',
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Вимірюємо швидкість вітру мильними бульбашками', en: 'Measuring the wind’s speed with soap bubbles' },
-    question: {
-      uk: 'Мильна бульбашка така легка, що летить разом із повітрям: її швидкість — це швидкість вітру. На подвір’ї рулеткою відміряємо 6 м уздовж вітру й ставимо дві позначки. Три дні з різним вітром: видуваємо бульбашку біля першої позначки й засікаємо, коли вона мине другу, — і порівнюємо швидкість із прикметами вітру за шкалою Бофорта. Як швидко рухається повітря, коли шелестить листя?',
-      en: 'A soap bubble is so light that it flies with the air: its speed is the wind’s. In the yard we measure 6 m along the wind with a tape measure and set two marks. Three days with different winds: we blow a bubble at the first mark and time it to the second — and compare the speed with the wind’s signs on the Beaufort scale. How fast does the air move when leaves rustle?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'wind',
-    plan: ([1, 2, 3] as const).map((day) => ({ kind: 'bench', command: { type: 'lab.wind', day } }) as const),
-    choices: [ch('walk', '2–3 метри за секунду', '2–3 metres a second'), ch('slow', 'Близько пів метра за секунду', 'About half a metre a second'), ch('fast', 'Близько 10 метрів за секунду', 'About 10 metres a second')],
-    formulas: ['mechanics.speed'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'вимірювання: середньої швидкості тіл, що здійснюють рівномірний і нерівномірний рухи; швидкості руху повітря' }],
-    expect: 'reached',
-  },
   {
     ask: { uk: 'Скільки обертів робить котушка, поки вантаж опускається на 30 см?', en: 'How many turns does the spool make while the load goes down 30 cm?' },
     id: 'windlass',
