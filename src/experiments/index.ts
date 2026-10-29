@@ -1,11 +1,16 @@
 import { calendars } from './calendars/index.js';
+import { rootsGravity } from './roots-gravity/index.js';
+import { dynoDiy } from './dyno-diy/index.js';
+import { rubberMotor } from './rubber-motor/index.js';
+import { scalesDiy } from './scales-diy/index.js';
+import { solarSystem } from './solar-system-model/index.js';
 import type { CommandOf, ExperimentModule } from './types.js';
 
 /**
  * The experiments written as modules (src/experiments/<name>), one line each. The bench, the presets, the answers and
  * the board take them from here; the older experiments are still spread over src/scenarios and join one by one.
  */
-export const EXPERIMENTS = [calendars] as const;
+export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem] as const;
 
 export type ExperimentKind = (typeof EXPERIMENTS)[number]['kind'];
 export type ExperimentCommand = CommandOf<(typeof EXPERIMENTS)[number]>;

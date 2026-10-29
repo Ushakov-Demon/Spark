@@ -1,7 +1,6 @@
 import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
-import { RUBBER_TURNS } from './rubber-bench.js';
 import { EXPERIMENTS, type ExperimentKind } from '../experiments/index.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { COMPONENTS } from '../components/index.js';
@@ -69,7 +68,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | ExperimentKind | 'scales' | 'dyno' | 'rubber' | 'gravi';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -983,122 +982,6 @@ const LIST: readonly Preset[] = [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
     ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Якщо Сонце — м’яч завбільшки 20 см, то де й якою буде Земля?', en: 'If the Sun is a 20 cm ball, where is the Earth and how big?' },
-    id: 'solar-system-model',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Модель Сонячної системи', en: 'A model of the Solar System' },
-    question: {
-      uk: 'Зробимо модель Сонячної системи, де все — у тому самому масштабі: і розміри, і відстані. Сонце — м’яч діаметром 20 см на шкільному стадіоні. Розміри й відстані планет беремо з таблиці NASA. Де ж ляже Земля і якою вона буде?',
-      en: 'Let us make a model of the Solar System with everything at one scale: the sizes and the distances. The Sun is a 20 cm ball on the school field. The planets’ sizes and distances come from NASA’s table. Where will the Earth lie, and how big will it be?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'planets',
-    plan: (['ball', 'inner', 'outer', 'kepler', 'voyager'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.planets', step } }) as const),
-    choices: [ch('ball', 'Кулька діаметром 2 см за 2 м від м’яча', 'A 2 cm ball 2 m from the Sun-ball'), ch('grain', 'Крупинка діаметром 2 мм за 20 м', 'A 2 mm grain 20 m away'), ch('near', 'Крупинка діаметром 2 мм за 2 м', 'A 2 mm grain 2 m away')],
-    answerOnBoard: ['pe:'],
-    formulas: ['mechanics.kepler-third'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет' }],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Як зважити яйце на саморобних терезах, якщо гир немає?', en: 'How to weigh an egg on home-made scales with no weights?' },
-    id: 'scales-diy',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Саморобні терези', en: 'Scales of our own' },
-    question: {
-      uk: 'Змайструємо терези: лінійку завдовжки 30 см підвісимо на нитці за середину, а на кінцях на нитках — два стаканчики від йогурту. Плечі однакові, тож лінійка стоїть рівно, коли маси в стаканчиках однакові. Але набору гир у нас немає. Як зважити куряче яйце?',
-      en: 'We make scales: a 30 cm ruler hung by a thread at its middle, and a yoghurt cup on a thread at each end. The arms are equal, so the ruler stays level when the masses in the cups are equal. But we have no set of weights. How to weigh a hen’s egg?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'scales',
-    plan: (['zero', 'check', 'egg'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.scales', step } }) as const),
-    choices: [ch('known', 'Тим, чия маса відома: аркушами паперу й водою', 'With things of known mass: sheets of paper and water'), ch('cant', 'Ніяк: без гир терези покажуть лише, що важче', 'No way: without weights the scales only show which is heavier'), ch('size', 'Ніяк точно — хіба що на око, за розміром', 'Not exactly — only by eye, by its size')],
-    answerOnBoard: ['sg:'],
-    formulas: ['mechanics.density', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез' }],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Скільки покаже динамометр, якщо почепити невелике яблуко?', en: 'What will a dynamometer show with a small apple on it?' },
-    id: 'dyno-diy',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Саморобний динамометр', en: 'A dynamometer of our own' },
-    question: {
-      uk: 'Змайструємо динамометр: дощечка, смужка паперу, пружина, стрілка з дроту й гачок зі скріпки. Шкалу нанесемо самі — за тягарцями по 100 г. А тоді почепимо на нього невелике яблуко, грамів на сто. Що покаже динамометр?',
-      en: 'We make a dynamometer: a board, a strip of paper, a spring, a wire pointer and a paper-clip hook. We draw the scale ourselves — by 100 g weights. Then we hang a small apple, about a hundred grams, on it. What will the dynamometer show?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'dyno',
-    plan: (['marks', 'scale', 'apple', 'egg'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.dyno', step } }) as const),
-    choices: [ch('one', 'Близько 1 Н', 'About 1 N'), ch('hundred', 'Близько 100 Н — яблуко ж важить 100 г', 'About 100 N — the apple is 100 g, after all'), ch('tenth', 'Близько 0,1 Н', 'About 0.1 N')],
-    trick: { uk: 'Багато хто плутає грами з ньютонами: маса — не сила.', en: 'Many mix up grams and newtons: mass is not force.' },
-    answerOnBoard: ['da:'],
-    formulas: ['mechanics.weight', 'mechanics.hooke'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра' }],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Удвічі більше обертів гумки — у скільки разів далі проїде машинка?', en: 'Twice the turns of the band — how many times further does the car go?' },
-    id: 'rubber-motor',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Машинка на гумовому двигуні', en: 'A car on a rubber-band motor' },
-    question: {
-      uk: 'Змайструємо машинку з гумовим двигуном: гумка зачеплена за передню вісь і намотується на задню. Закрутимо її на 3 оберти, відпустимо й поміряємо, скільки проїде. А тоді — на 6 обертів, удвічі більше. У скільки разів далі проїде машинка?',
-      en: 'We make a car with a rubber-band motor: the band is hooked to the front axle and winds round the back one. We wind it 3 turns, let go and measure how far it goes. Then 6 turns — twice as many. How many times further will the car go?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'rubber',
-    plan: [{ kind: 'bench', command: { type: 'lab.rubber', step: 'band' } }, ...RUBBER_TURNS.map((turns) => ({ kind: 'bench', command: { type: 'lab.rubber', step: 'run', turns } }) as const)],
-    choices: [ch('twice', 'Удвічі: удвічі більше обертів — удвічі далі', 'Twice: twice the turns, twice as far'), ch('four', 'Учетверо', 'Four times'), ch('same', 'Так само: гумка та сама', 'The same: it is the same band')],
-    trick: { uk: 'Більшість думає, що вдвічі більше обертів — це вдвічі далі.', en: 'Most people think twice the turns means twice as far.' },
-    answerOnBoard: ['rr:'],
-    formulas: ['mechanics.hooke'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра; механізму на «гумовому двигуні»' }],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Банку з паростками поклали на бік. Куди повернуть корінці?', en: 'A jar of seedlings is laid on its side. Which way will the roots turn?' },
-    id: 'roots-gravity',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Корінь знає, де низ', en: 'The root knows which way is down' },
-    question: {
-      uk: 'Зерна кукурудзи проросли в скляній банці за вологим паперовим рушником, корінці ростуть прямо вниз. Покладемо банку на бік — корінці ляжуть горизонтально. Що з ними буде за дві години?',
-      en: 'Maize grains have sprouted in a glass jar behind a wet paper towel, the roots growing straight down. We lay the jar on its side — the roots lie level. What becomes of them in two hours?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'gravi',
-    plan: (['upright', 'side', 'clino'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.gravi', step } }) as const),
-    choices: [ch('down', 'Загнуться вниз', 'They bend down'), ch('straight', 'Ростимуть далі вбік, як лежать', 'They go on growing sideways, as they lie'), ch('up', 'Повернуть угору, до світла', 'They turn up, to the light')],
-    answerOnBoard: ['gr:'],
-    asides: [
-      {
-        uk: 'А 1806 року англієць Томас Ендрю Найт обдурив паростки. Він прив’язав пророслі боби до обода колеса, яке крутила вода, — понад 150 обертів за хвилину. Корінці повернули від осі назовні, а стебельця за кілька днів зійшлися вістрями в центрі колеса: для рослин обертання стало замість тяжіння.',
-        en: 'And in 1806 the Englishman Thomas Andrew Knight fooled the seedlings. He tied sprouted beans to the rim of a wheel turned by water — over 150 turns a minute. The roots turned outwards from the axle, and in a few days the shoots met tip to tip in the centre of the wheel: for the plants, the spinning stood in for gravity.',
-      },
-      {
-        uk: 'Чарлз Дарвін разом із сином Френсісом 1880 року видав книжку «Здатність рослин до руху». Вони з’ясували, що тяжіння відчуває саме кінчик кореня, і написали: кінчик кореня діє, як мозок якоїсь нижчої тварини.',
-        en: 'In 1880 Charles Darwin with his son Francis published «The Power of Movement in Plants». They found that it is the very tip of the root that feels gravity, and wrote that the tip of the radicle «acts like the brain of one of the lower animals».',
-      },
-      {
-        uk: 'А що буде з корінцями там, де низу немає взагалі? 2012 року вчені вирощували рослинки резухи на Міжнародній космічній станції й фотографували їх кожні 6 годин. Корінці і в невагомості не росли абияк: їх напрямок задавало світло — вони росли від нього.',
-        en: 'And what becomes of roots where there is no down at all? In 2012 scientists grew thale cress on the International Space Station and photographed it every 6 hours. Even weightless, the roots did not grow anyhow: light set their direction — they grew away from it.',
-      },
-    ],
-    formulas: ['mechanics.density', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'впливу земного тяжіння на організми' }],
     expect: 'reached',
   },
 

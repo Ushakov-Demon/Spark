@@ -4,7 +4,7 @@ import type { MeasurementRecord } from '../core/trace.js';
 import { cite, sv } from '../components/sourced.js';
 import { G } from '../domains/mechanics/constants.js';
 import { moment, slidingFriction, weight } from '../domains/mechanics/formulas.js';
-import { blockMass, WOOD_ON_WOOD } from './bench.js';
+import { blockMass, WOOD_ON_WOOD } from './bench-kit.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SourcedValue } from '../knowledge/types.js';

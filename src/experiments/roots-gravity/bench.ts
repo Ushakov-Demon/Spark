@@ -1,9 +1,9 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * Gravity and living things (grade 7, «впливу земного тяжіння на організми»): maize seedlings behind a wet paper
@@ -51,7 +51,6 @@ export const graviCommand: CommandHandler<GraviCommand> = {
   },
 };
 
-export const GRAVI_COMMANDS = [graviCommand] as const;
 
 const STEP: Record<GraviCommand['step'], { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   upright: {

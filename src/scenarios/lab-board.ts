@@ -11,7 +11,6 @@ import { DRAG_MASS, dragBody, dragShapeName, framesText, type DragShape } from '
 import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidName, type TowerBody } from './tower-bench.js';
 import { clockText, equalShadowsNoon, GNOMON_HEIGHT, latitudeFrom, sunOf } from './gnomon-bench.js';
 import { airPlaceName, type AirWhere } from './air-bench.js';
-import { PLANETS, planetIds, SUN_RADIUS } from './planets-bench.js';
 import { experimentOf } from '../experiments/index.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
@@ -478,76 +477,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
       out.push({ id: `cl:${i}`, title: uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w} × 100 г`}: за 0,5 с` : `${w === 0 ? 'alike carts' : `cart 2 + ${w} × 100 g`}: in 0.5 s`, formula: `l₁ = ${cm(a ?? 0)}, l₂ = ${cm(b ?? 0)}` });
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
-      return;
-    }
-    // Roots and gravity: the bend after two hours on the side; on the clinostat.
-    if (c.type === 'lab.gravi') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      const step = String(c['step']);
-      if (step === 'upright' || !recs.length) return;
-      const last = recs[recs.length - 1]!;
-      out.push({ id: `${step === 'side' ? 'gr' : 'gc'}:${i}`, title: uk ? (step === 'side' ? 'банка на боці: кінчик кореня' : 'банка на клиностаті') : step === 'side' ? 'the jar on its side: the root tip' : 'the jar on a clinostat', formula: uk ? `${last.inputs?.['time']} хв` : `${last.inputs?.['time']} min`, numbers: `${last.value}°` });
-      return;
-    }
-    // The rubber motor: the band's stiffness; each run — the band wound on, the distance; the ratio to the first run.
-    if (c.type === 'lab.rubber') {
-      const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      if (!r) return;
-      if (String(c['step']) === 'band') {
-        out.push({ id: `rk:${i}`, title: uk ? 'гумка на динамометрі' : 'the band on the dynamometer', formula: 'k = F / x', numbers: `${n(r.value!, 2)} ${uk ? 'Н' : 'N'} / ${n(r.inputs?.['stretch'] ?? 0, 2)} ${uk ? 'м' : 'm'} = ${n(r.value! / (r.inputs?.['stretch'] ?? 1), 2)} ${uk ? 'Н/м' : 'N/m'}` });
-        return;
-      }
-      const N = Number(c['turns']);
-      out.push({ id: `rn:${i}`, title: uk ? `${N} об.` : `${N} turns`, formula: `x = N·π·d ≈ ${n((r.inputs?.['wound'] ?? 0) * 100, 2)} ${uk ? 'см' : 'cm'}`, numbers: `s = ${n(r.value!, 3)} ${uk ? 'м' : 'm'}` });
-      const first = log.slice(0, i).find((x) => x.ok && x.command.type === 'lab.rubber' && (x.command as unknown as { step: string }).step === 'run');
-      const s1 = first?.ok ? first.trace.find((x): x is MeasurementRecord => x.kind === 'measurement')?.value : undefined;
-      if (first && s1 && N === 6) out.push({ id: `rr:${i}`, title: uk ? 'удвічі більше обертів' : 'twice the turns', formula: 's₆ / s₃', numbers: `${n(r.value!, 3)} / ${n(s1, 3)} ≈ ${n(r.value! / s1, 2)}` });
-      return;
-    }
-    // A home-made dynamometer: the weights' forces and marks; the newton's length; the apple and the egg.
-    if (c.type === 'lab.dyno') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      const step = String(c['step']);
-      const mm = (x: number) => `${Math.round(x * 1000)} ${uk ? 'мм' : 'mm'}`;
-      if (step === 'marks') out.push({ id: `dm:${i}`, title: uk ? 'тягарці по 100 г: F = n·m·g' : '100 g weights: F = n·m·g', formula: recs.map((r) => `${n(r.inputs?.['force'] ?? 0, 3)} ${uk ? 'Н' : 'N'}`).join(' · '), numbers: recs.map((r) => mm(r.value!)).join(' · ') });
-      else if (step === 'scale') out.push({ id: `ds:${i}`, title: uk ? 'шкала: міліметрів на ньютон' : 'the scale: millimetres to the newton', formula: 'l₁ = x / F', numbers: `${mm(recs[0]!.value!)} / 1 ${uk ? 'Н' : 'N'}` });
-      else out.push({ id: `${step === 'apple' ? 'da' : 'de'}:${i}`, title: uk ? (step === 'apple' ? 'яблуко, 100 г' : 'яйце, 58 г') : step === 'apple' ? 'the apple, 100 g' : 'the egg, 58 g', formula: 'F = m·g', numbers: `${n(recs[0]!.inputs?.['mass'] ?? 0, 3)} · ${n(recs[0]!.inputs?.['g'] ?? 0, 3)} ≈ ${n(recs[0]!.exact, 2)} ${uk ? 'Н' : 'N'}` });
-      return;
-    }
-    // Home-made scales: the sheet against water; the egg — sheets and water.
-    if (c.type === 'lab.scales') {
-      const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      const step = String(c['step']);
-      if (!r || step === 'zero') return;
-      const N = r.inputs?.['sheets'] ?? 0;
-      const V = r.inputs?.['water'] ?? 0;
-      const g = (x: number) => `${n(x, 3)} ${uk ? 'г' : 'g'}`;
-      if (step === 'check') out.push({ id: `sc:${i}`, title: uk ? 'аркуш A4 = вода зі шприца' : 'a sheet of A4 = water from the syringe', formula: uk ? 'm = V·1 г/мл' : 'm = V·1 g/mL', numbers: `${V} ${uk ? 'мл' : 'mL'} → ${g(V)}` });
-      else out.push({ id: `sg:${i}`, title: uk ? 'яйце: аркуші по 5 г і вода' : 'the egg: sheets of 5 g and water', formula: 'm = N·5 + V', numbers: `${N}·5 + ${V} = ${g(N * 5 + V)}` });
-      return;
-    }
-    // The Solar System's model: the scale from the ball; where the planets lie and how big; Kepler's T²/a³; Voyager.
-    if (c.type === 'lab.planets') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      const ids = planetIds();
-      const nm = (k: number) => tr(PLANETS[ids[k]!]!.name, locale);
-      const m = uk ? 'м' : 'm';
-      const mm = (x: number) => `${n(x * 1000, 2)} ${uk ? 'мм' : 'mm'}`;
-      const step = String(c['step']);
-      if (step === 'ball') {
-        const scale = recs[0]?.inputs?.['scale'] ?? 1;
-        out.push({ id: `pb:${i}`, title: uk ? `м’яч-Сонце: d = ${n(recs[0]!.value! * 100, 3)} см — масштаб моделі` : `the Sun-ball: d = ${n(recs[0]!.value! * 100, 3)} cm — the model's scale`, formula: 'k = d / D☉', numbers: `${n(recs[0]!.value!, 2)} ${m} / ${n(2 * SUN_RADIUS.value, 7)} ${uk ? 'км' : 'km'} ≈ 1 : ${n(1 / scale / 1e9, 2)} ${uk ? 'млрд' : 'bn'}` });
-      } else if (step === 'inner' || step === 'outer') {
-        // (One planet a step on the board — the Earth, Neptune; all of them are in the protocol.)
-        const key = recs.find((x) => ids[x.inputs?.['planet'] ?? -1] === (step === 'inner' ? 'earth' : 'neptune'));
-        if (key) out.push({ id: `${step === 'inner' ? 'pe' : 'po'}:${i}`, title: uk ? `${nm(key.inputs?.['planet'] ?? 0)}: відстань від м’яча й діаметр` : `${nm(key.inputs?.['planet'] ?? 0)}: distance from the ball and diameter`, formula: 'L = k·a, d = k·D', numbers: `${n(key.value!, 3)} ${m}; ${mm(key.inputs?.['size'] ?? 0)}` });
-      } else if (step === 'kepler') {
-        const v = recs.map((x) => x.value!);
-        const f2 = (x: number) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(x);
-        out.push({ id: `pk:${i}`, title: uk ? 'T²/a³ у роках і відстанях Землі — для всіх восьми планет' : 'T²/a³ in the Earth’s years and distances — for all eight planets', formula: 'T² / a³ ≈ 1', numbers: `${f2(Math.min(...v))} … ${f2(Math.max(...v))}` });
-      } else if (step === 'voyager') {
-        out.push({ id: `pv:${i}`, title: uk ? '«Вояджер-1», 14.02.1990: у 40,5 раза далі, ніж Земля від Сонця' : 'Voyager 1, 14.02.1990: 40.5 times further than the Earth from the Sun', formula: 'L = k · 40,5 · a⊕'.replace(',', uk ? ',' : '.'), numbers: `≈ ${n(recs[0]!.value!, 3)} ${m}; ${uk ? 'Земля звідти — крупинка' : 'the Earth from there — a grain of'} ${mm(recs[0]!.inputs?.['earth'] ?? 0)}` });
-      }
       return;
     }
     // The air: each reading; up the stairs — the density from Δp = ρ·g·Δh; on the ground — the air above each m²;

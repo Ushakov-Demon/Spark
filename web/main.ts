@@ -155,12 +155,7 @@ import {
   airPlace,
   airPlaceName,
   type AirWhere,
-  INNER,
-  PLANETS,
-  scalesSequence,
   experimentOf,
-  turnsText,
-  planetIds,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
 import { sceneOf } from './experiments/index.js';
@@ -510,93 +505,6 @@ function benchView(): BenchView | null {
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
   }
-  // Roots and gravity: the jar as the last step left it — standing, on its side with the roots bent, on the clinostat.
-  if (kind === 'gravi') {
-    type Step = 'upright' | 'side' | 'clino';
-    const done = log.filter((e) => e.ok && e.command.type === 'lab.gravi');
-    const lastStep = done.length ? (done[done.length - 1]!.command as unknown as { step: Step }).step : undefined;
-    const recs = done.length ? readingsOf([done[done.length - 1]!]).map((x) => x.record) : [];
-    const cg = c?.type === 'lab.gravi' ? (c as unknown as { step: Step }).step : undefined;
-    const end = recs.at(-1);
-    const read = cg && cg !== 'upright' && end ? `${end.value}°` : undefined;
-    const minutes = lastStep && lastStep !== 'upright' ? end?.inputs?.['time'] ?? 120 : undefined;
-    return { ...base, kind, gravi: { tilt: lastStep === 'side' ? 90 : 0, bend: lastStep === 'side' ? end?.exact ?? 0 : 0, ...(lastStep === 'clino' ? { clino: true, spin: 0 } : {}), ...(minutes !== undefined ? { minutes } : {}), ...(read ? { read } : {}), ...(cg ? { anim: cg } : {}) } };
-  }
-  // The rubber motor: the band on the dynamometer; the car where its last run stopped, the earlier stops marked.
-  if (kind === 'rubber') {
-    const uk = locale === 'uk';
-    const done = log.filter((e) => e.ok && e.command.type === 'lab.rubber');
-    const cr = c?.type === 'lab.rubber' ? (c as unknown as { step: 'band' | 'run'; turns?: number }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.rubber');
-    const step = cr?.step ?? (next?.kind === 'bench' ? (next.command as unknown as { step: 'band' | 'run' }).step : 'run');
-    const m = (x: number) => `${new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 2 }).format(x)} ${uk ? 'м' : 'm'}`;
-    const runs = done.filter((e) => (e.command as unknown as { step: string }).step === 'run').map((e) => ({ n: Number((e.command as unknown as { turns: number }).turns), s: readingsOf([e])[0]?.record.value ?? 0 }));
-    const unit = uk ? 'м' : 'm';
-    if (step === 'band') {
-      const bandRec = done.length ? readingsOf([done[0]!])[0]?.record : undefined;
-      const F = bandRec?.value ?? 0;
-      const band = { weights: 0, hang: 'band' as const, stretch: F / BENCH_SPRING_K.value, marks: [], newton: 1 / BENCH_SPRING_K.value, unit: uk ? 'Н' : 'N', ...(bandRec ? { read: formatMeasured('force', bandRec.value, 0.1, locale) } : {}) };
-      return { ...base, kind, rubber: { mode: 'band', band, x: 0, wound: 0, spin: 0, stops: [], range: 4, unit, ...(cr ? { anim: 'band' } : {}) } };
-    }
-    const last = cr && runs.length ? runs[runs.length - 1]! : undefined;
-    const stops = runs.slice(0, last ? -1 : undefined).map((r) => ({ x: r.s, label: `${turnsText(r.n, uk)}: ${m(r.s)}` }));
-    return { ...base, kind, rubber: { mode: 'car', x: last?.s ?? 0, wound: 0, spin: 0, stops, range: 4, unit, ...(last ? { read: `${turnsText(last.n, uk)}: ${m(last.s)}`, anim: 'run', turns: last.n } : {}) } };
-  }
-  // The home-made dynamometer: the marks so far, the scale once divided, what hangs on it now.
-  if (kind === 'dyno') {
-    type Step = 'marks' | 'scale' | 'apple' | 'egg';
-    const done = log.filter((e) => e.ok && e.command.type === 'lab.dyno');
-    const stepOf = (e: (typeof done)[number]) => (e.command as unknown as { step: Step }).step;
-    const recOf = (s: Step) => { const e = done.find((x) => stepOf(x) === s); return e ? readingsOf([e]).map((x) => x.record) : []; };
-    const marks = recOf('marks').map((r) => r.value ?? 0);
-    const newton = recOf('scale')[0]?.value ?? undefined;
-    const lastStep = done.length ? stepOf(done[done.length - 1]!) : undefined;
-    const hangRec = lastStep === 'apple' || lastStep === 'egg' ? recOf(lastStep)[0] : undefined;
-    const cs = c?.type === 'lab.dyno' ? (c as unknown as { step: Step }).step : undefined;
-    const unit = locale === 'uk' ? 'Н' : 'N';
-    const read = hangRec && cs ? formatMeasured('force', hangRec.value, 0.1, locale) : undefined;
-    return { ...base, kind, dyno: { weights: lastStep === 'marks' ? 3 : 0, ...(hangRec ? { hang: lastStep as 'apple' | 'egg' } : {}), stretch: lastStep === 'marks' ? marks[2] ?? 0 : hangRec?.inputs?.['pointer'] ?? 0, marks, ...(newton ? { newton } : {}), unit, ...(read ? { read } : {}), ...(cs ? { anim: cs } : {}) } };
-  }
-  // Home-made scales: the cups as the last step left them (empty and uneven before the first).
-  if (kind === 'scales') {
-    type Step = 'zero' | 'check' | 'egg';
-    const done = log.filter((e) => e.ok && e.command.type === 'lab.scales');
-    const lastStep = done.length ? (done[done.length - 1]!.command as unknown as { step: Step }).step : undefined;
-    const load = lastStep ? scalesSequence(lastStep).at(-1)! : { plasticine: false, sheet: false, egg: false, sheets: 0, water: 0 };
-    const cs = c?.type === 'lab.scales' ? (c as unknown as { step: Step }).step : undefined;
-    const r = cs && last ? readingsOf([last]).map((x) => x.record)[0] : undefined;
-    const read = r && cs !== 'zero' ? formatMeasured('mass', r.value, 0.001, locale) : undefined;
-    return { ...base, kind, scales: { load, units: locale === 'uk' ? ['г', 'мл'] : ['g', 'mL'], ...(read ? { read } : {}), ...(cs ? { anim: cs } : {}) } };
-  }
-  // The Solar System's model: the planets laid out so far; the orbits once they are set going; Voyager's view back.
-  if (kind === 'planets') {
-    const uk = locale === 'uk';
-    const done = log.filter((e) => e.command.type === 'lab.planets');
-    const step = (e: (typeof done)[number]) => (e.command as unknown as { step: string }).step;
-    const ids = planetIds();
-    // (Tenths: «21,5 м · 1,8 мм».)
-    const one = (x: number) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 1 }).format(x);
-    const color: Record<string, string> = { mercury: '#b0a89a', venus: '#e8d39a', earth: '#5a9fd8', mars: '#d9643a', jupiter: '#d8b48a', saturn: '#e6cf8c', uranus: '#9fd8e0', neptune: '#4a6fd8' };
-    const marks = done.filter((e) => ['inner', 'outer'].includes(step(e))).flatMap((e) => readingsOf([e]).map((x) => {
-      const id = ids[x.record.inputs?.['planet'] ?? 0]!;
-      const size = x.record.inputs?.['size'] ?? 0;
-      return { name: tr(PLANETS[id].name, locale), distance: x.record.value ?? 0, size, read: `${one(x.record.value ?? 0)} ${uk ? 'м' : 'm'} · ${one(size * 1000)} ${uk ? 'мм' : 'mm'}`, color: color[id]! };
-    }));
-    const last = c?.type === 'lab.planets' ? (c as unknown as { step: string }).step : undefined;
-    const sun = uk ? 'Сонце, 20 см' : 'the Sun, 20 cm';
-    const outer = done.some((e) => step(e) === 'outer');
-    if (last === 'kepler') {
-      const recs = readingsOf([[...done].pop()!]).map((x) => x.record);
-      const orbits = recs.filter((r) => INNER.includes(ids[r.inputs?.['planet'] ?? 0]!)).map((r) => { const id = ids[r.inputs?.['planet'] ?? 0]!; return { name: tr(PLANETS[id].name, locale), a: r.inputs?.['a'] ?? 1, t: r.inputs?.['t'] ?? 1, color: color[id]! }; });
-      return { ...base, kind, planets: { view: 'orbits', marks, range: 700, sun, orbits, years: 2, anim: 'kepler', note: uk ? 'Юпітер і далі — за межами малюнка' : 'Jupiter and beyond — off the picture', caption: uk ? 'вид згори, відстані в масштабі' : 'from above, distances to scale' } };
-    }
-    if (last === 'voyager') {
-      const v = readingsOf([[...done].pop()!])[0]!.record;
-      const probe = { name: uk ? '«Вояджер-1»' : 'Voyager 1', distance: v.value ?? 0, size: 0, read: `${Math.round(v.value ?? 0)} ${uk ? 'м' : 'm'}`, color: '#d8e2ea' };
-      return { ...base, kind, planets: { view: 'back', marks: [...marks, probe], range: 900, sun, dark: 1, dot: 1, anim: 'voyager', note: uk ? 'Земля — менше пікселя' : 'the Earth — less than a pixel' } };
-    }
-    return { ...base, kind, planets: { view: 'field', marks, range: outer ? 700 : 35, sun, caption: uk ? `поле: ${outer ? 700 : 35} м` : `the field: ${outer ? 700 : 35} m`, ...(last === 'ball' || last === 'inner' || last === 'outer' ? { anim: last } : {}) } };
-  }
   // The air: where the phone is (this step's, or the next one's) and what its barometer shows; the town and its height.
   if (kind === 'air') {
     const ac = c?.type === 'lab.air' ? (c as unknown as { place: string; where: AirWhere }) : undefined;
@@ -921,45 +829,6 @@ function allReadings() {
   return [...history.map((h) => h.result.log), session.result().log].flatMap((l) => readingsOf(l));
 }
 const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
-/** What the Professor says about the latest level or dynamometer reading. */
-/** The roots' photos, in words: «0 хв — 0°, 20 хв — 0°, …». */
-function graviShown(recs: readonly MeasurementRecord[]): string {
-  const uk = locale === 'uk';
-  return recs.map((r) => `${r.inputs?.['time'] ?? 0} ${uk ? 'хв' : 'min'} — ${r.value}°`).join(', ');
-}
-/** «1,74 м»: a distance on the tape, metres to the centimetre. */
-const metres = (x: number | null): string => `${new Intl.NumberFormat(locale === 'uk' ? 'uk-UA' : 'en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(x ?? 0)} ${locale === 'uk' ? 'м' : 'm'}`;
-/** A step of the home-made dynamometer, in words: the marks, the newton's length, the reading. */
-function dynoShown(step: string, recs: readonly MeasurementRecord[]): string {
-  const uk = locale === 'uk';
-  const mm = (x: number | null) => `${Math.round((x ?? 0) * 1000)} ${uk ? 'мм' : 'mm'}`;
-  if (step === 'marks') return uk ? `риски — ${recs.map((r) => mm(r.value)).join(', ')} від нуля` : `the marks — ${recs.map((r) => mm(r.value)).join(', ')} from zero`;
-  if (step === 'scale') return uk ? `1 Н — ${mm(recs[0]?.value ?? 0)}, поділка 0,1 Н — ${Math.round((recs[0]?.value ?? 0) * 1000) / 10} мм`.replace('.', ',') : `1 N — ${mm(recs[0]?.value ?? 0)}, a 0.1 N division — ${Math.round((recs[0]?.value ?? 0) * 1000) / 10} mm`;
-  const F = formatMeasured('force', recs[0]?.value ?? null, 0.1, locale);
-  return step === 'apple' ? (uk ? `яблуко — ${F}` : `the apple — ${F}`) : uk ? `яйце — ${F}` : `the egg — ${F}`;
-}
-/** A step of the home-made scales, in words: «Лінійка рівно», «5 мл води — 5 г». */
-function scalesShown(step: string, r: MeasurementRecord): string {
-  const uk = locale === 'uk';
-  const V = r.inputs?.['water'] ?? 0;
-  const N = r.inputs?.['sheets'] ?? 0;
-  const m = formatMeasured('mass', r.value, 0.001, locale);
-  if (step === 'zero') return uk ? 'Лінійка стоїть рівно: стаканчики врівноважено.' : 'The ruler is level: the cups balance.';
-  if (step === 'check') return uk ? `Рівно при ${V} мл води: аркуш — ${m}.` : `Level at ${V} mL of water: the sheet — ${m}.`;
-  return uk ? `Рівно при ${N} аркушах і ${V} мл води: яйце — ${m}.` : `Level at ${N} sheets and ${V} mL of water: the egg — ${m}.`;
-}
-/** A step of the Solar System's model, in words: «Земля — 21,5 м, 1,8 мм; …», the scale, T²/a³, the way to Voyager. */
-function planetsShown(c: { step: string }, recs: readonly MeasurementRecord[]): string {
-  const uk = locale === 'uk';
-  const ids = planetIds();
-  const one = (x: number, d = 1) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: d }).format(x);
-  const name = (r: MeasurementRecord) => tr(PLANETS[ids[r.inputs?.['planet'] ?? 0]!].name, locale);
-  if (c.step === 'ball') return uk ? `м’яч — ${one((recs[0]?.value ?? 0) * 100)} см: масштаб 1 : ${one(1 / (recs[0]?.inputs?.['scale'] ?? 1) / 1e9)} млрд` : `the ball — ${one((recs[0]?.value ?? 0) * 100)} cm: the scale 1 : ${one(1 / (recs[0]?.inputs?.['scale'] ?? 1) / 1e9)} bn`;
-  const two = (x: number) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(x);
-  if (c.step === 'kepler') return `T²/a³: ${recs.map((r) => `${name(r)} ${two(r.value ?? 0)}`).join(', ')}`;
-  if (c.step === 'voyager') return uk ? `до «Вояджера-1» — ${one(recs[0]?.value ?? 0, 0)} м. Обертаємося…` : `to Voyager 1 — ${one(recs[0]?.value ?? 0, 0)} m. We turn round…`;
-  return recs.map((r) => `${name(r)} — ${one(r.value ?? 0)} ${uk ? 'м' : 'm'}, ${one((r.inputs?.['size'] ?? 0) * 1000)} ${uk ? 'мм' : 'mm'}`).join('; ');
-}
 /** Where a body let into the tower stopped, in words (its reading: the mark, the lower layer, the share in it). */
 function towerPlace(body: TowerBody, r: { value: number | null; inputs?: Record<string, number> }): string {
   const uk = locale === 'uk';
@@ -989,7 +858,7 @@ function measureSay(): string {
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
   // (Taking the nail out of the coil has its own words.)
-  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type === 'lab.rubber' && (m.command as unknown as { step: string }).step === 'band' ? 'lab.rubber.band' : m.command.type === 'lab.dyno' && (m.command as unknown as { step: string }).step === 'scale' ? 'lab.dyno.scale' : m.command.type === 'lab.planets' && ['kepler', 'voyager'].includes((m.command as unknown as { step: string }).step) ? `lab.planets.${(m.command as unknown as { step: string }).step}` : m.command.type;
+  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type;
   if (instrumentBusy && experimentOf(m.command.type)) return tr(experimentOf(m.command.type)!.busy(m.command as never), locale);
   if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
@@ -1072,36 +941,11 @@ function measureSay(): string {
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
   }
-  // Roots and gravity: the bend in the photos.
-  if (m.command.type === 'lab.gravi') {
-    const step = (m.command as { step: string }).step;
-    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.gravi')!]).map((x) => x.record);
-    if (step === 'upright') return uk ? 'Корінці ростуть прямо вниз.' : 'The roots grow straight down.';
-    return `${graviShown(recs)}.`.replace(/^./, (x) => x.toUpperCase());
-  }
-  // The rubber motor: the band's pull; how far the car went.
-  if (m.command.type === 'lab.rubber') {
-    const cmd = m.command as { step: string; turns?: number };
-    if (cmd.step === 'band') return uk ? `Розтягнута на 10 см, гумка тягне з силою ${formatMeasured('force', r.value, 0.1, locale)}.` : `Stretched 10 cm, the band pulls with ${formatMeasured('force', r.value, 0.1, locale)}.`;
-    return uk ? `${turnsText(cmd.turns ?? 0, true).replace(/^./, (x) => x.toUpperCase())} — машинка проїхала ${metres(r.value)}.` : `${turnsText(cmd.turns ?? 0, false).replace(/^./, (x) => x.toUpperCase())} — the car went ${metres(r.value)}.`;
-  }
-  // The home-made dynamometer: the marks, the scale, the apple, the egg.
-  if (m.command.type === 'lab.dyno') {
-    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.dyno')!]).map((x) => x.record);
-    const shown = dynoShown((m.command as { step: string }).step, recs);
-    return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
-  }
   // Home-made scales: level; the sheet against water; the egg.
-  if (m.command.type === 'lab.scales') return scalesShown((m.command as { step: string }).step, r);
   // An experiment module: its own words for the step.
   const mod = experimentOf(m.command.type);
   if (mod) {
     const shown = mod.shown(m.command as never, readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === m.command.type)!]).map((x) => x.record), locale);
-    return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
-  }
-  // The Solar System's model: the scale, the planets' places, Kepler's ratio, the way to Voyager.
-  if (m.command.type === 'lab.planets') {
-    const shown = planetsShown(m.command as { step: string }, readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.planets')!]).map((x) => x.record));
     return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
   }
   // The air: the barometer's reading at the place.
@@ -2990,13 +2834,8 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
-      const grShown = c.type === 'lab.gravi' ? (c['step'] === 'upright' ? (locale === 'uk' ? 'прямо вниз' : 'straight down') : graviShown(readingsOf([e]).map((x) => x.record))) : null;
-      const rbShown = c.type === 'lab.rubber' && r.value !== null ? (c['step'] === 'band' ? formatMeasured('force', r.value, 0.1, locale) : `${turnsText(Number(c['turns']), locale === 'uk')}: ${metres(r.value)}`) : null;
-      const dyShown = c.type === 'lab.dyno' ? dynoShown(String(c['step']), readingsOf([e]).map((x) => x.record)) : null;
-      const scShown = c.type === 'lab.scales' ? scalesShown(String(c['step']), r).replace(/\.$/, '') : null;
       // (An experiment module's own words for the step.)
       const modShown = experimentOf(c.type)?.shown(c as never, readingsOf([e]).map((x) => x.record), locale) ?? null;
-      const plShown = c.type === 'lab.planets' ? planetsShown(c as unknown as { step: string }, readingsOf([e]).map((x) => x.record)) : null;
       const arShown = c.type === 'lab.air' && r.value !== null ? formatMeasured('pressure', r.value, 1, locale) : null;
       const gnRecs = c.type === 'lab.gnomon' ? readingsOf([e]).map((x) => x.record) : [];
       const gnShown = gnRecs.length ? gnRecs.map((x) => formatMeasured('length', x.value, 0.01, locale)).join(' · ') : null;
@@ -3014,7 +2853,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = modShown ?? grShown ?? rbShown ?? dyShown ?? scShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = modShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

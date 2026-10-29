@@ -4,8 +4,6 @@ import { DRAG_FPS, DRAG_START, DRAG_TRACK, dragFall } from '../../../src/scenari
 import { Channel, type Motion, type ProcedureStep } from '../../motion.js';
 import { SINK_LEAD, type BenchView } from './bench.js';
 import { sceneOf } from '../../experiments/index.js';
-import { scalesMasses, scalesSequence, scalesTilt } from '../../../src/scenarios/scales-bench.js';
-import { rootBend } from '../../../src/scenarios/gravi-bench.js';
 
 /**
  * How each instrument of the bench comes to its reading, described once — the motion itself is the general
@@ -26,18 +24,9 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
-  'lab.planets': { uk: 'Відміряємо рулеткою — крок за кроком…', en: 'Measuring with the tape — step by step…' },
   /** (The planets set going; the way out to Voyager.) */
-  'lab.planets.kepler': { uk: 'Планети біжать по орбітах — дивимося…', en: 'The planets run round their orbits — watch…' },
-  'lab.planets.voyager': { uk: 'Ідемо туди, де був «Вояджер-1»…', en: 'Walking out to where Voyager 1 was…' },
-  'lab.gravi': { uk: 'Хвилини біжать — фотографуємо корінці…', en: 'The minutes run on — photographing the roots…' },
-  'lab.rubber': { uk: 'Закручую гумку — і відпускаю…', en: 'Winding the band — and letting go…' },
   /** (The band stretched on the dynamometer.) */
-  'lab.rubber.band': { uk: 'Розтягую гумку на динамометрі…', en: 'Stretching the band on the dynamometer…' },
-  'lab.dyno': { uk: 'Пружина ще коливається — чекаємо, поки заспокоїться…', en: 'The spring is still bouncing — wait until it settles…' },
   /** (The scale being drawn.) */
-  'lab.dyno.scale': { uk: 'Наношу поділки — через 0,1 Н…', en: 'Drawing the divisions — every 0.1 N…' },
-  'lab.scales': { uk: 'Кладу по одному — дивимося на лінійку…', en: 'Adding one at a time — watching the ruler…' },
   'lab.air': { uk: 'Тиск на екрані ще змінюється — чекаємо…', en: 'The pressure on the screen is still changing — wait…' },
   /** (The airship climbing to 2 km.) */
   'lab.air.high': { uk: 'Дирижабль набирає висоту…', en: 'The airship is climbing…' },
@@ -82,11 +71,6 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'drag' && next.drag?.read) return dragRun(next, draw);
   if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
   if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
-  if (next.kind === 'planets' && next.planets?.anim) return planetsRun(next, draw);
-  if (next.kind === 'scales' && next.scales?.anim) return scalesRun(next, draw);
-  if (next.kind === 'dyno' && next.dyno?.anim) return dynoRun(next, draw);
-  if (next.kind === 'rubber' && next.rubber?.anim) return rubberRun(next, draw);
-  if (next.kind === 'gravi' && next.gravi?.anim) return graviRun(next, draw);
   if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
   if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
@@ -568,153 +552,7 @@ function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   };
 }
 
-/**
- * Roots and gravity: the jar laid on its side (1 s), then two hours in 6 s — the clock running, the root tips
- * bending by the measured law; on the clinostat the jar spinning (sped up) and the roots staying straight.
- */
-function graviRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const g = next.gravi!;
-  const anim = g.anim!;
-  const length = anim === 'upright' ? 0.8 : anim === 'side' ? 7 : 6;
-  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
-  const { anim: _a, read: _r, ...rest } = g;
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw({ ...next, gravi: { ...rest, ...(g.read ? { read: g.read } : {}) } });
-      const t = Number.isFinite(clock.value) ? clock.value : 0;
-      if (anim === 'upright') return draw({ ...next, gravi: rest });
-      if (anim === 'side') {
-        if (t < 1) return draw({ ...next, gravi: { ...rest, tilt: 90 * t, bend: 0, minutes: 0 } });
-        const minutes = Math.min(120, ((t - 1) / 6) * 120);
-        return draw({ ...next, gravi: { ...rest, tilt: 90, bend: rootBend(minutes), minutes } });
-      }
-      const minutes = Math.min(120, (t / 6) * 120);
-      draw({ ...next, gravi: { ...rest, spin: (t * 120) % 360, minutes } });
-    },
-  };
-}
 
-/**
- * The rubber motor: the band pulled down on the dynamometer (1.5 s); or the car — wound (the back wheels turned back,
- * the coil growing, 1.5 s), then let go: it speeds off and slows to its stop (constant slowing, 2.5 s), the band
- * unwinding on the way.
- */
-function rubberRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const r = next.rubber!;
-  const anim = r.anim!;
-  const length = anim === 'band' ? 1.5 : 4.4;
-  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
-  const { anim: _a, read: _r, ...rest } = r;
-  const wheelR = 0.03;
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw({ ...next, rubber: { ...rest, ...(r.read ? { read: r.read } : {}) } });
-      const t = Number.isFinite(clock.value) ? clock.value : 0;
-      if (anim === 'band') {
-        const { read: _b, ...b } = r.band!;
-        const u = Math.min(1, t / 1.2);
-        return draw({ ...next, rubber: { ...rest, band: { ...b, stretch: b.stretch * u } } });
-      }
-      const N = r.turns ?? 0;
-      if (t < 1.5) return draw({ ...next, rubber: { ...rest, x: 0, wound: (N * t) / 1.5, spin: (-N * t) / 1.5 } });
-      // Let go: s(u) = S·(1 − (1 − u)²) — fast at first, slowing to the stop.
-      const u = Math.min(1, (t - 1.5) / 2.5);
-      const x = r.x * (1 - (1 - u) ** 2);
-      draw({ ...next, rubber: { ...rest, x, wound: Math.max(0, N * (1 - u * 2)), spin: -N + x / (2 * Math.PI * wheelR) } });
-    },
-  };
-}
 
-/**
- * The home-made dynamometer: a load hung on — the pointer drops and bounces about its new place (1.8 s), the
- * weights one after another, a pencil mark each time; the scale drawn division by division (2 s).
- */
-function dynoRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const d = next.dyno!;
-  const anim = d.anim!;
-  const per = 1.8;
-  const length = anim === 'marks' ? 3 * per : anim === 'scale' ? 2 : per;
-  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
-  const { anim: _a, read: _r, ...rest } = d;
-  // A drop from x0 to x: a damped bounce, 0.55 s a swing.
-  const bounce = (x0: number, x: number, t: number) => x - (x - x0) * Math.exp(-t / 0.4) * Math.cos((2 * Math.PI * t) / 0.55);
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw({ ...next, dyno: { ...rest, ...(d.read ? { read: d.read } : {}) } });
-      const t = Number.isFinite(clock.value) ? clock.value : 0;
-      if (anim === 'scale') return draw({ ...next, dyno: { ...rest, drawn: Math.min(1, t / 2) } });
-      if (anim === 'marks') {
-        const k = Math.min(2, Math.floor(t / per));
-        const u = t - k * per;
-        const from = k === 0 ? 0 : d.marks[k - 1]!;
-        // (The mark goes on once the spring has settled.)
-        return draw({ ...next, dyno: { ...rest, weights: k + 1, stretch: bounce(from, d.marks[k]!, u), marks: d.marks.slice(0, k + (u > per - 0.4 ? 1 : 0)) } });
-      }
-      draw({ ...next, dyno: { ...rest, stretch: bounce(0, d.stretch, t) } });
-    },
-  };
-}
 
-/**
- * Home-made scales: the step's loads one after another — the plasticine; the sheet or the egg, then the sheets (0.35 s
- * each), then water a millilitre at a time (0.6 s, the syringe over the cup) — the beam swinging to each new tilt.
- */
-function scalesRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const s = next.scales!;
-  const seq = scalesSequence(s.anim!);
-  const lengths = seq.map((x, k) => (k === 0 ? 0.8 : x.water !== seq[k - 1]!.water ? 0.6 : x.sheets !== seq[k - 1]!.sheets ? 0.35 : 0.8));
-  const total = lengths.reduce((a, b) => a + b, 0) + 0.6;
-  const clock = new Channel(0, total, { kind: 'steady', speed: 1 }, 1e-4);
-  const { anim: _a, read: _r, ...rest } = s;
-  const tilt = (k: number) => { const m = scalesMasses(seq[k]!); return scalesTilt(m.left, m.right); };
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw({ ...next, scales: { ...rest, ...(s.read ? { read: s.read } : {}) } });
-      const t = Number.isFinite(clock.value) ? clock.value : 0;
-      let k = 0;
-      let at = 0;
-      while (k < seq.length - 1 && t >= at + lengths[k]!) at += lengths[k++]!;
-      // The beam swings to the new tilt in 0.3 s.
-      const u = Math.min(1, (t - at) / 0.3);
-      const from = k === 0 ? (s.anim === 'zero' ? 0 : tilt(0)) : tilt(k - 1);
-      const angle = from + (tilt(k) - from) * (1 - (1 - u) ** 2);
-      draw({ ...next, scales: { ...rest, load: seq[k]!, angle, syringe: seq[k]!.water > 0 } });
-    },
-  };
-}
 
-/**
- * The Solar System's model: the planets laid out one by one (the field widening to the giants); the orbits turning
- * for two of the Earth's years; Voyager's view back — the field stretching out to it, the dark, then the dot.
- */
-function planetsRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const p = next.planets!;
-  const anim = p.anim!;
-  // (The ball: a moment with the ruler — every reading waits for its motion to end.)
-  const length = anim === 'kepler' ? 6 : anim === 'voyager' ? 5 : anim === 'ball' ? 0.8 : 0.7 * 4;
-  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
-  const { anim: _a, ...rest } = p;
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw({ ...next, planets: rest });
-      const t = Number.isFinite(clock.value) ? clock.value : 0;
-      if (anim === 'ball') return draw({ ...next, planets: rest });
-      if (anim === 'kepler') return draw({ ...next, planets: { ...rest, years: (2 * t) / length } });
-      if (anim === 'voyager') {
-        // (1.5 s out along the field to the probe, 2 s of dark coming, then the dot.)
-        const out = Math.min(1, t / 1.5);
-        return draw({ ...next, planets: { ...rest, view: t < 1.5 ? 'field' : 'back', range: 700 + 200 * out, dark: Math.max(0, Math.min(1, (t - 1.5) / 2)), dot: Math.max(0, Math.min(1, (t - 3.6) / 1)) } });
-      }
-      // Four planets of the step, 0.7 s each; the giants' field opens out from the inner one's 35 m.
-      const before = p.marks.length - 4;
-      const shown = before + Math.min(4, Math.floor(t / 0.7) + 1);
-      const range = anim === 'outer' ? 35 + (700 - 35) * Math.min(1, t / 0.7) : p.range;
-      draw({ ...next, planets: { ...rest, marks: p.marks.slice(0, shown), range } });
-    },
-  };
-}

@@ -39,12 +39,7 @@ import { DRAG_COMMANDS, DRAG_TEXT, type DragCommand } from './drag-bench.js';
 import { TOWER_COMMANDS, TOWER_TEXT, type TowerCommand } from './tower-bench.js';
 import { GNOMON_COMMANDS, GNOMON_TEXT, type GnomonCommand } from './gnomon-bench.js';
 import { AIR_COMMANDS, AIR_TEXT, type AirCommand } from './air-bench.js';
-import { PLANETS_COMMANDS, PLANETS_TEXT, type PlanetsCommand } from './planets-bench.js';
 import { EXPERIMENTS, type ExperimentCommand, type ExperimentKind } from '../experiments/index.js';
-import { SCALES_COMMANDS, SCALES_TEXT, type ScalesCommand } from './scales-bench.js';
-import { DYNO_COMMANDS, DYNO_TEXT, type DynoCommand } from './dyno-bench.js';
-import { RUBBER_COMMANDS, RUBBER_TEXT, type RubberCommand } from './rubber-bench.js';
-import { GRAVI_COMMANDS, GRAVI_TEXT, type GraviCommand } from './gravi-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -53,21 +48,8 @@ import { GRAVI_COMMANDS, GRAVI_TEXT, type GraviCommand } from './gravi-bench.js'
  * instruments show is rounded to their divisions, as on the real ones.
  */
 
-/** The spring of the 3B set (Hooke's law) that suits 100 g weights: 25 N/m, ≈ 4 cm per weight. */
-export const BENCH_SPRING_K: SourcedValue = sv(25, 'N/m', 'the stiffest spring of the set', 'single-source', 0.01, [cite('3b-helical-springs', 'Set of Helical Springs for Hooke’s Law 1003376: 2.5, 5, 10, 15, 25 N/m', 'new spring', 25)], 'The listing gives nominal constants; a real spring may differ by a few per cent.');
-/** The springs of the set, N/m (nominal): one is chosen for the lab work. */
-export const SPRING_SET: readonly number[] = [2.5, 5, 10, 15, 25];
-/** Its length unloaded, m: the spring of this lab (the listing gives no lengths). */
-export const BENCH_SPRING_L0 = 0.08;
-/** One slotted weight, kg: as in the lab work (four of 100 g). */
-export const BENCH_WEIGHT: SourcedValue = sv(0.1, 'kg', 'one slotted weight', 'single-source', 0.01, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 6, обладнання: 4 тягарці масою 100 г кожен', '—', 0.1)]);
-/** Wood sliding on wood. */
-export const WOOD_ON_WOOD: SourcedValue = sv(0.25, '', 'dry wood on dry wood, sliding', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', '§ 26, таблиця «Значення коефіцієнтів тертя ковзання»: дерево по дереву 0,25', '—', 0.25)], 'Tables give mean values: Wikipedia lists 0.25–0.62 for wood on wood (static) — it depends on the wood and how smooth it is.');
-/** Paper on wood: the block slid on a sheet of paper laid on the board (the same pair of materials). */
-export const PAPER_ON_WOOD: SourcedValue = sv(0.4, '', 'paper on wood, sliding', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', '§ 26, таблиця «Значення коефіцієнтів тертя ковзання»: папір по дереву 0,40', '—', 0.4)], 'A table’s mean value for the pair of materials.');
-/** The pine block of the lab works: its edges, m (a block of the lab; its mass follows from the wood's density). */
-export const BENCH_BLOCK = { substance: 'wood', edges: [0.12, 0.06, 0.04] as const };
-export const blockMass = (): number => BENCH_BLOCK.edges[0] * BENCH_BLOCK.edges[1] * BENCH_BLOCK.edges[2] * SUBSTANCES.wood.liquid.density.value;
+export { BENCH_SPRING_K, SPRING_SET, BENCH_SPRING_L0, BENCH_WEIGHT, WOOD_ON_WOOD, PAPER_ON_WOOD, BENCH_BLOCK, blockMass } from './bench-kit.js';
+import { BENCH_SPRING_K, SPRING_SET, BENCH_SPRING_L0, BENCH_WEIGHT, WOOD_ON_WOOD, PAPER_ON_WOOD, BENCH_BLOCK, blockMass } from './bench-kit.js';
 /** A pupil's ruler: millimetre divisions. */
 export const RULER_DIVISION = 0.001;
 const ruler = (x: number) => Math.round(x / RULER_DIVISION) * RULER_DIVISION;
@@ -101,7 +83,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand | CartsCommand | DragCommand | TowerCommand | GnomonCommand | AirCommand | PlanetsCommand | ExperimentCommand | ScalesCommand | DynoCommand | RubberCommand | GraviCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand | CartsCommand | DragCommand | TowerCommand | GnomonCommand | AirCommand | ExperimentCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -180,7 +162,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS, ...CARTS_COMMANDS, ...DRAG_COMMANDS, ...TOWER_COMMANDS, ...GNOMON_COMMANDS, ...AIR_COMMANDS, ...PLANETS_COMMANDS, ...EXPERIMENTS.flatMap((m) => m.commands as readonly CommandHandler<never>[]), ...SCALES_COMMANDS, ...DYNO_COMMANDS, ...RUBBER_COMMANDS, ...GRAVI_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS, ...CARTS_COMMANDS, ...DRAG_COMMANDS, ...TOWER_COMMANDS, ...GNOMON_COMMANDS, ...AIR_COMMANDS, ...EXPERIMENTS.flatMap((m) => m.commands as readonly CommandHandler<never>[])] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -205,12 +187,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...(TOWER_TEXT as Record<TowerCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(GNOMON_TEXT as Record<GnomonCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(AIR_TEXT as Record<AirCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(PLANETS_TEXT as Record<PlanetsCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   // The experiment modules: their steps' words, by command type.
-  ...(SCALES_TEXT as Record<ScalesCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(DYNO_TEXT as Record<DynoCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(RUBBER_TEXT as Record<RubberCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(GRAVI_TEXT as Record<GraviCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(INDUCT_TEXT as Record<InductCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(MAGNET_TEXT as Record<MagnetCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(VESSEL_TEXT as Record<VesselCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -270,14 +247,9 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-type OldBenchKind = 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'scales' | 'dyno' | 'rubber' | 'gravi';
+type OldBenchKind = 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air';
 const OLD_SETUP: Record<OldBenchKind, LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
-  gravi: { uk: 'Скляна банка, паперовий рушник, вода, пророслі зерна кукурудзи; телефон на штативі, транспортир; клиностат — моторчик, що повільно обертає банку (1 оберт за хвилину)', en: 'A glass jar, a paper towel, water, sprouted maize grains; a phone on a stand, a protractor; a clinostat — a small motor turning the jar slowly (1 turn a minute)' },
-  rubber: { uk: 'Машинка з картону: дві осі (задня — олівець), колеса з кришечок, офісна гумка; саморобний динамометр, рулетка, довгий коридор', en: 'A cardboard car: two axles (the back one a pencil), bottle-cap wheels, an office rubber band; the home-made dynamometer, a tape measure, a long corridor' },
-  dyno: { uk: 'Дощечка зі смужкою паперу, цвях, пружина з набору (25 Н/м), дротяна стрілка, гачок зі скріпки, три тягарці по 100 г, лінійка й олівець; невелике яблуко, яйце в пакетику', en: 'A board with a strip of paper, a nail, a spring of the set (25 N/m), a wire pointer, a paper-clip hook, three 100 g weights, a ruler and a pencil; a small apple, an egg in a little bag' },
-  scales: { uk: 'Лінійка 30 см, нитка, два стаканчики від йогурту, пластилін, аркуші офісного паперу A4 (80 г/м²), шприц на 10 мл і склянка води, куряче яйце', en: 'A 30 cm ruler, thread, two yoghurt cups, plasticine, sheets of A4 office paper (80 g/m²), a 10 mL syringe and a glass of water, a hen’s egg' },
-  planets: { uk: 'М’яч діаметром 20 см (Сонце), лінійка, рулетка, шкільний стадіон і довга вулиця; таблиця NASA з розмірами, відстанями й періодами планет', en: 'A 20 cm ball (the Sun), a ruler, a tape measure, a school field and a long street; NASA’s table of the planets’ sizes, distances and periods' },
   air: { uk: 'Смартфон із барометром (застосунок показує тиск до сотих гектопаскаля), ліфт багатоповерхівки, політ на дирижаблі', en: 'A smartphone with a barometer (an app shows the pressure to hundredths of a hectopascal), a block of flats with a lift, a flight in an airship' },
   gnomon: { uk: 'Метрова палиця (гномон), виска, щоб поставити її прямовисно, рулетка, годинник (місцевий час)', en: 'A metre stick (a gnomon), a plumb line to stand it upright, a tape measure, a clock (the local time)' },
   tower: { uk: 'Мірний циліндр на 250 мл, гліцерин, вода, соняшникова олія, спирт (по 50 мл), харчовий барвник, сталева гайка, шматочки оргскла й поліетилену, сосновий кубик', en: 'A 250 mL measuring cylinder, glycerol, water, sunflower oil, ethanol (50 mL each), food colouring, a steel nut, pieces of acrylic glass and polyethylene, a pine cube' },

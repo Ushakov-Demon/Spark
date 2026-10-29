@@ -6,7 +6,7 @@ import { G } from '../domains/mechanics/constants.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SourcedValue } from '../knowledge/types.js';
-import { BENCH_WEIGHT } from './bench.js';
+import { BENCH_WEIGHT } from './bench-kit.js';
 
 /**
  * Mass as the measure of inertia and of gravity (grade 7, the textbook's § 16): two light carts on the table with a

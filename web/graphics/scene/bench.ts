@@ -1,7 +1,7 @@
 import { TABLE } from './constants.js';
+import { CM, WOOD, WOOD_EDGE, STEEL, DARK, THREAD, weightsSvg, springSvg, rulerSvg, dynamometerSvg, stopwatchSvg, ballSvg, PLASTICINE } from './kit.js';
 import type { ExperimentKind } from '../../../src/experiments/index.js';
 import { sceneOf } from '../../experiments/index.js';
-import { scalesMasses, scalesTilt, type ScalesLoad } from '../../../src/scenarios/scales-bench.js';
 
 /**
  * The mechanics bench of grade 7, drawn on the table instead of the vessel: a stand with a spring, slotted
@@ -10,7 +10,7 @@ import { scalesMasses, scalesTilt, type ScalesLoad } from '../../../src/scenario
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | ExperimentKind | 'scales' | 'dyno' | 'rubber' | 'gravi';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | ExperimentKind;
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -64,41 +64,8 @@ export interface BenchView {
   /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
   /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
   readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
-  /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
-  /**
-   * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
-   * dropped below the card (m), its tilt (°), and the slow motion's label.
-   */
-  /**
-   * The Solar System's model: the field with the Sun-ball and the planets laid out (`marks`, as many as are out so far;
-   * the field shows `range` metres); the orbits seen from above, the planets `years` on; Voyager's view back (`dark` —
-   * how far the frame has gone dark, `dot` — the pale blue dot showing).
-   */
-  /**
-   * Roots and gravity: the jar of maize seedlings standing, on its side (`tilt` 0…90°, turning it over), or on the
-   * clinostat (`spin` — its turn, degrees); the roots' tips bent down by `bend` degrees; the clock — `minutes`.
-   */
-  readonly gravi?: { readonly tilt: number; readonly bend: number; readonly clino?: boolean; readonly spin?: number; readonly minutes?: number; readonly read?: string; /** The step just done, to be played. */ readonly anim?: 'upright' | 'side' | 'clino' };
-  /**
-   * The rubber motor: the band on the home-made dynamometer (`band` — the dynamometer's view); or the car in the
-   * corridor — at `x` m along the tape, its back axle `wound` turns wound (the band's coil), its wheels turned by
-   * `spin` turns; the earlier runs' stops (`stops`); the tape shows `range` m.
-   */
-  readonly rubber?: { readonly mode: 'band' | 'car'; readonly band?: BenchView['dyno']; readonly x: number; readonly wound: number; readonly spin: number; readonly stops: readonly { readonly x: number; readonly label: string }[]; readonly range: number; readonly unit: string; readonly read?: string; /** The step just done, to be played: the band; the car's run of so many turns. */ readonly anim?: 'band' | 'run'; readonly turns?: number };
-  /**
-   * A home-made dynamometer: what hangs on it (`weights` 100 g each, or the apple, or the egg in its bag), the pointer
-   * `stretch` m below the zero, the pencil `marks` (m), the scale once divided (`newton` — its length, m; `drawn` 0…1 —
-   * how much of it is drawn so far); `unit` — «Н».
-   */
-  readonly dyno?: { readonly weights: number; readonly hang?: 'apple' | 'egg' | 'band'; readonly stretch: number; readonly marks: readonly number[]; readonly newton?: number; readonly drawn?: number; readonly unit: string; readonly read?: string; /** The step just done, to be played. */ readonly anim?: 'marks' | 'scale' | 'apple' | 'egg' };
-  /**
-   * Home-made scales: what lies in the cups (`load`), the beam's tilt (degrees, + — the left cup down; without it, from
-   * the masses), the syringe over the right cup while water goes in; `units` — «г», «мл».
-   */
-  readonly scales?: { readonly load: ScalesLoad; readonly angle?: number; readonly syringe?: boolean; readonly units: readonly [string, string]; readonly read?: string; /** The step just done, to be played. */ readonly anim?: 'zero' | 'check' | 'egg' };
   /** An experiment module's own view (web/experiments), drawn by its scene. */
   readonly scene?: unknown;
-  readonly planets?: { readonly view: 'field' | 'orbits' | 'back'; readonly marks: readonly { readonly name: string; readonly distance: number; readonly size: number; readonly read: string; readonly color: string }[]; readonly range: number; readonly sun: string; readonly years?: number; readonly orbits?: readonly { readonly name: string; readonly a: number; readonly t: number; readonly color: string }[]; readonly dark?: number; readonly dot?: number; readonly caption?: string; readonly note?: string; /** The step just done, to be played. */ readonly anim?: 'ball' | 'inner' | 'outer' | 'kepler' | 'voyager' };
   /**
    * The air: where the phone is — on the ground floor, on the ninth (`floor` between them while the lift goes), or in
    * the airship over the town; its barometer's reading; the labels.
@@ -128,6 +95,10 @@ export interface BenchView {
   readonly touch?: { readonly case: string; readonly k: number; readonly read?: string };
   /** Inertia's motion: the card's speed, the coin's drag (μ·g), when the card leaves it, whether it slipped and dropped in. */
   readonly coinRun?: { readonly v: number; readonly a: number; readonly exit: number; readonly slipped: boolean; readonly inGlass: boolean; readonly slow?: string };
+  /**
+   * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
+   * dropped below the card (m), its tilt (°), and the slow motion's label.
+   */
   readonly coin?: { readonly card: number; readonly x: number; readonly drop: number; readonly tilt: number; readonly slow?: string; readonly read?: string };
   /** A snail: the surface it crawls on, how far it has gone (m), the distance read. */
   readonly snail?: { readonly surface: string; readonly at: number; readonly read?: string };
@@ -154,6 +125,7 @@ export interface BenchView {
    * last top's reading; the energy bars' labels (potential, kinetic, heat and sound).
    */
   readonly bounce?: { readonly ball: string; readonly size: number; readonly y: number; readonly squash: number; readonly mech: number; readonly marks: readonly number[]; readonly read?: string; readonly labels: readonly [string, string, string] };
+  /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
   readonly lift?: { readonly phase: string; readonly y: number; readonly force: number; readonly read?: string; readonly fall?: number; readonly rest?: number; readonly diff?: string };
   readonly forces?: { readonly hold: 'one' | 'two' | 'down'; readonly at: number; readonly a: number; readonly b: number; readonly loaded: boolean; readonly readA?: string; readonly readB?: string };
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
@@ -170,47 +142,6 @@ export interface BenchView {
   readonly run?: { readonly seconds: number; readonly period?: number; readonly count?: number; readonly amplitude?: number };
 }
 
-const CM = 6;
-const WOOD = '#d8a86a';
-const WOOD_EDGE = '#9a6b33';
-const STEEL = '#8d949c';
-const DARK = '#3a3f46';
-/** Threads and hooks: light, so they show against the dark green board behind the table. */
-const THREAD = '#efe9d6';
-
-/** Slotted weights stacked: each a short cylinder. */
-function weightsSvg(x: number, top: number, n: number, w = 22, h = 10): string {
-  return Array.from({ length: n }, (_, i) => `<rect x="${x - w / 2}" y="${top + i * h}" width="${w}" height="${h - 1}" rx="2" style="fill:#b9a26b;stroke:#7a6533"/><path d="M${x - w / 2 + 2},${top + i * h + 3} h${w - 4}" style="stroke:rgba(255,255,255,0.45)"/>`).join('');
-}
-
-/** A coil spring from (x, top) down `len` units. */
-function springSvg(x: number, top: number, len: number): string {
-  const turns = 14;
-  const hook = 6;
-  const body = Math.max(8, len - 2 * hook);
-  const pts = Array.from({ length: turns * 2 + 1 }, (_, i) => `${x + (i === 0 || i === turns * 2 ? 0 : i % 2 ? 7 : -7)},${top + hook + (body * i) / (turns * 2)}`).join(' ');
-  return `<path d="M${x},${top} v${hook}" style="stroke:${THREAD};stroke-width:1.5;fill:none"/><polyline points="${pts}" style="stroke:${STEEL};stroke-width:1.8;fill:none"/><path d="M${x},${top + hook + body} v${hook}" style="stroke:${THREAD};stroke-width:1.5;fill:none"/>`;
-}
-
-/** A ruler with centimetre marks, vertical (from y0 down) or horizontal (from x0 right). */
-function rulerSvg(x0: number, y0: number, cm: number, vertical: boolean, unit = CM): string {
-  const len = cm * unit;
-  const ticks = Array.from({ length: cm * 2 + 1 }, (_, i) => {
-    const d = (i * unit) / 2;
-    const long = i % 10 === 0 ? 7 : i % 2 === 0 ? 5 : 3;
-    return vertical ? `<path d="M${x0},${y0 + d} h${long}"/>` : `<path d="M${x0 + d},${y0} v${long}"/>`;
-  }).join('');
-  const labels = Array.from({ length: Math.floor(cm / 5) + 1 }, (_, i) => (vertical ? `<text x="${x0 + 9}" y="${y0 + i * 5 * unit + 3}">${i * 5}</text>` : `<text x="${x0 + i * 5 * unit}" y="${y0 + 15}" text-anchor="middle">${i * 5}</text>`)).join('');
-  const body = vertical ? `<rect x="${x0 - 2}" y="${y0 - 3}" width="22" height="${len + 6}" rx="2"/>` : `<rect x="${x0 - 3}" y="${y0 - 2}" width="${len + 6}" height="20" rx="2"/>`;
-  return `<g class="bench-ruler">${body}<g class="ticks">${ticks}</g><g class="labels">${labels}</g></g>`;
-}
-
-/** A spring dynamometer, horizontal or hanging, with its reading. */
-function dynamometerSvg(x: number, y: number, horizontal: boolean, display: string): string {
-  return horizontal
-    ? `<rect class="dyn-case" x="${x}" y="${y - 9}" width="86" height="18" rx="5"/><g class="dyn-ticks">${Array.from({ length: 11 }, (_, i) => `<path d="M${x + 10 + i * 6.5},${y - 6} v${i % 5 === 0 ? 7 : 4}"/>`).join('')}</g><text class="dyn-text" x="${x + 43}" y="${y - 14}" text-anchor="middle">${display}</text>`
-    : `<rect class="dyn-case" x="${x - 9}" y="${y}" width="18" height="80" rx="5"/><g class="dyn-ticks">${Array.from({ length: 11 }, (_, i) => `<path d="M${x - 5},${y + 8 + i * 6.5} h${i % 5 === 0 ? 7 : 4}"/>`).join('')}</g><text class="dyn-text" x="${x + 14}" y="${y + 44}">${display}</text>`;
-}
 
 /** The block seen from the side (length × height), lying on y = base. */
 function blockSvg(x: number, base: number, block: readonly [number, number, number]): string {
@@ -295,11 +226,6 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'tower') return towerSvg(v.tower);
   if (v.kind === 'gnomon') return gnomonSvg(v.gnomon);
   if (v.kind === 'air') return airSvg(v.air);
-  if (v.kind === 'planets') return planetsSvg(v.planets);
-  if (v.kind === 'scales') return scalesSvg(v.scales);
-  if (v.kind === 'dyno') return dynoSvg(v.dyno);
-  if (v.kind === 'gravi') return graviSvg(v.gravi);
-  if (v.kind === 'rubber') return v.rubber?.mode === 'band' ? dynoSvg(v.rubber.band) : rubberSvg(v.rubber);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -349,11 +275,6 @@ export function benchSvg(v: BenchView): string {
   return `${top}${blockSvg(x, base, v.block)}${e?.index === 1 ? `<path class="bench-mark" d="M${x + w + 2},${base - h} l${depth},${-depth * 0.6}"/>` : ''}${ruler}${label}`;
 }
 
-/** A stopwatch standing on the table at x, its bottom just above it: its display (and, when the drawing is sped up, by how much). */
-function stopwatchSvg(sw: NonNullable<BenchView['stopwatch']>, x: number): string {
-  const y = TABLE - 30;
-  return `<g class="stopwatch"><rect x="${x - 3}" y="${y - 30}" width="6" height="8" rx="1" style="fill:${DARK}"/><circle cx="${x}" cy="${y}" r="24" style="fill:#f4f1e8;stroke:${DARK};stroke-width:3"/><rect x="${x - 19}" y="${y - 8}" width="38" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-text" x="${x}" y="${y + 4.5}" text-anchor="middle">${sw.display}</text>${sw.fast && sw.fast > 1.05 ? `<text class="bench-reading" x="${x}" y="${y - 38}" text-anchor="middle">⏩ ×${Math.round(sw.fast)}</text>` : ''}</g>`;
-}
 
 /** Units of the drawing per metre for the motion benches: the 1 m pendulum fits between the board's top and the table. */
 const M = 230;
@@ -413,10 +334,6 @@ function motionSvg(v: BenchView): string {
   return `${standSvg(pivotX - 80, pivotX, pivotY)}<circle cx="${pivotX}" cy="${pivotY + 4}" r="5" style="fill:none;stroke:${STEEL};stroke-width:2"/><path d="M${pivotX},${pivotY + 8} L${bx},${by}" style="stroke:${THREAD};stroke-width:1.2"/>${ballSvg(bx, by + r, r)}${tape}`;
 }
 
-/** A steel ball with a highlight. */
-function ballSvg(x: number, y: number, r: number, color = '#9aa3ad'): string {
-  return `<circle cx="${x}" cy="${y}" r="${r}" style="fill:${color};stroke:${DARK}"/><circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.3}" style="fill:rgba(255,255,255,0.75)"/>`;
-}
 
 /**
  * The lever ruler on its axis in the stand: holes every 5 cm, the weights hanging on threads, the dynamometer
@@ -534,184 +451,10 @@ function sinkSvg(s: BenchView['sink']): string {
   return `${glass}${marks}${body}${label}`;
 }
 
-/**
- * The Solar System's model. The field: the Sun-ball on the left, a tape along the ground, each planet a dot (drawn
- * bigger than to scale — its true size is in its label) at its distance. The orbits: from above, the inner planets
- * round the Sun at the true ratio of their distances, turning at their true periods. Voyager's view back: the frame
- * goes dark, slanting beams of scattered sunlight cross it, and in one of them — a single pale blue dot.
- */
-function planetsSvg(p: BenchView['planets']): string {
-  if (!p) return '';
-  if (p.view === 'orbits') {
-    const cx = 470;
-    const cy = 165;
-    const k = 78;
-    const sun = `<circle cx="${cx}" cy="${cy}" r="9" style="fill:#ffd54a;stroke:#f0a500;stroke-width:1.5"/>`;
-    const rings = (p.orbits ?? []).map((o) => {
-      const ang = (2 * Math.PI * (p.years ?? 0)) / o.t - Math.PI / 2;
-      const x = cx + o.a * k * Math.cos(ang);
-      const y = cy + o.a * k * Math.sin(ang);
-      return `<circle cx="${cx}" cy="${cy}" r="${o.a * k}" style="fill:none;stroke:rgba(216,226,234,0.35);stroke-dasharray:3 4"/><circle cx="${x}" cy="${y}" r="4" style="fill:${o.color};stroke:#1d2a36"/><text class="bench-label" x="${x + 7}" y="${y - 6}">${o.name}</text>`;
-    }).join('');
-    const backdrop = `<circle cx="${cx}" cy="${cy}" r="${1.6 * k}" style="fill:rgba(16,24,20,0.88)"/>`;
-    return `${backdrop}${sun}${rings}${p.note ? `<text class="bench-label" x="${cx}" y="${cy + 150}" text-anchor="middle">${p.note}</text>` : ''}${p.caption ? `<text class="bench-reading" x="${cx}" y="${cy - 130}" text-anchor="middle">${p.caption}</text>` : ''}`;
-  }
-  const ground = TABLE - 18;
-  const x0 = 175;
-  const x1 = 585;
-  const at = (d: number) => x0 + (d / p.range) * (x1 - x0);
-  const field = `<path d="M${x0 - 30},${ground + 6} H${x1 + 10}" style="stroke:#7fae6a;stroke-width:3"/><path d="M${x0},${ground + 2} H${x1}" style="stroke:#f1d36b;stroke-width:2;stroke-dasharray:2 3"/><circle cx="${x0 - 12}" cy="${ground - 8}" r="12" style="fill:#ffd54a;stroke:#f0a500;stroke-width:1.5"/><text class="bench-label" x="${x0 - 12}" y="${ground - 26}" text-anchor="middle">${p.sun}</text>`;
-  // (Planets too close together for labels — the inner ones on the long field — go unlabelled.)
-  let lastLabel = -Infinity;
-  const dots = p.marks.map((m, i) => {
-    const x = at(m.distance);
-    const r = Math.max(2, Math.min(7, 2 + m.size * 300));
-    const label = x - lastLabel > 40;
-    if (label) lastLabel = x;
-    const up = i % 2 === 0;
-    return `<circle cx="${x}" cy="${ground - r}" r="${r}" style="fill:${m.color};stroke:#1d2a36;stroke-width:0.8"/>${label ? `<text class="bench-label" x="${x}" y="${up ? ground - 2 * r - 18 : ground - 2 * r - 6}" text-anchor="middle">${m.name}</text>` : ''}`;
-  }).join('');
-  const scale = `<text class="bench-label" x="${x1}" y="${ground + 22}" text-anchor="end">${p.caption ?? ''}</text>`;
-  if (p.view === 'back') {
-    // The view back: dark coming over the board, the beams, the dot (a pixel and a half) in the middle beam.
-    const d = p.dark ?? 0;
-    const beam = (x: number, w: number, o: number) => `<path d="M${x},14 l${w},0 l-150,300 l${-w},0 Z" style="fill:rgba(255,214,150,${o * d})"/>`;
-    const dot = p.dot ? `<circle cx="432" cy="168" r="1.6" style="fill:rgba(170,210,255,${p.dot})"/>` : '';
-    return `${field}${dots}${scale}<rect x="18" y="12" width="586" height="${ground - 4}" style="fill:rgba(4,6,10,${0.96 * d})"/>${beam(380, 34, 0.18)}${beam(470, 60, 0.26)}${beam(560, 22, 0.14)}${dot}${p.dot && p.note ? `<text class="bench-label" x="440" y="${ground - 20}" style="fill:rgba(200,215,230,${p.dot})">${p.note}</text>` : ''}`;
-  }
-  return `${field}${dots}${scale}`;
-}
 
-/**
- * Roots and gravity: a glass jar with a paper towel inside, three maize grains against the glass and their roots.
- * The jar turned by `tilt` (on its side at 90°); each root straight from its grain, then its tip bent towards the
- * Earth by `bend` (drawn in the jar's frame, so the bend shows against the floor); on the clinostat the jar on an axle
- * with a little motor. A clock with the minutes since the jar was laid down.
- */
-function graviSvg(g: BenchView['gravi']): string {
-  if (!g) return '';
-  const cx = 470;
-  const w = 110;
-  const h = 150;
-  const turn = g.clino ? 90 + (g.spin ?? 0) : g.tilt;
-  // On the table the jar stands (or lies) on it, its centre as high as half its turned height; on the clinostat — on the axle.
-  const r = (g.tilt * Math.PI) / 180;
-  const cy = g.clino ? 170 : TABLE - 4 - (h / 2) * Math.cos(r) - (w / 2 + 8) * Math.sin(r);
-  const jar = `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="10" style="fill:rgba(220,236,245,0.25);stroke:#d8e2ea;stroke-width:2"/><rect x="${-w / 2 + 6}" y="${-h / 2 + 18}" width="${w - 12}" height="${h - 26}" rx="4" style="fill:rgba(250,250,247,0.5)"/><rect x="${-w / 2 - 3}" y="${-h / 2 - 10}" width="${w + 6}" height="12" rx="3" style="fill:#8d949c"/>`;
-  // Three grains; their roots grow along the jar (+y in its frame), then the tip turns towards the real down: on its
-  // side (turned 90° clockwise) that is the jar's +x, so the tip goes (sin b, cos b) of the jar's frame.
-  const b = ((g.clino ? 0 : g.bend) * Math.PI) / 180;
-  const roots = [-34, 0, 34].map((x) => {
-    const y0 = -h / 2 + 34;
-    const y1 = y0 + 8 + 56;
-    const tip = 18;
-    return `<ellipse cx="${x}" cy="${y0}" rx="8" ry="10" style="fill:#f2c94c;stroke:#c9a227"/><path d="M${x},${y0 + 8} V${y1} Q${x},${y1 + tip * 0.5} ${x + tip * Math.sin(b)},${y1 + tip * Math.cos(b)}" style="fill:none;stroke:#fbf6e9;stroke-width:3;stroke-linecap:round"/>`;
-  }).join('');
-  const body = `<g transform="translate(${cx},${cy}) rotate(${turn})">${jar}${roots}</g>`;
-  const stand = g.clino ? `<rect x="${cx - 8}" y="${cy}" width="16" height="${TABLE - cy}" style="fill:${STEEL}"/><rect x="${cx - 40}" y="${TABLE - 10}" width="80" height="10" rx="2" style="fill:${DARK}"/><circle cx="${cx}" cy="${cy}" r="9" style="fill:${DARK}"/>` : '';
-  const clock = g.minutes !== undefined ? `<g transform="translate(${cx + 110},100)"><circle r="20" style="fill:#fbf8ef;stroke:${DARK};stroke-width:1.5"/><path d="M0,0 L${14 * Math.sin((g.minutes / 60) * 2 * Math.PI)},${-14 * Math.cos((g.minutes / 60) * 2 * Math.PI)}" style="stroke:${DARK};stroke-width:1.6"/><text y="36" text-anchor="middle" class="bench-reading">${Math.floor(g.minutes / 60)}:${String(Math.round(g.minutes) % 60).padStart(2, '0')}</text></g>` : '';
-  return `${stand}${body}${clock}${g.read ? `<text class="bench-reading" x="${cx + 110}" y="150" text-anchor="middle">${g.read}</text>` : ''}`;
-}
 
-/**
- * The rubber-motor car in a corridor: the floor with a tape from the start, the car (not to scale) with bottle-cap
- * wheels, the band from the front axle to the coil on the back one; chalk marks where the earlier runs stopped.
- */
-function rubberSvg(r: BenchView['rubber']): string {
-  if (!r) return '';
-  // (The floor well above the table's edge: the buttons under the scene cover its bottom.)
-  const floor = TABLE - 60;
-  const x0 = 200;
-  const x1 = 530;
-  const at = (m: number) => x0 + (m / r.range) * (x1 - x0);
-  const metres = Array.from({ length: Math.floor(r.range) + 1 }, (_, k) => `<path d="M${at(k)},${floor + 1} v6" style="stroke:#5a4a14;stroke-width:0.8"/><text x="${at(k)}" y="${floor + 17}" text-anchor="middle" style="font:600 9px system-ui,sans-serif;fill:#f1d36b">${k} ${r.unit}</text>`).join('');
-  const tape = `<rect x="${x0}" y="${floor + 1}" width="${x1 - x0}" height="5" style="fill:#f1d36b;stroke:#a88a2c;stroke-width:0.5"/>${metres}`;
-  const stops = r.stops.map((s, k) => `<path d="M${at(s.x)},${floor - 60} v60" style="stroke:#ffffff;stroke-width:1.4;stroke-dasharray:3 2"/><text class="bench-label" x="${at(s.x)}" y="${floor - 66 - 14 * (k % 2)}" text-anchor="middle">${s.label}</text>`).join('');
-  // The car: its back axle at the car's place; 56 units long.
-  const cx = at(r.x);
-  const back = cx - 6;
-  const front = cx + 60;
-  const wr = 14;
-  const wy = floor - wr;
-  const wheel = (x: number, turns: number) => {
-    const a = turns * 2 * Math.PI;
-    return `<circle cx="${x}" cy="${wy}" r="${wr}" style="fill:#e8e2d5;stroke:#5a636c;stroke-width:1.4"/><path d="M${x - wr * Math.cos(a)},${wy - wr * Math.sin(a)} L${x + wr * Math.cos(a)},${wy + wr * Math.sin(a)}" style="stroke:#5a636c;stroke-width:1.2"/>`;
-  };
-  const body = `<rect x="${back - 14}" y="${wy - 26}" width="${front - back + 28}" height="18" rx="3" style="fill:#d9b26a;stroke:#9a6b33"/><path d="M${back},${wy} H${front}" style="stroke:${DARK};stroke-width:1"/>`;
-  const coil = Math.min(9, 2.5 + r.wound * 0.7);
-  const band = `<path d="M${back},${wy - coil} L${front},${wy}" style="stroke:#b5651d;stroke-width:1.8"/><circle cx="${back}" cy="${wy}" r="${coil}" style="fill:none;stroke:#b5651d;stroke-width:${r.wound > 0.1 ? 2.2 : 0}"/>`;
-  const car = `${body}${wheel(back, r.spin)}${wheel(front, r.spin * 1)}${band}`;
-  return `${tape}${stops}${car}${r.read ? `<text class="bench-reading" x="${cx + 27}" y="${wy - 36}" text-anchor="middle">${r.read}</text>` : ''}`;
-}
 
-/** The home-made dynamometer: 12 units of the drawing to a centimetre; the zero's height. */
-const DYNO_K = 1200;
-const DYNO_ZERO = 130;
-/**
- * The home-made dynamometer: a board with a strip of paper, the spring from a nail, a wire pointer over the paper,
- * a hook below with the load; pencil marks on the paper; once divided, the scale in newtons.
- */
-function dynoSvg(d: BenchView['dyno']): string {
-  if (!d) return '';
-  const x = 452;
-  const top = 64;
-  const y = DYNO_ZERO + d.stretch * DYNO_K;
-  const board = `<rect x="${x - 34}" y="${top - 14}" width="104" height="${TABLE - top + 4}" rx="3" style="fill:${WOOD};stroke:${WOOD_EDGE}"/><rect x="${x + 18}" y="${top + 30}" width="40" height="${TABLE - top - 50}" style="fill:#fbf8ef;stroke:#d8d0bb;stroke-width:0.8"/><circle cx="${x}" cy="${top}" r="3" style="fill:${DARK}"/>`;
-  const zero = `<path d="M${x + 18},${DYNO_ZERO} h12" style="stroke:#555;stroke-width:1.2"/><text x="${x + 34}" y="${DYNO_ZERO + 4}" style="font:600 10px system-ui,sans-serif;fill:#2b2f36">0</text>`;
-  const marks = d.marks.map((m) => `<path d="M${x + 18},${DYNO_ZERO + m * DYNO_K} h14" style="stroke:#6b6f75;stroke-width:1.3"/>`).join('');
-  let scale = '';
-  if (d.newton) {
-    const tenth = (d.newton * DYNO_K) / 10;
-    const count = Math.floor(((TABLE - 40 - DYNO_ZERO) / tenth) * (d.drawn ?? 1));
-    scale = Array.from({ length: count + 1 }, (_, k) => `<path d="M${x + 18},${DYNO_ZERO + k * tenth} h${k % 10 === 0 ? 12 : k % 5 === 0 ? 8 : 5}" style="stroke:#2b2f36;stroke-width:${k % 10 === 0 ? 1.2 : 0.7}"/>${k % 10 === 0 && k ? `<text x="${x + 34}" y="${DYNO_ZERO + k * tenth + 4}" style="font:600 10px system-ui,sans-serif;fill:#2b2f36">${k / 10} ${d.unit}</text>` : ''}`).join('');
-  }
-  const spring = springSvg(x, top, y - top);
-  const pointer = `<path d="M${x},${y} H${x + 30}" style="stroke:#c0392b;stroke-width:1.8"/><path d="M${x},${y} v10" style="stroke:${THREAD};stroke-width:1.4"/>`;
-  const hook = y + 10;
-  let load = '';
-  if (d.weights) load = `<path d="M${x},${hook} v4" style="stroke:${THREAD};stroke-width:1.4"/>${weightsSvg(x, hook + 4, d.weights)}`;
-  else if (d.hang === 'apple') load = `<path d="M${x},${hook} v6" style="stroke:#6b4a2a;stroke-width:2"/><ellipse cx="${x + 6}" cy="${hook + 4}" rx="6" ry="3" style="fill:#5aa04a"/><circle cx="${x}" cy="${hook + 20}" r="14" style="fill:#d64535;stroke:#9c2a1e"/><path d="M${x - 6},${hook + 12} q3,-3 7,-2" style="stroke:rgba(255,255,255,0.5);stroke-width:2;fill:none"/>`;
-  else if (d.hang === 'band') load = `<path d="M${x - 3},${hook} L${x - 3},${TABLE - 10} M${x + 3},${hook} L${x + 3},${TABLE - 10}" style="stroke:#b5651d;stroke-width:2;fill:none"/><rect x="${x - 10}" y="${TABLE - 12}" width="20" height="12" rx="2" style="fill:${DARK}"/>`;
-  else if (d.hang === 'egg') load = `<path d="M${x},${hook} L${x - 13},${hook + 12} M${x},${hook} L${x + 13},${hook + 12}" style="stroke:rgba(230,230,230,0.8);stroke-width:1"/><ellipse cx="${x}" cy="${hook + 26}" rx="12" ry="16" style="fill:#f3e2c4;stroke:#c9a874"/><path d="M${x - 15},${hook + 12} Q${x - 18},${hook + 40} ${x},${hook + 44} Q${x + 18},${hook + 40} ${x + 15},${hook + 12} Z" style="fill:rgba(240,245,250,0.3);stroke:rgba(230,230,230,0.8)"/>`;
-  return `${board}${zero}${marks}${scale}${spring}${pointer}${load}${d.read ? `<text class="bench-reading" x="${x + 76}" y="${y + 4}">${d.read}</text>` : ''}`;
-}
 
-/**
- * Home-made scales: a stand with an arm, a thread down to the middle of a 30 cm ruler (the beam, tilting about it),
- * a yoghurt cup hanging upright from each end. In the left cup a folded sheet or an egg, plasticine stuck to its side;
- * in the right one a stack of sheets and water; the syringe above it while water goes in.
- */
-function scalesSvg(s: BenchView['scales']): string {
-  if (!s) return '';
-  const px = 470;
-  const py = 136;
-  const arm = 110;
-  const { left, right } = scalesMasses(s.load);
-  const a = s.angle ?? scalesTilt(left, right);
-  const r = (-a * Math.PI) / 180;
-  const end = (k: -1 | 1) => [px + k * arm * Math.cos(r), py + k * arm * Math.sin(r)] as const;
-  const stand = `<rect x="${px + 120}" y="${TABLE - 8}" width="60" height="8" rx="2" style="fill:${DARK}"/><rect x="${px + 147}" y="90" width="6" height="${TABLE - 98}" style="fill:${STEEL}"/><rect x="${px - 4}" y="90" width="157" height="6" rx="2" style="fill:${STEEL}"/><path d="M${px},96 V${py - 4}" style="stroke:${THREAD};stroke-width:1.2"/>`;
-  const ticks = Array.from({ length: 31 }, (_, k) => `<path d="M${px - arm + (k * 2 * arm) / 30},${py - 4} v${k % 5 ? 3 : 5}" style="stroke:#5a4a14;stroke-width:0.6"/>`).join('');
-  const beam = `<g transform="rotate(${-a} ${px} ${py})"><rect x="${px - arm - 4}" y="${py - 4}" width="${2 * arm + 8}" height="8" rx="1.5" style="fill:#f1d36b;stroke:#a88a2c;stroke-width:0.8"/>${ticks}<circle cx="${px}" cy="${py - 2}" r="2" style="fill:${DARK}"/></g>`;
-  const drop = 64;
-  const cup = (k: -1 | 1, inside: string, side: string) => {
-    const [x, y] = end(k);
-    const top = y + drop;
-    const h = 44;
-    return `<path d="M${x},${y} L${x - 20},${top} M${x},${y} L${x + 20},${top}" style="stroke:${THREAD};stroke-width:1"/>${inside.replace(/\{x\}/g, String(x)).replace(/\{b\}/g, String(top + h))}<path d="M${x - 24},${top} L${x - 17},${top + h} L${x + 17},${top + h} L${x + 24},${top} Z" style="fill:rgba(250,250,247,0.3);stroke:#e4e4dc;stroke-width:1.4"/>${side.replace(/\{x\}/g, String(x)).replace(/\{t\}/g, String(top))}`;
-  };
-  const l = s.load;
-  const leftIn = `${l.sheet ? `<rect x="{x}" y="{b}" width="22" height="9" transform="translate(-11,-11)" style="fill:#ffffff;stroke:#9aa3ab;stroke-width:0.8"/>` : ''}${l.egg ? `<ellipse cx="{x}" cy="{b}" rx="12" ry="16" transform="translate(0,-17)" style="fill:#f3e2c4;stroke:#c9a874;stroke-width:1"/>` : ''}`;
-  const leftSide = l.plasticine ? `<ellipse cx="{x}" cy="{t}" rx="5" ry="4" transform="translate(-22,14)" style="fill:${PLASTICINE};stroke:#a64d1f;stroke-width:0.6"/>` : '';
-  const stack = Array.from({ length: l.sheets }, (_, k) => `<rect x="{x}" y="{b}" width="26" height="2" transform="translate(-13,${-3 - 2.2 * k})" style="fill:#ffffff;stroke:#9aa3ab;stroke-width:0.4"/>`).join('');
-  const water = l.water ? `<rect x="{x}" y="{b}" width="32" height="${1 + 1.4 * l.water}" transform="translate(-16,${-1 - 1.4 * l.water})" style="fill:rgba(90,159,216,0.7)"/>` : '';
-  const [rx, ry] = end(1);
-  const syringe = s.syringe ? `<g transform="translate(${rx + 6},${ry + 8}) rotate(20)"><rect x="-4" y="-34" width="8" height="30" rx="1" style="fill:rgba(230,240,248,0.9);stroke:#7d858d"/><rect x="-1" y="-4" width="2" height="10" style="fill:#7d858d"/><rect x="-6" y="-40" width="12" height="6" style="fill:#7d858d"/></g>` : '';
-  const [g, ml] = s.units;
-  const what = [l.sheets ? `${l.sheets} × 5 ${g}` : '', l.water ? `${l.water} ${ml}` : ''].filter(Boolean).join(' + ');
-  const note = what ? `<text class="bench-label" x="${rx}" y="${ry + drop + 62}" text-anchor="middle">${what}</text>` : '';
-  return `${stand}${beam}${cup(-1, leftIn, leftSide)}${cup(1, `${stack}${water}`, '')}${syringe}${note}${s.read ? `<text class="bench-reading" x="${px}" y="${TABLE - 14}" text-anchor="middle">${s.read}</text>` : ''}`;
-}
 
 /**
  * The air: a band of air beside, thick at the bottom and thinning upwards; a nine-storey block with its lift, the phone
@@ -812,7 +555,6 @@ function towerSvg(t: BenchView['tower']): string {
 export const DRAG_TOP = 62;
 export const DRAG_K = 800;
 const DRAG_X = 508;
-const PLASTICINE = '#e8743b';
 /**
  * The drag: an aquarium on the table (water, or empty — the air), two marks on its glass 20 cm apart, the
  * plasticine body falling; a phone filming from the side, its count of frames between the marks.

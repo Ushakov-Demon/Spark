@@ -1,12 +1,12 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { G } from '../domains/mechanics/constants.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
-import { BENCH_SPRING_K, BENCH_WEIGHT } from './bench.js';
-import { EGG } from './scales-bench.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { G } from '../../domains/mechanics/constants.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
+import { BENCH_SPRING_K, BENCH_WEIGHT } from '../../scenarios/bench-kit.js';
+import { EGG } from '../scales-diy/bench.js';
 
 /**
  * A dynamometer of our own (grade 7, «конструювання: … динамометра»): a strip of paper on a board, a spring of the

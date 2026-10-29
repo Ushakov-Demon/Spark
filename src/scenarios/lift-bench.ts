@@ -6,7 +6,7 @@ import { G } from '../domains/mechanics/constants.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SourcedValue } from '../knowledge/types.js';
-import { BENCH_WEIGHT } from './bench.js';
+import { BENCH_WEIGHT } from './bench-kit.js';
 
 /**
  * Weight in a lift (grade 7): a dynamometer hangs from the cabin's ceiling with four 100 g weights. Standing or

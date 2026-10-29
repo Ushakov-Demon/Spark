@@ -7,7 +7,7 @@ import { weight } from '../domains/mechanics/formulas.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SourcedValue } from '../knowledge/types.js';
-import { BENCH_WEIGHT } from './bench.js';
+import { BENCH_WEIGHT } from './bench-kit.js';
 
 /**
  * Adding forces along one line (grade 7): one load — two 100 g weights on a light ruler — held by one dynamometer,
