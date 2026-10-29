@@ -507,6 +507,13 @@ details.more > summary { cursor: pointer; color: var(--accent); }
 @keyframes step { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-2px); } }
 
+/* Giggling at a catch sprung: shoulders shaking, the head bobbing and tilting, for a moment. */
+.scene-prof.act-giggle .prof { animation: giggle-shake 0.13s ease-in-out 9 alternate; }
+.scene-prof.act-giggle .p-head { animation: giggle-head 1.2s ease-in-out; }
+@keyframes giggle-shake { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+@keyframes giggle-head { 0% { transform: rotate(0); } 20% { transform: rotate(-7deg) translateY(-2px); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-5deg) translateY(-2px); } 80% { transform: rotate(3deg); } 100% { transform: rotate(0); } }
+@media (prefers-reduced-motion: reduce) { .scene-prof.act-giggle .prof, .scene-prof.act-giggle .p-head { animation: none; } }
+
 /* Glasses: pushed up onto the forehead, pockets searched, they drop back onto the nose. */
 .scene-prof.act-glasses .p-glasses { animation: glasses-up 9s ease-in-out; }
 .scene-prof.act-glasses .p-hand-r { animation: pat-right 9s ease-in-out; }

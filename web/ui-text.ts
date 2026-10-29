@@ -111,6 +111,9 @@ export interface UiText {
     noted: string;
     right(choice: string): string;
     wrong(choice: string, real: string): string;
+    /** An experiment with a catch: the prediction fell for it, or there was none (the common belief, the real result). */
+    trickWrong(choice: string, real: string): string;
+    trickNone(belief: string, real: string): string;
     /** The question asked at the end of a guided procedure. */
     conclude: string;
     /** After the experiment's own question (the choices at the end). */
@@ -431,6 +434,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       concludedWrong: (c, r) => `Ти обрав «${c}», але виміряна густина найближча до «${r}». Порівняй ще раз із таблицею.`,
       concludedOther: (c, r) => `Ти обрав «${c}», а дослід показав «${r}». Подивись на розрахунок нижче.`,
       wrong: (c, r) => `Твій прогноз: «${c}». А вийшло — «${r}». Саме для цього й роблять досліди!`,
+      trickWrong: (c, r) => `Хі-хі-хі! Ось і підвох: твій прогноз — «${c}», а вийшло — «${r}». Не журись — на цьому спотикається більшість!`,
+      trickNone: (b, r) => `Хі-хі-хі! А тут підвох: ${b.charAt(0).toLowerCase()}${b.slice(1, -1)}. А вийшло — «${r}»!`,
       weighAir: (d) => `Так! Ці ${d} випарувалися: вода стала парою, і пара пішла в повітря кімнати. Речовина не зникла — вона просто вийшла з каструлі.`,
       weighScales: (div, d) => `Ні, ваги точні до ${div}, а різниця — ${d}. Спробуй ще!`,
       weighShrink: 'Об’єм справді змінюється (лід навіть займає більше місця, ніж вода), але маса від цього не міняється. Спробуй ще!',
@@ -739,6 +744,8 @@ export const UI: Readonly<Record<Locale, UiText>> = {
       concludedWrong: (c, r) => `You chose “${c}”, but the measured density is nearest to “${r}”. Compare with the table again.`,
       concludedOther: (c, r) => `You chose “${c}”, and the experiment showed “${r}”. See the calculation below.`,
       wrong: (c, r) => `Your prediction: “${c}”. What happened: “${r}”. That is exactly why we do experiments!`,
+      trickWrong: (c, r) => `Hee-hee-hee! There’s the catch: your prediction — “${c}”, and what happened — “${r}”. Never mind — most people trip up here!`,
+      trickNone: (b, r) => `Hee-hee-hee! There is a catch here: ${b.charAt(0).toLowerCase()}${b.slice(1, -1)}. And what happened — “${r}”!`,
       weighAir: (d) => `Yes! Those ${d} evaporated: the water turned to vapour and the vapour went into the room air. The matter did not vanish — it just left the pot.`,
       weighScales: (div, d) => `No, the scales are accurate to ${div}, and the difference is ${d}. Try again!`,
       weighShrink: 'The volume does change (ice even takes more room than water), but that does not change the mass. Try again!',

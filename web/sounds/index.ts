@@ -169,6 +169,10 @@ interface Voice {
   readonly ring: number;
   /** A pressed, brighter voice: its harmonics fall off as 1/kᵇ (−6·b dB per octave). */
   readonly bright: number;
+  /** How loud the voice stays at the join of two syllables, 0…1 (one breath, never silent: 0.4). */
+  readonly join?: number;
+  /** A breathy «х» before every syllable (a laugh), not now and then a consonant. */
+  readonly huff?: boolean;
 }
 // Matched by spectrogram to a cartoon voice the author liked (not copied: no recording is used) —
 // ≈ 150…290 Hz (set lower here, ≈ 120…195), little at 2–2.5 kHz, a strong band near 4 kHz — and made
@@ -176,6 +180,8 @@ interface Voice {
 // jumps about but stays level over the line (the sample climbed; line after line that sounded like a
 // voice forever going up).
 const TOON: Voice = { low: 120, high: 195, step: 0.2, glide: 1.04, volume: 0.55, rasp: 0.15, formantShift: 1.2, clarity: 0.45, contour: 0.95, arc: 1.15, ring: 3900, bright: 0.8 };
+// The same Professor giggling: higher, breathy, short syllables falling in pitch, nearly silent between them.
+const GIGGLE: Voice = { ...TOON, low: 230, high: 290, step: 0.13, glide: 0.92, volume: 0.5, rasp: 0.6, formantShift: 1.3, contour: 0.72, arc: 1.05, join: 0.05, huff: true };
 export const VOICE_IDS: readonly VoiceId[] = ['toon', 'speech', 'none'];
 /** Consonants as short noise bursts: centre frequency, Hz, and length, s (с, ш, т, к, п/б, м/н — a soft hum). */
 const CONSONANTS: readonly (readonly [number, number])[] = [[6000, 0.05], [3000, 0.05], [4000, 0.018], [1800, 0.02], [900, 0.015], [300, 0.03]];
@@ -235,7 +241,7 @@ function browserVoice(lang: string): SpeechSynthesisVoice | null {
  */
 function flowing(a: AudioContext, out: GainNode, vc: Voice, count: number, question: boolean, exclaim: boolean, t0: number): number {
   // Gibberish is uneven: some syllables run together, some are drawn out.
-  const lens = Array.from({ length: count }, (_, i) => vc.step * (i === count - 1 ? 1.5 : 0.6 + Math.random() * 0.8));
+  const lens = Array.from({ length: count }, (_, i) => vc.step * (i === count - 1 ? 1.5 : vc.huff ? 0.9 + Math.random() * 0.2 : 0.6 + Math.random() * 0.8));
   const end = t0 + lens.reduce((x, y) => x + y, 0);
   const o = a.createOscillator();
   o.setPeriodicWave(glottalWave(a, vc.bright));
@@ -314,7 +320,7 @@ function flowing(a: AudioContext, out: GainNode, vc: Voice, count: number, quest
     // Loud in the vowel, a dip at the join (never silent: one breath).
     voiceGain.gain.linearRampToValueAtTime(1, t + Math.min(0.04, len * 0.3));
     voiceGain.gain.setValueAtTime(1, t + len * 0.7);
-    voiceGain.gain.linearRampToValueAtTime(last ? 0.0001 : 0.4, t + len);
+    voiceGain.gain.linearRampToValueAtTime(last ? 0.0001 : (vc.join ?? 0.4), t + len);
     // Gibberish: no real vowels — the mouth is somewhere between them, and somewhere else again by the
     // end of the syllable, so nothing sounds like a word; only the tune of the line is left.
     const mouthAt = () => [450 + Math.random() * 500, 1000 + Math.random() * 700] as const;
@@ -325,7 +331,8 @@ function flowing(a: AudioContext, out: GainNode, vc: Voice, count: number, quest
     formants[0]!.bp.frequency.linearRampToValueAtTime(b1 * shift, t + len * 0.9);
     formants[1]!.bp.frequency.linearRampToValueAtTime(b2 * shift, t + len * 0.9);
     formants[2]!.bp.frequency.setValueAtTime(2500 * shift, t);
-    if (i > 0 && Math.random() < 0.6) {
+    if (vc.huff) noise(a, out, t - 0.02, 0.05, 1600, 0.2);
+    else if (i > 0 && Math.random() < 0.6) {
       const [cf, cl] = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)]!;
       noise(a, out, t - cl * 0.3, cl, cf, 0.12);
     }
@@ -374,4 +381,17 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
   out.connect(a.destination);
   speaking = out;
   return flowing(a, out, vc, count, /\?\s*$/.test(text), /!\s*$/.test(text), a.currentTime + 0.03);
+}
+
+/** The Professor giggling — «хі-хі-хі» in his own voice (none when he is silent). Returns how long it lasts, s. */
+export function giggle(v: VoiceId = voice): number {
+  if (v === 'none') return 0;
+  const a = audio();
+  if (!a) return 0;
+  quiet(a);
+  const out = a.createGain();
+  out.gain.value = GIGGLE.volume;
+  out.connect(a.destination);
+  speaking = out;
+  return flowing(a, out, GIGGLE, 4 + Math.round(Math.random()), false, true, a.currentTime + 0.03);
 }

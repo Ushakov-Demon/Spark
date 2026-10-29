@@ -47,6 +47,11 @@ export interface Preset {
    * button; the readings go onto the board one by one.
    */
   readonly guided?: boolean;
+  /**
+   * An experiment with a catch: the belief most people hold, which it overturns (one sentence). When the prediction
+   * falls for it — or there was none — the Professor giggles at the answer.
+   */
+  readonly trick?: LocalizedText;
   /** When the choices are offered: before the start (a prediction, default) or at the end (the conclusion). */
   readonly choicesAt?: 'start' | 'end';
   /**
@@ -925,6 +930,7 @@ const LIST: readonly Preset[] = [
       { kind: 'bench', command: { type: 'lab.pull', weights: 3, face: 'wide' } },
     ],
     choices: [ch('same', 'Лишиться такою самою', 'It stays the same'), ch('less', 'Зменшиться: менша площа — менше тертя', 'It gets smaller: less area, less friction'), ch('more', 'Збільшиться: брусок сильніше тисне на дошку', 'It grows: the block presses harder on the board')],
+    trick: { uk: 'Більшість думає, що на вужчій грані тягти легше.', en: 'Most people think the block is easier to pull on its narrower face.' },
     formulas: ['mechanics.friction', 'mechanics.weight'],
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'між площею і якістю поверхонь рухомих тіл, масою рухомого тіла і силою тертя ковзання' },

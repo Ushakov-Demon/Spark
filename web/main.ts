@@ -172,7 +172,7 @@ import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
-import { babble, canSpeak, currentVoice, fizz, hum, hush, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
+import { babble, canSpeak, currentVoice, fizz, giggle, hum, hush, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -1811,7 +1811,9 @@ function sceneView(): SceneView {
     : reply
     ? { mood: quiz!.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.right === false ? 'thinking' : 'happy', says: reply }
     : verdict && presetAnswer && presetAnswer !== 'computing'
-    ? { mood: verdict === predictionVerdictRight() ? 'happy' : 'surprised', says: `${tr(presetAnswer.say, locale)} ${verdict}` }
+    ? tricked()
+      ? { mood: 'happy', says: verdict, act: 'giggle' }
+      : { mood: verdict === predictionVerdictRight() ? 'happy' : 'surprised', says: `${tr(presetAnswer.say, locale)} ${verdict}` }
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
     : showingDrop()
@@ -2282,11 +2284,20 @@ function whyHtml(): string {
   const why = presetAnswer && presetAnswer !== 'computing' && presetAnswer.why ? tr(presetAnswer.why, locale).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>').replace(/\n\n/g, '<br><br>') : '';
   return why ? `<div class="answer-why"><strong>${t().whyTitle}</strong> ${why}</div>` : '';
 }
+/** An experiment with a catch, answered: the prediction fell for it, or there was none — the Professor giggles. */
+function tricked(): boolean {
+  if (!preset?.trick || preset.choicesAt === 'end' || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return false;
+  return !prediction || prediction.preset !== preset.id || prediction.choice !== presetAnswer.correct;
+}
 /** The verdict on a prediction, once the run has answered the question. */
 function predictionVerdict(): string {
-  if (!prediction || !preset || prediction.preset !== preset.id || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return '';
-  const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? { uk: id, en: id }, locale);
   const q = t().quiz;
+  const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? { uk: id, en: id }, locale);
+  if (tricked()) {
+    const real = label((presetAnswer as PresetAnswer).correct!);
+    return prediction && prediction.preset === preset!.id ? q.trickWrong(label(prediction.choice), real) : q.trickNone(tr(preset!.trick!, locale), real);
+  }
+  if (!prediction || !preset || prediction.preset !== preset.id || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return '';
   // Chosen at the end it is the conclusion of the experiment, not a prediction.
   if (preset.choicesAt === 'end') return prediction.choice === presetAnswer.correct ? q.concludedRight(label(prediction.choice)) : (preset.choiceTable === 'density' ? q.concludedWrong : q.concludedOther)(label(prediction.choice), label(presetAnswer.correct));
   return prediction.choice === presetAnswer.correct ? q.right(label(prediction.choice)) : q.wrong(label(prediction.choice), label(presetAnswer.correct));
@@ -2548,7 +2559,14 @@ function render() {
     window.clearTimeout(sayTimer);
     // A long line is read page by page: now its first page, the rest as the bubble's pages are turned.
     const line = scene.page;
-    if (line && !scene.reading && !lookingAt) sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), 140);
+    // A catch sprung: first he giggles, then says it.
+    const laugh = view.professor.act === 'giggle';
+    if (line && !scene.reading && !lookingAt)
+      sayTimer = window.setTimeout(() => {
+        const g = laugh ? giggle(currentVoice()) : 0;
+        if (g) scene.talk(g);
+        sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), g ? g * 1000 + 150 : 0);
+      }, 140);
   }
   lastSaid = view.professor.says;
   if (!renderGuide()) {
