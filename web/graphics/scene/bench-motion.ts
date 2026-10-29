@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.touch': { uk: 'Дивимося…', en: 'Watching…' },
   'lab.coin': { uk: 'Знімаємо — дивимося покадрово…', en: 'Filming — watching frame by frame…' },
   'lab.snail': { uk: 'Равлик повзе — знімаємо 30 секунд…', en: 'The snail crawls — filming for 30 seconds…' },
   'lab.strobe': { uk: 'Спалахи один за одним — кулька лишає зображення…', en: 'Flash after flash — the ball leaves its images…' },
@@ -50,6 +51,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
   if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
   if (next.kind === 'strobe' && next.strobe?.gaps) return strobeRun(next, draw);
@@ -403,6 +405,20 @@ function coinRun(next: BenchView, run: NonNullable<BenchView['coinRun']>, draw: 
       // Off the rim: tipping over it and down beside the glass.
       const u = Math.min(1, (T - pull - fallShown) / off);
       draw({ ...next, coin: { ...rest, card: 1, x: x1 + (c.x - x1) * u, drop: depth + (c.drop - depth) * u * u, tilt: 70 * Math.sin(Math.PI * u) } });
+    },
+  };
+}
+
+/** Contact and non-contact forces: each case plays in about 1.5 s (the weight's fall in its own 0.4 s or so, slowed). */
+function touchRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const t = next.touch!;
+  const k = new Channel(0, 1, { kind: 'steady', speed: 0.7 }, 0.001);
+  return {
+    channels: [k],
+    frame: (done) => {
+      if (done) return draw(next);
+      const { read: _r, ...rest } = t;
+      draw({ ...next, touch: { ...rest, k: k.value } });
     },
   };
 }

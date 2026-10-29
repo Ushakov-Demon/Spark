@@ -44,3 +44,4 @@ export * from './wind-bench.js';
 export * from './strobe-bench.js';
 export * from './snail-bench.js';
 export * from './coin-bench.js';
+export * from './touch-bench.js';

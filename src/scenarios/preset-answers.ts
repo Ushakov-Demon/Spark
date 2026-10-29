@@ -26,6 +26,7 @@ import { winchSpoolName, type WinchSpool } from './winch-bench.js';
 import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
+import { touchPlan, touchSeen, type TouchCase } from './touch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -422,6 +423,24 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
         const s = `${parts.join('; ')}.`;
         return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
+    };
+  },
+  'contact-forces': (run) => {
+    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.touch').map((x) => ({ c: String(x.command['case']) as TouchCase, acts: x.record.inputs?.['acts'] === 1, touch: x.record.inputs?.['touch'] === 1 }));
+    const farOk = R.filter((x) => x.c !== 'lifted').every((x) => x.acts && !x.touch);
+    const frictionNeedsTouch = R.some((x) => x.c === 'lifted' && !x.acts);
+    return {
+      ...(farOk && frictionNeedsTouch ? { correct: 'field' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Деякі сили діють на відстані: магніт притягує залізо через повітря й крізь картон, наелектризоване тіло — легкі папірці, а Земля притягує все довкола — тому тягарець і падає, хоч його ніщо не штовхає. Такі тіла діють одне на одне через поле — магнітне, електричне, гравітаційне. А сила тертя й сила пружності — контактні: вони з’являються лише тоді, коли тіла торкаються. Брусок, піднятий над столом, тертя об стіл не відчуває; пружина тягне лише те, що до неї причеплено. Повітря тут нічого не передає: магніт притягує скріпку й у вакуумі.'
+          : 'Some forces act at a distance: a magnet pulls iron across air and through a card, a charged body — light bits of paper, and the Earth pulls everything around — so the weight falls, though nothing pushes it. Such bodies act on each other through a field — magnetic, electric, gravitational. But friction and the elastic force are contact forces: they appear only when bodies touch. The block lifted above the table feels no friction on it; a spring pulls only what is hooked on it. The air passes nothing here: a magnet pulls a clip in a vacuum too.',
+      ),
+      say: both((l) => (l === 'uk' ? 'Без дотику діяли магніт, гребінець і Земля; тертя без дотику зникло.' : 'Without touching acted the magnet, the comb and the Earth; friction vanished without touching.')),
+      text: both((l) => {
+        const s = `${R.map((x) => `${tr(touchPlan(x.c), l)} — ${tr(touchSeen(x.c), l)}`).join('; ')}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1);
       }),
     };
   },

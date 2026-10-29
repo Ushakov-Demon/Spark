@@ -6,6 +6,7 @@ import { bounceBallName, type BounceBall } from './bounce-bench.js';
 import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
+import { TOUCH_CASES, touchSeen, type TouchCase } from './touch-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -446,6 +447,13 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const title = tr(liftPhaseText(phase as LiftPhase).plan, locale);
       const acc = phase === 'fall' ? (uk ? 'вільне падіння' : 'free fall') : a === 0 ? (uk ? 'без прискорення' : 'no acceleration') : `a = ${n(Math.abs(a), 2)} ${uk ? 'м/с²' : 'm/s²'} ${a > 0 ? '↑' : '↓'}`;
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
+      return;
+    }
+    // Contact and non-contact forces: what was seen, and whether the force acted without touching (no numbers).
+    if (c.type === 'lab.touch') {
+      const k = String(c['case']) as TouchCase;
+      const acts = r.inputs?.['acts'] === 1;
+      out.push({ id: `tc:${i}`, title: tr(touchSeen(k), locale), formula: `${tr(TOUCH_CASES[k].force, locale)}: ${acts ? (uk ? 'діє без дотику' : 'acts without touching') : uk ? 'без дотику не діє' : 'does not act without touching'}` });
       return;
     }
     // Inertia: how fast the card went and how soon it left the coin; how far the coin moved.

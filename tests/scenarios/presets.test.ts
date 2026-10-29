@@ -322,6 +322,12 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('contact and non-contact forces: magnet, comb and gravity act without touching, friction does not', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'contact-forces')!);
+    expect(answer.correct).toBe('field');
+    expect(answer.text.uk).toContain('тертя об стіл немає');
+  }, 60_000);
+
   it('inertia: the faster the card goes, the less the coin moves; snatched, it drops into the glass', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'coin-inertia')!);
     expect(answer.correct).toBe('inertia');

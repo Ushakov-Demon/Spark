@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -885,7 +885,7 @@ const LIST: readonly Preset[] = [
       bench: 'spring',
       choices: [ch('proportional', 'Пропорційно: удвічі більша сила — удвічі більше видовження', 'In proportion: twice the force, twice the extension'), ch('faster', 'Видовження росте швидше за силу', 'The extension grows faster than the force'), ch('slower', 'Видовження росте повільніше за силу', 'The extension grows slower than the force')],
       formulas: ['mechanics.hooke', 'mechanics.weight'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }, { program: 'oxfordaqa-igcse-sciences', item: 'Physics RP 1', match: 'same', quote: 'Investigate the relationship between force and extension for a spring.' }],
+      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Дослідження • інерції; пружних властивостей тіл' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }, { program: 'oxfordaqa-igcse-sciences', item: 'Physics RP 1', match: 'same', quote: 'Investigate the relationship between force and extension for a spring.' }],
       expect: 'reached',
     },
     {
@@ -950,6 +950,27 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Які сили діють без дотику?', en: 'Which forces act without touching?' },
+    id: 'contact-forces',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Контактні й безконтактні сили', en: 'Contact and non-contact forces' },
+    question: {
+      uk: 'Тіла діють одне на одне — але чи завжди для цього треба торкатися? П’ять спостережень: магніт і скріпка на нитці через 2 см повітря, те саме крізь картонку, наелектризований гребінець над шматочками паперу, брусок, підвішений над столом (чи діє тертя?), і тягарець, який відпустили над столом. Які сили діють без дотику?',
+      en: 'Bodies act on each other — but do they always have to touch? Five observations: a magnet and a paper clip on a thread across 2 cm of air, the same through a card, a rubbed comb over bits of paper, a block hung above the table (does friction act?), and a weight let go above the table. Which forces act without touching?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'touch',
+    plan: (['magnet', 'card', 'comb', 'lifted', 'fall'] as const).map((c) => ({ kind: 'bench', command: { type: 'lab.touch', case: c } }) as const),
+    choices: [ch('field', 'Магнітна, електрична й сила тяжіння; тертя й пружність — лише при дотику', 'Magnetic, electric and gravity; friction and elasticity — only when touching'), ch('none', 'Жодна: сили передаються лише через дотик (хоч би через повітря)', 'None: forces pass only by touching (through the air at least)'), ch('magnet', 'Лише магнітна', 'Only the magnetic one')],
+    formulas: ['mechanics.weight'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'контактних і безконтактних сил' },
     ],
     expect: 'reached',
   },
@@ -2026,7 +2047,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
+  'coin-inertia', 'contact-forces', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',
