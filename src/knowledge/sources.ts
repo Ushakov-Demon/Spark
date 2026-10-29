@@ -844,10 +844,10 @@ export const SOURCES = {
   }),
   'wikipedia-friction': source({
     id: 'wikipedia-friction',
-    title: 'Wikipedia, Friction: laws of dry friction discovered by Leonardo da Vinci in 1493 (unpublished), rediscovered by Guillaume Amontons in 1699, developed by Coulomb (1785); friction proportional to load, independent of the apparent area; wood on wood μ 0.25–0.62 (static)',
+    title: 'Wikipedia, Friction: laws of dry friction discovered by Leonardo da Vinci in 1493 (unpublished), rediscovered by Guillaume Amontons in 1699, developed by Coulomb (1785); friction proportional to load, independent of the apparent area; wood on wood μ 0.25–0.62 (static). The actual area of contact is a very small fraction of the apparent area (Bowden and Tabor): contact only at asperities. When surfaces are conjoined Coulomb friction is a very poor approximation: adhesive tape resists sliding with no normal force, friction may depend strongly on the area of contact — some drag racing tires are adhesive; the relation of friction to load is not exactly linear',
     url: 'https://en.wikipedia.org/wiki/Friction',
     license: 'CC-BY-SA-4.0',
-    retrieved: '2026-10-22',
+    retrieved: '2026-10-29',
   }),
   '3b-helical-springs': source({
     id: '3b-helical-springs',

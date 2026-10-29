@@ -13,6 +13,8 @@ export interface BenchView {
   /** The spring's length now, m, and its stiffness, N/m. */
   readonly springLength?: number;
   readonly stiffness?: number;
+  /** A sheet of paper laid on the board, the block sliding over it (friction): its label. */
+  readonly paper?: string;
   /** The dynamometer pulling the block (friction): what it shows; absent — at rest. */
   readonly pull?: string;
   /** How far the block has slid along the board, units of the drawing. */
@@ -266,7 +268,8 @@ export function benchSvg(v: BenchView): string {
     const h = v.block[2] * 100 * CM;
     const mid = base - h / 2;
     const pull = v.pull ? `<path d="M${x + w},${mid} H${x + w + 60}" style="stroke:${THREAD};stroke-width:1.5"/>${dynamometerSvg(x + w + 60, mid, true, v.pull)}<path d="M${x + w + 146},${mid} h22" style="stroke:${THREAD};stroke-width:1.5"/><path class="bench-arrow" d="M${x + w + 120},${mid - 26} h34 l-6,-4 m6,4 l-6,4"/><text class="bench-label" x="${x + w + 112}" y="${mid - 30}" text-anchor="end">v</text>` : '';
-    return `${boardSvg}${blockSvg(x, base, v.block)}${weightsSvg(x + w / 2, base - h - v.weights * 10, v.weights)}${pull}`;
+    const paper = v.paper ? `<rect x="122" y="${base - 4}" width="380" height="5" rx="1" style="fill:#fdfcf6;stroke:#9c978a;stroke-width:0.8"/><text class="bench-label" x="134" y="${base - 10}">${v.paper}</text>` : '';
+    return `${boardSvg}${paper}${blockSvg(x, base, v.block)}${weightsSvg(x + w / 2, base - h - v.weights * 10, v.weights)}${pull}`;
   }
   // Pressure: the block on the table, the ruler at the edge being measured.
   const base = TABLE;

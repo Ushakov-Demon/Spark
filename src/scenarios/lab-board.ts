@@ -396,7 +396,8 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     }
     if (c.type === 'lab.pull') {
       const N = r.inputs?.['N'] ?? 0;
-      out.push({ id: `mu:${i}`, title: uk ? `тертя ковзання: брусок ${Number(c['weights']) === 0 ? 'без тягарців' : `і ${Number(c['weights'])} × 100 г`}` : `sliding friction: the block ${Number(c['weights']) === 0 ? 'alone' : `and ${Number(c['weights'])} × 100 g`}`, formula: 'μ = F / N', numbers: `${formatMeasured('force', r.value, 0.1, locale)} / ${F2(N)} ≈ ${n(r.value / N, 2)}` });
+      const how = c['face'] === 'narrow' ? (uk ? ', вужча грань' : ', narrower face') : c['surface'] === 'paper' ? (uk ? ', по папері' : ', over paper') : '';
+      out.push({ id: `mu:${i}`, title: uk ? `тертя ковзання: брусок ${Number(c['weights']) === 0 ? 'без тягарців' : `і ${Number(c['weights'])} × 100 г`}${how}` : `sliding friction: the block ${Number(c['weights']) === 0 ? 'alone' : `and ${Number(c['weights'])} × 100 g`}${how}`, formula: 'μ = F / N', numbers: `${formatMeasured('force', r.value, 0.1, locale)} / ${F2(N)} ≈ ${n(r.value / N, 2)}` });
       return;
     }
     if (c.type === 'lab.balance') {

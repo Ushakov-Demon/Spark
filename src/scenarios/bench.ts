@@ -53,6 +53,8 @@ export const BENCH_SPRING_L0 = 0.08;
 export const BENCH_WEIGHT: SourcedValue = sv(0.1, 'kg', 'one slotted weight', 'single-source', 0.01, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 6, обладнання: 4 тягарці масою 100 г кожен', '—', 0.1)]);
 /** Wood sliding on wood. */
 export const WOOD_ON_WOOD: SourcedValue = sv(0.25, '', 'dry wood on dry wood, sliding', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', '§ 26, таблиця «Значення коефіцієнтів тертя ковзання»: дерево по дереву 0,25', '—', 0.25)], 'Tables give mean values: Wikipedia lists 0.25–0.62 for wood on wood (static) — it depends on the wood and how smooth it is.');
+/** Paper on wood: the block slid on a sheet of paper laid on the board (the same pair of materials). */
+export const PAPER_ON_WOOD: SourcedValue = sv(0.4, '', 'paper on wood, sliding', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', '§ 26, таблиця «Значення коефіцієнтів тертя ковзання»: папір по дереву 0,40', '—', 0.4)], 'A table’s mean value for the pair of materials.');
 /** The pine block of the lab works: its edges, m (a block of the lab; its mass follows from the wood's density). */
 export const BENCH_BLOCK = { substance: 'wood', edges: [0.12, 0.06, 0.04] as const };
 export const blockMass = (): number => BENCH_BLOCK.edges[0] * BENCH_BLOCK.edges[1] * BENCH_BLOCK.edges[2] * SUBSTANCES.wood.liquid.density.value;
@@ -71,6 +73,10 @@ export interface StretchCommand {
 export interface PullCommand {
   readonly type: 'lab.pull';
   readonly weights: number;
+  /** The face the block lies on: the widest (default) or the narrower side face. */
+  readonly face?: 'wide' | 'narrow';
+  /** What it slides on: the bare board (default) or a sheet of paper laid on it. */
+  readonly surface?: 'wood' | 'paper';
 }
 /** Measure one edge of the block with the ruler (0 — length, 1 — width, 2 — height). */
 export interface EdgeCommand {
@@ -130,9 +136,11 @@ export const pullCommand: CommandHandler<PullCommand> = {
   apply(state, c) {
     if (!(c.weights >= 0 && c.weights <= 3 && Number.isInteger(c.weights))) return err({ uk: 'На брусок кладуть від 0 до 3 тягарців.', en: 'Put 0 to 3 weights on the block.' });
     const N = weight(blockMass() + c.weights * BENCH_WEIGHT.value, G);
-    const F = slidingFriction(WOOD_ON_WOOD.value, N);
+    // (Amontons' law: the face it lies on does not matter, only the pair of materials and the load.)
+    const mu = (c.surface === 'paper' ? PAPER_ON_WOOD : WOOD_ON_WOOD).value;
+    const F = slidingFriction(mu, N);
     const dyn = SCALES.dynamometer;
-    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('dynamometer', 'force', scaleReading(dyn, F), F, { weights: c.weights, N, mu: WOOD_ON_WOOD.value, block: blockMass() })] });
+    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('dynamometer', 'force', scaleReading(dyn, F), F, { weights: c.weights, N, mu, block: blockMass(), narrow: c.face === 'narrow' ? 1 : 0, paper: c.surface === 'paper' ? 1 : 0 })] });
   },
 };
 
@@ -203,11 +211,24 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
         };
   },
   'lab.pull': (c) => {
-    const n = (c as PullCommand).weights;
+    const p = c as PullCommand;
+    const n = p.weights;
+    if (p.face === 'narrow')
+      return {
+        say: { uk: 'Тепер постав брусок на вужчу бічну грань — площа дотику з дошкою менша — і знову рівномірно тягни.', en: 'Now stand the block on its narrower side face — less area touching the board — and pull it steadily again.' },
+        button: { uk: '➡ Брусок на вужчій грані', en: '➡ The block on its narrower face' },
+        plan: { uk: 'брусок на вужчій грані', en: 'the block on its narrower face' },
+      };
+    if (p.surface === 'paper')
+      return {
+        say: { uk: 'Покладемо на дошку аркуш паперу й потягнемо брусок по ньому — тією самою широкою гранню.', en: 'Lay a sheet of paper on the board and pull the block over it — on the same wide face.' },
+        button: { uk: '➡ Брусок по папері', en: '➡ The block over paper' },
+        plan: { uk: 'брусок по аркушу паперу', en: 'the block over a sheet of paper' },
+      };
     return {
-      say: n === 0 ? { uk: 'Поклади брусок широкою гранню на дошку й рівномірно тягни його динамометром. Що він показує?', en: 'Lay the block on its widest face on the board and pull it at a steady speed with the dynamometer. What does it show?' } : { uk: `Поклади на брусок ${n === 1 ? 'тягарець' : `${n} тягарці`} і знову рівномірно тягни.`, en: `Put ${n === 1 ? 'a weight' : `${n} weights`} on the block and pull it steadily again.` },
+      say: n === 0 ? { uk: 'Поклади брусок широкою гранню на дошку й рівномірно тягни його динамометром. Що він показує?', en: 'Lay the block on its widest face on the board and pull it at a steady speed with the dynamometer. What does it show?' } : { uk: `Поклади на брусок ${n === 1 ? 'тягарець' : `${n} тягарці`} і ${p.face ? 'рівномірно тягни його широкою гранню по дошці' : 'знову рівномірно тягни'}.`, en: `Put ${n === 1 ? 'a weight' : `${n} weights`} on the block and ${p.face ? 'pull it on its wide face along the board steadily' : 'pull it steadily again'}.` },
       button: { uk: `➡ Тягти брусок${n ? ` (+${n} × 100 г)` : ''}`, en: `➡ Pull the block${n ? ` (+${n} × 100 g)` : ''}` },
-      plan: { uk: `тягти брусок${n ? ` із ${n} тягарцями` : ''}`, en: `pull the block${n ? ` with ${n} weights` : ''}` },
+      plan: { uk: `тягти брусок${n === 1 ? ' із тягарцем' : n ? ` із ${n} тягарцями` : ''}`, en: `pull the block${n === 1 ? ' with a weight' : n ? ` with ${n} weights` : ''}` },
     };
   },
   'lab.balance': (c) => {

@@ -331,6 +331,15 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('візок 1 — 1,0 Н, візок 2 з двома тягарцями — 2,9 Н');
   }, 60_000);
 
+  it('friction: the same on the narrower face, more over paper, growing with the load', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'friction-factors')!);
+    expect(answer.correct).toBe('same');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.text.uk).toContain('на широкій грані — 0,6 Н, на вужчій — 0,6 Н');
+    expect(answer.text.uk).toContain('По аркушу паперу — 1,0 Н');
+    expect(answer.text.uk).toContain('З трьома тягарцями — 1,1 Н');
+  }, 60_000);
+
   it('contact and non-contact forces: magnet, comb and gravity act without touching, friction does not', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'contact-forces')!);
     expect(answer.correct).toBe('field');

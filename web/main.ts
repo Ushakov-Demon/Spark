@@ -736,7 +736,12 @@ function benchView(): BenchView | null {
     const weights = sc?.weights ?? (planned?.kind === 'bench' ? (planned.command as { weights?: number }).weights : undefined) ?? 2;
     return { ...base, kind, slope: { height: sc?.height ?? 0, length: SLOPE_LENGTH.value, up: sc ? 1 : 0, weights }, ...(sc ? { pull: show('force', r!.value) } : {}) };
   }
-  if (kind === 'friction') return c?.type === 'lab.pull' && r ? { ...base, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE } : base;
+  if (kind === 'friction') {
+    if (!(c?.type === 'lab.pull' && r)) return base;
+    // Stood on its narrower face: as tall as it was wide.
+    const [a, b, h] = BENCH_BLOCK.edges;
+    return { ...base, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE, ...(c['face'] === 'narrow' ? { block: [a, h, b] as const } : {}), ...(c['surface'] === 'paper' ? { paper: locale === 'uk' ? 'аркуш паперу' : 'a sheet of paper' } : {}) };
+  }
   return c?.type === 'lab.edge' && r ? { ...base, edge: { index: Number(c['edge']) as 0 | 1 | 2, display: show('length', r.value) } } : base;
 }
 /** The latest level reading or dynamometer reading while nothing has happened since. */
@@ -786,7 +791,10 @@ function measureSay(): string {
   }
   if (m.command.type === 'lab.pull') {
     const n = (m.command as { weights: number }).weights;
-    return uk ? `Брусок${n ? ` із ${n} тягарц${n === 1 ? 'ем' : 'ями'}` : ''} ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}. Це і є сила тертя ковзання.` : `The block${n ? ` with ${n} weight${n === 1 ? '' : 's'}` : ''} slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}. That is the force of sliding friction.`;
+    const pc = m.command as { face?: string; surface?: string };
+    if (pc.face === 'narrow') return uk ? `На вужчій грані брусок ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `On its narrower face the block slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
+    if (pc.surface === 'paper') return uk ? `По папері брусок ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `Over the paper the block slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
+    return uk ? `Брусок${n === 1 ? ' із тягарцем' : n ? ` із ${n} тягарцями` : ''} ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}. Це і є сила тертя ковзання.` : `The block${n ? ` with ${n} weight${n === 1 ? '' : 's'}` : ''} slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}. That is the force of sliding friction.`;
   }
   if (m.command.type === 'lab.balance') {
     if (r.value === null) return uk ? 'Важків із набору не вистачає — тіло завелике для цих терезів (до 211 г).' : 'The set of weights is not enough — the load is too heavy for this balance (up to 211 g).';
@@ -2249,7 +2257,7 @@ function showAnswerButton(): string {
 /** «Чому так?»: the reasoning behind the answer, when it has one. */
 function whyHtml(): string {
   // (ρ_тіла, F_A: subscripts, as on the board.)
-  const why = presetAnswer && presetAnswer !== 'computing' && presetAnswer.why ? tr(presetAnswer.why, locale).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>') : '';
+  const why = presetAnswer && presetAnswer !== 'computing' && presetAnswer.why ? tr(presetAnswer.why, locale).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>').replace(/\n\n/g, '<br><br>') : '';
   return why ? `<div class="answer-why"><strong>${t().whyTitle}</strong> ${why}</div>` : '';
 }
 /** The verdict on a prediction, once the run has answered the question. */
@@ -3909,7 +3917,7 @@ function explain() {
   if (!last) {
     if (!allReadings().length) return;
     const formulas = (preset?.formulas ?? []).map((id) => LAB_KNOWLEDGE.formulas.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f);
-    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: tr(presetAnswer.text, locale) } as Block, ...(presetAnswer.why ? [{ kind: 'paragraph', text: `${t().whyTitle} ${tr(presetAnswer.why, locale)}` } as Block] : [])] : [];
+    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: tr(presetAnswer.text, locale) } as Block, ...(presetAnswer.why ? tr(presetAnswer.why, locale).split('\n\n').map((text, k) => ({ kind: 'paragraph', text: k ? text : `${t().whyTitle} ${text}` }) as Block) : [])] : [];
     $('#report').innerHTML = renderHtml(
       buildMeasuredReport({
         title: locale === 'uk' ? 'Що виміряли і чому так вийшло' : 'What was measured and why it came out so',

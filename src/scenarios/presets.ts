@@ -905,6 +905,34 @@ const LIST: readonly Preset[] = [
     },
   ),
   {
+    ask: { uk: 'Чи залежить сила тертя від того, на яку грань покласти брусок?', en: 'Does friction depend on which face the block lies on?' },
+    id: 'friction-factors',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Від чого залежить сила тертя ковзання', en: 'What the force of sliding friction depends on' },
+    question: {
+      uk: 'Зважимо дерев’яний брусок, покладемо на нього тягарець 100 г і рівномірно тягтимемо динамометром по дерев’яній дошці: спершу на широкій грані, потім — поставивши на вужчу, далі по аркушу паперу, а наостанок із трьома тягарцями. Брусок поставили на вужчу грань — площа дотику з дошкою стала меншою. Що буде з силою тертя?',
+      en: 'We weigh a wooden block, put a 100 g weight on it and pull it steadily with a dynamometer along a wooden board: first on its wide face, then stood on a narrower one, then over a sheet of paper, and at last with three weights. The block stands on a narrower face — less of it touches the board. What happens to the friction?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'friction',
+    plan: [
+      { kind: 'hang', substance: 'wood', mass: 0.12 * 0.06 * 0.04 * SUBSTANCES.wood.liquid.density.value, into: 'air', label: { uk: 'Дерев’яний брусок', en: 'Wooden block' } },
+      { kind: 'bench', command: { type: 'lab.pull', weights: 1, face: 'wide' } },
+      { kind: 'bench', command: { type: 'lab.pull', weights: 1, face: 'narrow' } },
+      { kind: 'bench', command: { type: 'lab.pull', weights: 1, surface: 'paper' } },
+      { kind: 'bench', command: { type: 'lab.pull', weights: 3, face: 'wide' } },
+    ],
+    choices: [ch('same', 'Лишиться такою самою', 'It stays the same'), ch('less', 'Зменшиться: менша площа — менше тертя', 'It gets smaller: less area, less friction'), ch('more', 'Збільшиться: брусок сильніше тисне на дошку', 'It grows: the block presses harder on the board')],
+    formulas: ['mechanics.friction', 'mechanics.weight'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'між площею і якістю поверхонь рухомих тіл, масою рухомого тіла і силою тертя ковзання' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: 'Сили тертя. Тертя в природі й техніці.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 26, рис. 26.5–26.7: брусок по дереву й по склу, на більшій і меншій грані, з тягарцями; закон Амонтона — Кулона' } },
+    ],
+    expect: 'reached',
+  },
+  {
     ask: { uk: 'Як зміниться коефіцієнт тертя μ = F/N, коли додаватимемо тягарці?', en: 'How will the coefficient μ = F/N change as weights are added?' },
     id: 'friction-coefficient',
     grade: 7,
@@ -954,27 +982,6 @@ const LIST: readonly Preset[] = [
     expect: 'reached',
   },
   {
-    ask: { uk: 'Які сили діють без дотику?', en: 'Which forces act without touching?' },
-    id: 'contact-forces',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Контактні й безконтактні сили', en: 'Contact and non-contact forces' },
-    question: {
-      uk: 'Тіла діють одне на одне — але чи завжди для цього треба торкатися? П’ять спостережень: магніт і скріпка на нитці через 2 см повітря, те саме крізь картонку, наелектризований гребінець над шматочками паперу, брусок, підвішений над столом (чи діє тертя?), і тягарець, який відпустили над столом. Які сили діють без дотику?',
-      en: 'Bodies act on each other — but do they always have to touch? Five observations: a magnet and a paper clip on a thread across 2 cm of air, the same through a card, a rubbed comb over bits of paper, a block hung above the table (does friction act?), and a weight let go above the table. Which forces act without touching?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'touch',
-    plan: (['magnet', 'card', 'comb', 'lifted', 'fall'] as const).map((c) => ({ kind: 'bench', command: { type: 'lab.touch', case: c } }) as const),
-    choices: [ch('field', 'Магнітна, електрична й сила тяжіння; тертя й пружність — лише при дотику', 'Magnetic, electric and gravity; friction and elasticity — only when touching'), ch('none', 'Жодна: сили передаються лише через дотик (хоч би через повітря)', 'None: forces pass only by touching (through the air at least)'), ch('magnet', 'Лише магнітна', 'Only the magnetic one')],
-    formulas: ['mechanics.weight'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'контактних і безконтактних сил' },
-    ],
-    expect: 'reached',
-  },
-  {
     ask: { uk: 'Як порівняти маси двох візків, не зважуючи їх?', en: 'How can two carts’ masses be compared without weighing them?' },
     id: 'carts-mass',
     grade: 7,
@@ -998,6 +1005,27 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'залежності між масою тіла та його інертними та гравітаційними властивостями; … між масою і силою тяжіння' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: 'Явище інерції. Інертність і маса тіла', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 16 «Інертність тіла. Маса»: візки зі стиснутими пружинами, m₂ / m₁ = v₁ / v₂' } },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Які сили діють без дотику?', en: 'Which forces act without touching?' },
+    id: 'contact-forces',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Контактні й безконтактні сили', en: 'Contact and non-contact forces' },
+    question: {
+      uk: 'Тіла діють одне на одне — але чи завжди для цього треба торкатися? П’ять спостережень: магніт і скріпка на нитці через 2 см повітря, те саме крізь картонку, наелектризований гребінець над шматочками паперу, брусок, підвішений над столом (чи діє тертя?), і тягарець, який відпустили над столом. Які сили діють без дотику?',
+      en: 'Bodies act on each other — but do they always have to touch? Five observations: a magnet and a paper clip on a thread across 2 cm of air, the same through a card, a rubbed comb over bits of paper, a block hung above the table (does friction act?), and a weight let go above the table. Which forces act without touching?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'touch',
+    plan: (['magnet', 'card', 'comb', 'lifted', 'fall'] as const).map((c) => ({ kind: 'bench', command: { type: 'lab.touch', case: c } }) as const),
+    choices: [ch('field', 'Магнітна, електрична й сила тяжіння; тертя й пружність — лише при дотику', 'Magnetic, electric and gravity; friction and elasticity — only when touching'), ch('none', 'Жодна: сили передаються лише через дотик (хоч би через повітря)', 'None: forces pass only by touching (through the air at least)'), ch('magnet', 'Лише магнітна', 'Only the magnetic one')],
+    formulas: ['mechanics.weight'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'контактних і безконтактних сил' },
     ],
     expect: 'reached',
   },
@@ -2074,7 +2102,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

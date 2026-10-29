@@ -1349,6 +1349,31 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       ),
     };
   },
+  'friction-factors': (run) => {
+    const pulls = (run.readings ?? []).filter((x) => x.command.type === 'lab.pull' && x.record.value !== null);
+    const at = (f: (c: Record<string, unknown>) => boolean) => pulls.find((x) => f(x.command as Record<string, unknown>))?.record ?? null;
+    const wide = at((c) => c['weights'] === 1 && c['face'] !== 'narrow' && c['surface'] !== 'paper');
+    const narrow = at((c) => c['face'] === 'narrow');
+    const paper = at((c) => c['surface'] === 'paper');
+    const heavy = at((c) => Number(c['weights']) === 3);
+    const correct = wide && narrow ? (Math.abs(narrow.value! - wide.value!) < 0.05 ? 'same' : narrow.value! < wide.value! ? 'less' : 'more') : undefined;
+    const N1 = (x: { value: number | null } | null, l: Locale) => (x ? formatMeasured('force', x.value!, 0.1, l) : '—');
+    const Nof = (x: { inputs?: Record<string, number> } | null) => x?.inputs?.['N'] ?? 0;
+    return {
+      ...(correct ? { correct } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Здається, що на вужчій грані тягти легше: менша площа — менше тертя. Так думає більшість. Але площа грані — ще не площа дотику. Навіть гладкі на вигляд поверхні торкаються лише верхівками горбиків, і справжня площа дотику — дуже мала частка площі грані. На широкій грані вага бруска розподіляється на багато горбиків, і кожен притиснутий слабко. На вужчій горбиків менше, зате кожен притиснутий сильніше й зминається глибше. Справжня площа дотику виходить приблизно однаковою: її задає не розмір грані, а те, з якою силою брусок притиснутий до дошки. Вага не змінилася — тож і тертя те саме. Інша річ — матеріали: папір інакше зчіплюється з деревом, ніж дерево з деревом. А тягарці притискають брусок сильніше — горбики зминаються більше, і тертя росте пропорційно силі тиску.\n\nВажливо: усе це — про тверді тіла (дерево, метал, пластик, скло). Для липких і м’яких матеріалів правило не діє: скотч тримається, навіть коли його ніщо не притискає, і що ширша смужка, то міцніше він тримає — тут площа дотику важлива. Тому в гоночних драгстерів широкі липкі шини. Та й для твердих тіл закон наближений: сила тертя росте з навантаженням не строго пропорційно.'
+          : 'It seems easier to pull the block on its narrower face: less area, less friction. Most people think so. But the area of a face is not yet the area of contact. Even surfaces that look smooth touch only at the tips of their bumps, and the real area of contact is a very small fraction of the face. On the wide face the block’s weight is shared among many bumps, each pressed lightly. On the narrower face there are fewer bumps, but each is pressed harder and squashed deeper. The real area of contact comes out about the same: it is set not by the size of the face but by how hard the block is pressed to the board. The weight has not changed — so neither has the friction. The materials are another matter: paper catches on wood differently from wood on wood. And the weights press the block harder — the bumps are squashed more, and the friction grows in proportion to the pressing force.\n\nMind: all this is about solid bodies (wood, metal, plastic, glass). For sticky and soft materials the rule fails: adhesive tape holds even when nothing presses it, and the wider the strip, the better it holds — here the area of contact matters. That is why drag racers have wide, sticky tyres. And even for solid bodies the law is approximate: friction grows with the load not strictly in proportion.',
+      ),
+      say: both((l) => (l === 'uk' ? 'Для твердих тіл площа ролі не грає — важливі матеріали й сила тиску!' : 'For solid bodies the area does not matter — the materials and the pressing force do!')),
+      text: both((l) =>
+        l === 'uk'
+          ? `Брусок із тягарцем на широкій грані — ${N1(wide, l)}, на вужчій — ${N1(narrow, l)}: площа дотику менша в півтора раза, а сила тертя та сама. По аркушу паперу — ${N1(paper, l)}: інша пара матеріалів, μ = F / N ≈ ${paper ? sig(paper.value! / Nof(paper), 2, l) : '—'} (у таблиці підручника папір по дереву — 0,40, дерево по дереву — 0,25). З трьома тягарцями — ${N1(heavy, l)}: сила тиску зросла з ${sig(Nof(wide), 2, l)} до ${sig(Nof(heavy), 2, l)} Н, у ${sig(Nof(heavy) / Math.max(1e-9, Nof(wide)), 2, l)} раза, і тертя — приблизно у стільки ж. Це закон Амонтона — Кулона: сила тертя ковзання не залежить від площі дотику й пропорційна силі нормальної реакції опори, F = μN, а μ залежить від матеріалів і того, як оброблені поверхні. Уперше це помітив Леонардо да Вінчі (1493), але його записи не опублікували; у 1699 році закон заново відкрив Ґ. Амонтон, а Ш. Кулон перевірив. Закон стосується твердих тіл: для липких і м’яких матеріалів (скотч, гоночні шини) площа дотику на тертя впливає.`
+          : `The block with its weight on the wide face — ${N1(wide, l)}, on the narrower one — ${N1(narrow, l)}: one and a half times less area touching, the same friction. Over a sheet of paper — ${N1(paper, l)}: another pair of materials, μ = F / N ≈ ${paper ? sig(paper.value! / Nof(paper), 2, l) : '—'} (the textbook’s table: paper on wood 0.40, wood on wood 0.25). With three weights — ${N1(heavy, l)}: the pressing force grew from ${sig(Nof(wide), 2, l)} to ${sig(Nof(heavy), 2, l)} N, ${sig(Nof(heavy) / Math.max(1e-9, Nof(wide)), 2, l)} times, and the friction about as much. This is the Amontons–Coulomb law: sliding friction does not depend on the area of contact and is proportional to the normal force, F = μN, where μ depends on the materials and how the surfaces are finished. Leonardo da Vinci noticed it first (1493), but his notes were not published; in 1699 G. Amontons discovered the law anew, and C. Coulomb checked it. The law is about solid bodies: for sticky and soft materials (adhesive tape, racing tyres) the area of contact does affect friction.`,
+      ),
+    };
+  },
   'block-pressure': (run) => {
     const P = (run.readings ?? []).find((x) => x.command.type === 'lab.hang')?.record.value ?? null;
     const e = [0, 1, 2].map((k) => (run.readings ?? []).find((x) => x.command.type === 'lab.edge' && x.command['edge'] === k)?.record.value ?? null);
