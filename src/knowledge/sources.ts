@@ -849,6 +849,21 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-29',
   }),
+  'wikimedia-drag-shapes': source({
+    id: 'wikimedia-drag-shapes',
+    title: 'Wikimedia Commons, File:14ilf1l.svg «Measured drag coefficients of assorted 3D shapes, drawn to have the same projected frontal area» (TheOtherJesse, 2008): sphere 0.47, half-sphere 0.42, cone 0.50, cube 1.05, angled cube 0.80, long cylinder 0.82, short cylinder 1.15, streamlined body 0.04, streamlined half-body 0.09',
+    url: 'https://commons.wikimedia.org/wiki/File:14ilf1l.svg',
+    license: 'facts-only',
+    retrieved: '2026-10-29',
+    caveats: 'Used in Wikipedia «Drag coefficient», where the figure is captioned for Reynolds numbers between 10⁴ and 10⁶; the values are the usual ones from Hoerner, Fluid-Dynamic Drag (1965).',
+  }),
+  'wikipedia-drag-coefficient': source({
+    id: 'wikipedia-drag-coefficient',
+    title: 'Wikipedia, Drag coefficient: F_d = ½ρu²c_dA; flat plate perpendicular to flow (3D) 1.28; rough sphere (Re = 10⁶) 0.47; the shapes’ figure at Reynolds numbers between 10⁴ and 10⁶',
+    url: 'https://en.wikipedia.org/wiki/Drag_coefficient',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-29',
+  }),
   '3b-helical-springs': source({
     id: '3b-helical-springs',
     title: '3B Scientific, Set of Helical Springs for Hooke’s Law 1003376 [U40816]: 5 springs with pointers, 2.5, 5, 10, 15, 25 N/m',

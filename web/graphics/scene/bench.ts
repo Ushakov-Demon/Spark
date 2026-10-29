@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -66,6 +66,11 @@ export interface BenchView {
    * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
    * dropped below the card (m), its tilt (°), and the slow motion's label.
    */
+  /**
+   * The drag: the plasticine body (its form) let go in the aquarium's water or in the air; `at` — how far it has
+   * fallen from where it was let go (m); `count` — the frames counted between the marks so far; `read` — the result.
+   */
+  readonly drag?: { readonly shape: 'ball' | 'cube' | 'plate'; readonly medium: 'water' | 'air'; readonly at: number; readonly size: number; readonly count?: string; readonly read?: string; readonly slow?: string; readonly moving?: boolean; readonly air: string };
   /**
    * Carts: pushed apart — the weights on cart 2, how far each has gone (m), the burning thread (0…1), the paths read;
    * weighed — which cart hangs on the dynamometer, with its weights, and the reading.
@@ -236,6 +241,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'lift') return liftSvg(v.lift);
   if (v.kind === 'bounce') return bounceSvg(v.bounce);
   if (v.kind === 'carts') return cartsSvg(v.carts);
+  if (v.kind === 'drag') return dragSvg(v.drag);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -468,6 +474,37 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/** The aquarium: its water's surface, 8 units to the centimetre down from it; the marks at 5 and 25 cm. */
+export const DRAG_TOP = 62;
+export const DRAG_K = 800;
+const DRAG_X = 508;
+const PLASTICINE = '#e8743b';
+/**
+ * The drag: an aquarium on the table (water, or empty — the air), two marks on its glass 20 cm apart, the
+ * plasticine body falling; a phone filming from the side, its count of frames between the marks.
+ */
+function dragSvg(d: BenchView['drag']): string {
+  if (!d) return '';
+  const w = 100;
+  const bottom = TABLE - 6;
+  const x0 = DRAG_X - w / 2;
+  const glass = `<rect x="${x0}" y="${DRAG_TOP - 22}" width="${w}" height="${bottom - DRAG_TOP + 22}" rx="3" style="fill:none;stroke:#9fb4c4;stroke-width:2.5"/><rect x="${x0 - 4}" y="${bottom}" width="${w + 8}" height="6" rx="2" style="fill:${DARK}"/>`;
+  const water = d.medium === 'water' ? `<rect x="${x0 + 1.5}" y="${DRAG_TOP}" width="${w - 3}" height="${bottom - DRAG_TOP}" style="fill:rgba(90,160,220,0.32)"/><path d="M${x0 + 1.5},${DRAG_TOP} h${w - 3}" style="stroke:#5a9fd8;stroke-width:1.5"/>` : `<text class="bench-label" x="${DRAG_X}" y="${DRAG_TOP + 2}" text-anchor="middle">${d.air}</text>`;
+  const m1 = DRAG_TOP + 0.05 * DRAG_K;
+  const m2 = DRAG_TOP + 0.25 * DRAG_K;
+  const marks = `<path d="M${x0 - 10},${m1} h${w + 20} M${x0 - 10},${m2} h${w + 20}" style="stroke:#c0392b;stroke-width:1.5;stroke-dasharray:5 3"/><text class="bench-label" x="${x0 - 14}" y="${m1 + 4}" text-anchor="end">0</text><text class="bench-label" x="${x0 - 14}" y="${m2 + 4}" text-anchor="end">20 см</text>`;
+  const px = d.size * 100 * 8;
+  const y = Math.min(DRAG_TOP + d.at * DRAG_K, bottom - (d.shape === 'plate' ? 2 : px / 2));
+  const body = d.shape === 'ball' ? `<circle cx="${DRAG_X}" cy="${y}" r="${px / 2}" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : d.shape === 'cube' ? `<rect x="${DRAG_X - px / 2}" y="${y - px / 2}" width="${px}" height="${px}" rx="1.5" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : `<rect x="${DRAG_X - px / 2}" y="${y - 2}" width="${px}" height="4" rx="1" style="fill:${PLASTICINE};stroke:#8a3a12"/>`;
+  // The phone on a stand beside the aquarium, its lens to the marks; the count of frames on its screen.
+  const px0 = x0 + w + 14;
+  const phone = `<rect x="${px0}" y="${m1 + 30}" width="34" height="62" rx="5" style="fill:#2b2f36"/><rect x="${px0 + 3}" y="${m1 + 36}" width="28" height="48" rx="2" style="fill:#cfe3f3"/><circle cx="${px0 + 17}" cy="${m1 + 33}" r="1.6" style="fill:#9aa"/><path d="M${px0 + 17},${m1 + 92} V${bottom + 6}" style="stroke:${STEEL};stroke-width:3"/>`;
+  const count = d.count ? `<text x="${px0 + 17}" y="${m1 + 65}" text-anchor="middle" style="font:700 14px sans-serif;fill:#1d2a36">${d.count}</text>` : '';
+  const read = d.read && !d.moving ? `<text class="bench-reading" x="${DRAG_X + 10}" y="${DRAG_TOP - 30}" text-anchor="middle">${d.read}</text>` : '';
+  const slow = d.slow && d.moving ? `<text class="bench-label" x="${DRAG_X}" y="${DRAG_TOP - 30}" text-anchor="middle">${d.slow}</text>` : '';
+  return `${water}${marks}${body}${glass}${phone}${count}${read}${slow}`;
 }
 
 /** The carts on the table: 5 units to the centimetre; where they stand, touching through the spring. */

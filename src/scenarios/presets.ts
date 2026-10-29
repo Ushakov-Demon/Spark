@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -978,6 +978,30 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Яке тіло з тієї самої грудки пластиліну тонутиме найповільніше?', en: 'Which body from the same lump of plasticine sinks slowest?' },
+    id: 'drag-form',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Форма тіла, середовище й сила опору', en: 'The form of a body, the medium and the drag' },
+    question: {
+      uk: 'З тієї самої грудки пластиліну (5 г) ліпимо по черзі кульку, кубик і пласку квадратну пластинку й відпускаємо біля поверхні води в акваріумі. На склі дві позначки на відстані 20 см, перша — на 5 см нижче поверхні. Знімаємо телефоном (30 кадрів за секунду) й за кадрами рахуємо, скільки часу тіло йде між позначками. Наостанок ту саму кульку відпускаємо в повітрі. Яке тіло тонутиме у воді найповільніше?',
+      en: 'From the same lump of plasticine (5 g) we mould in turn a ball, a cube and a flat square plate and let each go at the water’s surface in an aquarium. On the glass are two marks 20 cm apart, the first 5 cm below the surface. We film it with a phone (30 frames a second) and count by the frames how long the body takes between the marks. At last the same ball is let go in the air. Which body sinks slowest in the water?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'drag',
+    plan: [
+      ...(['ball', 'cube', 'plate'] as const).map((shape) => ({ kind: 'bench', command: { type: 'lab.drag', shape, medium: 'water' } }) as const),
+      { kind: 'bench', command: { type: 'lab.drag', shape: 'ball', medium: 'air' } },
+    ],
+    choices: [ch('plate', 'Пластинка', 'The plate'), ch('ball', 'Кулька', 'The ball'), ch('same', 'Усі однаково: маса ж та сама', 'All alike: the mass is the same')],
+    formulas: ['mechanics.speed'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'між формою тіла, густиною середовища і силою опору середовища' },
     ],
     expect: 'reached',
   },
@@ -2102,7 +2126,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'ball-in-liquids',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

@@ -1,5 +1,6 @@
 import { BENCH_SPRING_K, BENCH_WEIGHT, WEIGHT_SET } from '../../../src/scenarios/bench.js';
 import type { LocalizedText } from '../../../src/knowledge/i18n.js';
+import { DRAG_FPS, DRAG_START, DRAG_TRACK, dragFall } from '../../../src/scenarios/drag-bench.js';
 import { Channel, type Motion, type ProcedureStep } from '../../motion.js';
 import { SINK_LEAD, type BenchView } from './bench.js';
 
@@ -22,6 +23,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.drag': { uk: 'Тіло тоне — телефон знімає…', en: 'The body sinks — the phone is filming…' },
   'lab.carts': { uk: 'Нитка перегоріла — візки роз’їжджаються…', en: 'The thread burnt — the carts roll apart…' },
   'lab.touch': { uk: 'Дивимося…', en: 'Watching…' },
   'lab.coin': { uk: 'Знімаємо — дивимося покадрово…', en: 'Filming — watching frame by frame…' },
@@ -53,6 +55,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
   if (next.kind === 'carts' && next.carts?.mode === 'push' && next.carts.read) return cartsRun(next, draw);
+  if (next.kind === 'drag' && next.drag?.read) return dragRun(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
   if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
@@ -440,6 +443,27 @@ function cartsRun(next: BenchView, draw: (v: BenchView) => void): Motion {
       if (T < burn) return draw({ ...next, carts: { ...rest, x1: 0, x2: 0, flame: T / burn } });
       const k = (T - burn) / ride;
       draw({ ...next, carts: { ...rest, x1: c.x1 * k, x2: c.x2 * k, moving: true } });
+    },
+  };
+}
+
+/** The drag: the body played slowed DRAG_SLOW times, falling as the model has it; the frames counted between the marks. */
+export const DRAG_SLOW = 2;
+function dragRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const d = next.drag!;
+  const f = dragFall(d.shape, d.medium);
+  const end = f.timeTo(0.3);
+  const t0 = f.timeTo(DRAG_START);
+  const t1 = f.timeTo(DRAG_START + DRAG_TRACK);
+  const clock = new Channel(0, end, { kind: 'steady', speed: 1 / DRAG_SLOW }, 1e-5);
+  const { read: _r, count: _c, ...rest } = d;
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      const t = clock.value;
+      const frames = t < t0 ? 0 : Math.floor((Math.min(t, t1) - t0) * DRAG_FPS);
+      draw({ ...next, drag: { ...rest, at: f.at(t), moving: true, ...(t >= t0 ? { count: String(frames) } : {}) } });
     },
   };
 }

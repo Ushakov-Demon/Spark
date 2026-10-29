@@ -46,3 +46,4 @@ export * from './snail-bench.js';
 export * from './coin-bench.js';
 export * from './touch-bench.js';
 export * from './carts-bench.js';
+export * from './drag-bench.js';

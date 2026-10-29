@@ -331,6 +331,15 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('візок 1 — 1,0 Н, візок 2 з двома тягарцями — 2,9 Н');
   }, 60_000);
 
+  it('drag: from the same plasticine the plate sinks slowest, the ball fastest; in the air the ball nearly falls freely', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'drag-form')!);
+    expect(answer.correct).toBe('plate');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.why?.uk, '\n', answer.say.uk);
+    const frames = [...answer.text.uk.matchAll(/(\d+) кадр/g)].map((m) => Number(m[1]));
+    expect(frames).toEqual([11, 15, 28, 4]);
+    expect(answer.text.uk).toContain('≈ 0,018 Н');
+  }, 60_000);
+
   it('friction: the same on the narrower face, more over paper, growing with the load', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'friction-factors')!);
     expect(answer.correct).toBe('same');

@@ -7,6 +7,7 @@ import { BEAUFORT, beaufortOf, WIND_TRACK } from './wind-bench.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
 import { TOUCH_CASES, touchSeen, type TouchCase } from './touch-bench.js';
+import { DRAG_MASS, dragBody, dragShapeName, framesText, type DragShape } from './drag-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -462,6 +463,25 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
       out.push({ id: `cl:${i}`, title: uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w} × 100 г`}: за 0,5 с` : `${w === 0 ? 'alike carts' : `cart 2 + ${w} × 100 g`}: in 0.5 s`, formula: `l₁ = ${cm(a ?? 0)}, l₂ = ${cm(b ?? 0)}` });
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
+      return;
+    }
+    // The drag: the frames between the marks, the time and the speed; in water, the drag once it moves steadily.
+    if (c.type === 'lab.drag') {
+      const frames = r.inputs?.['frames'] ?? 0;
+      const fps = r.inputs?.['fps'] ?? 30;
+      const track = r.inputs?.['track'] ?? 0.2;
+      const shape = dragShapeName(c['shape'] as DragShape)[uk ? 'uk' : 'en'];
+      const air = c['medium'] === 'air';
+      const t = formatMeasured('time', r.value, 0.01, locale);
+      out.push({ id: `dt:${i}`, title: uk ? `${shape} ${air ? 'в повітрі' : 'у воді'}: ${framesText(frames, true)} між позначками` : `${shape} ${air ? 'in the air' : 'in water'}: ${framesText(frames, false)} between the marks`, formula: `t = ${frames} / ${fps} ${uk ? 'с' : 's'} ≈ ${t}` });
+      out.push({ id: `dv:${i}`, title: uk ? 'швидкість між позначками' : 'the speed between the marks', formula: 'v = s / t', numbers: `${n(track, 2)} ${uk ? 'м' : 'm'} / ${t} ≈ ${n(track / r.value, 2)} ${uk ? 'м/с' : 'm/s'}` });
+      if (c['shape'] === 'ball' && !air) {
+        const { volume } = dragBody('ball');
+        const rho = r.inputs?.['rho'] ?? 1000;
+        const P = DRAG_MASS * G;
+        const Fa = rho * G * volume;
+        out.push({ id: `df:${i}`, title: uk ? 'тіло йде рівномірно: сила опору = вага − архімедова сила' : 'the body goes steadily: the drag = the weight − the buoyant force', formula: uk ? 'F_оп = m·g − ρ_в·g·V' : 'F_d = m·g − ρ_w·g·V', numbers: `${n(P, 2)} − ${n(Fa, 2)} ≈ ${n(P - Fa, 2)} ${uk ? 'Н' : 'N'}` });
+      }
       return;
     }
     // Contact and non-contact forces: what was seen, and whether the force acted without touching (no numbers).
