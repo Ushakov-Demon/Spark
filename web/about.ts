@@ -5,7 +5,7 @@
  */
 import type { Locale } from '../src/knowledge/i18n.js';
 
-export const DEVELOPER = { name: 'Baza Developers', url: 'https://bazadevelopers.com/', company: 'Baza Production' } as const;
+export const DEVELOPER = { name: 'Baza Developers', url: 'https://bazadevelopers.com/', company: 'Baza Production', companyUrl: 'https://bazaproduction.com/' } as const;
 /** Where reports go: a new issue in the project's repository (the user needs a GitHub account). */
 export const REPORT_URL = 'https://github.com/Ushakov-Demon/Spark/issues/new';
 
@@ -23,14 +23,19 @@ export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: strin
   en: { about: 'About', bug: 'Found a mistake', close: 'Close', madeBy: 'Developed by' },
 };
 
+/** When the page's text was last brought up to date (change it with the text). */
+export const ABOUT_UPDATED = '2026-10-29';
+const updated = (l: Locale) => new Intl.DateTimeFormat(l === 'uk' ? 'uk-UA' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(ABOUT_UPDATED));
+
 /** The page's first paragraph (also its description for search engines and link previews). */
 export const ABOUT_INTRO: Record<Locale, string> = {
-  uk: 'Тут можна поставити дослід і побачити, що відбувається і чому, — зі справжніми числами й формулами. Поки що можна нагрівати й заморожувати, плавити й розчиняти, зважувати, пропускати струм. Це лише початок.',
-  en: 'An experiment you can do here — and see what happens and why, with real numbers and formulas. For now you can heat and freeze, melt and dissolve, weigh, pass a current. This is only the beginning.',
+  uk: 'Тут можна поставити дослід і побачити, що відбувається і чому, — зі справжніми числами й формулами. Нагрівати й заморожувати, зважувати й міряти, котити кульки й розтягувати пружини, пропускати струм і вмикати електромагніт — у готових дослідах за шкільною програмою або в пісочниці, де дослід складаєш сам. Це лише початок.',
+  en: 'An experiment you can do here — and see what happens and why, with real numbers and formulas. Heat and freeze, weigh and measure, roll balls and stretch springs, pass a current and switch on an electromagnet — in ready-made experiments that follow the school curriculum, or in the sandbox, where you build the experiment yourself. This is only the beginning.',
 };
 
 export function aboutHtml(l: Locale): string {
   const dev = link(DEVELOPER.url, DEVELOPER.name);
+  const company = link(DEVELOPER.companyUrl, DEVELOPER.company);
   if (l === 'en') {
     return `<article class="about">
       <h2>Spark — a virtual science lab</h2>
@@ -49,13 +54,15 @@ export function aboutHtml(l: Locale): string {
       </ul>
 
       <h3>How it works</h3>
-      <p>Every experiment is computed by a model of the phenomena themselves (today: heat flow, phase changes, dissolving, electric current) — not drawn from a script. Every number comes with its source (press “i” next to an item); values we could only estimate are marked “estimate”. The model is simplified — for example, a body has one temperature throughout — so results are approximate, though they follow the same laws as reality.</p>
+      <p>Every experiment is computed by a model of the phenomena themselves (today: heat flow and changes of state, dissolving, mechanics — motion, forces, pressure, simple machines, energy — electric current and magnetism) — not drawn from a script. Every number comes with its source (press “i” next to an item); values we could only estimate are marked “estimate”. The model is simplified — for example, a body has one temperature throughout — so results are approximate, though they follow the same laws as reality.</p>
 
       <h3>Free, for everyone, for good</h3>
       <p>Spark is a social project. Everything in it is free and will stay free: no paid features, materials or options, no limits, no advertising. Nobody here will ever ask a student for money.</p>
 
       <h3>Spark is growing</h3>
-      <p>What is here now is a start: heat (heating, melting, boiling, heat balance), density and floating, electric current in liquids. Every new topic is built the same way — from sourced data and the laws behind it — and the lab keeps growing: chemistry and new branches of physics are next, along with new substances, instruments and ready-made experiments for more grades. The experiments you see are examples of what the lab can do, not its limits.</p>
+      <p>What is here now is a start. Physics: grade 7 — all five topics of the programme (measuring, motion, forces, pressure, work and energy); grade 8 — heat and electricity; grade 9 — current in different media, magnetism and electromagnetic induction. Chemistry: grade 8 shares experiments with physics (salt on winter roads, electrolysis), grade 9 begins with solutions. And experiments beyond the programme — a model of the Solar System to scale, the calendars that drift, a root that knows which way is down.</p>
+      <p>Around the experiments: the sandbox, where you put together your own; the reference book of terms and substances; the record of each experiment (one from the sandbox you can save and replay step by step); the board, where every reading is written down, as in a notebook; and the Professor's newspaper.</p>
+      <p>Every new topic is built the same way — from sourced data and the laws behind it — and the lab keeps growing: next come the rest of grades 7–9, optics, more chemistry and new branches of physics, with new substances and instruments. The experiments you see are examples of what the lab can do, not its limits.</p>
 
       <h3>Safety</h3>
       <p>Spark is a virtual laboratory. Many of its experiments are dangerous in reality: burns from boiling water, hot oil and molten metal, electric shock, poisonous gases (chlorine in electrolysis), fire. In the lab you can do what must never be done at home. <strong>Never use mains voltage (230 V)</strong>, never heat flammable liquids over an open flame, never point a heated test tube at anyone.</p>
@@ -70,7 +77,8 @@ export function aboutHtml(l: Locale): string {
       <p>Spark has no sign-up, no advertising and no analytics, and collects no personal data. Your settings (language, level, voice, sound) and saved experiments are kept only in your browser and disappear when you clear the site’s data. The newspaper loads articles from Wikipedia, Wikidata and Wikimedia, so your browser contacts their servers. The Professor’s voice uses your browser’s voices; some browsers process speech on their own servers. A mistake report is sent by you yourself and contains only what you see in it.</p>
 
       <h3>Developer</h3>
-      <p>Spark is developed by ${dev}, the technical department of the Slovak company ${esc(DEVELOPER.company)}. A non-commercial social project.</p>
+      <p>Spark is developed by ${dev}, the technical department of the Slovak company ${company}. A non-commercial social project.</p>
+      <p class="muted small">Text updated: ${updated('en')}</p>
     </article>`;
   }
   return `<article class="about">
@@ -90,13 +98,15 @@ export function aboutHtml(l: Locale): string {
     </ul>
 
     <h3>Як це працює</h3>
-    <p>Кожен дослід рахує модель самих явищ (сьогодні це теплообмін, плавлення й кипіння, розчинення, електричний струм), а не заздалегідь написаний сценарій. Кожне число має джерело (натисни «i» біля предмета); те, що вдалося лише оцінити, позначено «оцінка». Модель спрощена — наприклад, у кожного тіла одна температура на все тіло, — тож результати наближені, хоча підкоряються тим самим законам, що й у житті.</p>
+    <p>Кожен дослід рахує модель самих явищ (сьогодні це теплообмін і зміни агрегатного стану, розчинення, механіка — рух, сили, тиск, прості механізми, енергія, — електричний струм і магнітні явища), а не заздалегідь написаний сценарій. Кожне число має джерело (натисни «i» біля предмета); те, що вдалося лише оцінити, позначено «оцінка». Модель спрощена — наприклад, у кожного тіла одна температура на все тіло, — тож результати наближені, хоча підкоряються тим самим законам, що й у житті.</p>
 
     <h3>Безкоштовно, для всіх, назавжди</h3>
     <p>Spark — соціальний проєкт. Усе в ньому безкоштовне й таким залишиться: жодних платних функцій, матеріалів чи можливостей, жодних обмежень і реклами. Ніхто тут ніколи не проситиме в учня грошей.</p>
 
     <h3>Spark росте</h3>
-    <p>Те, що є зараз, — лише початок: теплові явища (нагрівання, плавлення, кипіння, тепловий баланс), густина й плавання, електричний струм у рідинах. Кожна нова тема будується так само — з даних із джерелами й законів, що за ними стоять, — і лабораторія росте далі: попереду хімія й нові розділи фізики, нові речовини, прилади й готові досліди для інших класів. Досліди, які ти бачиш, — приклади того, що вміє лабораторія, а не її межі.</p>
+    <p>Те, що є зараз, — лише початок. Фізика: 7 клас — усі п’ять тем програми (вимірювання, механічний рух, взаємодія тіл і сили, тиск, робота й енергія); 8 клас — теплові та електричні явища; 9 клас — струм у різних середовищах, магнітні явища й електромагнітна індукція. Хімія: у 8 класі — спільні з фізикою досліди (сіль на зимових дорогах, електроліз), у 9-му — розчини. А ще досліди поза програмою — модель Сонячної системи в масштабі, календарі, що збиваються з ліку, корінь, який знає, де низ.</p>
+    <p>Навколо дослідів: пісочниця, де дослід складаєш сам; довідник термінів і речовин; протокол кожного досліду (дослід із пісочниці можна зберегти й повторити крок за кроком); дошка, на яку записується кожне показання, як у зошиті; газета Професора.</p>
+    <p>Кожна нова тема будується так само — з даних із джерелами й законів, що за ними стоять, — і лабораторія росте далі: попереду решта програми 7–9 класів, оптика, більше хімії й нові розділи фізики, нові речовини й прилади. Досліди, які ти бачиш, — приклади того, що вміє лабораторія, а не її межі.</p>
 
     <h3>Безпека</h3>
     <p>Spark — віртуальна лабораторія. Багато її дослідів у реальності небезпечні: опіки окропом, розпеченою олією й розплавленим металом, ураження струмом, отруйні гази (хлор під час електролізу), пожежа. У лабораторії можна те, чого ніколи не можна робити вдома. <strong>Ніколи не використовуй мережеву напругу 230 В</strong>, не грій горючі рідини на відкритому вогні, не спрямовуй нагріту пробірку на людей.</p>
@@ -111,7 +121,8 @@ export function aboutHtml(l: Locale): string {
     <p>У Spark немає реєстрації, реклами й аналітики; персональних даних ми не збираємо. Налаштування (мова, рівень, голос, звук) і збережені досліди зберігаються лише у твоєму браузері й зникають, якщо очистити дані сайту. «Науковий вісник» завантажує статті з Вікіпедії, Wikidata та Wikimedia — для цього браузер звертається до їхніх серверів. Голос Професора — це голоси твого браузера; деякі браузери обробляють мовлення на своїх серверах. Повідомлення про помилку надсилаєш ти сам, і в ньому лише те, що ти бачиш.</p>
 
     <h3>Розробник</h3>
-    <p>Spark розробляє ${dev} — технічний відділ словацької компанії ${esc(DEVELOPER.company)}. Некомерційний соціальний проєкт.</p>
+    <p>Spark розробляє ${dev} — технічний відділ словацької компанії ${company}. Некомерційний соціальний проєкт.</p>
+    <p class="muted small">Текст оновлено: ${updated('uk')}</p>
   </article>`;
 }
 
