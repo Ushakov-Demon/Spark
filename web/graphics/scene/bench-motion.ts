@@ -23,6 +23,9 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.tower': { uk: 'Наливаю повільно, по стінці…', en: 'Pouring slowly, down the wall…' },
+  /** (A body let into the tower.) */
+  'lab.tower.drop': { uk: 'Опускається… дивимося, де зупиниться…', en: 'Going down… where will it stop…' },
   'lab.drag': { uk: 'Тіло тоне — телефон знімає…', en: 'The body sinks — the phone is filming…' },
   'lab.carts': { uk: 'Нитка перегоріла — візки роз’їжджаються…', en: 'The thread burnt — the carts roll apart…' },
   'lab.touch': { uk: 'Дивимося…', en: 'Watching…' },
@@ -56,6 +59,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
   if (next.kind === 'carts' && next.carts?.mode === 'push' && next.carts.read) return cartsRun(next, draw);
   if (next.kind === 'drag' && next.drag?.read) return dragRun(next, draw);
+  if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
   if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
@@ -464,6 +468,25 @@ function dragRun(next: BenchView, draw: (v: BenchView) => void): Motion {
       const t = clock.value;
       const frames = t < t0 ? 0 : Math.floor((Math.min(t, t1) - t0) * DRAG_FPS);
       draw({ ...next, drag: { ...rest, at: f.at(t), moving: true, ...(t >= t0 ? { count: String(frames) } : {}) } });
+    },
+  };
+}
+
+/** The tower: the four liquids poured one after another; or the last body let in from above, slowing to where it rests. */
+function towerRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const t = next.tower!;
+  const pour = t.anim === 'pour';
+  const clock = new Channel(0, 1, { kind: 'steady', speed: pour ? 1 / 4 : 1 / 1.6 }, 1e-4);
+  const last = t.bodies[t.bodies.length - 1];
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      const u = clock.value;
+      if (pour) return draw({ ...next, tower: { ...t, poured: 4 * u } });
+      // (From above the cylinder's top, fast through the light layers, slowing down: an ease-out.)
+      const at = last ? 280 + (last.at - 280) * (1 - (1 - u) ** 3) : 0;
+      draw({ ...next, tower: { ...t, bodies: [...t.bodies.slice(0, -1), ...(last ? [{ ...last, at }] : [])] } });
     },
   };
 }

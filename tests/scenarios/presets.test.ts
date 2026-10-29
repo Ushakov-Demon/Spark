@@ -331,6 +331,16 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('візок 1 — 1,0 Н, візок 2 з двома тягарцями — 2,9 Н');
   }, 60_000);
 
+  it('liquid tower: the nut on the bottom, acrylic on the glycerol, polyethylene on the water, pine in the ethanol', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'liquid-tower')!);
+    expect(answer.correct).toBe('glycerol');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.text.uk).toContain('лягла на дно');
+    expect(answer.text.uk).toContain('межі «гліцерин — вода»: 69 % його об’єму у гліцерині');
+    expect(answer.text.uk).toContain('межі «вода — олія»: 54 % його об’єму у воді');
+    expect(answer.text.uk).toContain('плаває у спирті, занурений на 65 %');
+  }, 60_000);
+
   it('drag: from the same plasticine the plate sinks slowest, the ball fastest; in the air the ball nearly falls freely', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'drag-form')!);
     expect(answer.correct).toBe('plate');

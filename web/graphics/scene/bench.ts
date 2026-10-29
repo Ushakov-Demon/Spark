@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -66,6 +66,11 @@ export interface BenchView {
    * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
    * dropped below the card (m), its tilt (°), and the slow motion's label.
    */
+  /**
+   * The liquid tower: how many layers are poured (2.5 — the third half-way); the bodies in the cylinder, each
+   * where it is (mL mark of its bottom… or resting: `share` of it below the mark), the names of the liquids.
+   */
+  readonly tower?: { readonly poured: number; readonly bodies: readonly { readonly body: 'nut' | 'acrylic' | 'hdpe' | 'pine'; readonly at: number }[]; readonly names: readonly string[]; readonly ml: string; /** What has just happened, to be played: the pouring, or the last body going in. */ readonly anim?: 'pour' | 'drop' };
   /**
    * The drag: the plasticine body (its form) let go in the aquarium's water or in the air; `at` — how far it has
    * fallen from where it was let go (m); `count` — the frames counted between the marks so far; `read` — the result.
@@ -242,6 +247,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'bounce') return bounceSvg(v.bounce);
   if (v.kind === 'carts') return cartsSvg(v.carts);
   if (v.kind === 'drag') return dragSvg(v.drag);
+  if (v.kind === 'tower') return towerSvg(v.tower);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -474,6 +480,39 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/** The tower's cylinder: 11 units to the centimetre; 250 mL across 3.8 cm inside — 50 mL is 4.4 cm of it. */
+const TOWER_X = 500;
+export const TOWER_PX_PER_ML = (11 * 4.41) / 50;
+const TOWER_COLORS = ['rgba(240,214,140,0.85)', 'rgba(74,144,217,0.75)', 'rgba(232,197,71,0.85)', 'rgba(224,108,140,0.7)'];
+/** The bodies: a grey hexagon nut; a clear bluish square; a white piece; a wooden cube — 1 cm or so, side by side. */
+const TOWER_BODY: Record<'nut' | 'acrylic' | 'hdpe' | 'pine', { dx: number; h: number; svg: (x: number, y: number) => string }> = {
+  nut: { dx: 0, h: 7, svg: (x, y) => `<rect x="${x - 8}" y="${y - 7}" width="16" height="7" rx="1" style="fill:#7d858d;stroke:#3a3f46"/><path d="M${x - 3},${y - 7} v7 M${x + 3},${y - 7} v7" style="stroke:#3a3f46;stroke-width:0.8"/>` },
+  acrylic: { dx: -9, h: 9, svg: (x, y) => `<rect x="${x - 5}" y="${y - 9}" width="10" height="9" rx="1" style="fill:rgba(200,235,255,0.85);stroke:#1f6fa8;stroke-width:1.2"/>` },
+  hdpe: { dx: 9, h: 6, svg: (x, y) => `<rect x="${x - 6}" y="${y - 6}" width="12" height="6" rx="1" style="fill:#fafafa;stroke:#555;stroke-width:1"/>` },
+  pine: { dx: 0, h: 11, svg: (x, y) => `<rect x="${x - 6}" y="${y - 11}" width="12" height="11" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/>` },
+};
+/** Where a body's bottom is drawn when it rests: `share` of it below the mark (on the bottom: on the glass). */
+export const towerBodyHeight = (b: 'nut' | 'acrylic' | 'hdpe' | 'pine') => TOWER_BODY[b].h;
+function towerSvg(t: BenchView['tower']): string {
+  if (!t) return '';
+  const w = 44;
+  const bottom = TABLE - 14;
+  const k = TOWER_PX_PER_ML;
+  const x0 = TOWER_X - w / 2;
+  const top = bottom - 250 * k;
+  const layers = TOWER_COLORS.map((c, i) => {
+    const fill = Math.max(0, Math.min(1, t.poured - i));
+    if (!fill) return '';
+    const y1 = bottom - 50 * k * (i + fill);
+    return `<rect x="${x0 + 2}" y="${y1}" width="${w - 4}" height="${50 * k * fill}" style="fill:${c}"/>`;
+  }).join('');
+  const names = t.names.map((n, i) => (t.poured >= i + 1 ? `<text class="bench-label" x="${x0 - 8}" y="${bottom - 50 * k * (i + 0.5) + 4}" text-anchor="end">${n}</text>` : '')).join('');
+  const marks = [50, 100, 150, 200, 250].map((m) => `<path d="M${x0 + w - 10},${bottom - m * k} h10" style="stroke:#d8e2ea;stroke-width:1"/><text class="bench-label" x="${x0 + w + 6}" y="${bottom - m * k + 4}">${m}</text>`).join('');
+  const bodies = t.bodies.map((b) => TOWER_BODY[b.body].svg(TOWER_X + TOWER_BODY[b.body].dx, Math.min(bottom, bottom - b.at * k))).join('');
+  const glass = `<rect x="${x0}" y="${top - 6}" width="${w}" height="${bottom - top + 6}" rx="3" style="fill:none;stroke:#9fb4c4;stroke-width:2.5"/><rect x="${x0 - 14}" y="${bottom}" width="${w + 28}" height="8" rx="2" style="fill:${DARK}"/>`;
+  return `${layers}${bodies}${glass}${marks}<text class="bench-label" x="${x0 + w + 6}" y="${top - 10}">${t.ml}</text>${names}`;
 }
 
 /** The aquarium: its water's surface, 8 units to the centimetre down from it; the marks at 5 and 25 cm. */

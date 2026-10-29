@@ -849,6 +849,20 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-29',
   }),
+  'wikipedia-pmma': source({
+    id: 'wikipedia-pmma',
+    title: 'Wikipedia, Poly(methyl methacrylate) (acrylic glass, оргскло): density 1.18 g/cm³ (infobox); «It has a density of 1.17–1.20 g/cm3, which is approximately half that of glass»',
+    url: 'https://en.wikipedia.org/wiki/Poly(methyl_methacrylate)',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-29',
+  }),
+  'wikipedia-hdpe': source({
+    id: 'wikipedia-hdpe',
+    title: 'Wikipedia, High-density polyethylene: density ca. 0.961 g/cm³ (961 kg/m³); «The density of HDPE ranges from 930 to 970 kg/m3»',
+    url: 'https://en.wikipedia.org/wiki/High-density_polyethylene',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-10-29',
+  }),
   'wikimedia-drag-shapes': source({
     id: 'wikimedia-drag-shapes',
     title: 'Wikimedia Commons, File:14ilf1l.svg «Measured drag coefficients of assorted 3D shapes, drawn to have the same projected frontal area» (TheOtherJesse, 2008): sphere 0.47, half-sphere 0.42, cone 0.50, cube 1.05, angled cube 0.80, long cylinder 0.82, short cylinder 1.15, streamlined body 0.04, streamlined half-body 0.09',

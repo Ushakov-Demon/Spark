@@ -62,7 +62,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -984,6 +984,31 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Де в циліндрі з чотирма рідинами зупиниться шматочок оргскла?', en: 'Where in a cylinder of four liquids does a piece of acrylic glass stop?' },
+    id: 'liquid-tower',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Тіла й рідини різної густини в одному циліндрі', en: 'Bodies and liquids of different densities in one cylinder' },
+    question: {
+      uk: 'У мірний циліндр по черзі наливаємо по 50 мл гліцерину, води, соняшникової олії та спирту — повільно, по стінці. Потім опускаємо сталеву гайку, шматочок оргскла, шматочок поліетилену й сосновий кубик. Оргскло у воді тоне. Де воно зупиниться в нашому циліндрі?',
+      en: 'Into a measuring cylinder we pour in turn 50 mL each of glycerol, water, sunflower oil and ethanol — slowly, down the wall. Then we let in a steel nut, a piece of acrylic glass, a piece of polyethylene and a pine cube. Acrylic glass sinks in water. Where will it stop in our cylinder?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'tower',
+    plan: [
+      { kind: 'bench', command: { type: 'lab.tower', step: 'pour' } },
+      ...(['nut', 'acrylic', 'hdpe', 'pine'] as const).map((body) => ({ kind: 'bench', command: { type: 'lab.tower', step: 'drop', body } }) as const),
+    ],
+    choices: [ch('bottom', 'На дні: у воді ж воно тоне', 'On the bottom: it sinks in water after all'), ch('glycerol', 'На межі гліцерину й води', 'At the boundary of glycerol and water'), ch('oil', 'На межі води й олії', 'At the boundary of water and oil')],
+    trick: { uk: 'Більшість думає, що тіло, яке тоне у воді, неодмінно ляже на дно.', en: 'Most people think a body that sinks in water is bound to end up on the bottom.' },
+    formulas: ['mechanics.density', 'mechanics.submerged-share'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'взаємного розташуванням тіл і рідин різної густини у циліндричному посуді' },
     ],
     expect: 'reached',
   },
@@ -2132,7 +2157,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

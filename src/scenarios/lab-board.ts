@@ -8,6 +8,7 @@ import { STROBE_INTERVAL, STROBE_SCALE } from './strobe-bench.js';
 import { SNAIL_TIME, snailSurfaceName, type SnailSurface } from './snail-bench.js';
 import { TOUCH_CASES, touchSeen, type TouchCase } from './touch-bench.js';
 import { DRAG_MASS, dragBody, dragShapeName, framesText, type DragShape } from './drag-bench.js';
+import { TOWER_BODIES, TOWER_LIQUIDS, towerLiquidDensity, towerLiquidName, type TowerBody } from './tower-bench.js';
 import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -463,6 +464,27 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
       out.push({ id: `cl:${i}`, title: uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w} × 100 г`}: за 0,5 с` : `${w === 0 ? 'alike carts' : `cart 2 + ${w} × 100 g`}: in 0.5 s`, formula: `l₁ = ${cm(a ?? 0)}, l₂ = ${cm(b ?? 0)}` });
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
+      return;
+    }
+    // The liquid tower: the layers by their densities; each body — between which liquids, and how much of it in the lower one.
+    if (c.type === 'lab.tower') {
+      const d = TOWER_LIQUIDS.map(towerLiquidDensity);
+      const kg = uk ? 'кг/м³' : 'kg/m³';
+      const ml = uk ? 'мл' : 'mL';
+      const nm = (k: number) => tr(towerLiquidName(TOWER_LIQUIDS[k]!), locale);
+      if (c['step'] === 'pour') {
+        out.push({ id: `tl:${i}`, title: uk ? 'шари знизу вгору: гліцерин, вода, олія, спирт (по 50 мл)' : 'layers from the bottom: glycerol, water, oil, ethanol (50 mL each)', formula: 'ρ_гл > ρ_в > ρ_ол > ρ_сп'.replace(/_гл|_в|_ол|_сп/g, (m) => (uk ? m : { _гл: '_g', _в: '_w', _ол: '_o', _сп: '_e' }[m]!)), numbers: `${d.map((x) => Math.round(x)).join(' > ')} ${kg}` });
+        return;
+      }
+      const body = c['body'] as TowerBody;
+      const rho = r.inputs?.['density'] ?? 0;
+      const lower = r.inputs?.['lower'] ?? -1;
+      const share = r.inputs?.['share'] ?? 0;
+      const made = tr(TOWER_BODIES[body].made, locale);
+      const R = (x: number) => String(Math.round(x));
+      if (lower < 0) out.push({ id: `tw:${i}`, title: uk ? `${made}: на дні` : `${made}: on the bottom`, formula: uk ? 'ρ_т > ρ_гл' : 'ρ_b > ρ_g', numbers: `${R(rho)} > ${R(d[0]!)} ${kg}` });
+      else if (r.inputs?.['top'] === 1) out.push({ id: `tw:${i}`, title: uk ? `${made}: плаває в спирті, позначка ${n(r.value * 1e6, 3)} ${ml}` : `${made}: floats in the ethanol, the ${n(r.value * 1e6, 3)} ${ml} mark`, formula: uk ? 'V_зан / V = ρ_т / ρ_сп' : 'V_sub / V = ρ_b / ρ_e', numbers: `${R(rho)} / ${R(d[lower]!)} ≈ ${n(share, 2)}` });
+      else out.push({ id: `tw:${i}`, title: uk ? `${made}: межа «${nm(lower)} — ${nm(lower + 1)}», ${n(r.value * 1e6, 3)} ${ml}; частка в нижній` : `${made}: the ${nm(lower)} — ${nm(lower + 1)} boundary, ${n(r.value * 1e6, 3)} ${ml}; share in the lower`, formula: uk ? 'V₁ / V = (ρ_т − ρ₂) / (ρ₁ − ρ₂)' : 'V₁ / V = (ρ_b − ρ₂) / (ρ₁ − ρ₂)', numbers: `(${R(rho)} − ${R(d[lower + 1]!)}) / (${R(d[lower]!)} − ${R(d[lower + 1]!)}) ≈ ${n(share, 2)}` });
       return;
     }
     // The drag: the frames between the marks, the time and the speed; in water, the drag once it moves steadily.
