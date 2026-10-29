@@ -28,3 +28,4 @@ export const PRESSURE: LocalizedText = { uk: 'Тиск твердих тіл, р
 export const WORK: LocalizedText = { uk: 'Механічна робота. Механічна енергія', en: 'Mechanical work. Mechanical energy' };
 export const MEDIA: LocalizedText = { uk: 'Електричний струм у різних середовищах', en: 'Electric current in different media' };
 export const MAGNETIC: LocalizedText = { uk: 'Магнітні та електромагнітні явища', en: 'Magnetic and electromagnetic phenomena' };
+export const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };

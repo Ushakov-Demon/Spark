@@ -18,7 +18,6 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.balance': { uk: 'Підбираю важки — від більших до менших…', en: 'Picking the weights — from larger to smaller…' },
   'lab.stretch': { uk: 'Пружина ще коливається — чекаємо, поки заспокоїться…', en: 'The spring is still bouncing — wait until it settles…' },
   'lab.pull': { uk: 'Тягну брусок рівномірно…', en: 'Pulling the block steadily…' },
-  'lab.slope': { uk: 'Тягну брусок угору рівномірно…', en: 'Pulling the block up steadily…' },
   'lab.roll': { uk: 'Кулька котиться — секундомір іде…', en: 'The ball is rolling — the stopwatch is running…' },
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
@@ -42,7 +41,6 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'balance' && next.balance?.mass !== undefined) return balance(next, next.balance.mass, draw);
   if (next.kind === 'spring' && next.springLength !== undefined && prev?.kind === 'spring' && next.weights > 0) return spring(prev, next, draw);
   if (next.kind === 'friction' && next.pull) return pull(next, draw);
-  if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   return null;
 }
@@ -119,14 +117,6 @@ function pull(next: BenchView, draw: (v: BenchView) => void): Motion {
   };
 }
 
-/** The block pulled up the slope at a steady speed; the dynamometer is read on the way. */
-function slopeUp(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const up = new Channel(0, 1, { kind: 'steady', speed: 0.35 }, 0.005);
-  return {
-    channels: [up],
-    frame: (done) => draw({ ...next, slope: { ...next.slope!, up: up.value }, pull: done || up.value > 0.2 ? next.pull! : '…' }),
-  };
-}
 
 
 

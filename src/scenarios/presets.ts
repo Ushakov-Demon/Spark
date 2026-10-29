@@ -6,8 +6,6 @@ import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
 import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './motion-bench.js';
-import { slopeLoad } from './lever-bench.js';
-import { LAB_RESISTOR, SET_RESISTORS } from './circuit-bench.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -69,7 +67,7 @@ export interface Preset {
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
   /** What stands on the table, when it is not the bench's usual (one bench, another set: a bubble in washing-up liquid). */
   readonly benchSetup?: LocalizedText;
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | ExperimentKind;
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -98,7 +96,7 @@ export type PresetControl = { readonly id: string; readonly label: LocalizedText
 );
 export { parsePlace, placeValue, type Place } from './place.js';
 import { parsePlace } from './place.js';
-import { defaultValues, MEDIA, varied } from './preset-kit.js';
+import { defaultValues, ELECTRIC, MEDIA, varied } from './preset-kit.js';
 export { defaultValues };
 export type PresetValues = Readonly<Record<string, number | string>>;
 export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices'>>;
@@ -176,7 +174,6 @@ export function nearestRows(rows: readonly Choice[], measured: number | null, va
 }
 
 const THERMAL: LocalizedText = { uk: 'Теплові явища', en: 'Thermal phenomena' };
-const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
 const FUN: LocalizedText = { uk: 'Цікаві досліди', en: 'Curious experiments' };
 const SOLUTIONS: LocalizedText = { uk: 'Розчини', en: 'Solutions' };
 // The physics topics as the programmes name them (grade 7: Holovko's four; 9: Kreminskyi's), in their order.
@@ -195,33 +192,6 @@ const hotplate = { id: 'electric-hotplate', rating: 2000, knob: 1 } as const;
 const bench = (knob: number) => ({ id: 'bench-supply', knob }) as const;
 const beaker = { vessel: 'beaker', size: 0.25, material: 'glass', liters: 0.2 } as const;
 
-/**
- * The circuit lab works' conditions: a resistor from the set and the source's steps. The resistor goes by its
- * number where its resistance is what the work finds. Every set of steps stays within the instruments with
- * every resistor: at most 6 V / 3.1 Ω ≈ 1.9 A (the ammeter takes 2 A), 6 V on the voltmeter (it takes 6 V);
- * each doubles a voltage of the set, for the power's «twice the voltage».
- */
-const CIRCUIT_RESISTOR = (unknown: boolean): PresetControl => ({
-  id: 'resistor',
-  label: unknown ? { uk: 'Резистор (опір невідомий — його й знайдемо)', en: 'Resistor (its resistance unknown — that is what we find)' } : { uk: 'Резистор із набору', en: 'Resistor from the set' },
-  kind: 'choice',
-  options: SET_RESISTORS.map((r, k) => (unknown ? ch(String(r.value), `№ ${k + 1}`, `No. ${k + 1}`) : ch(String(r.value), `${r.value} Ом`, `${r.value} Ω`))),
-  value: String(LAB_RESISTOR.value),
-});
-const VOLT_SETS = [[1.5, 3, 4.5], [1, 2, 3, 4], [2, 4, 6]] as const;
-const CIRCUIT_VOLTS: PresetControl = {
-  id: 'volts',
-  label: { uk: 'Напруга джерела', en: 'Source voltage' },
-  kind: 'choice',
-  options: VOLT_SETS.map((set) => ch(set.join('-'), `${set.map((x) => String(x).replace('.', ',')).join(' · ')} В`, `${set.join(' · ')} V`)),
-  value: '1.5-3-4.5',
-};
-const voltsOf = (v: PresetValues): number[] => String(v['volts']).split('-').map(Number);
-/** «1,5, 3 і 4,5 В» / «1.5, 3 and 4.5 V». */
-const voltsText = (volts: readonly number[], l: 'uk' | 'en') => {
-  const n = volts.map((x) => (l === 'uk' ? String(x).replace('.', ',') : String(x)));
-  return `${n.slice(0, -1).join(', ')} ${l === 'uk' ? 'і' : 'and'} ${n[n.length - 1]} ${l === 'uk' ? 'В' : 'V'}`;
-};
 const pot = { vessel: 'pot', size: 2, material: 'steel', liters: 1 } as const;
 
 
@@ -258,204 +228,6 @@ const LIST: readonly Preset[] = [
           { kind: 'level' },
         ],
       }),
-    },
-  ),
-  {
-    id: 'lever-moments',
-    ask: { uk: 'За якої умови важіль перебуває в рівновазі?', en: 'When is a lever in balance?' },
-    grade: 8,
-    topic: WORK,
-    title: { uk: 'Умова рівноваги важеля', en: 'The condition of a lever’s balance' },
-    question: {
-      uk: 'Важіль-лінійка висить на осі в штативі й сам урівноважений; отвори для гачків — через 5 см. Чіплятимемо тягарці по 100 г ліворуч і праворуч на різних відстанях від осі, а потім урівноважимо їх динамометром. Щоразу знайдемо момент сили з кожного боку: M = F·l. За якої умови важіль перебуває в рівновазі?',
-      en: 'A lever ruler hangs on an axis in a stand and balances by itself; the holes for the hooks are every 5 cm. We hang 100 g weights left and right at different distances from the axis, then balance them with a dynamometer. Each time we find the moment on each side: M = F·l. When is a lever in balance?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'lever',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 2, at: 0.1 }, right: { weights: 1, at: 0.2 } } },
-      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 2, at: 0.15 }, right: { weights: 3, at: 0.1 } } },
-      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 3, at: 0.1 }, right: { dynamometer: true, at: 0.2 } } },
-      { kind: 'bench', command: { type: 'lab.lever', left: { weights: 2, at: 0.2 }, right: { dynamometer: true, at: 0.1 } } },
-    ],
-    choices: [ch('moments', 'Коли моменти сил з обох боків рівні: F₁·l₁ = F₂·l₂', 'When the moments on both sides are equal: F₁·l₁ = F₂·l₂'), ch('forces', 'Коли сили з обох боків однакові', 'When the forces on both sides are the same'), ch('arms', 'Коли плечі з обох боків однакові', 'When the arms on both sides are the same')],
-    choicesAt: 'end',
-    answerOnBoard: ['M1:', 'M2:'],
-    formulas: ['mechanics.moment', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 1', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 1. Вивчення умови рівноваги важеля.' }],
-    expect: 'reached',
-  },
-  varied(
-    {
-      id: 'slope-efficiency',
-      ask: { uk: 'Як зміниться ККД похилої площини, якщо підняти її вище?', en: 'How does a slope’s efficiency change if it is raised higher?' },
-      grade: 8,
-      topic: WORK,
-      title: { uk: 'ККД похилої площини', en: 'The efficiency of an inclined plane' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'slope',
-      choices: [ch('grows', 'Зросте', 'It grows'), ch('falls', 'Зменшиться', 'It falls'), ch('same', 'Не зміниться', 'It stays the same')],
-      choicesAt: 'end',
-      answerOnBoard: ['eta:'],
-      formulas: ['mechanics.efficiency', 'mechanics.weight'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 2', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 2. Визначення ККД простого механізму.' }],
-      expect: 'reached',
-    },
-    {
-      controls: [{ id: 'weights', label: { uk: 'Тягарців на бруску (по 100 г)', en: 'Weights on the block (100 g each)' }, kind: 'number', unit: '', min: 1, max: 3, step: 1, value: 2 }],
-      build: (v) => {
-        const n = Number(v['weights']);
-        const with_ = { uk: n === 1 ? 'з одним тягарцем' : n === 2 ? 'із двома тягарцями' : 'із трьома тягарцями', en: n === 1 ? 'with one weight' : n === 2 ? 'with two weights' : 'with three weights' };
-        return {
-          question: {
-            uk: `Зважимо динамометром дерев’яний брусок ${with_.uk} по 100 г. Потім покладемо його на дерев’яну дошку завдовжки 60 см, піднімемо її кінець на 10, 20 і 30 см і щоразу рівномірно тягтимемо брусок вгору вздовж дошки. ККД похилої площини η = P·h / (F·l). Як він зміниться, якщо підняти дошку вище?`,
-            en: `We weigh a wooden block ${with_.en} of 100 g on the dynamometer. Then we put it on a 60 cm wooden board, raise its end 10, 20 and 30 cm and each time pull the block steadily up along the board. The efficiency of the slope η = P·h / (F·l). How does it change if the board is raised higher?`,
-          },
-          plan: [
-            { kind: 'hang', substance: 'wood', mass: slopeLoad(n), into: 'air', label: { uk: `Брусок ${with_.uk}`, en: `Block ${with_.en}` } },
-            ...[0.1, 0.2, 0.3].map((height) => ({ kind: 'bench', command: { type: 'lab.slope', height, weights: n } }) as const),
-          ],
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'conductor-resistance',
-      ask: { uk: 'Чи зміниться опір провідника, якщо збільшити напругу на ньому?', en: 'Will the conductor’s resistance change if the voltage across it is raised?' },
-      grade: 8,
-      topic: ELECTRIC,
-      title: { uk: 'Вимірюємо опір провідника', en: 'Measuring the resistance of a conductor' },
-      question: {
-        uk: 'Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі 1,5, 3 і 4,5 В і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?',
-        en: 'We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to 1.5, 3 and 4.5 V, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?',
-      },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'circuit',
-      plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value } }) as const),
-      choices: [ch('same', 'Ні — опір лишиться тим самим, зросте струм', 'No — the resistance stays, the current grows'), ch('grows', 'Так, зросте разом із напругою', 'Yes, it grows with the voltage'), ch('falls', 'Так, зменшиться', 'Yes, it falls')],
-      choicesAt: 'end',
-      answerOnBoard: ['R:'],
-      formulas: ['electrical.ohm-resistance'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 6', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 6. Вимірювання опору провідника за допомогою амперметра й вольтметра.' }],
-      expect: 'reached',
-    },
-    {
-      controls: [CIRCUIT_RESISTOR(true), CIRCUIT_VOLTS],
-      build: (v) => {
-        const volts = voltsOf(v);
-        return {
-          question: {
-            uk: `Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі ${voltsText(volts, 'uk')} і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?`,
-            en: `We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to ${voltsText(volts, 'en')}, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?`,
-          },
-          plan: volts.map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: Number(v['resistor']) } }) as const),
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'consumer-power',
-      ask: { uk: 'У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?', en: 'How many times does the power grow if the voltage across the resistor is doubled?' },
-      grade: 8,
-      topic: ELECTRIC,
-      title: { uk: 'Вимірюємо потужність споживача', en: 'Measuring the power of a consumer' },
-      question: {
-        uk: 'У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі 1,5, 3 і 4,5 В, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?',
-        en: 'The circuit has a source, a key, a resistor (the consumer), an ammeter and a voltmeter. We set the source to 1.5, 3 and 4.5 V, write down the instruments each time and find the power P = U · I. How many times does the power grow if the voltage across the resistor is doubled?',
-      },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'circuit',
-      plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value, power: true } }) as const),
-      choices: [ch('four', 'Учетверо', 'Four times'), ch('two', 'Удвічі', 'Twice'), ch('same', 'Не зміниться', 'It stays the same')],
-      choicesAt: 'end',
-      answerOnBoard: ['P:'],
-      formulas: ['electrical.power', 'electrical.ohm-resistance'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 9', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 9. Вимірювання потужності споживача електроенергії.' }],
-      expect: 'reached',
-    },
-    {
-      controls: [CIRCUIT_RESISTOR(false), CIRCUIT_VOLTS],
-      build: (v) => {
-        const volts = voltsOf(v);
-        return {
-          question: {
-            uk: `У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі ${voltsText(volts, 'uk')}, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?`,
-            en: `The circuit has a source, a key, a resistor (the consumer), an ammeter and a voltmeter. We set the source to ${voltsText(volts, 'en')}, write down the instruments each time and find the power P = U · I. How many times does the power grow if the voltage across the resistor is doubled?`,
-          },
-          plan: volts.map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: Number(v['resistor']), power: true } }) as const),
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'series-circuit',
-      ask: { uk: 'Як пов’язані напруги на резисторах із загальною напругою?', en: 'How do the voltages across the resistors relate to the total?' },
-      grade: 8,
-      topic: ELECTRIC,
-      title: { uk: 'Послідовне з’єднання провідників', en: 'Conductors in series' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'series',
-      choices: [ch('sum', 'Загальна напруга — сума напруг на резисторах', 'The total is the sum of the voltages across the resistors'), ch('equal', 'На кожному резисторі — уся напруга джерела', 'Each resistor gets the source’s whole voltage'), ch('half', 'Напруга ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
-      choicesAt: 'end',
-      answerOnBoard: ['sum:'],
-      formulas: ['electrical.series-voltage', 'electrical.ohm-resistance'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 7', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 7. Дослідження електричного кола з послідовним з’єднанням провідників.' }],
-      expect: 'reached',
-    },
-    {
-      // In series 6.1 Ω in all: 6 V drive ≈ 1 A (the ammeter takes 2 A), the voltmeter across both reads up to 6 V.
-      controls: [{ id: 'source', label: { uk: 'Напруга джерела', en: 'Source voltage' }, kind: 'choice', options: [ch('2', '2 В', '2 V'), ch('4', '4 В', '4 V'), ch('6', '6 В', '6 V')], value: '4' }],
-      build: (v) => {
-        const source = Number(v['source']);
-        return {
-          question: {
-            uk: `З’єднаємо два резистори (2 і 4 Ом) послідовно — один за одним — з амперметром і джерелом на ${source} В. Виміряємо силу струму й напругу на першому резисторі, на другому і на обох разом. Як пов’язані напруги на резисторах із загальною напругою?`,
-            en: `We connect two resistors (2 and 4 Ω) in series — one after the other — with an ammeter and a ${source} V source. We measure the current and the voltage across the first resistor, the second and both together. How do the voltages across the resistors relate to the total?`,
-          },
-          plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source, connection: 'series', at } }) as const),
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'parallel-circuit',
-      ask: { uk: 'Як пов’язані струми в гілках із загальним струмом?', en: 'How do the branch currents relate to the total current?' },
-      grade: 8,
-      topic: ELECTRIC,
-      title: { uk: 'Паралельне з’єднання провідників', en: 'Conductors in parallel' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'parallel',
-      choices: [ch('sum', 'Загальний струм — сума струмів у гілках', 'The total is the sum of the branch currents'), ch('equal', 'У кожній гілці — увесь струм', 'Each branch carries the whole current'), ch('half', 'Струм ділиться навпіл, хоч які резистори', 'It splits in half, whatever the resistors')],
-      choicesAt: 'end',
-      answerOnBoard: ['sum:'],
-      formulas: ['electrical.parallel-current', 'electrical.ohm-resistance'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 8', topic: 'Тема 3. Електричні явища. Електричний струм', match: 'same', quote: '№ 8. Дослідження електричного кола з паралельним з’єднанням провідників.' }],
-      expect: 'reached',
-    },
-    {
-      // In parallel ≈ 1.33 Ω: before the fork 2.5 V drive ≈ 1.7 A, 3 V would be past the ammeter's 2 A.
-      controls: [{ id: 'source', label: { uk: 'Напруга джерела', en: 'Source voltage' }, kind: 'choice', options: [ch('1', '1 В', '1 V'), ch('1.5', '1,5 В', '1.5 V'), ch('2', '2 В', '2 V'), ch('2.5', '2,5 В', '2.5 V')], value: '2' }],
-      build: (v) => {
-        const source = Number(v['source']);
-        const uk = String(source).replace('.', ',');
-        return {
-          question: {
-            uk: `З’єднаємо ті самі резистори (2 і 4 Ом) паралельно — кожен своєю гілкою — і під’єднаємо до джерела на ${uk} В. Виміряємо струм у гілці з першим резистором, у гілці з другим і до розгалуження, а щоразу — й напругу. Як пов’язані струми в гілках із загальним струмом?`,
-            en: `We connect the same resistors (2 and 4 Ω) in parallel — each on its own branch — to a ${source} V source. We measure the current in the branch of the first resistor, of the second and before the fork, and the voltage each time. How do the branch currents relate to the total current?`,
-          },
-          plan: (['r1', 'r2', 'both'] as const).map((at) => ({ kind: 'bench', command: { type: 'lab.pair', source, connection: 'parallel', at } }) as const),
-        };
-      },
     },
   ),
   varied(

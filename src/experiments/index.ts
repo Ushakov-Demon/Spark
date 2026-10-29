@@ -29,13 +29,17 @@ import { atmosphericPressure } from './atmospheric-pressure/index.js';
 import { diodeBlackBox } from './diode-black-box/index.js';
 import { electromagnet } from './electromagnet/index.js';
 import { electromagneticInduction } from './electromagnetic-induction/index.js';
+import { leverMoments } from './lever-moments/index.js';
+import { slopeEfficiency } from './slope-efficiency/index.js';
+import { resistorCircuit } from './resistor-circuit/index.js';
+import { twoResistors } from './two-resistors/index.js';
 import type { CommandOf, ExperimentModule } from './types.js';
 
 /**
  * The experiments written as modules (src/experiments/<name>), one line each. The bench, the presets, the answers and
  * the board take them from here; the older experiments are still spread over src/scenarios and join one by one.
  */
-export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces, bodiesInLiquids, relativeMotion, depthPressure, communicatingVessels, hydrostaticParadox, hydraulicPress, atmosphericPressure, diodeBlackBox, electromagnet, electromagneticInduction] as const;
+export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces, bodiesInLiquids, relativeMotion, depthPressure, communicatingVessels, hydrostaticParadox, hydraulicPress, atmosphericPressure, diodeBlackBox, electromagnet, electromagneticInduction, leverMoments, slopeEfficiency, resistorCircuit, twoResistors] as const;
 
 export type ExperimentKind = (typeof EXPERIMENTS)[number]['kind'];
 export type ExperimentCommand = CommandOf<(typeof EXPERIMENTS)[number]>;

@@ -278,8 +278,6 @@ export interface UiText {
   answerMissing: string;
   /** Before the reasoning behind an answer. */
   whyTitle: string;
-  leverLevel: string;
-  leverTips: string;
   /** Steps that would tell the answer before it is predicted: shown once the experiment gets there. */
   moreSteps(n: number): string;
   /** Looking back at the end of a row of the protocol: what it was, the way back. */
@@ -592,8 +590,6 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     measuring: 'Вимірювання',
     answerMissing: 'Відповіді для цього досліду не знайдено. Якщо сторінка відкрита давно — онови її (Ctrl+Shift+R).',
     whyTitle: 'Чому так?',
-    leverLevel: 'рівновага',
-    leverTips: 'переважує',
     moreSteps: (n) => `… і ще ${n} ${n === 1 ? 'крок' : n < 5 ? 'кроки' : 'кроків'} — побачиш, коли дійдемо`,
     protocolNext: 'Крок завершено. Що далі? Обери дію чи прилад у «Пісочниці» ліворуч або досип щось — і натисни «Продовжити».',
     stepRunning: (e) => `іде ${e}`,
@@ -900,8 +896,6 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     measuring: 'Measurements',
     answerMissing: 'No answer found for this experiment. If the page has been open long, reload it (Ctrl+Shift+R).',
     whyTitle: 'Why so?',
-    leverLevel: 'balanced',
-    leverTips: 'tips',
     moreSteps: (n) => `… and ${n} more step${n === 1 ? '' : 's'} — you will see them when we get there`,
     protocolNext: 'Step done. What next? Pick an action or a device in the Sandbox on the left, or add something — then press “Continue”.',
     stepRunning: (e) => `running ${e}`,

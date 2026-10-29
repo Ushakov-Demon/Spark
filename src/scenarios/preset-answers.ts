@@ -15,7 +15,6 @@ import { LAB_VESSEL_ID, sampleOf, type LabParams, type LabStatus } from './therm
 import { formatReading, weigh } from './weighing.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { formatMeasured } from './measuring.js';
-import { AMMETER, VOLTMETER } from './circuit-bench.js';
 import { EXPERIMENTS } from '../experiments/index.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
@@ -166,100 +165,6 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
             } Once the ice melted — ${b ? mL(b.value!, l) : '—'}. Melting does not change the mass: ${shown ? `${gr(iceMass, l)} of ice became ${gr(iceMass, l)} of water, and ${gr(iceMass, l)} of water take exactly ${mL(shown, l)}` : 'the meltwater has the mass of the displaced water, and so its volume'} — just as much as the cube pushed aside. So the level stays; melting sea ice does not raise the ocean either — unlike glaciers on land.`,
       ),
       ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
-    };
-  },
-  'slope-efficiency': (run) => {
-    const R = run.readings ?? [];
-    const P = R.find((x) => x.command.type === 'lab.hang')?.record.value ?? null;
-    const rows = R.filter((x) => x.command.type === 'lab.slope' && x.record.value !== null).map((x) => ({ h: x.record.inputs?.['h'] ?? 0, l: x.record.inputs?.['l'] ?? 1, F: x.record.value! }));
-    const eta = rows.map((x) => (P !== null ? (P * x.h) / (x.F * x.l) : 0));
-    const trend = eta.length >= 2 ? eta[eta.length - 1]! - eta[0]! : 0;
-    const correct = P !== null && rows.length >= 2 ? (trend > 0.03 ? 'grows' : trend < -0.03 ? 'falls' : 'same') : undefined;
-    const N1 = (x: number, l: Locale) => formatMeasured('force', x, 0.1, l);
-    const pct = (x: number, l: Locale) => `${sig(x * 100, 2, l)} %`;
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Щоб підняти брусок на висоту h, треба виконати роботу P·h — хоч прямо вгору, хоч по похилій. Тягнучи вздовж дошки довжиною l, довшої за h, ту саму роботу виконують меншою силою: без тертя F = P·h / l — у стільки разів менша за вагу, у скільки разів дошка довша за висоту. Але брусок тисне на дошку й треться об неї: до сили додається тертя μ·P·cos α, і ця частина роботи йде в тепло, а не на підйом. Що крутіша дошка, то менше брусок тисне на неї (cos α менший) — менше тертя, — і водночас більша частка сили йде саме на підйом (sin α більший). Тому ККД росте з висотою, а 100 % не буде ніколи: тертя є завжди." : "Lifting the block by h takes the work P·h — straight up or along a slope. Pulling along a board of length l longer than h, the same work is done with a smaller force: without friction F = P·h / l — as many times less than the weight as the board is longer than the height. But the block presses on the board and rubs on it: friction μ·P·cos α adds to the force, and that part of the work goes into heat, not into lifting. The steeper the board, the less the block presses on it (a smaller cos α) — less friction — and the bigger the share of the force that lifts (a larger sin α). So the efficiency grows with the height, and it never reaches 100 %: there is always friction.")),
-      say: both((l) => (l === 'uk' ? 'Що крутіша площина, то менше втрат на тертя!' : 'The steeper the slope, the less is lost to friction!')),
-      text: both((l) => {
-        const list = rows.map((x, k) => `h = ${Math.round(x.h * 100)} ${l === 'uk' ? 'см' : 'cm'}: F = ${N1(x.F, l)}, η ≈ ${pct(eta[k]!, l)}`).join('; ');
-        return l === 'uk'
-          ? `Брусок із тягарцями важить P = ${P !== null ? N1(P, l) : '—'}. ${list}. Що вище піднята дошка, то вищий ККД: брусок менше тисне на дошку (сила тертя пропорційна P·cos α), і на тертя йде менша частка роботи. Похила площина дає виграш у силі — тягнути легше, ніж піднімати (F < P), — але програє у відстані: «золоте правило механіки». ККД завжди менший за 100 %, бо тертя є завжди.`
-          : `The block with its weights weighs P = ${P !== null ? N1(P, l) : '—'}. ${list}. The higher the board, the higher the efficiency: the block presses on it less (friction is proportional to P·cos α), and a smaller share of the work goes into friction. A slope gains in force — pulling is easier than lifting (F < P) — but loses in distance: the “golden rule of mechanics”. The efficiency is always below 100 %, as there is always friction.`;
-      }),
-    };
-  },
-  'consumer-power': (run) => {
-    const rows = (run.readings ?? [])
-      .filter((x) => x.command.type === 'lab.circuit')
-      .reduce<{ I: number; U: number }[]>((acc, x, k, all) => (x.record.quantity === 'current' ? [...acc, { I: x.record.value ?? 0, U: all[k + 1]?.record.value ?? 0 }] : acc), [])
-      .filter((x) => x.I > 0);
-    const P = rows.map((x) => x.U * x.I);
-    const ratio = P.length >= 2 ? P[1]! / P[0]! : 0;
-    const A = (x: number, l: Locale) => formatMeasured('current', x, 0.01, l);
-    const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
-    const W = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'Вт' : 'W'}`;
-    return {
-      ...(P.length >= 2 ? { correct: ratio > 3 ? 'four' : ratio > 1.4 ? 'two' : 'same' } : {}),
-      why: both((l) => (l === 'uk' ? 'Потужність — це добуток двох величин: напруги й сили струму. А сила струму в резисторі сама пропорційна напрузі (закон Ома: I = U/R). Тож, подвоївши напругу, ми подвоюємо обидва множники: удвічі більша напруга «штовхає» удвічі більший струм — і потужність зростає в 2 · 2 = 4 рази: P = U²/R. Тому лампочка, розрахована на 220 В, у мережі зі 110 В світить ледь-ледь — її потужність учетверо менша, — а прилад, увімкнений на подвійну напругу, швидко перегріється.' : 'Power is the product of two quantities: the voltage and the current. And the current in a resistor is itself proportional to the voltage (Ohm’s law: I = U/R). So, doubling the voltage, we double both factors: twice the voltage drives twice the current — and the power grows 2 · 2 = 4 times: P = U²/R. That is why a bulb made for 220 V glows barely at 110 V — a quarter of its power — and a device put on twice its voltage soon overheats.')),
-      say: both((l) => (l === 'uk' ? `Удвічі більша напруга — у ${sig(ratio, 2, l)} раза більша потужність!` : `Twice the voltage — ${sig(ratio, 2, l)} times the power!`)),
-      text: both((l) => {
-        const list = rows.map((x, k) => `U = ${V(x.U, l)}, I = ${A(x.I, l)} → P ≈ ${W(P[k]!, l)}`).join('; ');
-        return l === 'uk'
-          ? `${list}. Напруга зросла вдвічі — потужність зросла в ${sig(ratio, 2, l)} раза, тобто майже вчетверо (розбіжність — від цін поділок приладів); утричі — у ${sig(P.length >= 3 ? P[2]! / P[0]! : 0, 2, l)} раза, майже вдев’ятеро. Потужність резистора пропорційна квадрату напруги: P = U · I = U² / R.`
-          : `${list}. The voltage doubled — the power grew ${sig(ratio, 2, l)} times, almost four times (the difference comes from the instruments’ divisions); tripled — ${sig(P.length >= 3 ? P[2]! / P[0]! : 0, 2, l)} times, almost nine. A resistor’s power is proportional to the square of the voltage: P = U · I = U² / R.`;
-      }),
-    };
-  },
-  'series-circuit': (run) => pairAnswer(run, 'series'),
-  'parallel-circuit': (run) => pairAnswer(run, 'parallel'),
-  'conductor-resistance': (run) => {
-    const rows = (run.readings ?? [])
-      .filter((x) => x.command.type === 'lab.circuit')
-      .reduce<{ I?: number; U?: number }[]>((acc, x, k, all) => (x.record.quantity === 'current' ? [...acc, { I: x.record.value ?? 0, U: all[k + 1]?.record.value ?? 0 }] : acc), [])
-      .filter((x) => (x.I ?? 0) > 0) as { I: number; U: number }[];
-    const R = rows.map((x) => x.U / x.I);
-    const mean = R.reduce((a, b) => a + b, 0) / Math.max(1, R.length);
-    // The same, if the first and the last R differ by no more than the instruments allow: half a division of each,
-    // relative to its reading (at a small current the ammeter's 0.05 A is a large share).
-    const err = (x: { I: number; U: number }) => AMMETER.division.value / 2 / x.I + VOLTMETER.division.value / 2 / x.U;
-    const first = rows[0];
-    const last = rows[rows.length - 1];
-    const apart = first && last ? Math.abs(R[R.length - 1]! - R[0]!) - (R[0]! * err(first) + R[R.length - 1]! * err(last)) : 0;
-    const A = (x: number, l: Locale) => formatMeasured('current', x, 0.01, l);
-    const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
-    return {
-      ...(rows.length >= 2 ? { correct: apart <= 0 ? 'same' : R[R.length - 1]! > R[0]! ? 'grows' : 'falls' } : {}),
-      why: both((l) => (l === 'uk' ? 'Напруга — це те, що змушує заряджені частинки (у металі — електрони) рухатися впорядковано; опір — те, наскільки провідник цьому заважає: електрони раз у раз натрапляють на коливні йони кристалічної ґратки й гальмуються. Удвічі більша напруга вдвічі сильніше підганяє електрони — і вони рухаються вдвічі швидше, тож струм удвічі більший; а «перешкоди» в провіднику ті самі. Тому відношення U / I не змінюється — це і є опір, властивість самого провідника: він залежить від матеріалу, довжини й товщини дроту, а не від приладів і не від напруги. Так буває, поки провідник не нагрівається: у нагрітому металі йони коливаються сильніше, і опір зростає (це видно в нитки лампи).' : 'The voltage is what makes charged particles (electrons, in a metal) move in an orderly way; the resistance is how much the conductor hinders that: the electrons keep running into the vibrating ions of the crystal lattice and are slowed. Twice the voltage drives the electrons twice as hard — they drift twice as fast, so the current is twice as large; the “obstacles” in the conductor are the same. So the ratio U / I stays — that is the resistance, a property of the conductor itself: it depends on the material, the length and the thickness of the wire, not on the instruments or the voltage. This holds while the conductor does not warm up: in a hot metal the ions vibrate harder, and the resistance grows (as in a lamp’s filament).')),
-      say: both((l) => (l === 'uk' ? `R ≈ ${sig(mean, 2, l)} Ом — за будь-якої напруги!` : `R ≈ ${sig(mean, 2, l)} Ω — at any voltage!`)),
-      text: both((l) => {
-        const list = rows.map((x, k) => `I = ${A(x.I, l)}, U = ${V(x.U, l)} → R ≈ ${sig(R[k]!, 2, l)} ${l === 'uk' ? 'Ом' : 'Ω'}`).join('; ');
-        return l === 'uk'
-          ? `${list}. Напруга зростала — зростав і струм, і в стільки ж разів: опір R = U / I лишався майже тим самим, ≈ ${sig(mean, 2, l)} Ом. Розкид — від цін поділок: амперметр показує струм з точністю до 0,05 А, вольтметр — напругу до 0,2 В, тож що більші покази, то точніше R. Струм у провіднику прямо пропорційний напрузі на ньому — це закон Ома для ділянки кола: I = U / R.`
-          : `${list}. As the voltage rose, so did the current, and by as many times: the resistance R = U / I stayed about the same, ≈ ${sig(mean, 2, l)} Ω. The spread comes from the divisions: the ammeter reads the current to 0.05 A, the voltmeter the voltage to 0.2 V, so the larger the readings, the more precise R. The current in a conductor is proportional to the voltage across it — Ohm’s law for part of a circuit: I = U / R.`;
-      }),
-    };
-  },
-  'lever-moments': (run) => {
-    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.lever' && x.record.value !== null).map((x) => ({ F1: x.record.inputs?.['F1'] ?? 0, l1: x.record.inputs?.['l1'] ?? 0, F2: x.record.value!, l2: x.record.inputs?.['l2'] ?? 0, dyn: x.record.instrument === 'dynamometer', balanced: x.record.inputs?.['balanced'] === 1 }));
-    const M = (F: number, l: number) => F * l;
-    // Within what the dynamometer tells (half its 0.1 N division at that arm): the moments are equal.
-    const equal = rows.every((x) => Math.abs(M(x.F1, x.l1) - M(x.F2, x.l2)) <= 0.05 * x.l2 + 1e-9);
-    const forcesDiffer = rows.some((x) => Math.abs(x.F1 - x.F2) > 0.1);
-    const armsDiffer = rows.some((x) => Math.abs(x.l1 - x.l2) > 1e-6);
-    const correct = rows.length ? (equal ? 'moments' : !forcesDiffer ? 'forces' : !armsDiffer ? 'arms' : undefined) : undefined;
-    const N = (x: number, l: Locale) => formatMeasured('force', x, 0.01, l);
-    const cm = (x: number) => Math.round(x * 100);
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Уяви, що важіль трохи повернувся навколо осі. Кожна точка важеля проходить дугу, і що далі точка від осі, то довша її дуга: на плечі 20 см — удвічі довша, ніж на плечі 10 см (шлях s = l · кут). Сам важіль енергії не додає й не забирає (тертя в осі мале), тож робота, яку виконує сила з одного боку, дорівнює роботі з другого: F₁·s₁ = F₂·s₂. Підстав s = l · кут — кут однаковий для всього важеля й скорочується: F₁·l₁ = F₂·l₂. Ось чому важить не сила сама по собі й не плече саме по собі, а їхній добуток — момент сили. Це й «золоте правило механіки»: удвічі менша сила — зате вдвічі довший шлях; виграєш у силі — програєш у відстані. Тому дверну ручку ставлять далеко від завіс, гайку відкручують довгим ключем, а ломом підважують камінь, який руками не зрушиш." : "Imagine the lever turned a little about its axis. Every point of it moves along an arc, and the farther a point from the axis, the longer its arc: at 20 cm twice as long as at 10 cm (the path s = l · angle). The lever itself adds no energy and takes none (there is little friction at the axis), so the work done by the force on one side equals the work on the other: F₁·s₁ = F₂·s₂. Put s = l · angle — the angle is the same for the whole lever and cancels: F₁·l₁ = F₂·l₂. That is why what matters is neither the force alone nor the arm alone but their product — the moment. This is the “golden rule of mechanics”: half the force — but twice the path; what you gain in force you lose in distance. That is why a door handle sits far from the hinges, a nut is undone with a long spanner, and a crowbar lifts a stone hands cannot move.")),
-      say: both((l) => (l === 'uk' ? 'Рівні моменти — і важіль у рівновазі!' : 'Equal moments — and the lever balances!')),
-      text: both((l) => {
-        const list = rows.map((x) => (l === 'uk' ? `${N(x.F1, l)} · ${cm(x.l1)} см ${x.dyn ? `і динамометр ${formatMeasured('force', x.F2, 0.1, l)}` : `і ${N(x.F2, l)}`} · ${cm(x.l2)} см: M₁ ≈ ${sig(M(x.F1, x.l1), 3, l)} Н·м, M₂ ≈ ${sig(M(x.F2, x.l2), 3, l)} Н·м` : `${N(x.F1, l)} · ${cm(x.l1)} cm ${x.dyn ? `and the dynamometer ${formatMeasured('force', x.F2, 0.1, l)}` : `and ${N(x.F2, l)}`} · ${cm(x.l2)} cm: M₁ ≈ ${sig(M(x.F1, x.l1), 3, l)} N·m, M₂ ≈ ${sig(M(x.F2, x.l2), 3, l)} N·m`)).join('; ');
-        return l === 'uk'
-          ? `${list}. Сили з боків були різні, плечі — теж, а важіль щоразу стояв рівно: рівними були моменти сил. Умова рівноваги важеля: F₁·l₁ = F₂·l₂ — у скільки разів менша сила, у стільки разів довше її плече. Це закон важеля, відомий з часів Архімеда. Розбіжності в соті частки — бо динамометр показує лише десяті частки ньютона.`
-          : `${list}. The forces on the two sides differed, so did the arms, and every time the lever stood level: the moments were equal. The condition of a lever’s balance: F₁·l₁ = F₂·l₂ — as many times smaller a force, as many times longer its arm. This is the law of the lever, known since Archimedes. Differences in the hundredths come from the dynamometer reading only tenths of a newton.`;
-      }),
     };
   },
   'average-speed': (run) => {
@@ -1175,47 +1080,3 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
 /** The answers by preset id: these, and the experiment modules' own. */
 export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> = { ...LOCAL_ANSWERS, ...Object.assign({}, ...EXPERIMENTS.map((m) => m.answers)) };
 
-/** The two connections answered alike: the readings at each place, the sum that holds, why. */
-function pairAnswer(run: PresetRun, connection: 'series' | 'parallel'): PresetAnswer {
-  const at = (where: string) => {
-    const rs = (run.readings ?? []).filter((x) => x.command.type === 'lab.pair' && x.command['at'] === where).map((x) => x.record);
-    const I = rs.find((x) => x.quantity === 'current')?.value;
-    const U = rs.find((x) => x.quantity === 'voltage')?.value;
-    return I != null && U != null ? { I, U } : null;
-  };
-  const [r1, r2, all] = [at('r1'), at('r2'), at('both')];
-  const series = connection === 'series';
-  const A = (x: number, l: Locale) => formatMeasured('current', x, 0.01, l);
-  const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
-  // Within the instruments' divisions (two readings rounded each): the sum holds.
-  const ok = !!(r1 && r2 && all);
-  const sum = ok ? (series ? r1!.U + r2!.U : r1!.I + r2!.I) : 0;
-  const total = ok ? (series ? all!.U : all!.I) : 0;
-  const tol = series ? 0.3 : 0.12;
-  const each = ok ? (series ? Math.abs(r1!.U - total) < tol && Math.abs(r2!.U - total) < tol : Math.abs(r1!.I - total) < tol && Math.abs(r2!.I - total) < tol) : false;
-  const halves = ok ? (series ? Math.abs(r1!.U - r2!.U) < tol : Math.abs(r1!.I - r2!.I) < tol) : false;
-  const correct = ok ? (Math.abs(sum - total) <= tol ? 'sum' : each ? 'equal' : halves ? 'half' : undefined) : undefined;
-  return {
-    ...(correct ? { correct } : {}),
-    why: both((l) =>
-      series
-        ? l === 'uk'
-          ? 'У послідовному колі в струму одна дорога: скільки зарядів пройшло через перший резистор, стільки ж пройде й через другий — інакше вони десь накопичувалися б. Тому струм всюди однаковий. А напруга — це робота, яку джерело виконує, переносячи заряд по колу; цю роботу заряд «витрачає» по дорозі: частину на першому резисторі, решту — на другому. Отже, U = U₁ + U₂. За законом Ома U₁ = I·R₁, U₂ = I·R₂: на вдвічі більшому опорі — удвічі більша напруга. Так ялинкова гірлянда з лампочок, увімкнених одна за одною, ділить між ними напругу мережі — і якщо одна перегорить, згасає вся.'
-          : 'In a series circuit the current has one road: as many charges pass through the first resistor as through the second — otherwise they would pile up somewhere. So the current is the same everywhere. The voltage is the work the source does carrying charge round the circuit; the charge “spends” that work on the way: part across the first resistor, the rest across the second. So U = U₁ + U₂. By Ohm’s law U₁ = I·R₁, U₂ = I·R₂: twice the resistance, twice the voltage. That is how a string of tree lights wired one after another shares the mains voltage — and if one burns out, all go dark.'
-        : l === 'uk'
-          ? 'У паралельному колі обидва резистори під’єднані до тих самих двох точок, тож напруга на них однакова — це напруга між цими точками. Струм, дійшовши до розгалуження, ділиться: заряди не зникають і не з’являються, тож скільки ввійшло у вузол, стільки й вийшло: I = I₁ + I₂. У гілці з меншим опором струм більший (I = U/R): удвічі менший опір — удвічі більший струм. Кожна нова гілка додає ще одну дорогу для струму, тож загальний опір менший за найменший опір гілки. Так увімкнено прилади в квартирі: кожен має напругу мережі й працює незалежно від інших.'
-          : 'In a parallel circuit both resistors are joined to the same two points, so the voltage across them is the same — the voltage between those points. The current, reaching the fork, splits: charges neither vanish nor appear, so as much flows into the junction as out: I = I₁ + I₂. The branch of smaller resistance carries more current (I = U/R): half the resistance, twice the current. Each new branch adds another road for the current, so the total resistance is less than the smallest branch’s. That is how appliances at home are wired: each gets the mains voltage and works independently of the others.',
-    ),
-    say: both((l) => (l === 'uk' ? (series ? 'Напруги склалися — струм той самий!' : 'Струми склалися — напруга та сама!') : series ? 'The voltages add up — the current is the same!' : 'The currents add up — the voltage is the same!')),
-    text: both((l) => {
-      if (!ok) return l === 'uk' ? 'Дослід ще не завершено.' : 'The experiment is not finished yet.';
-      return series
-        ? l === 'uk'
-          ? `Струм у колі всюди однаковий — ${A(all!.I, l)}. Напруга на резисторі 2 Ом — ${V(r1!.U, l)}, на резисторі 4 Ом — ${V(r2!.U, l)}, на обох разом — ${V(all!.U, l)}. Сума U₁ + U₂ = ${V(r1!.U + r2!.U, l)} — та сама загальна напруга (розбіжність — у межах ціни поділки вольтметра, 0,2 В). На більшому опорі напруга більша: у скільки разів більший опір, у стільки ж разів більша напруга.`
-          : `The current is the same everywhere — ${A(all!.I, l)}. The voltage across the 2 Ω resistor is ${V(r1!.U, l)}, across the 4 Ω one ${V(r2!.U, l)}, across both ${V(all!.U, l)}. The sum U₁ + U₂ = ${V(r1!.U + r2!.U, l)} — the same total voltage (any difference is within the voltmeter’s 0.2 V division). The larger resistance gets the larger voltage: as many times more resistance, as many times more voltage.`
-        : l === 'uk'
-          ? `Напруга на обох гілках однакова — ${V(r1!.U, l)} (коли амперметр стоїть до розгалуження, вольтметр показує трохи менше — ${V(all!.U, l)}: частину напруги «забирає» сам амперметр). Струм у гілці з резистором 2 Ом — ${A(r1!.I, l)}, з резистором 4 Ом — ${A(r2!.I, l)}, до розгалуження — ${A(all!.I, l)}. Сума I₁ + I₂ = ${A(r1!.I + r2!.I, l)} — майже той самий загальний струм: невелика розбіжність — від ціни поділки амперметра (0,05 А) і від того, що він сам має невеликий опір і, ввімкнений у гілку, трохи зменшує в ній струм. У гілці з удвічі меншим опором струм удвічі більший.`
-          : `The voltage across both branches is the same — ${V(r1!.U, l)} (with the ammeter before the fork the voltmeter reads a little less — ${V(all!.U, l)}: the ammeter itself “takes” part of the voltage). The current in the branch of the 2 Ω resistor is ${A(r1!.I, l)}, of the 4 Ω one ${A(r2!.I, l)}, before the fork ${A(all!.I, l)}. The sum I₁ + I₂ = ${A(r1!.I + r2!.I, l)} — almost the same total: the small difference comes from the ammeter’s 0.05 A division and from its own small resistance, which, put in a branch, lowers the current in it a little. The branch of half the resistance carries twice the current.`;
-    }),
-  };
-}

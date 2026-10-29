@@ -7,12 +7,10 @@ import { slidingFriction, weight } from '../domains/mechanics/formulas.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
 import type { SourcedValue } from '../knowledge/types.js';
-import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
+import { type SubstanceId } from '../substances/catalog.js';
 import { weigh } from './weighing.js';
 import { MOTION_COMMANDS, MOTION_SETUP, MOTION_TEXT, type MotionCommand } from './motion-bench.js';
 import { ELECTRODE_COMMANDS, ELECTRODE_TEXT, type CathodeCommand } from './electrode-bench.js';
-import { LEVER_COMMANDS, LEVER_TEXT, type LeverCommand, type SlopeCommand } from './lever-bench.js';
-import { CIRCUIT_COMMANDS, CIRCUIT_TEXT, type CircuitCommand, type PairCommand } from './circuit-bench.js';
 import { COIL_COMMANDS, COIL_TEXT, type OhmCommand } from './coil-bench.js';
 import { EXPERIMENTS, type ExperimentCommand, type ExperimentKind } from '../experiments/index.js';
 
@@ -58,7 +56,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | ExperimentCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | OhmCommand | ExperimentCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -137,7 +135,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...EXPERIMENTS.flatMap((m) => m.commands as readonly CommandHandler<never>[])] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...COIL_COMMANDS, ...EXPERIMENTS.flatMap((m) => m.commands as readonly CommandHandler<never>[])] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -145,8 +143,6 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...ELECTRODE_TEXT,
   ...COIL_TEXT,
   // The experiment modules: their steps' words, by command type.
-  ...(CIRCUIT_TEXT as Record<CircuitCommand['type'] | PairCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(LEVER_TEXT as Record<LeverCommand['type'] | SlopeCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   'lab.stretch': (c) => {
     const n = (c as StretchCommand).weights;
     return n === 0
@@ -197,14 +193,9 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-type OldBenchKind = 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel';
+type OldBenchKind = 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum';
 const OLD_SETUP: Record<OldBenchKind, LocalizedText> = {
-  circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
-  series: { uk: 'Джерело струму, ключ, два резистори (2 і 4 Ом), амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, two resistors (2 and 4 Ω), an ammeter, a voltmeter, connecting wires' },
-  parallel: { uk: 'Джерело струму, ключ, два резистори (2 і 4 Ом), амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, two resistors (2 and 4 Ω), an ammeter, a voltmeter, connecting wires' },
   ...MOTION_SETUP,
-  lever: { uk: 'Важіль-лінійка на осі в штативі, тягарці по 100 г, динамометр', en: 'A lever ruler on an axis in a stand, 100 g weights, a dynamometer' },
-  slope: { uk: 'Дерев’яна дошка на штативі, дерев’яний брусок, тягарці по 100 г, динамометр, лінійка', en: 'A wooden board on a stand, a wooden block, 100 g weights, a dynamometer, a ruler' },
   spring: { uk: 'Штатив із лапкою, пружина з набору, тягарці по 100 г, учнівська лінійка', en: 'A stand with a clamp, a spring of the set, 100 g weights, a ruler' },
   friction: { uk: 'Дерев’яний брусок, дерев’яна дошка, тягарці по 100 г, динамометр', en: 'A wooden block, a wooden board, 100 g weights, a dynamometer' },
   pressure: { uk: 'Дерев’яний брусок, динамометр, учнівська лінійка', en: 'A wooden block, a dynamometer, a ruler' },

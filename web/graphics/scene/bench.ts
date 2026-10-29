@@ -1,5 +1,5 @@
 import { TABLE } from './constants.js';
-import { CM, WOOD, WOOD_EDGE, STEEL, DARK, THREAD, weightsSvg, springSvg, standSvg, meterSvg, rulerSvg, dynamometerSvg, stopwatchSvg, ballSvg } from './kit.js';
+import { CM, WOOD_EDGE, STEEL, DARK, THREAD, weightsSvg, springSvg, standSvg, blockSvg, rulerSvg, dynamometerSvg, stopwatchSvg, ballSvg } from './kit.js';
 import type { ExperimentKind } from '../../../src/experiments/index.js';
 import { sceneOf } from '../../experiments/index.js';
 
@@ -10,7 +10,7 @@ import { sceneOf } from '../../experiments/index.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | ExperimentKind;
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | ExperimentKind;
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -45,29 +45,16 @@ export interface BenchView {
   readonly stopwatch?: { readonly display: string; readonly fast?: number };
   /** The measuring tape along what was measured, and what it shows. */
   readonly tape?: string;
-  /** The lever (grade 8): weights on the left so far out, on the right weights or the dynamometer (what it shows); how it tips (−1 left down, 0 level, 1 right down). */
-  readonly lever?: { readonly left: { readonly weights: number; readonly at: number }; readonly right: { readonly weights?: number; readonly at: number; readonly dynamometer?: string }; readonly tip: number };
-  /** The inclined plane (grade 8): how high its end is, m, and the board's length; how far up the block is (0…1). */
-  readonly slope?: { readonly height: number; readonly length: number; readonly up: number; readonly weights?: number };
-  /** The circuit (grade 8): the source's volts; what the ammeter and the voltmeter show (their needles, 0…1 of the scale) — absent, the key is open. */
-  readonly circuit?: { readonly source: number; readonly amps?: { readonly text: string; readonly share: number }; readonly volts?: { readonly text: string; readonly share: number } };
   /** Two resistors (grade 8): where the instruments are, and what they show. */
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
   /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
   /** An experiment module's own view (web/experiments), drawn by its scene. */
   readonly scene?: unknown;
-  readonly pair?: { readonly source: number; readonly at: 'r1' | 'r2' | 'both'; readonly amps?: { readonly text: string; readonly share: number }; readonly volts?: { readonly text: string; readonly share: number } };
   /** A timed run to play (the ball rolling, the turns, the swings): how long it took, s; its period, s; how many; the swing, rad. */
   readonly run?: { readonly seconds: number; readonly period?: number; readonly count?: number; readonly amplitude?: number };
 }
 
 
-/** The block seen from the side (length × height), lying on y = base. */
-function blockSvg(x: number, base: number, block: readonly [number, number, number]): string {
-  const w = block[0] * 100 * CM;
-  const h = block[2] * 100 * CM;
-  return `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" rx="1.5" style="fill:${WOOD};stroke:${WOOD_EDGE}"/><path d="M${x + 6},${base - h + 6} h${w - 20} M${x + 10},${base - h / 2} h${w - 26}" style="stroke:rgba(154,107,51,0.45)"/>`;
-}
 
 
 /** A dynamometer hanging from the stand with the block on its hook (weighing the block). */
@@ -120,11 +107,9 @@ function balanceSvg(b: BenchView['balance']): string {
 
 export function benchSvg(v: BenchView): string {
   const scene = sceneOf(v.kind);
-  if (scene) return v.scene === undefined ? '' : scene.svg(v.scene);
+  // (A module's bench with a body weighed on the dynamometer: drawn here, as on every bench.)
+  if (scene) return v.hang ? hangingBlock(v.hang, v.block) : v.scene === undefined ? '' : scene.svg(v.scene);
   if (v.kind === 'balance') return balanceSvg(v.balance);
-  if (v.kind === 'lever') return leverSvg(v.lever);
-  if (v.kind === 'circuit') return circuitSvg(v.circuit);
-  if (v.kind === 'series' || v.kind === 'parallel') return pairSvg(v.kind, v.pair);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
   if (v.kind === 'spring') {
@@ -138,7 +123,6 @@ export function benchSvg(v: BenchView): string {
     return `${standSvg(rodX, armX, armY)}${springSvg(armX, armY + 3, len)}${weightsSvg(armX, bottom + 2, v.weights, 18, 8)}${rulerSvg(armX + 20, armY + 3, 40, true, S)}<path class="bench-mark" d="M${armX + 4},${bottom} H${armX + 22}"/>${v.reading ? `<text class="bench-reading" x="${armX + 46}" y="${bottom + 4}">${v.reading}</text>` : ''}`;
   }
   if (v.hang) return hangingBlock(v.hang, v.block);
-  if (v.kind === 'slope') return slopeSvg(v);
   if (v.kind === 'friction') {
     // The board lies on the table; the block on the board (slid along it so far).
     const base = TABLE - 12;
@@ -225,75 +209,6 @@ function motionSvg(v: BenchView): string {
 }
 
 
-/**
- * The lever ruler on its axis in the stand: holes every 5 cm, the weights hanging on threads, the dynamometer
- * pulling down on the right. Tipped a few degrees to the heavier side when the moments differ.
- */
-function leverSvg(lv: BenchView['lever']): string {
-  const ax = 330;
-  // Low on the stand: the board's writing stays clear above it.
-  const ay = 200;
-  const U = 7.5; // units per cm
-  const half = 21 * U;
-  const tilt = (lv?.tip ?? 0) * 8;
-  const holes = Array.from({ length: 9 }, (_, i) => (i - 4) * 5 * U).map((x) => `<circle cx="${ax + x}" cy="${ay}" r="1.8" style="fill:${DARK}"/>`).join('');
-  const marks = [5, 10, 15, 20].flatMap((c) => [-c, c]).map((c) => `<text class="lever-mark" x="${ax + c * U}" y="${ay - 7}" text-anchor="middle">${Math.abs(c)}</text>`).join('');
-  const hang = (cmFromAxis: number, n: number) => {
-    const x = ax + cmFromAxis * U;
-    return `<path d="M${x},${ay + 3} v26" style="stroke:${THREAD};stroke-width:1.3"/>${weightsSvg(x, ay + 29, n, 18, 9)}`;
-  };
-  const left = lv ? hang(-lv.left.at * 100, lv.left.weights) : '';
-  const r = lv?.right;
-  const right = !r ? '' : r.dynamometer !== undefined
-    ? (() => {
-        const x = ax + r.at * 100 * U;
-        return `<path d="M${x},${ay + 3} v12" style="stroke:${THREAD};stroke-width:1.3"/>${dynamometerSvg(x, ay + 15, false, r.dynamometer)}<path d="M${x},${ay + 95} v16" style="stroke:${THREAD};stroke-width:1.3"/><path class="bench-arrow" d="M${x + 22},${ay + 70} v30 l-4,-6 m4,6 l4,-6"/>`;
-      })()
-    : hang(r.at * 100, r.weights ?? 0);
-  return `<rect x="${ax - 40}" y="${TABLE - 8}" width="80" height="8" rx="2" style="fill:${DARK}"/><rect x="${ax - 3}" y="${ay}" width="6" height="${TABLE - 8 - ay}" style="fill:${STEEL}"/><g transform="rotate(${tilt} ${ax} ${ay})"><rect x="${ax - half}" y="${ay - 5}" width="${2 * half}" height="10" rx="2" style="fill:#e9d9a8;stroke:#a8955a"/>${holes}${marks}${left}${right}</g><circle cx="${ax}" cy="${ay}" r="4.5" style="fill:${DARK}"/>`;
-}
-
-/**
- * The wooden board as a slope: its lower end on the table, the upper one on the stand's clamp at the height h;
- * the block with two weights on it, pulled up along it by the dynamometer (what it shows).
- */
-function slopeSvg(v: BenchView): string {
-  const sl = v.slope ?? { height: 0, length: 0.6, up: 0 };
-  const S = 600; // units per metre
-  const x0 = 140;
-  const y0 = TABLE - 4;
-  const L = sl.length * S;
-  const sin = sl.height / sl.length;
-  const cos = Math.sqrt(1 - sin * sin);
-  const x1 = x0 + L * cos;
-  const y1 = y0 - L * sin;
-  const ang = (-Math.asin(sin) * 180) / Math.PI;
-  const w = v.block[0] * 100 * 5;
-  const h = v.block[2] * 100 * 5;
-  // The block slides from near the bottom to near the top.
-  const at = 20 + (L - w - 150) * sl.up;
-  const pull = v.pull ? `<path d="M${at + w},${-h / 2} H${at + w + 40}" style="stroke:${THREAD};stroke-width:1.5"/>${dynamometerSvg(at + w + 40, -h / 2, true, v.pull)}` : '';
-  const stand = sl.height > 0 ? standSvg(x1 + 26, x1 + 2, y1) : '';
-  return `${stand}<g transform="translate(${x0},${y0}) rotate(${ang})"><rect x="0" y="0" width="${L}" height="10" rx="2" style="fill:#e3bf86;stroke:${WOOD_EDGE}"/>${blockSvg(at, 0, [v.block[0] * 5 / 6, 0, v.block[2] * 5 / 6])}${(sl.weights ?? 2) > 0 ? weightsSvg(at + w / 2, -h - 9 * (sl.weights ?? 2), sl.weights ?? 2, 18, 9) : ''}${pull}</g>${sl.height > 0 ? `<path class="bench-mark" d="M${x1 + 6},${y1} V${y0}"/><text class="bench-reading" x="${x1 + 10}" y="${(y1 + y0) / 2}">h = ${Math.round(sl.height * 100)} см</text>` : ''}`;
-}
-
-
-/**
- * The circuit on the table: the source on the left, the key, the ammeter in series, the resistor; the voltmeter
- * across the resistor above it. Wires light up when the key is closed.
- */
-function circuitSvg(c: BenchView['circuit']): string {
-  const on = !!c?.amps;
-  const wire = on ? '#e2b04a' : '#9aa3ad';
-  const y = TABLE - 40;
-  const top = TABLE - 130;
-  const W = (d: string) => `<path d="${d}" style="fill:none;stroke:${wire};stroke-width:2.2"/>`;
-  const source = `<rect x="140" y="${y - 30}" width="70" height="44" rx="5" style="fill:${DARK}"/><rect x="150" y="${y - 22}" width="50" height="16" rx="2" style="fill:#0f2a12"/><text class="sw-text" x="175" y="${y - 10}" text-anchor="middle" style="fill:#7CFC9a">${String(c?.source ?? 0).replace('.', ',')} V</text><circle cx="155" cy="${y + 4}" r="3" style="fill:#c0392b"/><circle cx="195" cy="${y + 4}" r="3" style="fill:#222"/>`;
-  const key = `<circle cx="250" cy="${y + 4}" r="3" style="fill:${DARK}"/><circle cx="280" cy="${y + 4}" r="3" style="fill:${DARK}"/><path d="M250,${y + 4} L${on ? 280 : 276},${on ? y + 4 : y - 10}" style="stroke:${DARK};stroke-width:3;stroke-linecap:round"/>`;
-  const resistor = `<rect x="430" y="${y - 6}" width="60" height="20" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${[0, 1, 2].map((k) => `<rect x="${442 + k * 12}" y="${y - 6}" width="4" height="20" style="fill:${['#8b4513', '#222', '#c0392b'][k]}"/>`).join('')}`;
-  const wires = W(`M195,${y + 4} H250`) + W(`M280,${y + 4} H340`) + W(`M392,${y + 4} H430`) + W(`M490,${y + 4} H540 V${y + 40} H150 V${y + 4} H155`) + W(`M410,${y + 4} V${top + 40} H${435}`) + W(`M485,${top + 40} H510 V${y + 4}`);
-  return `${wires}${source}${key}${meterSvg(366, y + 6, 'A', c?.amps?.share, c?.amps?.text)}${resistor}${meterSvg(460, top + 40, 'V', c?.volts?.share, c?.volts?.text)}`;
-}
 
 
 
@@ -319,46 +234,10 @@ function circuitSvg(c: BenchView['circuit']): string {
 
 
 
-/** A resistor seen from above: its body and colour bands (2 Ω — red-black-gold, 4 Ω — yellow-black-gold). */
-function resistorSvg(x: number, y: number, ohms: number): string {
-  const bands = ohms === 2 ? ['#c0392b', '#222', '#b8860b'] : ['#e6c229', '#222', '#b8860b'];
-  return `<rect x="${x}" y="${y - 10}" width="56" height="20" rx="3" style="fill:#d9c08a;stroke:#8a6d33"/>${bands.map((b, k) => `<rect x="${x + 12 + k * 11}" y="${y - 10}" width="4" height="20" style="fill:${b}"/>`).join('')}<text class="lever-mark" x="${x + 28}" y="${y + 21}" text-anchor="middle">${ohms} Ом</text>`;
-}
 
-/**
- * Two resistors on the table, in series (one after the other) or in parallel (two branches); the ammeter and the
- * voltmeter where this step reads them.
- */
-function pairSvg(kind: 'series' | 'parallel', p: BenchView['pair']): string {
-  const on = !!p?.amps;
-  const wire = on ? '#e2b04a' : '#9aa3ad';
-  const W = (d: string) => `<path d="${d}" style="fill:none;stroke:${wire};stroke-width:2.2"/>`;
-  const y = TABLE - 40;
-  const at = p?.at ?? 'both';
-  const source = `<rect x="110" y="${y - 30}" width="70" height="44" rx="5" style="fill:${DARK}"/><rect x="120" y="${y - 22}" width="50" height="16" rx="2" style="fill:#0f2a12"/><text class="sw-text" x="145" y="${y - 10}" text-anchor="middle" style="fill:#7CFC9a">${String(p?.source ?? 0).replace('.', ',')} V</text>`;
-  const amm = (x: number, yy: number) => meterSvg(x, yy, 'A', p?.amps?.share, p?.amps?.text);
-  const volt = (x: number, yy: number) => meterSvg(x, yy, 'V', p?.volts?.share, p?.volts?.text);
-  if (kind === 'series') {
-    // Source → ammeter → R1 → R2 → back; the voltmeter above R1, R2 or both.
-    const r1x = 330;
-    const r2x = 430;
-    const vx = at === 'r1' ? r1x + 28 : at === 'r2' ? r2x + 28 : (r1x + r2x + 56) / 2;
-    const [va, vb] = at === 'r1' ? [r1x, r1x + 56] : at === 'r2' ? [r2x, r2x + 56] : [r1x, r2x + 56];
-    const vy = TABLE - 150;
-    return `${W(`M180,${y} H244 M296,${y} H${r1x} M${r1x + 56},${y} H${r2x} M${r2x + 56},${y} H540 V${y + 34} H145 V${y + 14}`)}${W(`M${va},${y} V${vy + 14} H${vx - 26} M${vx + 26},${vy + 14} H${vb} V${y}`)}${source}${amm(270, y + 2)}${resistorSvg(r1x, y, 2)}${resistorSvg(r2x, y, 4)}${volt(vx, vy)}`;
-  }
-  // Parallel: a fork after the ammeter of the main line (or the ammeter in one branch); the voltmeter across the pair.
-  const fx = 300;
-  const jx = 500;
-  const b1 = y - 50;
-  const b2 = y + 10;
-  const main = at === 'both';
-  const ax = main ? 245 : 360;
-  const ay = at === 'r1' ? b1 + 2 : at === 'r2' ? b2 + 2 : y + 2;
-  const branch = (yy: number, ohms: number, metered: boolean) => (metered ? W(`M${fx},${yy} H${ax - 26} M${ax + 26},${yy} H410`) : W(`M${fx},${yy} H410`)) + resistorSvg(410, yy, ohms) + W(`M466,${yy} H${jx}`);
-  const vy = TABLE - 175;
-  return `${W(`M180,${y} H${main ? ax - 26 : fx}`)}${main ? W(`M${ax + 26},${y} H${fx}`) : ''}${W(`M${fx},${b1} V${b2} M${jx},${b1} V${b2} M${jx},${y} H560 V${y + 44} H145 V${y + 14}`)}${branch(b1, 2, at === 'r1')}${branch(b2, 4, at === 'r2')}${W(`M${fx},${b1} V${vy + 14} H${400 - 26} M${400 + 26},${vy + 14} H${jx} V${b1}`)}${source}${amm(ax, ay)}${volt(400, vy)}`;
-}
+
+
+
 
 
 

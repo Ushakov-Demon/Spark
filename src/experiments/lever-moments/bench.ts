@@ -1,13 +1,13 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { G } from '../domains/mechanics/constants.js';
-import { moment, slidingFriction, weight } from '../domains/mechanics/formulas.js';
-import { blockMass, WOOD_ON_WOOD } from './bench-kit.js';
-import { SCALES, scaleReading } from '../equipment/scales.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { G } from '../../domains/mechanics/constants.js';
+import { moment, slidingFriction, weight } from '../../domains/mechanics/formulas.js';
+import { blockMass, WOOD_ON_WOOD } from '../../scenarios/bench-kit.js';
+import { SCALES, scaleReading } from '../../equipment/scales.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * The lever of grade 8 (lab work 1, the condition of a lever's balance): a ruler on an axis at its middle,

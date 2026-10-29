@@ -321,7 +321,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   const edges: (number | undefined)[] = [];
   const count = { volume: 0, mass: 0 };
   let tapePath: number | null = null;
-  const pair: Partial<Record<'r1' | 'r2' | 'both', { I: number; U: number }>> = {};
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
     if (!e.ok) return;
@@ -336,41 +335,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const sub = SUBSTANCES[c['substance'] as keyof typeof SUBSTANCES];
       if (sub?.category.startsWith('solid.') || c['frozen']) addedSince = { v: true, m: true };
       dissolvedAdded = !!sub && sub.category.startsWith('solid.') && !c['frozen'] && inWaterFamily(sub);
-      return;
-    }
-    // Two resistors: what the instruments show at each place; once all three are read, the sum that holds.
-    if (c.type === 'lab.pair') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
-      const I = recs.find((x) => x.quantity === 'current')?.value;
-      const U = recs.find((x) => x.quantity === 'voltage')?.value;
-      if (I == null || U == null) return;
-      const at = String(c['at']) as 'r1' | 'r2' | 'both';
-      const series = c['connection'] === 'series';
-      pair[at] = { I, U };
-      const A = (x: number) => formatMeasured('current', x, 0.01, locale);
-      const V = (x: number) => formatMeasured('voltage', x, 0.1, locale);
-      const sub = at === 'r1' ? '₁' : at === 'r2' ? '₂' : '';
-      const place = at === 'both' ? (series ? (uk ? 'на обох резисторах разом' : 'across both resistors') : uk ? 'до розгалуження' : 'before the fork') : uk ? `резистор ${at === 'r1' ? 1 : 2}` : `resistor ${at === 'r1' ? 1 : 2}`;
-      out.push({ id: `pair:${i}`, title: uk ? `покази: ${place}` : `the readings: ${place}`, formula: series ? `I = ${A(I)}, U${sub} = ${V(U)}` : `I${sub} = ${A(I)}, U = ${V(U)}` });
-      const { r1, r2, both } = pair;
-      if (r1 && r2 && both) {
-        out.push(series
-          ? { id: `sum:${i}`, title: uk ? 'сума напруг на резисторах — і загальна напруга' : 'the voltages across the resistors added — and the total', formula: 'U = U₁ + U₂', numbers: `${V(r1.U)} + ${V(r2.U)} = ${V(r1.U + r2.U)} (${uk ? 'виміряно' : 'measured'} ${V(both.U)})` }
-          : { id: `sum:${i}`, title: uk ? 'сума струмів у гілках — і загальний струм' : 'the branch currents added — and the total', formula: 'I = I₁ + I₂', numbers: `${A(r1.I)} + ${A(r2.I)} = ${A(r1.I + r2.I)} (${uk ? 'виміряно' : 'measured'} ${A(both.I)})` });
-      }
-      return;
-    }
-    // The circuit: the ammeter and the voltmeter read together — the resistance R = U / I.
-    if (c.type === 'lab.circuit') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
-      const I = recs.find((x) => x.quantity === 'current');
-      const U = recs.find((x) => x.quantity === 'voltage');
-      if (!I || !U || I.value === null || U.value === null || I.value <= 0) return;
-      const A = (x: number) => formatMeasured('current', x, 0.01, locale);
-      const V = (x: number) => formatMeasured('voltage', x, 0.1, locale);
-      out.push({ id: `IU:${i}`, title: uk ? `покази приладів (джерело ${n(Number(c['source']), 2)} В)` : `the instruments (source ${n(Number(c['source']), 2)} V)`, formula: `I = ${A(I.value)}, U = ${V(U.value)}` });
-      if (c['power']) out.push({ id: `P:${i}`, title: uk ? 'потужність споживача' : 'the power of the consumer', formula: 'P = U · I', numbers: `${V(U.value)} · ${A(I.value)} ≈ ${n(U.value * I.value, 2)} ${uk ? 'Вт' : 'W'}` });
-      else out.push({ id: `R:${i}`, title: uk ? 'опір провідника' : 'the resistance of the conductor', formula: 'R = U / I', numbers: `${V(U.value)} / ${A(I.value)} ≈ ${n(U.value / I.value, 2)} ${uk ? 'Ом' : 'Ω'}` });
       return;
     }
     const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement');
@@ -409,33 +373,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
         out.push({ id: `liq:${i}`, title: uk ? 'маса рідини — різниця двох зважувань' : 'the mass of the liquid — the difference of two weighings', formula: 'm = m₂ − m₁', numbers: `${g(r.value)} − ${g(emptyVessel)} = ${g(liquidMass)}` });
       }
       liquidDensityLine(i);
-      return;
-    }
-    // The inclined plane: the useful work (lifting by h), the work done (pulling along l), the efficiency.
-    if (c.type === 'lab.slope') {
-      const h = r.inputs?.['h'] ?? 0;
-      const l = r.inputs?.['l'] ?? 1;
-      // The weight as the dynamometer showed it in the air (the last weighing), else the model's.
-      const P = [...airByBody.values()].filter((x): x is number => x !== null).pop() ?? r.inputs?.['P'] ?? 0;
-      const N1 = (x: number) => formatMeasured('force', x, 0.1, locale);
-      const J = uk ? 'Дж' : 'J';
-      const Au = P * h;
-      const At = r.value * l;
-      out.push({ id: `Au:${i}`, title: uk ? `корисна робота — підняти брусок на h = ${cm(h)}` : `the useful work — lifting the block by h = ${cm(h)}`, formula: 'A_к = P·h', numbers: `${N1(P)} · ${n(h)} ${uk ? 'м' : 'm'} ≈ ${n(Au, 3)} ${J}` });
-      out.push({ id: `At:${i}`, title: uk ? `повна робота — тягти вздовж дошки l = ${cm(l)}` : `the work done — pulling along the board l = ${cm(l)}`, formula: 'A_п = F·l', numbers: `${N1(r.value)} · ${n(l)} ${uk ? 'м' : 'm'} ≈ ${n(At, 3)} ${J}` });
-      out.push({ id: `eta:${i}`, title: uk ? `ККД похилої площини (h = ${cm(h)})` : `the efficiency of the slope (h = ${cm(h)})`, formula: 'η = A_к / A_п', numbers: `${n(Au, 3)} ${J} / ${n(At, 3)} ${J} ≈ ${n((Au / At) * 100, 2)} %` });
-      return;
-    }
-    // The lever: the moments on both sides — equal when it balances.
-    if (c.type === 'lab.lever') {
-      const F1 = r.inputs?.['F1'] ?? 0;
-      const l1 = r.inputs?.['l1'] ?? 0;
-      const l2 = r.inputs?.['l2'] ?? 0;
-      const dyn = r.instrument === 'dynamometer';
-      const F2s = dyn ? formatMeasured('force', r.value, 0.1, locale) : F2(r.value);
-      const Nm = uk ? 'Н·м' : 'N·m';
-      out.push({ id: `M1:${i}`, title: uk ? `момент сили ліворуч (${F2(F1)} на ${cm(l1)})` : `the moment on the left (${F2(F1)} at ${cm(l1)})`, formula: 'M₁ = F₁·l₁', numbers: `${F2(F1)} · ${n(l1)} ${uk ? 'м' : 'm'} ≈ ${n(F1 * l1, 3)} ${Nm}` });
-      out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
     // The coil in the water on the multimeter: its resistance at this temperature, and — once warmer than at the

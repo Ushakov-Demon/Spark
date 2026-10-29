@@ -29,10 +29,14 @@ import { atmosphericPressureScene } from './atmospheric-pressure/scene.js';
 import { diodeBlackBoxScene } from './diode-black-box/scene.js';
 import { electromagnetScene } from './electromagnet/scene.js';
 import { electromagneticInductionScene } from './electromagnetic-induction/scene.js';
+import { leverMomentsScene } from './lever-moments/scene.js';
+import { slopeEfficiencyScene } from './slope-efficiency/scene.js';
+import { resistorCircuitScene } from './resistor-circuit/scene.js';
+import { twoResistorsScene } from './two-resistors/scene.js';
 import type { ExperimentScene } from './types.js';
 
 /** The pictures of the experiment modules, by kind (one line each, beside src/experiments/index.ts). */
-const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene, windlassScene, smallBodiesScene, ballBounceScene, weightInLiftScene, addingForcesScene, bodiesInLiquidsScene, relativeMotionScene, depthPressureScene, communicatingVesselsScene, hydrostaticParadoxScene, hydraulicPressScene, atmosphericPressureScene, diodeBlackBoxScene, electromagnetScene, electromagneticInductionScene] as unknown as readonly ExperimentScene<never>[];
+const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene, windlassScene, smallBodiesScene, ballBounceScene, weightInLiftScene, addingForcesScene, bodiesInLiquidsScene, relativeMotionScene, depthPressureScene, communicatingVesselsScene, hydrostaticParadoxScene, hydraulicPressScene, atmosphericPressureScene, diodeBlackBoxScene, electromagnetScene, electromagneticInductionScene, leverMomentsScene, slopeEfficiencyScene, resistorCircuitScene, twoResistorsScene] as unknown as readonly ExperimentScene<never>[];
 
 const BY_KIND = new Map(SCENES.map((s) => [s.kind, s] as const));
 export const sceneOf = (kind: string): ExperimentScene<unknown> | undefined => BY_KIND.get(kind) as ExperimentScene<unknown> | undefined;
