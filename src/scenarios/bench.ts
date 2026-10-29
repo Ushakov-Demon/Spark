@@ -23,12 +23,7 @@ import { VESSEL_COMMANDS, VESSEL_TEXT, type VesselCommand } from './vessels-benc
 import { MAGNET_COMMANDS, MAGNET_TEXT, type MagnetCommand } from './magnet-bench.js';
 import { INDUCT_COMMANDS, INDUCT_TEXT, type InductCommand } from './induct-bench.js';
 import { SINK_COMMANDS, SINK_TEXT, type SinkCommand } from './sink-bench.js';
-import { FORCES_COMMANDS, FORCES_TEXT, type ForcesCommand } from './forces-bench.js';
-import { ROWS_COMMANDS, ROWS_TEXT, type RowsCommand } from './rows-bench.js';
-import { LIFT_COMMANDS, LIFT_TEXT, type LiftCommand } from './lift-bench.js';
-import { BOUNCE_COMMANDS, BOUNCE_TEXT, type BounceCommand } from './bounce-bench.js';
 import { CARRY_COMMANDS, CARRY_TEXT, type CarryCommand } from './carry-bench.js';
-import { WINCH_COMMANDS, WINCH_TEXT, type WinchCommand } from './winch-bench.js';
 import { EXPERIMENTS, type ExperimentCommand, type ExperimentKind } from '../experiments/index.js';
 
 /**
@@ -73,7 +68,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | ExperimentCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | CarryCommand | ExperimentCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -152,7 +147,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...EXPERIMENTS.flatMap((m) => m.commands as readonly CommandHandler<never>[])] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...CARRY_COMMANDS, ...EXPERIMENTS.flatMap((m) => m.commands as readonly CommandHandler<never>[])] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -161,12 +156,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...COIL_TEXT,
   ...(PRESS_TEXT as Record<PressCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(SINK_TEXT as Record<SinkCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(FORCES_TEXT as Record<ForcesCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(ROWS_TEXT as Record<RowsCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(LIFT_TEXT as Record<LiftCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(BOUNCE_TEXT as Record<BounceCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(CARRY_TEXT as Record<CarryCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
-  ...(WINCH_TEXT as Record<WinchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   // The experiment modules: their steps' words, by command type.
   ...(INDUCT_TEXT as Record<InductCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(MAGNET_TEXT as Record<MagnetCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -227,15 +217,10 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-type OldBenchKind = 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch';
+type OldBenchKind = 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'carry';
 const OLD_SETUP: Record<OldBenchKind, LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
-  winch: { uk: 'Ворот на штативі: вісь із ручкою, котушка від ниток (d = 2 см) або олівець (d = 8 мм), нитка з вантажем, лінійка', en: 'A windlass on a stand: an axis with a handle, a cotton reel (d = 2 cm) or a pencil (d = 8 mm), a thread with a load, a ruler' },
   carry: { uk: 'Перевернута пляшка густої рідини для миття посуду з позначками, лінійка на столі, аркуш паперу за пляшкою, маркер, секундомір', en: 'An upside-down bottle of thick washing-up liquid with marks, a ruler on the table, a sheet of paper behind the bottle, a marker, a stopwatch' },
-  bounce: { uk: 'Метрова лінійка на штативі, стальна плита, м’ячик для настільного тенісу, тенісний м’яч, пластилінова кулька', en: 'A metre stick on a stand, a steel plate, a table tennis ball, a tennis ball, a plasticine ball' },
-  lift: { uk: 'Кабіна ліфта, динамометр (до 5 Н) під її стелею, чотири тягарці по 100 г', en: 'A lift cabin, a dynamometer (up to 5 N) under its ceiling, four 100 g weights' },
-  rows: { uk: 'Лінійка з міліметровими поділками, горох, пшоно, дві зубочистки, стрижень для ручки, нитка № 10 (≈ 50 см)', en: 'A ruler with millimetre divisions, peas, millet, two toothpicks, a pen refill, a № 10 thread (≈ 50 cm)' },
-  forces: { uk: 'Штатив, два динамометри (до 5 Н), дерев’яна лінійка, два тягарці по 100 г', en: 'A stand, two dynamometers (up to 5 N), a wooden ruler, two 100 g weights' },
   bubble: { uk: 'Прозора пляшка (0,5 л) густої рідини для миття посуду з позначками, лінійка, секундомір', en: 'A clear 0.5 L bottle of thick washing-up liquid with marks, a ruler, a stopwatch' },
   sink: { uk: 'Мірні циліндри (250 мл) з гліцерином, соняшниковою олією й водою, з позначками; сталева кулька від підшипника, секундомір', en: '250 mL measuring cylinders of glycerol, sunflower oil and water, with marks; a steel bearing ball, a stopwatch' },
   induct: { uk: 'Котушка-моток, штабовий магніт, міліамперметр з нулем посередині, з’єднувальні дроти', en: 'A coil, a bar magnet, a milliammeter with its zero in the middle, connecting wires' },

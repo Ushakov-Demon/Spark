@@ -1,13 +1,13 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { G } from '../domains/mechanics/constants.js';
-import { weight } from '../domains/mechanics/formulas.js';
-import { SCALES, scaleReading } from '../equipment/scales.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
-import { BENCH_WEIGHT } from './bench-kit.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { G } from '../../domains/mechanics/constants.js';
+import { weight } from '../../domains/mechanics/formulas.js';
+import { SCALES, scaleReading } from '../../equipment/scales.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
+import { BENCH_WEIGHT } from '../../scenarios/bench-kit.js';
 
 /**
  * Adding forces along one line (grade 7): one load — two 100 g weights on a light ruler — held by one dynamometer,

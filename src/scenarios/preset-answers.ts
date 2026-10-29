@@ -18,10 +18,6 @@ import { formatMeasured } from './measuring.js';
 import { AMMETER, VOLTMETER } from './circuit-bench.js';
 import { vesselName, type PascalVessel } from './vessels-bench.js';
 import { sinkLiquidName, type SinkLiquid } from './sink-bench.js';
-import { rowName, type RowBody } from './rows-bench.js';
-import { liftPhaseText, type LiftPhase } from './lift-bench.js';
-import { BOUNCE_FROM, bounceBallName, type BounceBall } from './bounce-bench.js';
-import { winchSpoolName, type WinchSpool } from './winch-bench.js';
 import { EXPERIMENTS } from '../experiments/index.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
@@ -396,64 +392,7 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
       ),
     };
   },
-  'weight-in-lift': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.lift' && x.record.value !== null).map((x) => ({ phase: String(x.command['phase']) as LiftPhase, P: x.record.value!, a: x.record.inputs?.['a'] ?? 0 }));
-    const at = (p: LiftPhase) => R.find((x) => x.phase === p)?.P;
-    const rest = at('rest');
-    const steady = R.filter((x) => x.a === 0).every((x) => x.P === rest);
-    const more = R.filter((x) => x.a > 0).every((x) => rest !== undefined && x.P > rest);
-    const less = R.filter((x) => x.a < 0 && x.phase !== 'fall').every((x) => rest !== undefined && x.P < rest);
-    return {
-      ...(steady && more && less ? { correct: 'accel' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Вага — сила, з якою тіло тягне підвіс. Поки ліфт стоїть чи їде рівномірно, пружина лише тримає тягарці: P = m·g, хоч угору, хоч униз. Щоб тягарці розганялися вгору разом із кабіною, пружина мусить тягнути їх сильніше, ніж їх тягне Земля, — вона розтягується більше: вага зростає. Це буває, коли ліфт рушає вгору і коли гальмує, їдучи вниз, — в обох випадках прискорення напрямлене вгору. Коли прискорення напрямлене вниз (ліфт рушає вниз або гальмує нагорі), пружина тягне слабше — вага менша. Важливо не те, куди їде ліфт, а куди він прискорюється. А якщо тягарці падають разом із динамометром, пружині нема чого тримати: вага нуль — це невагомість. Маса ж тягарців увесь час та сама, і сила тяжіння теж. Як порахувати вагу з прискоренням, P = m·(g + a), — у 9 класі.'
-          : 'Weight is the force with which a body pulls on its hanger. While the lift stands or moves steadily, the spring only holds the weights: P = m·g, up or down alike. For the weights to speed up upwards with the cabin, the spring must pull them harder than the Earth does — it stretches more: the weight grows. That happens when the lift starts up and when it slows down on the way down — both times the acceleration points up. When the acceleration points down (starting down, slowing at the top), the spring pulls weaker — the weight is less. What matters is not which way the lift goes, but which way it accelerates. And if the weights fall together with the dynamometer, the spring has nothing to hold: the weight is zero — weightlessness. The weights’ mass stays the same all the time, and so does the force of gravity. How to count the weight with the acceleration, P = m·(g + a), comes in grade 9.',
-      ),
-      say: both((l) => {
-        const up = at('up-start');
-        const down = at('down-start');
-        return rest !== undefined && up !== undefined && down !== undefined ? (l === 'uk' ? `Стоїть чи їде рівно — ${N(rest, l)}; розганяється вгору — ${N(up, l)}, униз — ${N(down, l)}; у падінні — нуль.` : `Standing or going steadily — ${N(rest, l)}; speeding up upwards — ${N(up, l)}, downwards — ${N(down, l)}; falling — zero.`) : '';
-      }),
-      text: both((l) => {
-        const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
-        const s = `${parts.join('; ')}.`;
-        return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
-      }),
-    };
-  },
 
-  windlass: (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.winch' && x.record.value !== null).map((x) => ({ spool: String(x.command['spool']), mode: String(x.command['mode']), amount: Number(x.command['amount']), v: x.record.value!, d: x.record.inputs?.['diameter'] ?? 0 }));
-    const turns = R.filter((x) => x.mode === 'lower');
-    // Each count against l / (π·d) and l / d: which one the turns follow (to a quarter turn).
-    const byCircle = turns.length > 0 && turns.every((x) => Math.abs(x.v - x.amount / (Math.PI * x.d)) <= 0.25);
-    const num = (x: number, l: Locale) => sig(x, 3, l);
-    const cm = (x: number, l: Locale) => `${sig(x * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-    const name = (sp: string, l: Locale) => tr(winchSpoolName(sp as WinchSpool), l);
-    return {
-      ...(byCircle ? { correct: 'circle' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Нитка лежить на котушці кільцями. За один оберт котушки з неї змотується один виток — це довжина кола котушки, C = π·d. Тож вантаж, опускаючись на l, обертає котушку n = l / (π·d) разів: прямолінійний рух вантажу стає обертанням котушки. І навпаки: повертаючи ручку n разів, намотуємо n·π·d нитки — обертання стає прямолінійним рухом вантажу. Тонкий олівець має коротше коло, тож на ті самі 30 см обертається більше разів, а за ті самі 5 обертів піднімає вантаж менше. Так працюють ворот колодязя, котушка спінінга, рулетка; а рейка з шестірнею чи колесо, що котиться, роблять те саме без нитки. Товщину нитки тут не враховано — з нею кожен виток трохи довший.'
-          : 'The thread lies on the spool in rings. One turn of the spool unwinds one ring — the spool’s circumference, C = π·d. So the load, going down by l, turns the spool n = l / (π·d) times: the load’s straight motion becomes the spool’s turning. And back: turning the handle n times winds n·π·d of thread — turning becomes the load’s straight motion. The thin pencil has a shorter circumference, so it turns more times for the same 30 cm, and lifts the load less in the same 5 turns. This is how a well’s windlass, a fishing reel, a tape measure work; a rack and pinion or a rolling wheel do the same without a thread. The thread’s thickness is left out here — with it each ring is a little longer.',
-      ),
-      say: both((l) => {
-        const a = turns[0];
-        return a ? (l === 'uk' ? `${name(a.spool, l).replace(/^./, (ch) => ch.toUpperCase())}: ${num(a.v, l)} оберту на 30 см — стільки разів π·d вміщується в довжину нитки.` : `${name(a.spool, l).replace(/^./, (ch) => ch.toUpperCase())}: ${num(a.v, l)} turns for 30 cm — as many times as π·d fits into the thread.`) : '';
-      }),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = R.map((x) =>
-          x.mode === 'lower'
-            ? uk ? `${name(x.spool, l)}, вантаж опустився на ${cm(x.amount, l)} — ${num(x.v, l)} об. (l / (π·d) = ${sig(x.amount / (Math.PI * x.d), 3, l)})` : `${name(x.spool, l)}, the load down ${cm(x.amount, l)} — ${num(x.v, l)} turns (l / (π·d) = ${sig(x.amount / (Math.PI * x.d), 3, l)})`
-            : uk ? `${name(x.spool, l)}, ${x.amount} обертів ручки — вантаж піднявся на ${cm(x.v, l)} (π·d·n = ${cm(Math.PI * x.d * x.amount, l)})` : `${name(x.spool, l)}, ${x.amount} turns of the handle — the load rose ${cm(x.v, l)} (π·d·n = ${cm(Math.PI * x.d * x.amount, l)})`,
-        );
-        const s = `${parts.join('; ')}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Оберти лічено за міткою — до чверті оберту.' : ' The turns are counted by a mark — to a quarter turn.');
-      }),
-    };
-  },
   'relative-motion': (run) => {
     // Each step: the time, the bottle's shift and the bubble's path on the paper (the records by `which`).
     const steps = new Map<number, { u: number; t?: number; x?: number; s?: number }>();
@@ -492,103 +431,6 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
         });
         const s = `${parts.join('; ')}.`;
         return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Відносно пляшки шлях щоразу 9 см.' : ' Relative to the bottle the path is 9 cm each time.');
-      }),
-    };
-  },
-  'ball-bounce': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.bounce' && x.record.value !== null).map((x) => ({ ball: String(x.command['ball']) as BounceBall, n: Number(x.command['bounce']), h: x.record.value!, m: x.record.inputs?.['mass'] ?? 0 }));
-    const cm = (h: number) => Math.round(h * 100);
-    const pp = R.filter((x) => x.ball === 'pingpong').sort((a, b) => a.n - b.n);
-    const lower = pp.length > 1 && pp.every((x, i) => x.h < (i === 0 ? BOUNCE_FROM : pp[i - 1]!.h));
-    // The energy at a top, millijoules: Eп = m·g·h.
-    const mJ = (m: number, h: number, l: Locale) => `${sig(m * G * h * 1000, 2, l)} ${l === 'uk' ? 'мДж' : 'mJ'}`;
-    return {
-      ...(lower ? { correct: 'heat' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Нагорі м’ячик має потенціальну енергію Eп = m·g·h. Падаючи, він розганяється: потенціальна енергія переходить у кінетичну. Ударившись об плиту, м’ячик на мить сплющується, а тоді розпрямляється й відштовхується — і, піднімаючись, знову міняє кінетичну енергію на потенціальну. Але сплющення повертає не все: частина енергії йде на нагрівання м’ячика й плити (стає внутрішньою енергією), частина — на звук удару. Тому механічної енергії щоразу менше, і м’ячик піднімається нижче: висота показує, яку частку енергії він зберіг. Енергія не зникає — вона лише переходить в інші види: це закон збереження енергії. Пружний м’ячик для настільного тенісу зберігає близько 80 % за удар, тенісний м’яч — трохи більше половини, а пластилін, сплющившись, лишається на плиті: уся його механічна енергія стала внутрішньою. Земля ж притягує м’ячик однаково на будь-якій із цих висот.'
-          : 'At the top the ball has potential energy Eₚ = m·g·h. Falling, it speeds up: potential energy turns into kinetic. Hitting the plate, the ball is squashed for a moment, then straightens and pushes off — and, rising, trades kinetic energy back for potential. But the squashing does not give everything back: part of the energy warms the ball and the plate (becomes internal energy), part goes as the sound of the impact. So there is less mechanical energy each time, and the ball rises lower: the height shows the share of energy it kept. Energy does not vanish — it only turns into other forms: this is the conservation of energy. A springy table tennis ball keeps about 80 % per impact, a tennis ball a little over half, and plasticine, squashed, stays on the plate: all its mechanical energy became internal. The Earth pulls the ball just the same at any of these heights.',
-      ),
-      say: both((l) => {
-        const a = pp[0];
-        return a ? (l === 'uk' ? `З метра м’ячик для настільного тенісу підскочив на ${cm(a.h)} см — зберіг ${cm(a.h)} % енергії; щоразу — приблизно стільки ж від попередньої.` : `From a metre the table tennis ball bounced to ${cm(a.h)} cm — it kept ${cm(a.h)} % of its energy; each time about the same share of the one before.`) : '';
-      }),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = [
-          ...(pp.length ? [uk ? `М’ячик для настільного тенісу з 1 м: ${pp.map((x) => `${cm(x.h)} см`).join(', ')} — енергія ${mJ(pp[0]!.m, BOUNCE_FROM, l)} нагорі, ${pp.map((x) => mJ(x.m, x.h, l)).join(', ')} після ударів` : `The table tennis ball from 1 m: ${pp.map((x) => `${cm(x.h)} cm`).join(', ')} — an energy of ${mJ(pp[0]!.m, BOUNCE_FROM, l)} at the top, ${pp.map((x) => mJ(x.m, x.h, l)).join(', ')} after the impacts`] : []),
-          ...R.filter((x) => x.ball !== 'pingpong').map((x) => `${tr(bounceBallName(x.ball), l)} — ${cm(x.h)} ${uk ? 'см' : 'cm'}${x.h > 0 ? (uk ? `, зберіг ${cm(x.h)} % енергії` : `, it kept ${cm(x.h)} % of its energy`) : uk ? ': уся енергія стала внутрішньою' : ': all the energy became internal'}`),
-        ];
-        const s = `${parts.join('; ')}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Частки — з випробувань м’ячів за правилами ITTF і ITF; опір повітря не враховано.' : ' The shares are from the balls’ tests under the ITTF and ITF rules; the air’s drag is left out.');
-      }),
-    };
-  },
-  'small-bodies': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.rows' && x.record.value !== null).map((x) => ({ body: String(x.command['body']), n: Number(x.command['count']), L: x.record.value! }));
-    const mm = (x: number, l: Locale, d = 3) => `${sig(x * 1000, d, l)} ${l === 'uk' ? 'мм' : 'mm'}`;
-    // The size of one: to hundredths of a millimetre (0,40 — not 0,4).
-    const d2 = (x: number, l: Locale) => `${(x * 1000).toFixed(2).replace('.', l === 'uk' ? ',' : '.')} ${l === 'uk' ? 'мм' : 'mm'}`;
-    const one = R.find((x) => x.n === 1);
-    const rows = R.filter((x) => x.n > 1);
-    const name = (b: string, n: number, l: Locale) => tr(rowName(b as RowBody, n), l);
-    return {
-      correct: 'row',
-      why: both((l) =>
-        l === 'uk'
-          ? 'Лінійка дає довжину лише до поділки: її похибка — пів поділки, 0,5 мм, хоч що вимірюй. Для горошини завбільшки 6–7 мм це вже кілька відсотків, а зернятко пшона чи нитку однією лінійкою не виміряти взагалі. Але коли вимірюємо ряд із N однакових тіл, ці пів міліметра припадають на весь ряд — на одне тіло лише 0,5/N мм. Тож що довший ряд, то точніше d = L/N. Так само усереднюються й відмінності між горошинами: виходить середній розмір. Так вимірюють товщину аркуша (пачку), дроту (намотку), навіть розміри молекул — у збільшенні.'
-          : 'A ruler gives a length only to a division: its error is half a division, 0.5 mm, whatever you measure. For a 6–7 mm pea that is several per cent already, and a millet grain or a thread cannot be measured by one ruler at all. But when we measure a row of N alike bodies, that half millimetre is for the whole row — just 0.5/N mm per body. So the longer the row, the better d = L/N. The differences between the peas average out the same way: we get the mean size. This is how the thickness of a sheet (a stack), of a wire (a winding) are measured — even molecules, magnified.',
-      ),
-      say: both((l) => {
-        const millet = rows.find((x) => x.body === 'millet');
-        return millet ? (l === 'uk' ? `Зернятко пшона — ${d2(millet.L / millet.n, l)}: ряд із ${millet.n} зерняток дав соті частки міліметра.` : `A millet grain is ${d2(millet.L / millet.n, l)}: a row of ${millet.n} grains gave hundredths of a millimetre.`) : '';
-      }),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = [
-          ...(one ? [uk ? `Одна горошина — ${mm(one.L, l, 2)} ± 0,5 мм: похибка близько ${Math.round((0.0005 / one.L) * 100)} %` : `One pea — ${mm(one.L, l, 2)} ± 0.5 mm: an error of about ${Math.round((0.0005 / one.L) * 100)} %`] : []),
-          ...rows.map((x) => (uk ? `${name(x.body, x.n, l)} — ${mm(x.L, l, 3)}, d = ${mm(x.L, l, 3)} / ${x.n} ≈ ${d2(x.L / x.n, l)} (± ${sig(0.5 / x.n, 1, l)} мм)` : `${name(x.body, x.n, l)} — ${mm(x.L, l, 3)}, d = ${mm(x.L, l, 3)} / ${x.n} ≈ ${d2(x.L / x.n, l)} (± ${sig(0.5 / x.n, 1, l)} mm)`)),
-        ];
-        return `${parts.join('; ')}.${uk ? ' Ряд ділить похибку лінійки на кількість тіл: нитку, тоншу за поділку, вдалося виміряти до сотих міліметра.' : ' A row divides the ruler’s error by the number of bodies: the thread, thinner than a division, came out to hundredths of a millimetre.'}`.replace(/^./, (ch) => ch.toUpperCase());
-      }),
-    };
-  },
-  'adding-forces': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.forces' && x.record.value !== null);
-    const of = (hold: string, at?: number) => R.filter((x) => x.command['hold'] === hold && (at === undefined || Math.abs(Number(x.command['at']) - at) < 1e-6)).map((x) => x.record.value!);
-    const [one] = of('one');
-    const twos = [...new Set(R.filter((x) => x.command['hold'] === 'two').map((x) => Number(x.command['at'])))].map((at) => ({ at, f: of('two', at) }));
-    const down = of('down');
-    const round = (x: number) => Math.round(x * 10) / 10;
-    const sums = [...twos.map((x) => round((x.f[0] ?? 0) + (x.f[1] ?? 0))), ...(down.length === 2 ? [round(down[0]! - down[1]!)] : [])];
-    const same = one !== undefined && sums.length > 0 && sums.every((x) => Math.abs(x - one) < 0.15);
-    return {
-      ...(same ? { correct: 'same' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Вантаж висить нерухомо — отже, сили, що на нього діють, зрівноважені: униз його тягне вага тягарців разом із лінійкою, угору — динамометри. Тож рівнодійна сил динамометрів щоразу дорівнює вазі вантажу — тій самій силі, яку показував один динамометр. Тримати можна одним динамометром чи двома, ділити вагу між кінцями лінійки порівну чи ні (кінець, ближчий до тягарців, тримає більше — чому, з’ясуємо в темі про важіль), — разом угору щоразу та сама сила. А коли другий динамометр тягне тягарці вниз, верхньому доводиться тримати і вантаж, і цю силу — він показує більше. Рівнодійна двох протилежних сил — їхня різниця — знову дорівнює вазі вантажу.'
-          : 'The load hangs still — so the forces on it balance: its weight with the ruler pulls it down, the dynamometers pull it up. So the resultant of the dynamometers’ forces equals the load’s weight each time — the very force one dynamometer showed. Hold it by one dynamometer or by two, share the weight between the ruler’s ends equally or not (the end nearer the weights holds more — why, we shall see with the lever), — together upwards it is the same force every time. And when the second dynamometer pulls the weights down, the upper one has to hold both the load and that pull — it shows more. The resultant of the two opposite forces — their difference — again equals the load’s weight.',
-      ),
-      say: both((l) => (one !== undefined ? (l === 'uk' ? `Щоразу R = ${N(sums[0] ?? one, l)} — стільки ж, скільки показував один динамометр.` : `Each time R = ${N(sums[0] ?? one, l)} — as much as one dynamometer showed.`) : '')),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = [
-          ...(one !== undefined ? [uk ? `Один динамометр тримав вантаж із силою ${N(one, l)}` : `One dynamometer held the load with ${N(one, l)}`] : []),
-          ...twos.map((x) =>
-            uk
-              ? `два, тягарці на ${Math.round(x.at * 100)} см: ${N(x.f[0] ?? 0, l)} + ${N(x.f[1] ?? 0, l)} = ${N(round((x.f[0] ?? 0) + (x.f[1] ?? 0)), l)}`
-              : `two, the weights at ${Math.round(x.at * 100)} cm: ${N(x.f[0] ?? 0, l)} + ${N(x.f[1] ?? 0, l)} = ${N(round((x.f[0] ?? 0) + (x.f[1] ?? 0)), l)}`,
-          ),
-          ...(down.length === 2 ? [uk ? `вгору ${N(down[0]!, l)}, униз ${N(down[1]!, l)}: ${N(down[0]!, l)} − ${N(down[1]!, l)} = ${N(round(down[0]! - down[1]!), l)}` : `up ${N(down[0]!, l)}, down ${N(down[1]!, l)}: ${N(down[0]!, l)} − ${N(down[1]!, l)} = ${N(round(down[0]! - down[1]!), l)}`] : []),
-        ];
-        const tail = same
-          ? uk
-            ? ' Покази динамометрів змінювалися, а рівнодійна — ні: щоразу вона дорівнює вазі вантажу.'
-            : ' The dynamometers’ readings changed, the resultant did not: each time it equals the load’s weight.'
-          : uk
-            ? ' Різниця в одну поділку (0,1 Н) — від округлення показів до поділки.'
-            : ' A difference of one division (0.1 N) comes from rounding the readings to the division.';
-        return `${parts.join('; ')}.${tail}`;
       }),
     };
   },

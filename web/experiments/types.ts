@@ -22,8 +22,8 @@ export interface ExperimentScene<V, K extends string = string> {
   readonly kind: K;
   readonly view: (ctx: SceneContext) => V;
   readonly svg: (v: V) => string;
-  /** The motion from the previous picture to `next`; null — nothing to play. */
-  readonly motion: (next: V, draw: (v: V) => void) => Motion | null;
+  /** The motion from the previous picture (`prev`, when it was this experiment's too) to `next`; null — nothing to play. */
+  readonly motion: (next: V, draw: (v: V) => void, prev: V | null) => Motion | null;
 }
 
 export const defineScene = <V, const K extends string>(s: ExperimentScene<V, K>): ExperimentScene<V, K> => s;

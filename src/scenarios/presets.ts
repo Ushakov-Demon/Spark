@@ -68,7 +68,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | ExperimentKind;
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'carry' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -949,59 +949,7 @@ const LIST: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 7', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 7. Визначення коефіцієнта тертя ковзання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 27, лабораторна робота № 7, с. 191' } }],
     expect: 'reached',
   },
-  {
-    ask: { uk: 'Як виміряти зернятко пшона точніше, ніж до міліметра?', en: 'How to measure a millet grain better than to a millimetre?' },
-    id: 'small-bodies',
-    grade: 7,
-    topic: INTRO,
-    title: { uk: 'Вимірюємо малі тіла методом рядів', en: 'Measuring small bodies by the method of rows' },
-    question: {
-      uk: 'У лінійки поділки по 1 мм, а пшоняне зернятко — завбільшки лише з дві поділки, горошина — із шість-сім. Виміряємо одну горошину, потім ряд горошин, ряд пшона, а ще намотаємо нитку на стрижень. Як виміряти зернятко точніше, ніж до міліметра?',
-      en: 'The ruler’s divisions are 1 mm, and a millet grain is only about two divisions across, a pea six or seven. We measure one pea, then a row of peas, a row of millet, and wind a thread on a rod. How to measure a grain better than to a millimetre?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'rows',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.rows', body: 'pea', count: 1 } },
-      { kind: 'bench', command: { type: 'lab.rows', body: 'pea', count: 15 } },
-      { kind: 'bench', command: { type: 'lab.rows', body: 'millet', count: 40 } },
-      { kind: 'bench', command: { type: 'lab.rows', body: 'thread', count: 30 } },
-    ],
-    choices: [ch('row', 'Викласти багато зерняток у ряд і поділити довжину ряду на їх кількість', 'Lay many grains in a row and divide the row’s length by their number'), ch('one', 'Уважно виміряти одне зернятко', 'Measure one grain very carefully'), ch('cant', 'Ніяк: точніше за поділку лінійка не виміряє', 'No way: a ruler measures no better than its division')],
-    formulas: ['mechanics.row-size'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
-    ],
-    expect: 'reached',
-  },
 
-  {
-    ask: { uk: 'Скільки обертів робить котушка, поки вантаж опускається на 30 см?', en: 'How many turns does the spool make while the load goes down 30 cm?' },
-    id: 'windlass',
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Конструюємо ворот: прямолінійний рух і обертання', en: 'Building a windlass: straight motion and turning' },
-    question: {
-      uk: 'Збираємо на штативі ворот, як у колодязя: на вісь із ручкою надіваємо котушку від ниток (діаметр — 2 см, виміряли лінійкою), намотуємо нитку, на кінці — невеликий вантаж. Опускаємо вантаж на 30 см і рахуємо оберти котушки за міткою на ній, потім те саме з олівцем (8 мм) замість котушки. А тоді навпаки — повертаємо ручку 5 разів і вимірюємо, на скільки піднявся вантаж. Скільки обертів робить котушка, поки вантаж опускається на 30 см?',
-      en: 'We build a windlass on a stand, like a well’s: a cotton reel (2 cm across, measured by a ruler) goes on an axis with a handle, a thread is wound on it, a small load at its end. We let the load down by 30 cm and count the reel’s turns by a mark on it, then the same with a pencil (8 mm) instead of the reel. And then the other way — we turn the handle 5 times and measure how far the load rose. How many turns does the spool make while the load goes down 30 cm?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'winch',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.winch', spool: 'reel', mode: 'lower', amount: 0.3 } },
-      { kind: 'bench', command: { type: 'lab.winch', spool: 'pencil', mode: 'lower', amount: 0.3 } },
-      { kind: 'bench', command: { type: 'lab.winch', spool: 'reel', mode: 'turn', amount: 5 } },
-      { kind: 'bench', command: { type: 'lab.winch', spool: 'pencil', mode: 'turn', amount: 5 } },
-    ],
-    choices: [ch('circle', 'Стільки, скільки разів довжина кола котушки (π·d) вміщується в 30 см', 'As many as the spool’s circumference (π·d) fits into 30 cm'), ch('diameter', 'Стільки, скільки разів діаметр котушки вміщується в 30 см', 'As many as the spool’s diameter fits into 30 cm'), ch('same', 'Будь-яка котушка зробить однаково обертів', 'Any spool makes the same number of turns')],
-    answerOnBoard: ['wc:'],
-    formulas: ['mechanics.wound-length'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'конструювання механізмів, що перетворюють прямолінійний рух на обертальний і навпаки' }],
-    expect: 'reached',
-  },
   {
     ask: { uk: 'Чи однакові траєкторія й шлях бульбашки відносно пляшки та відносно стола?', en: 'Are the bubble’s path and trajectory the same relative to the bottle and to the table?' },
     id: 'relative-motion',
@@ -1021,78 +969,6 @@ const LIST: readonly Preset[] = [
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'моделювання: відносності руху' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 2. Механічний рух', match: 'related', quote: 'Механічний рух. Відносність руху та спокою. Система відліку.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 7, «Чому механічний рух є відносним?»: «Форма траєкторії руху, шлях і переміщення тіла залежать від того, відносно якої системи відліку розглядають рух»' } },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Коли динамометр у ліфті показує більше чи менше?', en: 'When does the dynamometer in a lift show more or less?' },
-    id: 'weight-in-lift',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Вага тіла в ліфті', en: 'A body’s weight in a lift' },
-    question: {
-      uk: 'Під стелею кабіни ліфта висить динамометр із чотирма тягарцями по 100 г. Записуватимемо його покази, поки ліфт стоїть, рушає вгору, їде рівномірно, гальмує, а потім так само вниз. Наостанок — дослід із підручника: на мить відпустимо динамометр разом із тягарцями. Коли покази зміняться?',
-      en: 'A dynamometer with four 100 g weights hangs under a lift cabin’s ceiling. We write down its readings while the lift stands, starts up, goes steadily, slows down, and then the same downwards. At last, the textbook’s investigation: we let the dynamometer go for a moment with its weights. When will the readings change?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'lift',
-    plan: (['rest', 'up-start', 'up', 'up-stop', 'down-start', 'down', 'down-stop', 'fall'] as const).map((phase) => ({ kind: 'bench', command: { type: 'lab.lift', phase } }) as const),
-    choices: [ch('accel', 'Лише коли ліфт розганяється чи гальмує', 'Only while the lift speeds up or slows down'), ch('up', 'Більші, поки ліфт їде вгору, менші — поки їде вниз', 'More while the lift goes up, less while it goes down'), ch('same', 'Ніколи: маса тягарців та сама', 'Never: the weights’ mass is the same')],
-    formulas: ['mechanics.weight'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … ваги в ліфтах' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: 'Сили тяжіння та пружності. Вага та невагомість.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 25, дослідження «невагомість», с. 177' } },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Чому м’ячик щоразу підскакує нижче?', en: 'Why does the ball bounce lower each time?' },
-    id: 'ball-bounce',
-    grade: 7,
-    topic: WORK,
-    title: { uk: 'Перетворення механічної енергії: відскок м’яча', en: 'Mechanical energy changing form: a ball’s bounce' },
-    question: {
-      uk: 'Поруч зі стальною плитою стоїть метрова лінійка. Відпускаємо м’ячик для настільного тенісу з висоти 1 м і помічаємо, на яку висоту він підскочить, — після першого удару, другого, третього. Потім так само тенісний м’яч і пластилінову кульку. Нагорі в м’ячика потенціальна енергія Eп = m·g·h, а вона пропорційна висоті. Чому м’ячик щоразу підскакує нижче?',
-      en: 'A metre stick stands by a steel plate. We let a table tennis ball go from 1 m and mark how high it bounces — after the first impact, the second, the third. Then the same with a tennis ball and a plasticine ball. At the top the ball has potential energy Eₚ = m·g·h, proportional to the height. Why does the ball bounce lower each time?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'bounce',
-    plan: ([['pingpong', 1], ['pingpong', 2], ['pingpong', 3], ['tennis', 1], ['clay', 1]] as const).map(([ball, bounce]) => ({ kind: 'bench', command: { type: 'lab.bounce', ball, bounce } }) as const),
-    choices: [ch('heat', 'Під час удару частина енергії стає внутрішньою: м’ячик і плита трохи нагріваються, ще частина йде на звук', 'At each impact part of the energy becomes internal: the ball and the plate warm a little, and part goes as sound'), ch('gone', 'Під час удару частина енергії просто зникає', 'At each impact part of the energy simply vanishes'), ch('gravity', 'Земля щоразу притягує м’ячик сильніше', 'The Earth pulls the ball harder each time')],
-    formulas: ['mechanics.potential-energy'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 4. Механічна робота, потужність, енергія', match: 'same', quote: 'виявлення зміни і перетворення механічної енергії' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 8, topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'related', quote: 'Механічна енергія та її види. Закон збереження та перетворення енергії.' },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Чому дорівнює рівнодійна сил двох динамометрів?', en: 'What is the resultant of the two dynamometers’ forces?' },
-    id: 'adding-forces',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Додаємо сили: рівнодійна', en: 'Adding forces: the resultant' },
-    question: {
-      uk: 'Два тягарці по 100 г висять на дерев’яній лінійці. Тримаємо цей вантаж одним динамометром, потім двома — за кінці лінійки, тягарці посередині й ближче до краю, — а потім один динамометр тягне вгору, а другий униз. Щоразу записуємо покази. Чому дорівнює рівнодійна сил двох динамометрів?',
-      en: 'Two 100 g weights hang on a wooden ruler. We hold this load by one dynamometer, then by two at the ruler’s ends — the weights in the middle and nearer an end — and then one dynamometer pulls up and the other down. Each time we write down the readings. What is the resultant of the two dynamometers’ forces?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'forces',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.forces', hold: 'one' } },
-      { kind: 'bench', command: { type: 'lab.forces', hold: 'two', at: 0.15 } },
-      { kind: 'bench', command: { type: 'lab.forces', hold: 'two', at: 0.06 } },
-      { kind: 'bench', command: { type: 'lab.forces', hold: 'down', down: 1 } },
-    ],
-    choices: [ch('same', 'Щоразу такій самій силі, як покази одного динамометра', 'Each time the same force as one dynamometer showed'), ch('more', 'Більшій: динамометрів же два', 'More: there are two dynamometers'), ch('less', 'Меншій: кожен тягне слабше', 'Less: each pulls weaker')],
-    answerOnBoard: ['rs:'],
-    formulas: ['mechanics.resultant', 'mechanics.resultant-opposite', 'mechanics.weight'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … рівнодійної сил' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: 'Додавання сил, спрямованих уздовж однієї прямої. Визначення рівнодійної кількох сил.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 22, с. 155–156' } },
     ],
     expect: 'reached',
   },

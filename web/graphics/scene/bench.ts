@@ -10,7 +10,7 @@ import { sceneOf } from '../../experiments/index.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | ExperimentKind;
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'carry' | ExperimentKind;
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -62,29 +62,13 @@ export interface BenchView {
   readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
   /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
-  /** The method of rows: the bodies (their sizes, m, in the row's order), how many are laid so far (a fraction — the next one falling), what the ruler shows. */
-  readonly rows?: { readonly body: 'pea' | 'millet' | 'thread'; readonly sizes: readonly number[]; readonly placed: number; readonly read?: string };
   /** An experiment module's own view (web/experiments), drawn by its scene. */
   readonly scene?: unknown;
-  /**
-   * A windlass: the spool and its diameter (m); how far it has turned (turns, + — the way letting the load down
-   * turns it); the load's depth below the spool (m); what was counted or measured.
-   */
-  readonly winch?: { readonly spool: string; readonly d: number; readonly turned: number; readonly drop: number; readonly read?: string };
   /**
    * The relativity of motion: the bubble's bottle (in `sink`) carried along the table at `speed` (m/s), moved `shift`
    * (m) so far; the line on the paper behind, once measured (`path`).
    */
   readonly carry?: { readonly speed: number; readonly shift: number; readonly path?: string; readonly rise?: string };
-  /**
-   * A ball's bounce: the ball, its diameter (m), its bottom's height (m, 1 — the drop height), how squashed it is
-   * (0…1; plasticine stays flat), the mechanical energy left (a share of the start's); the tops marked so far; the
-   * last top's reading; the energy bars' labels (potential, kinetic, heat and sound).
-   */
-  readonly bounce?: { readonly ball: string; readonly size: number; readonly y: number; readonly squash: number; readonly mech: number; readonly marks: readonly number[]; readonly read?: string; readonly labels: readonly [string, string, string] };
-  /** Weight in a lift: the phase, where the cabin is (0 — the ground floor, 1 — the top), the dynamometer's force and reading; `fall` — how far it has fallen to the floor (0…1). */
-  readonly lift?: { readonly phase: string; readonly y: number; readonly force: number; readonly read?: string; readonly fall?: number; readonly rest?: number; readonly diff?: string };
-  readonly forces?: { readonly hold: 'one' | 'two' | 'down'; readonly at: number; readonly a: number; readonly b: number; readonly loaded: boolean; readonly readA?: string; readonly readB?: string };
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
   readonly vessels?: { readonly shape?: 'straight' | 'wide' | 'narrow'; readonly height: number; readonly dh: number; readonly read?: string; readonly poured?: string };
@@ -170,11 +154,6 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'atm') return atmSvg(v.atm);
   if (v.kind === 'vessels') return vesselsSvg(v.vessels);
   if (v.kind === 'magnet') return magnetSvg(v.magnet);
-  if (v.kind === 'forces') return forcesSvg(v.forces);
-  if (v.kind === 'rows') return rowsSvg(v.rows);
-  if (v.kind === 'lift') return liftSvg(v.lift);
-  if (v.kind === 'bounce') return bounceSvg(v.bounce);
-  if (v.kind === 'winch') return winchSvg(v.winch);
   if (v.kind === 'carry') return `${carrySvg(v.sink, v.carry)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 585) : ''}`;
   if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
@@ -406,35 +385,6 @@ function sinkSvg(s: BenchView['sink']): string {
 
 
 
-/** The windlass's drawing: its axis, and the load's way down the ruler (6 units to the centimetre, as the other rulers). */
-const WINCH_AXIS = { x: 520, y: 64 };
-/**
- * A windlass: a stand with the axis at the arm's end, the spool on it (drawn some 2½ times larger than life) with a
- * red mark and a handle that turn together; the thread from the spool's right edge down to the load; a ruler beside
- * it from the spool's level down. The reading by the load.
- */
-function winchSvg(w: BenchView['winch']): string {
-  if (!w) return '';
-  const { x, y } = WINCH_AXIS;
-  const r = w.d * 1000 * 1.1 + 2;
-  const top = y + 24;
-  const loadY = top + w.drop * 100 * CM;
-  const a = w.turned * 2 * Math.PI;
-  const stand = standSvg(x - 90, x, y);
-  const ruler = rulerSvg(x + r + 26, top, 35, true);
-  const thread = `<path d="M${x + r},${y} V${loadY}" style="stroke:${THREAD};stroke-width:1.6"/>`;
-  const load = `${weightsSvg(x + r, loadY, 2, 20, 9)}<path d="M${x + r - 30},${loadY} h26" style="stroke:#c0392b;stroke-width:1.5"/>`;
-  const spool = w.spool === 'pencil'
-    ? `<circle cx="${x}" cy="${y}" r="${r}" style="fill:#f2c94c;stroke:#9a7a1f;stroke-width:1.5"/><circle cx="${x}" cy="${y}" r="${r * 0.35}" style="fill:#3a3f46"/>`
-    : `<circle cx="${x}" cy="${y}" r="${r + 5}" style="fill:#d9b27c;stroke:${WOOD_EDGE};stroke-width:1.5"/><circle cx="${x}" cy="${y}" r="${r}" style="fill:#f1efe4;stroke:#c9c2a8"/><circle cx="${x}" cy="${y}" r="3" style="fill:${DARK}"/>`;
-  // The mark and the handle turn with the spool (letting the load down turns it clockwise).
-  const mark = `<path d="M${x},${y} L${x + r * Math.sin(a)},${y - r * Math.cos(a)}" style="stroke:#c0392b;stroke-width:2.5"/>`;
-  const hx = x - 34 * Math.sin(a + Math.PI / 3);
-  const hy = y + 34 * Math.cos(a + Math.PI / 3);
-  const handle = `<path d="M${x},${y} L${hx},${hy}" style="stroke:${STEEL};stroke-width:4;stroke-linecap:round"/><circle cx="${hx}" cy="${hy}" r="5" style="fill:#7a4a1f"/>`;
-  const read = w.read ? `<text class="bench-reading" x="${x + r - 34}" y="${loadY + 14}" text-anchor="end">${w.read}</text>` : '';
-  return `${stand}${ruler}${thread}${load}${handle}${spool}${mark}${read}`;
-}
 
 /** Where the carried bottle starts (its axis), units of the drawing; the drawing's scale is the bottle's: 8 to the centimetre. */
 const CARRY_X0 = 360;
@@ -767,210 +717,7 @@ function pairSvg(kind: 'series' | 'parallel', p: BenchView['pair']): string {
   return `${W(`M180,${y} H${main ? ax - 26 : fx}`)}${main ? W(`M${ax + 26},${y} H${fx}`) : ''}${W(`M${fx},${b1} V${b2} M${jx},${b1} V${b2} M${jx},${y} H560 V${y + 44} H145 V${y + 14}`)}${branch(b1, 2, at === 'r1')}${branch(b2, 4, at === 'r2')}${W(`M${fx},${b1} V${vy + 14} H${400 - 26} M${400 + 26},${vy + 14} H${jx} V${b1}`)}${source}${amm(ax, ay)}${volt(400, vy)}`;
 }
 
-/**
- * Adding forces: a stand with a long arm; school dynamometers (10 units to the newton) hang from it, their hooks
- * coming out as the spring stretches, so a ruler held by two of them tilts when they pull differently. Under the
- * load, for "down", a third position: a dynamometer turned over, its ring tied to a clamp on the table, its hook
- * pulling the weights down.
- */
-const FORCES_K = 600;
-function forcesSvg(f: BenchView['forces']): string {
-  const hold = f?.hold ?? 'one';
-  const loaded = !!f?.loaded;
-  const armY = 40;
-  const top = armY + 6;
-  // To the right: the board's writing on the left stays readable.
-  const xC = 480;
-  const half = (0.3 * FORCES_K) / 2;
-  const PER_N = 10;
-  // A dynamometer hanging from (x, top): its pointer and hook go down by the force; returns the drawing and where the hook ends.
-  const hanging = (x: number, F: number, read: string | undefined, left: boolean): [string, number] => {
-    const p = top + 8 + F * PER_N;
-    const tip = top + 64 + F * PER_N;
-    const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - 6},${top + 8 + i * 5} h${i % 2 === 0 ? 6 : 3}"/>`).join('');
-    const label = read ? `<text class="bench-reading" x="${x + 13}" y="${top + (left ? 24 : 40)}">${read}</text>` : '';
-    return [`<path d="M${x},${armY + 3} V${top}" style="stroke:${THREAD};stroke-width:1.5"/><rect class="dyn-case" x="${x - 9}" y="${top}" width="18" height="64" rx="5"/><g class="dyn-ticks">${ticks}</g><path d="M${x},${p} V${tip}" style="stroke:${STEEL};stroke-width:2"/><path d="M${x - 7},${p} h14" style="stroke:#c0392b;stroke-width:2"/><path d="M${x},${tip} q0,6 -5,5" style="stroke:${THREAD};stroke-width:1.5;fill:none"/>${label}`, tip + 4];
-  };
-  const ruler = (x1: number, y1: number, x2: number, y2: number) => `<path d="M${x1},${y1} L${x2},${y2}" style="stroke:${WOOD_EDGE};stroke-width:7;stroke-linecap:round"/><path d="M${x1},${y1} L${x2},${y2}" style="stroke:${WOOD};stroke-width:5;stroke-linecap:round"/>`;
-  const load = (x: number, y: number) => `<path d="M${x},${y} v12" style="stroke:${THREAD};stroke-width:1.5"/>${weightsSvg(x, y + 12, 2)}`;
-  const stand = standSvg(345, 610, armY);
-  if (!loaded) {
-    // Not hung yet: the dynamometers empty, the ruler and the weights on the table.
-    const xs = hold === 'two' ? [xC - half, xC + half] : [xC];
-    return `${stand}${xs.map((x, i) => hanging(x, 0, undefined, i === 0 && xs.length > 1)[0]).join('')}${ruler(xC - half - 30, TABLE - 4, xC + half - 30, TABLE - 4)}${weightsSvg(xC + half + 10, TABLE - 20, 2)}`;
-  }
-  if (hold === 'two') {
-    const [l, yl] = hanging(xC - half, f!.a, f!.readA, true);
-    const [r, yr] = hanging(xC + half, f!.b, f!.readB, false);
-    const k = Math.max(0, Math.min(1, f!.at / 0.3));
-    return `${stand}${l}${r}${ruler(xC - half, yl, xC + half, yr)}${load(xC - half + k * 2 * half, yl + (yr - yl) * k)}`;
-  }
-  const [a, y] = hanging(xC, f!.a, f!.readA, false);
-  const body = `${ruler(xC - half, y, xC + half, y)}${load(xC, y)}`;
-  if (hold === 'one') return `${stand}${a}${body}`;
-  // The lower one, turned over: its hook in the weights' bottom, pulled out by the force; its ring tied to a clamp.
-  const hook = y + 12 + 20 + 2;
-  const bt = hook + 6 + f!.b * PER_N;
-  const p = bt + 56 - f!.b * PER_N;
-  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${xC - 6},${bt + 56 - i * 5} h${i % 2 === 0 ? 6 : 3}"/>`).join('');
-  const lower = `<path d="M${xC},${hook} V${p}" style="stroke:${STEEL};stroke-width:2"/><rect class="dyn-case" x="${xC - 9}" y="${bt}" width="18" height="64" rx="5"/><g class="dyn-ticks">${ticks}</g><path d="M${xC - 7},${p} h14" style="stroke:#c0392b;stroke-width:2"/><path d="M${xC},${bt + 64} V${TABLE - 10}" style="stroke:${THREAD};stroke-width:1.5"/><rect x="${xC - 14}" y="${TABLE - 10}" width="28" height="10" rx="2" style="fill:${DARK}"/>${f!.readB ? `<text class="bench-reading" x="${xC + 16}" y="${bt + 36}">${f!.readB}</text>` : ''}`;
-  return `${stand}${a}${body}${lower}`;
-}
 
-/**
- * The method of rows, seen from the front, 4 units to the millimetre (larger than life): a ruler with millimetre
- * marks lying on the table, the row laid along it from its zero — peas or millet grains, pressed between two
- * toothpicks — or a pen refill with the thread wound on it turn to turn; a bracket with the row's length.
- */
-const ROW_K = 4000;
-function rowsSvg(r: BenchView['rows']): string {
-  // (Clear of the Professor on the left.)
-  const x0 = 180;
-  const top = TABLE - 16;
-  const mmTicks = Array.from({ length: 111 }, (_, i) => `<path d="M${x0 + i * 4},${top} v${i % 10 === 0 ? 8 : i % 5 === 0 ? 6 : 3}"/>`).join('');
-  const labels = Array.from({ length: 12 }, (_, i) => `<text x="${x0 + i * 40}" y="${top + 15}" text-anchor="middle">${i}</text>`).join('');
-  const ruler = `<g class="bench-ruler"><rect x="${x0 - 10}" y="${top}" width="${460}" height="16" rx="2"/><g class="ticks">${mmTicks}</g><g class="labels">${labels}</g></g>`;
-  if (!r) return ruler;
-  const n = Math.floor(r.placed);
-  const falling = r.placed - n;
-  let x = x0;
-  const parts: string[] = [];
-  if (r.body === 'thread') {
-    // The refill lies along the ruler; the turns go on from its zero, one after another.
-    const total = r.sizes.reduce((a, d) => a + d, 0) * ROW_K;
-    parts.push(`<rect x="${x0 - 30}" y="${top - 9}" width="${Math.max(120, total + 60)}" height="7" rx="3" style="fill:#5d8fc9;stroke:#33557e"/>`);
-    r.sizes.slice(0, n).forEach((d, i) => {
-      const w = d * ROW_K;
-      parts.push(`<rect x="${x}" y="${top - 11}" width="${w}" height="11" style="fill:${i % 2 ? '#f4e9c8' : '#ffffff'};stroke:#9b8b5d;stroke-width:0.3"/>`);
-      x += w;
-    });
-  } else {
-    const color = r.body === 'pea' ? '#b9c45a' : '#f0c53c';
-    const edge = r.body === 'pea' ? '#6f7a26' : '#a7801d';
-    r.sizes.forEach((d, i) => {
-      const rad = (d * ROW_K) / 2;
-      if (i < n || (i === n && falling > 0)) {
-        // The one being laid drops in from above.
-        const lift = i === n ? (1 - falling) * 50 : 0;
-        parts.push(`<circle cx="${x + rad}" cy="${top - rad - lift}" r="${rad}" style="fill:${color};stroke:${edge};stroke-width:0.8"/>`);
-      }
-      x += rad * 2;
-    });
-    // The toothpicks press the row from both ends (once it is all laid).
-    x = x0 + r.sizes.slice(0, n).reduce((a, d) => a + d * ROW_K, 0);
-    if (n > 1) parts.push(`<rect x="${x0 - 3}" y="${top - 26}" width="3" height="26" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/><rect x="${x}" y="${top - 26}" width="3" height="26" rx="1" style="fill:${WOOD};stroke:${WOOD_EDGE}"/>`);
-  }
-  const end = x0 + r.sizes.slice(0, n).reduce((a, d) => a + d * ROW_K, 0);
-  const bracket = r.read ? `<path class="bench-mark" d="M${x0},${top - 34} v-6 H${end} v6"/><text class="bench-reading" x="${(x0 + end) / 2}" y="${top - 46}" text-anchor="middle">${r.read}</text>` : '';
-  return `${ruler}${parts.join('')}${bracket}`;
-}
 
-/** The bounce's drawing: a metre above the plate is this many units. */
-const BOUNCE_K = 280;
-const BOUNCE_LOOK: Readonly<Record<string, { fill: string; edge: string }>> = {
-  pingpong: { fill: '#f7f6ef', edge: '#a9a89c' },
-  tennis: { fill: '#d4e157', edge: '#8a9a1c' },
-  clay: { fill: '#e0603f', edge: '#8e2b20' },
-};
-/**
- * A ball's bounce: a steel plate on the table, a metre stick beside it (a tick every 5 cm, a number every 10), the
- * ball (drawn larger than life) squashed at the impact; a chalk mark at each top it reached, the last one read.
- * On the board to the right, three chalk bars: the potential and kinetic energy and what went into heat and sound —
- * together always the energy it was let go with.
- */
-function bounceSvg(b: BenchView['bounce']): string {
-  if (!b) return '';
-  const plate = TABLE - 6;
-  const bx = 455;
-  const sx = 500;
-  const Y = (h: number) => plate - h * BOUNCE_K;
-  const look = BOUNCE_LOOK[b.ball] ?? BOUNCE_LOOK['pingpong']!;
-  const r = Math.max(8, b.size * BOUNCE_K * 0.8);
-  const stick = `<rect x="${sx}" y="${Y(1) - 6}" width="16" height="${plate - Y(1) + 6}" style="fill:#e8c98f;stroke:${WOOD_EDGE}"/>${Array.from({ length: 21 }, (_, i) => `<path d="M${sx},${Y(i / 20)} h${i % 2 === 0 ? 8 : 4}" style="stroke:${DARK};stroke-width:1"/>${i % 2 === 0 ? `<text class="lever-mark" x="${sx + 15}" y="${Y(i / 20) + 3}" text-anchor="end" style="font-size:7px">${i * 5}</text>` : ''}`).join('')}`;
-  const base = `<rect x="${bx - 34}" y="${plate}" width="68" height="6" rx="1" style="fill:#9aa3ab;stroke:${STEEL}"/>${stick}`;
-  const marks = b.marks.map((h, i) => `<path d="M${bx - 16},${Y(h)} H${sx}" style="stroke:#f1efe4;stroke-width:1.5;stroke-dasharray:3 3;opacity:${i === b.marks.length - 1 ? 0.95 : 0.4}"/>`).join('');
-  const read = b.read && b.marks.length ? `<text class="bench-reading" x="${bx - 22}" y="${Y(b.marks.at(-1)!) - 6}" text-anchor="end">h = ${b.read}</text>` : '';
-  // Squashed: wider and lower, resting on the plate.
-  const rx = r * (1 + 0.5 * b.squash);
-  const ry = r * (1 - 0.55 * b.squash);
-  const cy = Y(b.y) - ry;
-  const seam = b.ball === 'tennis' ? `<path d="M${bx - rx * 0.8},${cy - ry * 0.4} q${rx * 0.8},${ry * 0.9} ${rx * 1.6},0" style="fill:none;stroke:#f4f6e0;stroke-width:1.6"/>` : '';
-  const ball = `<ellipse cx="${bx}" cy="${cy}" rx="${rx}" ry="${ry}" style="fill:${look.fill};stroke:${look.edge};stroke-width:1.2"/>${seam}`;
-  // The energy bars: shares of the start's energy.
-  const ep = Math.max(0, Math.min(b.y, b.mech));
-  const bars = [ep, Math.max(0, b.mech - ep), 1 - b.mech];
-  const colours = ['#7fb8e6', '#f5c04a', '#f08a6c'];
-  const H = 170;
-  const foot = 292;
-  const bar = bars.map((v, i) => {
-    const x = 540 + i * 26;
-    return `<rect x="${x}" y="${foot - H}" width="18" height="${H}" style="fill:none;stroke:#f1efe4;stroke-width:1;opacity:0.35"/><rect x="${x}" y="${foot - H * v}" width="18" height="${H * v}" style="fill:${colours[i]}"/><text class="bench-label" x="${x + 9}" y="${foot + 13}" text-anchor="middle" style="fill:#f1efe4;font-size:9px">${b.labels[i]}</text>`;
-  }).join('');
-  return `${base}${marks}${ball}${read}${bar}`;
-}
 
-/**
- * Weight in a lift: a shaft with its floors, the cabin on its cable; under its ceiling a dynamometer with four
- * weights, its hook coming out as the spring stretches (10 units to the newton). Arrows by the shaft: the cabin's
- * velocity (v) and acceleration (a). Let go, the dynamometer and its weights fall to the cabin's floor.
- */
-function liftSvg(l: BenchView['lift']): string {
-  const phase = l?.phase ?? 'rest';
-  const left = 430;
-  const right = 550;
-  const x = (left + right) / 2;
-  const trip = 150;
-  const floor = TABLE - 4 - (l?.y ?? 0) * trip;
-  // Tall enough for the dynamometer stretched by the heaviest reading and its four weights.
-  const roof = floor - 175;
-  const shaft = `<rect x="${left - 8}" y="-40" width="${right - left + 16}" height="${TABLE + 40}" style="fill:rgba(20,26,34,0.35)"/><path d="M${left - 6},-40 V${TABLE} M${right + 6},-40 V${TABLE}" style="stroke:${STEEL};stroke-width:3"/>${[0, 1].map((k) => `<path d="M${left - 30},${TABLE - 4 - k * trip} h22" style="stroke:${THREAD};stroke-width:2"/><text class="bench-label" x="${left - 34}" y="${TABLE - 8 - k * trip}" text-anchor="end">${k ? '5' : '1'}</text>`).join('')}`;
-  const cable = `<path d="M${x},-40 V${roof}" style="stroke:${DARK};stroke-width:2.5"/>`;
-  const cabin = `<rect x="${left}" y="${roof}" width="${right - left}" height="${floor - roof}" rx="3" style="fill:#d9dee4;stroke:#7d8791;stroke-width:2"/><rect x="${left + 6}" y="${roof + 6}" width="${right - left - 12}" height="${floor - roof - 12}" style="fill:#eef1f4"/>`;
-  // The dynamometer: from the ceiling's hook, or let go and falling with its weights.
-  const F = l?.force ?? 0;
-  const drop = (l?.fall ?? 0) * (floor - 6 - (roof + 8 + 64 + 40));
-  const top = roof + 8 + drop;
-  const p = top + 8 + F * 10;
-  const tip = top + 64 + F * 10;
-  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - 6},${top + 8 + i * 5} h${i % 2 === 0 ? 6 : 3}"/>`).join('');
-  const dyn = `${l?.fall ? '' : `<path d="M${x},${roof + 6} V${top}" style="stroke:${DARK};stroke-width:1.5"/>`}<rect class="dyn-case" x="${x - 9}" y="${top}" width="18" height="64" rx="5"/><g class="dyn-ticks">${ticks}</g><path d="M${x},${p} V${tip}" style="stroke:${STEEL};stroke-width:2"/><path d="M${x - 7},${p} h14" style="stroke:#c0392b;stroke-width:2"/>${weightsSvg(x, tip + 2, 4)}`;
-  // (Dark: the cabin's wall is light; coloured as the board's bar when it differs from the reading at rest.)
-  const tone = l?.diff ? (l.diff.startsWith('+') ? '#2e8b46' : '#c0502e') : '#1d2733';
-  const read = l?.read ? `<text class="bench-reading" x="${x + 14}" y="${top + 30}" style="fill:${tone}">${l.read}</text>` : '';
-  // The arrows: up is negative y.
-  const up = phase === 'up-start' || phase === 'up' || phase === 'up-stop';
-  const down = phase === 'down-start' || phase === 'down' || phase === 'down-stop';
-  const accUp = phase === 'up-start' || phase === 'down-stop';
-  const accDown = phase === 'up-stop' || phase === 'down-start' || phase === 'fall';
-  const arrow = (ax: number, dir: -1 | 1, label: string, cls: string) => {
-    const y0 = (roof + floor) / 2;
-    return `<path class="${cls}" d="M${ax},${y0 - dir * 22} V${y0 + dir * 22} m-5,${-dir * 7} l5,${dir * 7} l5,${-dir * 7}" style="fill:none;stroke-width:2.5"/><text class="bench-label" x="${ax + 9}" y="${y0 + 4}">${label}</text>`;
-  };
-  const arrows = `${up || down ? arrow(right + 24, up ? -1 : 1, 'v', 'bench-arrow') : ''}${accUp || accDown ? arrow(right + 52, accUp ? -1 : 1, phase === 'fall' ? 'g' : 'a', 'bench-mark') : ''}`;
-  return `${shaft}${cable}${cabin}${dyn}${read}${arrows}${liftZoom(l, x - 9, top + 32)}`;
-}
 
-/**
- * The dynamometer's scale enlarged, in chalk on the board by the shaft: 0 at the top as on the instrument, a dashed
- * mark at its reading at rest and a bar from it to the pointer — green when it shows more, red when less — so that
- * half a newton, five units on the instrument itself, is plain to see. A dashed line leads to the instrument.
- */
-function liftZoom(l: BenchView['lift'], toX: number, toY: number): string {
-  if (!l?.rest) return '';
-  const x = 395;
-  const y0 = -32;
-  const per = 34;
-  const at = (F: number) => y0 + Math.min(5.2, Math.max(0, F)) * per;
-  const chalk = 'stroke:#f1efe4';
-  const ticks = Array.from({ length: 11 }, (_, i) => `<path d="M${x - (i % 2 === 0 ? 10 : 5)},${y0 + i * per / 2} H${x}" style="${chalk};stroke-width:1.5"/>${i % 2 === 0 ? `<text class="bench-label" x="${x + 6}" y="${y0 + i * per / 2 + 4}" style="fill:#f1efe4">${i / 2}</text>` : ''}`).join('');
-  const F = l.force;
-  const more = F - l.rest > 0.02;
-  const less = F - l.rest < -0.02;
-  const colour = more ? '#8fd694' : '#f2a07b';
-  const bar = more || less ? `<rect x="${x - 26}" y="${Math.min(at(F), at(l.rest))}" width="14" height="${Math.abs(at(F) - at(l.rest))}" style="fill:${colour}"/>` : '';
-  const diff = l.diff ? `<text class="bench-reading" x="${x - 32}" y="${(at(F) + at(l.rest)) / 2 + 5}" text-anchor="end" style="fill:${colour}">${l.diff}</text>` : '';
-  const rest = `<path d="M${x - 38},${at(l.rest)} H${x}" style="${chalk};stroke-width:1.5;stroke-dasharray:4 3"/>`;
-  const pointer = `<path d="M${x - 14},${at(F)} H${x + 2}" style="stroke:#ff6b5b;stroke-width:3"/>`;
-  const lead = `<path d="M${x + 22},${at(F)} L${toX},${toY}" style="${chalk};stroke-width:1;stroke-dasharray:2 4;opacity:0.6"/>`;
-  return `<path d="M${x},${y0} V${y0 + 5 * per}" style="${chalk};stroke-width:2"/>${ticks}${bar}${rest}${pointer}${diff}${lead}`;
-}

@@ -1,7 +1,7 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
 
 /**
  * A mechanism turning straight motion into turning and back (grade 7, construction): a well's windlass made on a

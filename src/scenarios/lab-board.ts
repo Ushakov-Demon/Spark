@@ -1,10 +1,7 @@
 import type { ExperimentLogEntry } from '../core/experiment.js';
 import type { SystemState } from '../core/state.js';
 import { tr } from '../knowledge/i18n.js';
-import { liftPhaseText, type LiftPhase } from './lift-bench.js';
-import { bounceBallName, type BounceBall } from './bounce-bench.js';
 import { experimentOf } from '../experiments/index.js';
-import { G } from '../domains/mechanics/constants.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';
@@ -444,30 +441,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
-    // Weight in a lift: the phase, which way the lift accelerates, and what the dynamometer shows.
-    if (c.type === 'lab.lift') {
-      const a = r.inputs?.['a'] ?? 0;
-      const phase = String(c['phase']);
-      const title = tr(liftPhaseText(phase as LiftPhase).plan, locale);
-      const acc = phase === 'fall' ? (uk ? 'вільне падіння' : 'free fall') : a === 0 ? (uk ? 'без прискорення' : 'no acceleration') : `a = ${n(Math.abs(a), 2)} ${uk ? 'м/с²' : 'm/s²'} ${a > 0 ? '↑' : '↓'}`;
-      out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
-      return;
-    }
-    // A windlass: what was counted or measured; how it follows from the circumference (hidden till the answer).
-    if (c.type === 'lab.winch') {
-      const d = r.inputs?.['diameter'] ?? 0;
-      const amount = Number(c['amount']);
-      const what = c['spool'] === 'pencil' ? (uk ? 'олівець, d = 8 мм' : 'pencil, d = 8 mm') : uk ? 'котушка, d = 2 см' : 'reel, d = 2 cm';
-      const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
-      if (c['mode'] === 'lower') {
-        out.push({ id: `wm:${i}`, title: uk ? `${what}: вантаж униз на ${cm(amount)}` : `${what}: the load down ${cm(amount)}`, formula: `n = ${formatMeasured('turns', r.value, 0.25, locale)}` });
-        out.push({ id: `wc:${i}`, title: uk ? 'за оберт — довжина кола' : 'a turn — the circumference', formula: 'n = l / (π·d)', numbers: `${cm(amount)} / (3,14 · ${cm(d)}) ≈ ${n(amount / (Math.PI * d), 3)}`.replace('3,14', uk ? '3,14' : '3.14') });
-      } else {
-        out.push({ id: `wm:${i}`, title: uk ? `${what}: ${amount} обертів ручки` : `${what}: ${amount} turns of the handle`, formula: `h = ${cm(r.value)}` });
-        out.push({ id: `wc:${i}`, title: uk ? 'за оберт — довжина кола' : 'a turn — the circumference', formula: 'l = π·d·n', numbers: `3,14 · ${cm(d)} · ${amount} ≈ ${cm(Math.PI * d * amount)}`.replace('3,14', uk ? '3,14' : '3.14') });
-      }
-      return;
-    }
     // The relativity of motion: the time, the bottle's shift, the bubble's speed relative to the bottle and to the table.
     if (c.type === 'lab.carry') {
       const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
@@ -480,52 +453,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const how = u === 0 ? (uk ? 'пляшка стоїть' : 'the bottle stands') : uk ? `u = ${n(u * 100, 2)} см/с, зсув ${cm(of(1))}` : `u = ${n(u * 100, 2)} cm/s, moved ${cm(of(1))}`;
       out.push({ id: `cb:${i}`, title: uk ? `${how}: відносно пляшки` : `${how}: relative to the bottle`, formula: 'v = l / t', numbers: `${cm(0.09)} / ${T} ≈ ${v(0.09)}` });
       out.push({ id: `ct:${i}`, title: uk ? 'відносно стола' : 'relative to the table', formula: 'v = s / t', numbers: `${cm(of(2))} / ${T} ≈ ${v(of(2))}` });
-      return;
-    }
-    // A ball's bounce: how high it rose after this impact and the energy it has there, Eп = m·g·h.
-    if (c.type === 'lab.bounce') {
-      const m = r.inputs?.['mass'] ?? 0;
-      const k = Number(c['bounce']);
-      const what = tr(bounceBallName(String(c['ball']) as BounceBall), locale);
-      const h = `${Math.round(r.value * 100)} ${uk ? 'см' : 'cm'}`;
-      const title = uk ? `${k}-й відскок: h = ${h}` : `bounce ${k}: h = ${h}`;
-      // (Its energy before the drop: the first bounce of each ball.)
-      if (k === 1) out.push({ id: `b0:${i}`, title: uk ? `${what} нагорі: h₀ = 1 м` : `${what} at the top: h₀ = 1 m`, formula: uk ? 'Eп = m·g·h' : 'Eₚ = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · 1 ${uk ? 'м' : 'm'} ≈ ${n(m * G * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
-      out.push({ id: `bn:${i}`, title, formula: uk ? 'Eп = m·g·h' : 'Eₚ = m·g·h', numbers: `${n(m, 2)} ${uk ? 'кг' : 'kg'} · ${n(G, 2)} ${uk ? 'Н/кг' : 'N/kg'} · ${n(r.value, 2)} ${uk ? 'м' : 'm'} ≈ ${n(m * G * r.value * 1000, 2)} ${uk ? 'мДж' : 'mJ'}` });
-      return;
-    }
-    // The method of rows: the row's length and the size of one, d = L/N.
-    if (c.type === 'lab.rows') {
-      const N = Number(c['count']);
-      const body = String(c['body']);
-      const L = `${Math.round(r.value * 1000)} ${uk ? 'мм' : 'mm'}`;
-      const what = { pea: uk ? 'горошин' : 'peas', millet: uk ? 'зерняток пшона' : 'millet grains', thread: uk ? 'витків нитки' : 'turns of thread' }[body] ?? '';
-      if (N === 1) {
-        out.push({ id: `r1:${i}`, title: uk ? 'одна горошина: лінійкою до поділки' : 'one pea: by the ruler to a division', formula: `d = ${L} ± 0,5 ${uk ? 'мм' : 'mm'}`.replace('0,5', uk ? '0,5' : '0.5') });
-        return;
-      }
-      out.push({ id: `rw:${i}`, title: uk ? `${N} ${what}: ${body === 'thread' ? 'ширина намотки' : 'довжина ряду'} ${L}` : `${N} ${what}: ${body === 'thread' ? 'the winding’s width' : 'the row’s length'} ${L}`, formula: 'd = L / N', numbers: `${L} / ${N} ≈ ${(r.value / N * 1000).toFixed(2).replace('.', uk ? ',' : '.')} ${uk ? 'мм' : 'mm'}` });
-      return;
-    }
-    // Adding forces: what the dynamometers show, and their resultant (hidden till the answer).
-    if (c.type === 'lab.forces') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'force' && x.value !== null);
-      const F = (x: MeasurementRecord | undefined) => formatMeasured('force', x?.value ?? 0, 0.1, locale);
-      const [a, b] = recs;
-      if (!a) return;
-      if (c['hold'] === 'one') {
-        out.push({ id: `fw:${i}`, title: uk ? 'вантаж на одному динамометрі' : 'the load on one dynamometer', formula: `F = ${F(a)}` });
-        return;
-      }
-      if (!b) return;
-      if (c['hold'] === 'two') {
-        const at = Math.round(Number(c['at']) * 100);
-        out.push({ id: `ft:${i}`, title: uk ? `два динамометри, тягарці на ${at} см` : `two dynamometers, the weights at ${at} cm`, formula: `F₁ = ${F(a)}; F₂ = ${F(b)}` });
-        out.push({ id: `rs:${i}`, title: uk ? 'рівнодійна: обидві сили вгору' : 'the resultant: both forces up', formula: 'R = F₁ + F₂', numbers: `${F(a)} + ${F(b)} = ${formatMeasured('force', a.value! + b.value!, 0.1, locale)}` });
-        return;
-      }
-      out.push({ id: `fd:${i}`, title: uk ? 'один тягне вгору, другий униз' : 'one pulls up, the other down', formula: `F₁ = ${F(a)} ↑; F₂ = ${F(b)} ↓` });
-      out.push({ id: `rs:${i}`, title: uk ? 'рівнодійна: сили протилежні' : 'the resultant: opposite forces', formula: 'R = F₁ − F₂', numbers: `${F(a)} − ${F(b)} = ${formatMeasured('force', a.value! - b.value!, 0.1, locale)}` });
       return;
     }
     // A body in a liquid: its times at the marks, and its speed v = l/t (hidden till the answer).

@@ -28,12 +28,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The scale being drawn.) */
   /** (The airship climbing to 2 km.) */
   /** (A body let into the tower.) */
-  'lab.winch': { uk: 'Котушка крутиться — рахую оберти…', en: 'The spool is turning — counting the turns…' },
   'lab.carry': { uk: 'Бульбашка спливає — веду пляшку рівномірно…', en: 'The bubble rises — carrying the bottle steadily…' },
-  'lab.bounce': { uk: 'Відпускаю м’ячик — стежимо, куди підскочить…', en: 'Letting the ball go — watch how high it bounces…' },
-  'lab.lift': { uk: 'Ліфт їде — стежимо за динамометром…', en: 'The lift is moving — watch the dynamometer…' },
-  'lab.rows': { uk: 'Викладаю ряд — по одному…', en: 'Laying the row — one by one…' },
-  'lab.forces': { uk: 'Пружини ще коливаються — чекаємо, поки заспокояться…', en: 'The springs are still bouncing — wait until they settle…' },
   'lab.magnet': { uk: 'Стрілка компаса ще гойдається — чекаємо…', en: 'The compass needle is still swinging — wait…' },
   /** (The step that takes the nail out of the coil.) */
   'lab.magnet.pull': { uk: 'Повільно витягую цвях із котушки…', en: 'Slowly pulling the nail out of the coil…' },
@@ -47,18 +42,13 @@ const sw = (t: number, comma: boolean) => `${t.toFixed(2).replace('.', comma ? '
 /** The motion from the previous picture to the new one; null — nothing moves (it is drawn at once). */
 export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: BenchView) => void): Motion | null {
   const scene = sceneOf(next.kind);
-  if (scene) return next.scene === undefined ? null : scene.motion(next.scene, (v) => draw({ ...next, scene: v }));
+  if (scene) return next.scene === undefined ? null : scene.motion(next.scene, (v) => draw({ ...next, scene: v }), prev?.kind === next.kind && prev.scene !== undefined ? prev.scene : null);
   if (next.kind === 'balance' && next.balance?.mass !== undefined) return balance(next, next.balance.mass, draw);
   if (next.kind === 'spring' && next.springLength !== undefined && prev?.kind === 'spring' && next.weights > 0) return spring(prev, next, draw);
   if (next.kind === 'friction' && next.pull) return pull(next, draw);
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
-  if (next.kind === 'winch' && next.winch?.read) return winch(next, draw);
-  if (next.kind === 'bounce' && next.bounce?.read) return bounce(next, draw);
-  if (next.kind === 'lift' && next.lift?.read) return lift(prev?.kind === 'lift' ? (prev.lift ?? null) : null, next, draw);
-  if (next.kind === 'rows' && next.rows?.read) return row(next, draw);
-  if (next.kind === 'forces' && next.forces?.loaded) return forces(prev?.kind === 'forces' ? (prev.forces ?? null) : null, next, draw);
   if (next.kind === 'magnet' && next.magnet && prev?.kind === 'magnet' && prev.magnet) return compass(prev.magnet, next, draw);
   return null;
 }
@@ -193,131 +183,9 @@ function compass(was: NonNullable<BenchView['magnet']>, next: BenchView, draw: (
   };
 }
 
-/**
- * Adding forces: the springs take the load and bounce to their readings (the drawing's period); moved along the
- * ruler, the weights slide to their new place and the readings follow. Pulled down, the lower dynamometer is
- * drawn out slowly by hand, and the upper one takes on that pull as well.
- */
-function forces(was: BenchView['forces'] | null, next: BenchView, draw: (v: BenchView) => void): Motion {
-  const f = next.forces!;
-  const same = !!was?.loaded && was.hold === f.hold;
-  const spring = { kind: 'damped', period: 0.6, damping: 0.18 } as const;
-  const pulling = f.hold === 'down';
-  const load = f.a - f.b;
-  const a = new Channel(same ? was!.a : 0, pulling ? load : f.a, spring, 0.01);
-  const b = new Channel(same ? was!.b : 0, f.b, pulling ? { kind: 'steady', speed: 0.5 } : spring, 0.01);
-  const at = new Channel(same ? was!.at : f.at, f.at, { kind: 'steady', speed: 0.04 }, 0.0005);
-  return {
-    channels: [a, b, at],
-    frame: (done) => {
-      // The upper one holds the load and whatever the lower one pulls by now.
-      if (pulling) a.target = load + Math.max(0, b.value);
-      const { readA: _a, readB: _b, ...rest } = f;
-      draw(done ? next : { ...next, forces: { ...rest, a: Math.max(0, a.value), b: Math.max(0, b.value), at: at.value } });
-    },
-  };
-}
 
-/** The method of rows: the bodies are laid one by one (each drops in), or the thread is wound turn by turn — in about three seconds. */
-function row(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const r = next.rows!;
-  const n = r.sizes.length;
-  const laid = new Channel(0, n, { kind: 'steady', speed: Math.max(3, n / 3) }, 0.001);
-  return {
-    channels: [laid],
-    frame: (done) => {
-      const { read: _r, ...rest } = r;
-      draw(done ? next : { ...next, rows: { ...rest, placed: laid.value } });
-    },
-  };
-}
 
-/** Where each phase of the ride starts, 0 — the ground floor, 1 — the top (it ends where the next one starts). */
-const LIFT_FROM: Readonly<Record<string, number>> = { rest: 0, 'up-start': 0, up: 0.25, 'up-stop': 0.75, 'down-start': 1, down: 0.75, 'down-stop': 0.25, fall: 0 };
-/**
- * The lift's ride: speeding up (the way grows as t²), steady, slowing down (as the square of the time left); the
- * dynamometer's spring swings to the phase's reading. Let go, the dynamometer falls (t²) and its spring goes slack.
- */
-function lift(was: BenchView['lift'] | null, next: BenchView, draw: (v: BenchView) => void): Motion {
-  const l = next.lift!;
-  const from = LIFT_FROM[l.phase] ?? l.y;
-  const shape = (k: number) => (l.phase.endsWith('-start') ? k * k : l.phase.endsWith('-stop') ? 1 - (1 - k) ** 2 : k);
-  const k = new Channel(0, 1, { kind: 'steady', speed: l.phase === 'fall' ? 1.6 : 0.45 }, 0.001);
-  const spring = new Channel(was?.force ?? l.force, l.force, { kind: 'damped', period: 0.5, damping: 0.2 }, 0.01);
-  return {
-    channels: [k, spring],
-    frame: (done) => {
-      const { read: _r, diff: _d, ...rest } = l;
-      if (done) return draw(next);
-      if (l.phase === 'fall') return draw({ ...next, lift: { ...rest, y: 0, force: Math.max(0, spring.value), fall: k.value * k.value } });
-      draw({ ...next, lift: { ...rest, y: from + (l.y - from) * shape(k.value), force: Math.max(0, spring.value) } });
-    },
-  };
-}
 
-/** g for the bounce's timing, m/s². */
-const BOUNCE_G = 9.81;
-/** The ball is squashed within this much of the plate, m (drawn larger than life). */
-const SQUASH_NEAR = 0.03;
-/**
- * A ball's bounce, played at under half the real speed: it falls from the metre (the way grows as t²), and after
- * each impact rises to the next top and falls again, squashed near the plate; at the last top it stops — as a
- * photo would catch it. Plasticine lands and flattens. The energy bars follow: the potential share is the height,
- * the rest of the mechanical energy is kinetic, and each impact moves a share into heat and sound.
- */
-function bounce(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const b = next.bounce!;
-  const tops = [1, ...b.marks];
-  const flat = tops.at(-1)! === 0;
-  // The segments: falling from a top, rising to the next one; the time of each, √(2h/g).
-  const legs: { from: number; to: number; time: number; mech: number; marks: number }[] = [];
-  tops.forEach((h, j) => {
-    if (j > 0 && h > 0) legs.push({ from: 0, to: h, time: Math.sqrt((2 * h) / BOUNCE_G), mech: h, marks: j - 1 });
-    if (j < tops.length - 1) legs.push({ from: h, to: 0, time: Math.sqrt((2 * h) / BOUNCE_G), mech: j === 0 ? 1 : h, marks: j });
-  });
-  const FLATTEN = 0.15;
-  const total = legs.reduce((a, x) => a + x.time, 0) + (flat ? FLATTEN : 0);
-  const clock = new Channel(0, total, { kind: 'steady', speed: 0.4 }, 1e-4);
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw(next);
-      let t = clock.value;
-      const { read: _r, ...rest } = b;
-      for (const leg of legs) {
-        if (t <= leg.time) {
-          const k = t / leg.time;
-          // Falling: the way grows as t²; rising: the way left shrinks as the time left squared.
-          const y = leg.to === 0 ? leg.from * (1 - k * k) : leg.to * (1 - (1 - k) ** 2);
-          const squash = flat ? 0 : Math.max(0, 1 - y / SQUASH_NEAR) * 0.6;
-          return draw({ ...next, bounce: { ...rest, y, squash, mech: leg.mech, marks: b.marks.slice(0, leg.marks) } });
-        }
-        t -= leg.time;
-      }
-      // Plasticine on the plate: it flattens, and all its energy is heat now.
-      draw({ ...next, bounce: { ...rest, y: 0, squash: Math.min(1, t / FLATTEN), mech: 0, marks: [] } });
-    },
-  };
-}
-
-/**
- * A windlass: the load goes down (or up) steadily and the spool turns with it — as many turns as the thread's length
- * over the circumference — in about three seconds.
- */
-function winch(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const w = next.winch!;
-  // Let down — from the spool; turned up — from where the handle's turns started it (low on the ruler).
-  const from = w.turned < 0 ? w.drop + Math.PI * w.d * -w.turned : 0;
-  const k = new Channel(0, 1, { kind: 'steady', speed: 0.35 }, 0.001);
-  return {
-    channels: [k],
-    frame: (done) => {
-      if (done) return draw(next);
-      const { read: _r, ...rest } = w;
-      draw({ ...next, winch: { ...rest, drop: from + (w.drop - from) * k.value, turned: w.turned * k.value } });
-    },
-  };
-}
 
 
 
