@@ -1,8 +1,7 @@
-import { readingsOf, formatMeasured } from '../../../src/scenarios/measuring.js';
+import { scalesMasses, scalesSequence, scalesTilt, type ScalesLoad } from '../../../src/experiments/scales-diy/bench.js';
+import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, PLASTICINE, springSvg, STEEL, THREAD, weightsSvg, WOOD, WOOD_EDGE } from '../../graphics/scene/kit.js';
-import { scalesMasses, scalesSequence, scalesTilt, type ScalesLoad } from '../../../src/experiments/scales-diy/bench.js';
-
 import { Channel, type Motion } from '../../motion.js';
 import { defineScene, type SceneContext } from '../types.js';
 

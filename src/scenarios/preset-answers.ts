@@ -17,7 +17,6 @@ import { SUBSTANCES } from '../substances/catalog.js';
 import { formatMeasured } from './measuring.js';
 import { AMMETER, VOLTMETER } from './circuit-bench.js';
 import { vesselName, type PascalVessel } from './vessels-bench.js';
-import { sinkLiquidName, type SinkLiquid } from './sink-bench.js';
 import { EXPERIMENTS } from '../experiments/index.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
@@ -361,107 +360,7 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
       ),
     };
   },
-  'bubble-speed': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.sink' && x.record.value !== null);
-    const sizes = [...new Set(R.map((x) => Number(x.command['diameter'])))].sort((a, b) => a - b);
-    const per = sizes.map((d) => {
-      const laps = R.filter((x) => Number(x.command['diameter']) === d && x.record.quantity === 'time').map((x) => ({ s: x.record.inputs?.['mark'] ?? 0, t: x.record.value! }));
-      const vs = laps.filter((x) => x.t > 0).map((x) => x.s / x.t);
-      const v = vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : 0;
-      return { d, laps, v, spread: vs.length ? (Math.max(...vs) - Math.min(...vs)) / v : 0 };
-    });
-    const [small, big] = [per[0], per[per.length - 1]];
-    const correct = !small || !big || small === big ? undefined : big.v > small.v * 1.05 ? 'bigger' : small.v > big.v * 1.05 ? 'smaller' : 'same';
-    const cmS = (v: number, l: Locale) => `${sig(v * 100, 2, l)} ${l === 'uk' ? 'см/с' : 'cm/s'}`;
-    const s = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'с' : 's'}`;
-    const lapList = (p: (typeof per)[number], l: Locale) => p.laps.map((x) => `${Math.round(x.s * 100)} ${l === 'uk' ? 'см' : 'cm'} — ${s(x.t, l)}`).join(', ');
-    const liquid = String(R[0]?.command['liquid'] ?? 'washing-up');
-    const ratio = small && big && small.v > 0 ? big.v / small.v : 0;
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'На бульбашку діють виштовхувальна сила (вгору) й опір густої рідини (униз). Поки бульбашка розганяється, опір зростає — і за мить зрівнюється з виштовхувальною силою. Далі сили зрівноважені, і бульбашка спливає з незмінною швидкістю — рівномірно: за однакові проміжки часу — однаковий шлях. Більша бульбашка витісняє набагато більше рідини (виштовхувальна сила зростає як куб розміру), а опір — лише пропорційно розміру й швидкості. Тому їй потрібна більша швидкість, щоб опір зрівнявся з виштовхувальною силою: удвічі більша бульбашка спливає приблизно вчетверо швидше.'
-          : 'A bubble feels the buoyant force (up) and the thick liquid’s drag (down). While it speeds up, the drag grows — and in a moment matches the buoyant force. From then on the forces balance and the bubble rises at a steady speed — uniformly: equal paths in equal times. A bigger bubble pushes aside much more liquid (the buoyant force grows as the cube of its size), the drag only in proportion to its size and speed. So it needs more speed for the drag to match the buoyancy: a bubble twice as big rises about four times as fast.',
-      ),
-      say: both((l) => (correct === 'bigger' ? (l === 'uk' ? `Більша бульбашка спливала ≈ в ${sig(ratio, 2, l)} раза швидше!` : `The bigger bubble rose ≈ ${sig(ratio, 2, l)} times as fast!`) : l === 'uk' ? 'Подивімося на секундомір.' : 'Let us look at the stopwatch.')),
-      text: both((l) =>
-        l === 'uk'
-          ? `${per.map((p) => `Бульбашка ≈ ${sig(p.d * 1000, 2, l)} мм: ${lapList(p, l)}`).join('. ')}. Удвічі довший шлях — удвічі більший час: шлях пропорційний часу, а відношення l/t на кожній позначці те саме (розкид ${sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l)} % — секундомір показує лише соті частки секунди). Отже, рух рівномірний: v ≈ ${small ? cmS(small.v, l) : ''} і ${big ? cmS(big.v, l) : ''}. Більша бульбашка спливала швидше — ≈ в ${sig(ratio, 2, l)} раза.${liquid === 'washing-up' ? ' (Скільки саме — залежить від рідини: різні марки бувають у кілька разів густіші чи рідші; а от рівномірність і «більша — швидша» не залежать.)' : ''}`
-          : `${per.map((p) => `A ≈ ${sig(p.d * 1000, 2, l)} mm bubble: ${lapList(p, l)}`).join('. ')}. Twice the path — twice the time: the path is proportional to the time, and l/t is the same at every mark (a spread of ${sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l)} % — the stopwatch shows only hundredths of a second). So the motion is uniform: v ≈ ${small ? cmS(small.v, l) : ''} and ${big ? cmS(big.v, l) : ''}. The bigger bubble rose faster — ≈ ${sig(ratio, 2, l)} times.${liquid === 'washing-up' ? ' (How fast exactly depends on the liquid: makes are several times thicker or thinner; the uniformity and “bigger — faster” do not.)' : ''}`,
-      ),
-    };
-  },
 
-  'relative-motion': (run) => {
-    // Each step: the time, the bottle's shift and the bubble's path on the paper (the records by `which`).
-    const steps = new Map<number, { u: number; t?: number; x?: number; s?: number }>();
-    for (const r of (run.readings ?? []).filter((x) => x.command.type === 'lab.carry' && x.record.value !== null)) {
-      const u = Number(r.command['speed']);
-      const e = steps.get(u) ?? { u };
-      const w = r.record.inputs?.['which'];
-      if (w === 0) e.t = r.record.value!;
-      else if (w === 1) e.x = r.record.value!;
-      else e.s = r.record.value!;
-      steps.set(u, e);
-    }
-    const R = [...steps.values()].sort((a, b) => a.u - b.u);
-    const cm = (x: number, l: Locale) => `${sig(x * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-    const sec = (x: number, l: Locale) => formatMeasured('time', x, 0.01, l);
-    const longer = R.length > 1 && R.every((x, i) => i === 0 || (x.s ?? 0) > (R[i - 1]!.s ?? 0));
-    const sameTime = R.every((x) => Math.abs((x.t ?? 0) - (R[0]!.t ?? 0)) < 0.05);
-    return {
-      ...(longer && sameTime ? { correct: 'depends' } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Рух завжди описують відносно чогось — тіла відліку. Відносно пляшки бульбашка щоразу піднімається вертикально на ті самі 9 см і за той самий час: рідина в пляшці нічого не знає про те, що пляшку ведуть. Але відносно стола бульбашка водночас і піднімається, і їде разом із пляшкою вбік. Два рівномірні рухи складаються в один — уздовж похилої прямої, — і що швидше ведемо пляшку, то довший цей шлях і більша швидкість бульбашки відносно стола. Тож траєкторія, шлях і швидкість залежать від того, відносно чого розглядають рух; а час підйому — ні. Так само яблуко, що впало в автобусі, для пасажира падає прямовисно, а для людини на зупинці — летить по кривій.'
-          : 'Motion is always described relative to something — a body of reference. Relative to the bottle the bubble rises straight up the same 9 cm in the same time each time: the liquid in the bottle knows nothing of the bottle being carried. But relative to the table the bubble at once rises and travels sideways with the bottle. The two uniform motions add up into one — along a slanted straight line — and the faster the bottle is carried, the longer that path and the faster the bubble goes relative to the table. So the trajectory, the path and the speed depend on what the motion is described relative to; the time of the rise does not. In the same way an apple dropped in a bus falls straight down for a passenger, but flies along a curve for someone at the stop.',
-      ),
-      say: both((l) => {
-        const a = R[0];
-        const z = R.at(-1);
-        return a && z && a !== z ? (l === 'uk' ? `Відносно пляшки — щоразу 9 см угору, а відносно стола — від ${cm(a.s ?? 0, l)} до ${cm(z.s ?? 0, l)}, за той самий час.` : `Relative to the bottle — 9 cm up each time; relative to the table — from ${cm(a.s ?? 0, l)} to ${cm(z.s ?? 0, l)}, in the same time.`) : '';
-      }),
-      text: both((l) => {
-        const uk = l === 'uk';
-        const parts = R.map((x) => {
-          const how = x.u === 0 ? (uk ? 'пляшка стоїть' : 'the bottle stands') : uk ? `пляшку ведуть ${sig(x.u * 100, 2, l)} см/с` : `the bottle carried at ${sig(x.u * 100, 2, l)} cm/s`;
-          const moved = x.u === 0 ? (uk ? 'пляшка не зсунулася' : 'the bottle did not move') : uk ? `пляшка зсунулася на ${cm(x.x ?? 0, l)}` : `the bottle moved ${cm(x.x ?? 0, l)}`;
-          return uk ? `${how}: ${sec(x.t ?? 0, l)}, ${moved}, шлях бульбашки відносно стола ${cm(x.s ?? 0, l)}` : `${how}: ${sec(x.t ?? 0, l)}, ${moved}, the bubble’s path relative to the table ${cm(x.s ?? 0, l)}`;
-        });
-        const s = `${parts.join('; ')}.`;
-        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Відносно пляшки шлях щоразу 9 см.' : ' Relative to the bottle the path is 9 cm each time.');
-      }),
-    };
-  },
-  'ball-in-liquids': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.sink' && x.record.value !== null);
-    const liquids = ['glycerol', 'sunflower-oil', 'water'] as const;
-    const per = liquids.flatMap((liquid) => {
-      const laps = R.filter((x) => x.command['liquid'] === liquid).map((x) => ({ s: x.record.inputs?.['mark'] ?? 0, t: x.record.value!, rho: x.record.inputs?.['density'] ?? 0, mu: x.record.inputs?.['viscosity'] ?? 0 }));
-      const last = laps[laps.length - 1];
-      return last && last.t > 0 ? [{ liquid, v: last.s / last.t, t: last.t, s: last.s, rho: last.rho, mu: last.mu }] : [];
-    });
-    const slowest = [...per].sort((a, b) => a.v - b.v)[0];
-    const correct = slowest?.liquid;
-    const name = (x: string, l: Locale) => tr({ uk: sinkLiquidName(x as SinkLiquid).in.uk, en: sinkLiquidName(x as SinkLiquid).in.en }, l);
-    const v = (x: number, l: Locale) => (x < 0.1 ? `${sig(x * 100, 2, l)} ${l === 'uk' ? 'см/с' : 'cm/s'}` : `${sig(x, 2, l)} ${l === 'uk' ? 'м/с' : 'm/s'}`);
-    const water = per.find((x) => x.liquid === 'water');
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Кулька тоне рівномірно, коли її вагу врівноважують виштовхувальна сила й опір рідини. Густина рідини змінює лише виштовхувальну силу — а вона для сталевої кульки, що в 6–8 разів густіша за ці рідини, мала. Головне — в’язкість, «тягучість» рідини: що вона більша, то сильніше рідина гальмує кульку. Гліцерин у тисячу з гаком разів в’язкіший за воду, олія — у п’ятдесят. Тому в олії, найлегшій із трьох, кулька тоне повільніше, ніж у воді, а в гліцерині, найгустішому, — ледь-ледь.'
-          : 'The ball sinks steadily when its weight is balanced by the buoyant force and the liquid’s drag. The liquid’s density changes only the buoyant force — and for a steel ball 6–8 times as dense as these liquids it is small. What matters is the viscosity, the liquid’s “thickness”: the higher it is, the harder the liquid brakes the ball. Glycerol is over a thousand times as viscous as water, oil some fifty. So in oil, the lightest of the three, the ball sinks slower than in water, and in glycerol, the densest, hardly at all.',
-      ),
-      say: both((l) => (slowest ? (l === 'uk' ? `Найповільніше — ${name(slowest.liquid, l)}: ${v(slowest.v, l)}.` : `Slowest ${name(slowest.liquid, l)}: ${v(slowest.v, l)}.`) : '')),
-      text: both((l) =>
-        l === 'uk'
-          ? `${per.map((x, k) => `${k ? name(x.liquid, l) : name(x.liquid, l).replace(/^./, (c) => c.toUpperCase())} (густина ${Math.round(x.rho)} кг/м³) кулька пройшла ${Math.round(x.s * 100)} см за ${sig(x.t, 3, l)} с — v ≈ ${v(x.v, l)}`).join('; ')}. Швидкість не йде за густиною: олія найлегша, а кулька в ній повільніша, ніж у воді, — бо олія набагато в’язкіша.${water && water.t < 1 ? ` У воді кулька проходить ${Math.round(water.s * 100)} см менш ніж за секунду — рукою засікти такий час точно важко: запізнення пальця (0,1–0,2 с) тут суттєве.` : ''}`
-          : `${per.map((x, k) => `${k ? name(x.liquid, l) : name(x.liquid, l).replace(/^./, (c) => c.toUpperCase())} (density ${Math.round(x.rho)} kg/m³) the ball went ${Math.round(x.s * 100)} cm in ${sig(x.t, 3, l)} s — v ≈ ${v(x.v, l)}`).join('; ')}. The speed does not follow the density: oil is the lightest, yet the ball is slower in it than in water — because oil is much more viscous.${water && water.t < 1 ? ` In water the ball goes ${Math.round(water.s * 100)} cm in under a second — hard to time by hand: the finger’s delay (0.1–0.2 s) matters here.` : ''}`,
-      ),
-    };
-  },
   'electromagnetic-induction': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.induct' && x.record.value !== null);
     const find = (move: string, pole = 'N', fast?: boolean) => R.find((x) => x.command['move'] === move && x.command['pole'] === pole && (fast === undefined || (Number(x.command['time']) <= 0.5) === fast))?.record;
@@ -593,69 +492,6 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
         l === 'uk'
           ? `Шкала 1 мл займає ${sig(len * 100, 2, l)} см, тож площа поршня S = V / l ≈ ${sig(1e-6 / Math.max(len, 1e-9) * 1e4, 3, l)} см². З відкритим носиком динамометр показав ${N(open, l)}. Із закритим: ${list(l)} (p = F / S). Барометр показував ${hPa(p0, l)}: шприц дав ${correct === 'same' ? 'той самий тиск у межах точності динамометра' : correct === 'less' ? `на ${short} % менше — тим ближче до барометра, що далі витягнуто поршень` : 'більше'}. (Тертя поршня не враховано: у справжньому шприці воно додає до сили.)`
           : `The 1 mL scale is ${sig(len * 100, 2, l)} cm long, so the plunger’s area S = V / l ≈ ${sig(1e-6 / Math.max(len, 1e-9) * 1e4, 3, l)} cm². With the nozzle open the dynamometer showed ${N(open, l)}. Shut: ${list(l)} (p = F / S). The barometer showed ${hPa(p0, l)}: the syringe gave ${correct === 'same' ? 'the same pressure within the dynamometer’s accuracy' : correct === 'less' ? `${short} % less — the nearer the barometer the farther the plunger is pulled` : 'more'}. (The plunger’s friction is left out: in a real syringe it adds to the force.)`,
-      ),
-    };
-  },
-  'communicating-vessels': (run) => {
-    const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.utube' && x.record.value !== null);
-    const alone = R.find((x) => x.record.inputs?.['which'] === 2)?.record;
-    const pours = [...new Set(R.filter((x) => Number(x.command['poured']) > 0).map((x) => Number(x.command['poured'])))].map((ml) => ({
-      ml,
-      oil: R.find((x) => Number(x.command['poured']) === ml && x.record.inputs?.['which'] === 1)?.record.value ?? 0,
-      water: R.find((x) => Number(x.command['poured']) === ml && x.record.inputs?.['which'] === 0)?.record.value ?? 0,
-      rhoW: R[0]?.record.inputs?.['rhoWater'] ?? 997,
-      rhoO: R[0]?.record.inputs?.['rhoOil'] ?? 919,
-    }));
-    const last = pours[pours.length - 1];
-    const correct = !last ? undefined : last.oil > last.water + 0.001 ? 'oil' : last.water > last.oil + 0.001 ? 'water' : 'same';
-    const rho = last && last.oil > 0 ? (last.rhoW * last.water) / last.oil : 0;
-    const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-    const list = (l: Locale) => pours.map((x) => (l === 'uk' ? `олії ${x.ml} мл: h_олії = ${cm(x.oil, l)}, h_води = ${cm(x.water, l)}` : `${x.ml} mL of oil: h_oil = ${cm(x.oil, l)}, h_water = ${cm(x.water, l)}`)).join('; ');
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Рідина в сполучених посудинах стоїть спокійно, коли на одному рівні в обох колінах тиск однаковий — інакше вона перетікала б туди, де тиск менший. З самою водою це означає однакові рівні. На рівні межі олії й води зліва тисне стовп олії, справа — стовп води: ρ_олії·g·h_олії = ρ_води·g·h_води. Олія легша за воду, тож її стовп мусить бути вищим, щоб тиснути так само.'
-          : 'A liquid in communicating vessels stays still when the pressure is the same at one level in both arms — otherwise it would flow to where it is lower. With water alone that means the same levels. At the level of the boundary the oil column presses on the left, the water column on the right: ρ_oil·g·h_oil = ρ_water·g·h_water. Oil is lighter than water, so its column has to be taller to press as hard.',
-      ),
-      say: both((l) => (correct === 'oil' ? (l === 'uk' ? 'Стовп олії вищий — бо олія легша за воду!' : 'The oil column is taller — oil is lighter than water!') : l === 'uk' ? 'Подивімося на лінійку.' : 'Let us look at the ruler.')),
-      text: both((l) =>
-        l === 'uk'
-          ? `Сама вода стояла в обох колінах на одному рівні${alone ? ` (різниця ${cm(alone.value ?? 0, l)})` : ''}. Потім: ${list(l)}. Стовп олії щоразу вищий за стовп води, а їхнє відношення стале: тиски на рівні межі рівні, ρ_олії·h_олії = ρ_води·h_води. Звідси густина олії ρ = ρ_води·h_води / h_олії ≈ ${sig(rho, 3, l)} кг/м³ (у таблиці — ${sig(last?.rhoO ?? 0, 3, l)} кг/м³).`
-          : `Water alone stood at one level in both arms${alone ? ` (a difference of ${cm(alone.value ?? 0, l)})` : ''}. Then: ${list(l)}. The oil column is taller than the water column each time, and their ratio stays the same: the pressures are equal at the boundary, ρ_oil·h_oil = ρ_water·h_water. Hence the oil’s density ρ = ρ_water·h_water / h_oil ≈ ${sig(rho, 3, l)} kg/m³ (the table gives ${sig(last?.rhoO ?? 0, 3, l)} kg/m³).`,
-      ),
-    };
-  },
-  'depth-pressure': (run) => {
-    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.depth' && x.record.value !== null).map((x) => ({ h: Number(x.command['depth']), side: !!x.command['sideways'], dh: x.record.value!, rhoM: x.record.inputs?.['rhoManometer'] ?? 1000, rhoL: x.record.inputs?.['rhoLiquid'] ?? 1000, g: x.record.inputs?.['g'] ?? 9.81 }));
-    const down = rows.filter((x) => !x.side);
-    const side = rows.find((x) => x.side);
-    const p = (x: (typeof rows)[number]) => x.rhoM * x.g * x.dh;
-    // Proportional: p / h the same at every depth, within the manometer's millimetre (half of it, relative to Δh).
-    const k = down.map((x) => p(x) / x.h);
-    const mean = k.reduce((a, b) => a + b, 0) / Math.max(1, k.length);
-    const err = down.length ? Math.max(...down.map((x) => 0.0005 / x.dh)) : 0;
-    const spread = k.length ? Math.max(...k.map((x) => Math.abs(x / mean - 1))) : 0;
-    const first = down[0];
-    const last = down[down.length - 1];
-    const correct = down.length < 2 ? undefined : spread <= err + 0.01 ? 'proportional' : last && first && p(last) > p(first) ? 'slower' : 'same';
-    const rho = first ? mean / first.g : 0;
-    const table = first?.rhoL ?? 0;
-    const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-    const Pa = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'Па' : 'Pa'}`;
-    const list = (l: Locale) => down.map((x) => `${cm(x.h, l)} — Δh = ${cm(x.dh, l)}, p ≈ ${Pa(p(x), l)}`).join('; ');
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Рідина важка: кожен її шар тисне на шари під собою вагою всього, що над ним. На глибині h на кожен квадратний метр давить стовп рідини висотою h і масою ρ·h, тобто вагою ρ·g·h — тому тиск росте рівно пропорційно глибині. А частинки рідини легко зсуваються одна відносно одної й передають цей тиск в усі боки однаково (закон Паскаля): плівка, повернута вбік, відчуває той самий тиск.'
-          : 'A liquid is heavy: each layer presses on the layers below with the weight of all that is above it. At a depth h each square metre carries a column of liquid h high with a mass ρ·h, that is, a weight ρ·g·h — so the pressure grows exactly in proportion to the depth. And the bits of a liquid slide past each other easily and pass that pressure on in all directions alike (Pascal’s law): the film turned sideways feels the same pressure.',
-      ),
-      say: both((l) => (correct === 'proportional' ? (l === 'uk' ? 'Удвічі глибше — удвічі більший тиск!' : 'Twice as deep — twice the pressure!') : l === 'uk' ? 'Подивімося на манометр.' : 'Let us look at the manometer.')),
-      text: both((l) =>
-        l === 'uk'
-          ? `${list(l)}. Тиск, який показує манометр (p = ρ_води·g·Δh), зростав пропорційно глибині: p / h скрізь ≈ ${sig(mean, 3, l)} Па/м. Звідси й густина рідини ρ = p / (g·h) ≈ ${sig(rho, 3, l)} кг/м³ (у таблиці — ${sig(table, 3, l)} кг/м³).${side ? ` Плівка, повернута вбік на ${cm(side.h, l)}, дала ті самі Δh = ${cm(side.dh, l)}: на одній глибині тиск однаковий в усі боки.` : ''}`
-          : `${list(l)}. The pressure the manometer shows (p = ρ_water·g·Δh) grew in proportion to the depth: p / h ≈ ${sig(mean, 3, l)} Pa/m everywhere. From it the liquid’s density ρ = p / (g·h) ≈ ${sig(rho, 3, l)} kg/m³ (the table gives ${sig(table, 3, l)} kg/m³).${side ? ` The film turned sideways at ${cm(side.h, l)} gave the same Δh = ${cm(side.dh, l)}: at one depth the pressure is the same in all directions.` : ''}`,
       ),
     };
   },

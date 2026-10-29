@@ -58,7 +58,7 @@ export function presetTopic(p: Preset, locale: Locale): string {
 export function presetEquipment(p: Preset, locale: Locale): string[] {
   const d = UI[locale].details;
   const things = new Set<string>();
-  if (p.bench) for (const x of tr(BENCH_SETUP[p.bench], locale).split(', ')) things.add(x);
+  if (p.bench) for (const x of tr(p.benchSetup ?? BENCH_SETUP[p.bench], locale).split(', ')) things.add(x);
   if (!p.bench || p.bench === 'balance') things.add(labSubject(p.params, locale));
   for (const s of guidedPlan(p)) {
     // What heats it, and the thermometer that tells when; the instruments a step reads (the multimeter on the coil).

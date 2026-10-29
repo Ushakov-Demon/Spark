@@ -19,10 +19,14 @@ import { smallBodiesScene } from './small-bodies/scene.js';
 import { ballBounceScene } from './ball-bounce/scene.js';
 import { weightInLiftScene } from './weight-in-lift/scene.js';
 import { addingForcesScene } from './adding-forces/scene.js';
+import { bodiesInLiquidsScene } from './bodies-in-liquids/scene.js';
+import { relativeMotionScene } from './relative-motion/scene.js';
+import { depthPressureScene } from './depth-pressure/scene.js';
+import { communicatingVesselsScene } from './communicating-vessels/scene.js';
 import type { ExperimentScene } from './types.js';
 
 /** The pictures of the experiment modules, by kind (one line each, beside src/experiments/index.ts). */
-const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene, windlassScene, smallBodiesScene, ballBounceScene, weightInLiftScene, addingForcesScene] as unknown as readonly ExperimentScene<never>[];
+const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene, windlassScene, smallBodiesScene, ballBounceScene, weightInLiftScene, addingForcesScene, bodiesInLiquidsScene, relativeMotionScene, depthPressureScene, communicatingVesselsScene] as unknown as readonly ExperimentScene<never>[];
 
 const BY_KIND = new Map(SCENES.map((s) => [s.kind, s] as const));
 export const sceneOf = (kind: string): ExperimentScene<unknown> | undefined => BY_KIND.get(kind) as ExperimentScene<unknown> | undefined;

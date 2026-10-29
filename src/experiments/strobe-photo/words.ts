@@ -1,6 +1,6 @@
 import type { MeasurementRecord } from '../../core/trace.js';
 import { sig } from '../../explain/format.js';
-import { type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { STROBE_INTERVAL, STROBE_SCALE, STROBE_TEXT, type StrobeCommand } from './bench.js';

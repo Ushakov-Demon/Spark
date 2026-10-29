@@ -1,11 +1,11 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { G } from '../domains/mechanics/constants.js';
-import { hydrostaticPressure } from '../domains/mechanics/formulas.js';
-import { SUBSTANCES } from '../substances/catalog.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import { sampleOf } from './thermal-lab.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { G } from '../../domains/mechanics/constants.js';
+import { hydrostaticPressure } from '../../domains/mechanics/formulas.js';
+import { SUBSTANCES } from '../../substances/catalog.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import { sampleOf } from '../../scenarios/thermal-lab.js';
 
 /**
  * The pressure in a liquid and its depth (grade 7, «Тиск рідин і газів»): a funnel with a rubber film on a tube

@@ -68,7 +68,9 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'carry' | ExperimentKind;
+  /** What stands on the table, when it is not the bench's usual (one bench, another set: a bubble in washing-up liquid). */
+  readonly benchSetup?: LocalizedText;
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -628,27 +630,6 @@ const LIST: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Закон Паскаля. … Гідравлічна машина. … Дослідження: … передавання тиску рідинами й газами' }],
     expect: 'reached',
   },
-  {
-    id: 'communicating-vessels',
-    ask: { uk: 'Де стоятиме вищий рівень — олії чи води?', en: 'Which level will stand higher — the oil’s or the water’s?' },
-    grade: 7,
-    topic: PRESSURE,
-    title: { uk: 'Сполучені посудини: вода й олія', en: 'Communicating vessels: water and oil' },
-    question: {
-      uk: 'Наллємо у скляну U-подібну трубку води й порівняємо рівні в обох колінах. Потім доливатимемо в ліве коліно соняшникову олію — 10 мл, а тоді ще 10 мл — і щоразу вимірюватимемо лінійкою висоту стовпа олії й висоту води в правому коліні над рівнем межі між олією й водою. Де стоятиме вищий рівень — олії чи води?',
-      en: 'We pour water into a glass U-tube and compare the levels in its two arms. Then we pour sunflower oil into the left arm — 10 mL, then 10 mL more — and each time measure with a ruler the height of the oil column and of the water in the right arm above the level of the boundary between the oil and the water. Which level will stand higher — the oil’s or the water’s?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'utube',
-    plan: [0, 10, 20].map((poured) => ({ kind: 'bench', command: { type: 'lab.utube', poured, liquid: 'sunflower-oil' } }) as const),
-    choices: [ch('oil', 'Вищим буде рівень олії', 'The oil’s level will be higher'), ch('water', 'Вищим буде рівень води', 'The water’s level will be higher'), ch('same', 'Рівні будуть однакові', 'The levels will be the same')],
-    choicesAt: 'end',
-    answerOnBoard: ['rhoU:'],
-    formulas: ['mechanics.communicating-vessels', 'mechanics.hydrostatic-pressure'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Сполучені посудини. … моделювання: сполучених посудин' }],
-    expect: 'reached',
-  },
   varied(
     {
       id: 'hydrostatic-paradox',
@@ -717,42 +698,6 @@ const LIST: readonly Preset[] = [
             { kind: 'bench', command: { type: 'lab.atm', step: 'barometer', air } },
             { kind: 'bench', command: { type: 'lab.atm', step: 'open', air } },
             ...[0.25, 0.5, 1].map((pulled) => ({ kind: 'bench', command: { type: 'lab.atm', step: 'sealed', air, pulled } }) as const),
-          ],
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'depth-pressure',
-      ask: { uk: 'Як тиск рідини залежить від глибини?', en: 'How does a liquid’s pressure depend on the depth?' },
-      grade: 7,
-      topic: PRESSURE,
-      title: { uk: 'Як тиск рідини залежить від глибини?', en: 'How does the pressure of a liquid depend on the depth?' },
-      guided: true,
-      bench: 'depth',
-      choices: [ch('proportional', 'Зростає пропорційно глибині: удвічі глибше — удвічі більший тиск', 'It grows in proportion: twice as deep — twice the pressure'), ch('same', 'Не залежить від глибини', 'It does not depend on the depth'), ch('slower', 'Зростає, але все повільніше', 'It grows, but ever more slowly')],
-      choicesAt: 'end',
-      answerOnBoard: ['rhoD:'],
-      formulas: ['mechanics.hydrostatic-pressure'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Дослідження: … зміни тиску в рідині з глибиною; … вимірювання й визначення: атмосферного й гідростатичного тиску' }],
-      expect: 'reached',
-    },
-    {
-      // Liquids of different densities: the manometer's water tells them apart (salt water deeper, oil less).
-      controls: [{ id: 'liquid', label: { uk: 'Рідина в стакані', en: 'Liquid in the beaker' }, kind: 'choice', options: [ch('water', 'Вода', 'Water'), ch('salt-water-20', 'Солона вода (20 %)', 'Salt water (20 %)'), ch('sunflower-oil', 'Соняшникова олія', 'Sunflower oil')], value: 'water' }],
-      build: (v) => {
-        const liquid = String(v['liquid']) as 'water' | 'salt-water-20' | 'sunflower-oil';
-        const name = { water: { uk: 'водою', en: 'water' }, 'salt-water-20': { uk: 'солоною водою', en: 'salt water' }, 'sunflower-oil': { uk: 'соняшниковою олією', en: 'sunflower oil' } }[liquid];
-        return {
-          question: {
-            uk: `У стакані з ${name.uk} (рідини — на 12 см) опускатимемо воронку, затягнуту гумовою плівкою; трубка від неї йде до U-подібного манометра з водою. Записуватимемо, на скільки різняться рівні води в манометрі, коли плівка на глибині 3, 6 і 9 см, а наостанок на 9 см повернемо її вбік. Як тиск рідини залежить від глибини?`,
-            en: `Into a beaker of ${name.en} (12 cm of it) we lower a funnel covered with a rubber film; a tube leads from it to a U-tube manometer with water. We write down how far apart the water levels in the manometer are with the film 3, 6 and 9 cm deep, and at last turn it sideways at 9 cm. How does the liquid’s pressure depend on the depth?`,
-          },
-          params: { ...room, vessel: 'beaker', size: 1, material: 'glass', liters: 0.9, action: 'settle', substance: liquid, startTemp: 20 },
-          plan: [
-            ...[0.03, 0.06, 0.09].map((depth) => ({ kind: 'bench', command: { type: 'lab.depth', depth } }) as const),
-            { kind: 'bench', command: { type: 'lab.depth', depth: 0.09, sideways: true } },
           ],
         };
       },
@@ -950,28 +895,6 @@ const LIST: readonly Preset[] = [
     expect: 'reached',
   },
 
-  {
-    ask: { uk: 'Чи однакові траєкторія й шлях бульбашки відносно пляшки та відносно стола?', en: 'Are the bubble’s path and trajectory the same relative to the bottle and to the table?' },
-    id: 'relative-motion',
-    grade: 7,
-    topic: MOTION,
-    title: { uk: 'Відносність руху: бульбашка в пляшці, що їде', en: 'The relativity of motion: a bubble in a moving bottle' },
-    question: {
-      uk: 'Знову перевернута пляшка густої рідини для миття посуду й бульбашка ≈ 4 мм, що спливає від нульової позначки до позначки 9 см. За пляшкою на столі закріплено аркуш паперу: на ньому маркером позначаємо, де бульбашка була на старті й на фініші, і вимірюємо відрізок між позначками. Спершу пляшка стоїть, а потім, поки бульбашка спливає, ведемо пляшку вздовж лінійки — повільно й швидше. Щоразу засікаємо час і вимірюємо, на скільки зсунулася пляшка. Чи однакові траєкторія й шлях бульбашки відносно пляшки та відносно стола?',
-      en: 'The upside-down bottle of thick washing-up liquid again, and a ≈ 4 mm bubble rising from the zero mark to the 9 cm one. A sheet of paper is fixed to the table behind the bottle: we mark on it with a marker where the bubble was at the start and at the finish, and measure the line between. First the bottle stands, then, while the bubble rises, we carry the bottle along a ruler — slowly and faster. Each time we time it and measure how far the bottle moved. Are the bubble’s path and trajectory the same relative to the bottle and to the table?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'carry',
-    plan: [0, 0.005, 0.01].map((speed) => ({ kind: 'bench', command: { type: 'lab.carry', speed } }) as const),
-    choices: [ch('depends', 'Ні: відносно пляшки — та сама вертикаль 9 см, а відносно стола — похила пряма й довший шлях', 'No: relative to the bottle the same 9 cm upright, relative to the table a slanted line and a longer path'), ch('same', 'Так: бульбашка ж спливає так само', 'Yes: the bubble rises just the same'), ch('slower', 'Ні: бульбашка спливає повільніше, коли пляшку ведуть', 'No: the bubble rises slower while the bottle is carried')],
-    formulas: ['mechanics.speed'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'моделювання: відносності руху' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 2. Механічний рух', match: 'related', quote: 'Механічний рух. Відносність руху та спокою. Система відліку.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 7, «Чому механічний рух є відносним?»: «Форма траєкторії руху, шлях і переміщення тіла залежать від того, відносно якої системи відліку розглядають рух»' } },
-    ],
-    expect: 'reached',
-  },
   {
     ask: { uk: 'На якій грані брусок тиснутиме на стіл найсильніше?', en: 'On which face will the block press on the table hardest?' },
     id: 'block-pressure',
@@ -1525,74 +1448,6 @@ const LIST: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 9, item: 'ЛР № 3', topic: 'Тема 1. Електричний струм у різних середовищах', match: 'related', quote: '№ 3. Визначення електрохімічного еквівалента речовини.' }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 9, item: 'Тема 2. Досліджуємо хімічні реакції в розчинах', match: 'same', quote: 'Дослідження електропровідності розчинів електролітів і неелектролітів.' }, { program: 'oxfordaqa-igcse-sciences', item: 'Chemistry RP 1', match: 'same', quote: 'Electrolysis (C). Investigating the products formed at the anode and cathode in the electrolysis of copper sulfate solution.' }],
     expect: 'reached',
   },
-  varied(
-    {
-      id: 'bubble-speed',
-      ask: { uk: 'Чи залежить швидкість бульбашки від її розміру?', en: 'Does a bubble’s speed depend on its size?' },
-      grade: 7,
-      topic: MOTION,
-      title: { uk: 'Бульбашка в пляшці: рівномірний рух', en: 'A bubble in a bottle: uniform motion' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'bubble',
-      choices: [ch('bigger', 'Більша бульбашка спливає швидше', 'A bigger bubble rises faster'), ch('same', 'Не залежить', 'It does not'), ch('smaller', 'Менша бульбашка спливає швидше', 'A smaller bubble rises faster')],
-      choicesAt: 'end',
-      answerOnBoard: ['bv:'],
-      formulas: ['mechanics.speed'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'Дослідження • виявлення пропорційної залежності між величинами, що описують прямолінійний рівномірний рух', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 8, дослідження: «Знайдіть швидкість її руху. Чи залежить швидкість руху бульбашки від її розмірів?»' } }],
-      expect: 'reached',
-    },
-    {
-      // The liquid: the textbook's washing-up liquid (its viscosity an estimate) or glycerol (a table's).
-      controls: [{ id: 'liquid', label: { uk: 'Рідина в пляшці', en: 'The liquid in the bottle' }, kind: 'choice', options: [ch('washing-up', 'Рідина для миття посуду', 'Washing-up liquid'), ch('glycerol', 'Гліцерин', 'Glycerol')], value: 'washing-up' }],
-      build: (v) => {
-        const liquid = String(v['liquid']) as 'washing-up' | 'glycerol';
-        const marks = [0.03, 0.06, 0.09, 0.12];
-        const what = liquid === 'glycerol' ? { uk: 'гліцерину', en: 'glycerol' } : { uk: 'густої рідини для миття посуду', en: 'thick washing-up liquid' };
-        return {
-          question: {
-            uk: `Прозора пляшка ${what.uk}, на ній — позначки через 3 см. Перевернемо її й стежитимемо за маленькою бульбашкою повітря (≈ 2 мм): запустимо секундомір, коли вона мине нульову позначку, і засікатимемо час на позначках 3, 6, 9 і 12 см. Тоді — те саме з більшою бульбашкою (≈ 4 мм). Чи залежить швидкість бульбашки від її розміру?`,
-            en: `A clear bottle of ${what.en} with marks every 3 cm. We turn it over and watch a small air bubble (≈ 2 mm): start the stopwatch as it passes the zero mark and note the time at 3, 6, 9 and 12 cm. Then the same with a bigger bubble (≈ 4 mm). Does a bubble’s speed depend on its size?`,
-          },
-          plan: [0.002, 0.004].map((diameter) => ({ kind: 'bench', command: { type: 'lab.sink', body: 'bubble', diameter, liquid, marks } }) as const),
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'ball-in-liquids',
-      ask: { uk: 'У якій рідині кулька тоне найповільніше?', en: 'In which liquid does the ball sink slowest?' },
-      grade: 7,
-      topic: INTERACTION,
-      title: { uk: 'Кулька в рідинах різної густини', en: 'A ball in liquids of different densities' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'sink',
-      choices: [ch('glycerol', 'У гліцерині', 'In glycerol'), ch('sunflower-oil', 'В олії', 'In oil'), ch('water', 'У воді', 'In water')],
-      choicesAt: 'end',
-      answerOnBoard: ['kv:'],
-      formulas: ['mechanics.speed'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … швидкості руху кульки у рідинах різної густини' }],
-      expect: 'reached',
-    },
-    {
-      // The ball's size: a smaller one goes slower in each liquid (in glycerol — as the square of its size).
-      controls: [{ id: 'diameter', label: { uk: 'Кулька', en: 'The ball' }, kind: 'choice', options: [ch('1', '1 мм', '1 mm'), ch('1.5', '1,5 мм', '1.5 mm')], value: '1.5' }],
-      build: (v) => {
-        const diameter = Number(v['diameter']) / 1000;
-        const marks = [0.05, 0.1, 0.15];
-        const d = String(v['diameter']);
-        return {
-          question: {
-            uk: `Три мірні циліндри: з гліцерином (густина 1261 кг/м³), соняшниковою олією (919 кг/м³) і водою (997 кг/м³), на кожному — позначки через 5 см. Опускатимемо в кожен сталеву кульку діаметром ${d.replace('.', ',')} мм: запустимо секундомір, коли вона мине нульову позначку, і засікатимемо час на позначках 5, 10 і 15 см. Знайдемо швидкість кульки в кожній рідині. У якій рідині кулька тоне найповільніше?`,
-            en: `Three measuring cylinders: of glycerol (density 1261 kg/m³), sunflower oil (919 kg/m³) and water (997 kg/m³), each with marks every 5 cm. We drop a steel ball ${d} mm across into each: start the stopwatch as it passes the zero mark and note the time at 5, 10 and 15 cm. We find the ball’s speed in each liquid. In which liquid does it sink slowest?`,
-          },
-          plan: (['glycerol', 'sunflower-oil', 'water'] as const).map((liquid) => ({ kind: 'bench', command: { type: 'lab.sink', body: 'ball', diameter, liquid, marks } }) as const),
-        };
-      },
-    },
-  ),
   varied(
     {
       id: 'electromagnet',

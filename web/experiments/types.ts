@@ -11,6 +11,8 @@ export interface SceneContext {
   readonly last?: Extract<ExperimentLogEntry<{ readonly type: string }>, { readonly ok: true }>;
   readonly command?: { readonly type: string } & Record<string, unknown>;
   readonly plan: readonly ProtocolStep[];
+  /** The run's substance (the liquid in the vessel, chosen in the experiment's setup). */
+  readonly substance: string;
   readonly locale: Locale;
 }
 

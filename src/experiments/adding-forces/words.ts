@@ -1,5 +1,5 @@
 import type { MeasurementRecord } from '../../core/trace.js';
-import { type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';

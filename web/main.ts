@@ -50,11 +50,7 @@ import {
   SLOPE_LENGTH,
   AMMETER,
   ZERO_METER,
-  sinkLiquidName,
   BENCH_WEIGHT,
-  CARRY_BUBBLE,
-  CARRY_RISE,
-  type SinkLiquid,
   VOLTMETER,
   stepCommand,
   OPERATIONS,
@@ -450,7 +446,7 @@ function benchView(): BenchView | null {
   const base = { kind, weights: 0, block: BENCH_BLOCK.edges } as const;
   // An experiment module draws itself (web/experiments).
   const scene = sceneOf(kind);
-  if (scene) return { ...base, scene: scene.view({ log, ...(last ? { last } : {}), ...(c ? { command: c } : {}), plan, locale }) };
+  if (scene) return { ...base, scene: scene.view({ log, ...(last ? { last } : {}), ...(c ? { command: c } : {}), plan, substance: params.substance, locale }) };
   // The circuit: the source's volts; the meters' needles and readings once the key is closed.
   if (kind === 'circuit') {
     const cc = c?.type === 'lab.circuit' ? (c as unknown as { source: number }) : undefined;
@@ -458,28 +454,6 @@ function benchView(): BenchView | null {
     const I = recs.find((x) => x.quantity === 'current');
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
-  }
-  // The relativity of motion: the bubble's bottle (turned over, the bubble at the 9 cm mark once timed), moved along the table.
-  if (kind === 'carry') {
-    const cc = c?.type === 'lab.carry' ? (c as unknown as { speed: number }) : undefined;
-    const recs = last && cc ? readingsOf([last]).map((x) => x.record) : [];
-    const of = (w: number) => recs.find((x) => x.inputs?.['which'] === w);
-    const t = of(0);
-    const cm = (x: number) => `${String(Math.round(x * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`;
-    const sink = { body: 'bubble' as const, color: 'rgba(120,200,120,0.55)', marks: [0.03, 0.06, 0.09], diameter: CARRY_BUBBLE, ...(t ? { at: CARRY_RISE, speed: t.inputs?.['bubble'] ?? 0 } : {}) };
-    return { ...base, kind, sink, ...(t ? { stopwatch: { display: formatMeasured('time', t.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: t.value ?? 0 } } : {}), carry: { speed: cc?.speed ?? 0, shift: of(1)?.value ?? 0, ...(t ? { path: cm(of(2)?.value ?? 0), rise: cm(CARRY_RISE) } : {}) } };
-  }
-  // A body in a liquid: the vessel of the liquid this step used (or the next planned), the body at its last mark,
-  // the stopwatch's last reading.
-  if (kind === 'bubble' || kind === 'sink') {
-    const sc = c?.type === 'lab.sink' ? (c as unknown as { body: 'bubble' | 'ball'; liquid: string; diameter: number; marks: number[] }) : undefined;
-    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.sink');
-    const cmd = sc ?? (next?.kind === 'bench' ? (next.command as unknown as { body: 'bubble' | 'ball'; liquid: string; diameter: number; marks: number[] }) : undefined);
-    const laps = last && sc ? readingsOf([last]).map((x) => x.record).filter((x) => x.quantity === 'time') : [];
-    const lap = laps[laps.length - 1];
-    const color = { 'washing-up': 'rgba(120,200,120,0.55)', glycerol: 'rgba(225,235,245,0.55)', 'sunflower-oil': 'rgba(240,200,80,0.6)', water: 'rgba(120,170,230,0.5)' }[cmd?.liquid ?? 'water'] ?? 'rgba(120,170,230,0.5)';
-    const label = cmd ? (cmd.body === 'bubble' ? `${locale === 'uk' ? 'бульбашка' : 'bubble'} ≈ ${String(cmd.diameter * 1000).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мм' : 'mm'}` : tr({ uk: sinkLiquidName(cmd.liquid as SinkLiquid).uk, en: sinkLiquidName(cmd.liquid as SinkLiquid).en }, locale)) : undefined;
-    return { ...base, kind, ...(lap ? { stopwatch: { display: formatMeasured('time', lap.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: lap.value ?? 0 } } : {}), sink: { body: cmd?.body ?? (kind === 'bubble' ? 'bubble' : 'ball'), color, marks: cmd?.marks ?? [], diameter: cmd?.diameter ?? 0.002, ...(lap ? { at: lap.inputs?.['mark'] ?? 0, speed: lap.inputs?.['speed'] ?? 0 } : {}), ...(label ? { label } : {}) } };
   }
   // Induction: the move this step made, the pole facing the coil, the meter's swing.
   if (kind === 'induct') {
@@ -523,23 +497,6 @@ function benchView(): BenchView | null {
     const recs = last && pc ? readingsOf([last]).map((x) => x.record) : [];
     const read = pc?.step === 'diameters' ? `d₁ = ${formatMeasured('length', recs[0]?.value ?? 0, 0.001, locale)}, d₂ = ${formatMeasured('length', recs[1]?.value ?? 0, 0.001, locale)}` : pc?.step === 'travel' ? `l₂ = ${formatMeasured('length', recs[0]?.value ?? 0, 0.001, locale)}` : undefined;
     return { ...base, kind, press: { weights, pushed: pc?.step === 'travel' ? 1 : 0, ...(pc?.step === 'lift' && r ? { pull: show('force', r.value) } : {}), ...(read ? { read } : {}) } };
-  }
-  // The U-tube: water poured once the first step is done; the oil's and the water's columns as the ruler read them.
-  if (kind === 'utube') {
-    const uc = c?.type === 'lab.utube' ? (c as unknown as { poured: number }) : undefined;
-    const recs = last && uc ? readingsOf([last]).map((x) => x.record) : [];
-    const hO = recs.find((x) => x.inputs?.['which'] === 1)?.value ?? 0;
-    const hW = recs.find((x) => x.inputs?.['which'] === 0)?.value ?? 0;
-    const cmT = (m: number) => formatMeasured('length', m, 0.001, locale);
-    const read = !uc ? undefined : uc.poured === 0 ? `Δh = ${cmT(recs[0]?.value ?? 0)}` : `${cmT(hO)} / ${cmT(hW)}`;
-    return { ...base, kind, utube: { water: !!uc, oil: hO, over: hW, ...(read ? { read } : {}) } };
-  }
-  // The pressure at a depth: the funnel where this step put it, the manometer's Δh; the liquid's own colour.
-  if (kind === 'depth') {
-    const dc = c?.type === 'lab.depth' ? (c as unknown as { depth: number; sideways?: boolean }) : undefined;
-    const liquid = params.substance as SubstanceId;
-    const color = liquid === 'sunflower-oil' ? 'rgba(232,190,60,0.6)' : liquid.startsWith('salt-water') ? 'rgba(150,190,225,0.6)' : 'rgba(120,170,230,0.55)';
-    return { ...base, kind, depth: { depth: dc?.depth ?? 0, sideways: !!dc?.sideways, dh: dc && r ? (r.value ?? 0) : 0, color, ...(dc && r ? { display: formatMeasured('length', r.value, 0.001, locale) } : {}) } };
   }
   // The black box: the source, which way the box stands, the milliammeter in mA (a tenth).
   if (kind === 'box') {
@@ -713,16 +670,6 @@ function measureSay(): string {
     const dm = r.value - before.record.value!;
     return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
   }
-  // A body in a liquid: the last mark's time — and the speed it gives.
-  if (m.command.type === 'lab.sink') {
-    const sc = m.command as { body: string };
-    const laps = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.sink').slice(0, 1)).map((x) => x.record).filter((x) => x.quantity === 'time');
-    const lp = laps[laps.length - 1];
-    if (!lp) return '';
-    const s = Math.round((lp.inputs?.['mark'] ?? 0) * 100);
-    const T = formatMeasured('time', lp.value, 0.01, locale);
-    return sc.body === 'bubble' ? (uk ? `Бульбашка пройшла ${s} см за ${T}.` : `The bubble went ${s} cm in ${T}.`) : uk ? `Кулька пройшла ${s} см за ${T}.` : `The ball went ${s} cm in ${T}.`;
-  }
   // An experiment module: its own words for the step.
   const mod = experimentOf(m.command.type);
   if (mod) {
@@ -730,15 +677,6 @@ function measureSay(): string {
     if (mod.say) return mod.say(m.command as never, recs, locale);
     const shown = mod.shown(m.command as never, recs, locale);
     return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
-  }
-  // The relativity of motion: the time, how far the bottle went, the line on the paper.
-  if (m.command.type === 'lab.carry') {
-    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.carry')!]).map((x) => x.record);
-    const of = (w: number) => recs.find((x) => x.inputs?.['which'] === w)?.value ?? 0;
-    const cm = (x: number) => `${String(Math.round(x * 1000) / 10).replace('.', uk ? ',' : '.')} ${uk ? 'см' : 'cm'}`;
-    const T = formatMeasured('time', of(0), 0.01, locale);
-    if ((m.command as { speed: number }).speed === 0) return uk ? `9 см угору за ${T}; на аркуші — той самий відрізок, ${cm(of(2))}.` : `9 cm up in ${T}; on the paper the same line, ${cm(of(2))}.`;
-    return uk ? `За ${T} пляшка проїхала ${cm(of(1))}, а на аркуші — похилий відрізок ${cm(of(2))}.` : `In ${T} the bottle went ${cm(of(1))}, and on the paper — a slanted line of ${cm(of(2))}.`;
   }
   // Induction: the needle's swing — which way and how far.
   if (m.command.type === 'lab.induct') {
@@ -786,23 +724,6 @@ function measureSay(): string {
       return uk ? `Вантаж ${formatMeasured('force', F2, 0.1, locale)} пішов угору, коли динамометр показав лише ${formatMeasured('force', r.value, 0.1, locale)}!` : `The ${formatMeasured('force', F2, 0.1, locale)} load went up when the dynamometer showed only ${formatMeasured('force', r.value, 0.1, locale)}!`;
     }
     return uk ? `Вузький поршень пройшов 6 см, а широкий піднявся лише на ${cm(r.value ?? 0)}.` : `The narrow piston went 6 cm, and the wide one rose only ${cm(r.value ?? 0)}.`;
-  }
-  // The U-tube: the levels alike with water alone; with oil — both columns above the boundary.
-  if (m.command.type === 'lab.utube') {
-    const recs = readingsOf([...session.result().log].reverse().filter((e) => e.ok && e.command.type === 'lab.utube').slice(0, 1)).map((x) => x.record);
-    const ml = (m.command as { poured: number }).poured;
-    if (ml === 0) return uk ? 'Вода в обох колінах стоїть на одному рівні!' : 'The water stands at one level in both arms!';
-    const hO = recs.find((x) => x.inputs?.['which'] === 1)?.value ?? 0;
-    const hW = recs.find((x) => x.inputs?.['which'] === 0)?.value ?? 0;
-    return uk ? `Олії ${ml} мл: її стовп — ${cm(hO)}, а вода справа стоїть над межею лише на ${cm(hW)}.` : `${ml} mL of oil: its column is ${cm(hO)}, and the water on the right stands only ${cm(hW)} above the boundary.`;
-  }
-  // The manometer: how far apart its water levels are at this depth; sideways — the same as with the film down.
-  if (m.command.type === 'lab.depth') {
-    if (r.value === null) return '';
-    const dc = m.command as { depth: number; sideways?: boolean };
-    const d = cm(dc.depth);
-    if (dc.sideways) return uk ? `Плівка вбік на ${d} — а рівні в манометрі різняться так само: на ${cm(r.value)}!` : `The film sideways at ${d} — and the manometer’s levels differ just the same: by ${cm(r.value)}!`;
-    return uk ? `Плівка на глибині ${d}: рівні води в манометрі різняться на ${cm(r.value)}.` : `The film ${d} deep: the water levels in the manometer differ by ${cm(r.value)}.`;
   }
   // The black box: what the milliammeter shows, one way or turned round.
   if (m.command.type === 'lab.box') {
@@ -2228,7 +2149,7 @@ function render() {
   renderSide();
 
   // On the bench the vessel is not what the experiment is about: what stands on the table is named instead.
-  $('#setup-line').textContent = preset?.bench && preset.bench !== 'balance' ? tr(BENCH_SETUP[preset.bench], locale) : preset?.bench === 'balance' ? `${tr(BENCH_SETUP.balance, locale)}; ${labSubject(params, locale, session.state)}` : labSubject(params, locale, session.state);
+  $('#setup-line').textContent = preset?.bench && preset.bench !== 'balance' ? tr(preset.benchSetup ?? BENCH_SETUP[preset.bench], locale) : preset?.bench === 'balance' ? `${tr(BENCH_SETUP.balance, locale)}; ${labSubject(params, locale, session.state)}` : labSubject(params, locale, session.state);
   showOnlyWhatMatters();
   const sub = substance();
   const b = sample();
@@ -2511,7 +2432,6 @@ function renderProtocol() {
       const both = c.type === 'lab.circuit' || c.type === 'lab.pair' ? readingsOf([e]).map((x) => formatMeasured(x.record.quantity, x.record.value, x.record.quantity === 'current' ? 0.01 : 0.1, locale)).join(' · ') : null;
       // (The black box's milliammeter: milliamperes to a tenth.)
       // (A body in a liquid: the times at the marks.)
-      const sShown = c.type === 'lab.sink' ? readingsOf([e]).map((x) => x.record).filter((x) => x.quantity === 'time').map((x) => formatMeasured('time', x.value, 0.01, locale)).join(' · ') : null;
       // (Induction: the milliammeter's signed milliamperes.)
       const iShown = c.type === 'lab.induct' ? inductShown(r.value) : null;
       // (The electromagnet: the ammeter and the compass.)
@@ -2524,17 +2444,13 @@ function renderProtocol() {
       const pRecs = c.type === 'lab.press' ? readingsOf([e]).map((x) => x.record) : [];
       const pShown = c.type === 'lab.press' && pRecs.length === 2 ? `${formatMeasured('length', pRecs[0]!.value, 0.001, locale)} · ${formatMeasured('length', pRecs[1]!.value, 0.001, locale)}` : null;
       // (The U-tube with oil: both columns.)
-      const uRecs = c.type === 'lab.utube' ? readingsOf([e]).map((x) => x.record) : [];
-      const uShown = c.type === 'lab.utube' && uRecs.length === 2 ? (locale === 'uk' ? `олія ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, вода ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}` : `oil ${formatMeasured('length', uRecs[0]!.value, 0.001, locale)}, water ${formatMeasured('length', uRecs[1]!.value, 0.001, locale)}`) : null;
       const boxShown = c.type === 'lab.box' && r.value !== null ? `${(r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мА' : 'mA'}` : null;
       // (Two dynamometers: both readings.)
       // (The method of rows: millimetres.)
       // (A ball's bounce: whole centimetres.)
       // (An experiment module's own words for the step.)
       const modShown = experimentOf(c.type)?.shown(c as never, readingsOf([e]).map((x) => x.record), locale) ?? null;
-      const cbRecs = c.type === 'lab.carry' ? readingsOf([e]).map((x) => x.record) : [];
-      const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
-      const shown = modShown ?? cbShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = modShown ?? both ?? leverShown ?? boxShown ?? pShown ?? vShown ?? mShown ?? iShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

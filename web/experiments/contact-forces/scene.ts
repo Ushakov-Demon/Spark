@@ -1,4 +1,4 @@
-import { type TouchCase } from '../../../src/experiments/contact-forces/bench.js';
+import type { TouchCase } from '../../../src/experiments/contact-forces/bench.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { standSvg, THREAD, weightsSvg } from '../../graphics/scene/kit.js';

@@ -1,7 +1,7 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
 import { beaker, both, ch, MOTION, room } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
-import { type Locale } from '../../knowledge/i18n.js';
+import type { Locale } from '../../knowledge/i18n.js';
 import { STROBE_INTERVAL, STROBE_SCALE } from './bench.js';
 import { sig } from '../../explain/format.js';
 

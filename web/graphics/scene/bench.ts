@@ -10,7 +10,7 @@ import { sceneOf } from '../../experiments/index.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'carry' | ExperimentKind;
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | ExperimentKind;
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -56,26 +56,15 @@ export interface BenchView {
   readonly press?: { readonly weights: number; readonly pull?: string; readonly pushed: number; readonly read?: string };
   /** The syringe and the barometer: the plunger out by so many mL (0…1), the nozzle shut; the dynamometer's reading, the ruler's; the day's pressure, Pa, and its reading once looked at. */
   readonly atm?: { readonly pulled: number; readonly sealed: boolean; readonly pull?: string; readonly read?: string; readonly air: number; readonly baro?: string };
-  /** A body in a liquid: a bubble in the bottle or a ball in the cylinder; the liquid's colour; its marks (m from the zero one) and where the body is now (m past the zero mark; none — not let go yet); its size, m. */
-  readonly sink?: { readonly body: 'bubble' | 'ball'; readonly color: string; readonly marks: readonly number[]; readonly at?: number; readonly diameter: number; readonly label?: string; readonly speed?: number; readonly turn?: number };
   /** Induction: how the magnet (or the coil) moved and which pole faces the coil; the meter's swing (−1…1 of its scale) and reading. */
   readonly induct?: { readonly move: 'still' | 'in' | 'out' | 'coil' | 'none'; readonly pole: 'N' | 'S'; readonly swing: number; readonly read?: string };
   /** The electromagnet: the current (0 — the key open) and what the ammeter shows; the nail in the coil or not; the compass needle's turn, degrees. */
   /** Adding forces: how the load is held, where the weights hang on the ruler (m from its left end), the two dynamometers' forces, N, and what they show; `loaded` — the load is on them (else it lies on the table). */
   /** An experiment module's own view (web/experiments), drawn by its scene. */
   readonly scene?: unknown;
-  /**
-   * The relativity of motion: the bubble's bottle (in `sink`) carried along the table at `speed` (m/s), moved `shift`
-   * (m) so far; the line on the paper behind, once measured (`path`).
-   */
-  readonly carry?: { readonly speed: number; readonly shift: number; readonly path?: string; readonly rise?: string };
   readonly magnet?: { readonly current: number; readonly amps?: string; readonly core: boolean; readonly angle: number; readonly read?: string; /** The nail being pulled out of the coil: 0 — in, 1 — out (the straw stays). */ readonly pull?: number };
   /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
   readonly vessels?: { readonly shape?: 'straight' | 'wide' | 'narrow'; readonly height: number; readonly dh: number; readonly read?: string; readonly poured?: string };
-  /** The U-tube: water poured (or not yet), the oil's and the water's columns above their boundary, m; what the ruler read. */
-  readonly utube?: { readonly water: boolean; readonly oil: number; readonly over: number; readonly read?: string };
-  /** The pressure at a depth: the funnel's depth, m (0 — above the liquid), sideways; the manometer's Δh, m; the liquid's colour. */
-  readonly depth?: { readonly depth: number; readonly sideways: boolean; readonly dh: number; readonly color: string; readonly display?: string };
   /** The black box: the source's volts, which way the box stands, what the milliammeter shows (once the key is closed). */
   readonly box?: { readonly source: number; readonly reversed: boolean; readonly display?: string };
   readonly pair?: { readonly source: number; readonly at: 'r1' | 'r2' | 'both'; readonly amps?: { readonly text: string; readonly share: number }; readonly volts?: { readonly text: string; readonly share: number } };
@@ -148,14 +137,10 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'circuit') return circuitSvg(v.circuit);
   if (v.kind === 'series' || v.kind === 'parallel') return pairSvg(v.kind, v.pair);
   if (v.kind === 'box') return boxSvg(v.box);
-  if (v.kind === 'depth') return depthSvg(v.depth);
-  if (v.kind === 'utube') return utubeSvg(v.utube);
   if (v.kind === 'press') return pressSvg(v.press);
   if (v.kind === 'atm') return atmSvg(v.atm);
   if (v.kind === 'vessels') return vesselsSvg(v.vessels);
   if (v.kind === 'magnet') return magnetSvg(v.magnet);
-  if (v.kind === 'carry') return `${carrySvg(v.sink, v.carry)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 585) : ''}`;
-  if (v.kind === 'bubble' || v.kind === 'sink') return `${sinkSvg(v.sink)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 520) : ''}`;
   if (v.kind === 'induct') return inductSvg(v.induct);
   // The stopwatch stands by the stand, on the side away from what hangs or rolls (on the table, beside the sheet for the circle).
   if (v.kind === 'incline' || v.kind === 'circle' || v.kind === 'pendulum') return `${motionSvg(v)}${v.stopwatch ? stopwatchSvg(v.stopwatch, v.kind === 'pendulum' ? 178 : v.kind === 'incline' ? 152 : 215) : ''}`;
@@ -336,42 +321,6 @@ function circuitSvg(c: BenchView['circuit']): string {
   return `${wires}${source}${key}${meterSvg(366, y + 6, 'A', c?.amps?.share, c?.amps?.text)}${resistor}${meterSvg(460, top + 40, 'V', c?.volts?.share, c?.volts?.text)}`;
 }
 
-/**
- * A body moving through a liquid: a tall vessel (a bottle turned upside down, or a measuring cylinder) with marks every
- * few centimetres (8 px to the centimetre, the zero mark near the start); the bubble rises from below, the ball sinks
- * from above; it stands where the step left it — at the last mark.
- */
-/** How far before the zero mark the body starts (the bottle's neck, the liquid's surface), m: it has its steady speed by the zero mark. */
-export const SINK_LEAD = 30 / 800;
-
-function sinkSvg(s: BenchView['sink']): string {
-  const k = 800;
-  const x = 400;
-  const bubble = s?.body === 'bubble';
-  const w = bubble ? 60 : 40;
-  const bottom = TABLE - 8;
-  const top = bottom - 200;
-  const zero = bubble ? bottom - 30 : top + 30;
-  const dir = bubble ? -1 : 1;
-  const glass = bubble
-    ? `<path d="M${x - w / 2},${top + 10} V${bottom - 6} q0,6 6,6 H${x + w / 2 - 6} q6,0 6,-6 V${top + 10} q0,-10 -10,-10 H${x - w / 2 + 10} q-10,0 -10,10 Z" style="fill:${s?.color ?? 'rgba(120,200,120,0.5)'};stroke:#8fb8dd;stroke-width:2"/><rect x="${x - 8}" y="${bottom}" width="16" height="6" style="fill:#c0392b"/>`
-    : `<rect x="${x - w / 2}" y="${top}" width="${w}" height="${bottom - top}" style="fill:${s?.color ?? 'rgba(120,170,230,0.5)'};stroke:#8fb8dd;stroke-width:2"/><rect x="${x - w / 2 - 8}" y="${bottom - 4}" width="${w + 16}" height="6" rx="2" style="fill:#8fb8dd"/>`;
-  const marks = [0, ...(s?.marks ?? [])].map((m) => `<path d="M${x + w / 2 - 10},${zero + dir * m * k} h14" style="stroke:#3d3d3d;stroke-width:1.2"/><text x="${x + w / 2 + 8}" y="${zero + dir * m * k + 3}" style="font:600 10px system-ui,sans-serif;fill:#efe9d2">${Math.round(m * 100)}</text>`).join('');
-  const at = s?.at;
-  // (Not to scale: a millimetre ball would be a dot.)
-  const r = Math.max(bubble ? 2.5 : 4.5, (s?.diameter ?? 0.002) * 1000 * (bubble ? 1.6 : 3));
-  // A steel ball: dark, with a highlight (it must not melt into the liquid).
-  const steel = `<defs><radialGradient id="sink-steel" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.25" stop-color="#9aa6b2"/><stop offset="1" stop-color="#1f262d"/></radialGradient></defs>`;
-  const body = at === undefined || s?.turn !== undefined ? '' : bubble ? `<circle cx="${x}" cy="${zero + dir * at * k}" r="${r}" style="fill:rgba(255,255,255,0.85);stroke:#6c8fb0"/>` : `${steel}<circle cx="${x}" cy="${zero + dir * at * k}" r="${r}" style="fill:url(#sink-steel);stroke:#11161b;stroke-width:0.8"/>`;
-  const label = s?.label ? `<text class="bench-reading" x="${x}" y="${top - 10}" text-anchor="middle">${s.label}</text>` : '';
-  // The bottle being turned over (1 — still upright, its air under the cap at the top; 0 — upside down).
-  const turn = s?.turn;
-  if (bubble && turn !== undefined) {
-    const air = turn > 0.5 ? `<rect x="${x - w / 2 + 2}" y="${bottom - 14}" width="${w - 4}" height="8" style="fill:rgba(255,255,255,0.75)"/>` : '';
-    return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
-  }
-  return `${glass}${marks}${body}${label}`;
-}
 
 
 
@@ -386,31 +335,7 @@ function sinkSvg(s: BenchView['sink']): string {
 
 
 
-/** Where the carried bottle starts (its axis), units of the drawing; the drawing's scale is the bottle's: 8 to the centimetre. */
-const CARRY_X0 = 360;
-/**
- * The relativity of motion: a sheet of paper fixed to the table behind the bottle, a ruler on the table in front;
- * the bottle (sinkSvg's, moved along) with its bubble. On the paper: a dot where the bubble passed the zero mark,
- * a chalk-red line from it to where the bubble is now — its path relative to the table — and, in the bottle, the
- * bubble's own way straight up. An arrow shows the bottle's motion.
- */
-function carrySvg(s: BenchView['sink'], c: BenchView['carry']): string {
-  const k = 800;
-  const bottom = TABLE - 8;
-  const zero = bottom - 30;
-  const dx = (c?.shift ?? 0) * k;
-  const paper = `<rect x="${CARRY_X0 - 50}" y="${bottom - 190}" width="220" height="180" style="fill:#f4f1e8;stroke:#c9c2a8;opacity:0.92"/>`;
-  const ruler = rulerSvg(CARRY_X0 - 20, TABLE + 6, 20, false, 8);
-  const at = s?.at;
-  const on = at !== undefined && at >= 0 && s?.turn === undefined;
-  const start = on ? `<circle cx="${CARRY_X0}" cy="${zero}" r="3" style="fill:#c0392b"/>` : '';
-  const trail = on ? `<path d="M${CARRY_X0},${zero} L${CARRY_X0 + dx},${zero - at * k}" style="stroke:#c0392b;stroke-width:2;stroke-dasharray:5 3"/>` : '';
-  const end = on && c?.path ? `<circle cx="${CARRY_X0 + dx}" cy="${zero - at * k}" r="3" style="fill:#c0392b"/><text class="bench-reading" x="${CARRY_X0 + dx / 2 - 8}" y="${zero - (at * k) / 2 + 16}" text-anchor="end" style="fill:#8e2b20">s = ${c.path}</text>` : '';
-  // The bubble's own way, in the bottle: straight up from the zero mark.
-  const own = on ? `<path d="M${CARRY_X0 + dx - 14},${zero} V${zero - at * k}" style="stroke:#2d6a9f;stroke-width:1.6"/>${c?.rise ? `<text class="bench-reading" x="${CARRY_X0 + dx - 10}" y="${zero - (at * k) / 2 + 4}" style="fill:#1f4f7a">${c.rise}</text>` : ''}` : '';
-  const arrow = c && c.speed > 0 ? `<path class="bench-arrow" d="M${CARRY_X0 + dx - 20},${bottom - 212} h40 m-6,-4 l6,4 l-6,4"/><text class="bench-label" x="${CARRY_X0 + dx}" y="${bottom - 220}" text-anchor="middle">u</text>` : '';
-  return `${paper}${ruler}${start}${trail}<g transform="translate(${CARRY_X0 - 400 + dx},0)">${sinkSvg(s)}</g>${own}${end}${arrow}`;
-}
+
 
 /**
  * Induction: the coil lying on the table, its axis left–right, wires to a milliammeter with its zero in the middle;
@@ -579,80 +504,7 @@ function pressSvg(p: BenchView['press']): string {
   return `${tube}${syringe(nx, 16, nTop)}${syringe(wx, 34, wTop)}${weights}${dyn}${read}`;
 }
 
-/**
- * A glass U-tube on a stand (8 px to the centimetre): water in its bend and arms; oil floating in the left arm as a
- * column `oil` high; the water in the right arm stands `over` above the boundary's level. A ruler beside it.
- */
-function utubeSvg(u: BenchView['utube']): string {
-  const k = 800;
-  const lx = 390;
-  const rx = 470;
-  const w = 16;
-  const bottom = TABLE - 40;
-  const top = TABLE - 300;
-  // Water alone fills each arm to the same level; oil pushes the boundary down in the left arm.
-  const base = bottom - 90;
-  const oil = u?.oil ?? 0;
-  const over = u?.over ?? 0;
-  // The water's volume stays: the boundary on the left goes down as far as the water on the right goes up, and the
-  // right level is `over` above the boundary — so each moves by half of it.
-  const b = oil > 0 ? base + (over * k) / 2 : base;
-  const rightTop = oil > 0 ? b - over * k : base;
-  const oilTop = b - oil * k;
-  const glass = (x: number) => `<rect x="${x - w / 2}" y="${top}" width="${w}" height="${bottom - top}" style="fill:rgba(220,235,250,0.3);stroke:#8fb8dd;stroke-width:1.5"/>`;
-  const bend = `<path d="M${lx - w / 2},${bottom} q0,30 ${(rx - lx) / 2 + w / 2},30 q${(rx - lx) / 2 + w / 2},0 ${(rx - lx) / 2 + w / 2},-30" style="fill:none;stroke:#8fb8dd;stroke-width:1.5"/>`;
-  const water = u?.water
-    ? `<rect x="${lx - w / 2 + 2}" y="${b}" width="${w - 4}" height="${bottom - b}" style="fill:#3b82c4"/><rect x="${rx - w / 2 + 2}" y="${rightTop}" width="${w - 4}" height="${bottom - rightTop}" style="fill:#3b82c4"/><path d="M${lx},${bottom} q0,22 ${(rx - lx) / 2},22 q${(rx - lx) / 2},0 ${(rx - lx) / 2},-22" style="fill:none;stroke:#3b82c4;stroke-width:${w - 4}"/>`
-    : '';
-  const oilCol = oil > 0 ? `<rect x="${lx - w / 2 + 2}" y="${oilTop}" width="${w - 4}" height="${b - oilTop}" style="fill:#e8be3c"/>` : '';
-  const stand = `<rect x="${(lx + rx) / 2 - 50}" y="${TABLE - 8}" width="100" height="8" rx="2" style="fill:${DARK}"/><rect x="${(lx + rx) / 2 - 3}" y="${top - 10}" width="6" height="${TABLE - top + 2}" style="fill:#9aa3ad"/>`;
-  const ticks = Array.from({ length: 31 }, (_, i) => `<path d="M${rx + 22},${bottom - i * 8} h${i % 5 === 0 ? 10 : 5}" style="stroke:#5b4a2a;stroke-width:0.8"/>`).join('');
-  const ruler = `<rect x="${rx + 18}" y="${bottom - 248}" width="18" height="252" style="fill:#f1e3b0;stroke:#a8945a"/>${ticks}`;
-  const marks = oil > 0
-    ? `<path class="bench-mark" d="M${lx - 30},${b} H${rx + 18}"/><path class="bench-mark" d="M${lx - 30},${oilTop} H${lx + 10} M${rx - 10},${rightTop} H${rx + 18}"/><text class="bench-reading" x="${rx + 42}" y="${(b + oilTop) / 2 + 4}">${u?.read ?? ''}</text>`
-    : u?.water && u.read ? `<path class="bench-mark" d="M${lx - 20},${base} H${rx + 18}"/><text class="bench-reading" x="${rx + 42}" y="${base + 4}">${u.read}</text>` : '';
-  return `${stand}${ruler}${water}${oilCol}${glass(lx)}${glass(rx)}${bend}${marks}`;
-}
 
-/**
- * A beaker of liquid (12 cm of it, 10 px to the centimetre) with a ruler beside it; the funnel with its film at the
- * depth (turned sideways — its mouth to the side); its tube up and over to a U-shaped manometer whose water stands
- * Δh higher in the open arm than in the arm the tube presses on.
- */
-function depthSvg(d: BenchView['depth']): string {
-  const k = 1000; // px per metre
-  const bx = 240;
-  const bw = 130;
-  const bottom = TABLE - 6;
-  const surface = bottom - 0.12 * k;
-  const top = surface - 22;
-  const color = d?.color ?? 'rgba(120,170,230,0.55)';
-  const beaker = `<rect x="${bx}" y="${surface}" width="${bw}" height="${bottom - surface}" style="fill:${color}"/><path d="M${bx},${top} V${bottom} H${bx + bw} V${top}" style="fill:none;stroke:#8fb8dd;stroke-width:2.5"/>`;
-  const ticks = Array.from({ length: 13 }, (_, i) => `<path d="M${bx - 14},${surface + i * 10} h${i % 5 === 0 ? 8 : 5}" style="stroke:#5b4a2a;stroke-width:1"/>`).join('');
-  const ruler = `<rect x="${bx - 18}" y="${surface - 4}" width="12" height="${bottom - surface + 4}" style="fill:#f1e3b0;stroke:#a8945a"/>${ticks}`;
-  // The funnel: its film at the depth; down — mouth facing down, sideways — facing right.
-  const h = d?.depth ?? 0;
-  const fy = h > 0 ? surface + h * k : top - 30;
-  const fx = bx + bw / 2;
-  const funnel = d?.sideways
-    ? `<path d="M${fx - 12},${fy - 4} L${fx + 6},${fy - 12} L${fx + 6},${fy + 12} L${fx - 12},${fy + 4} Z" style="fill:#d7dde3;stroke:#59636e"/><path d="M${fx + 6},${fy - 12} V${fy + 12}" style="stroke:#b03a2e;stroke-width:2.5"/>`
-    : `<path d="M${fx - 4},${fy - 18} L${fx + 4},${fy - 18} L${fx + 12},${fy} L${fx - 12},${fy} Z" style="fill:#d7dde3;stroke:#59636e"/><path d="M${fx - 12},${fy} H${fx + 12}" style="stroke:#b03a2e;stroke-width:2.5"/>`;
-  const tubeStart = d?.sideways ? `M${fx - 12},${fy}` : `M${fx},${fy - 18}`;
-  // The manometer: a U of glass on a board, water in it; the arm the tube joins (left) goes down by Δh/2, the open one up.
-  const mx = 430;
-  const mTop = TABLE - 210;
-  const mBot = TABLE - 40;
-  const rest = (mTop + mBot) / 2 + 20;
-  const half = Math.min(70, ((d?.dh ?? 0) * k) / 2);
-  const left = rest + half;
-  const right = rest - half;
-  const tube = `<path d="${tubeStart} V${top - 40} H${mx} V${mTop}" style="fill:none;stroke:#7b8a99;stroke-width:3"/>`;
-  const glass = (x: number) => `<rect x="${x - 5}" y="${mTop}" width="10" height="${mBot - mTop}" style="fill:rgba(220,235,250,0.35);stroke:#8fb8dd"/>`;
-  const water = `<rect x="${mx - 4}" y="${left}" width="8" height="${mBot - left}" style="fill:#3b82c4"/><rect x="${mx + 46}" y="${right}" width="8" height="${mBot - right}" style="fill:#3b82c4"/><path d="M${mx - 5},${mBot} q0,18 30,18 q30,0 30,-18" style="fill:none;stroke:#3b82c4;stroke-width:9"/>`;
-  const board = `<rect x="${mx - 22}" y="${mTop - 10}" width="98" height="${mBot - mTop + 34}" rx="4" style="fill:#e9dfc4;stroke:#a8945a"/>${Array.from({ length: 17 }, (_, i) => `<path d="M${mx + 14},${mTop + i * 10} h${i % 5 === 0 ? 22 : 12}" style="stroke:#7a6a45;stroke-width:0.8"/>`).join('')}`;
-  const marks = half > 1 ? `<path class="bench-mark" d="M${mx - 14},${left} H${mx + 64} M${mx - 14},${right} H${mx + 64}"/><text class="bench-reading" x="${mx + 82}" y="${(left + right) / 2 + 4}">Δh = ${d?.display ?? ''}</text>` : '';
-  return `${ruler}${beaker}${board}${tube}${glass(mx)}${glass(mx + 50)}${water}${funnel}${marks}`;
-}
 
 /**
  * The black box on the table: the source, the key, the box with its two terminals (turned round — its marks

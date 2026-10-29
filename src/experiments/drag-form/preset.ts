@@ -3,7 +3,7 @@ import { beaker, both, ch, INTERACTION, room } from '../../scenarios/preset-kit.
 import type { Preset } from '../../scenarios/presets.js';
 import { DRAG_COEFFICIENTS, DRAG_MASS, DRAG_START, DRAG_TRACK, dragBody, type DragShape, dragShapeName, framesText, mediumDensity } from './bench.js';
 import { G } from '../../domains/mechanics/constants.js';
-import { type Locale } from '../../knowledge/i18n.js';
+import type { Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
 import { sig } from '../../explain/format.js';
 

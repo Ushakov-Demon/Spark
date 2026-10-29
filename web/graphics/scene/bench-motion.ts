@@ -1,7 +1,7 @@
 import { BENCH_SPRING_K, BENCH_WEIGHT, WEIGHT_SET } from '../../../src/scenarios/bench.js';
 import type { LocalizedText } from '../../../src/knowledge/i18n.js';
 import { Channel, type Motion, type ProcedureStep } from '../../motion.js';
-import { SINK_LEAD, type BenchView } from './bench.js';
+import type { BenchView } from './bench.js';
 import { sceneOf } from '../../experiments/index.js';
 
 /**
@@ -22,20 +22,18 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.roll': { uk: 'Кулька котиться — секундомір іде…', en: 'The ball is rolling — the stopwatch is running…' },
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
-  'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
   /** (The planets set going; the way out to Voyager.) */
   /** (The band stretched on the dynamometer.) */
   /** (The scale being drawn.) */
   /** (The airship climbing to 2 km.) */
   /** (A body let into the tower.) */
-  'lab.carry': { uk: 'Бульбашка спливає — веду пляшку рівномірно…', en: 'The bubble rises — carrying the bottle steadily…' },
   'lab.magnet': { uk: 'Стрілка компаса ще гойдається — чекаємо…', en: 'The compass needle is still swinging — wait…' },
   /** (The step that takes the nail out of the coil.) */
   'lab.magnet.pull': { uk: 'Повільно витягую цвях із котушки…', en: 'Slowly pulling the nail out of the coil…' },
 };
 
 /** A long run (many turns, many swings) is played this much faster than real time: about this many seconds at most. */
-const PLAY_SECONDS = 6;
+export const PLAY_SECONDS = 6;
 /** The stopwatch's display: seconds to hundredths. */
 const sw = (t: number, comma: boolean) => `${t.toFixed(2).replace('.', comma ? ',' : '.')} ${comma ? 'с' : 's'}`;
 
@@ -48,7 +46,6 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'friction' && next.pull) return pull(next, draw);
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
-  if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
   if (next.kind === 'magnet' && next.magnet && prev?.kind === 'magnet' && prev.magnet) return compass(prev.magnet, next, draw);
   return null;
 }
@@ -74,33 +71,6 @@ function timed(next: BenchView, run: NonNullable<BenchView['run']>, draw: (v: Be
   };
 }
 
-/**
- * A body through a liquid: the bottle is turned over first (a bubble), then the body goes at its steady speed from
- * where it starts (the neck, the surface) past the zero mark — the stopwatch starts there — to the last mark.
- * A long run is sped up, the turn of the bottle with it, so it takes about a second whatever the speed-up.
- */
-function through(next: BenchView, run: NonNullable<BenchView['run']>, s: NonNullable<BenchView['sink']>, draw: (v: BenchView) => void): Motion {
-  const fast = Math.max(1, run.seconds / PLAY_SECONDS);
-  const comma = (next.stopwatch?.display ?? ',').includes(',');
-  // (The display's own width: the seconds without their unit, as the reading itself.)
-  const lcd = (t: number) => t.toFixed(2).replace('.', comma ? ',' : '.');
-  const v = s.speed!;
-  const flip = s.body === 'bubble' ? 1.2 * fast : 0;
-  const lead = SINK_LEAD / v;
-  const clock = new Channel(0, flip + lead + run.seconds, { kind: 'steady', speed: fast }, 1e-6);
-  return {
-    channels: [clock],
-    frame: (done) => {
-      const u = clock.value;
-      if (!done && u < flip) return draw({ ...next, stopwatch: { display: lcd(0), fast }, sink: { ...s, turn: 1 - u / flip }, ...(next.carry ? { carry: { speed: next.carry.speed, shift: 0 } } : {}) });
-      const t = u - flip - lead;
-      const sink = { ...s, at: done ? (s.at ?? 0) : t < 0 ? -SINK_LEAD + (u - flip) * v : t * v };
-      // (The carried bottle: moved from the moment the bubble passes the zero mark; its marks measured at the end.)
-      const carry = next.carry && !done ? { speed: next.carry.speed, shift: next.carry.speed * Math.max(0, t) } : next.carry;
-      return draw({ ...next, stopwatch: { display: done ? (next.stopwatch?.display ?? lcd(t)) : lcd(Math.max(0, t)), fast }, sink, ...(carry ? { carry } : {}) });
-    },
-  };
-}
 
 /**
  * The lever balance: each weight of the set goes on from the largest; one that tips the beam the other way is

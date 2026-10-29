@@ -19,13 +19,17 @@ import { smallBodies } from './small-bodies/index.js';
 import { ballBounce } from './ball-bounce/index.js';
 import { weightInLift } from './weight-in-lift/index.js';
 import { addingForces } from './adding-forces/index.js';
+import { bodiesInLiquids } from './bodies-in-liquids/index.js';
+import { relativeMotion } from './relative-motion/index.js';
+import { depthPressure } from './depth-pressure/index.js';
+import { communicatingVessels } from './communicating-vessels/index.js';
 import type { CommandOf, ExperimentModule } from './types.js';
 
 /**
  * The experiments written as modules (src/experiments/<name>), one line each. The bench, the presets, the answers and
  * the board take them from here; the older experiments are still spread over src/scenarios and join one by one.
  */
-export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces] as const;
+export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces, bodiesInLiquids, relativeMotion, depthPressure, communicatingVessels] as const;
 
 export type ExperimentKind = (typeof EXPERIMENTS)[number]['kind'];
 export type ExperimentCommand = CommandOf<(typeof EXPERIMENTS)[number]>;

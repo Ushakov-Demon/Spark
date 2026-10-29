@@ -1,6 +1,6 @@
 import type { MeasurementRecord } from '../../core/trace.js';
 import { sig } from '../../explain/format.js';
-import { type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { COIN_TEXT, type CoinCommand } from './bench.js';

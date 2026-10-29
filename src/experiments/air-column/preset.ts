@@ -2,7 +2,7 @@ import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js'
 import { beaker, both, ch, INTERACTION, PLACE_KYIV, PLACE_NEW_YORK, room, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { airPlace, AIRSHIP, type AirWhere } from './bench.js';
-import { type Locale } from '../../knowledge/i18n.js';
+import type { Locale } from '../../knowledge/i18n.js';
 import { parsePlace } from '../../scenarios/place.js';
 import { sig } from '../../explain/format.js';
 

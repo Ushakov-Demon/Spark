@@ -1,13 +1,13 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { COMPONENTS } from '../components/index.js';
-import { G } from '../domains/mechanics/constants.js';
-import { terminalVelocity } from '../domains/mechanics/settling.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
-import { STOPWATCH_DIVISION } from './motion-bench.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { COMPONENTS } from '../../components/index.js';
+import { G } from '../../domains/mechanics/constants.js';
+import { terminalVelocity } from '../../domains/mechanics/settling.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
+import { STOPWATCH_DIVISION } from '../../scenarios/motion-bench.js';
 
 /**
  * A body moving steadily through a liquid (grade 7): an air bubble rising in a bottle of thick washing-up liquid

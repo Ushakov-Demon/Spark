@@ -1,10 +1,10 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import { SUBSTANCES } from '../substances/catalog.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import { SUBSTANCES } from '../../substances/catalog.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * Communicating vessels (grade 7, «Сполучені посудини»): a glass U-tube with water — its levels stand alike in

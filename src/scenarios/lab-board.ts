@@ -441,36 +441,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `M2:${i}`, title: dyn ? (uk ? `момент сили праворуч (динамометр на ${cm(l2)})` : `the moment on the right (the dynamometer at ${cm(l2)})`) : uk ? `момент сили праворуч (${F2s} на ${cm(l2)})` : `the moment on the right (${F2s} at ${cm(l2)})`, formula: 'M₂ = F₂·l₂', numbers: `${F2s} · ${n(l2)} ${uk ? 'м' : 'm'} ≈ ${n(r.value * l2, 3)} ${Nm}` });
       return;
     }
-    // The relativity of motion: the time, the bottle's shift, the bubble's speed relative to the bottle and to the table.
-    if (c.type === 'lab.carry') {
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
-      const of = (w: number) => recs.find((x) => x.inputs?.['which'] === w)?.value ?? 0;
-      const t = of(0);
-      const u = Number(c['speed']);
-      const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
-      const T = formatMeasured('time', t, 0.01, locale);
-      const v = (l: number) => `${n((l / t) * 100, 2)} ${uk ? 'см/с' : 'cm/s'}`;
-      const how = u === 0 ? (uk ? 'пляшка стоїть' : 'the bottle stands') : uk ? `u = ${n(u * 100, 2)} см/с, зсув ${cm(of(1))}` : `u = ${n(u * 100, 2)} cm/s, moved ${cm(of(1))}`;
-      out.push({ id: `cb:${i}`, title: uk ? `${how}: відносно пляшки` : `${how}: relative to the bottle`, formula: 'v = l / t', numbers: `${cm(0.09)} / ${T} ≈ ${v(0.09)}` });
-      out.push({ id: `ct:${i}`, title: uk ? 'відносно стола' : 'relative to the table', formula: 'v = s / t', numbers: `${cm(of(2))} / ${T} ≈ ${v(of(2))}` });
-      return;
-    }
-    // A body in a liquid: its times at the marks, and its speed v = l/t (hidden till the answer).
-    if (c.type === 'lab.sink') {
-      const laps = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.quantity === 'time' && x.value !== null);
-      const last = laps[laps.length - 1];
-      if (!last) return;
-      const bubble = c['body'] === 'bubble';
-      const d = Number(c['diameter']) * 1000;
-      const liquid = { 'washing-up': uk ? 'у рідині для посуду' : 'in washing-up liquid', glycerol: uk ? 'у гліцерині' : 'in glycerol', 'sunflower-oil': uk ? 'в олії' : 'in oil', water: uk ? 'у воді' : 'in water' }[String(c['liquid'])] ?? '';
-      const what = bubble ? (uk ? `бульбашка ≈ ${n(d, 2)} мм` : `a ≈ ${n(d, 2)} mm bubble`) : uk ? `кулька ${liquid}` : `the ball ${liquid}`;
-      const cmT = (m: number) => `${Math.round(m * 100)} ${uk ? 'см' : 'cm'}`;
-      out.push({ id: `st:${i}`, title: uk ? `${what}: час на позначках` : `${what}: the times at the marks`, formula: laps.map((x) => `${cmT(x.inputs?.['mark'] ?? 0)} — ${formatMeasured('time', x.value, 0.01, locale)}`).join('; ') });
-      const s = last.inputs?.['mark'] ?? 0;
-      const v = s / last.value!;
-      out.push({ id: `${bubble ? 'bv' : 'kv'}:${i}`, title: uk ? `${what}: швидкість` : `${what}: the speed`, formula: 'v = l / t', numbers: `${n(s * 100)} ${uk ? 'см' : 'cm'} / ${formatMeasured('time', last.value, 0.01, locale)} ≈ ${v < 0.1 ? `${n(v * 100, 2)} ${uk ? 'см/с' : 'cm/s'}` : `${n(v, 2)} ${uk ? 'м/с' : 'm/s'}`}` });
-      return;
-    }
     // Induction: the milliammeter's swing and the EMF it gives, ε = I·R.
     if (c.type === 'lab.induct') {
       const R = r.inputs?.['resistance'] ?? 0;
@@ -560,35 +530,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
         return;
       }
       out.push({ id: 'pl', title: uk ? 'вузький поршень на 6 см униз — широкий угору на' : 'the narrow piston 6 cm down — the wide one up by', formula: `l₂ = ${cmT(r.value)}` });
-      return;
-    }
-    // The U-tube: water alone — its levels alike; with oil — both columns above the boundary, and the oil's density.
-    if (c.type === 'lab.utube') {
-      const ml = Number(c['poured']);
-      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement');
-      const cmT = (m: number) => `${n(m * 100)} ${uk ? 'см' : 'cm'}`;
-      if (ml === 0) {
-        out.push({ id: 'u0', title: uk ? 'сама вода: різниця рівнів у колінах' : 'water alone: the levels’ difference', formula: `Δh = ${cmT(r.value)}` });
-        return;
-      }
-      const hO = recs.find((x) => x.inputs?.['which'] === 1)?.value ?? 0;
-      const hW = recs.find((x) => x.inputs?.['which'] === 0)?.value ?? 0;
-      const rhoW = r.inputs?.['rhoWater'] ?? 997;
-      out.push({ id: `uh:${ml}`, title: uk ? `олії ${ml} мл: висоти над межею` : `${ml} mL of oil: the heights above the boundary`, formula: `h_${uk ? 'олії' : 'oil'} = ${cmT(hO)}, h_${uk ? 'води' : 'water'} = ${cmT(hW)}` });
-      if (hO > 0) out.push({ id: `rhoU:${ml}`, title: uk ? `густина олії (${ml} мл)` : `the oil’s density (${ml} mL)`, formula: uk ? 'ρ_олії = ρ_води·h_води / h_олії' : 'ρ_oil = ρ_water·h_water / h_oil', numbers: `${n(rhoW, 4)} · ${n(hW * 100)} / ${n(hO * 100)} ≈ ${n((rhoW * hW) / hO, 3)} ${uk ? 'кг/м³' : 'kg/m³'}` });
-      return;
-    }
-    // The pressure at a depth: the manometer's Δh gives p = ρ_water·g·Δh, and over the depth — the liquid's density.
-    if (c.type === 'lab.depth') {
-      const h = Number(c['depth']);
-      const side = !!c['sideways'];
-      const rhoM = r.inputs?.['rhoManometer'] ?? 1000;
-      const g = r.inputs?.['g'] ?? 9.81;
-      const p = rhoM * g * r.value;
-      const cmT = (m: number) => `${n(m * 100)} ${uk ? 'см' : 'cm'}`;
-      const where = side ? (uk ? `, плівкою вбік` : ', film sideways') : '';
-      out.push({ id: `dp:${side ? 's' : ''}${Math.round(h * 1000)}`, title: uk ? `тиск на глибині ${cmT(h)}${where}` : `the pressure at ${cmT(h)}${where}`, formula: 'p = ρ_води·g·Δh', numbers: `${n(rhoM, 4)} · ${n(g)} · ${n(r.value, 3)} ≈ ${n(p, 3)} ${uk ? 'Па' : 'Pa'}` });
-      if (!side) out.push({ id: `rhoD:${Math.round(h * 1000)}`, title: uk ? `густина рідини (з глибини ${cmT(h)})` : `the liquid’s density (from ${cmT(h)})`, formula: 'ρ = p / (g·h)', numbers: `${n(p, 3)} / (${n(g)} · ${n(h)}) ≈ ${n(p / (g * h), 3)} ${uk ? 'кг/м³' : 'kg/m³'}` });
       return;
     }
     // The black box: the current at this voltage, one way or turned round, and the circuit's resistance R = U / I.
