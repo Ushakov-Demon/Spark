@@ -68,7 +68,8 @@ export function play(m: Motion, onSettled: () => void): () => void {
   let last = performance.now();
   let frame = 0;
   const tick = (now: number) => {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    // (The first frame's time may come a little before `last` was taken: never step backwards.)
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
     last = now;
     while (steps.length && now >= next) {
       steps.shift()!.apply();
@@ -76,6 +77,8 @@ export function play(m: Motion, onSettled: () => void): () => void {
     }
     for (const c of m.channels) c.step(dt);
     const done = !steps.length && m.channels.every((c) => c.settled);
+    // Settled is «within tolerance»: the last frame stands exactly at the targets (the same picture every time).
+    if (done) for (const c of m.channels) c.value = c.target;
     m.frame(done);
     if (done) onSettled();
     else frame = requestAnimationFrame(tick);

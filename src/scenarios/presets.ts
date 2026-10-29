@@ -2,6 +2,7 @@ import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
 import { RUBBER_TURNS } from './rubber-bench.js';
+import { EXPERIMENTS, type ExperimentKind } from '../experiments/index.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
@@ -68,7 +69,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber' | 'gravi';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | ExperimentKind | 'scales' | 'dyno' | 'rubber' | 'gravi';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -1100,27 +1101,7 @@ const LIST: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'впливу земного тяжіння на організми' }],
     expect: 'reached',
   },
-  {
-    ask: { uk: 'Шекспір і Сервантес померли 23 квітня 1616 року. Чи в один день?', en: 'Shakespeare and Cervantes died on 23 April 1616. On the same day?' },
-    id: 'calendars',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Давні й сучасні календарі', en: 'Calendars old and new' },
-    question: {
-      uk: 'Календар лічить цілі доби, а пори року задає Сонце: від весняного рівнодення до наступного минає 365,24219 доби — не ціле число. Змоделюємо давні й сучасні календарі й подивимося, як вони встигають за Сонцем. А наостанок загадка: Вільям Шекспір і Мігель де Сервантес обидва померли 23 квітня 1616 року. Чи в один день?',
-      en: 'A calendar counts whole days, and the seasons go by the Sun: from one spring equinox to the next 365.24219 days pass — not a whole number. We model calendars old and new and see how they keep up with the Sun. And at the end, a riddle: William Shakespeare and Miguel de Cervantes both died on 23 April 1616. On the same day?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'calendar',
-    plan: (['egypt', 'julian', 'gregorian', 'bard'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.calendar', step } }) as const),
-    choices: [ch('same', 'Так, в один день — дата ж однакова', 'Yes, on the same day — the date is the same'), ch('hours', 'Майже: різниця — кілька годин, через часові пояси', 'Nearly: a few hours apart, by the time zones'), ch('days', 'Ні, між ними понад десять днів', 'No, more than ten days apart')],
-    trick: { uk: 'Більшість думає, що однакова дата — це той самий день.', en: 'Most people think the same date is the same day.' },
-    answerOnBoard: ['cb:'],
-    formulas: ['mechanics.calendar-drift'],
-    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет; календарів' }],
-    expect: 'reached',
-  },
+
   varied(
     {
       ask: { uk: 'Скільки важить повітря над кожним квадратним метром землі?', en: 'How much does the air above each square metre of ground weigh?' },
@@ -2374,11 +2355,13 @@ export const PRESET_ORDER: readonly string[] = [
   // For everyone.
   'oil-does-not-boil', 'alcohol-in-freezer', 'weigh-the-water', 'grand-chain',
 ];
+/** The experiments of the bench modules (src/experiments) join the list. */
+const ALL: readonly Preset[] = [...LIST, ...EXPERIMENTS.flatMap((m) => m.presets)];
 const rank = (p: Preset) => {
   const k = PRESET_ORDER.indexOf(p.id);
-  return k < 0 ? PRESET_ORDER.length + LIST.indexOf(p) : k;
+  return k < 0 ? PRESET_ORDER.length + ALL.indexOf(p) : k;
 };
-export const PRESETS: readonly Preset[] = [...LIST].sort((a, b) => rank(a) - rank(b));
+export const PRESETS: readonly Preset[] = [...ALL].sort((a, b) => rank(a) - rank(b));
 
 /** Grades that have presets, in order; null (for everyone) last. */
 export const PRESET_GRADES: readonly (number | null)[] = [...new Set(PRESETS.map((p) => p.grade))].sort((a, b) => (a ?? 99) - (b ?? 99));

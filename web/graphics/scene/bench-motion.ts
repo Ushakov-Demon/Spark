@@ -3,6 +3,7 @@ import type { LocalizedText } from '../../../src/knowledge/i18n.js';
 import { DRAG_FPS, DRAG_START, DRAG_TRACK, dragFall } from '../../../src/scenarios/drag-bench.js';
 import { Channel, type Motion, type ProcedureStep } from '../../motion.js';
 import { SINK_LEAD, type BenchView } from './bench.js';
+import { sceneOf } from '../../experiments/index.js';
 import { scalesMasses, scalesSequence, scalesTilt } from '../../../src/scenarios/scales-bench.js';
 import { rootBend } from '../../../src/scenarios/gravi-bench.js';
 
@@ -37,10 +38,6 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The scale being drawn.) */
   'lab.dyno.scale': { uk: 'Наношу поділки — через 0,1 Н…', en: 'Drawing the divisions — every 0.1 N…' },
   'lab.scales': { uk: 'Кладу по одному — дивимося на лінійку…', en: 'Adding one at a time — watching the ruler…' },
-  'lab.calendar': { uk: 'Роки біжать — стежимо, де рівнодення…', en: 'The years run on — watching where the equinox falls…' },
-  /** (The reform: the days struck out; Shakespeare's date carried over.) */
-  'lab.calendar.gregorian': { uk: 'Викреслюємо дні з жовтня 1582 року…', en: 'Striking the days out of October 1582…' },
-  'lab.calendar.bard': { uk: 'Переводимо лондонську дату в григоріанський календар…', en: 'Carrying the London date over to the Gregorian calendar…' },
   'lab.air': { uk: 'Тиск на екрані ще змінюється — чекаємо…', en: 'The pressure on the screen is still changing — wait…' },
   /** (The airship climbing to 2 km.) */
   'lab.air.high': { uk: 'Дирижабль набирає висоту…', en: 'The airship is climbing…' },
@@ -73,6 +70,8 @@ const sw = (t: number, comma: boolean) => `${t.toFixed(2).replace('.', comma ? '
 
 /** The motion from the previous picture to the new one; null — nothing moves (it is drawn at once). */
 export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: BenchView) => void): Motion | null {
+  const scene = sceneOf(next.kind);
+  if (scene) return next.scene === undefined ? null : scene.motion(next.scene, (v) => draw({ ...next, scene: v }));
   if (next.kind === 'balance' && next.balance?.mass !== undefined) return balance(next, next.balance.mass, draw);
   if (next.kind === 'spring' && next.springLength !== undefined && prev?.kind === 'spring' && next.weights > 0) return spring(prev, next, draw);
   if (next.kind === 'friction' && next.pull) return pull(next, draw);
@@ -84,7 +83,6 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
   if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
   if (next.kind === 'planets' && next.planets?.anim) return planetsRun(next, draw);
-  if (next.kind === 'calendar' && next.calendar?.anim) return calendarRun(next, draw);
   if (next.kind === 'scales' && next.scales?.anim) return scalesRun(next, draw);
   if (next.kind === 'dyno' && next.dyno?.anim) return dynoRun(next, draw);
   if (next.kind === 'rubber' && next.rubber?.anim) return rubberRun(next, draw);
@@ -685,37 +683,6 @@ function scalesRun(next: BenchView, draw: (v: BenchView) => void): Motion {
       const from = k === 0 ? (s.anim === 'zero' ? 0 : tilt(0)) : tilt(k - 1);
       const angle = from + (tilt(k) - from) * (1 - (1 - u) ** 2);
       draw({ ...next, scales: { ...rest, load: seq[k]!, angle, syringe: seq[k]!.water > 0 } });
-    },
-  };
-}
-
-/**
- * Calendars: the years running on and the Sun sliding over the days (4 s); the reform — October's days crossed out
- * one by one, the month closing up, then the Sun back to 21 March and the new calendar's years; 1616 — a pause on the
- * two sheets, then the London date carried along the Gregorian tape.
- */
-function calendarRun(next: BenchView, draw: (v: BenchView) => void): Motion {
-  const c = next.calendar!;
-  const anim = c.anim!;
-  const length = anim === 'gregorian' ? 8 : 4;
-  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
-  const { anim: _a, read: _r, ...rest } = c;
-  const from = c.yearFmt && c.year !== undefined ? (anim === 'gregorian' ? 1582 : anim === 'julian' ? 325 : 0) : 0;
-  const start = c.start ?? 20;
-  return {
-    channels: [clock],
-    frame: (done) => {
-      if (done) return draw({ ...next, calendar: { ...rest, ...(c.read ? { read: c.read } : {}) } });
-      const t = Number.isFinite(clock.value) ? clock.value : 0;
-      if (anim === 'bard') return draw({ ...next, calendar: { ...rest, shift: Math.max(0, Math.min(1, (t - 1) / 2.5)) } });
-      if (anim === 'gregorian' && t < 4) return draw({ ...next, calendar: { ...rest, view: 'october', cut: t < 3 ? t / 3 : 2 } });
-      // (The reform: 1 s for the Sun back to its place, then the years.)
-      const u = anim === 'gregorian' ? t - 4 : t;
-      const back = anim === 'gregorian' ? Math.min(1, u) : 1;
-      const run = anim === 'gregorian' ? Math.max(0, Math.min(1, (u - 1) / 3)) : Math.min(1, u / 4);
-      const year = from + run * ((c.year ?? 0) - from);
-      const sun = (anim === 'gregorian' ? start - 10 + 10 * back : start) + run * ((c.sun ?? start) - start);
-      draw({ ...next, calendar: { ...rest, year, sun } });
     },
   };
 }

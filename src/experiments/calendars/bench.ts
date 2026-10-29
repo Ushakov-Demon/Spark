@@ -1,9 +1,9 @@
-import type { CommandHandler } from '../core/commands.js';
-import { err, ok } from '../core/result.js';
-import type { MeasurementRecord } from '../core/trace.js';
-import { cite, sv } from '../components/sourced.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
-import type { SourcedValue } from '../knowledge/types.js';
+import type { CommandHandler } from '../../core/commands.js';
+import { err, ok } from '../../core/result.js';
+import type { MeasurementRecord } from '../../core/trace.js';
+import { cite, sv } from '../../components/sourced.js';
+import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * A model of calendars, old and new (grade 7, «моделювання: … календарів»): a calendar counts whole days, and the
@@ -97,8 +97,6 @@ export const calendarCommand: CommandHandler<CalendarCommand> = {
   },
 };
 
-export const CALENDAR_COMMANDS = [calendarCommand] as const;
-
 /** «29,1 доби», «10 днів»… — days, the Ukrainian forms by the number. */
 export function daysText(n: number, uk: boolean, word: 'доба' | 'день' = 'доба'): string {
   const v = new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 1 }).format(n);
@@ -119,31 +117,4 @@ export function dateText(m: number, d: number, uk: boolean): string {
 export const equinoxDate = (day: number, uk: boolean): string => {
   const d = Math.round(day) + 1;
   return d > 31 ? dateText(4, d - 31, uk) : dateText(3, d, uk);
-};
-
-const STEP: Record<CalendarCommand['step'], { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
-  egypt: {
-    say: { uk: 'Давні єгиптяни мали календар із 365 діб — без високосних років. А Сонце повертається до весняного рівнодення за 365,24219 доби. Запустимо такий календар на 120 років: куди переїде рівнодення?', en: 'The ancient Egyptians had a calendar of 365 days — with no leap years. And the Sun comes back to the spring equinox in 365.24219 days. We run such a calendar for 120 years: where will the equinox move?' },
-    button: { uk: '🏺 Єгипетський календар: 365 діб', en: '🏺 The Egyptian calendar: 365 days' },
-    plan: { uk: 'єгипетський календар на 120 років', en: 'the Egyptian calendar for 120 years' },
-  },
-  julian: {
-    say: { uk: 'Юлій Цезар 46 року до н. е. запровадив календар (він діяв із 45 року), у якому кожен четвертий рік — високосний: у середньому 365,25 доби. 325 року весняне рівнодення вважали 21 березня. Запустимо юліанський календар до 1582 року.', en: 'In 46 BC Julius Caesar brought in a calendar (in force from 45 BC) in which every fourth year is a leap year: 365.25 days on average. In 325 the spring equinox was reckoned on 21 March. We run the Julian calendar on to 1582.' },
-    button: { uk: '🏛 Юліанський календар: 365¼ доби', en: '🏛 The Julian calendar: 365¼ days' },
-    plan: { uk: 'юліанський календар із 325 по 1582 рік', en: 'the Julian calendar from 325 to 1582' },
-  },
-  gregorian: {
-    say: { uk: '1582 року календар виправили — за папи Григорія XIII. Спершу викреслили зайві дні: після четверга, 4 жовтня, настала п’ятниця, 15 жовтня. А тоді змінили правило: рік, що ділиться на 100, — не високосний, хіба що ділиться й на 400. Тож 1900 рік — не високосний, а 2000 — високосний. Скільки набіжить за ті самі 1257 років?', en: 'In 1582 the calendar was mended — under Pope Gregory XIII. First the extra days were struck out: Thursday 4 October was followed by Friday 15 October. Then the rule changed: a year divisible by 100 is not a leap year unless it is divisible by 400 too. So 1900 was not a leap year, and 2000 was. How much builds up over the same 1257 years?' },
-    button: { uk: '✂ Григоріанська реформа', en: '✂ The Gregorian reform' },
-    plan: { uk: 'григоріанська реформа', en: 'the Gregorian reform' },
-  },
-  bard: {
-    say: { uk: 'Мігель де Сервантес помер 22 квітня 1616 року, а 23-го його поховали — цю дату й пам’ятають. Вільям Шекспір помер 23 квітня 1616 року. Але Іспанія вже жила за новим календарем, а Англія — ще за юліанським: на новий вона перейшла аж 1752 року. Переведемо обидві дати в один календар.', en: 'Miguel de Cervantes died on 22 April 1616 and was buried on the 23rd — the date that is remembered. William Shakespeare died on 23 April 1616. But Spain already lived by the new calendar, and England still by the Julian: it changed over only in 1752. We put both dates into one calendar.' },
-    button: { uk: '✒ Шекспір і Сервантес', en: '✒ Shakespeare and Cervantes' },
-    plan: { uk: 'Шекспір і Сервантес: в один календар', en: 'Shakespeare and Cervantes: into one calendar' },
-  },
-};
-
-export const CALENDAR_TEXT: Record<CalendarCommand['type'], (c: CalendarCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
-  'lab.calendar': (x) => STEP[(x as CalendarCommand).step],
 };
