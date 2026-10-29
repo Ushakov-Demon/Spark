@@ -29,6 +29,7 @@ const UA_UNIFORM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', 
 const UA_ROWS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' }];
 const UA_ENERGY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна енергія та її види. Закон збереження енергії в механічних процесах' }];
 const UA_WINCH: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'конструювання механізмів, що перетворюють прямолінійний рух на обертальний і навпаки' }];
+const UA_PLANETS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'моделювання: руху планет' }];
 const UA_SUN_TIME: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'закономірностей руху небесних тіл і обліком часу' }];
 const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Взаємодія тіл. Сила. Додавання сил. Рівнодійна.' }];
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
@@ -408,6 +409,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.woundLength,
     examples: [{ args: [0.02, 5], expected: 0.314159, note: '5 turns of a 2 cm reel' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.kepler-third',
+    law: 'kepler-third',
+    title: { uk: 'Третій закон Кеплера', en: 'Kepler’s third law' },
+    latex: 'T^2 / a^3 = \\text{const}',
+    plain: 'T² / a³ = const',
+    argSymbols: ['T', 'a'],
+    resultSymbol: 'T²/a³',
+    variables: {
+      'T²/a³': { name: { uk: 'однакова для всіх планет стала', en: 'the constant, the same for all the planets' }, unit: '' },
+      T: { name: { uk: 'період обертання (у роках Землі)', en: 'the period (in the Earth’s years)' }, unit: '' },
+      a: { name: { uk: 'відстань від Сонця (у відстанях Землі)', en: 'the distance from the Sun (in the Earth’s distances)' }, unit: '' },
+    },
+    curriculum: UA_PLANETS,
+    explanation: {
+      novice: { uk: 'Далека планета не лише проходить довшу орбіту, а й рухається повільніше — тому її рік такий довгий.', en: 'A far planet not only has a longer orbit to go but also moves slower — that is why its year is so long.' },
+      school: { uk: 'Якщо відстань від Сонця більша в a разів, то рік планети довший у √(a³) разів: Юпітер у 5,2 раза далі від Сонця, ніж Земля, — і обходить його майже за 12 років.', en: 'If the distance from the Sun is a times larger, the planet’s year is √(a³) times longer: Jupiter is 5.2 times further from the Sun than the Earth — and goes round it in almost 12 years.' },
+    },
+    compute: f.keplerConstant,
+    examples: [{ args: [11.86, 5.204], expected: 0.9976, note: 'Jupiter' }],
     textSource: 'spark',
     reviewed: false,
   }),

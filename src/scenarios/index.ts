@@ -51,3 +51,4 @@ export * from './tower-bench.js';
 export * from './gnomon-bench.js';
 export * from './place-time.js';
 export * from './air-bench.js';
+export * from './planets-bench.js';

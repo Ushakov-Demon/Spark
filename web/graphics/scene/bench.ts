@@ -7,7 +7,7 @@ import { TABLE } from './constants.js';
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -66,6 +66,12 @@ export interface BenchView {
    * Inertia: how far the card has gone (m; past 0.2 — taken away), how far the coin moved along it (m), how far it has
    * dropped below the card (m), its tilt (°), and the slow motion's label.
    */
+  /**
+   * The Solar System's model: the field with the Sun-ball and the planets laid out (`marks`, as many as are out so far;
+   * the field shows `range` metres); the orbits seen from above, the planets `years` on; Voyager's view back (`dark` —
+   * how far the frame has gone dark, `dot` — the pale blue dot showing).
+   */
+  readonly planets?: { readonly view: 'field' | 'orbits' | 'back'; readonly marks: readonly { readonly name: string; readonly distance: number; readonly size: number; readonly read: string; readonly color: string }[]; readonly range: number; readonly sun: string; readonly years?: number; readonly orbits?: readonly { readonly name: string; readonly a: number; readonly t: number; readonly color: string }[]; readonly dark?: number; readonly dot?: number; readonly caption?: string; readonly note?: string; /** The step just done, to be played. */ readonly anim?: 'ball' | 'inner' | 'outer' | 'kepler' | 'voyager' };
   /**
    * The air: where the phone is — on the ground floor, on the ninth (`floor` between them while the lift goes), or in
    * the airship over the town; its barometer's reading; the labels.
@@ -260,6 +266,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'tower') return towerSvg(v.tower);
   if (v.kind === 'gnomon') return gnomonSvg(v.gnomon);
   if (v.kind === 'air') return airSvg(v.air);
+  if (v.kind === 'planets') return planetsSvg(v.planets);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
   if (v.kind === 'snail') return `${snailSvg(v.snail)}${v.stopwatch ? stopwatchSvg(v.stopwatch, 595) : ''}`;
@@ -492,6 +499,54 @@ function sinkSvg(s: BenchView['sink']): string {
     return `<g transform="rotate(${180 * turn} ${x} ${(top + bottom) / 2})">${glass}${air}</g>${label}`;
   }
   return `${glass}${marks}${body}${label}`;
+}
+
+/**
+ * The Solar System's model. The field: the Sun-ball on the left, a tape along the ground, each planet a dot (drawn
+ * bigger than to scale — its true size is in its label) at its distance. The orbits: from above, the inner planets
+ * round the Sun at the true ratio of their distances, turning at their true periods. Voyager's view back: the frame
+ * goes dark, slanting beams of scattered sunlight cross it, and in one of them — a single pale blue dot.
+ */
+function planetsSvg(p: BenchView['planets']): string {
+  if (!p) return '';
+  if (p.view === 'orbits') {
+    const cx = 470;
+    const cy = 165;
+    const k = 78;
+    const sun = `<circle cx="${cx}" cy="${cy}" r="9" style="fill:#ffd54a;stroke:#f0a500;stroke-width:1.5"/>`;
+    const rings = (p.orbits ?? []).map((o) => {
+      const ang = (2 * Math.PI * (p.years ?? 0)) / o.t - Math.PI / 2;
+      const x = cx + o.a * k * Math.cos(ang);
+      const y = cy + o.a * k * Math.sin(ang);
+      return `<circle cx="${cx}" cy="${cy}" r="${o.a * k}" style="fill:none;stroke:rgba(216,226,234,0.35);stroke-dasharray:3 4"/><circle cx="${x}" cy="${y}" r="4" style="fill:${o.color};stroke:#1d2a36"/><text class="bench-label" x="${x + 7}" y="${y - 6}">${o.name}</text>`;
+    }).join('');
+    const backdrop = `<circle cx="${cx}" cy="${cy}" r="${1.6 * k}" style="fill:rgba(16,24,20,0.88)"/>`;
+    return `${backdrop}${sun}${rings}${p.note ? `<text class="bench-label" x="${cx}" y="${cy + 150}" text-anchor="middle">${p.note}</text>` : ''}${p.caption ? `<text class="bench-reading" x="${cx}" y="${cy - 130}" text-anchor="middle">${p.caption}</text>` : ''}`;
+  }
+  const ground = TABLE - 18;
+  const x0 = 175;
+  const x1 = 585;
+  const at = (d: number) => x0 + (d / p.range) * (x1 - x0);
+  const field = `<path d="M${x0 - 30},${ground + 6} H${x1 + 10}" style="stroke:#7fae6a;stroke-width:3"/><path d="M${x0},${ground + 2} H${x1}" style="stroke:#f1d36b;stroke-width:2;stroke-dasharray:2 3"/><circle cx="${x0 - 12}" cy="${ground - 8}" r="12" style="fill:#ffd54a;stroke:#f0a500;stroke-width:1.5"/><text class="bench-label" x="${x0 - 12}" y="${ground - 26}" text-anchor="middle">${p.sun}</text>`;
+  // (Planets too close together for labels — the inner ones on the long field — go unlabelled.)
+  let lastLabel = -Infinity;
+  const dots = p.marks.map((m, i) => {
+    const x = at(m.distance);
+    const r = Math.max(2, Math.min(7, 2 + m.size * 300));
+    const label = x - lastLabel > 40;
+    if (label) lastLabel = x;
+    const up = i % 2 === 0;
+    return `<circle cx="${x}" cy="${ground - r}" r="${r}" style="fill:${m.color};stroke:#1d2a36;stroke-width:0.8"/>${label ? `<text class="bench-label" x="${x}" y="${up ? ground - 2 * r - 18 : ground - 2 * r - 6}" text-anchor="middle">${m.name}</text>` : ''}`;
+  }).join('');
+  const scale = `<text class="bench-label" x="${x1}" y="${ground + 22}" text-anchor="end">${p.caption ?? ''}</text>`;
+  if (p.view === 'back') {
+    // The view back: dark coming over the board, the beams, the dot (a pixel and a half) in the middle beam.
+    const d = p.dark ?? 0;
+    const beam = (x: number, w: number, o: number) => `<path d="M${x},14 l${w},0 l-150,300 l${-w},0 Z" style="fill:rgba(255,214,150,${o * d})"/>`;
+    const dot = p.dot ? `<circle cx="432" cy="168" r="1.6" style="fill:rgba(170,210,255,${p.dot})"/>` : '';
+    return `${field}${dots}${scale}<rect x="18" y="12" width="586" height="${ground - 4}" style="fill:rgba(4,6,10,${0.96 * d})"/>${beam(380, 34, 0.18)}${beam(470, 60, 0.26)}${beam(560, 22, 0.14)}${dot}${p.dot && p.note ? `<text class="bench-label" x="440" y="${ground - 20}" style="fill:rgba(200,215,230,${p.dot})">${p.note}</text>` : ''}`;
+  }
+  return `${field}${dots}${scale}`;
 }
 
 /**

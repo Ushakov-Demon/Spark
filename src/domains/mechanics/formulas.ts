@@ -42,6 +42,8 @@ export const rowSize = (length: number, count: number): number => length / count
 
 /** A thread wound on (off) a spool: each turn moves it by the circumference, l = π·d·n. */
 export const woundLength = (diameter: number, turns: number): number => Math.PI * diameter * turns;
+/** Kepler's T²/a³: the period and the distance in the Earth's years and distances. */
+export const keplerConstant = (period: number, distance: number): number => (period * period) / (distance * distance * distance);
 /** The latitude from the Sun's height at noon and its declination, degrees. */
 export const noonLatitude = (height: number, declination: number): number => 90 - height + declination;
 

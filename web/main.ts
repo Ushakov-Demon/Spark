@@ -154,6 +154,9 @@ import {
   airPlace,
   airPlaceName,
   type AirWhere,
+  INNER,
+  PLANETS,
+  planetIds,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
 import type { SystemState } from '../src/core/state.js';
@@ -163,6 +166,7 @@ import { SUPPLIES, supplyVoltage, type SupplyId } from '../src/equipment/supplie
 import { MASS_SCALE_IDS, SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { createChart } from './chart.js';
+import type { MeasurementRecord } from '../src/core/trace.js';
 import { searchPlaces } from './place-search.js';
 import { catalogHtml, catalogUi, pagePath, parsePath, presetDescription, SITE, type Route } from './site.js';
 import { labSheetHtml as labSheetHtmlIn, planStepLabel as planStepLabelIn, predictsFirst, TOPIC_NUMBER, unspoiledSteps } from './experiment-sheet.js';
@@ -498,6 +502,35 @@ function benchView(): BenchView | null {
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
   }
+  // The Solar System's model: the planets laid out so far; the orbits once they are set going; Voyager's view back.
+  if (kind === 'planets') {
+    const uk = locale === 'uk';
+    const done = log.filter((e) => e.command.type === 'lab.planets');
+    const step = (e: (typeof done)[number]) => (e.command as unknown as { step: string }).step;
+    const ids = planetIds();
+    // (Tenths: «21,5 м · 1,8 мм».)
+    const one = (x: number) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 1 }).format(x);
+    const color: Record<string, string> = { mercury: '#b0a89a', venus: '#e8d39a', earth: '#5a9fd8', mars: '#d9643a', jupiter: '#d8b48a', saturn: '#e6cf8c', uranus: '#9fd8e0', neptune: '#4a6fd8' };
+    const marks = done.filter((e) => ['inner', 'outer'].includes(step(e))).flatMap((e) => readingsOf([e]).map((x) => {
+      const id = ids[x.record.inputs?.['planet'] ?? 0]!;
+      const size = x.record.inputs?.['size'] ?? 0;
+      return { name: tr(PLANETS[id].name, locale), distance: x.record.value ?? 0, size, read: `${one(x.record.value ?? 0)} ${uk ? 'м' : 'm'} · ${one(size * 1000)} ${uk ? 'мм' : 'mm'}`, color: color[id]! };
+    }));
+    const last = c?.type === 'lab.planets' ? (c as unknown as { step: string }).step : undefined;
+    const sun = uk ? 'Сонце, 20 см' : 'the Sun, 20 cm';
+    const outer = done.some((e) => step(e) === 'outer');
+    if (last === 'kepler') {
+      const recs = readingsOf([[...done].pop()!]).map((x) => x.record);
+      const orbits = recs.filter((r) => INNER.includes(ids[r.inputs?.['planet'] ?? 0]!)).map((r) => { const id = ids[r.inputs?.['planet'] ?? 0]!; return { name: tr(PLANETS[id].name, locale), a: r.inputs?.['a'] ?? 1, t: r.inputs?.['t'] ?? 1, color: color[id]! }; });
+      return { ...base, kind, planets: { view: 'orbits', marks, range: 700, sun, orbits, years: 2, anim: 'kepler', note: uk ? 'Юпітер і далі — за межами малюнка' : 'Jupiter and beyond — off the picture', caption: uk ? 'вид згори, відстані в масштабі' : 'from above, distances to scale' } };
+    }
+    if (last === 'voyager') {
+      const v = readingsOf([[...done].pop()!])[0]!.record;
+      const probe = { name: uk ? '«Вояджер-1»' : 'Voyager 1', distance: v.value ?? 0, size: 0, read: `${Math.round(v.value ?? 0)} ${uk ? 'м' : 'm'}`, color: '#d8e2ea' };
+      return { ...base, kind, planets: { view: 'back', marks: [...marks, probe], range: 900, sun, dark: 1, dot: 1, anim: 'voyager', note: uk ? 'Земля — менше пікселя' : 'the Earth — less than a pixel' } };
+    }
+    return { ...base, kind, planets: { view: 'field', marks, range: outer ? 700 : 35, sun, caption: uk ? `поле: ${outer ? 700 : 35} м` : `the field: ${outer ? 700 : 35} m`, ...(last === 'ball' || last === 'inner' || last === 'outer' ? { anim: last } : {}) } };
+  }
   // The air: where the phone is (this step's, or the next one's) and what its barometer shows; the town and its height.
   if (kind === 'air') {
     const ac = c?.type === 'lab.air' ? (c as unknown as { place: string; where: AirWhere }) : undefined;
@@ -823,6 +856,18 @@ function allReadings() {
 }
 const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
 /** What the Professor says about the latest level or dynamometer reading. */
+/** A step of the Solar System's model, in words: «Земля — 21,5 м, 1,8 мм; …», the scale, T²/a³, the way to Voyager. */
+function planetsShown(c: { step: string }, recs: readonly MeasurementRecord[]): string {
+  const uk = locale === 'uk';
+  const ids = planetIds();
+  const one = (x: number, d = 1) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: d }).format(x);
+  const name = (r: MeasurementRecord) => tr(PLANETS[ids[r.inputs?.['planet'] ?? 0]!].name, locale);
+  if (c.step === 'ball') return uk ? `м’яч — ${one((recs[0]?.value ?? 0) * 100)} см: масштаб 1 : ${one(1 / (recs[0]?.inputs?.['scale'] ?? 1) / 1e9)} млрд` : `the ball — ${one((recs[0]?.value ?? 0) * 100)} cm: the scale 1 : ${one(1 / (recs[0]?.inputs?.['scale'] ?? 1) / 1e9)} bn`;
+  const two = (x: number) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(x);
+  if (c.step === 'kepler') return `T²/a³: ${recs.map((r) => `${name(r)} ${two(r.value ?? 0)}`).join(', ')}`;
+  if (c.step === 'voyager') return uk ? `до «Вояджера-1» — ${one(recs[0]?.value ?? 0, 0)} м. Обертаємося…` : `to Voyager 1 — ${one(recs[0]?.value ?? 0, 0)} m. We turn round…`;
+  return recs.map((r) => `${name(r)} — ${one(r.value ?? 0)} ${uk ? 'м' : 'm'}, ${one((r.inputs?.['size'] ?? 0) * 1000)} ${uk ? 'мм' : 'mm'}`).join('; ');
+}
 /** Where a body let into the tower stopped, in words (its reading: the mark, the lower layer, the share in it). */
 function towerPlace(body: TowerBody, r: { value: number | null; inputs?: Record<string, number> }): string {
   const uk = locale === 'uk';
@@ -852,7 +897,7 @@ function measureSay(): string {
   // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
   const uk = locale === 'uk';
   // (Taking the nail out of the coil has its own words.)
-  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type;
+  const busy = m.command.type === 'lab.magnet' && !(m.command as unknown as { core: boolean }).core && BUSY['lab.magnet.pull'] ? 'lab.magnet.pull' : m.command.type === 'lab.tower' && (m.command as unknown as { step: string }).step === 'drop' ? 'lab.tower.drop' : m.command.type === 'lab.air' && ['airship', 'high'].includes((m.command as unknown as { where: string }).where) ? 'lab.air.high' : m.command.type === 'lab.planets' && ['kepler', 'voyager'].includes((m.command as unknown as { step: string }).step) ? `lab.planets.${(m.command as unknown as { step: string }).step}` : m.command.type;
   if (instrumentBusy && BUSY[busy]) return tr(BUSY[busy]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   if (m.command.type === 'lab.stretch') {
@@ -933,6 +978,11 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // The Solar System's model: the scale, the planets' places, Kepler's ratio, the way to Voyager.
+  if (m.command.type === 'lab.planets') {
+    const shown = planetsShown(m.command as { step: string }, readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.planets')!]).map((x) => x.record));
+    return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
   }
   // The air: the barometer's reading at the place.
   if (m.command.type === 'lab.air') {
@@ -2816,6 +2866,7 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const plShown = c.type === 'lab.planets' ? planetsShown(c as unknown as { step: string }, readingsOf([e]).map((x) => x.record)) : null;
       const arShown = c.type === 'lab.air' && r.value !== null ? formatMeasured('pressure', r.value, 1, locale) : null;
       const gnRecs = c.type === 'lab.gnomon' ? readingsOf([e]).map((x) => x.record) : [];
       const gnShown = gnRecs.length ? gnRecs.map((x) => formatMeasured('length', x.value, 0.01, locale)).join(' · ') : null;
@@ -2833,7 +2884,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

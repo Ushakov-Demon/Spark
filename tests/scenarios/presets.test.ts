@@ -331,6 +331,16 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('візок 1 — 1,0 Н, візок 2 з двома тягарцями — 2,9 Н');
   }, 60_000);
 
+  it('the Solar System to scale: the Earth a 1.8 mm grain 21.5 m from a 20 cm Sun, Neptune 650 m off; T²/a³ the same', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'solar-system-model')!);
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.correct).toBe('grain');
+    expect(answer.text.uk).toContain('крупинка 1,8 мм за 21,5 м');
+    expect(answer.text.uk).toContain('Нептун — за 649 м');
+    expect(answer.text.uk).toContain('від 0,98 до 1,00');
+    expect(answer.text.uk).toContain('за 871 м');
+  }, 60_000);
+
   it('the air: about 10 t above each m², a density of 1.2 kg/m³ from two floors, a fifth of it below the airship at 2 km', async () => {
     const { withValues } = await import('../../src/scenarios/index.js');
     const p = PRESETS.find((x) => x.id === 'air-column')!;

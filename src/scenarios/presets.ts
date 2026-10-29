@@ -62,7 +62,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -976,6 +976,26 @@ const LIST: readonly Preset[] = [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },
       { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 1. Методи пізнання природи. Фізика як природнича наука', match: 'related', quote: 'Фізичні величини та їх вимірювання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'розділ 1, експериментальна робота «Вимірювання розмірів малих тіл методом рядів», с. 36' } },
     ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Якщо Сонце — м’яч завбільшки 20 см, то де й якою буде Земля?', en: 'If the Sun is a 20 cm ball, where is the Earth and how big?' },
+    id: 'solar-system-model',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Модель Сонячної системи', en: 'A model of the Solar System' },
+    question: {
+      uk: 'Зробимо модель Сонячної системи, де все — у тому самому масштабі: і розміри, і відстані. Сонце — м’яч діаметром 20 см на шкільному стадіоні. Розміри й відстані планет беремо з таблиці NASA. Де ж ляже Земля і якою вона буде?',
+      en: 'Let us make a model of the Solar System with everything at one scale: the sizes and the distances. The Sun is a 20 cm ball on the school field. The planets’ sizes and distances come from NASA’s table. Where will the Earth lie, and how big will it be?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'planets',
+    plan: (['ball', 'inner', 'outer', 'kepler', 'voyager'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.planets', step } }) as const),
+    choices: [ch('ball', 'Кулька діаметром 2 см за 2 м від м’яча', 'A 2 cm ball 2 m from the Sun-ball'), ch('grain', 'Крупинка діаметром 2 мм за 20 м', 'A 2 mm grain 20 m away'), ch('near', 'Крупинка діаметром 2 мм за 2 м', 'A 2 mm grain 2 m away')],
+    answerOnBoard: ['pe:'],
+    formulas: ['mechanics.kepler-third'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет' }],
     expect: 'reached',
   },
   varied(
@@ -2212,7 +2232,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

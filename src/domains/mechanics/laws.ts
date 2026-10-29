@@ -8,6 +8,7 @@ const HUYGENS: Person = { name: { uk: 'Крістіан Гюйгенс', en: 'Ch
 const ARCHIMEDES: Person = { name: { uk: 'Архімед', en: 'Archimedes' }, born: -287, died: -212, wikidata: 'Q8739' };
 const TORRICELLI: Person = { name: { uk: 'Еванджеліста Торрічеллі', en: 'Evangelista Torricelli' }, born: 1608, died: 1647, wikidata: 'Q102490' };
 const STEVIN: Person = { name: { uk: 'Симон Стевін', en: 'Simon Stevin' }, born: 1548, died: 1620, wikidata: 'Q23696' };
+const KEPLER: Person = { name: { uk: 'Йоганн Кеплер', en: 'Johannes Kepler' }, born: 1571, died: 1630, wikidata: 'Q8963' };
 const PASCAL: Person = { name: { uk: 'Блез Паскаль', en: 'Blaise Pascal' }, born: 1623, died: 1662, wikidata: 'Q1290' };
 
 /**
@@ -182,6 +183,26 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: { uk: 'Коли нитка змотується з котушки без проковзування, за кожен оберт вона проходить довжину кола котушки: l = π·d·n. Що менший діаметр, то більше обертів на ту саму довжину.', en: 'When a thread unwinds from a spool without slipping, each turn moves it by the spool’s circumference: l = π·d·n. The smaller the diameter, the more turns for the same length.' },
     },
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це спосіб будови механізмів.', en: 'This is a way of building mechanisms.' } }, citations: [] },
+  },
+  {
+    id: 'kepler-third',
+    kind: 'law',
+    name: { uk: 'Третій закон Кеплера', en: 'Kepler’s third law' },
+    statement: {
+      novice: { uk: 'Що далі планета від Сонця, то довше вона обходить свою орбіту — і не просто довше, а за точним правилом.', en: 'The further a planet is from the Sun, the longer it takes to go round — and not just longer, but by an exact rule.' },
+      school: { uk: 'Квадрат періоду обертання планети, поділений на куб її відстані від Сонця, однаковий для всіх планет: T²/a³ = const. У роках і відстанях Землі (астрономічних одиницях) ця стала дорівнює 1.', en: 'The square of a planet’s period divided by the cube of its distance from the Sun is the same for all the planets: T²/a³ = const. In the Earth’s years and distances (astronomical units) the constant is 1.' },
+    },
+    history: {
+      people: [KEPLER],
+      role: 'discovered',
+      when: { uk: '1619', en: '1619' },
+      work: 'Harmonice Mundi (Гармонія світу)',
+      story: { school: { uk: 'Йоганн Кеплер знайшов це правило, перебираючи спостереження планет, і опублікував його 1619 року в книзі «Гармонія світу» (Harmonice Mundi). Чому воно таке, пояснив лише закон всесвітнього тяжіння.', en: 'Johannes Kepler found the rule sifting through observations of the planets and published it in 1619 in his book Harmonice Mundi. Why it holds was explained only by the law of universal gravitation.' } },
+      citations: [
+        { source: 'wikipedia-kepler-laws', locator: 'Lead / Third law', claim: 'published in 1619 in Harmonice Mundi; T²/a³ the same for all objects orbiting the same primary' },
+        { source: 'wikidata', locator: 'Q8963 (P569, P570)', claim: 'life dates (1571 – 1630)' },
+      ],
+    },
   },
   {
     id: 'sun-and-time',

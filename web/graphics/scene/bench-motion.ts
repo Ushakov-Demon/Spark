@@ -23,6 +23,10 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.planets': { uk: 'Відміряємо рулеткою — крок за кроком…', en: 'Measuring with the tape — step by step…' },
+  /** (The planets set going; the way out to Voyager.) */
+  'lab.planets.kepler': { uk: 'Планети біжать по орбітах — дивимося…', en: 'The planets run round their orbits — watch…' },
+  'lab.planets.voyager': { uk: 'Ідемо туди, де був «Вояджер-1»…', en: 'Walking out to where Voyager 1 was…' },
   'lab.air': { uk: 'Тиск на екрані ще змінюється — чекаємо…', en: 'The pressure on the screen is still changing — wait…' },
   /** (The airship climbing to 2 km.) */
   'lab.air.high': { uk: 'Дирижабль набирає висоту…', en: 'The airship is climbing…' },
@@ -65,6 +69,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'drag' && next.drag?.read) return dragRun(next, draw);
   if (next.kind === 'tower' && next.tower?.anim) return towerRun(next, draw);
   if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
+  if (next.kind === 'planets' && next.planets?.anim) return planetsRun(next, draw);
   if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
   if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
@@ -543,5 +548,37 @@ function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   return {
     channels: [climb],
     frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
+  };
+}
+
+/**
+ * The Solar System's model: the planets laid out one by one (the field widening to the giants); the orbits turning
+ * for two of the Earth's years; Voyager's view back — the field stretching out to it, the dark, then the dot.
+ */
+function planetsRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const p = next.planets!;
+  const anim = p.anim!;
+  // (The ball: a moment with the ruler — every reading waits for its motion to end.)
+  const length = anim === 'kepler' ? 6 : anim === 'voyager' ? 5 : anim === 'ball' ? 0.8 : 0.7 * 4;
+  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
+  const { anim: _a, ...rest } = p;
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw({ ...next, planets: rest });
+      const t = Number.isFinite(clock.value) ? clock.value : 0;
+      if (anim === 'ball') return draw({ ...next, planets: rest });
+      if (anim === 'kepler') return draw({ ...next, planets: { ...rest, years: (2 * t) / length } });
+      if (anim === 'voyager') {
+        // (1.5 s out along the field to the probe, 2 s of dark coming, then the dot.)
+        const out = Math.min(1, t / 1.5);
+        return draw({ ...next, planets: { ...rest, view: t < 1.5 ? 'field' : 'back', range: 700 + 200 * out, dark: Math.max(0, Math.min(1, (t - 1.5) / 2)), dot: Math.max(0, Math.min(1, (t - 3.6) / 1)) } });
+      }
+      // Four planets of the step, 0.7 s each; the giants' field opens out from the inner one's 35 m.
+      const before = p.marks.length - 4;
+      const shown = before + Math.min(4, Math.floor(t / 0.7) + 1);
+      const range = anim === 'outer' ? 35 + (700 - 35) * Math.min(1, t / 0.7) : p.range;
+      draw({ ...next, planets: { ...rest, marks: p.marks.slice(0, shown), range } });
+    },
   };
 }
