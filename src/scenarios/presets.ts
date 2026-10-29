@@ -57,7 +57,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -971,6 +971,33 @@ const LIST: readonly Preset[] = [
     formulas: ['mechanics.weight'],
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'контактних і безконтактних сил' },
+    ],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Як порівняти маси двох візків, не зважуючи їх?', en: 'How can two carts’ masses be compared without weighing them?' },
+    id: 'carts-mass',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Маса — міра інертності й тяжіння: візки', en: 'Mass as the measure of inertia and gravity: carts' },
+    question: {
+      uk: 'Два легкі візки по 100 г стоять на столі, між ними стиснута пружина, зв’язана ниткою. Перепалюємо нитку — пружина розштовхує візки, а ми за кадрами відео міряємо, хто скільки проїхав за 0,5 с. Спершу візки однакові, потім на другий ставимо один, а тоді два тягарці по 100 г. Наостанок вішаємо обидва візки на динамометр. Як порівняти маси двох візків, не зважуючи їх?',
+      en: 'Two light 100 g carts stand on the table with a squeezed spring between them, tied by a thread. We burn the thread — the spring pushes the carts apart, and by the video’s frames we measure how far each went in 0.5 s. First the carts are alike, then one and then two 100 g weights go on the second. At last both carts hang on a dynamometer. How can two carts’ masses be compared without weighing them?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'carts',
+    plan: [
+      ...[0, 1, 2].map((weights) => ({ kind: 'bench', command: { type: 'lab.carts', mode: 'push', weights } }) as const),
+      { kind: 'bench', command: { type: 'lab.carts', mode: 'weigh', weights: 2, cart: 1 } },
+      { kind: 'bench', command: { type: 'lab.carts', mode: 'weigh', weights: 2, cart: 2 } },
+    ],
+    choices: [ch('speeds', 'За швидкостями після поштовху: у скільки разів візок повільніший, у стільки разів його маса більша', 'By the speeds after the push: as many times slower a cart is, so many times greater its mass'), ch('same', 'Ніяк: одна пружина штовхає обидва візки однаково, тож вони поїдуть однаково', 'No way: one spring pushes both carts alike, so they go alike'), ch('faster', 'Важчий візок поїде швидше — він сильніше розганяється', 'The heavier cart goes faster — it gathers more speed')],
+    answerOnBoard: ['cr:'],
+    formulas: ['mechanics.speed', 'mechanics.weight'],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'залежності між масою тіла та його інертними та гравітаційними властивостями; … між масою і силою тяжіння' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'related', quote: 'Явище інерції. Інертність і маса тіла', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 16 «Інертність тіла. Маса»: візки зі стиснутими пружинами, m₂ / m₁ = v₁ / v₂' } },
     ],
     expect: 'reached',
   },
@@ -2047,7 +2074,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-coefficient', 'ball-in-liquids',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

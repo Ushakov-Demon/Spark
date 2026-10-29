@@ -45,3 +45,4 @@ export * from './strobe-bench.js';
 export * from './snail-bench.js';
 export * from './coin-bench.js';
 export * from './touch-bench.js';
+export * from './carts-bench.js';

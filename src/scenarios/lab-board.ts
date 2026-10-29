@@ -449,6 +449,20 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `lf:${i}`, title: `${title} (${acc})`, formula: `P = ${formatMeasured('force', r.value, 0.1, locale)}` });
       return;
     }
+    // Carts: the paths in 0.5 s and their ratio — the masses' (hidden till the answer); a cart's weight.
+    if (c.type === 'lab.carts') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      if (c['mode'] === 'weigh') {
+        out.push({ id: `cw:${i}`, title: uk ? `візок ${c['cart']} на динамометрі` : `cart ${c['cart']} on the dynamometer`, formula: `P = ${formatMeasured('force', recs[0]?.value ?? 0, 0.1, locale)}` });
+        return;
+      }
+      const [a, b] = recs.map((x) => x.value!);
+      const w = Number(c['weights']);
+      const cm = (x: number) => `${n(x * 100, 3)} ${uk ? 'см' : 'cm'}`;
+      out.push({ id: `cl:${i}`, title: uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w} × 100 г`}: за 0,5 с` : `${w === 0 ? 'alike carts' : `cart 2 + ${w} × 100 g`}: in 0.5 s`, formula: `l₁ = ${cm(a ?? 0)}, l₂ = ${cm(b ?? 0)}` });
+      out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
+      return;
+    }
     // Contact and non-contact forces: what was seen, and whether the force acted without touching (no numbers).
     if (c.type === 'lab.touch') {
       const k = String(c['case']) as TouchCase;

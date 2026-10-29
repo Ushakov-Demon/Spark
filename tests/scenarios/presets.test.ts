@@ -322,6 +322,15 @@ describe('ready-made experiments with values to change', () => {
     expect(P).toEqual([3.9, 4.4, 3.9, 3.4, 3.4, 3.9, 4.4, 0]);
   }, 60_000);
 
+  it('carts: the paths in 0.5 s go as the inverse of the masses, and the weights as the masses', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'carts-mass')!);
+    expect(answer.correct).toBe('speeds');
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    const r = [...answer.text.uk.matchAll(/l₁ \/ l₂ ≈ ([\d,]+)/g)].map((m) => Number(m[1]!.replace(',', '.')));
+    expect(r).toEqual([1, 2, 3]);
+    expect(answer.text.uk).toContain('візок 1 — 1,0 Н, візок 2 з двома тягарцями — 2,9 Н');
+  }, 60_000);
+
   it('contact and non-contact forces: magnet, comb and gravity act without touching, friction does not', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'contact-forces')!);
     expect(answer.correct).toBe('field');

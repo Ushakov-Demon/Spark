@@ -426,6 +426,37 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
       }),
     };
   },
+  'carts-mass': (run) => {
+    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.carts' && x.record.value !== null);
+    const pushes = [0, 1, 2].map((w) => recs.filter((x) => x.command['mode'] === 'push' && Number(x.command['weights']) === w).map((x) => x.record.value!)).filter((x) => x.length === 2) as [number, number][];
+    const P = (cart: number) => recs.find((x) => x.command['mode'] === 'weigh' && Number(x.command['cart']) === cart)?.record.value ?? null;
+    const P1 = P(1);
+    const P2 = P(2);
+    const cm = (x: number, l: Locale) => `${sig(x * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
+    const ratio = (x: number, l: Locale) => sig(x, 2, l);
+    // «у 3 рази», but «у 2,9 раза».
+    const times = (x: number, l: Locale) => (l === 'uk' ? `у ${ratio(x, l)} ${/[,.]/.test(ratio(x, l)) ? 'раза' : 'рази'}` : `${ratio(x, l)} times`);
+    const slower = pushes.length === 3 && pushes.every(([a, b], w) => Math.abs(a / b - (1 + w)) < 0.1);
+    return {
+      ...(slower ? { correct: 'speeds' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Пружина діє на обидва візки однаково, але важчий візок інертніший — він повільніше набирає швидкість, тож розганяється менше. Тому в скільки разів його швидкість менша, у стільки разів його маса більша: m₂ / m₁ = v₁ / v₂. Візки рушили одночасно й їхали однаковий час, тож відношення шляхів — це відношення швидкостей. Так масу можна виміряти без терезів — за інертністю. А динамометр показує, що й сила тяжіння в стільки ж разів більша: P = m·g. Тож маса — міра і інертності тіла, і його притягання до Землі. Тертя коліс за ці 0,5 с не враховано.'
+          : 'The spring acts on both carts alike, but the heavier cart is more inert — it gathers speed more slowly, so it ends up slower. So as many times smaller its speed, so many times greater its mass: m₂ / m₁ = v₁ / v₂. The carts set off together and went for the same time, so the ratio of the paths is the ratio of the speeds. This way mass can be measured without scales — by inertia. And the dynamometer shows that the force of gravity is as many times greater too: P = m·g. So mass measures both a body’s inertia and its pull to the Earth. The wheels’ friction over these 0.5 s is left out.',
+      ),
+      say: both((l) => {
+        const last = pushes[2];
+        return last && P1 !== null && P2 !== null ? (l === 'uk' ? `Візок утричі важчий проїхав ${times(last[0] / last[1], l)} менше — і сила тяжіння на нього ${times(P2 / P1, l)} більша.` : `The cart three times heavier went ${times(last[0] / last[1], l)} less — and gravity on it is ${times(P2 / P1, l)} greater.`) : '';
+      }),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts = pushes.map(([a, b], w) => (uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w === 1 ? 'один тягарець' : 'два тягарці'}`}: ${cm(a, l)} і ${cm(b, l)}, l₁ / l₂ ≈ ${ratio(a / b, l)}` : `${w === 0 ? 'alike carts' : `cart 2 + ${w === 1 ? 'one weight' : 'two weights'}`}: ${cm(a, l)} and ${cm(b, l)}, l₁ / l₂ ≈ ${ratio(a / b, l)}`));
+        const weigh = P1 !== null && P2 !== null ? (uk ? `; на динамометрі: візок 1 — ${N(P1, l)}, візок 2 з двома тягарцями — ${N(P2, l)}, ${times(P2 / P1, l)} більше` : `; on the dynamometer: cart 1 — ${N(P1, l)}, cart 2 with two weights — ${N(P2, l)}, ${times(P2 / P1, l)} more`) : '';
+        const s = `${parts.join('; ')}${weigh}.`;
+        return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' (2,9 Н, а не 3,0 — бо динамометр показує до десятих: 2,94 Н.)' : ' (2.9 N, not 3.0 — the dynamometer reads to tenths: 2.94 N.)');
+      }),
+    };
+  },
   'contact-forces': (run) => {
     const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.touch').map((x) => ({ c: String(x.command['case']) as TouchCase, acts: x.record.inputs?.['acts'] === 1, touch: x.record.inputs?.['touch'] === 1 }));
     const farOk = R.filter((x) => x.c !== 'lifted').every((x) => x.acts && !x.touch);

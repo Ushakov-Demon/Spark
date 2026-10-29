@@ -473,6 +473,18 @@ function benchView(): BenchView | null {
     const U = recs.find((x) => x.quantity === 'voltage');
     return { ...base, kind, circuit: { source: cc?.source ?? 0, ...(cc && I && U ? { amps: { text: formatMeasured('current', I.value, 0.01, locale), share: (I.value ?? 0) / AMMETER.max.value }, volts: { text: formatMeasured('voltage', U.value, 0.1, locale), share: (U.value ?? 0) / VOLTMETER.max.value } } : {}) } };
   }
+  // Carts: this step (or the next one): pushed apart — where they ended; weighed — which cart and the reading.
+  if (kind === 'carts') {
+    type Carts = { mode: 'push' | 'weigh'; weights: number; cart?: 1 | 2 };
+    const cc = c?.type === 'lab.carts' ? (c as unknown as Carts) : undefined;
+    const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.carts');
+    const cmd = cc ?? (next?.kind === 'bench' ? (next.command as unknown as Carts) : { mode: 'push' as const, weights: 0 });
+    const recs = last && cc ? readingsOf([last]).map((x) => x.record) : [];
+    const cm = (x: number | null) => `${String(Math.round((x ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`;
+    if (cmd.mode === 'weigh') return { ...base, kind, carts: { mode: 'weigh', weights: cmd.weights, x1: 0, x2: 0, cart: cmd.cart ?? 1, ...(recs[0] ? { read: [formatMeasured('force', recs[0].value, 0.1, locale)] } : {}) } };
+    const done = recs.length === 2;
+    return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
+  }
   // Contact and non-contact forces: this step's case (or the next one's, not played yet), and what was seen.
   if (kind === 'touch') {
     const tc = c?.type === 'lab.touch' ? (c as unknown as { case: TouchCase }) : undefined;
@@ -840,6 +852,13 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // Carts: the two paths, or the weight.
+  if (m.command.type === 'lab.carts') {
+    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.carts')!]).map((x) => x.record);
+    if ((m.command as { mode: string }).mode === 'weigh') return uk ? `Динамометр показує ${formatMeasured('force', recs[0]?.value ?? null, 0.1, locale)}.` : `The dynamometer shows ${formatMeasured('force', recs[0]?.value ?? null, 0.1, locale)}.`;
+    const cm = (x: number | null) => `${String(Math.round((x ?? 0) * 1000) / 10).replace('.', uk ? ',' : '.')} ${uk ? 'см' : 'cm'}`;
+    return uk ? `За 0,5 с: перший візок — ${cm(recs[0]?.value ?? null)}, другий — ${cm(recs[1]?.value ?? null)}.` : `In 0.5 s: the first cart — ${cm(recs[0]?.value ?? null)}, the second — ${cm(recs[1]?.value ?? null)}.`;
   }
   // Contact and non-contact forces: what was seen.
   if (m.command.type === 'lab.touch') {
@@ -2673,6 +2692,8 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const ctRecs = c.type === 'lab.carts' && c['mode'] === 'push' ? readingsOf([e]).map((x) => x.record) : [];
+      const ctShown = ctRecs.length === 2 ? ctRecs.map((x) => `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`).join(' · ') : null;
       const tcShown = c.type === 'lab.touch' ? (r.inputs?.['acts'] === 1 ? (locale === 'uk' ? 'діє без дотику' : 'acts without touching') : locale === 'uk' ? 'без дотику не діє' : 'no force without touching') : null;
       const cnShown = c.type === 'lab.coin' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       const snShown = c.type === 'lab.snail' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
@@ -2683,7 +2704,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

@@ -34,6 +34,7 @@ import { STROBE_COMMANDS, STROBE_TEXT, type StrobeCommand } from './strobe-bench
 import { SNAIL_COMMANDS, SNAIL_TEXT, type SnailCommand } from './snail-bench.js';
 import { COIN_COMMANDS, COIN_TEXT, type CoinCommand } from './coin-bench.js';
 import { TOUCH_COMMANDS, TOUCH_TEXT, type TouchCommand } from './touch-bench.js';
+import { CARTS_COMMANDS, CARTS_TEXT, type CartsCommand } from './carts-bench.js';
 
 /**
  * The mechanics bench of grade 7, beside the vessel: a spring on a stand with slotted weights and a ruler
@@ -84,7 +85,7 @@ export interface BalanceCommand {
   readonly mass?: number;
   readonly label?: LocalizedText;
 }
-export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand;
+export type BenchCommand = StretchCommand | PullCommand | EdgeCommand | BalanceCommand | MotionCommand | CathodeCommand | LeverCommand | SlopeCommand | CircuitCommand | PairCommand | OhmCommand | BoxCommand | DepthCommand | UtubeCommand | PressCommand | AtmCommand | VesselCommand | MagnetCommand | InductCommand | SinkCommand | ForcesCommand | RowsCommand | LiftCommand | BounceCommand | CarryCommand | WinchCommand | WindCommand | StrobeCommand | SnailCommand | CoinCommand | TouchCommand | CartsCommand;
 
 /**
  * The set of weights for a school lever balance, kg: nominal values in the sequence (1; 2; 2; 5) × 10ⁿ that
@@ -161,7 +162,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   },
 };
 
-export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS] as const;
+export const BENCH_COMMANDS = [stretchCommand, pullCommand, edgeCommand, balanceCommand, ...MOTION_COMMANDS, ...ELECTRODE_COMMANDS, ...LEVER_COMMANDS, ...CIRCUIT_COMMANDS, ...COIL_COMMANDS, ...BOX_COMMANDS, ...DEPTH_COMMANDS, ...UTUBE_COMMANDS, ...PRESS_COMMANDS, ...ATM_COMMANDS, ...VESSEL_COMMANDS, ...MAGNET_COMMANDS, ...INDUCT_COMMANDS, ...SINK_COMMANDS, ...FORCES_COMMANDS, ...ROWS_COMMANDS, ...LIFT_COMMANDS, ...BOUNCE_COMMANDS, ...CARRY_COMMANDS, ...WINCH_COMMANDS, ...WIND_COMMANDS, ...STROBE_COMMANDS, ...SNAIL_COMMANDS, ...COIN_COMMANDS, ...TOUCH_COMMANDS, ...CARTS_COMMANDS] as const;
 
 /** What a bench step asks to do and what its button says. */
 export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -181,6 +182,7 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
   ...(SNAIL_TEXT as Record<SnailCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(COIN_TEXT as Record<CoinCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(TOUCH_TEXT as Record<TouchCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
+  ...(CARTS_TEXT as Record<CartsCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(INDUCT_TEXT as Record<InductCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(MAGNET_TEXT as Record<MagnetCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
   ...(VESSEL_TEXT as Record<VesselCommand['type'], (c: BenchCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }>),
@@ -225,8 +227,9 @@ export const BENCH_TEXT: Record<BenchCommand['type'], (c: BenchCommand) => { say
 };
 
 /** What stands on the table for each bench (instead of the vessel), for the line under the experiment's title. */
-export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch', LocalizedText> = {
+export const BENCH_SETUP: Record<'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts', LocalizedText> = {
   circuit: { uk: 'Джерело струму, ключ, резистор, амперметр, вольтметр, з’єднувальні дроти', en: 'A source, a key, a resistor, an ammeter, a voltmeter, connecting wires' },
+  carts: { uk: 'Два легкі візки по 100 г, пружина між ними, нитка й сірники, тягарці по 100 г, лінійка, камера телефона, динамометр (до 5 Н)', en: 'Two light 100 g carts, a spring between them, a thread and matches, 100 g weights, a ruler, a phone camera, a dynamometer (up to 5 N)' },
   touch: { uk: 'Штатив, скріпка на нитці, магніт, картонка, пластиковий гребінець, шматочки паперу, брусок на нитці, тягарець', en: 'A stand, a paper clip on a thread, a magnet, a card, a plastic comb, bits of paper, a block on a thread, a weight' },
   coin: { uk: 'Склянка, листівка 10 × 15 см, монета (2,6 см), лінійка, камера телефона', en: 'A glass, a 10 × 15 cm postcard, a coin (2.6 cm), a ruler, a phone camera' },
   snail: { uk: 'Садовий равлик, пластиковий аркуш (сухий, мокрий, вертикально), наждачний папір P120, лінійка, камера телефона, секундомір', en: 'A garden snail, a plastic sheet (dry, wet, upright), P120 sandpaper, a ruler, a phone camera, a stopwatch' },

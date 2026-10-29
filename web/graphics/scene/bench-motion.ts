@@ -22,6 +22,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   'lab.whirl': { uk: 'Рахую оберти: раз, два, три…', en: 'Counting the turns: one, two, three…' },
   'lab.swing': { uk: 'Рахую коливання: раз, два, три…', en: 'Counting the swings: one, two, three…' },
   'lab.sink': { uk: 'Стежу — секундомір іде…', en: 'Watching — the stopwatch is running…' },
+  'lab.carts': { uk: 'Нитка перегоріла — візки роз’їжджаються…', en: 'The thread burnt — the carts roll apart…' },
   'lab.touch': { uk: 'Дивимося…', en: 'Watching…' },
   'lab.coin': { uk: 'Знімаємо — дивимося покадрово…', en: 'Filming — watching frame by frame…' },
   'lab.snail': { uk: 'Равлик повзе — знімаємо 30 секунд…', en: 'The snail crawls — filming for 30 seconds…' },
@@ -51,6 +52,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'slope' && next.pull && next.slope) return slopeUp(next, draw);
   if (next.run && (next.kind === 'incline' || next.kind === 'circle' || next.kind === 'pendulum')) return timed(next, next.run, draw);
   if (next.run && next.sink?.speed && (next.kind === 'bubble' || next.kind === 'sink' || next.kind === 'carry')) return through(next, next.run, next.sink, draw);
+  if (next.kind === 'carts' && next.carts?.mode === 'push' && next.carts.read) return cartsRun(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
   if (next.kind === 'coin' && next.coin?.read && next.coinRun) return coinRun(next, next.coinRun, draw);
   if (next.kind === 'snail' && next.snail?.read && next.run) return snailRun(next, next.run, draw);
@@ -419,6 +421,25 @@ function touchRun(next: BenchView, draw: (v: BenchView) => void): Motion {
       if (done) return draw(next);
       const { read: _r, ...rest } = t;
       draw({ ...next, touch: { ...rest, k: k.value } });
+    },
+  };
+}
+
+/** Carts: the thread burns, then both roll apart steadily for their 0.5 s, played three times slower. */
+function cartsRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const c = next.carts!;
+  const burn = 0.5;
+  const ride = 1.5;
+  const clock = new Channel(0, burn + ride, { kind: 'steady', speed: 1 }, 1e-4);
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw(next);
+      const T = clock.value;
+      const { read: _r, ...rest } = c;
+      if (T < burn) return draw({ ...next, carts: { ...rest, x1: 0, x2: 0, flame: T / burn } });
+      const k = (T - burn) / ride;
+      draw({ ...next, carts: { ...rest, x1: c.x1 * k, x2: c.x2 * k, moving: true } });
     },
   };
 }
