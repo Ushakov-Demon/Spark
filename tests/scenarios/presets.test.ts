@@ -341,6 +341,22 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('за 871 м');
   }, 60_000);
 
+  it('roots and gravity: on its side the root bends down to 90° in two hours (lag, then ~1.4°/min); on a clinostat it does not', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'roots-gravity')!);
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.correct).toBe('down');
+    expect(answer.text.uk).toContain('0 хв — 0°, 20 хв — 0°, 40 хв — 20°, 60 хв — 45°');
+    expect(answer.text.uk).toContain('120 хв — 90°');
+    expect(answer.text.uk).toContain('На клиностаті за ті самі дві години — 0°');
+  });
+
+  it('every story told after «Чому так?» is written in both languages', () => {
+    for (const p of PRESETS) for (const a of p.asides ?? []) {
+      expect(a.uk.length, p.id).toBeGreaterThan(40);
+      expect(a.en.length, p.id).toBeGreaterThan(40);
+    }
+  });
+
   it('rubber motor: the band 20 N/m; 3, 6, 9 turns — 0.44, 1.74, 3.92 m: twice the turns, four times as far', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'rubber-motor')!);
     if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);

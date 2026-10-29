@@ -53,6 +53,11 @@ export interface Preset {
    * falls for it — or there was none — the Professor giggles at the answer.
    */
   readonly trick?: LocalizedText;
+  /**
+   * Stories from beyond the lesson (history, culture), each with its source among the knowledge's sources: one of them,
+   * at random, closes «Чому так?» each time the experiment is done.
+   */
+  readonly asides?: readonly LocalizedText[];
   /** When the choices are offered: before the start (a prediction, default) or at the end (the conclusion). */
   readonly choicesAt?: 'start' | 'end';
   /**
@@ -63,7 +68,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber' | 'gravi';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -1059,6 +1064,40 @@ const LIST: readonly Preset[] = [
     answerOnBoard: ['rr:'],
     formulas: ['mechanics.hooke'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра; механізму на «гумовому двигуні»' }],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Банку з паростками поклали на бік. Куди повернуть корінці?', en: 'A jar of seedlings is laid on its side. Which way will the roots turn?' },
+    id: 'roots-gravity',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Корінь знає, де низ', en: 'The root knows which way is down' },
+    question: {
+      uk: 'Зерна кукурудзи проросли в скляній банці за вологим паперовим рушником, корінці ростуть прямо вниз. Покладемо банку на бік — корінці ляжуть горизонтально. Що з ними буде за дві години?',
+      en: 'Maize grains have sprouted in a glass jar behind a wet paper towel, the roots growing straight down. We lay the jar on its side — the roots lie level. What becomes of them in two hours?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'gravi',
+    plan: (['upright', 'side', 'clino'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.gravi', step } }) as const),
+    choices: [ch('down', 'Загнуться вниз', 'They bend down'), ch('straight', 'Ростимуть далі вбік, як лежать', 'They go on growing sideways, as they lie'), ch('up', 'Повернуть угору, до світла', 'They turn up, to the light')],
+    answerOnBoard: ['gr:'],
+    asides: [
+      {
+        uk: 'А 1806 року англієць Томас Ендрю Найт обдурив паростки. Він прив’язав пророслі боби до обода колеса, яке крутила вода, — понад 150 обертів за хвилину. Корінці повернули від осі назовні, а стебельця за кілька днів зійшлися вістрями в центрі колеса: для рослин обертання стало замість тяжіння.',
+        en: 'And in 1806 the Englishman Thomas Andrew Knight fooled the seedlings. He tied sprouted beans to the rim of a wheel turned by water — over 150 turns a minute. The roots turned outwards from the axle, and in a few days the shoots met tip to tip in the centre of the wheel: for the plants, the spinning stood in for gravity.',
+      },
+      {
+        uk: 'Чарлз Дарвін разом із сином Френсісом 1880 року видав книжку «Здатність рослин до руху». Вони з’ясували, що тяжіння відчуває саме кінчик кореня, і написали: кінчик кореня діє, як мозок якоїсь нижчої тварини.',
+        en: 'In 1880 Charles Darwin with his son Francis published «The Power of Movement in Plants». They found that it is the very tip of the root that feels gravity, and wrote that the tip of the radicle «acts like the brain of one of the lower animals».',
+      },
+      {
+        uk: 'А що буде з корінцями там, де низу немає взагалі? 2012 року вчені вирощували рослинки резухи на Міжнародній космічній станції й фотографували їх кожні 6 годин. Корінці і в невагомості не росли абияк: їх напрямок задавало світло — вони росли від нього.',
+        en: 'And what becomes of roots where there is no down at all? In 2012 scientists grew thale cress on the International Space Station and photographed it every 6 hours. Even weightless, the roots did not grow anyhow: light set their direction — they grew away from it.',
+      },
+    ],
+    formulas: ['mechanics.density', 'mechanics.weight'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'впливу земного тяжіння на організми' }],
     expect: 'reached',
   },
   {
@@ -2316,7 +2355,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars', 'scales-diy', 'dyno-diy', 'rubber-motor',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'roots-gravity', 'air-column', 'solar-system-model', 'calendars', 'scales-diy', 'dyno-diy', 'rubber-motor',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',

@@ -9,7 +9,7 @@ import { scalesMasses, scalesTilt, type ScalesLoad } from '../../../src/scenario
  * apparatus is 6 units of the drawing.
  */
 export interface BenchView {
-  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber';
+  readonly kind: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales' | 'dyno' | 'rubber' | 'gravi';
   /** Weights hanging on the spring or lying on the block. */
   readonly weights: number;
   /** The spring's length now, m, and its stiffness, N/m. */
@@ -73,6 +73,11 @@ export interface BenchView {
    * the field shows `range` metres); the orbits seen from above, the planets `years` on; Voyager's view back (`dark` —
    * how far the frame has gone dark, `dot` — the pale blue dot showing).
    */
+  /**
+   * Roots and gravity: the jar of maize seedlings standing, on its side (`tilt` 0…90°, turning it over), or on the
+   * clinostat (`spin` — its turn, degrees); the roots' tips bent down by `bend` degrees; the clock — `minutes`.
+   */
+  readonly gravi?: { readonly tilt: number; readonly bend: number; readonly clino?: boolean; readonly spin?: number; readonly minutes?: number; readonly read?: string; /** The step just done, to be played. */ readonly anim?: 'upright' | 'side' | 'clino' };
   /**
    * The rubber motor: the band on the home-made dynamometer (`band` — the dynamometer's view); or the car in the
    * corridor — at `x` m along the tape, its back axle `wound` turns wound (the band's coil), its wheels turned by
@@ -296,6 +301,7 @@ export function benchSvg(v: BenchView): string {
   if (v.kind === 'calendar') return calendarSvg(v.calendar);
   if (v.kind === 'scales') return scalesSvg(v.scales);
   if (v.kind === 'dyno') return dynoSvg(v.dyno);
+  if (v.kind === 'gravi') return graviSvg(v.gravi);
   if (v.kind === 'rubber') return v.rubber?.mode === 'band' ? dynoSvg(v.rubber.band) : rubberSvg(v.rubber);
   if (v.kind === 'touch') return touchSvg(v.touch);
   if (v.kind === 'coin') return coinSvg(v.coin);
@@ -577,6 +583,37 @@ function planetsSvg(p: BenchView['planets']): string {
     return `${field}${dots}${scale}<rect x="18" y="12" width="586" height="${ground - 4}" style="fill:rgba(4,6,10,${0.96 * d})"/>${beam(380, 34, 0.18)}${beam(470, 60, 0.26)}${beam(560, 22, 0.14)}${dot}${p.dot && p.note ? `<text class="bench-label" x="440" y="${ground - 20}" style="fill:rgba(200,215,230,${p.dot})">${p.note}</text>` : ''}`;
   }
   return `${field}${dots}${scale}`;
+}
+
+/**
+ * Roots and gravity: a glass jar with a paper towel inside, three maize grains against the glass and their roots.
+ * The jar turned by `tilt` (on its side at 90°); each root straight from its grain, then its tip bent towards the
+ * Earth by `bend` (drawn in the jar's frame, so the bend shows against the floor); on the clinostat the jar on an axle
+ * with a little motor. A clock with the minutes since the jar was laid down.
+ */
+function graviSvg(g: BenchView['gravi']): string {
+  if (!g) return '';
+  const cx = 470;
+  const w = 110;
+  const h = 150;
+  const turn = g.clino ? 90 + (g.spin ?? 0) : g.tilt;
+  // On the table the jar stands (or lies) on it, its centre as high as half its turned height; on the clinostat — on the axle.
+  const r = (g.tilt * Math.PI) / 180;
+  const cy = g.clino ? 170 : TABLE - 4 - (h / 2) * Math.cos(r) - (w / 2 + 8) * Math.sin(r);
+  const jar = `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="10" style="fill:rgba(220,236,245,0.25);stroke:#d8e2ea;stroke-width:2"/><rect x="${-w / 2 + 6}" y="${-h / 2 + 18}" width="${w - 12}" height="${h - 26}" rx="4" style="fill:rgba(250,250,247,0.5)"/><rect x="${-w / 2 - 3}" y="${-h / 2 - 10}" width="${w + 6}" height="12" rx="3" style="fill:#8d949c"/>`;
+  // Three grains; their roots grow along the jar (+y in its frame), then the tip turns towards the real down: on its
+  // side (turned 90° clockwise) that is the jar's +x, so the tip goes (sin b, cos b) of the jar's frame.
+  const b = ((g.clino ? 0 : g.bend) * Math.PI) / 180;
+  const roots = [-34, 0, 34].map((x) => {
+    const y0 = -h / 2 + 34;
+    const y1 = y0 + 8 + 56;
+    const tip = 18;
+    return `<ellipse cx="${x}" cy="${y0}" rx="8" ry="10" style="fill:#f2c94c;stroke:#c9a227"/><path d="M${x},${y0 + 8} V${y1} Q${x},${y1 + tip * 0.5} ${x + tip * Math.sin(b)},${y1 + tip * Math.cos(b)}" style="fill:none;stroke:#fbf6e9;stroke-width:3;stroke-linecap:round"/>`;
+  }).join('');
+  const body = `<g transform="translate(${cx},${cy}) rotate(${turn})">${jar}${roots}</g>`;
+  const stand = g.clino ? `<rect x="${cx - 8}" y="${cy}" width="16" height="${TABLE - cy}" style="fill:${STEEL}"/><rect x="${cx - 40}" y="${TABLE - 10}" width="80" height="10" rx="2" style="fill:${DARK}"/><circle cx="${cx}" cy="${cy}" r="9" style="fill:${DARK}"/>` : '';
+  const clock = g.minutes !== undefined ? `<g transform="translate(${cx + 110},100)"><circle r="20" style="fill:#fbf8ef;stroke:${DARK};stroke-width:1.5"/><path d="M0,0 L${14 * Math.sin((g.minutes / 60) * 2 * Math.PI)},${-14 * Math.cos((g.minutes / 60) * 2 * Math.PI)}" style="stroke:${DARK};stroke-width:1.6"/><text y="36" text-anchor="middle" class="bench-reading">${Math.floor(g.minutes / 60)}:${String(Math.round(g.minutes) % 60).padStart(2, '0')}</text></g>` : '';
+  return `${stand}${body}${clock}${g.read ? `<text class="bench-reading" x="${cx + 110}" y="150" text-anchor="middle">${g.read}</text>` : ''}`;
 }
 
 /**

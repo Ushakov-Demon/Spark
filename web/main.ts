@@ -512,6 +512,18 @@ function benchView(): BenchView | null {
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
   }
+  // Roots and gravity: the jar as the last step left it — standing, on its side with the roots bent, on the clinostat.
+  if (kind === 'gravi') {
+    type Step = 'upright' | 'side' | 'clino';
+    const done = log.filter((e) => e.ok && e.command.type === 'lab.gravi');
+    const lastStep = done.length ? (done[done.length - 1]!.command as unknown as { step: Step }).step : undefined;
+    const recs = done.length ? readingsOf([done[done.length - 1]!]).map((x) => x.record) : [];
+    const cg = c?.type === 'lab.gravi' ? (c as unknown as { step: Step }).step : undefined;
+    const end = recs.at(-1);
+    const read = cg && cg !== 'upright' && end ? `${end.value}°` : undefined;
+    const minutes = lastStep && lastStep !== 'upright' ? end?.inputs?.['time'] ?? 120 : undefined;
+    return { ...base, kind, gravi: { tilt: lastStep === 'side' ? 90 : 0, bend: lastStep === 'side' ? end?.exact ?? 0 : 0, ...(lastStep === 'clino' ? { clino: true, spin: 0 } : {}), ...(minutes !== undefined ? { minutes } : {}), ...(read ? { read } : {}), ...(cg ? { anim: cg } : {}) } };
+  }
   // The rubber motor: the band on the dynamometer; the car where its last run stopped, the earlier stops marked.
   if (kind === 'rubber') {
     const uk = locale === 'uk';
@@ -937,6 +949,11 @@ function allReadings() {
 }
 const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
 /** What the Professor says about the latest level or dynamometer reading. */
+/** The roots' photos, in words: «0 хв — 0°, 20 хв — 0°, …». */
+function graviShown(recs: readonly MeasurementRecord[]): string {
+  const uk = locale === 'uk';
+  return recs.map((r) => `${r.inputs?.['time'] ?? 0} ${uk ? 'хв' : 'min'} — ${r.value}°`).join(', ');
+}
 /** «1,74 м»: a distance on the tape, metres to the centimetre. */
 const metres = (x: number | null): string => `${new Intl.NumberFormat(locale === 'uk' ? 'uk-UA' : 'en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(x ?? 0)} ${locale === 'uk' ? 'м' : 'm'}`;
 /** A step of the home-made dynamometer, in words: the marks, the newton's length, the reading. */
@@ -1097,6 +1114,13 @@ function measureSay(): string {
     const phase = (m.command as { phase: LiftPhase }).phase;
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
+  }
+  // Roots and gravity: the bend in the photos.
+  if (m.command.type === 'lab.gravi') {
+    const step = (m.command as { step: string }).step;
+    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.gravi')!]).map((x) => x.record);
+    if (step === 'upright') return uk ? 'Корінці ростуть прямо вниз.' : 'The roots grow straight down.';
+    return `${graviShown(recs)}.`.replace(/^./, (x) => x.toUpperCase());
   }
   // The rubber motor: the band's pull; how far the car went.
   if (m.command.type === 'lab.rubber') {
@@ -1678,8 +1702,12 @@ function answerPreset() {
   const done = doneRecord ? { ...doneRecord, result: { ...doneRecord.result, log: now.log } } : { params: stepP, result: now, status: labStatus(stepP, now, simulation, warnings) };
   const steps = [...history, done].map((h) => ({ params: h.params, result: h.result as never, status: h.status }));
   const readings = allReadings() as never;
+  // One of the experiment's stories, at random, closes «Чому так?» (the same one in the answer and the newspaper).
+  const asides = preset?.asides ?? [];
+  const aside = asides.length ? asides[Math.floor(Math.random() * asides.length)] : undefined;
   window.setTimeout(() => {
-    presetAnswer = answerOf({ steps, simulation, readings });
+    const a = answerOf({ steps, simulation, readings });
+    presetAnswer = aside && a.why ? { ...a, why: { uk: `${a.why.uk}\n\n${aside.uk}`, en: `${a.why.en}\n\n${aside.en}` } } : a;
     render();
   }, 30);
 }
@@ -3004,6 +3032,7 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const grShown = c.type === 'lab.gravi' ? (c['step'] === 'upright' ? (locale === 'uk' ? 'прямо вниз' : 'straight down') : graviShown(readingsOf([e]).map((x) => x.record))) : null;
       const rbShown = c.type === 'lab.rubber' && r.value !== null ? (c['step'] === 'band' ? formatMeasured('force', r.value, 0.1, locale) : `${turnsText(Number(c['turns']), locale === 'uk')}: ${metres(r.value)}`) : null;
       const dyShown = c.type === 'lab.dyno' ? dynoShown(String(c['step']), readingsOf([e]).map((x) => x.record)) : null;
       const scShown = c.type === 'lab.scales' ? scalesShown(String(c['step']), r).replace(/\.$/, '') : null;
@@ -3026,7 +3055,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = rbShown ?? dyShown ?? scShown ?? clShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = grShown ?? rbShown ?? dyShown ?? scShown ?? clShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

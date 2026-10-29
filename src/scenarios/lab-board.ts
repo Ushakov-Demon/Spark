@@ -474,6 +474,15 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
       return;
     }
+    // Roots and gravity: the bend after two hours on the side; on the clinostat.
+    if (c.type === 'lab.gravi') {
+      const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      const step = String(c['step']);
+      if (step === 'upright' || !recs.length) return;
+      const last = recs[recs.length - 1]!;
+      out.push({ id: `${step === 'side' ? 'gr' : 'gc'}:${i}`, title: uk ? (step === 'side' ? 'банка на боці: кінчик кореня' : 'банка на клиностаті') : step === 'side' ? 'the jar on its side: the root tip' : 'the jar on a clinostat', formula: uk ? `${last.inputs?.['time']} хв` : `${last.inputs?.['time']} min`, numbers: `${last.value}°` });
+      return;
+    }
     // The rubber motor: the band's stiffness; each run — the band wound on, the distance; the ratio to the first run.
     if (c.type === 'lab.rubber') {
       const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);

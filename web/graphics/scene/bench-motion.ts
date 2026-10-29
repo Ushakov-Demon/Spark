@@ -4,6 +4,7 @@ import { DRAG_FPS, DRAG_START, DRAG_TRACK, dragFall } from '../../../src/scenari
 import { Channel, type Motion, type ProcedureStep } from '../../motion.js';
 import { SINK_LEAD, type BenchView } from './bench.js';
 import { scalesMasses, scalesSequence, scalesTilt } from '../../../src/scenarios/scales-bench.js';
+import { rootBend } from '../../../src/scenarios/gravi-bench.js';
 
 /**
  * How each instrument of the bench comes to its reading, described once — the motion itself is the general
@@ -28,6 +29,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The planets set going; the way out to Voyager.) */
   'lab.planets.kepler': { uk: 'Планети біжать по орбітах — дивимося…', en: 'The planets run round their orbits — watch…' },
   'lab.planets.voyager': { uk: 'Ідемо туди, де був «Вояджер-1»…', en: 'Walking out to where Voyager 1 was…' },
+  'lab.gravi': { uk: 'Хвилини біжать — фотографуємо корінці…', en: 'The minutes run on — photographing the roots…' },
   'lab.rubber': { uk: 'Закручую гумку — і відпускаю…', en: 'Winding the band — and letting go…' },
   /** (The band stretched on the dynamometer.) */
   'lab.rubber.band': { uk: 'Розтягую гумку на динамометрі…', en: 'Stretching the band on the dynamometer…' },
@@ -86,6 +88,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'scales' && next.scales?.anim) return scalesRun(next, draw);
   if (next.kind === 'dyno' && next.dyno?.anim) return dynoRun(next, draw);
   if (next.kind === 'rubber' && next.rubber?.anim) return rubberRun(next, draw);
+  if (next.kind === 'gravi' && next.gravi?.anim) return graviRun(next, draw);
   if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
   if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
@@ -564,6 +567,33 @@ function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   return {
     channels: [climb],
     frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
+  };
+}
+
+/**
+ * Roots and gravity: the jar laid on its side (1 s), then two hours in 6 s — the clock running, the root tips
+ * bending by the measured law; on the clinostat the jar spinning (sped up) and the roots staying straight.
+ */
+function graviRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const g = next.gravi!;
+  const anim = g.anim!;
+  const length = anim === 'upright' ? 0.8 : anim === 'side' ? 7 : 6;
+  const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
+  const { anim: _a, read: _r, ...rest } = g;
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw({ ...next, gravi: { ...rest, ...(g.read ? { read: g.read } : {}) } });
+      const t = Number.isFinite(clock.value) ? clock.value : 0;
+      if (anim === 'upright') return draw({ ...next, gravi: rest });
+      if (anim === 'side') {
+        if (t < 1) return draw({ ...next, gravi: { ...rest, tilt: 90 * t, bend: 0, minutes: 0 } });
+        const minutes = Math.min(120, ((t - 1) / 6) * 120);
+        return draw({ ...next, gravi: { ...rest, tilt: 90, bend: rootBend(minutes), minutes } });
+      }
+      const minutes = Math.min(120, (t / 6) * 120);
+      draw({ ...next, gravi: { ...rest, spin: (t * 120) % 360, minutes } });
+    },
   };
 }
 
