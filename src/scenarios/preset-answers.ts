@@ -32,6 +32,7 @@ import { clockText, equalShadowsNoon, gnomonClock, gnomonPlace, GNOMON_HEIGHT, l
 import { offsetText } from './place-time.js';
 import { AIRSHIP, airPlace, type AirWhere } from './air-bench.js';
 import { modelScale, planetIds } from './planets-bench.js';
+import { SHEET } from './scales-bench.js';
 import { CALENDARS, daysText, dateText, equinoxDate, EQUINOX } from './calendar-bench.js';
 import { touchPlan, touchSeen, type TouchCase } from './touch-bench.js';
 import { createCommandRegistry } from '../core/commands.js';
@@ -430,6 +431,29 @@ export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetA
         const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
         const s = `${parts.join('; ')}.`;
         return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
+      }),
+    };
+  },
+  'scales-diy': (run) => {
+    const recs = (run.readings ?? []).filter((x) => x.command.type === 'lab.scales' && x.record.value !== null);
+    const at = (step: string) => recs.find((x) => x.command['step'] === step)?.record;
+    const check = at('check');
+    const egg = at('egg');
+    const g = (x: number, l: Locale) => `${sig(x * 1000, 3, l)} ${l === 'uk' ? 'г' : 'g'}`;
+    return {
+      ...(egg ? { correct: 'known' } : {}),
+      why: both((l) =>
+        l === 'uk'
+          ? 'Плечі в лінійки однакові, а Земля притягує однакові маси однаково — тож лінійка стоїть рівно, коли маси в стаканчиках рівні. Гирею може бути будь-що, чия маса відома: аркуш паперу, вода зі шприца. Як із набором гир, кладемо спершу великі, а тоді дрібні.\n\nА гирі колись перевіряли так само — водою. 1795 року грам визначили як масу кубічного сантиметра води. 1889 року головною гирею світу став «Великий К» (Le Grand K) — циліндр зі сплаву платини й іридію заввишки 39 мм, який зберігають під Парижем. Його копії звіряли з ним на терезах — і за століття вони розійшлися приблизно на 50 мікрограмів. Тому з 20 травня 2019 року кілограм визначають через сталу Планка, а зважують на терезах Кіббла: там гирю заміняє електричний струм.'
+          : 'The ruler’s arms are equal, and the Earth pulls equal masses equally — so the ruler stays level when the masses in the cups are equal. Anything of known mass can be a weight: a sheet of paper, water from a syringe. As with a set of weights, the big ones go first, then the small.\n\nAnd weights were once checked the same way — with water. In 1795 the gram was defined as the mass of a cubic centimetre of water. In 1889 the world’s chief weight became Le Grand K — a cylinder of platinum and iridium 39 mm tall, kept near Paris. Its copies were compared with it on scales — and over a century they drifted apart by about 50 micrograms. So since 20 May 2019 the kilogram has been defined by the Planck constant and weighed on Kibble balances: there an electric current takes the place of the weight.',
+      ),
+      say: both((l) => (egg ? (l === 'uk' ? `Яйце — ${g(egg.value!, l)}, і жодної гирі!` : `The egg — ${g(egg.value!, l)}, and not a single weight!`) : '')),
+      text: both((l) => {
+        const uk = l === 'uk';
+        const parts: string[] = [uk ? 'Порожні стаканчики зрівняли пластиліном.' : 'The empty cups were evened with plasticine.'];
+        if (check) parts.push(uk ? `Аркуш A4 врівноважили ${check.inputs?.['water']} мл води — ${g(check.value!, l)}: аркуш і справді важить ${g(SHEET.value, l)}, терези узгоджуються самі з собою.` : `The A4 sheet was balanced by ${check.inputs?.['water']} mL of water — ${g(check.value!, l)}: the sheet does weigh ${g(SHEET.value, l)}, the scales agree with themselves.`);
+        if (egg) parts.push(uk ? `Яйце: ${egg.inputs?.['sheets']} аркушів по 5 г і ${egg.inputs?.['water']} мл води — ${g(egg.value!, l)}. Терези відчувають десь пів грама, тож точніше за грам ними не зважиш.` : `The egg: ${egg.inputs?.['sheets']} sheets of 5 g and ${egg.inputs?.['water']} mL of water — ${g(egg.value!, l)}. The scales feel about half a gram, so they weigh no better than to a gram.`);
+        return parts.join(' ');
       }),
     };
   },

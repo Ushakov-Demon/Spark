@@ -3,6 +3,7 @@ import type { LocalizedText } from '../../../src/knowledge/i18n.js';
 import { DRAG_FPS, DRAG_START, DRAG_TRACK, dragFall } from '../../../src/scenarios/drag-bench.js';
 import { Channel, type Motion, type ProcedureStep } from '../../motion.js';
 import { SINK_LEAD, type BenchView } from './bench.js';
+import { scalesMasses, scalesSequence, scalesTilt } from '../../../src/scenarios/scales-bench.js';
 
 /**
  * How each instrument of the bench comes to its reading, described once — the motion itself is the general
@@ -27,6 +28,7 @@ export const BUSY: Readonly<Record<string, LocalizedText>> = {
   /** (The planets set going; the way out to Voyager.) */
   'lab.planets.kepler': { uk: 'Планети біжать по орбітах — дивимося…', en: 'The planets run round their orbits — watch…' },
   'lab.planets.voyager': { uk: 'Ідемо туди, де був «Вояджер-1»…', en: 'Walking out to where Voyager 1 was…' },
+  'lab.scales': { uk: 'Кладу по одному — дивимося на лінійку…', en: 'Adding one at a time — watching the ruler…' },
   'lab.calendar': { uk: 'Роки біжать — стежимо, де рівнодення…', en: 'The years run on — watching where the equinox falls…' },
   /** (The reform: the days struck out; Shakespeare's date carried over.) */
   'lab.calendar.gregorian': { uk: 'Викреслюємо дні з жовтня 1582 року…', en: 'Striking the days out of October 1582…' },
@@ -75,6 +77,7 @@ export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: B
   if (next.kind === 'gnomon' && next.gnomon?.anim) return gnomonRun(next, draw);
   if (next.kind === 'planets' && next.planets?.anim) return planetsRun(next, draw);
   if (next.kind === 'calendar' && next.calendar?.anim) return calendarRun(next, draw);
+  if (next.kind === 'scales' && next.scales?.anim) return scalesRun(next, draw);
   if (next.kind === 'air' && next.air?.where === 'ninth' && next.air.read) return liftUp(next, draw);
   if (next.kind === 'air' && (next.air?.where === 'airship' || next.air?.where === 'high') && next.air.read) return airshipUp(next, draw);
   if (next.kind === 'touch' && next.touch?.read) return touchRun(next, draw);
@@ -553,6 +556,35 @@ function airshipUp(next: BenchView, draw: (v: BenchView) => void): Motion {
   return {
     channels: [climb],
     frame: (done) => draw(done ? next : { ...next, air: { ...rest, zoom: Number.isFinite(climb.value) ? climb.value : from } }),
+  };
+}
+
+/**
+ * Home-made scales: the step's loads one after another — the plasticine; the sheet or the egg, then the sheets (0.35 s
+ * each), then water a millilitre at a time (0.6 s, the syringe over the cup) — the beam swinging to each new tilt.
+ */
+function scalesRun(next: BenchView, draw: (v: BenchView) => void): Motion {
+  const s = next.scales!;
+  const seq = scalesSequence(s.anim!);
+  const lengths = seq.map((x, k) => (k === 0 ? 0.8 : x.water !== seq[k - 1]!.water ? 0.6 : x.sheets !== seq[k - 1]!.sheets ? 0.35 : 0.8));
+  const total = lengths.reduce((a, b) => a + b, 0) + 0.6;
+  const clock = new Channel(0, total, { kind: 'steady', speed: 1 }, 1e-4);
+  const { anim: _a, read: _r, ...rest } = s;
+  const tilt = (k: number) => { const m = scalesMasses(seq[k]!); return scalesTilt(m.left, m.right); };
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (done) return draw({ ...next, scales: { ...rest, ...(s.read ? { read: s.read } : {}) } });
+      const t = Number.isFinite(clock.value) ? clock.value : 0;
+      let k = 0;
+      let at = 0;
+      while (k < seq.length - 1 && t >= at + lengths[k]!) at += lengths[k++]!;
+      // The beam swings to the new tilt in 0.3 s.
+      const u = Math.min(1, (t - at) / 0.3);
+      const from = k === 0 ? (s.anim === 'zero' ? 0 : tilt(0)) : tilt(k - 1);
+      const angle = from + (tilt(k) - from) * (1 - (1 - u) ** 2);
+      draw({ ...next, scales: { ...rest, load: seq[k]!, angle, syringe: seq[k]!.water > 0 } });
+    },
   };
 }
 

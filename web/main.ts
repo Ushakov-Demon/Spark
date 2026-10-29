@@ -157,6 +157,7 @@ import {
   INNER,
   PLANETS,
   CALENDARS,
+  scalesSequence,
   daysText,
   dateText,
   equinoxDate,
@@ -508,6 +509,17 @@ function benchView(): BenchView | null {
     if (cmd.mode === 'weigh') return { ...base, kind, carts: { mode: 'weigh', weights: cmd.weights, x1: 0, x2: 0, cart: cmd.cart ?? 1, ...(recs[0] ? { read: [formatMeasured('force', recs[0].value, 0.1, locale)] } : {}) } };
     const done = recs.length === 2;
     return { ...base, kind, carts: { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) } };
+  }
+  // Home-made scales: the cups as the last step left them (empty and uneven before the first).
+  if (kind === 'scales') {
+    type Step = 'zero' | 'check' | 'egg';
+    const done = log.filter((e) => e.ok && e.command.type === 'lab.scales');
+    const lastStep = done.length ? (done[done.length - 1]!.command as unknown as { step: Step }).step : undefined;
+    const load = lastStep ? scalesSequence(lastStep).at(-1)! : { plasticine: false, sheet: false, egg: false, sheets: 0, water: 0 };
+    const cs = c?.type === 'lab.scales' ? (c as unknown as { step: Step }).step : undefined;
+    const r = cs && last ? readingsOf([last]).map((x) => x.record)[0] : undefined;
+    const read = r && cs !== 'zero' ? formatMeasured('mass', r.value, 0.001, locale) : undefined;
+    return { ...base, kind, scales: { load, units: locale === 'uk' ? ['г', 'мл'] : ['g', 'mL'], ...(read ? { read } : {}), ...(cs ? { anim: cs } : {}) } };
   }
   // Calendars: the calendar of this step (or the next one) running on; October 1582; Shakespeare and Cervantes.
   if (kind === 'calendar') {
@@ -888,6 +900,16 @@ function allReadings() {
 }
 const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
 /** What the Professor says about the latest level or dynamometer reading. */
+/** A step of the home-made scales, in words: «Лінійка рівно», «5 мл води — 5 г». */
+function scalesShown(step: string, r: MeasurementRecord): string {
+  const uk = locale === 'uk';
+  const V = r.inputs?.['water'] ?? 0;
+  const N = r.inputs?.['sheets'] ?? 0;
+  const m = formatMeasured('mass', r.value, 0.001, locale);
+  if (step === 'zero') return uk ? 'Лінійка стоїть рівно: стаканчики врівноважено.' : 'The ruler is level: the cups balance.';
+  if (step === 'check') return uk ? `Рівно при ${V} мл води: аркуш — ${m}.` : `Level at ${V} mL of water: the sheet — ${m}.`;
+  return uk ? `Рівно при ${N} аркушах і ${V} мл води: яйце — ${m}.` : `Level at ${N} sheets and ${V} mL of water: the egg — ${m}.`;
+}
 /** A step of the calendars, in words: «за 120 років — на 29,1 доби пізніше», the struck-out days, the two deaths. */
 function calendarShown(step: string, recs: readonly MeasurementRecord[]): string {
   const uk = locale === 'uk';
@@ -1028,6 +1050,8 @@ function measureSay(): string {
     const P = formatMeasured('force', r.value, 0.1, locale);
     return phase === 'fall' ? (uk ? `У падінні динамометр показує ${P} — тягарці нічого не тягнуть: невагомість!` : `Falling, the dynamometer shows ${P} — the weights pull on nothing: weightlessness!`) : uk ? `Динамометр показує ${P}.` : `The dynamometer shows ${P}.`;
   }
+  // Home-made scales: level; the sheet against water; the egg.
+  if (m.command.type === 'lab.scales') return scalesShown((m.command as { step: string }).step, r);
   // Calendars: where the equinox went, the reform, the two deaths.
   if (m.command.type === 'lab.calendar') {
     const shown = calendarShown((m.command as { step: string }).step, readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === 'lab.calendar')!]).map((x) => x.record));
@@ -2920,6 +2944,7 @@ function renderProtocol() {
       // (The method of rows: millimetres.)
       const rShown = c.type === 'lab.rows' && r.value !== null ? `${Math.round(r.value * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` : null;
       // (A ball's bounce: whole centimetres.)
+      const scShown = c.type === 'lab.scales' ? scalesShown(String(c['step']), r).replace(/\.$/, '') : null;
       const clShown = c.type === 'lab.calendar' ? calendarShown(String(c['step']), readingsOf([e]).map((x) => x.record)) : null;
       const plShown = c.type === 'lab.planets' ? planetsShown(c as unknown as { step: string }, readingsOf([e]).map((x) => x.record)) : null;
       const arShown = c.type === 'lab.air' && r.value !== null ? formatMeasured('pressure', r.value, 1, locale) : null;
@@ -2939,7 +2964,7 @@ function renderProtocol() {
       const cbShown = cbRecs.length === 3 ? cbRecs.map((x, k) => (k === 0 ? formatMeasured('time', x.value, 0.01, locale) : `${String(Math.round((x.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`)).join(' · ') : null;
       const bnShown = c.type === 'lab.bounce' && r.value !== null ? `${Math.round(r.value * 100)} ${locale === 'uk' ? 'см' : 'cm'}` : null;
       const fShown = c.type === 'lab.forces' && readingsOf([e]).length === 2 ? readingsOf([e]).map((x) => formatMeasured('force', x.record.value, 0.1, locale)).join(' · ') : null;
-      const shown = clShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
+      const shown = scShown ?? clShown ?? plShown ?? arShown ?? gnShown ?? twShown ?? dgShown ?? ctShown ?? tcShown ?? cnShown ?? snShown ?? sgShown ?? wShown ?? cbShown ?? bnShown ?? rShown ?? fShown ?? both ?? leverShown ?? boxShown ?? uShown ?? pShown ?? vShown ?? mShown ?? iShown ?? sShown ?? (r.quantity === 'pressure' ? formatMeasured('pressure', r.value, 100, locale) : r.quantity === 'mass' ? formatMeasured('mass', r.value, 0.00001, locale) : r.quantity === 'length' ? formatMeasured('length', r.value, 0.001, locale) : r.quantity === 'time' ? formatMeasured('time', r.value, 0.01, locale) : r.quantity === 'volume' ? formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale) : formatMeasured('force', r.value, 0.1, locale));
       return `<li class="done"${lookAttr(`m:${history.length}:${i}`)}><span class="what">${lowerFirst(label).replace(/^./, (x) => x.toUpperCase())}</span><span class="outcome">${shown}</span></li>`;
     });
     const next = plan.map((s) => `<li class="planned"><span class="what">${s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale) : s.kind === 'level' ? u.measure.level : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid) : ''}</span></li>`);

@@ -341,6 +341,15 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('за 871 м');
   }, 60_000);
 
+  it('home-made scales: a sheet of A4 against 5 mL of water; the egg — 11 sheets and 3 mL, 58 g', () => {
+    const { answer } = run(PRESETS.find((x) => x.id === 'scales-diy')!);
+    if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk);
+    expect(answer.correct).toBe('known');
+    expect(answer.text.uk).toContain('врівноважили 5 мл води — 5 г');
+    expect(answer.text.uk).toContain('11 аркушів по 5 г і 3 мл води — 58 г');
+    expect(answer.say.uk).toContain('Яйце — 58 г');
+  });
+
   it('calendars: the equinox slides a month in 120 Egyptian years, ten days by 1582; Shakespeare 11 days after Cervantes', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'calendars')!);
     if (process.env['SHOW_ANSWERS']) console.log(answer.text.uk, '\n', answer.say.uk, '\n', answer.text.en);

@@ -474,6 +474,18 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `cr:${i}`, title: uk ? 'у скільки разів повільніший — у стільки разів важчий' : 'as many times slower — so many times heavier', formula: 'm₂ / m₁ = v₁ / v₂ = l₁ / l₂', numbers: `${cm(a ?? 0)} / ${cm(b ?? 0)} ≈ ${n((a ?? 0) / (b ?? 1), 2)}` });
       return;
     }
+    // Home-made scales: the sheet against water; the egg — sheets and water.
+    if (c.type === 'lab.scales') {
+      const r = e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);
+      const step = String(c['step']);
+      if (!r || step === 'zero') return;
+      const N = r.inputs?.['sheets'] ?? 0;
+      const V = r.inputs?.['water'] ?? 0;
+      const g = (x: number) => `${n(x, 3)} ${uk ? 'г' : 'g'}`;
+      if (step === 'check') out.push({ id: `sc:${i}`, title: uk ? 'аркуш A4 = вода зі шприца' : 'a sheet of A4 = water from the syringe', formula: uk ? 'm = V·1 г/мл' : 'm = V·1 g/mL', numbers: `${V} ${uk ? 'мл' : 'mL'} → ${g(V)}` });
+      else out.push({ id: `sg:${i}`, title: uk ? 'яйце: аркуші по 5 г і вода' : 'the egg: sheets of 5 g and water', formula: 'm = N·5 + V', numbers: `${N}·5 + ${V} = ${g(N * 5 + V)}` });
+      return;
+    }
     // Calendars: each one's slide of the equinox, Δ = N·(T☉ − T); the struck-out days; Shakespeare and Cervantes.
     if (c.type === 'lab.calendar') {
       const recs = e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null);

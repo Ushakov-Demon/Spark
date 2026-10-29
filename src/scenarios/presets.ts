@@ -62,7 +62,7 @@ export interface Preset {
   /** 'measurements': the board writes only what was measured — the heating in it is just the way to a temperature. */
   readonly board?: 'measurements';
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar';
+  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | 'lever' | 'slope' | 'circuit' | 'series' | 'parallel' | 'box' | 'depth' | 'utube' | 'press' | 'atm' | 'vessels' | 'magnet' | 'induct' | 'bubble' | 'sink' | 'forces' | 'rows' | 'lift' | 'bounce' | 'carry' | 'winch' | 'wind' | 'strobe' | 'snail' | 'coin' | 'touch' | 'carts' | 'drag' | 'tower' | 'gnomon' | 'air' | 'planets' | 'calendar' | 'scales';
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -996,6 +996,26 @@ const LIST: readonly Preset[] = [
     answerOnBoard: ['pe:'],
     formulas: ['mechanics.kepler-third'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет' }],
+    expect: 'reached',
+  },
+  {
+    ask: { uk: 'Як зважити яйце на саморобних терезах, якщо гир немає?', en: 'How to weigh an egg on home-made scales with no weights?' },
+    id: 'scales-diy',
+    grade: 7,
+    topic: INTERACTION,
+    title: { uk: 'Саморобні терези', en: 'Scales of our own' },
+    question: {
+      uk: 'Змайструємо терези: лінійку завдовжки 30 см підвісимо на нитці за середину, а на кінцях на нитках — два стаканчики від йогурту. Плечі однакові, тож лінійка стоїть рівно, коли маси в стаканчиках однакові. Але набору гир у нас немає. Як зважити куряче яйце?',
+      en: 'We make scales: a 30 cm ruler hung by a thread at its middle, and a yoghurt cup on a thread at each end. The arms are equal, so the ruler stays level when the masses in the cups are equal. But we have no set of weights. How to weigh a hen’s egg?',
+    },
+    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
+    guided: true,
+    bench: 'scales',
+    plan: (['zero', 'check', 'egg'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.scales', step } }) as const),
+    choices: [ch('known', 'Тим, чия маса відома: аркушами паперу й водою', 'With things of known mass: sheets of paper and water'), ch('cant', 'Ніяк: без гир терези покажуть лише, що важче', 'No way: without weights the scales only show which is heavier'), ch('size', 'Ніяк точно — хіба що на око, за розміром', 'Not exactly — only by eye, by its size')],
+    answerOnBoard: ['sg:'],
+    formulas: ['mechanics.density', 'mechanics.weight'],
+    programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез' }],
     expect: 'reached',
   },
   {
@@ -2253,7 +2273,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'strobe-photo', 'snail-speed', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'air-column', 'solar-system-model', 'calendars', 'scales-diy',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'ice-level',
