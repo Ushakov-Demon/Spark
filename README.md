@@ -1,60 +1,61 @@
 # Spark
 
-Ядро научной лаборатории-песочницы для школьников (начинаем с физики): ученик сам ставит опыт, при желании — прогноз или цель, и получает честный разбор результата.
-UI-независимый TypeScript-движок: работает в Node, браузере и Web Worker.
+The core of a science sandbox lab for school students (starting with physics): the student sets up an experiment, optionally makes a prediction or sets a goal, and gets an honest breakdown of the result.
+A UI-independent TypeScript engine: it runs in Node, in the browser and in a Web Worker.
 
-## Як це виглядає
+## What it looks like
 
-![Лабораторія: ліворуч — досліди за предметами й класами; вода замерзла в морозилці; на дошці — формули кожної фази з числами досліду](docs/screenshots/lab-desktop.png)
+![The lab: on the left, experiments by subject and grade; water frozen in the freezer; on the board, the formulas of each phase with the experiment's numbers](docs/screenshots/lab-desktop.png)
 
 | | |
 |---|---|
-| ![Професор читає дошку: прилади відсунуто, видно всі формули](docs/screenshots/board-reading.png) | ![Тепловий баланс у калориметрі: алюміній віддав — вода отримала](docs/screenshots/heat-balance.png) |
-| Професор читає дошку | Тепловий баланс у калориметрі |
-| ![Що це за метал: ρ = m/V за терезами й мензуркою](docs/screenshots/density.png) | ![Архімедова сила: динамометр у воді](docs/screenshots/archimedes.png) |
-| Густина невідомого металу | Архімедова сила |
-| ![«Науковий вісник» — газета Професора](docs/screenshots/newspaper.png) | ![На телефоні](docs/screenshots/lab-phone.png) |
-| «До речі!..» — газета Професора | На телефоні |
-| ![Пісочниця: плита вже на столі, над ним — посуд на вибір](docs/screenshots/choose-over-table.png) | ![7 клас: сталева кулька тоне в гліцерині, секундомір іде](docs/screenshots/ball-in-liquids.png) |
-| Пісочниця: обираємо над столом — і ставимо | Кулька в рідинах різної густини |
+| ![The Professor reads the board: the instruments moved aside, all the formulas in view](docs/screenshots/board-reading.png) | ![Heat balance in a calorimeter: the aluminium gave, the water received](docs/screenshots/heat-balance.png) |
+| The Professor reads the board | Heat balance in a calorimeter |
+| ![Which metal is it: ρ = m/V from the scales and the measuring cylinder](docs/screenshots/density.png) | ![The buoyant force: a dynamometer in water](docs/screenshots/archimedes.png) |
+| The density of an unknown metal | The buoyant force |
+| ![«Науковий вісник» — the Professor's newspaper](docs/screenshots/newspaper.png) | ![On a phone](docs/screenshots/lab-phone.png) |
+| «До речі!..» — the Professor's newspaper | On a phone |
+| ![The sandbox: the hotplate already on the table, the vessels to choose from above it](docs/screenshots/choose-over-table.png) | ![Grade 7: a steel ball sinks in glycerol, the stopwatch is running](docs/screenshots/ball-in-liquids.png) |
+| The sandbox: choose above the table — and put it down | A ball in liquids of different densities |
 
-## Лабораторія в браузері
+## The lab in the browser
 
-**Варіант 1 — для розробки** (зміни в коді видно одразу):
-
-```bash
-npm install
-npm run web        # браузер відкриється сам на http://127.0.0.1:5173 ; зупинити — Ctrl+C
-```
-
-Сторінка працює, лише поки в терміналі запущено `npm run web`.
-
-**Варіант 2 — один файл** (можна відкрити подвійним клацанням або надіслати учням):
-
-```bash
-npm run web:offline  # створить dist-offline/index.html — один самодостатній файл
-```
-
-**Варіант 3 — сайт** (для хостингу: сторінка кожного досліду, каталог, мета-теги для пошуку й поширення):
-
-```bash
-SPARK_SITE_URL=https://адреса.сайту npm run web:build  # створить dist-web/: 100 сторінок, sitemap.xml, robots.txt
-```
-
-Без `SPARK_SITE_URL` сайт теж збереться, але без `sitemap.xml`, `canonical` і `og:url`: їм потрібна повна адреса. Сайт може лежати й у підпапці (наприклад, на GitHub Pages).
-
-Відкривати сам файл `web/index.html` не можна: це вихідний код, браузер його не виконає.
-
-## Консоль
+**Option 1 — for development** (code changes show at once):
 
 ```bash
 npm install
-npm test        # vitest: физика проверяется против аналитических решений
-npm run demo    # консольное демо: закипание чайника
-npm run experiment -- --level school --lang uk   # дослід з поясненням: novice|school|advanced|expert|all, uk|en
-npm run lab -- --goal 40 --pot glass                    # лаборатория: смешивание воды, прогноз/цель по желанию
-npm run knowledge:report               # насколько надёжны данные
+npm run web        # the browser opens by itself at http://127.0.0.1:5173 ; stop with Ctrl+C
+```
+
+The page works only while `npm run web` is running in the terminal.
+
+**Option 2 — a single file** (open it with a double click or send it to students):
+
+```bash
+npm run web:offline  # builds dist-offline/index.html — one self-contained file
+```
+
+**Option 3 — a website** (for hosting: a page for each experiment, a catalogue, meta tags for search and sharing):
+
+```bash
+SPARK_SITE_URL=https://site.address npm run web:build  # builds dist-web/: the pages, sitemap.xml, robots.txt
+```
+
+Without `SPARK_SITE_URL` the site still builds, but without `sitemap.xml`, `canonical` and `og:url`: they need the full address. The site may also live in a subfolder (on GitHub Pages, for example).
+
+Opening the file `web/index.html` itself will not work: it is source code, and the browser will not run it.
+
+## The console
+
+```bash
+npm install
+npm test        # vitest: the physics is checked against analytical solutions
+npm run demo    # a console demo: a kettle coming to the boil
+npm run experiment -- --level school --lang uk   # an experiment with its explanation: novice|school|advanced|expert|all, uk|en
+npm run lab -- --goal 40 --pot glass                    # the lab: mixing water, with an optional prediction or goal
+npm run knowledge:report               # how reliable the data are
 npm run typecheck
+npx tsx scripts/smoke.ts               # every ready-made experiment in a real browser (needs the lab running and Chrome)
 ```
 
 ```ts
@@ -66,4 +67,4 @@ const sim = createSimulation({ solvers: [createThermalSolver()], fixedDt: second
 const after60s = sim.run(kettleScenario(), seconds(60));
 ```
 
-Архитектура и план — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Откуда берутся данные — [docs/DATA_POLICY.md](docs/DATA_POLICY.md) (`npm run knowledge:report`).
+The architecture and the plan — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Where the data come from — [docs/DATA_POLICY.md](docs/DATA_POLICY.md) (`npm run knowledge:report`).
