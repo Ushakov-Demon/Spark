@@ -5,7 +5,7 @@
  */
 import type { Locale } from '../src/knowledge/i18n.js';
 
-export const DEVELOPER = { name: 'Baza Developers', url: 'https://bazadevelopers.com/', company: 'Baza Production', companyUrl: 'https://bazaproduction.com/' } as const;
+export const DEVELOPER = { name: 'Baza Developers', url: 'https://bazadevelopers.com/', company: 'Baza Production', companyUrl: 'https://bazaproduction.com/', email: 'bazadevelopers@gmail.com' } as const;
 /** Where reports go: a new issue in the project's repository (the user needs a GitHub account). */
 export const REPORT_URL = 'https://github.com/Ushakov-Demon/Spark/issues/new';
 
@@ -18,13 +18,13 @@ export const SAFETY_LINE: Record<Locale, string> = {
   en: 'Repeating the experiments in real life can be dangerous to health and life.',
 };
 
-export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: string; madeBy: string }> = {
-  uk: { about: 'Про проєкт', bug: 'Знайшов помилку', close: 'Закрити', madeBy: 'Розроблено' },
-  en: { about: 'About', bug: 'Found a mistake', close: 'Close', madeBy: 'Developed by' },
+export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: string; madeBy: string; contact: string }> = {
+  uk: { about: 'Про проєкт', bug: 'Знайшов помилку', close: 'Закрити', madeBy: 'Розроблено', contact: 'З будь-яких питань пишіть на' },
+  en: { about: 'About', bug: 'Found a mistake', close: 'Close', madeBy: 'Developed by', contact: 'For any questions, write to' },
 };
 
 /** When the page's text was last brought up to date (change it with the text). */
-export const ABOUT_UPDATED = '2026-10-29';
+export const ABOUT_UPDATED = '2026-10-30';
 const updated = (l: Locale) => new Intl.DateTimeFormat(l === 'uk' ? 'uk-UA' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(ABOUT_UPDATED));
 
 /** The page's first paragraph (also its description for search engines and link previews). */
@@ -77,7 +77,7 @@ export function aboutHtml(l: Locale): string {
       <p>Spark has no sign-up, no advertising and no analytics, and collects no personal data. Your settings (language, level, voice, sound) and saved experiments are kept only in your browser and disappear when you clear the site’s data. The newspaper loads articles from Wikipedia, Wikidata and Wikimedia, so your browser contacts their servers. The Professor’s voice uses your browser’s voices; some browsers process speech on their own servers. A mistake report is sent by you yourself and contains only what you see in it.</p>
 
       <h3>Developer</h3>
-      <p>Spark is developed by ${dev}, the technical department of the Slovak company ${company}. A non-commercial social project.</p>
+      <p>Spark is developed by ${dev}, the technical department of ${company}. A non-commercial social project.</p>
       <p class="muted small">Text updated: ${updated('en')}</p>
     </article>`;
   }
@@ -121,7 +121,7 @@ export function aboutHtml(l: Locale): string {
     <p>У Spark немає реєстрації, реклами й аналітики; персональних даних ми не збираємо. Налаштування (мова, рівень, голос, звук) і збережені досліди зберігаються лише у твоєму браузері й зникають, якщо очистити дані сайту. «Науковий вісник» завантажує статті з Вікіпедії, Wikidata та Wikimedia — для цього браузер звертається до їхніх серверів. Голос Професора — це голоси твого браузера; деякі браузери обробляють мовлення на своїх серверах. Повідомлення про помилку надсилаєш ти сам, і в ньому лише те, що ти бачиш.</p>
 
     <h3>Розробник</h3>
-    <p>Spark розробляє ${dev} — технічний відділ словацької компанії ${company}. Некомерційний соціальний проєкт.</p>
+    <p>Spark розробляє ${dev} — технічний відділ компанії ${company}. Некомерційний соціальний проєкт.</p>
     <p class="muted small">Текст оновлено: ${updated('uk')}</p>
   </article>`;
 }
