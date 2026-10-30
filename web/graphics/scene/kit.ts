@@ -1,4 +1,3 @@
-import type { BenchView } from './bench.js';
 import { TABLE } from './constants.js';
 
 /** What the bench's pictures are drawn with — the colours and the common parts — for the old scenes and the experiment modules alike. */
@@ -46,7 +45,7 @@ export function dynamometerSvg(x: number, y: number, horizontal: boolean, displa
 }
 
 /** A stopwatch standing on the table at x, its bottom just above it: its display (and, when the drawing is sped up, by how much). */
-export function stopwatchSvg(sw: NonNullable<BenchView['stopwatch']>, x: number): string {
+export function stopwatchSvg(sw: { readonly display: string; readonly fast?: number }, x: number): string {
   const y = TABLE - 30;
   return `<g class="stopwatch"><rect x="${x - 3}" y="${y - 30}" width="6" height="8" rx="1" style="fill:${DARK}"/><circle cx="${x}" cy="${y}" r="24" style="fill:#f4f1e8;stroke:${DARK};stroke-width:3"/><rect x="${x - 19}" y="${y - 8}" width="38" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-text" x="${x}" y="${y + 4.5}" text-anchor="middle">${sw.display}</text>${sw.fast && sw.fast > 1.05 ? `<text class="bench-reading" x="${x}" y="${y - 38}" text-anchor="middle">⏩ ×${Math.round(sw.fast)}</text>` : ''}</g>`;
 }

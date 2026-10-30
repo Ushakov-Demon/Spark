@@ -317,7 +317,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     out.push({ id: `rhoL:${i}`, title: uk ? 'густина рідини' : 'the density of the liquid', formula: 'ρ = m / V', numbers: `${n(liquidMass * 1000)} ${uk ? 'г' : 'g'} / ${n(liquidVolume * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(liquidMass / liquidVolume / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(liquidMass / liquidVolume)} ${uk ? 'кг/м³' : 'kg/m³'}` });
   };
   const count = { volume: 0, mass: 0 };
-  let tapePath: number | null = null;
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
     if (!e.ok) return;
@@ -375,35 +374,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `cath2:${i}`, title: uk ? 'маса катода після досліду' : 'the cathode after', formula: `m₂ = ${g(r.value)}` });
       out.push({ id: `dm:${i}`, title: uk ? 'маса міді, що осіла на катоді' : 'the copper settled on the cathode', formula: 'Δm = m₂ − m₁', numbers: `${g(r.value)} − ${g(before)} = ${g(dm)}` });
       if (I > 0) out.push({ id: `kEq:${i}`, title: uk ? `електрохімічний еквівалент (I ≈ ${n(I, 2)} А, t = ${n(t / 60, 3)} хв)` : `the electrochemical equivalent (I ≈ ${n(I, 2)} A, t = ${n(t / 60, 3)} min)`, formula: 'k = Δm / (I·t)', numbers: `${n(dm * 1e6, 3)} ${uk ? 'мг' : 'mg'} / (${n(I, 2)} ${uk ? 'А' : 'A'} · ${n(t, 4)} ${uk ? 'с' : 's'}) ≈ ${n((dm * 1e6) / (I * t), 2)} ${uk ? 'мг/Кл' : 'mg/C'}` });
-      return;
-    }
-    // The motion bench: a path by the tape, times by the stopwatch — speeds and periods.
-    const sec = (x: number) => formatMeasured('time', x, 0.01, locale);
-    if (c.type === 'lab.tape') {
-      tapePath = r.value;
-      out.push({ id: `tape:${i}`, title: c['what'] === 'path' ? (uk ? 'шлях кульки — від позначки до циліндра' : 'the ball’s path — from the mark to the cylinder') : uk ? 'довжина маятника' : 'the length of the pendulum', formula: `l = ${cm(r.value)}` });
-      return;
-    }
-    if (c.type === 'lab.roll') {
-      const path = Number(c['path']);
-      // Half the path: half of what the tape measured.
-      const l = tapePath === null ? path : path < tapePath - 1e-9 ? tapePath / 2 : tapePath;
-      const half = tapePath !== null && path < tapePath - 1e-9;
-      out.push({ id: `roll:${i}`, title: half ? (uk ? 'середня швидкість на першій половині шляху' : 'the average speed on the first half of the path') : uk ? 'середня швидкість кульки на всьому шляху' : 'the ball’s average speed on the whole path', formula: 'v = l / t', numbers: `${n(l)} ${uk ? 'м' : 'm'} / ${sec(r.value)} ≈ ${n(l / r.value, 2)} ${uk ? 'м/с' : 'm/s'}` });
-      return;
-    }
-    if (c.type === 'lab.whirl') {
-      const N = Number(c['turns']);
-      const T = r.value / N;
-      const R = r.inputs?.['radius'] ?? 0.15;
-      out.push({ id: `T:${i}`, title: uk ? `період обертання (нитка ${cm(Number(c['thread']))})` : `the period of turning (thread ${cm(Number(c['thread']))})`, formula: 'T = t / N', numbers: `${sec(r.value)} / ${N} ≈ ${sec(T)}` });
-      out.push({ id: `n:${i}`, title: uk ? 'обертова частота' : 'the frequency', formula: 'n = N / t', numbers: `${N} / ${sec(r.value)} ≈ ${n(N / r.value, 2)} ${uk ? 'об/с' : 'rev/s'}` });
-      out.push({ id: `vc:${i}`, title: uk ? 'швидкість тіла на колі' : 'the body’s speed on the circle', formula: 'v = 2πR / T', numbers: `2π · ${n(R)} ${uk ? 'м' : 'm'} / ${sec(T)} ≈ ${n((2 * Math.PI * R) / T, 2)} ${uk ? 'м/с' : 'm/s'}` });
-      return;
-    }
-    if (c.type === 'lab.swing') {
-      const N = Number(c['count']);
-      out.push({ id: `Tp:${i}`, title: uk ? `період: ${cm(Number(c['length']))}, відхилення ${cm(Number(c['amplitude']))}, кулька ${Math.round(Number(c['mass']) * 1000)} г` : `the period: ${cm(Number(c['length']))}, ${cm(Number(c['amplitude']))} aside, a ${Math.round(Number(c['mass']) * 1000)} g ball`, formula: 'T = t / N', numbers: `${sec(r.value)} / ${N} ≈ ${sec(r.value / N)}` });
       return;
     }
     if (r.quantity === 'volume' && liquidVolume === null && emptyVessel !== null) {

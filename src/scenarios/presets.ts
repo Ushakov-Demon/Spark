@@ -5,7 +5,6 @@ import { EXPERIMENTS, type ExperimentKind } from '../experiments/index.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
-import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './motion-bench.js';
 
 /**
  * Ready-made experiments, grouped by school grade and topic. Each sets up the
@@ -67,7 +66,7 @@ export interface Preset {
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
   /** What stands on the table, when it is not the bench's usual (one bench, another set: a bubble in washing-up liquid). */
   readonly benchSetup?: LocalizedText;
-  readonly bench?: 'incline' | 'circle' | 'pendulum' | ExperimentKind;
+  readonly bench?: ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -226,118 +225,6 @@ const LIST: readonly Preset[] = [
           { kind: 'level' },
         ],
       }),
-    },
-  ),
-  varied(
-    {
-      id: 'average-speed',
-      ask: { uk: 'Де середня швидкість кульки більша: на всьому шляху чи на першій половині?', en: 'Where is the ball’s average speed greater: on the whole path or on its first half?' },
-      grade: 7,
-      topic: MOTION,
-      title: { uk: 'Середня швидкість кульки на жолобі', en: 'The average speed of a ball in a groove' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'incline',
-      choices: [ch('whole', 'На всьому шляху', 'On the whole path'), ch('half', 'На першій половині', 'On the first half'), ch('same', 'Однакова', 'The same')],
-      choicesAt: 'end',
-      answerOnBoard: ['roll:'],
-      formulas: ['mechanics.average-speed'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 1', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 1. Визначення середньої швидкості руху тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 1, с. 75' } }],
-      expect: 'reached',
-    },
-    {
-      // «At a small angle»: the upper end of the 1.2 m groove raised 5, 10 or 15 cm.
-      controls: [{ id: 'raise', label: { uk: 'Верхній кінець жолоба', en: 'Upper end of the groove' }, kind: 'choice', options: [ch('5', '5 см', '5 cm'), ch('10', '10 см', '10 cm'), ch('15', '15 см', '15 cm')], value: '10' }],
-      build: (v) => {
-        const cm = Number(v['raise']);
-        const raise = cm / 100;
-        return {
-          question: {
-            uk: `Жолоб закріпили на штативі під невеликим кутом — верхній кінець піднято на ${cm} см, на ньому — позначка крейдою, а внизу — металевий циліндр, що зупиняє кульку. Виміряємо шлях і час, за який кулька скотиться від позначки до циліндра, а потім — лише першу половину шляху. Де середня швидкість кульки більша: на всьому шляху чи на першій половині?`,
-            en: `A groove is fixed on a stand at a small angle — its upper end raised ${cm} cm, with a chalk mark on it and a metal cylinder at the bottom to stop the ball. We measure the path and the time the ball takes from the mark to the cylinder, then the first half of the path only. Where is the ball’s average speed greater: on the whole path or on its first half?`,
-          },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.tape', what: 'path', length: ROLL_PATH } },
-            { kind: 'bench', command: { type: 'lab.roll', path: ROLL_PATH, raise } },
-            { kind: 'bench', command: { type: 'lab.roll', path: ROLL_PATH / 2, raise } },
-          ],
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'rotation-period',
-      ask: { uk: 'Як зміниться період обертання, якщо вкоротити нитку, а коло лишити те саме?', en: 'How does the period change if the thread is shortened and the circle stays the same?' },
-      grade: 7,
-      topic: MOTION,
-      title: { uk: 'Період обертання тіла на нитці', en: 'The period of a body turning on a thread' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'circle',
-      choices: [ch('shorter', 'Стане меншим — тіло обертатиметься частіше', 'It gets shorter — the body turns more often'), ch('longer', 'Стане більшим', 'It gets longer'), ch('same', 'Не зміниться — коло ж те саме', 'It stays — the circle is the same')],
-      choicesAt: 'end',
-      formulas: ['mechanics.period'],
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 2', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 2. Визначення періоду обертання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 2, с. 87' } }],
-      expect: 'reached',
-    },
-    {
-      // More turns timed — the same slip of the stopwatch shared among more of them: a truer period.
-      controls: [{ id: 'turns', label: { uk: 'Скільки обертів рахувати', en: 'Turns to count' }, kind: 'choice', options: [ch('10', '10', '10'), ch('20', '20', '20')], value: '10' }],
-      build: (v) => {
-        const turns = Number(v['turns']);
-        return {
-          question: {
-            uk: `Тримаючи нитку за петлю над центром кола радіусом 15 см, розкрутимо тіло так, щоб воно йшло по колу, і виміряємо час ${turns} обертів. З нього знайдемо період, обертову частоту й швидкість тіла. А потім вкоротимо нитку, а коло лишимо те саме. Як зміниться період обертання?`,
-            en: `Holding the thread by its loop over the centre of a 15 cm circle, we swing the body round it and time ${turns} turns. From that we find the period, the frequency and the body’s speed. Then we shorten the thread and keep the circle. How does the period change?`,
-          },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.whirl', thread: THREAD_LENGTH.value, turns } },
-            { kind: 'bench', command: { type: 'lab.whirl', thread: 0.3, turns } },
-          ],
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'pendulum',
-      ask: { uk: 'Від чого залежить період коливань маятника: від амплітуди, маси кульки чи довжини нитки?', en: 'What does a pendulum’s period depend on: the amplitude, the ball’s mass or the length?' },
-      grade: 7,
-      topic: MOTION,
-      title: { uk: 'Коливання нитяного маятника', en: 'The swings of a thread pendulum' },
-      params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-      guided: true,
-      bench: 'pendulum',
-      choices: [ch('length', 'Лише від довжини нитки', 'Only on the length'), ch('amplitude', 'Від амплітуди: що ширше розмах, то довше', 'On the amplitude: the wider, the longer'), ch('mass', 'Від маси: важча кулька гойдається повільніше', 'On the mass: a heavier ball swings slower')],
-      choicesAt: 'end',
-      answerOnBoard: ['Tp:'],
-      formulas: ['mechanics.pendulum', 'mechanics.period'],
-      programs: [
-        { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 3', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 3. Дослідження коливань нитяного маятника.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 3, с. 99' } },
-        { program: 'ua-nus-2023-holovko', grade: 9, match: 'same', quote: 'коливань математичного маятника' },
-      ],
-      expect: 'reached',
-    },
-    {
-      // More swings timed — the same slip of the stopwatch shared among more of them: a truer period.
-      controls: [{ id: 'count', label: { uk: 'Скільки коливань рахувати', en: 'Swings to count' }, kind: 'choice', options: [ch('10', '10', '10'), ch('20', '20', '20'), ch('30', '30', '30')], value: '20' }],
-      build: (v) => {
-        const count = Number(v['count']);
-        return {
-          question: {
-            uk: `Підвісимо до кільця штатива кульку на нитці завдовжки 1 м. Виміряємо час ${count} коливань, відхиливши кульку на 2,5 см, потім — на 5,5 см. Тоді замінимо кульку важчою, а наостанок вкоротимо нитку до 25 см. Від чого залежить період коливань маятника?`,
-            en: `We hang a ball on a 1 m thread from the stand’s ring. We time ${count} swings with the ball pulled 2.5 cm aside, then 5.5 cm. Then we put on a heavier ball, and at last shorten the thread to 25 cm. What does the pendulum’s period depend on?`,
-          },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.tape', what: 'length', length: 1 } },
-            { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.light, count } },
-            { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.055, mass: PENDULUM_BALLS.light, count } },
-            { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.heavy, count } },
-            { kind: 'bench', command: { type: 'lab.swing', length: 0.25, amplitude: 0.025, mass: PENDULUM_BALLS.light, count } },
-          ],
-        };
-      },
     },
   ),
   {

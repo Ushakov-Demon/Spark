@@ -1,4 +1,3 @@
-import { G } from '../domains/mechanics/constants.js';
 import type { MeasurementRecord } from '../core/trace.js';
 import { COMPONENTS, molarMass as molarMassOf, NACL_SOLUTE } from '../components/index.js';
 import type { Command } from '../core/commands.js';
@@ -23,7 +22,7 @@ import { bodyEnergy, isThermalBody } from '../domains/thermal/entities.js';
 import { solubilityAt } from '../domains/thermal/mixture.js';
 import { LAB_COMMANDS, type LabCommand } from './lab-knowledge.js';
 import { labGoalReached, labSetup } from './thermal-lab.js';
-import { times, WATER } from './preset-kit.js';
+import { WATER } from './preset-kit.js';
 
 /**
  * Answers to the questions the ready-made experiments ask — built from what
@@ -157,70 +156,6 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
             } Once the ice melted — ${b ? mL(b.value!, l) : '—'}. Melting does not change the mass: ${shown ? `${gr(iceMass, l)} of ice became ${gr(iceMass, l)} of water, and ${gr(iceMass, l)} of water take exactly ${mL(shown, l)}` : 'the meltwater has the mass of the displaced water, and so its volume'} — just as much as the cube pushed aside. So the level stays; melting sea ice does not raise the ocean either — unlike glaciers on land.`,
       ),
       ...(a && b ? { correct: d > div / 2 ? 'up' : d < -div / 2 ? 'down' : 'same' } : {}),
-    };
-  },
-  'average-speed': (run) => {
-    const R = run.readings ?? [];
-    const l = R.find((x) => x.command.type === 'lab.tape')?.record.value ?? null;
-    const rolls = R.filter((x) => x.command.type === 'lab.roll' && x.record.value !== null);
-    const whole = rolls.find((x) => Number(x.command['path']) >= (l ?? 1) - 1e-9)?.record.value ?? null;
-    const half = rolls.find((x) => Number(x.command['path']) < (l ?? 1) - 1e-9)?.record.value ?? null;
-    const ok = l !== null && whole !== null && half !== null;
-    const v1 = ok ? l! / whole! : 0;
-    const v2 = ok ? l! / 2 / half! : 0;
-    const correct = ok ? (v1 > v2 * 1.03 ? 'whole' : v2 > v1 * 1.03 ? 'half' : 'same') : undefined;
-    const s = (x: number, l: Locale) => formatMeasured('time', x, 0.01, l);
-    const v = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'м/с' : 'm/s'}`;
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Кулька весь час розганяється: її тягне вниз уздовж жолоба частина сили тяжіння. На початку вона котиться повільно, наприкінці — швидко. Перша половина шляху — повільна частина, тому її середня швидкість менша; на всьому шляху до неї додається швидка друга половина. Під час розгону з місця шлях росте як квадрат часу (l = a·t²/2), тож половину шляху кулька проходить не за половину часу, а за ≈ 71 % (1/√2) — і середня швидкість на всьому шляху в √2 ≈ 1,4 раза більша. Тому, називаючи середню швидкість, завжди кажуть, на якій ділянці." : "The ball keeps speeding up: part of gravity pulls it down along the groove. It rolls slowly at first and fast at the end. The first half of the path is the slow part, so its average speed is lower; over the whole path the fast second half adds in. Speeding up from rest, the path grows as the square of the time (l = a·t²/2), so the ball covers half the path not in half the time but in ≈ 71 % of it (1/√2) — and the average speed over the whole path is √2 ≈ 1.4 times greater. That is why an average speed always comes with the stretch it is for.")),
-      say: both((l) => (l === 'uk' ? 'Кулька розганяється — тому й середня швидкість різна!' : 'The ball speeds up — so the average speed differs!')),
-      text: both((lc) =>
-        lc === 'uk'
-          ? `Увесь шлях l = ${ok ? formatMeasured('length', l!, 0.001, lc) : '—'} кулька пройшла за ${ok ? s(whole!, lc) : '—'}: v = l/t ≈ ${v(v1, lc)}. Першу половину — за ${ok ? s(half!, lc) : '—'}: v ≈ ${v(v2, lc)}. Кулька весь час розганяється, тож другу половину шляху вона проходить швидше за першу, і середня швидкість на всьому шляху більша — тут ${times(v1 / Math.max(v2, 1e-9), lc)}. Тому середня швидкість завжди стосується певної ділянки шляху. Секундомір тут показує точно; вручну людина вмикає й зупиняє його із запізненням ≈ 0,1–0,2 с — тому дослід у підручнику повторюють тричі й беруть середній час.`
-          : `The ball covered the whole path l = ${ok ? formatMeasured('length', l!, 0.001, lc) : '—'} in ${ok ? s(whole!, lc) : '—'}: v = l/t ≈ ${v(v1, lc)}. The first half — in ${ok ? s(half!, lc) : '—'}: v ≈ ${v(v2, lc)}. The ball keeps speeding up, so it covers the second half faster than the first, and the average speed on the whole path is greater — here ${sig(v1 / Math.max(v2, 1e-9), 2, lc)} times. So an average speed always belongs to a stretch of the path. The stopwatch here reads exactly; by hand one starts and stops it ≈ 0.1–0.2 s late — that is why the textbook repeats the run three times and takes the mean time.`,
-      ),
-    };
-  },
-  'rotation-period': (run) => {
-    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.whirl' && x.record.value !== null).map((x) => ({ L: Number(x.command['thread']), N: Number(x.command['turns']), t: x.record.value!, R: x.record.inputs?.['radius'] ?? 0.15 }));
-    const [a, b] = rows;
-    const Ta = a ? a.t / a.N : 0;
-    const Tb = b ? b.t / b.N : 0;
-    const correct = a && b ? (Tb < Ta * 0.97 ? 'shorter' : Tb > Ta * 1.03 ? 'longer' : 'same') : undefined;
-    const cm = (m: number, l: Locale) => formatMeasured('length', m, 0.01, l);
-    const s = (x: number, l: Locale) => formatMeasured('time', x, 0.01, l);
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Тіло йде по колу, бо нитка, нахилена до вертикалі, тягне його не лише вгору, а й до центру кола. Коло те саме, але коротка нитка нахилена сильніше, тож до центру тягне більша частка сили — і тіло мусить обходити коло швидше, щоб ця сила якраз утримувала його на колі. Виходить T = 2π·√(h/g), де h — висота руки над площиною кола: коротша нитка — нижче рука над колом — менший період. Це той самий закон, що й у нитяного маятника, — бо це теж маятник, тільки він не гойдається, а обертається." : "The body goes round because the slanting thread pulls it not only up but also towards the centre. The circle is the same, but a short thread slants more, so a bigger share of the pull points to the centre — and the body has to go round faster for that pull to keep it just on the circle. It comes out T = 2π·√(h/g), h being the hand’s height above the circle: a shorter thread — the hand lower over the circle — a shorter period. It is the same law as for a thread pendulum — because it is a pendulum too, only it turns instead of swinging.")),
-      say: both((l) => (l === 'uk' ? 'Коротша нитка — частіше оберти!' : 'A shorter thread — quicker turns!')),
-      text: both((l) =>
-        l === 'uk'
-          ? `${a ? `Із ниткою ${cm(a.L, l)} ${a.N} обертів тривали ${s(a.t, l)}: T = t/N ≈ ${formatMeasured('time', Ta, 0.01, l)}, n = N/t ≈ ${sig(1 / Ta, 2, l)} об/с, швидкість тіла v = 2πR/T ≈ ${sig((2 * Math.PI * a.R) / Ta, 2, l)} м/с. ` : ''}${b ? `Із ниткою ${cm(b.L, l)} — ${s(b.t, l)}: T ≈ ${formatMeasured('time', Tb, 0.01, l)}. ` : ''}Коло те саме, але коротша нитка стоїть похиліше, і тіло, щоб іти по колу, має обертатися частіше: період залежить від довжини нитки (для тіла на нитці T = 2π·√(h/g), де h — висота руки над площиною кола). Тому період міряють за багатьма обертами: один оберт триває близько секунди, а рука вмикає секундомір із запізненням ≈ 0,1–0,2 с.`
-          : `${a ? `With a ${cm(a.L, l)} thread ${a.N} turns took ${s(a.t, l)}: T = t/N ≈ ${formatMeasured('time', Ta, 0.01, l)}, n = N/t ≈ ${sig(1 / Ta, 2, l)} rev/s, the body’s speed v = 2πR/T ≈ ${sig((2 * Math.PI * a.R) / Ta, 2, l)} m/s. ` : ''}${b ? `With a ${cm(b.L, l)} thread — ${s(b.t, l)}: T ≈ ${formatMeasured('time', Tb, 0.01, l)}. ` : ''}The circle is the same, but a shorter thread slants more, and to go round the circle the body has to turn more often: the period depends on the thread (for a body on a thread T = 2π·√(h/g), h being the hand’s height above the circle). That is why the period is timed over many turns: one turn takes about a second, and a hand starts the stopwatch ≈ 0.1–0.2 s late.`,
-      ),
-    };
-  },
-  pendulum: (run) => {
-    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.swing' && x.record.value !== null).map((x) => ({ L: Number(x.command['length']), A: Number(x.command['amplitude']), m: Number(x.command['mass']), T: x.record.value! / Number(x.command['count']) }));
-    const [base, wide, heavy, short] = rows;
-    const close = (x?: { T: number }, y?: { T: number }) => !!x && !!y && Math.abs(x.T - y.T) / y.T < 0.02;
-    const ok = !!base && !!wide && !!heavy && !!short;
-    const correct = ok ? (close(wide, base) && close(heavy, base) && !close(short, base) ? 'length' : !close(wide, base) ? 'amplitude' : 'mass') : undefined;
-    const sT = (x: number, l: Locale) => formatMeasured('time', x, 0.01, l);
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Чому маса не важить? Важчу кульку Земля тягне сильніше, але й розігнати її важче — у стільки ж разів: і сила тяжіння, і інертність пропорційні масі, тож рухається важка кулька так само, як легка (як і падають вони однаково, якщо не заважає повітря). Чому майже не важить амплітуда? За ширшого розмаху кульці далі йти, але й сила, що повертає її до середини, більша — вона пропорційна відхиленню, тож кулька й рухається швидше; при малих кутах ці два ефекти точно компенсують один одного. А довжина важить: на довшій нитці та сама сила тяжіння повертає кульку повільніше — повертальна сила пропорційна відхиленню, поділеному на довжину. Звідси T = 2π·√(l/g): учетверо довша нитка — удвічі довший період." : "Why does the mass not matter? The Earth pulls a heavier ball harder, but it is also harder to speed up — by just as much: both gravity and inertia are proportional to the mass, so a heavy ball moves like a light one (just as they fall alike when the air does not get in the way). Why does the amplitude hardly matter? With a wider swing the ball has farther to go, but the force bringing it back to the middle is larger too — proportional to how far it is out — so it also moves faster; at small angles the two cancel exactly. But the length matters: on a longer thread the same gravity brings the ball back more slowly — the restoring force is proportional to the displacement over the length. Hence T = 2π·√(l/g): a thread four times longer — twice the period.")),
-      say: both((l) => (l === 'uk' ? 'Лише довжина нитки задає ритм маятника!' : 'Only the length sets a pendulum’s rhythm!')),
-      text: both((l) =>
-        l === 'uk'
-          ? ok
-            ? `Маятник 1 м: відхилення 2,5 см — T ≈ ${sT(base!.T, l)}, 5,5 см — T ≈ ${sT(wide!.T, l)}, важча кулька — T ≈ ${sT(heavy!.T, l)}: період той самий. Маятник 25 см — T ≈ ${sT(short!.T, l)}: учетверо коротша нитка — удвічі менший період. Період малих коливань не залежить ні від амплітуди, ні від маси, а лише від довжини: T = 2π·√(l/g) ≈ ${sT(2 * Math.PI * Math.sqrt(1 / G), l)} для 1 м. (За ширшого розмаху період зростає на тисячні частки — секундомір у руці цього не помітить.) Тож маятник завдовжки 4 м гойдався б із періодом ≈ 4 с — удвічі довше, ніж метровий, хай якою була б його кулька.`
-            : 'Дослід ще не завершено.'
-          : ok
-            ? `A 1 m pendulum: 2.5 cm aside — T ≈ ${sT(base!.T, l)}, 5.5 cm — T ≈ ${sT(wide!.T, l)}, a heavier ball — T ≈ ${sT(heavy!.T, l)}: the same period. A 25 cm pendulum — T ≈ ${sT(short!.T, l)}: a thread four times shorter — half the period. The period of small swings depends on neither the amplitude nor the mass, only on the length: T = 2π·√(l/g) ≈ ${sT(2 * Math.PI * Math.sqrt(1 / G), l)} for 1 m. (A wider swing lengthens it by thousandths — a stopwatch in a hand will not notice.) So a 4 m pendulum would swing with a period of ≈ 4 s — twice as long as a metre one, whatever its ball.`
-            : 'The experiment is not finished yet.',
-      ),
     };
   },
 

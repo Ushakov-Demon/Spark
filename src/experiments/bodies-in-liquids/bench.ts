@@ -7,7 +7,7 @@ import { G } from '../../domains/mechanics/constants.js';
 import { terminalVelocity } from '../../domains/mechanics/settling.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import type { SourcedValue } from '../../knowledge/types.js';
-import { STOPWATCH_DIVISION } from '../../scenarios/motion-bench.js';
+import { STOPWATCH_DIVISION } from '../motion-lab-works/bench.js';
 
 /**
  * A body moving steadily through a liquid (grade 7): an air bubble rising in a bottle of thick washing-up liquid

@@ -45,9 +45,6 @@ import {
   sandFull,
   TUBE_DIAMETER,
   TUBE_LENGTH,
-  ROLL_PATH,
-  THREAD_LENGTH,
-  PENDULUM_BALLS,
   BENCH_WEIGHT,
   stepCommand,
   OPERATIONS,
@@ -133,7 +130,6 @@ import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
-import { BUSY } from './graphics/scene/bench-motion.js';
 import { LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute, type LibraryPage } from './library.js';
 import { createChooser, fly, type ChoiceCard, type ChooserStage } from './chooser.js';
 import { deviceSvg } from './graphics/scene/devices.js';
@@ -415,7 +411,7 @@ function measureNow(command: LabCommand): string {
     hum(0.3 + amps / 2, 1.6);
   }
   // An instrument that moves on the scene (a balance, a spring, a pulled block): its reading is told once it is at rest.
-  instrumentBusy = entry.ok && (command.type in BUSY || (experimentOf(command.type)?.busy(command as never) ?? null) !== null) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  instrumentBusy = entry.ok && (experimentOf(command.type)?.busy(command as never) ?? null) !== null && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   boardEpoch++;
   render();
   return measureSay();
@@ -437,35 +433,12 @@ function benchView(): BenchView | null {
   const r = last ? readingsOf([last])[0]?.record : undefined;
   const c = last?.command as ({ type: string } & Record<string, unknown>) | undefined;
   const show = (q: 'force' | 'length', v: number | null | undefined) => formatMeasured(q, v ?? 0, q === 'force' ? 0.1 : 0.001, locale);
-  const base = { kind, weights: 0, block: BENCH_BLOCK.edges } as const;
+  const base = { kind, block: BENCH_BLOCK.edges } as const;
   // A body weighed on the dynamometer hanging from the stand: the same on every bench.
   if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
   // An experiment module draws itself (web/experiments).
   const scene = sceneOf(kind);
   if (scene) return { ...base, scene: scene.view({ log, ...(last ? { last } : {}), ...(c ? { command: c } : {}), plan, substance: params.substance, locale }) };
-  // The motion bench: the groove, the body on a thread, the pendulum — the stopwatch with the time read, the run to play.
-  const sec = (x: number | null | undefined) => formatMeasured('time', x ?? 0, 0.01, locale);
-  const tapeShown = c?.type === 'lab.tape' && r ? { tape: show('length', r.value) } : {};
-  if (kind === 'incline') {
-    const roll = c?.type === 'lab.roll' && r;
-    const stop = roll ? Number(c!['path']) / ROLL_PATH : 1;
-    // As high as the experiment raises the groove (before the first roll too).
-    const planned = preset?.plan?.find((s) => s.kind === 'bench' && s.command.type === 'lab.roll');
-    const raise = (roll ? (c as { raise?: number }).raise : undefined) ?? (planned?.kind === 'bench' ? (planned.command as { raise?: number }).raise : undefined);
-    return { ...base, kind, incline: { stop, ball: roll ? 1 : 0, ...(raise ? { raise } : {}) }, stopwatch: { display: sec(roll ? r!.value : 0) }, ...tapeShown, ...(roll ? { run: { seconds: r!.exact ?? r!.value ?? 0 } } : {}) };
-  }
-  if (kind === 'circle') {
-    const whirl = c?.type === 'lab.whirl' && r;
-    const thread = whirl ? Number(c!['thread']) : THREAD_LENGTH.value;
-    return { ...base, kind, circle: { thread, angle: 0 }, stopwatch: { display: sec(whirl ? r!.value : 0) }, ...(whirl ? { run: { seconds: r!.exact ?? r!.value ?? 0, period: r!.inputs?.['period'] ?? 1, count: Number(c!['turns']) } } : {}) };
-  }
-  if (kind === 'pendulum') {
-    const swing = c?.type === 'lab.swing' && r;
-    const prev = [...log].reverse().find((e) => e.command.type === 'lab.swing')?.command as { length?: number; mass?: number } | undefined;
-    const length = swing ? Number(c!['length']) : c?.type === 'lab.tape' ? Number(c['length']) : (prev?.length ?? 1);
-    const mass = swing ? Number(c!['mass']) : (prev?.mass ?? PENDULUM_BALLS.light);
-    return { ...base, kind, pendulum: { length, angle: 0, mass }, stopwatch: { display: sec(swing ? r!.value : 0) }, ...tapeShown, ...(swing ? { run: { seconds: r!.exact ?? r!.value ?? 0, period: r!.inputs?.['period'] ?? 2, count: Number(c!['count']), amplitude: Math.asin(Number(c!['amplitude']) / length) } } : {}) };
-  }
   return base;
 }
 /** The latest level reading or dynamometer reading while nothing has happened since. */
@@ -503,15 +476,7 @@ function measureSay(): string {
   const uk = locale === 'uk';
   const modBusy = instrumentBusy ? experimentOf(m.command.type)?.busy(m.command as never) : null;
   if (modBusy) return tr(modBusy, locale);
-  if (instrumentBusy && BUSY[m.command.type]) return tr(BUSY[m.command.type]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
-  // The motion bench: what the tape and the stopwatch showed.
-  const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
-  const cmd = m.command as unknown as Record<string, number | string>;
-  if (m.command.type === 'lab.tape') return uk ? `${cmd['what'] === 'path' ? 'Шлях кульки' : 'Довжина маятника'}: l = ${cm(r.value ?? 0)}.` : `${cmd['what'] === 'path' ? 'The ball’s path' : 'The pendulum’s length'}: l = ${cm(r.value ?? 0)}.`;
-  if (m.command.type === 'lab.roll') return uk ? `Кулька докотилася до циліндра за ${sec(r.value)}.` : `The ball reached the cylinder in ${sec(r.value)}.`;
-  if (m.command.type === 'lab.whirl') return uk ? `${cmd['turns']} обертів — ${sec(r.value)}: один оберт ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} с.` : `${cmd['turns']} turns — ${sec(r.value)}: one turn ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} s.`;
-  if (m.command.type === 'lab.swing') return uk ? `${cmd['count']} коливань — ${sec(r.value)}: одне коливання ≈ ${sig((r.value ?? 0) / Number(cmd['count']), 3, locale)} с.` : `${cmd['count']} swings — ${sec(r.value)}: one swing ≈ ${sig((r.value ?? 0) / Number(cmd['count']), 3, locale)} s.`;
   // The coil on the multimeter: its resistance at the water's temperature, and how much it grew since the first reading.
   if (m.command.type === 'lab.ohm') {
     const Om = (x: number) => formatMeasured('resistance', x, r.inputs?.['division'] ?? 0.01, locale);
@@ -3157,6 +3122,7 @@ function buildInfo() {
   $('#library-links').innerHTML = [`<a href="${siteHref(pagePath({ page: 'catalog' }, locale))}">${catalogUi(locale).title}</a>`, ...LIBRARY_PAGES.map((p) => `<a href="${siteHref(pagePath({ page: 'library', tab: p }, locale))}">${lib.tabs[p]}</a>`)].join('');
   $('#safety').textContent = `⚠ ${SAFETY_LINE[locale]}`;
   $('#made-by').innerHTML = `${a.madeBy} <a href="${DEVELOPER.url}" target="_blank" rel="noopener">${DEVELOPER.name}</a>`;
+  $('#contact').innerHTML = `${a.contact} <a href="mailto:${DEVELOPER.email}">${DEVELOPER.email}</a>`;
   $('#about-back').textContent = lib.back;
   $<HTMLAnchorElement>('#about-back').href = siteHref(pagePath({ page: 'lab' }, locale));
   $('#bug-close').setAttribute('aria-label', a.close);

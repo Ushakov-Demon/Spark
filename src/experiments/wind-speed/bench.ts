@@ -4,7 +4,7 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import type { SourcedValue } from '../../knowledge/types.js';
-import { STOPWATCH_DIVISION } from '../../scenarios/motion-bench.js';
+import { STOPWATCH_DIVISION } from '../motion-lab-works/bench.js';
 
 /**
  * Measuring the speed of the air (grade 7): outdoors, on three days with different winds, a soap bubble is blown at
