@@ -37,6 +37,26 @@ export const balancedDensity = (rho1: number, h1: number, h2: number): number =>
 /** Boyle–Mariotte: a gas kept at one temperature — its pressure times its volume stays the same, p₁·V₁ = p₂·V₂, so V₂ = V₁·p₁ / p₂. */
 export const isothermalVolume = (volume: number, p1: number, p2: number): number => (volume * p1) / p2;
 
+/** Torricelli: a liquid flows out from under a height h of itself as fast as a body falling from h, v = √(2·g·h). */
+export const outflowSpeed = (g: number, head: number): number => Math.sqrt(2 * g * head);
+/** Thrown straight up at a speed v, a body (a jet of water) rises until its kinetic energy is all potential: h = v² / (2·g). */
+export const riseHeight = (speed: number, g: number): number => (speed * speed) / (2 * g);
+/** Hagen–Poiseuille as a lost height: a liquid in laminar flow through a pipe loses h = 32·μ·L·v / (ρ·g·D²) of its head. */
+export const laminarHeadLoss = (viscosity: number, length: number, speed: number, density: number, g: number, diameter: number): number => (32 * viscosity * length * speed) / (density * g * diameter * diameter);
+/** The Reynolds number of a flow in a pipe: Re = ρ·v·D / μ (laminar below ≈ 2300). */
+export const reynolds = (density: number, speed: number, diameter: number, viscosity: number): number => (density * speed * diameter) / viscosity;
+/**
+ * A liquid let out of a vessel through a pipe and a nozzle, the nozzle `head` below its surface: its speed out of the
+ * nozzle. The head is spent on that speed and on the pipe's (laminar) friction: H = v²/(2g) + 32·μ·L·v_pipe/(ρ·g·D²),
+ * v_pipe = v·(d/D)² — the same water through the wider pipe, slower.
+ */
+export const pipeOutflowSpeed = (head: number, g: number, pipe: { readonly length: number; readonly diameter: number }, nozzle: number, liquid: { readonly density: number; readonly viscosity: number }): number => {
+  if (head <= 0) return 0;
+  const a = 1 / (2 * g);
+  const b = laminarHeadLoss(liquid.viscosity, pipe.length, (nozzle / pipe.diameter) ** 2, liquid.density, g, pipe.diameter);
+  return (-b + Math.sqrt(b * b + 4 * a * head)) / (2 * a);
+};
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

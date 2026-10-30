@@ -25,3 +25,14 @@ export const STANDARD_ATMOSPHERE: SourcedValue = {
   citations: [{ source: 'wikipedia-standard-atmosphere', locator: 'Lead: defined as 101325 Pa', conditions: 'defined', value: 101325 }],
   note: 'A defined unit, not a measurement: the day’s pressure differs by a few per cent.',
 };
+
+/** Below this Reynolds number a flow in a round pipe is laminar (Hagen–Poiseuille holds); above ≈ 2900 — turbulent. */
+export const LAMINAR_REYNOLDS: SourcedValue = {
+  value: 2300,
+  unit: '1',
+  conditions: 'fully developed flow in a round pipe',
+  verification: 'single-source',
+  tolerance: 0.01,
+  citations: [{ source: 'wikipedia-reynolds-number', locator: 'Flow in a pipe: laminar when Re_D < 2300, turbulent when Re_D > 2900', conditions: 'round pipe', value: 2300 }],
+  note: 'Between 2300 and 2900 the flow alternates; the edge is not sharp.',
+};

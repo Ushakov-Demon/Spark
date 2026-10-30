@@ -11,6 +11,8 @@ const STEVIN: Person = { name: { uk: 'Симон Стевін', en: 'Simon Stevi
 const KEPLER: Person = { name: { uk: 'Йоганн Кеплер', en: 'Johannes Kepler' }, born: 1571, died: 1630, wikidata: 'Q8963' };
 const BOYLE: Person = { name: { uk: 'Роберт Бойль', en: 'Robert Boyle' }, born: 1627, died: 1691, wikidata: 'Q43393' };
 const MARIOTTE: Person = { name: { uk: 'Едм Маріотт', en: 'Edme Mariotte' }, born: 1620, died: 1684, wikidata: 'Q319749' };
+const HAGEN: Person = { name: { uk: 'Готтгільф Гаген', en: 'Gotthilf Hagen' }, born: 1797, died: 1884, wikidata: 'Q62726' };
+const POISEUILLE: Person = { name: { uk: 'Жан Леонар Марі Пуазейль', en: 'Jean Léonard Marie Poiseuille' }, born: 1797, died: 1869, wikidata: 'Q550943' };
 const PASCAL: Person = { name: { uk: 'Блез Паскаль', en: 'Blaise Pascal' }, born: 1623, died: 1662, wikidata: 'Q1290' };
 
 /**
@@ -433,6 +435,61 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     },
     limits: {
       school: { uk: 'Так — поки температура газу стала (стискають повільно, і газ устигає віддати теплоту) і поки газ не стиснутий так сильно, що починає зріджуватися.', en: 'So — while the gas keeps its temperature (squeezed slowly, it has time to give its heat away) and is not squeezed so hard that it starts to liquefy.' },
+    },
+  },
+  {
+    id: 'torricelli-outflow',
+    kind: 'law',
+    name: { uk: 'Закон Торрічеллі', en: 'Torricelli’s law' },
+    statement: {
+      novice: { uk: 'Вода б’є з отвору так швидко, наче впала з висоти, на якій стоїть над ним її поверхня.', en: 'Water shoots from an opening as fast as if it had fallen from the height its surface stands above it.' },
+      school: { uk: 'Швидкість, з якою рідина витікає з отвору, v = √(2gH), де H — висота її поверхні над отвором: така сама, якої набуло б тіло, вільно падаючи з висоти H. Спрямований угору струмінь (без втрат) піднявся б якраз до рівня рідини в посудині.', en: 'The speed a liquid flows out of an opening at is v = √(2gH), H the height of its surface above the opening: the same a body would gain falling freely from H. A jet pointed up (without losses) would rise just to the level of the liquid in the vessel.' },
+    },
+    history: {
+      people: [TORRICELLI],
+      role: 'discovered',
+      when: { uk: '1643', en: '1643' },
+      story: {
+        school: {
+          uk: 'Італієць Еванджеліста Торрічеллі відкрив цей закон 1643 року (хоч і не в нинішньому вигляді). Згодом з’ясувалося, що це окремий випадок закону Бернуллі — збереження енергії для рідини, що тече.',
+          en: 'The Italian Evangelista Torricelli discovered this law in 1643 (though not in today’s form). Later it turned out to be a particular case of Bernoulli’s principle — the conservation of energy for a flowing liquid.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-torricelli-law', locator: 'lead', claim: 'v = √(2gh), the speed a body would acquire falling freely from h' },
+        { source: 'wikipedia-torricelli-law', locator: 'lead', claim: 'discovered (though not in this form) by Evangelista Torricelli in 1643; a particular case of Bernoulli’s principle' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Так — без тертя. У справжньому фонтані вода треться в трубці й об повітря, тому струмінь не дістає трохи до рівня води в посудині — і що він швидший, то більше.', en: 'So — without friction. In a real fountain the water rubs in the pipe and on the air, so the jet falls a little short of the vessel’s level — the faster, the more.' },
+    },
+  },
+  {
+    id: 'hagen-poiseuille',
+    kind: 'law',
+    name: { uk: 'Закон Гагена — Пуазейля', en: 'Hagen–Poiseuille law' },
+    statement: {
+      novice: { uk: 'Рідина в трубці треться — і на це йде частина тиску, що її жене. Що вужча й довша трубка, то більше.', en: 'A liquid in a pipe rubs — and part of the pressure driving it goes into that. The narrower and longer the pipe, the more.' },
+      school: { uk: 'У спокійній (ламінарній) течії рідини круглою трубою перепад тиску Δp = 8·μ·L·Q / (π·R⁴): він пропорційний в’язкості, довжині й витраті і обернено — четвертому степеню радіуса.', en: 'In a smooth (laminar) flow of a liquid through a round pipe the pressure drop Δp = 8·μ·L·Q / (π·R⁴): proportional to the viscosity, the length and the flow, and inversely to the fourth power of the radius.' },
+    },
+    history: {
+      people: [HAGEN, POISEUILLE],
+      role: 'discovered',
+      when: { uk: '1838 (надруковано 1839 і 1840–1846)', en: '1838 (published 1839 and 1840–1846)' },
+      story: {
+        school: {
+          uk: 'Німецький інженер Готтгільф Гаген і французький лікар-фізик Жан Пуазейль 1838 року незалежно один від одного знайшли цей закон дослідами. Пуазейля цікавило, як тече кров у тонких судинах. Теоретично закон обґрунтував Джордж Стокс 1845 року.',
+          en: 'The German engineer Gotthilf Hagen and the French physician-physicist Jean Poiseuille found this law by experiment in 1838, independently of each other. Poiseuille wanted to know how blood flows in thin vessels. George Stokes gave it a theoretical footing in 1845.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-hagen-poiseuille', locator: 'lead', claim: 'Δp = 8μLQ/(πR⁴) for laminar flow of an incompressible Newtonian fluid in a long round pipe' },
+        { source: 'wikipedia-hagen-poiseuille', locator: 'History', claim: 'derived experimentally and independently by Poiseuille and Hagen in 1838; published by Hagen in 1839, by Poiseuille in 1840–41 and 1846; Stokes’ theoretical justification in 1845' },
+        { source: 'wikipedia-reynolds-number', locator: 'Flow in a pipe', claim: 'laminar flow occurs when Re_D < 2300' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Лише для спокійної (ламінарної) течії — у круглій трубі, поки число Рейнольдса менше за ≈ 2300; у бурхливій (турбулентній) тертя більше.', en: 'Only for smooth (laminar) flow — in a round pipe while the Reynolds number is below ≈ 2300; in a churning (turbulent) one the friction is greater.' },
     },
   },
 ];
