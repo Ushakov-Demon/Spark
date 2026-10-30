@@ -71,7 +71,7 @@ export const PNEUMATIC_TEXT: Record<PneumaticCommand['type'], (c: PneumaticComma
     const water = c.medium === 'water';
     return {
       say: water
-        ? { uk: `Спершу заповнимо шприци й трубку водою. Постав на широкий поршень ${w(c.weights, true)} і втисни вузький на 6 см. Коли рушив вантаж і на скільки піднявся?`, en: `First fill the syringes and the tube with water. Put ${w(c.weights, false)} on the wide piston and push the narrow one 6 cm in. When did the load move, and how far did it rise?` }
+        ? { uk: `У шприцах і трубці знову вода. ${w(c.weights, true)} на широкому поршні; втисни вузький на ті самі 6 см. Коли рушив вантаж і на скільки піднявся?`, en: `Water in the syringes and the tube again. ${w(c.weights, false)} on the wide piston; push the narrow one the same 6 cm in. When did the load move, and how far did it rise?` }
         : { uk: `У шприцах і трубці — повітря. ${w(c.weights, true)} на широкому поршні; втисни вузький на ті самі 6 см. Коли рушив вантаж і на скільки піднявся?`, en: `Air in the syringes and the tube. ${w(c.weights, false)} on the wide piston; push the narrow one the same 6 cm in. When did the load move, and how far did it rise?` },
       button: water ? { uk: `💧 Вода, ${w(c.weights, true)}: втиснути на 6 см`, en: `💧 Water, ${w(c.weights, false)}: push 6 cm in` } : { uk: `💨 Повітря, ${w(c.weights, true)}: втиснути на 6 см`, en: `💨 Air, ${w(c.weights, false)}: push 6 cm in` },
       plan: water ? { uk: `вода, ${w(c.weights, true)} — втиснути вузький поршень на 6 см`, en: `water, ${w(c.weights, false)} — push the narrow piston 6 cm in` } : { uk: `повітря, ${w(c.weights, true)} — втиснути вузький поршень на 6 см`, en: `air, ${w(c.weights, false)} — push the narrow piston 6 cm in` },

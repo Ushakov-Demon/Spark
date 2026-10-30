@@ -4246,10 +4246,19 @@ $('#quiz').addEventListener('click', (e) => {
   }
   const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
   if (step) return nextPlanStep();
-  // The optional rest of the plan skipped: straight to the conclusion.
+  // An optional part skipped: on to the next one (or the conclusion); a part that follows it up goes with it.
   if ((e.target as HTMLElement).closest('button[data-skip]') && plan.length) {
-    planTotal -= plan.length;
-    plan = [];
+    const starts = (s: ProtocolStep | undefined) => s?.kind === 'bench' && !!s.optional;
+    const after = (from: number) => {
+      let i = from + 1;
+      while (i < plan.length && !starts(plan[i])) i++;
+      return i;
+    };
+    let end = after(0);
+    const followsUp = (s: ProtocolStep | undefined) => s?.kind === 'bench' && !!s.followUp;
+    while (end < plan.length && followsUp(plan[end])) end = after(end);
+    planTotal -= end;
+    plan = plan.slice(end);
     return render();
   }
   if ((e.target as HTMLElement).closest('button[data-show-answer]') && preset) {

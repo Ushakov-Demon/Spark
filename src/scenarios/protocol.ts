@@ -30,10 +30,12 @@ export interface BenchStep {
   readonly kind: 'bench';
   readonly command: BenchCommand;
   /**
-   * From this step to the plan's end — a part one may skip (a «what if…» after the main experiment): the guide offers it
-   * in these words, with the step's own button and «skip» — which drops the rest of the plan and goes to the conclusion.
+   * From this step to the next such step (or the plan's end) — a part one may skip (a «what if…» after the main
+   * experiment): the guide offers it in these words, with the step's own button and «skip», which drops the part.
    */
   readonly optional?: LocalizedText;
+  /** An optional part that only follows up the one before it (water poured back after the air): skipped with it. */
+  readonly followUp?: boolean;
 }
 
 export interface OperationStep {

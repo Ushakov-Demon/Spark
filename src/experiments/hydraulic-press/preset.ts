@@ -31,6 +31,13 @@ export const preset_hydraulic_press: Preset = {
           ...(k === 0 ? { optional: { uk: '💨 А якщо виллити воду й залишити в шприцах повітря — пневматична машина? Чи підніме вона вантаж так само?', en: '💨 And if we pour the water out and leave air in the syringes — a pneumatic machine? Will it lift the load the same way?' } } : {}),
         }) as const,
     ),
+    // And back: the water poured in again, under the heaviest load — side by side with the air.
+    {
+      kind: 'bench',
+      command: { type: 'lab.pneumatic', step: 'push', medium: 'water', weights: 8 },
+      optional: { uk: '💧 Повернемо воду? Знову заллємо шприци водою — і з тими самими 8 тягарцями.', en: '💧 Shall we bring the water back? Fill the syringes with water again — with the same 8 weights.' },
+      followUp: true,
+    },
   ],
   choices: [ch('areas', 'У стільки, у скільки площа широкого поршня більша за площу вузького', 'As many times as the wide piston’s area is larger than the narrow one’s'), ch('diameters', 'У стільки, у скільки більший діаметр', 'As many times as the diameter is larger'), ch('none', 'Ні в скільки — сила та сама', 'Not at all — the force is the same')],
   choicesAt: 'end',
@@ -68,7 +75,12 @@ export const answer_hydraulic_press = (run: PresetRun): PresetAnswer => {
   const rise = travel?.value ?? 0;
   const list = (l: Locale) => lifts.map((x) => `F₂ = ${N(x.F2, l)} — F₁ = ${N(x.F1, l)}`).join('; ');
   // The «what if…» with air, if it was done: each push reads the idle travel (4), then the rise (3).
-  const A = (run.readings ?? []).filter((x) => x.command.type === 'lab.pneumatic' && x.record.value !== null);
+  const P = (run.readings ?? []).filter((x) => x.command.type === 'lab.pneumatic' && x.record.value !== null);
+  const A = P.filter((x) => x.record.inputs?.['medium'] === 0);
+  // The water poured back in, if it was: its load moved at once.
+  const back = P.filter((x) => x.record.inputs?.['medium'] === 1);
+  const backRise = back.find((x) => x.record.inputs?.['which'] === 3)?.record.value ?? undefined;
+  const backWeights = back[0]?.record.inputs?.['weights'];
   const air = A.flatMap((x, k) => (x.record.inputs?.['which'] === 4 ? [{ weights: x.record.inputs?.['weights'] ?? 0, dead: x.record.value!, rise: A[k + 1]?.record.inputs?.['which'] === 3 ? A[k + 1]!.record.value! : 0, extra: x.record.inputs?.['extra'] ?? 0, squeezed: x.record.inputs?.['squeezed'] ?? 0 }] : []));
   const mm = (x: number, l: Locale) => `${Math.round(x * 1000)} ${l === 'uk' ? 'мм' : 'mm'}`;
   const airWhy = (l: Locale) =>
@@ -81,8 +93,8 @@ export const answer_hydraulic_press = (run: PresetRun): PresetAnswer => {
     !air.length
       ? ''
       : l === 'uk'
-        ? ` З повітрям, на ті самі 6 см: ${air.map((x) => `${x.weights} тягарці${x.weights >= 5 ? 'в' : ''} — потрібно ≈ ${sig(x.extra / 1000, 2, l)} кПа, повітря стиснулося на ${sig(x.squeezed * 1e6, 2, l)} мл, вантаж рушив після ${mm(x.dead, l)} і піднявся на ${mm(x.rise, l)}`).join('; ')} (з водою — одразу, на ${mm(rise, l)}).`
-        : ` With air, the same 6 cm: ${air.map((x) => `${x.weights} weights — ≈ ${sig(x.extra / 1000, 2, l)} kPa needed, the air shrank by ${sig(x.squeezed * 1e6, 2, l)} mL, the load moved after ${mm(x.dead, l)} and rose ${mm(x.rise, l)}`).join('; ')} (with water — at once, by ${mm(rise, l)}).`;
+        ? ` З повітрям, на ті самі 6 см: ${air.map((x) => `${x.weights} тягарці${x.weights >= 5 ? 'в' : ''} — потрібно ≈ ${sig(x.extra / 1000, 2, l)} кПа, повітря стиснулося на ${sig(x.squeezed * 1e6, 2, l)} мл, вантаж рушив після ${mm(x.dead, l)} і піднявся на ${mm(x.rise, l)}`).join('; ')} (з водою — одразу, на ${mm(rise, l)}).${backRise !== undefined ? ` Знову залили воду — і ${backWeights} тягарців пішли вгору одразу, на ${mm(backRise, l)}.` : ''}`
+        : ` With air, the same 6 cm: ${air.map((x) => `${x.weights} weights — ≈ ${sig(x.extra / 1000, 2, l)} kPa needed, the air shrank by ${sig(x.squeezed * 1e6, 2, l)} mL, the load moved after ${mm(x.dead, l)} and rose ${mm(x.rise, l)}`).join('; ')} (with water — at once, by ${mm(rise, l)}).${backRise !== undefined ? ` With the water poured back, ${backWeights} weights went up at once, by ${mm(backRise, l)}.` : ''}`;
   return {
     ...(correct ? { correct } : {}),
     why: both((l) =>
