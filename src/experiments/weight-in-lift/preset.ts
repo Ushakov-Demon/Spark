@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTERACTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTERACTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { type LiftPhase, liftPhaseText } from './bench.js';
 import { sig } from '../../explain/format.js';
@@ -52,7 +52,7 @@ export const answer_weight_in_lift = (run: PresetRun): PresetAnswer => {
     }),
     text: both((l) => {
       const parts = R.map((x) => `${x.phase === 'fall' ? (l === 'uk' ? 'динамометр падає разом із тягарцями' : 'the dynamometer falls with the weights') : tr(liftPhaseText(x.phase).plan, l)} — ${N(x.P, l)}`);
-      const s = `${parts.join('; ')}.`;
+      const s = `${parts.map(stepLine).join(';') + STEPS_END}.`;
       return (s.charAt(0).toUpperCase() + s.slice(1)) + (l === 'uk' ? ` Прискорення ліфта взято ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} м/с² — межа, якої тримаються для зручності пасажирів.` : ` The lift’s acceleration is taken as ${sig(R.find((x) => x.a > 0)?.a ?? 1.2, 2, l)} m/s² — the limit kept for the passengers’ comfort.`);
     }),
   };

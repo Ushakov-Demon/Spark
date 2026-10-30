@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, MOTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, MOTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { type Locale, tr } from '../../knowledge/i18n.js';
 import { SNAIL_TIME, type SnailSurface, snailSurfaceName } from './bench.js';
@@ -39,7 +39,7 @@ export const answer_snail_speed = (run: PresetRun): PresetAnswer => {
     ),
     say: both((l) => (slowest ? (l === 'uk' ? `Найповільніше — ${tr(snailSurfaceName(slowest.surface), l)}: ${mm(slowest.l)} мм за 30 с, ${v(slowest, l)}.` : `Slowest — ${tr(snailSurfaceName(slowest.surface), l)}: ${mm(slowest.l)} mm in 30 s, ${v(slowest, l)}.`) : '')),
     text: both((l) => {
-      const s = `${R.map((x) => `${tr(snailSurfaceName(x.surface), l)} — ${mm(x.l)} ${l === 'uk' ? 'мм за 30 с' : 'mm in 30 s'}, ${v(x, l)}`).join('; ')}.`;
+      const s = `${R.map((x) => `${tr(snailSurfaceName(x.surface), l)} — ${mm(x.l)} ${l === 'uk' ? 'мм за 30 с' : 'mm in 30 s'}, ${v(x, l)}`).map(stepLine).join(';') + STEPS_END}.`;
       return s.charAt(0).toUpperCase() + s.slice(1) + (l === 'uk' ? ' Середні з дослідження Pembury Smith і Ruxton (2021).' : ' The means from Pembury Smith and Ruxton’s study (2021).');
     }),
   };

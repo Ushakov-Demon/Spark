@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, PRESSURE, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, PRESSURE, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
@@ -73,7 +73,7 @@ export const answer_hydraulic_press = (run: PresetRun): PresetAnswer => {
   const lastLift = lifts[lifts.length - 1];
   const push = travel?.inputs?.['push'] ?? 0.06;
   const rise = travel?.value ?? 0;
-  const list = (l: Locale) => lifts.map((x) => `F₂ = ${N(x.F2, l)} — F₁ = ${N(x.F1, l)}`).join('; ');
+  const list = (l: Locale) => lifts.map((x) => `F₂ = ${N(x.F2, l)} — F₁ = ${N(x.F1, l)}`).map(stepLine).join(';') + STEPS_END;
   // The «what if…» with air, if it was done: each push reads the idle travel (4), then the rise (3).
   const P = (run.readings ?? []).filter((x) => x.command.type === 'lab.pneumatic' && x.record.value !== null);
   const A = P.filter((x) => x.record.inputs?.['medium'] === 0);
@@ -93,8 +93,8 @@ export const answer_hydraulic_press = (run: PresetRun): PresetAnswer => {
     !air.length
       ? ''
       : l === 'uk'
-        ? ` З повітрям, на ті самі 6 см: ${air.map((x) => `${x.weights} тягарці${x.weights >= 5 ? 'в' : ''} — потрібно ≈ ${sig(x.extra / 1000, 2, l)} кПа, повітря стиснулося на ${sig(x.squeezed * 1e6, 2, l)} мл, вантаж рушив після ${mm(x.dead, l)} і піднявся на ${mm(x.rise, l)}`).join('; ')} (з водою — одразу, на ${mm(rise, l)}).${backRise !== undefined ? ` Знову залили воду — і ${backWeights} тягарців пішли вгору одразу, на ${mm(backRise, l)}.` : ''}`
-        : ` With air, the same 6 cm: ${air.map((x) => `${x.weights} weights — ≈ ${sig(x.extra / 1000, 2, l)} kPa needed, the air shrank by ${sig(x.squeezed * 1e6, 2, l)} mL, the load moved after ${mm(x.dead, l)} and rose ${mm(x.rise, l)}`).join('; ')} (with water — at once, by ${mm(rise, l)}).${backRise !== undefined ? ` With the water poured back, ${backWeights} weights went up at once, by ${mm(backRise, l)}.` : ''}`;
+        ? ` З повітрям, на ті самі 6 см: ${air.map((x) => `${x.weights} тягарці${x.weights >= 5 ? 'в' : ''} — потрібно ≈ ${sig(x.extra / 1000, 2, l)} кПа, повітря стиснулося на ${sig(x.squeezed * 1e6, 2, l)} мл, вантаж рушив після ${mm(x.dead, l)} і піднявся на ${mm(x.rise, l)}`).map(stepLine).join(';') + STEPS_END} (з водою — одразу, на ${mm(rise, l)}).${backRise !== undefined ? ` Знову залили воду — і ${backWeights} тягарців пішли вгору одразу, на ${mm(backRise, l)}.` : ''}`
+        : ` With air, the same 6 cm: ${air.map((x) => `${x.weights} weights — ≈ ${sig(x.extra / 1000, 2, l)} kPa needed, the air shrank by ${sig(x.squeezed * 1e6, 2, l)} mL, the load moved after ${mm(x.dead, l)} and rose ${mm(x.rise, l)}`).map(stepLine).join(';') + STEPS_END} (with water — at once, by ${mm(rise, l)}).${backRise !== undefined ? ` With the water poured back, ${backWeights} weights went up at once, by ${mm(backRise, l)}.` : ''}`;
   return {
     ...(correct ? { correct } : {}),
     why: both((l) =>

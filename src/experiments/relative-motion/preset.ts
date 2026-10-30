@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, MOTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, MOTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
@@ -64,7 +64,7 @@ export const answer_relative_motion = (run: PresetRun): PresetAnswer => {
         const moved = x.u === 0 ? (uk ? 'пляшка не зсунулася' : 'the bottle did not move') : uk ? `пляшка зсунулася на ${cm(x.x ?? 0, l)}` : `the bottle moved ${cm(x.x ?? 0, l)}`;
         return uk ? `${how}: ${sec(x.t ?? 0, l)}, ${moved}, шлях бульбашки відносно стола ${cm(x.s ?? 0, l)}` : `${how}: ${sec(x.t ?? 0, l)}, ${moved}, the bubble’s path relative to the table ${cm(x.s ?? 0, l)}`;
       });
-      const s = `${parts.join('; ')}.`;
+      const s = `${parts.map(stepLine).join(';') + STEPS_END}.`;
       return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Відносно пляшки шлях щоразу 9 см.' : ' Relative to the bottle the path is 9 cm each time.');
     }),
   };

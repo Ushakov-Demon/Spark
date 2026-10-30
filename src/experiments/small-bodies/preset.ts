@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTRO, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTRO, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { type Locale, tr } from '../../knowledge/i18n.js';
 import { type RowBody, rowName } from './bench.js';
@@ -58,7 +58,7 @@ export const answer_small_bodies = (run: PresetRun): PresetAnswer => {
         ...(one ? [uk ? `Одна горошина — ${mm(one.L, l, 2)} ± 0,5 мм: похибка близько ${Math.round((0.0005 / one.L) * 100)} %` : `One pea — ${mm(one.L, l, 2)} ± 0.5 mm: an error of about ${Math.round((0.0005 / one.L) * 100)} %`] : []),
         ...rows.map((x) => (uk ? `${name(x.body, x.n, l)} — ${mm(x.L, l, 3)}, d = ${mm(x.L, l, 3)} / ${x.n} ≈ ${d2(x.L / x.n, l)} (± ${sig(0.5 / x.n, 1, l)} мм)` : `${name(x.body, x.n, l)} — ${mm(x.L, l, 3)}, d = ${mm(x.L, l, 3)} / ${x.n} ≈ ${d2(x.L / x.n, l)} (± ${sig(0.5 / x.n, 1, l)} mm)`)),
       ];
-      return `${parts.join('; ')}.${uk ? ' Ряд ділить похибку лінійки на кількість тіл: нитку, тоншу за поділку, вдалося виміряти до сотих міліметра.' : ' A row divides the ruler’s error by the number of bodies: the thread, thinner than a division, came out to hundredths of a millimetre.'}`.replace(/^./, (ch) => ch.toUpperCase());
+      return `${parts.map(stepLine).join(';') + STEPS_END}.${uk ? ' Ряд ділить похибку лінійки на кількість тіл: нитку, тоншу за поділку, вдалося виміряти до сотих міліметра.' : ' A row divides the ruler’s error by the number of bodies: the thread, thinner than a division, came out to hundredths of a millimetre.'}`.replace(/^./, (ch) => ch.toUpperCase());
     }),
   };
 };

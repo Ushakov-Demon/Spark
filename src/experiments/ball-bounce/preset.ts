@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, WORK, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, room, stepLine, STEPS_END, WORK } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { BOUNCE_FROM, type BounceBall, bounceBallName } from './bench.js';
 import { G } from '../../domains/mechanics/constants.js';
@@ -53,7 +53,7 @@ export const answer_ball_bounce = (run: PresetRun): PresetAnswer => {
         ...(pp.length ? [uk ? `М’ячик для настільного тенісу з 1 м: ${pp.map((x) => `${cm(x.h)} см`).join(', ')} — енергія ${mJ(pp[0]!.m, BOUNCE_FROM, l)} нагорі, ${pp.map((x) => mJ(x.m, x.h, l)).join(', ')} після ударів` : `The table tennis ball from 1 m: ${pp.map((x) => `${cm(x.h)} cm`).join(', ')} — an energy of ${mJ(pp[0]!.m, BOUNCE_FROM, l)} at the top, ${pp.map((x) => mJ(x.m, x.h, l)).join(', ')} after the impacts`] : []),
         ...R.filter((x) => x.ball !== 'pingpong').map((x) => `${tr(bounceBallName(x.ball), l)} — ${cm(x.h)} ${uk ? 'см' : 'cm'}${x.h > 0 ? (uk ? `, зберіг ${cm(x.h)} % енергії` : `, it kept ${cm(x.h)} % of its energy`) : uk ? ': уся енергія стала внутрішньою' : ': all the energy became internal'}`),
       ];
-      const s = `${parts.join('; ')}.`;
+      const s = `${parts.map(stepLine).join(';') + STEPS_END}.`;
       return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Частки — з випробувань м’ячів за правилами ITTF і ITF; опір повітря не враховано.' : ' The shares are from the balls’ tests under the ITTF and ITF rules; the air’s drag is left out.');
     }),
   };

@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTERACTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTERACTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { sig } from '../../explain/format.js';
@@ -61,7 +61,7 @@ export const answer_carts_mass = (run: PresetRun): PresetAnswer => {
       const uk = l === 'uk';
       const parts = pushes.map(([a, b], w) => (uk ? `${w === 0 ? 'однакові візки' : `візок 2 + ${w === 1 ? 'один тягарець' : 'два тягарці'}`}: ${cm(a, l)} і ${cm(b, l)}, l₁ / l₂ ≈ ${ratio(a / b, l)}` : `${w === 0 ? 'alike carts' : `cart 2 + ${w === 1 ? 'one weight' : 'two weights'}`}: ${cm(a, l)} and ${cm(b, l)}, l₁ / l₂ ≈ ${ratio(a / b, l)}`));
       const weigh = P1 !== null && P2 !== null ? (uk ? `; на динамометрі: візок 1 — ${N(P1, l)}, візок 2 з двома тягарцями — ${N(P2, l)}, ${times(P2 / P1, l)} більше` : `; on the dynamometer: cart 1 — ${N(P1, l)}, cart 2 with two weights — ${N(P2, l)}, ${times(P2 / P1, l)} more`) : '';
-      const s = `${parts.join('; ')}${weigh}.`;
+      const s = `${parts.map(stepLine).join(';') + STEPS_END}${weigh}.`;
       return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' (2,9 Н, а не 3,0 — бо динамометр показує до десятих: 2,94 Н.)' : ' (2.9 N, not 3.0 — the dynamometer reads to tenths: 2.94 N.)');
     }),
   };

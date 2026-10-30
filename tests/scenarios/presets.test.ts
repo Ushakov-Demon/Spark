@@ -208,7 +208,7 @@ describe('ready-made experiments with values to change', () => {
   it('the slope: the higher it is raised, the higher its efficiency', () => {
     const { answer } = run(PRESETS.find((p) => p.id === 'slope-efficiency')!);
     expect(answer.correct).toBe('grows');
-    expect(answer.text.uk).toMatch(/η ≈ \d+ %.*η ≈ \d+ %.*η ≈ \d+ %/);
+    expect(answer.text.uk).toMatch(/η ≈ \d+ %.*η ≈ \d+ %.*η ≈ \d+ %/s);
   }, 60_000);
 
   it('the power of a consumer: twice the voltage, four times the power', () => {
@@ -254,7 +254,7 @@ describe('ready-made experiments with values to change', () => {
   it('the conditions of floating: sinks, floats inside, comes up — by the tube’s mean density', () => {
     const { answer } = run(PRESETS.find((p) => p.id === 'floating-conditions')!);
     expect(answer.correct).toBe('density');
-    expect(answer.text.uk).toMatch(/потонула.*плавала всередині води.*спливла/);
+    expect(answer.text.uk).toMatch(/потонула.*плавала всередині води.*спливла/s);
   }, 60_000);
 
   it('the floating ice: mass and volume are told apart, with the numbers of the run', () => {
@@ -634,7 +634,7 @@ describe('ready-made experiments with values to change', () => {
     const alpha = Number(answer.text.uk.match(/≈ ([\d,]+) 1\/°C, а в таблиці/)![1]!.replace(',', '.'));
     expect(alpha).toBeGreaterThan(0.0035);
     expect(alpha).toBeLessThan(0.0043);
-    expect(answer.text.uk).toMatch(/^20 °C: R = 10,00 Ом;.*80,\d °C: R = 12,\d\d Ом/);
+    expect(answer.text.uk.trim()).toMatch(/^20 °C: R = 10,00 Ом;.*80,\d °C: R = 12,\d\d Ом/s);
   }, 60_000);
 
   it('a resistor keeps its resistance with any resistor and any voltages: the spread is within the instruments', async () => {

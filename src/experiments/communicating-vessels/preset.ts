@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, PRESSURE, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, PRESSURE, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { sig } from '../../explain/format.js';
@@ -40,7 +40,7 @@ export const answer_communicating_vessels = (run: PresetRun): PresetAnswer => {
   const correct = !last ? undefined : last.oil > last.water + 0.001 ? 'oil' : last.water > last.oil + 0.001 ? 'water' : 'same';
   const rho = last && last.oil > 0 ? (last.rhoW * last.water) / last.oil : 0;
   const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-  const list = (l: Locale) => pours.map((x) => (l === 'uk' ? `олії ${x.ml} мл: h_олії = ${cm(x.oil, l)}, h_води = ${cm(x.water, l)}` : `${x.ml} mL of oil: h_oil = ${cm(x.oil, l)}, h_water = ${cm(x.water, l)}`)).join('; ');
+  const list = (l: Locale) => pours.map((x) => (l === 'uk' ? `олії ${x.ml} мл: h_олії = ${cm(x.oil, l)}, h_води = ${cm(x.water, l)}` : `${x.ml} mL of oil: h_oil = ${cm(x.oil, l)}, h_water = ${cm(x.water, l)}`)).map(stepLine).join(';') + STEPS_END;
   return {
     ...(correct ? { correct } : {}),
     why: both((l) =>

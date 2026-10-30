@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTERACTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTERACTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { sig } from '../../explain/format.js';
@@ -47,7 +47,7 @@ export const answer_coin_inertia = (run: PresetRun): PresetAnswer => {
     text: both((l) => {
       const uk = l === 'uk';
       const how: Record<string, string> = uk ? { slow: 'повільно', push: 'штовхнули (0,5 м/с)', flick: 'різко (1 м/с)', snap: 'клацнули (3 м/с)' } : { slow: 'slowly', push: 'pushed (0.5 m/s)', flick: 'sharply (1 m/s)', snap: 'flicked (3 m/s)' };
-      const s = `${R.map((x) => `${how[x.pull] ?? x.pull}: ${uk ? 'зсув' : 'moved'} ${mm(x.s)} ${uk ? 'мм' : 'mm'} — ${where(x, l)}`).join('; ')}.`;
+      const s = `${R.map((x) => `${how[x.pull] ?? x.pull}: ${uk ? 'зсув' : 'moved'} ${mm(x.s)} ${uk ? 'мм' : 'mm'} — ${where(x, l)}`).map(stepLine).join(';') + STEPS_END}.`;
       return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Щоб упасти в склянку, монета мала зсунутися менш ніж на 19 мм.' : ' To drop into the glass, the coin had to move less than 19 mm.');
     }),
   };

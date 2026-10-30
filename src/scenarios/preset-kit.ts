@@ -41,3 +41,17 @@ export const times = (x: number, l: Locale): string => {
 };
 /** Water's density, kg/m³ (the component model's). */
 export const WATER = COMPONENTS.water.phases.liquid!.density!.value;
+
+/**
+ * The steps of a run in an answer's text, each on a line of its own, and what follows them on a new line too:
+ * `steps.map(stepLine).join(';') + STEPS_END`. (A punctuation mark after the list stays on its last line — `answerLines`.)
+ */
+export const stepLine = (step: string): string => `\n${step}`;
+export const STEPS_END = '\n';
+/** An answer's text in lines: trimmed, and a line that starts with a punctuation mark gives it back to the line before. */
+export const answerLines = (text: string): readonly string[] =>
+  text
+    .replace(/\n\s*([.,:;)])[ \t]*/g, '$1\n')
+    .split('\n')
+    .map((x) => x.trim())
+    .filter(Boolean);

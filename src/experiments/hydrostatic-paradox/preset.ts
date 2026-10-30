@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, PRESSURE, room, varied } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, PRESSURE, room, stepLine, STEPS_END, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { type Locale, tr } from '../../knowledge/i18n.js';
 import { type PascalVessel, vesselName } from './bench.js';
@@ -63,7 +63,7 @@ export const answer_hydrostatic_paradox = (run: PresetRun): PresetAnswer => {
   const N = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'Н' : 'N'}`;
   const ml = (x: number, l: Locale) => formatMeasured('volume', x, 5e-6, l);
   const name = (s: string, l: Locale) => tr(vesselName(s as PascalVessel), l);
-  const list = (l: Locale) => shapes.map((x) => (l === 'uk' ? `${name(x.shape, l)}: води ${ml(x.V, l)} (вага ≈ ${N(x.P, l)}), манометр ${formatMeasured('length', x.dh, 0.001, l)}` : `${name(x.shape, l)}: ${ml(x.V, l)} of water (weight ≈ ${N(x.P, l)}), the manometer ${formatMeasured('length', x.dh, 0.001, l)}`)).join('; ').replace(/^./, (x) => x.toUpperCase());
+  const list = (l: Locale) => shapes.map((x) => (l === 'uk' ? `${name(x.shape, l)}: води ${ml(x.V, l)} (вага ≈ ${N(x.P, l)}), манометр ${formatMeasured('length', x.dh, 0.001, l)}` : `${name(x.shape, l)}: ${ml(x.V, l)} of water (weight ≈ ${N(x.P, l)}), the manometer ${formatMeasured('length', x.dh, 0.001, l)}`)).map(stepLine).join(';') + STEPS_END.replace(/^./, (x) => x.toUpperCase());
   const F = shapes[0]?.F ?? 0;
   return {
     ...(correct ? { correct } : {}),

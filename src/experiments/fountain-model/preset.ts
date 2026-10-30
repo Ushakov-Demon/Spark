@@ -2,7 +2,7 @@ import { riseHeight } from '../../domains/mechanics/formulas.js';
 import { sig } from '../../explain/format.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, PRESSURE, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, PRESSURE, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 
 export const preset_fountain_model: Preset = {
@@ -60,7 +60,7 @@ export const answer_fountain_model = (run: PresetRun): PresetAnswer => {
     text: both((l) => {
       if (!jets.length) return '';
       const uk = l === 'uk';
-      const list = jets.map((x) => (uk ? `H = ${cm(x.head)} см — h = ${cm(x.jet)} см` : `H = ${cm(x.head)} cm — h = ${cm(x.jet)} cm`)).join('; ');
+      const list = jets.map((x) => (uk ? `H = ${cm(x.head)} см — h = ${cm(x.jet)} см` : `H = ${cm(x.head)} cm — h = ${cm(x.jet)} cm`)).map(stepLine).join(';') + STEPS_END;
       const lost = jets.map((x) => `${cm(x.head - x.jet)} ${u(l)}`).join(', ');
       const tail = last
         ? uk

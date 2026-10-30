@@ -22,7 +22,7 @@ import { bodyEnergy, isThermalBody } from '../domains/thermal/entities.js';
 import { solubilityAt } from '../domains/thermal/mixture.js';
 import { LAB_COMMANDS, type LabCommand } from './lab-knowledge.js';
 import { labGoalReached, labSetup } from './thermal-lab.js';
-import { WATER } from './preset-kit.js';
+import { stepLine, STEPS_END, WATER } from './preset-kit.js';
 
 /**
  * Answers to the questions the ready-made experiments ask — built from what
@@ -181,7 +181,7 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
       ),
       say: both((l) => (l === 'uk' ? `Нагріли на ${deg(ok ? last!.t - first!.t : 0, l)} — опір зріс: α ≈ ${a(alpha, l)} на градус!` : `Warmed by ${deg(ok ? last!.t - first!.t : 0, l)} — the resistance grew: α ≈ ${a(alpha, l)} per degree!`)),
       text: both((l) => {
-        const list = rows.map((x) => `${deg(x.t, l)}: R = ${Om(x.R, l)}`).join('; ');
+        const list = rows.map((x) => `${deg(x.t, l)}: R = ${Om(x.R, l)}`).map(stepLine).join(';') + STEPS_END;
         return l === 'uk'
           ? `${list}. Що гарячіша вода (а з нею й мідний дріт), то більший опір котушки. Температурний коефіцієнт опору α = (R − R₀) / (R₀·Δt) = (${Om(last?.R ?? 0, l)} − ${Om(first?.R ?? 0, l)}) / (${Om(first?.R ?? 0, l)} · ${deg(ok ? last!.t - first!.t : 0, l)}) ≈ ${a(alpha, l)} 1/°C, а в таблиці для міді — ${a(table, l)} 1/°C: на кожен градус опір зростає приблизно на ${sig(alpha * 100, 2, l)} %. Так само, тільки набагато сильніше, росте опір розжареної нитки лампи.`
           : `${list}. The hotter the water (and the copper wire in it), the larger the coil’s resistance. The temperature coefficient of resistance α = (R − R₀) / (R₀·Δt) = (${Om(last?.R ?? 0, l)} − ${Om(first?.R ?? 0, l)}) / (${Om(first?.R ?? 0, l)} · ${deg(ok ? last!.t - first!.t : 0, l)}) ≈ ${a(alpha, l)} 1/°C, and the table gives ${a(table, l)} 1/°C for copper: the resistance grows by about ${sig(alpha * 100, 2, l)} % per degree. A glowing lamp filament does the same, only much more.`;
@@ -231,7 +231,7 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
       why: both((l) => (l === 'uk' ? "На тіло під водою діють дві сили: сила тяжіння m·g = ρ_тіла·V·g тягне вниз, архімедова сила ρ_води·V·g штовхає вгору. Обидві пропорційні тому самому об’єму V, тож порівнюються лише густини. Більша густина тіла — переважає тяжіння, і тіло тоне. Рівні густини — сили рівні, і тіло лишається там, де його відпустили. Менша — переважає архімедова сила, і тіло спливає, поки над водою не вийде стільки, що занурена частина витіснятиме воду якраз його маси. Тому важкий корабель зі сталі плаває: він порожній усередині, і його середня густина менша за густину води." : "Two forces act on a body under water: gravity m·g = ρ_body·V·g pulls down, the buoyant force ρ_water·V·g pushes up. Both are proportional to the same volume V, so only the densities are compared. A denser body — gravity wins, and it sinks. Equal densities — the forces balance, and it stays where it was let go. Less dense — the buoyant force wins, and the body comes up until so much is out of the water that the part under it pushes aside just its own mass of water. That is why a heavy steel ship floats: it is hollow, and its mean density is less than water’s.")),
       say: both((l) => (l === 'uk' ? 'Тоне чи плаває — вирішує густина!' : 'Sinking or floating — the density decides!')),
       text: both((l) => {
-        const runs = [0, 1, 2].map((k) => `${l === 'uk' ? `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ води — пробірка ${word[kinds[k]!].uk}` : `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ of water — the tube ${word[kinds[k]!].en}`}`).join('; ');
+        const runs = [0, 1, 2].map((k) => `${l === 'uk' ? `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ води — пробірка ${word[kinds[k]!].uk}` : `${k + 1}) m = ${g(masses[k]!, l)}, ρ = m / V ≈ ${gcm(rho[k]!, l)} ${cmp[kinds[k]!]} ρ of water — the tube ${word[kinds[k]!].en}`}`).map(stepLine).join(';') + STEPS_END;
         return l === 'uk'
           ? `Об’єм пробірки — з першого досліду, коли вона лежала на дні: V = ${mL(vol, l)}. Відсипаючи пісок, ми змінювали масу, а об’єм лишався тим самим: ${runs}. Тіло тоне, коли його густина більша за густину рідини, плаває всередині — коли рівна, спливає — коли менша: тоді архімедова сила, що діє на все тіло під водою, більша за силу тяжіння. Спливла пробірка занурена лише частково: рівно настільки, щоб витіснити воду своєї маси. Тому в третьому досліді мензурка не дала б об’єму всієї пробірки.`
           : `The tube’s volume is from run 1, when it lay on the bottom: V = ${mL(vol, l)}. Pouring sand out changed the mass, the volume stayed: ${runs}. A body sinks when its density is greater than the liquid’s, floats inside when equal, comes up when less: then the buoyant force on the whole body under water is greater than gravity. The tube that came up is only partly under water — just enough to push aside its own mass of water. So in run 3 the cylinder would not give the volume of the whole tube.`;

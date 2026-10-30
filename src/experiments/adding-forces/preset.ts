@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTERACTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTERACTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
@@ -70,7 +70,7 @@ export const answer_adding_forces = (run: PresetRun): PresetAnswer => {
         : uk
           ? ' Різниця в одну поділку (0,1 Н) — від округлення показів до поділки.'
           : ' A difference of one division (0.1 N) comes from rounding the readings to the division.';
-      return `${parts.join('; ')}.${tail}`;
+      return `${parts.map(stepLine).join(';') + STEPS_END}.${tail}`;
     }),
   };
 };

@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { both, ch, PRESSURE, room, varied } from '../../scenarios/preset-kit.js';
+import { both, ch, PRESSURE, room, stepLine, STEPS_END, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { sig } from '../../explain/format.js';
@@ -58,7 +58,7 @@ export const answer_depth_pressure = (run: PresetRun): PresetAnswer => {
   const table = first?.rhoL ?? 0;
   const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
   const Pa = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'Па' : 'Pa'}`;
-  const list = (l: Locale) => down.map((x) => `${cm(x.h, l)} — Δh = ${cm(x.dh, l)}, p ≈ ${Pa(p(x), l)}`).join('; ');
+  const list = (l: Locale) => down.map((x) => `${cm(x.h, l)} — Δh = ${cm(x.dh, l)}, p ≈ ${Pa(p(x), l)}`).map(stepLine).join(';') + STEPS_END;
   return {
     ...(correct ? { correct } : {}),
     why: both((l) =>

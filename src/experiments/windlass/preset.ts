@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, MOTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, MOTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { type Locale, tr } from '../../knowledge/i18n.js';
 import { type WinchSpool, winchSpoolName } from './bench.js';
@@ -57,7 +57,7 @@ export const answer_windlass = (run: PresetRun): PresetAnswer => {
           ? uk ? `${name(x.spool, l)}, вантаж опустився на ${cm(x.amount, l)} — ${num(x.v, l)} об. (l / (π·d) = ${sig(x.amount / (Math.PI * x.d), 3, l)})` : `${name(x.spool, l)}, the load down ${cm(x.amount, l)} — ${num(x.v, l)} turns (l / (π·d) = ${sig(x.amount / (Math.PI * x.d), 3, l)})`
           : uk ? `${name(x.spool, l)}, ${x.amount} обертів ручки — вантаж піднявся на ${cm(x.v, l)} (π·d·n = ${cm(Math.PI * x.d * x.amount, l)})` : `${name(x.spool, l)}, ${x.amount} turns of the handle — the load rose ${cm(x.v, l)} (π·d·n = ${cm(Math.PI * x.d * x.amount, l)})`,
       );
-      const s = `${parts.join('; ')}.`;
+      const s = `${parts.map(stepLine).join(';') + STEPS_END}.`;
       return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Оберти лічено за міткою — до чверті оберту.' : ' The turns are counted by a mark — to a quarter turn.');
     }),
   };

@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, PRESSURE, room, varied } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, PRESSURE, room, stepLine, STEPS_END, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
@@ -56,7 +56,7 @@ export const answer_atmospheric_pressure = (run: PresetRun): PresetAnswer => {
   const hPa = (p: number, l: Locale) => formatMeasured('pressure', p, 100, l);
   const N = (x: number, l: Locale) => formatMeasured('force', x, 0.1, l);
   const mlT = (v: number, l: Locale) => `${sig(v, 2, l)} ${l === 'uk' ? 'мл' : 'mL'}`;
-  const list = (l: Locale) => pulls.map((x) => `${mlT(x.v, l)} — ${N(x.F, l)} → ${hPa(x.p, l)}`).join('; ');
+  const list = (l: Locale) => pulls.map((x) => `${mlT(x.v, l)} — ${N(x.F, l)} → ${hPa(x.p, l)}`).map(stepLine).join(';') + STEPS_END;
   const short = last && p0 ? Math.round((1 - last.p / p0) * 100) : 0;
   return {
     ...(correct ? { correct } : {}),

@@ -145,6 +145,7 @@ import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
 import { createFinger } from './finger.js';
+import { answerLines } from '../src/scenarios/preset-kit.js';
 
 // ---------- persistent preferences (per browser, optional) ----------
 const store = {
@@ -1714,7 +1715,7 @@ function renderGuide(): boolean {
     }
     // Settled, yet no answer (an experiment without one, or a page left behind its code): said, not a blank.
     if (!presetAnswer) return (setHtml('#quiz', concluded() && !PRESET_ANSWERS[preset.id] ? `<div class="guide"><p class="muted">${t().answerMissing}</p>${renewButton()}</div>` : ''), true);
-    const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>${whyHtml()}`;
+    const text = presetAnswer === 'computing' ? `<p class="muted">${t().answerComputing}</p>` : `${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}<p class="answer-text">${answerLines(tr(presetAnswer.text, locale)).join('<br>')}</p>${whyHtml()}`;
     setHtml('#quiz', `<div class="guide"><span class="guide-step">${t().answerTitle}</span>${text}${renewButton()}</div>`);
     return true;
   }
@@ -1736,7 +1737,7 @@ function renderGuide(): boolean {
       .join('');
     const rhoText = rho === null ? '—' : `${sig(rho / 1000, 3, locale)} ${locale === 'uk' ? 'г/см³' : 'g/cm³'} = ${sig(rho, 3, locale)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'}`;
     const verdict = predictionVerdict();
-    const answer = revealed && presetAnswer && presetAnswer !== 'computing' ? `${verdict ? `<p class="verdict">${verdict}</p>` : ''}<p class="answer-text">${tr(presetAnswer.text, locale)}</p>${whyHtml()}` : '';
+    const answer = revealed && presetAnswer && presetAnswer !== 'computing' ? `${verdict ? `<p class="verdict">${verdict}</p>` : ''}<p class="answer-text">${answerLines(tr(presetAnswer.text, locale)).join('<br>')}</p>${whyHtml()}` : '';
     setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table>${revealed ? renewButton() : showAnswerButton()}</div>`);
     return true;
   }
@@ -2093,7 +2094,7 @@ function render() {
       msg.push(
         presetAnswer === 'computing'
           ? `<div class="answer"><h4>${u.answerTitle}</h4><p class="muted">${u.answerComputing}</p></div>`
-          : `<div class="answer"><h4>${u.answerTitle}</h4>${preset ? `<p class="q">${tr(preset.question, locale)}</p>` : ''}<p>${tr(presetAnswer.text, locale)}</p>${whyHtml()}${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}</div>`,
+          : `<div class="answer"><h4>${u.answerTitle}</h4>${preset ? `<p class="q">${tr(preset.question, locale)}</p>` : ''}<p>${answerLines(tr(presetAnswer.text, locale)).join('<br>')}</p>${whyHtml()}${predictionVerdict() ? `<p class="verdict">${predictionVerdict()}</p>` : ''}</div>`,
       );
     }
     // A ready-made experiment goes on along its plan.
@@ -3437,7 +3438,7 @@ function explain() {
   if (!last) {
     if (!allReadings().length) return;
     const formulas = (preset?.formulas ?? []).map((id) => LAB_KNOWLEDGE.formulas.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f);
-    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: tr(presetAnswer.text, locale) } as Block, ...(presetAnswer.why ? tr(presetAnswer.why, locale).split('\n\n').map((text, k) => ({ kind: 'paragraph', text: k ? text : `${t().whyTitle} ${text}` }) as Block) : [])] : [];
+    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: answerLines(tr(presetAnswer.text, locale)).join('\n') } as Block, ...(presetAnswer.why ? tr(presetAnswer.why, locale).split('\n\n').map((text, k) => ({ kind: 'paragraph', text: k ? text : `${t().whyTitle} ${text}` }) as Block) : [])] : [];
     $('#report').innerHTML = renderHtml(
       buildMeasuredReport({
         title: locale === 'uk' ? 'Що виміряли і чому так вийшло' : 'What was measured and why it came out so',

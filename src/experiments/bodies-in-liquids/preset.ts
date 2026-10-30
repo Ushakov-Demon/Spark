@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTERACTION, MOTION, room, varied } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTERACTION, MOTION, room, stepLine, STEPS_END, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { type Locale, tr } from '../../knowledge/i18n.js';
 import { type SinkLiquid, sinkLiquidName } from './bench.js';
@@ -131,8 +131,8 @@ export const answer_ball_in_liquids = (run: PresetRun): PresetAnswer => {
     say: both((l) => (slowest ? (l === 'uk' ? `Найповільніше — ${name(slowest.liquid, l)}: ${v(slowest.v, l)}.` : `Slowest ${name(slowest.liquid, l)}: ${v(slowest.v, l)}.`) : '')),
     text: both((l) =>
       l === 'uk'
-        ? `${per.map((x, k) => `${k ? name(x.liquid, l) : name(x.liquid, l).replace(/^./, (c) => c.toUpperCase())} (густина ${Math.round(x.rho)} кг/м³) кулька пройшла ${Math.round(x.s * 100)} см за ${sig(x.t, 3, l)} с — v ≈ ${v(x.v, l)}`).join('; ')}. Швидкість не йде за густиною: олія найлегша, а кулька в ній повільніша, ніж у воді, — бо олія набагато в’язкіша.${water && water.t < 1 ? ` У воді кулька проходить ${Math.round(water.s * 100)} см менш ніж за секунду — рукою засікти такий час точно важко: запізнення пальця (0,1–0,2 с) тут суттєве.` : ''}`
-        : `${per.map((x, k) => `${k ? name(x.liquid, l) : name(x.liquid, l).replace(/^./, (c) => c.toUpperCase())} (density ${Math.round(x.rho)} kg/m³) the ball went ${Math.round(x.s * 100)} cm in ${sig(x.t, 3, l)} s — v ≈ ${v(x.v, l)}`).join('; ')}. The speed does not follow the density: oil is the lightest, yet the ball is slower in it than in water — because oil is much more viscous.${water && water.t < 1 ? ` In water the ball goes ${Math.round(water.s * 100)} cm in under a second — hard to time by hand: the finger’s delay (0.1–0.2 s) matters here.` : ''}`,
+        ? `${per.map((x, k) => `${k ? name(x.liquid, l) : name(x.liquid, l).replace(/^./, (c) => c.toUpperCase())} (густина ${Math.round(x.rho)} кг/м³) кулька пройшла ${Math.round(x.s * 100)} см за ${sig(x.t, 3, l)} с — v ≈ ${v(x.v, l)}`).map(stepLine).join(';') + STEPS_END}. Швидкість не йде за густиною: олія найлегша, а кулька в ній повільніша, ніж у воді, — бо олія набагато в’язкіша.${water && water.t < 1 ? ` У воді кулька проходить ${Math.round(water.s * 100)} см менш ніж за секунду — рукою засікти такий час точно важко: запізнення пальця (0,1–0,2 с) тут суттєве.` : ''}`
+        : `${per.map((x, k) => `${k ? name(x.liquid, l) : name(x.liquid, l).replace(/^./, (c) => c.toUpperCase())} (density ${Math.round(x.rho)} kg/m³) the ball went ${Math.round(x.s * 100)} cm in ${sig(x.t, 3, l)} s — v ≈ ${v(x.v, l)}`).map(stepLine).join(';') + STEPS_END}. The speed does not follow the density: oil is the lightest, yet the ball is slower in it than in water — because oil is much more viscous.${water && water.t < 1 ? ` In water the ball goes ${Math.round(water.s * 100)} cm in under a second — hard to time by hand: the finger’s delay (0.1–0.2 s) matters here.` : ''}`,
     ),
   };
 };

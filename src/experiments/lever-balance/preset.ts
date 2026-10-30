@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { both, ch, INTERACTION, room, varied, WATER } from '../../scenarios/preset-kit.js';
+import { both, ch, INTERACTION, room, stepLine, STEPS_END, varied, WATER } from '../../scenarios/preset-kit.js';
 import type { Choice, Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
@@ -48,8 +48,8 @@ export const answer_lever_balance = (run: PresetRun): PresetAnswer => {
     say: both((l) => (water !== null ? (l === 'uk' ? `У склянці ${g(water, l)} води!` : `The glass holds ${g(water, l)} of water!`) : '—')),
     text: both((l) =>
       l === 'uk'
-        ? `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).join('; ')}. Масу води знаходимо як різницю двох зважувань: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. Найменший важок у наборі — 10 мг, тож саме з такою точністю зважено кожне тіло. Але точність маси води гірша: у різниці двох зважувань похибки додаються. Тіла кладуть на ліву шальку, важки — на праву, пінцетом, від більших до менших; брудне й вологе на шальки не кладуть, а рідину зважують лише в посудині.`
-        : `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).join('; ')}. The water’s mass is the difference of two weighings: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. The smallest weight of the set is 10 mg, so that is how precisely each body was weighed. The water’s mass is less precise: in a difference of two weighings the errors add up. Loads go on the left pan, weights on the right, with tweezers, from larger to smaller; nothing dirty or wet goes on the pans, and a liquid is weighed only in a vessel.`,
+        ? `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).map(stepLine).join(';') + STEPS_END}. Масу води знаходимо як різницю двох зважувань: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. Найменший важок у наборі — 10 мг, тож саме з такою точністю зважено кожне тіло. Але точність маси води гірша: у різниці двох зважувань похибки додаються. Тіла кладуть на ліву шальку, важки — на праву, пінцетом, від більших до менших; брудне й вологе на шальки не кладуть, а рідину зважують лише в посудині.`
+        : `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).map(stepLine).join(';') + STEPS_END}. The water’s mass is the difference of two weighings: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. The smallest weight of the set is 10 mg, so that is how precisely each body was weighed. The water’s mass is less precise: in a difference of two weighings the errors add up. Loads go on the left pan, weights on the right, with tweezers, from larger to smaller; nothing dirty or wet goes on the pans, and a liquid is weighed only in a vessel.`,
     ),
   };
 };

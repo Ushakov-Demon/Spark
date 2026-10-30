@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, MOTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, MOTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { BEAUFORT, beaufortOf, WIND_TRACK } from './bench.js';
 import { type Locale, tr } from '../../knowledge/i18n.js';
@@ -46,7 +46,7 @@ export const answer_wind_speed = (run: PresetRun): PresetAnswer => {
         const f = beaufortOf(v(x));
         return uk ? `${b.signs.uk}: 6 м за ${formatMeasured('time', x.t, 0.01, l)}, v ≈ ${ms(v(x), l)} — ${f} ${f === 1 ? 'бал' : 'бали'}, «${tr(BEAUFORT[f as 1 | 2 | 3]?.name ?? b.name, l)}»` : `${b.signs.en}: 6 m in ${formatMeasured('time', x.t, 0.01, l)}, v ≈ ${ms(v(x), l)} — force ${f}, a ${tr(BEAUFORT[f as 1 | 2 | 3]?.name ?? b.name, l)}`;
       });
-      const s = `${parts.join('; ')}.`;
+      const s = `${parts.map(stepLine).join(';') + STEPS_END}.`;
       return s.charAt(0).toUpperCase() + s.slice(1) + (uk ? ' Сила вітру за швидкістю збіглася з прикметами (шкала Бофорта).' : ' The wind’s force by its speed matched its signs (the Beaufort scale).');
     }),
   };

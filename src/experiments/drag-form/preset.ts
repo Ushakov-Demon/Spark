@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTERACTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTERACTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { DRAG_COEFFICIENTS, DRAG_MASS, DRAG_START, DRAG_TRACK, dragBody, type DragShape, dragShapeName, framesText, mediumDensity } from './bench.js';
 import { G } from '../../domains/mechanics/constants.js';
@@ -55,7 +55,7 @@ export const answer_drag_form = (run: PresetRun): PresetAnswer => {
     say: both((l) => (l === 'uk' ? 'Та сама маса — а швидкість різна: усе вирішують форма й середовище!' : 'The same mass — different speeds: the form and the medium decide!')),
     text: both((l) => {
       const uk = l === 'uk';
-      const parts = water.map((x) => `${dragShapeName(x.shape)[l]} — ${fr(x.r!, l)}`).join('; ');
+      const parts = water.map((x) => `${dragShapeName(x.shape)[l]} — ${fr(x.r!, l)}`).map(stepLine).join(';') + STEPS_END;
       const a = air ? (uk ? ` У повітрі та сама кулька пролетіла 20 см за ${fr(air, l)} — майже як у вільному падінні (${formatMeasured('time', free, 0.001, l)}): опір повітря тут мізерний.` : ` In the air the same ball covered 20 cm in ${fr(air, l)} — nearly as in free fall (${formatMeasured('time', free, 0.001, l)}): the air hardly resists here.`) : '';
       return uk
         ? `У воді між позначками: ${parts}. Вага всіх тіл однакова, архімедова сила теж, тож, рухаючись рівномірно, кожне зазнає однакової сили опору: F = m·g − ρ·g·V ≈ ${sig(Fd, 2, l)} Н. Але пластинка набирає її вже за малої швидкості, а кулька — лише за найбільшої.${a} Сила опору F = C·ρ·v²·S / 2 залежить від форми тіла (коефіцієнт опору C: кулька ${cd('ball', l)}, кубик ${cd('cube', l)}, пластинка ${cd('plate', l)}), площі S, яку тіло підставляє зустрічному потоку, і густини середовища ρ.`

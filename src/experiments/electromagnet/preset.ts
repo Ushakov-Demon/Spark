@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, MAGNETIC, room, varied } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, MAGNETIC, room, stepLine, STEPS_END, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { earthField, modelYear } from '../../domains/electrical/wmm.js';
 import type { Locale } from '../../knowledge/i18n.js';
@@ -74,7 +74,7 @@ export const answer_electromagnet = (run: PresetRun): PresetAnswer => {
   const deg = (x: number) => `${x}°`;
   const uT = (x: number, l: Locale) => `${sig(x * 1e6, 2, l)} ${l === 'uk' ? 'мкТл' : 'µT'}`;
   const A = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'А' : 'A'}`;
-  const list = (l: Locale) => steps.map((x) => `${A(x.I, l)} — ${deg(x.deg)} (B ≈ ${uT(B(x.deg), l)})`).join('; ');
+  const list = (l: Locale) => steps.map((x) => `${A(x.I, l)} — ${deg(x.deg)} (B ≈ ${uT(B(x.deg), l)})`).map(stepLine).join(';') + STEPS_END;
   const turns = Number(R[0]?.command['turns'] ?? 100);
   const place = String(R[0]?.command['place'] ?? 'Київ');
   const where = (l: Locale) => `${place}${R[0]?.command['example'] ? (l === 'uk' ? ', для прикладу' : ', for example') : ''}`;

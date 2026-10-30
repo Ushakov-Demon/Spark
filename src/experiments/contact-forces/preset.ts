@@ -1,5 +1,5 @@
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, INTERACTION, room } from '../../scenarios/preset-kit.js';
+import { beaker, both, ch, INTERACTION, room, stepLine, STEPS_END } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { type TouchCase, touchPlan, touchSeen } from './bench.js';
 import { tr } from '../../knowledge/i18n.js';
@@ -39,7 +39,7 @@ export const answer_contact_forces = (run: PresetRun): PresetAnswer => {
     ),
     say: both((l) => (l === 'uk' ? 'Без дотику діяли магніт, гребінець і Земля; тертя без дотику зникло.' : 'Without touching acted the magnet, the comb and the Earth; friction vanished without touching.')),
     text: both((l) => {
-      const s = `${R.map((x) => `${tr(touchPlan(x.c), l)} — ${tr(touchSeen(x.c), l)}`).join('; ')}.`;
+      const s = `${R.map((x) => `${tr(touchPlan(x.c), l)} — ${tr(touchSeen(x.c), l)}`).map(stepLine).join(';') + STEPS_END}.`;
       return s.charAt(0).toUpperCase() + s.slice(1);
     }),
   };
