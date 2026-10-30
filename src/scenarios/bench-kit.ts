@@ -1,3 +1,4 @@
+import type { MeasurementRecord } from '../core/trace.js';
 import { cite, sv } from '../components/sourced.js';
 import type { SourcedValue } from '../knowledge/types.js';
 import { SUBSTANCES } from '../substances/catalog.js';
@@ -22,3 +23,9 @@ export const PAPER_ON_WOOD: SourcedValue = sv(0.4, '', 'paper on wood, sliding',
 /** The pine block of the lab works: its edges, m (a block of the lab; its mass follows from the wood's density). */
 export const BENCH_BLOCK = { substance: 'wood', edges: [0.12, 0.06, 0.04] as const };
 export const blockMass = (): number => BENCH_BLOCK.edges[0] * BENCH_BLOCK.edges[1] * BENCH_BLOCK.edges[2] * SUBSTANCES.wood.liquid.density.value;
+
+/** A pupil's ruler: millimetre divisions. */
+export const RULER_DIVISION = 0.001;
+export const ruler = (x: number) => Math.round(x / RULER_DIVISION) * RULER_DIVISION;
+/** A bench instrument's reading: what it shows, and the exact value behind it. */
+export const measured = (instrument: string, quantity: MeasurementRecord['quantity'], value: number | null, exact: number, inputs: Record<string, number>): MeasurementRecord => ({ kind: 'measurement', instrument, quantity, value, exact, entities: [], inputs });

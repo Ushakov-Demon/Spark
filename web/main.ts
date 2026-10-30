@@ -57,8 +57,6 @@ import {
   parsePlace,
   withValues,
   type PresetValues,
-  balanceWeights,
-  weightsText,
   BENCH_BLOCK,
   BENCH_SPRING_L0,
   BENCH_SPRING_K,
@@ -120,6 +118,7 @@ import {
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
 import { sceneOf } from './experiments/index.js';
+import { BODY_COLOR } from './graphics/scene/kit.js';
 import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, type ComponentId } from '../src/components/index.js';
 import { cellReaction, cellReading, createElectricalSolver, GAS_CONSTANT, isSupply, molesToMass } from '../src/domains/electrical/index.js';
@@ -134,7 +133,7 @@ import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
-import { BUSY, SLIDE } from './graphics/scene/bench-motion.js';
+import { BUSY } from './graphics/scene/bench-motion.js';
 import { LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute, type LibraryPage } from './library.js';
 import { createChooser, fly, type ChoiceCard, type ChooserStage } from './chooser.js';
 import { deviceSvg } from './graphics/scene/devices.js';
@@ -467,22 +466,7 @@ function benchView(): BenchView | null {
     const mass = swing ? Number(c!['mass']) : (prev?.mass ?? PENDULUM_BALLS.light);
     return { ...base, kind, pendulum: { length, angle: 0, mass }, stopwatch: { display: sec(swing ? r!.value : 0) }, ...tapeShown, ...(swing ? { run: { seconds: r!.exact ?? r!.value ?? 0, period: r!.inputs?.['period'] ?? 2, count: Number(c!['count']), amplitude: Math.asin(Number(c!['amplitude']) / length) } } : {}) };
   }
-  if (kind === 'spring') {
-    const n = c?.type === 'lab.stretch' ? Number(c['weights']) : 0;
-    return { ...base, weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r?.inputs?.['k'] ? { stiffness: r.inputs['k'] } : {}), ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
-  }
-  if (kind === 'balance') {
-    const b = c?.type === 'lab.balance' ? (c as unknown as { what: string; substance?: string; label?: { uk: string; en: string } }) : undefined;
-    const set = r?.value != null && b ? (balanceWeights(r.value) ?? []) : [];
-    return { ...base, ...(b ? { balance: { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, ...(r && r.value !== null ? { mass: r.exact } : {}), display: r?.value != null ? `${weightsText(set, locale === 'uk')} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' } } : {}) };
-  }
-  if (kind === 'friction') {
-    if (!(c?.type === 'lab.pull' && r)) return base;
-    // Stood on its narrower face: as tall as it was wide.
-    const [a, b, h] = BENCH_BLOCK.edges;
-    return { ...base, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE, ...(c['face'] === 'narrow' ? { block: [a, h, b] as const } : {}), ...(c['surface'] === 'paper' ? { paper: locale === 'uk' ? 'аркуш паперу' : 'a sheet of paper' } : {}) };
-  }
-  return c?.type === 'lab.edge' && r ? { ...base, edge: { index: Number(c['edge']) as 0 | 1 | 2, display: show('length', r.value) } } : base;
+  return base;
 }
 /** The latest level reading or dynamometer reading while nothing has happened since. */
 function showingMeasure() {
@@ -521,25 +505,6 @@ function measureSay(): string {
   if (modBusy) return tr(modBusy, locale);
   if (instrumentBusy && BUSY[m.command.type]) return tr(BUSY[m.command.type]!, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
-  if (m.command.type === 'lab.stretch') {
-    const n = (m.command as { weights: number }).weights;
-    const l0 = [...all.slice(0, i)].find((x) => x.command.type === 'lab.stretch' && (x.command as { weights: number }).weights === 0)?.record.value;
-    if (n === 0 || r.value === null) return uk ? `Довжина пружини без вантажу l₀ = ${cm(r.value ?? 0)}.` : `The spring’s length with no load l₀ = ${cm(r.value ?? 0)}.`;
-    const x = l0 !== undefined && l0 !== null ? r.value - l0 : null;
-    return uk ? `З ${n === 1 ? 'тягарцем' : `${n} тягарцями`} пружина завдовжки l = ${cm(r.value)}${x !== null ? `: видовження x = l − l₀ = ${cm(x)}` : ''}.` : `With ${n === 1 ? 'one weight' : `${n} weights`} the spring is l = ${cm(r.value)} long${x !== null ? `: the extension x = l − l₀ = ${cm(x)}` : ''}.`;
-  }
-  if (m.command.type === 'lab.pull') {
-    const n = (m.command as { weights: number }).weights;
-    const pc = m.command as { face?: string; surface?: string };
-    if (pc.face === 'narrow') return uk ? `На вужчій грані брусок ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `On its narrower face the block slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
-    if (pc.surface === 'paper') return uk ? `По папері брусок ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}.` : `Over the paper the block slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}.`;
-    return uk ? `Брусок${n === 1 ? ' із тягарцем' : n ? ` із ${n} тягарцями` : ''} ковзає рівномірно — динамометр показує ${formatMeasured('force', r.value, 0.1, locale)}. Це і є сила тертя ковзання.` : `The block${n ? ` with ${n} weight${n === 1 ? '' : 's'}` : ''} slides steadily — the dynamometer shows ${formatMeasured('force', r.value, 0.1, locale)}. That is the force of sliding friction.`;
-  }
-  if (m.command.type === 'lab.balance') {
-    if (r.value === null) return uk ? 'Важків із набору не вистачає — тіло завелике для цих терезів (до 211 г).' : 'The set of weights is not enough — the load is too heavy for this balance (up to 211 g).';
-    const set = balanceWeights(r.value) ?? [];
-    return uk ? `Терези в рівновазі: ${weightsText(set, true)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.` : `The balance is level: ${weightsText(set, false)} = ${formatMeasured('mass', r.value, 0.00001, locale)}.`;
-  }
   // The motion bench: what the tape and the stopwatch showed.
   const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
   const cmd = m.command as unknown as Record<string, number | string>;
@@ -547,11 +512,6 @@ function measureSay(): string {
   if (m.command.type === 'lab.roll') return uk ? `Кулька докотилася до циліндра за ${sec(r.value)}.` : `The ball reached the cylinder in ${sec(r.value)}.`;
   if (m.command.type === 'lab.whirl') return uk ? `${cmd['turns']} обертів — ${sec(r.value)}: один оберт ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} с.` : `${cmd['turns']} turns — ${sec(r.value)}: one turn ≈ ${sig((r.value ?? 0) / Number(cmd['turns']), 3, locale)} s.`;
   if (m.command.type === 'lab.swing') return uk ? `${cmd['count']} коливань — ${sec(r.value)}: одне коливання ≈ ${sig((r.value ?? 0) / Number(cmd['count']), 3, locale)} с.` : `${cmd['count']} swings — ${sec(r.value)}: one swing ≈ ${sig((r.value ?? 0) / Number(cmd['count']), 3, locale)} s.`;
-  if (m.command.type === 'lab.edge') {
-    const e = (m.command as { edge: number }).edge;
-    const what = uk ? ['Довжина', 'Ширина', 'Висота'][e] : ['Length', 'Width', 'Height'][e];
-    return `${what} ${uk ? 'бруска' : 'of the block'}: ${cm(r.value ?? 0)}.`;
-  }
   // The coil on the multimeter: its resistance at the water's temperature, and how much it grew since the first reading.
   if (m.command.type === 'lab.ohm') {
     const Om = (x: number) => formatMeasured('resistance', x, r.inputs?.['division'] ?? 0.01, locale);
@@ -574,8 +534,11 @@ function measureSay(): string {
   // An experiment module: its own words for the step.
   const mod = experimentOf(m.command.type);
   if (mod) {
-    const recs = readingsOf([[...session.result().log].reverse().find((e) => e.ok && e.command.type === m.command.type)!]).map((x) => x.record);
-    if (mod.say) return mod.say(m.command as never, recs, locale);
+    const log = session.result().log;
+    let at = log.length - 1;
+    while (at > 0 && !(log[at]!.ok && log[at]!.command.type === m.command.type)) at--;
+    const recs = readingsOf([log[at]!]).map((x) => x.record);
+    if (mod.say) return mod.say(m.command as never, recs, locale, log.slice(0, at));
     const shown = mod.shown(m.command as never, recs, locale);
     return `${shown.charAt(0).toUpperCase()}${shown.slice(1)}.`;
   }
@@ -1910,8 +1873,6 @@ function showingWeighing() {
   return last?.ok && last.command.type === 'lab.weigh' ? (weighingsOf([last])[0] ?? null) : null;
 }
 
-/** How solid bodies look in the vessel. */
-const BODY_COLOR: Partial<Record<string, string>> = { 'table-salt': 'rgba(246, 246, 242, 0.97)', 'ammonium-chloride': '#f7f7f3', 'caustic-soda': '#f3f3ee', 'sodium-acetate': '#f6f6f1', sugar: '#fbfbf8', 'baking-soda': '#f4f4f0', 'copper-sulfate': '#2f7fd6', chalk: '#f1eee6', 'iron-ii-hydroxide': '#7f9a63', graphite: '#3a3d42', porcelain: '#f6f3ec', brick: '#b5553a', 'stearic-acid': '#f3efe4', tin: '#c8ccd0', aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
 const formulaOf = (x: SubstanceItem) =>
   x.recipe ? RECIPES[x.recipe as RecipeId].parts.map((p) => COMPONENTS[p.component].formula ?? '').join('+') : (x.component && COMPONENTS[x.component as keyof typeof COMPONENTS]?.formula) || '';
 /** The colour of the crystals on the bottom: of the substance with most of them, as its shelf picture is drawn. */

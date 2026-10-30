@@ -22,8 +22,8 @@ export interface ExperimentModule<C extends { readonly type: string } = { readon
   readonly text: (c: C) => StepText;
   /** A done step's outcome in words: the protocol's line; capitalised, with a full stop, the Professor's. */
   readonly shown: (c: C, recs: readonly MeasurementRecord[], locale: Locale) => string;
-  /** The Professor's line, when it says more than the protocol's (a whole sentence, with its full stop). */
-  readonly say?: (c: C, recs: readonly MeasurementRecord[], locale: Locale) => string;
+  /** The Professor's line, when it says more than the protocol's (a whole sentence, with its full stop); `before` — the run's log up to the step. */
+  readonly say?: (c: C, recs: readonly MeasurementRecord[], locale: Locale, before: readonly ExperimentLogEntry<{ readonly type: string }>[]) => string;
   /** What the Professor says while the step's motion plays; null — the step has no motion (the picture just changes). */
   readonly busy: (c: C) => LocalizedText | null;
   /** The board's lines for a done step (`before` — the log up to it). */

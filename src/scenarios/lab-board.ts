@@ -14,7 +14,6 @@ import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { liquidHeat } from '../substances/types.js';
 import { formatReading, weigh } from './weighing.js';
 import { formatMeasured } from './measuring.js';
-import { balanceWeights, weightsText } from './bench.js';
 import type { MeasurementRecord } from '../core/trace.js';
 import type { ScaleId } from '../equipment/scales.js';
 import { SAMPLE_ID, sampleOf, type LabParams } from './thermal-lab.js';
@@ -307,7 +306,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   let dissolvedAdded = false;
   let body: { m?: number; v?: number } = {};
   const airByBody = new Map<string, number>();
-  let springL0: number | null = null;
   // A liquid weighed on the balance (empty vessel, then with the liquid) and its volume read by the marks: its density.
   let emptyVessel: number | null = null;
   let liquidMass: number | null = null;
@@ -318,7 +316,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     liquidDone = true;
     out.push({ id: `rhoL:${i}`, title: uk ? 'густина рідини' : 'the density of the liquid', formula: 'ρ = m / V', numbers: `${n(liquidMass * 1000)} ${uk ? 'г' : 'g'} / ${n(liquidVolume * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(liquidMass / liquidVolume / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(liquidMass / liquidVolume)} ${uk ? 'кг/м³' : 'kg/m³'}` });
   };
-  const edges: (number | undefined)[] = [];
   const count = { volume: 0, mass: 0 };
   let tapePath: number | null = null;
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
@@ -328,7 +325,13 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     // An experiment module writes its own lines.
     const mod = experimentOf(c.type);
     if (mod) {
+      // The density of a liquid: weighed in its vessel on the lever balance (empty, then with the liquid), its
+      // volume read by the marks — two instruments, the module's and the vessel's, so it is reckoned here.
+      const weighed = c.type === 'lab.balance' ? e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement')?.value : undefined;
+      if (weighed != null && c['what'] === 'vessel-empty') emptyVessel = weighed;
+      if (weighed != null && c['what'] === 'vessel' && emptyVessel !== null) liquidMass = weighed - emptyVessel;
       if (mod.board) out.push(...mod.board(c as never, e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null), { index: i, before: log.slice(0, i), locale }));
+      if (weighed != null) liquidDensityLine(i);
       return;
     }
     if (c.type === 'thermal.add') {
@@ -341,40 +344,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     if (!r || r.value === null) return;
     // The bench: a spring stretched by weights, a block pulled along a board, the block's edges.
     const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
-    const F2 = (x: number) => formatMeasured('force', x, 0.01, locale);
-    if (c.type === 'lab.stretch') {
-      const w = Number(c['weights']);
-      if (w === 0) {
-        springL0 = r.value;
-        out.push({ id: `l0:${i}`, title: uk ? 'довжина пружини без вантажу' : 'the spring with no load', formula: `l₀ = ${cm(r.value)}` });
-        return;
-      }
-      if (springL0 === null) return;
-      const x = r.value - springL0;
-      const F = r.inputs?.['F'] ?? 0;
-      out.push({ id: `hooke:${i}`, title: uk ? `${w} × 100 г: сила пружності дорівнює вазі тягарців` : `${w} × 100 g: the elastic force equals the weights’ weight`, formula: 'k = F / x', numbers: `${F2(F)} / ${n(x)} ${uk ? 'м' : 'm'} ≈ ${n(F / x)} ${uk ? 'Н/м' : 'N/m'} (x = ${cm(r.value)} − ${cm(springL0)})` });
-      return;
-    }
-    if (c.type === 'lab.pull') {
-      const N = r.inputs?.['N'] ?? 0;
-      const how = c['face'] === 'narrow' ? (uk ? ', вужча грань' : ', narrower face') : c['surface'] === 'paper' ? (uk ? ', по папері' : ', over paper') : '';
-      out.push({ id: `mu:${i}`, title: uk ? `тертя ковзання: брусок ${Number(c['weights']) === 0 ? 'без тягарців' : `і ${Number(c['weights'])} × 100 г`}${how}` : `sliding friction: the block ${Number(c['weights']) === 0 ? 'alone' : `and ${Number(c['weights'])} × 100 g`}${how}`, formula: 'μ = F / N', numbers: `${formatMeasured('force', r.value, 0.1, locale)} / ${F2(N)} ≈ ${n(r.value / N, 2)}` });
-      return;
-    }
-    if (c.type === 'lab.balance') {
-      const what = String(c['what']);
-      const label = (c['label'] as { uk: string; en: string } | undefined)?.[uk ? 'uk' : 'en'] ?? (what === 'vessel-empty' ? (uk ? 'порожня посудина' : 'the empty vessel') : what === 'vessel' ? (uk ? 'посудина з рідиною' : 'the vessel with the liquid') : uk ? 'тіло' : 'the body');
-      const g = (kg: number) => formatMeasured('mass', kg, 0.00001, locale);
-      const set = balanceWeights(r.value) ?? [];
-      out.push({ id: `bal:${i}`, title: uk ? `важільні терези: ${label.toLowerCase()}` : `lever balance: ${label.toLowerCase()}`, formula: `m = ${g(r.value)}`, numbers: weightsText(set, uk) });
-      if (what === 'vessel-empty') emptyVessel = r.value;
-      if (what === 'vessel' && emptyVessel !== null) {
-        liquidMass = r.value - emptyVessel;
-        out.push({ id: `liq:${i}`, title: uk ? 'маса рідини — різниця двох зважувань' : 'the mass of the liquid — the difference of two weighings', formula: 'm = m₂ − m₁', numbers: `${g(r.value)} − ${g(emptyVessel)} = ${g(liquidMass)}` });
-      }
-      liquidDensityLine(i);
-      return;
-    }
     // The coil in the water on the multimeter: its resistance at this temperature, and — once warmer than at the
     // start — the temperature coefficient α = (R − R₀) / (R₀·Δt). (R₀ is its reading at 20 °C, where it starts.)
     if (c.type === 'lab.ohm') {
@@ -435,17 +404,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     if (c.type === 'lab.swing') {
       const N = Number(c['count']);
       out.push({ id: `Tp:${i}`, title: uk ? `період: ${cm(Number(c['length']))}, відхилення ${cm(Number(c['amplitude']))}, кулька ${Math.round(Number(c['mass']) * 1000)} г` : `the period: ${cm(Number(c['length']))}, ${cm(Number(c['amplitude']))} aside, a ${Math.round(Number(c['mass']) * 1000)} g ball`, formula: 'T = t / N', numbers: `${sec(r.value)} / ${N} ≈ ${sec(r.value / N)}` });
-      return;
-    }
-    if (c.type === 'lab.edge') {
-      edges[Number(c['edge'])] = r.value;
-      out.push({ id: `edge:${i}`, title: uk ? ['довжина бруска', 'ширина бруска', 'висота бруска'][Number(c['edge'])]! : ['the block’s length', 'its width', 'its height'][Number(c['edge'])]!, formula: `${['a', 'b', 'c'][Number(c['edge'])]} = ${cm(r.value)}` });
-      const P = [...airByBody.values()].pop();
-      const [a, b, h] = edges;
-      if (a !== undefined && b !== undefined && h !== undefined && P !== undefined && P !== null) {
-        const faces: [string, number][] = [[uk ? 'найбільша грань' : 'the largest face', a * b], [uk ? 'бічна грань' : 'the side face', a * h], [uk ? 'найменша грань' : 'the smallest face', b * h]];
-        for (const [name, S] of faces) out.push({ id: `pressure:${i}:${name}`, title: uk ? `тиск бруска: ${name}` : `the block’s pressure: ${name}`, formula: 'p = P / S', numbers: `${formatMeasured('force', P, 0.1, locale)} / ${n(S * 1e4)} ${uk ? 'см²' : 'cm²'} ≈ ${n(P / S)} ${uk ? 'Па' : 'Pa'}` });
-      }
       return;
     }
     if (r.quantity === 'volume' && liquidVolume === null && emptyVessel !== null) {

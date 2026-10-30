@@ -1,8 +1,8 @@
+import { AMMETER, VOLTMETER } from '../../../src/experiments/resistor-circuit/bench.js';
 import { readingsOf, formatMeasured } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, meterSvg } from '../../graphics/scene/kit.js';
 import { defineScene, type SceneContext } from '../types.js';
-import { AMMETER, VOLTMETER } from '../../../src/experiments/resistor-circuit/bench.js';
 
 /** A resistor seen from above: its body and colour bands (2 Ω — red-black-gold, 4 Ω — yellow-black-gold). */
 function resistorSvg(x: number, y: number, ohms: number): string {

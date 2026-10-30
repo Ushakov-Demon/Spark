@@ -1,8 +1,8 @@
+import { AMMETER, VOLTMETER } from '../../../src/experiments/resistor-circuit/bench.js';
 import { readingsOf, formatMeasured } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, meterSvg } from '../../graphics/scene/kit.js';
 import { defineScene, type SceneContext } from '../types.js';
-import { AMMETER, VOLTMETER } from '../../../src/experiments/resistor-circuit/bench.js';
 
 /** The circuit (grade 8): the source's volts; what the ammeter and the voltmeter show (their needles, 0…1 of the scale) — absent, the key is open. */
 export type CircuitView = { readonly source: number; readonly amps?: { readonly text: string; readonly share: number }; readonly volts?: { readonly text: string; readonly share: number } };

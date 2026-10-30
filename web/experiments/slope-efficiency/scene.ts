@@ -1,10 +1,10 @@
+import { SLOPE_LENGTH } from '../../../src/experiments/lever-moments/bench.js';
+import { BENCH_BLOCK } from '../../../src/scenarios/bench-kit.js';
 import { readingsOf, formatMeasured } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { blockSvg, dynamometerSvg, standSvg, THREAD, weightsSvg, WOOD_EDGE } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
-import { BENCH_BLOCK } from '../../../src/scenarios/bench-kit.js';
 import { defineScene, type SceneContext } from '../types.js';
-import { SLOPE_LENGTH } from '../../../src/experiments/lever-moments/bench.js';
 
 /** The inclined plane (grade 8): how high its end is, m, and the board's length; how far up the block is (0…1). */
 type Slope = { readonly height: number; readonly length: number; readonly up: number; readonly weights?: number };

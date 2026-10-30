@@ -1,3 +1,5 @@
+import { COMPONENTS } from '../components/index.js';
+import { sig } from '../explain/format.js';
 import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import type { Choice, Preset, PresetValues, PresetVary } from './presets.js';
 
@@ -29,3 +31,13 @@ export const WORK: LocalizedText = { uk: 'Механічна робота. Ме�
 export const MEDIA: LocalizedText = { uk: 'Електричний струм у різних середовищах', en: 'Electric current in different media' };
 export const MAGNETIC: LocalizedText = { uk: 'Магнітні та електромагнітні явища', en: 'Magnetic and electromagnetic phenomena' };
 export const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
+/** "у 3 рази", "у 2,4 раза", "у 5 разів" — "3 times". */
+export const times = (x: number, l: Locale): string => {
+  const v = sig(x, 2, l);
+  if (l !== 'uk') return `${v} times`;
+  if (/[,.]/.test(v)) return `у ${v} раза`;
+  const n = Number(v.replace(/\s/g, ''));
+  return `у ${v} ${n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'рази' : 'разів'}`;
+};
+/** Water's density, kg/m³ (the component model's). */
+export const WATER = COMPONENTS.water.phases.liquid!.density!.value;

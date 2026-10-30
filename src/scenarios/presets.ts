@@ -67,7 +67,7 @@ export interface Preset {
   /** The mechanics bench is on the table instead of the vessel: a spring on a stand, a block on a board. */
   /** What stands on the table, when it is not the bench's usual (one bench, another set: a bubble in washing-up liquid). */
   readonly benchSetup?: LocalizedText;
-  readonly bench?: 'spring' | 'friction' | 'pressure' | 'balance' | 'incline' | 'circle' | 'pendulum' | ExperimentKind;
+  readonly bench?: 'incline' | 'circle' | 'pendulum' | ExperimentKind;
   /** The choices come as a table of this property (the experimenter looks the result up in it). */
   readonly choiceTable?: 'density';
   /**
@@ -186,8 +186,6 @@ const WORK: LocalizedText = { uk: 'Механічна робота. Механі
 const room = { roomTemp: 20, lid: false } as const;
 /** Metals for the specific-heat lab work: what a school set of calorimeter cylinders has. */
 const METALS_FOR_HEAT: readonly Choice[] = (['aluminium', 'copper', 'iron', 'brass', 'steel'] as const).map((id) => ({ id, label: SUBSTANCES[id].name }));
-/** Liquids whose density the lab work finds (all fit the balance in a 100 mL cylinder). */
-const LIQUIDS_FOR_DENSITY: readonly Choice[] = (['sunflower-oil', 'glycerol', 'ethanol', 'water'] as const).map((id) => ({ id, label: SUBSTANCES[id].name }));
 const hotplate = { id: 'electric-hotplate', rating: 2000, knob: 1 } as const;
 const bench = (knob: number) => ({ id: 'bench-supply', knob }) as const;
 const beaker = { vessel: 'beaker', size: 0.25, material: 'glass', liters: 0.2 } as const;
@@ -418,175 +416,7 @@ const LIST: readonly Preset[] = [
     ],
     expect: 'reached',
   },
-  {
-    id: 'lever-balance',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Зважуємо на важільних терезах', en: 'Weighing on a lever balance' },
-    question: {
-      uk: 'Зважимо на важільних терезах алюмінієвий циліндр, дерев’яний брусок, порожню склянку й склянку з водою. Тіло кладемо на ліву шальку, а на праву пінцетом — важки з набору, від більших до менших, поки терези не зрівноважаться. Скільки води в склянці?',
-      en: 'On a lever balance we weigh an aluminium cylinder, a wooden block, an empty glass and the glass with water. The load goes on the left pan, and on the right — weights from the set with tweezers, from larger to smaller, until the balance is level. How much water is in the glass?',
-    },
-    params: { ...room, vessel: 'beaker', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'balance',
-    plan: [
-      { kind: 'bench', command: { type: 'lab.balance', what: 'body', substance: 'aluminium', mass: 0.0543, label: { uk: 'Алюмінієвий циліндр', en: 'Aluminium cylinder' } } },
-      { kind: 'bench', command: { type: 'lab.balance', what: 'body', substance: 'wood', mass: 0.12 * 0.06 * 0.04 * SUBSTANCES.wood.liquid.density.value, label: { uk: 'Дерев’яний брусок', en: 'Wooden block' } } },
-      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel-empty', label: { uk: 'Порожня склянка', en: 'Empty glass' } } },
-      { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', label: { uk: 'Склянка з водою', en: 'Glass with water' } } },
-    ],
-    choices: [ch('diff', 'Різниця зважувань: склянка з водою мінус порожня склянка', 'The difference of weighings: the glass with water minus the empty glass'), ch('total', 'Стільки, скільки показали терези зі склянкою з водою', 'As much as the balance showed with the glass of water'), ch('glass', 'Стільки, скільки важить порожня склянка', 'As much as the empty glass weighs')],
-    choicesAt: 'end',
-    formulas: ['mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 4', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 4. Вимірювання маси тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 16, лабораторна робота № 4, с. 116' } }, { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }],
-    expect: 'reached',
-  },
-  varied(
-    {
-      ask: { uk: 'Рідина легша чи важча за воду, якщо порівняти однакові об’єми?', en: 'Is the liquid lighter or heavier than water, for equal volumes?' },
-      id: 'liquid-density',
-      grade: 7,
-      topic: INTERACTION,
-      title: { uk: 'Яка густина рідини?', en: 'What is the density of a liquid?' },
-      guided: true,
-      bench: 'balance',
-      formulas: ['mechanics.density'],
-      quoteHas: 'густини',
-      programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }],
-      expect: 'reached',
-    },
-    {
-      controls: [
-        { id: 'liquid', label: { uk: 'Рідина', en: 'Liquid' }, kind: 'choice', options: LIQUIDS_FOR_DENSITY, value: 'sunflower-oil' },
-        { id: 'volume', label: { uk: 'Скільки налити', en: 'How much to pour' }, kind: 'number', unit: 'мл', min: 30, max: 60, step: 5, value: 50 },
-      ],
-      build: (v) => {
-        const liquid = SUBSTANCES[v['liquid'] as SubstanceId];
-        const volume = Number(v['volume']);
-        const name = (l: 'uk' | 'en') => liquid.name[l].toLowerCase();
-        const gen = (l: 'uk' | 'en') => (liquid.genitive?.[l] ?? liquid.name[l]).toLowerCase();
-        return {
-          question: {
-            uk: `Зважимо порожню мензурку на важільних терезах, наллємо в неї ≈ ${volume} мл: ${name('uk')}, зважимо ще раз і подивимося на поділки, скільки рідини налили. Вона легша чи важча за воду, якщо порівняти однакові об’єми?`,
-            en: `We weigh an empty measuring cylinder on a lever balance, pour ≈ ${volume} mL of ${gen('en')} into it, weigh it again and read on the marks how much we poured. For equal volumes, is it lighter or heavier than water?`,
-          },
-          params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: volume / 1000, action: 'settle', substance: liquid.id as SubstanceId, startTemp: 20 },
-          plan: [
-            { kind: 'bench', command: { type: 'lab.balance', what: 'vessel-empty', label: { uk: 'Порожня мензурка', en: 'Empty cylinder' } } },
-            { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', label: { uk: `Мензурка: ${name('uk')}`, en: `Cylinder with ${gen('en')}` } } },
-            { kind: 'level' },
-          ],
-          choices: [ch('lighter', 'Легша', 'Lighter'), ch('same', 'Однакова', 'The same'), ch('heavier', 'Важча', 'Heavier')],
-        };
-      },
-    },
-  ),
-  varied(
-    {
-      id: 'hooke-spring',
-      grade: 7,
-      topic: INTERACTION,
-      title: { uk: 'Як розтягується пружина?', en: 'How does a spring stretch?' },
-      guided: true,
-      bench: 'spring',
-      choices: [ch('proportional', 'Пропорційно: удвічі більша сила — удвічі більше видовження', 'In proportion: twice the force, twice the extension'), ch('faster', 'Видовження росте швидше за силу', 'The extension grows faster than the force'), ch('slower', 'Видовження росте повільніше за силу', 'The extension grows slower than the force')],
-      formulas: ['mechanics.hooke', 'mechanics.weight'],
-      programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Дослідження • інерції; пружних властивостей тіл' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }, { program: 'oxfordaqa-igcse-sciences', item: 'Physics RP 1', match: 'same', quote: 'Investigate the relationship between force and extension for a spring.' }],
-      expect: 'reached',
-    },
-    {
-      // Only the springs that four 100 g weights stretch within the 40 cm ruler.
-      controls: [{ id: 'spring', label: { uk: 'Пружина з набору', en: 'Spring of the set' }, kind: 'choice', options: [ch('25', 'Тугіша', 'Stiffer'), ch('15', 'М’якша', 'Softer')], value: '25' }],
-      build: (v) => {
-        const stiffness = Number(v['spring']);
-        return {
-          question: {
-            uk: `Підвісимо ${stiffness === 25 ? 'тугішу' : 'м’якшу'} пружину з набору на штатив і будемо чіпляти до неї тягарці по 100 г — один, два, три, чотири, щоразу вимірюючи її довжину лінійкою. Як видовження пружини залежить від сили, що її розтягує?`,
-            en: `We hang the ${stiffness === 25 ? 'stiffer' : 'softer'} spring of the set on a stand and add 100 g weights to it — one, two, three, four — measuring its length with a ruler each time. How does the spring’s extension depend on the force stretching it?`,
-          },
-          params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-          plan: [0, 1, 2, 3, 4].map((weights) => ({ kind: 'bench', command: { type: 'lab.stretch', weights, stiffness } }) as const),
-        };
-      },
-    },
-  ),
-  {
-    ask: { uk: 'Чи залежить сила тертя від того, на яку грань покласти брусок?', en: 'Does friction depend on which face the block lies on?' },
-    id: 'friction-factors',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Від чого залежить сила тертя ковзання', en: 'What the force of sliding friction depends on' },
-    question: {
-      uk: 'Зважимо дерев’яний брусок, покладемо на нього тягарець 100 г і рівномірно тягтимемо динамометром по дерев’яній дошці: спершу на широкій грані, потім — поставивши на вужчу, далі по аркушу паперу, а наостанок із трьома тягарцями. Брусок поставили на вужчу грань — площа дотику з дошкою стала меншою. Що буде з силою тертя?',
-      en: 'We weigh a wooden block, put a 100 g weight on it and pull it steadily with a dynamometer along a wooden board: first on its wide face, then stood on a narrower one, then over a sheet of paper, and at last with three weights. The block stands on a narrower face — less of it touches the board. What happens to the friction?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'friction',
-    plan: [
-      { kind: 'hang', substance: 'wood', mass: 0.12 * 0.06 * 0.04 * SUBSTANCES.wood.liquid.density.value, into: 'air', label: { uk: 'Дерев’яний брусок', en: 'Wooden block' } },
-      { kind: 'bench', command: { type: 'lab.pull', weights: 1, face: 'wide' } },
-      { kind: 'bench', command: { type: 'lab.pull', weights: 1, face: 'narrow' } },
-      { kind: 'bench', command: { type: 'lab.pull', weights: 1, surface: 'paper' } },
-      { kind: 'bench', command: { type: 'lab.pull', weights: 3, face: 'wide' } },
-    ],
-    choices: [ch('same', 'Лишиться такою самою', 'It stays the same'), ch('less', 'Зменшиться: менша площа — менше тертя', 'It gets smaller: less area, less friction'), ch('more', 'Збільшиться: брусок сильніше тисне на дошку', 'It grows: the block presses harder on the board')],
-    trick: { uk: 'Більшість думає, що на вужчій грані тягти легше.', en: 'Most people think the block is easier to pull on its narrower face.' },
-    formulas: ['mechanics.friction', 'mechanics.weight'],
-    programs: [
-      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'між площею і якістю поверхонь рухомих тіл, масою рухомого тіла і силою тертя ковзання' },
-      { program: 'ua-nus-2023-kreminskyi', grade: 7, topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: 'Сили тертя. Тертя в природі й техніці.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 26, рис. 26.5–26.7: брусок по дереву й по склу, на більшій і меншій грані, з тягарцями; закон Амонтона — Кулона' } },
-    ],
-    expect: 'reached',
-  },
-  {
-    ask: { uk: 'Як зміниться коефіцієнт тертя μ = F/N, коли додаватимемо тягарці?', en: 'How will the coefficient μ = F/N change as weights are added?' },
-    id: 'friction-coefficient',
-    grade: 7,
-    topic: INTERACTION,
-    title: { uk: 'Визначаємо коефіцієнт тертя ковзання', en: 'Finding the coefficient of sliding friction' },
-    question: {
-      uk: 'Зважимо дерев’яний брусок динамометром, а потім тягтимемо його по дерев’яній дошці — спершу порожнього, далі з одним, двома, трьома тягарцями по 100 г, щоразу записуючи покази динамометра. Що буде з коефіцієнтом тертя μ = F/N?',
-      en: 'We weigh a wooden block on a dynamometer, then pull it along a wooden board — first bare, then with one, two, three 100 g weights, writing down the dynamometer each time. What happens to the coefficient μ = F/N?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'friction',
-    plan: [
-      { kind: 'hang', substance: 'wood', mass: 0.12 * 0.06 * 0.04 * SUBSTANCES.wood.liquid.density.value, into: 'air', label: { uk: 'Дерев’яний брусок', en: 'Wooden block' } },
-      ...[0, 1, 2, 3].map((weights) => ({ kind: 'bench', command: { type: 'lab.pull', weights } }) as const),
-    ],
-    choices: [ch('same', 'Лишиться майже тим самим', 'It stays about the same'), ch('grows', 'Теж зростатиме', 'It grows too'), ch('falls', 'Зменшуватиметься', 'It gets smaller')],
-    formulas: ['mechanics.friction', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 7', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 7. Визначення коефіцієнта тертя ковзання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 27, лабораторна робота № 7, с. 191' } }],
-    expect: 'reached',
-  },
 
-  {
-    ask: { uk: 'На якій грані брусок тиснутиме на стіл найсильніше?', en: 'On which face will the block press on the table hardest?' },
-    id: 'block-pressure',
-    grade: 7,
-    topic: PRESSURE,
-    title: { uk: 'Який тиск чинить брусок на стіл?', en: 'What pressure does a block put on the table?' },
-    question: {
-      uk: 'Зважимо дерев’яний брусок динамометром і виміряємо лінійкою його довжину, ширину й висоту. Брусок можна покласти на стіл трьома різними гранями. На якій грані він тиснутиме на стіл найсильніше?',
-      en: 'We weigh a wooden block on a dynamometer and measure its length, width and height with a ruler. The block can lie on the table on three different faces. On which face will it press on the table hardest?',
-    },
-    params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-    guided: true,
-    bench: 'pressure',
-    plan: [
-      { kind: 'hang', substance: 'wood', mass: 0.12 * 0.06 * 0.04 * SUBSTANCES.wood.liquid.density.value, into: 'air', label: { uk: 'Дерев’яний брусок', en: 'Wooden block' } },
-      ...([0, 1, 2] as const).map((edge) => ({ kind: 'bench', command: { type: 'lab.edge', edge } }) as const),
-    ],
-    choices: [ch('largest', 'На найбільшій грані', 'On the largest face'), ch('smallest', 'На найменшій грані', 'On the smallest face'), ch('same', 'Однаково — вага ж та сама', 'The same — the weight is the same')],
-    choicesAt: 'end',
-    answerOnBoard: ['pressure:'],
-    formulas: ['mechanics.pressure', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 8', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 8. Вимірювання тиску тіла на опору.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 28, лабораторна робота № 8, с. 203' } }],
-    expect: 'reached',
-  },
   {
     ask: { uk: 'З якої речовини зроблено брусок?', en: 'What substance is the block made of?' },
     id: 'hydrostatic-weighing',

@@ -23,6 +23,7 @@ import { bodyEnergy, isThermalBody } from '../domains/thermal/entities.js';
 import { solubilityAt } from '../domains/thermal/mixture.js';
 import { LAB_COMMANDS, type LabCommand } from './lab-knowledge.js';
 import { labGoalReached, labSetup } from './thermal-lab.js';
+import { times, WATER } from './preset-kit.js';
 
 /**
  * Answers to the questions the ready-made experiments ask — built from what
@@ -88,14 +89,6 @@ function current(s: Step): { amps: number; charge: number; time: number } {
   const time = s.result.final.time - s.result.initial.time;
   return { amps: time > 0 ? charge / time : 0, charge, time };
 }
-/** "у 3 рази", "у 2,4 раза", "у 5 разів" — "3 times". */
-const times = (x: number, l: Locale): string => {
-  const v = sig(x, 2, l);
-  if (l !== 'uk') return `${v} times`;
-  if (/[,.]/.test(v)) return `у ${v} раза`;
-  const n = Number(v.replace(/\s/g, ''));
-  return `у ${v} ${n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'рази' : 'разів'}`;
-};
 const ratio = (a: number, b: number, l: Locale) => sig(a / Math.max(b, 1e-12), 2, l);
 
 /** The temperature right after something was poured in: what the heat balance gives (from the log), or the step's start. */
@@ -130,7 +123,6 @@ const g = (kg: number, l: Locale) => `${sig(kg * 1000, 4, l)} ${l === 'uk' ? 'г
 /** A force as the dynamometer shows it: to its 0.1 N division. */
 const N = (n: number, l: Locale) => formatMeasured('force', n, 0.1, l);
 const ICE = COMPONENTS.water.phases.solid!.density!.value;
-const WATER = COMPONENTS.water.phases.liquid!.density!.value;
 /** Densities of the metals a guess can be about, kg/m³ (from the component models). */
 const METALS = { aluminium: COMPONENTS.aluminium, iron: COMPONENTS.iron, copper: COMPONENTS.copper, brass: COMPONENTS.brass } as const;
 
@@ -494,141 +486,6 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
           : `Right after mixing the water was at ${C(ideal, l)} — exactly what the heat balance gives: θ = (m₁t₁ + m₂t₂) / (m₁ + m₂), since the heat the hot water gave is the heat the cold water took. But within ${D(t, l)} the cold glass beaker and the air took some of the heat, and equilibrium came at ${C(real, l)}. That is why a real mixture is always a little colder than the calculation; to cut the losses, labs mix in a calorimeter.`,
       ),
       correct: real < ideal - 0.5 ? 'less' : real > ideal + 0.5 ? 'more' : 'fifty',
-    };
-  },
-  'lever-balance': (run) => {
-    const r = (run.readings ?? []).filter((x) => x.command.type === 'lab.balance');
-    const at = (what: string) => r.find((x) => x.command['what'] === what)?.record.value ?? null;
-    const empty = at('vessel-empty');
-    const full = at('vessel');
-    const water = empty !== null && full !== null ? full - empty : null;
-    const g = (kg: number, l: Locale) => formatMeasured('mass', kg, 0.00001, l);
-    const name = (x: (typeof r)[number], l: Locale) => ((x.command['label'] as { uk: string; en: string } | undefined)?.[l] ?? '').toLowerCase();
-    return {
-      ...(water !== null ? { correct: 'diff' } : {}),
-      why: both((l) => (l === 'uk' ? "Важільні терези — рівноплечий важіль: шальки висять на однакових відстанях від осі. Тому коромисло стоїть рівно, коли однакові сили з обох боків, тобто однакові маси — Земля тягне кожен грам однаково. Терези порівнюють маси, а не ваги: на Місяці вони показали б те саме, бо там і тіло, і важки стали б легшими однаково." : "A lever balance is a lever with equal arms: the pans hang at equal distances from the axis. So the beam is level when the forces on both sides are equal, that is, the masses are — the Earth pulls each gram alike. The balance compares masses, not weights: on the Moon it would show the same, as the body and the weights would both get lighter alike.")),
-      say: both((l) => (water !== null ? (l === 'uk' ? `У склянці ${g(water, l)} води!` : `The glass holds ${g(water, l)} of water!`) : '—')),
-      text: both((l) =>
-        l === 'uk'
-          ? `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).join('; ')}. Масу води знаходимо як різницю двох зважувань: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. Найменший важок у наборі — 10 мг, тож саме з такою точністю зважено кожне тіло. Але точність маси води гірша: у різниці двох зважувань похибки додаються. Тіла кладуть на ліву шальку, важки — на праву, пінцетом, від більших до менших; брудне й вологе на шальки не кладуть, а рідину зважують лише в посудині.`
-          : `${r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).join('; ')}. The water’s mass is the difference of two weighings: m = m₂ − m₁ = ${water !== null ? g(water, l) : '—'}. The smallest weight of the set is 10 mg, so that is how precisely each body was weighed. The water’s mass is less precise: in a difference of two weighings the errors add up. Loads go on the left pan, weights on the right, with tweezers, from larger to smaller; nothing dirty or wet goes on the pans, and a liquid is weighed only in a vessel.`,
-      ),
-    };
-  },
-  'liquid-density': (run) => {
-    const r = run.readings ?? [];
-    const empty = r.find((x) => x.command.type === 'lab.balance' && x.command['what'] === 'vessel-empty')?.record.value ?? null;
-    const full = r.find((x) => x.command.type === 'lab.balance' && x.command['what'] === 'vessel')?.record.value ?? null;
-    const V = r.find((x) => x.record.quantity === 'volume')?.record.value ?? null;
-    const m = empty !== null && full !== null ? full - empty : null;
-    const rho = m !== null && V ? m / V : null;
-    const correct = rho === null ? undefined : rho < WATER * 0.97 ? 'lighter' : rho > WATER * 1.03 ? 'heavier' : 'same';
-    // The liquid of this run, and its density in the tables.
-    const liquid = SUBSTANCES[run.steps[0]!.params.substance];
-    const table = liquid.liquid.density.value;
-    const name = (l: Locale) => liquid.name[l];
-    const g = (kg: number, l: Locale) => formatMeasured('mass', kg, 0.00001, l);
-    const cmp = (l: Locale) => (correct === 'lighter' ? (l === 'uk' ? 'легша за воду' : 'lighter than water') : correct === 'heavier' ? (l === 'uk' ? 'важча за воду' : 'heavier than water') : l === 'uk' ? 'майже як вода' : 'about as dense as water');
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Густина — маса в одиниці об’єму: ρ = m/V. Масу рідини дають два зважування — маса мензурки при цьому скорочується (m = m₂ − m₁), об’єм — поділки. Різні рідини вміщують у тому самому об’ємі різну масу: частинки олії чи спирту легші й упаковані вільніше, ніж у воді, гліцерину — щільніше. Рідина, легша за воду, на ній плаває: олія збирається зверху." : "Density is the mass per unit volume: ρ = m/V. Two weighings give the liquid’s mass — the cylinder’s own mass cancels (m = m₂ − m₁) — and the marks give the volume. Different liquids pack a different mass into the same volume: the particles of oil or alcohol are lighter and packed more loosely than water’s, glycerol’s more tightly. A liquid lighter than water floats on it: oil gathers on top.")),
-      say: both((l) => (rho !== null ? `ρ ≈ ${sig(rho, 3, l)} ${l === 'uk' ? 'кг/м³' : 'kg/m³'} — ${cmp(l)}!` : '—')),
-      text: both((l) =>
-        rho === null
-          ? '—'
-          : l === 'uk'
-            ? `Маса рідини — різниця зважувань: m = ${g(full!, l)} − ${g(empty!, l)} = ${g(m!, l)}. Об’єм — за поділками мензурки: V = ${sig(V! * 1e6, 3, l)} см³. Густина ρ = m/V ≈ ${sig(rho / 1000, 3, l)} г/см³ = ${sig(rho, 3, l)} кг/м³ (${name(l).toLowerCase()} — ${cmp(l)}, у води ${sig(WATER, 3, l)} кг/м³). У таблиці — ${sig(table, 3, l)} кг/м³. Найменш точне тут — об’єм: мензурка показує його лише з точністю до поділки. Рідина, легша за воду і нерозчинна в ній, плаває на воді шаром; важча — опускається на дно.`
-            : `The liquid’s mass is the difference of the weighings: m = ${g(full!, l)} − ${g(empty!, l)} = ${g(m!, l)}. Its volume comes from the cylinder’s marks: V = ${sig(V! * 1e6, 3, l)} cm³. The density ρ = m/V ≈ ${sig(rho / 1000, 3, l)} g/cm³ = ${sig(rho, 3, l)} kg/m³ (${name(l).toLowerCase()} is ${cmp(l)}; water has ${sig(WATER, 3, l)} kg/m³). The table gives ${sig(table, 3, l)} kg/m³. The least precise thing here is the volume: the cylinder shows it only to a division. A liquid lighter than water that does not mix with it floats on it as a layer; a heavier one sinks.`,
-      ),
-    };
-  },
-  'hooke-spring': (run) => {
-    const r = (run.readings ?? []).filter((x) => x.command.type === 'lab.stretch' && x.record.value !== null);
-    const l0 = r.find((x) => x.command['weights'] === 0)?.record.value ?? null;
-    const rows = r.filter((x) => Number(x.command['weights']) > 0).map((x) => ({ n: Number(x.command['weights']), F: x.record.inputs?.['F'] ?? 0, x: x.record.value! - (l0 ?? 0) }));
-    const ks = rows.map((x) => x.F / x.x);
-    const kMean = ks.reduce((a, b) => a + b, 0) / Math.max(1, ks.length);
-    const spread = ks.length ? (Math.max(...ks) - Math.min(...ks)) / kMean : 0;
-    const first = rows[0];
-    const last = rows[rows.length - 1];
-    const ratio = first && last ? last.x / first.x / (last.F / first.F) : 1;
-    const correct = l0 === null || rows.length < 2 ? undefined : Math.abs(ratio - 1) < 0.08 ? 'proportional' : ratio > 1 ? 'faster' : 'slower';
-    const cm = (x: number, l: Locale) => formatMeasured('length', x, 0.001, l);
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Пружина розтягується, бо трохи віддаляються одна від одної частинки її металу, а сили між ними тягнуть їх назад. При малих зміщеннях ці сили ростуть пропорційно зміщенню — так у кожному витку, тож і вся пружина подовжується пропорційно силі: удвічі більший вантаж — удвічі більше видовження. Відношення F/x — жорсткість — залежить від пружини: товщини дроту, діаметра й числа витків. Так буває, поки деформація пружна: розтягнута надто сильно пружина вже не повернеться до своєї довжини — там закон Гука не діє." : "A spring stretches because the particles of its metal move a little apart, and the forces between them pull them back. For small shifts these forces grow in proportion to the shift — in every coil, so the whole spring lengthens in proportion to the force: twice the load, twice the extension. The ratio F/x — the stiffness — depends on the spring: the wire’s thickness, the diameter and the number of coils. This holds while the deformation is elastic: a spring stretched too far does not return to its length — Hooke’s law does not hold there.")),
-      say: both((l) => (l === 'uk' ? `Видовження пропорційне силі: k ≈ ${sig(kMean, 2, l)} Н/м!` : `The extension is proportional to the force: k ≈ ${sig(kMean, 2, l)} N/m!`)),
-      text: both((l) =>
-        l === 'uk'
-          ? `Кожен тягарець 100 г тягне пружину із силою ≈ 0,98 Н. ${rows.map((x) => `${x.n} × 100 г: x = ${cm(x.x, l)}`).join('; ')}. У скільки разів більша сила, у стільки ж разів більше й видовження, а відношення F/x майже однакове: k ≈ ${sig(kMean, 2, l)} Н/м (розкид ${sig(spread * 100, 2, l)} % — бо лінійка показує лише міліметри). Це закон Гука: F = k·x. Він діє, доки деформація пружна — коли тягарці зняти, пружина повертається до довжини ${l0 !== null ? cm(l0, l) : 'l₀'}. У підручнику цю роботу виконують із гумовим шнуром; гума підкоряється закону Гука гірше, ніж сталева пружина, особливо за великих розтягів.`
-          : `Each 100 g weight pulls the spring with ≈ 0.98 N. ${rows.map((x) => `${x.n} × 100 g: x = ${cm(x.x, l)}`).join('; ')}. As many times as the force grows, so does the extension, and F/x stays nearly the same: k ≈ ${sig(kMean, 2, l)} N/m (a spread of ${sig(spread * 100, 2, l)} % — the ruler shows only millimetres). That is Hooke’s law: F = k·x. It holds while the deformation is elastic — take the weights off, and the spring comes back to ${l0 !== null ? cm(l0, l) : 'l₀'}. The textbook does this lab work with a rubber cord; rubber follows Hooke’s law less closely than a steel spring, especially when stretched far.`,
-      ),
-    };
-  },
-  'friction-coefficient': (run) => {
-    const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.pull' && x.record.value !== null).map((x) => ({ n: Number(x.command['weights']), F: x.record.value!, N: x.record.inputs?.['N'] ?? 1 }));
-    const P = (run.readings ?? []).find((x) => x.command.type === 'lab.hang')?.record.value ?? null;
-    const mus = rows.map((x) => x.F / x.N);
-    const mean = mus.reduce((a, b) => a + b, 0) / Math.max(1, mus.length);
-    const trend = rows.length >= 2 ? (mus[mus.length - 1]! - mus[0]!) / mean : 0;
-    const correct = rows.length < 2 ? undefined : Math.abs(trend) < 0.25 ? 'same' : trend > 0 ? 'grows' : 'falls';
-    const N1 = (x: number, l: Locale) => formatMeasured('force', x, 0.1, l);
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Навіть гладкі на вигляд поверхні торкаються лише горбиками. Що сильніше брусок притиснутий до дошки, то більше горбиків змикається й зачіпається — справжня площа дотику, а з нею й сила тертя, росте пропорційно силі тиску. Тому відношення F/N лишається сталим для пари матеріалів — це коефіцієнт тертя: він залежить від того, з чого поверхні й як оброблені, але не від ваги бруска." : "Even surfaces that look smooth touch only at their bumps. The harder the block is pressed to the board, the more bumps meet and catch — the real area of contact, and with it the friction, grows in proportion to the pressing force. So the ratio F/N stays the same for a pair of materials — the coefficient of friction: it depends on what the surfaces are and how they are finished, not on the block’s weight.")),
-      say: both((l) => (l === 'uk' ? `μ ≈ ${sig(mean, 2, l)} — для дерева по дереву!` : `μ ≈ ${sig(mean, 2, l)} — for wood on wood!`)),
-      text: both((l) =>
-        l === 'uk'
-          ? `Брусок важить ${P !== null ? N1(P, l) : '≈ 1,4 Н'}; на горизонтальній дошці сила нормальної реакції N дорівнює вазі бруска з тягарцями. ${rows.map((x) => `N = ${sig(x.N, 2, l)} Н → F = ${N1(x.F, l)}, μ ≈ ${sig(x.F / x.N, 2, l)}`).join('; ')}. Сила тертя росте разом із навантаженням, а їхнє відношення — коефіцієнт тертя — лишається майже тим самим: μ ≈ ${sig(mean, 2, l)}. У таблиці підручника для дерева по дереву — 0,25. Розкид — бо динамометр показує лише десяті частки ньютона, а тягнути рівномірно непросто. Коефіцієнт тертя залежить від матеріалів і того, як оброблені поверхні, але не від ваги бруска.`
-          : `The block weighs ${P !== null ? N1(P, l) : '≈ 1.4 N'}; on a level board the normal force N equals the weight of the block with its weights. ${rows.map((x) => `N = ${sig(x.N, 2, l)} N → F = ${N1(x.F, l)}, μ ≈ ${sig(x.F / x.N, 2, l)}`).join('; ')}. The friction grows with the load, while their ratio — the coefficient of friction — stays about the same: μ ≈ ${sig(mean, 2, l)}. The textbook’s table gives 0.25 for wood on wood. The spread is there because the dynamometer reads only tenths of a newton, and pulling steadily is not easy. The coefficient depends on the materials and how the surfaces are finished, not on the block’s weight.`,
-      ),
-    };
-  },
-  'friction-factors': (run) => {
-    const pulls = (run.readings ?? []).filter((x) => x.command.type === 'lab.pull' && x.record.value !== null);
-    const at = (f: (c: Record<string, unknown>) => boolean) => pulls.find((x) => f(x.command as Record<string, unknown>))?.record ?? null;
-    const wide = at((c) => c['weights'] === 1 && c['face'] !== 'narrow' && c['surface'] !== 'paper');
-    const narrow = at((c) => c['face'] === 'narrow');
-    const paper = at((c) => c['surface'] === 'paper');
-    const heavy = at((c) => Number(c['weights']) === 3);
-    const correct = wide && narrow ? (Math.abs(narrow.value! - wide.value!) < 0.05 ? 'same' : narrow.value! < wide.value! ? 'less' : 'more') : undefined;
-    const N1 = (x: { value: number | null } | null, l: Locale) => (x ? formatMeasured('force', x.value!, 0.1, l) : '—');
-    const Nof = (x: { inputs?: Record<string, number> } | null) => x?.inputs?.['N'] ?? 0;
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) =>
-        l === 'uk'
-          ? 'Здається, що на вужчій грані тягти легше: менша площа — менше тертя. Так думає більшість. Але площа грані — ще не площа дотику. Навіть гладкі на вигляд поверхні торкаються лише верхівками горбиків, і справжня площа дотику — дуже мала частка площі грані. На широкій грані вага бруска розподіляється на багато горбиків, і кожен притиснутий слабко. На вужчій горбиків менше, зате кожен притиснутий сильніше й зминається глибше. Справжня площа дотику виходить приблизно однаковою: її задає не розмір грані, а те, з якою силою брусок притиснутий до дошки. Вага не змінилася — тож і тертя те саме. Інша річ — матеріали: папір інакше зчіплюється з деревом, ніж дерево з деревом. А тягарці притискають брусок сильніше — горбики зминаються більше, і тертя росте пропорційно силі тиску.\n\nВажливо: усе це — про тверді тіла (дерево, метал, пластик, скло). Для липких і м’яких матеріалів правило не діє: скотч тримається, навіть коли його ніщо не притискає, і що ширша смужка, то міцніше він тримає — тут площа дотику важлива. Тому в гоночних драгстерів широкі липкі шини. Та й для твердих тіл закон наближений: сила тертя росте з навантаженням не строго пропорційно.'
-          : 'It seems easier to pull the block on its narrower face: less area, less friction. Most people think so. But the area of a face is not yet the area of contact. Even surfaces that look smooth touch only at the tips of their bumps, and the real area of contact is a very small fraction of the face. On the wide face the block’s weight is shared among many bumps, each pressed lightly. On the narrower face there are fewer bumps, but each is pressed harder and squashed deeper. The real area of contact comes out about the same: it is set not by the size of the face but by how hard the block is pressed to the board. The weight has not changed — so neither has the friction. The materials are another matter: paper catches on wood differently from wood on wood. And the weights press the block harder — the bumps are squashed more, and the friction grows in proportion to the pressing force.\n\nMind: all this is about solid bodies (wood, metal, plastic, glass). For sticky and soft materials the rule fails: adhesive tape holds even when nothing presses it, and the wider the strip, the better it holds — here the area of contact matters. That is why drag racers have wide, sticky tyres. And even for solid bodies the law is approximate: friction grows with the load not strictly in proportion.',
-      ),
-      say: both((l) => (l === 'uk' ? 'Для твердих тіл площа ролі не грає — важливі матеріали й сила тиску!' : 'For solid bodies the area does not matter — the materials and the pressing force do!')),
-      text: both((l) =>
-        l === 'uk'
-          ? `Брусок із тягарцем на широкій грані — ${N1(wide, l)}, на вужчій — ${N1(narrow, l)}: площа дотику менша в півтора раза, а сила тертя та сама. По аркушу паперу — ${N1(paper, l)}: інша пара матеріалів, μ = F / N ≈ ${paper ? sig(paper.value! / Nof(paper), 2, l) : '—'} (у таблиці підручника папір по дереву — 0,40, дерево по дереву — 0,25). З трьома тягарцями — ${N1(heavy, l)}: сила тиску зросла з ${sig(Nof(wide), 2, l)} до ${sig(Nof(heavy), 2, l)} Н, у ${sig(Nof(heavy) / Math.max(1e-9, Nof(wide)), 2, l)} раза, і тертя — приблизно у стільки ж. Це закон Амонтона — Кулона: сила тертя ковзання не залежить від площі дотику й пропорційна силі нормальної реакції опори, F = μN, а μ залежить від матеріалів і того, як оброблені поверхні. Уперше це помітив Леонардо да Вінчі (1493), але його записи не опублікували; у 1699 році закон заново відкрив Ґ. Амонтон, а Ш. Кулон перевірив. Закон стосується твердих тіл: для липких і м’яких матеріалів (скотч, гоночні шини) площа дотику на тертя впливає.`
-          : `The block with its weight on the wide face — ${N1(wide, l)}, on the narrower one — ${N1(narrow, l)}: one and a half times less area touching, the same friction. Over a sheet of paper — ${N1(paper, l)}: another pair of materials, μ = F / N ≈ ${paper ? sig(paper.value! / Nof(paper), 2, l) : '—'} (the textbook’s table: paper on wood 0.40, wood on wood 0.25). With three weights — ${N1(heavy, l)}: the pressing force grew from ${sig(Nof(wide), 2, l)} to ${sig(Nof(heavy), 2, l)} N, ${sig(Nof(heavy) / Math.max(1e-9, Nof(wide)), 2, l)} times, and the friction about as much. This is the Amontons–Coulomb law: sliding friction does not depend on the area of contact and is proportional to the normal force, F = μN, where μ depends on the materials and how the surfaces are finished. Leonardo da Vinci noticed it first (1493), but his notes were not published; in 1699 G. Amontons discovered the law anew, and C. Coulomb checked it. The law is about solid bodies: for sticky and soft materials (adhesive tape, racing tyres) the area of contact does affect friction.`,
-      ),
-    };
-  },
-  'block-pressure': (run) => {
-    const P = (run.readings ?? []).find((x) => x.command.type === 'lab.hang')?.record.value ?? null;
-    const e = [0, 1, 2].map((k) => (run.readings ?? []).find((x) => x.command.type === 'lab.edge' && x.command['edge'] === k)?.record.value ?? null);
-    const [a, b, c] = e;
-    const ok = P !== null && a !== null && b !== null && c !== null;
-    const faces = ok ? [a! * b!, a! * c!, b! * c!] : [];
-    const p = faces.map((S) => P! / S);
-    const correct = ok ? (p[2]! > p[0]! * 1.05 ? 'smallest' : p[0]! > p[2]! * 1.05 ? 'largest' : 'same') : undefined;
-    const cm = (x: number, l: Locale) => formatMeasured('length', x, 0.001, l);
-    return {
-      ...(correct ? { correct } : {}),
-      why: both((l) => (l === 'uk' ? "Брусок тисне на стіл тією самою силою, хоч як його поклади, — своєю вагою. Але на меншій грані ця сила припадає на меншу площу, і кожному квадратному сантиметру стола дістається більша її частка: p = F/S. Тому гострий ніж ріже (мала площа — великий тиск), а широкі лижі не провалюються в сніг (велика площа — малий тиск)." : "The block presses on the table with the same force however it lies — its weight. But on a smaller face that force falls on a smaller area, and each square centimetre of the table gets a bigger share of it: p = F/S. That is why a sharp knife cuts (a small area — a large pressure) and wide skis do not sink into snow (a large area — a small pressure).")),
-      say: both((l) => (l === 'uk' ? 'Найсильніше — на найменшій грані!' : 'Hardest on the smallest face!')),
-      text: both((l) =>
-        !ok
-          ? '—'
-          : l === 'uk'
-            ? `Вага бруска P = ${formatMeasured('force', P!, 0.1, l)}, ребра ${cm(a!, l)} × ${cm(b!, l)} × ${cm(c!, l)}. Сила тиску на будь-якій грані та сама — вага, а площа різна: ${sig(faces[0]! * 1e4, 3, l)}, ${sig(faces[1]! * 1e4, 3, l)} і ${sig(faces[2]! * 1e4, 3, l)} см². Тому й тиск p = P/S різний: ≈ ${sig(p[0]!, 3, l)}, ${sig(p[1]!, 3, l)} і ${sig(p[2]!, 3, l)} Па. Що менша площа опори, то більший тиск — на найменшій грані він ${times(p[2]! / p[0]!, l)} більший, ніж на найбільшій. Тому ніж гострять, а лижі й гусениці роблять широкими.`
-            : `The block weighs P = ${formatMeasured('force', P!, 0.1, l)}, its edges are ${cm(a!, l)} × ${cm(b!, l)} × ${cm(c!, l)}. The force on any face is the same — the weight, but the areas differ: ${sig(faces[0]! * 1e4, 3, l)}, ${sig(faces[1]! * 1e4, 3, l)} and ${sig(faces[2]! * 1e4, 3, l)} cm². So the pressure p = P/S differs too: ≈ ${sig(p[0]!, 3, l)}, ${sig(p[1]!, 3, l)} and ${sig(p[2]!, 3, l)} Pa. The smaller the area, the larger the pressure — on the smallest face it is ${times(p[2]! / p[0]!, l)} that on the largest. That is why knives are sharpened, and skis and caterpillar tracks are made wide.`,
-      ),
     };
   },
   'hydrostatic-weighing': (run) => {
