@@ -162,6 +162,7 @@ const SHELF = [
   { id: 'brick', component: 'brick' },
   { id: 'wood', component: 'wood', as: { name: { uk: 'Дерев’яний брусок (сосна)', en: 'Wooden block (pine)' }, gender: 'm' } },
   { id: 'glass', component: 'glass', as: { name: { uk: 'Скляна кулька', en: 'Glass marble' }, gender: 'f', bodyShape: 'ball' } },
+  { id: 'rubber', component: 'rubber', as: { name: { uk: 'Гумовий корок', en: 'Rubber stopper' }, gender: 'm' } },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];
 
 export type SubstanceId = (typeof SHELF)[number]['id'];

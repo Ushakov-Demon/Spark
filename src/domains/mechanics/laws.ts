@@ -9,6 +9,8 @@ const ARCHIMEDES: Person = { name: { uk: 'Архімед', en: 'Archimedes' }, b
 const TORRICELLI: Person = { name: { uk: 'Еванджеліста Торрічеллі', en: 'Evangelista Torricelli' }, born: 1608, died: 1647, wikidata: 'Q102490' };
 const STEVIN: Person = { name: { uk: 'Симон Стевін', en: 'Simon Stevin' }, born: 1548, died: 1620, wikidata: 'Q23696' };
 const KEPLER: Person = { name: { uk: 'Йоганн Кеплер', en: 'Johannes Kepler' }, born: 1571, died: 1630, wikidata: 'Q8963' };
+const BOYLE: Person = { name: { uk: 'Роберт Бойль', en: 'Robert Boyle' }, born: 1627, died: 1691, wikidata: 'Q43393' };
+const MARIOTTE: Person = { name: { uk: 'Едм Маріотт', en: 'Edme Mariotte' }, born: 1620, died: 1684, wikidata: 'Q319749' };
 const PASCAL: Person = { name: { uk: 'Блез Паскаль', en: 'Blaise Pascal' }, born: 1623, died: 1662, wikidata: 'Q1290' };
 
 /**
@@ -404,5 +406,33 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: { uk: 'ККД — відношення корисної роботи до повної (затраченої): η = A_к / A_п · 100 %. Він завжди менший за 100 %.', en: 'Efficiency is the useful work over the total work done: η = A_useful / A_done · 100 %. It is always below 100 %.' },
     },
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
+  },
+  {
+    id: 'boyle-mariotte',
+    kind: 'law',
+    name: { uk: 'Закон Бойля — Маріотта', en: 'Boyle–Mariotte law' },
+    statement: {
+      novice: { uk: 'Що сильніше стискаєш газ, то менше місця він займає: удвічі більший тиск — удвічі менший об’єм.', en: 'The harder you squeeze a gas, the less room it takes: twice the pressure — half the volume.' },
+      school: { uk: 'Для певної маси газу за сталої температури тиск обернено пропорційний об’єму: p₁·V₁ = p₂·V₂.', en: 'For a given mass of gas at a constant temperature the pressure is inversely proportional to the volume: p₁·V₁ = p₂·V₂.' },
+    },
+    history: {
+      people: [BOYLE, MARIOTTE],
+      role: 'discovered',
+      when: { uk: '1662; незалежно — 1679', en: '1662; independently — 1679' },
+      story: {
+        school: {
+          uk: 'Залежність тиску від об’єму першими помітили англійці Річард Таунлі й Генрі Павер, а Роберт Бойль перевірив її дослідами й надрукував 1662 року. Француз Едм Маріотт відкрив той самий закон незалежно від Бойля 1679-го — тому у Франції його звуть законом Маріотта.',
+          en: 'The link between pressure and volume was first noticed by the Englishmen Richard Towneley and Henry Power; Robert Boyle confirmed it by experiment and published it in 1662. The Frenchman Edme Mariotte discovered the same law independently of Boyle in 1679 — so in France it is called Mariotte’s law.',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-boyles-law', locator: 'lead', claim: 'pressure inversely proportional to the volume at constant temperature and amount of gas, in a closed system' },
+        { source: 'wikipedia-boyles-law', locator: 'History', claim: 'Boyle published it in 1662; first noted by Richard Towneley and Henry Power' },
+        { source: 'wikipedia-boyles-law', locator: 'History', claim: 'Mariotte discovered the same law independently of Boyle in 1679; called Mariotte’s law especially in France' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Так — поки температура газу стала (стискають повільно, і газ устигає віддати теплоту) і поки газ не стиснутий так сильно, що починає зріджуватися.', en: 'So — while the gas keeps its temperature (squeezed slowly, it has time to give its heat away) and is not squeezed so hard that it starts to liquefy.' },
+    },
   },
 ];

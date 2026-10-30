@@ -115,7 +115,7 @@ export const SOURCES = {
   }),
   'wikipedia-properties-of-water': source({
     id: 'wikipedia-properties-of-water',
-    title: 'Wikipedia, Properties of water (infobox)',
+    title: 'Wikipedia, Properties of water (infobox); compressibility: «At 0 °C, at the limit of zero pressure, the compressibility is 5.1×10−10 Pa−1», a minimum of 4.4×10−10 Pa−1 around 45 °C',
     url: 'https://en.wikipedia.org/wiki/Properties_of_water',
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-10-11',
@@ -821,6 +821,8 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'wikipedia-boyles-law': source({ id: 'wikipedia-boyles-law', title: 'Wikipedia, Boyle’s law: the pressure of a gas is «inversely proportional to the volume it occupies if the temperature and amount of gas remain unchanged within a closed system»; Boyle «published it in 1662»; Mariotte «discovered the same law independently of Boyle in 1679» (Mariotte’s law, especially in France); first noted by Richard Towneley and Henry Power', url: 'https://en.wikipedia.org/wiki/Boyle%27s_law', license: 'CC-BY-SA-4.0', retrieved: '2026-10-30' }),
+  'wikipedia-standard-atmosphere': source({ id: 'wikipedia-standard-atmosphere', title: 'Wikipedia, Standard atmosphere (unit): «a unit of pressure defined as 101325 Pa»; adopted for general use by the 10th CGPM (1954)', url: 'https://en.wikipedia.org/wiki/Standard_atmosphere_(unit)', license: 'CC-BY-SA-4.0', retrieved: '2026-10-30' }),
   'wikipedia-pascal-law': source({
     id: 'wikipedia-pascal-law',
     title: 'Wikipedia, Pascal’s law: a pressure change at any point in a confined incompressible fluid is transmitted throughout the fluid; established by Blaise Pascal in 1653, published in 1663; it underlies the hydraulic press, F₂/F₁ = A₂/A₁',
@@ -884,6 +886,8 @@ export const SOURCES = {
   'wikipedia-revised-julian-calendar': source({ id: 'wikipedia-revised-julian-calendar', title: 'Wikipedia, Revised Julian calendar: a mean year of 365 + 109/450 = 365.242 days; adopted by the Orthodox Church of Ukraine on 1 September 2023', url: 'https://en.wikipedia.org/wiki/Revised_Julian_calendar', license: 'CC-BY-SA-4.0', retrieved: '2026-10-29' }),
   'wikipedia-pale-blue-dot': source({ id: 'wikipedia-pale-blue-dot', title: 'Wikipedia, Pale Blue Dot: taken by Voyager 1 on 14 February 1990 from over 6 billion kilometres (40.5 AU) from Earth, on Carl Sagan’s idea; Earth is 0.12 of a pixel; Sagan: «That’s here. That’s home. That’s us.»', url: 'https://en.wikipedia.org/wiki/Pale_Blue_Dot', license: 'CC-BY-SA-4.0', retrieved: '2026-10-29' }),
   'nasa-pale-blue-dot-photo': source({ id: 'nasa-pale-blue-dot-photo', title: 'NASA/JPL Photojournal, PIA00452: Pale Blue Dot — Earth from Voyager 1, 1990 (public domain)', url: 'https://photojournal.jpl.nasa.gov/catalog/PIA00452', license: 'CC0-1.0', retrieved: '2026-10-29', caveats: 'A NASA image, public domain (not CC0 as such): the closest of the licences listed here.' }),
+  'wikipedia-cartesian-diver': source({ id: 'wikipedia-cartesian-diver', title: 'Wikipedia, Cartesian diver: «The first written description of this device is provided by Raffaello Magiotti, in his book Renitenza certissima dell’acqua alla compressione (Very firm resistance of water to compression) published in 1648»; said to have been invented by Descartes (citation needed)', url: 'https://en.wikipedia.org/wiki/Cartesian_diver', license: 'CC-BY-SA-4.0', retrieved: '2026-10-30' }),
+  'wikipedia-raffaello-magiotti': source({ id: 'wikipedia-raffaello-magiotti', title: 'Wikipedia, Raffaello Magiotti (1597–1656), Italian astronomer, mathematician and physicist; a pupil of Castelli, often in touch with Galileo; his only published work, on water’s resistance to compression (1648), which he wrongly held to be absolute, illustrates «Cartesian divers» — implying they were discovered by Magiotti rather than by Descartes', url: 'https://en.wikipedia.org/wiki/Raffaello_Magiotti', license: 'CC-BY-SA-4.0', retrieved: '2026-10-30' }),
   'wikipedia-zeppelin-nt': source({ id: 'wikipedia-zeppelin-nt', title: 'Wikipedia, Zeppelin NT: «inflated exclusively with the non-flammable noble gas helium»; standard operational altitude 300 m, «up to 2,600 m (8,500 ft) is possible»; volume 8,225 m³ (specifications: 8,255 m³); 12 passengers and a crew of two', url: 'https://en.wikipedia.org/wiki/Zeppelin_NT', license: 'CC-BY-SA-4.0', retrieved: '2026-10-29' }),
   'wikipedia-hindenburg-disaster': source({ id: 'wikipedia-hindenburg-disaster', title: 'Wikipedia, Hindenburg disaster: 6 May 1937, Lakehurst, New Jersey; filled with hydrogen; destroyed in about half a minute', url: 'https://en.wikipedia.org/wiki/Hindenburg_disaster', license: 'CC-BY-SA-4.0', retrieved: '2026-10-29' }),
   'commons-hindenburg-photo': source({ id: 'commons-hindenburg-photo', title: 'Wikimedia Commons, File:Hindenburg disaster.jpg — the Hindenburg on fire, Lakehurst, 6 May 1937, photograph by Sam Shere (public domain)', url: 'https://commons.wikimedia.org/wiki/File:Hindenburg_disaster.jpg', license: 'CC0-1.0', retrieved: '2026-10-29', caveats: 'Public domain (not CC0 as such): the closest of the licences listed here.' }),
@@ -972,7 +976,7 @@ export const SOURCES = {
   }),
   'engineeringtoolbox-solids-density': source({
     id: 'engineeringtoolbox-solids-density',
-    title: 'The Engineering ToolBox, Densities of Solids: Glass, common 2.4–2.8 ×10³ kg/m³',
+    title: 'The Engineering ToolBox, Densities of Solids: Glass, common 2.4–2.8 ×10³ kg/m³; Rubber, soft commercial 1.1, hard 1.2, pure gum 0.91–0.93 ×10³ kg/m³',
     url: 'https://www.engineeringtoolbox.com/density-solids-d_1265.html',
     license: 'facts-only',
     retrieved: '2026-10-20',
@@ -1109,14 +1113,14 @@ export const SOURCES = {
   }),
   'engineeringtoolbox-specific-heat-solids': source({
     id: 'engineeringtoolbox-specific-heat-solids',
-    title: 'The Engineering ToolBox, Solids – Specific Heats (porcelain 1.07, tin 0.24, salt 0.88 kJ/(kg·K))',
+    title: 'The Engineering ToolBox, Solids – Specific Heats (porcelain 1.07, tin 0.24, salt 0.88, rubber 2.01 kJ/(kg·K))',
     url: 'https://www.engineeringtoolbox.com/specific-heat-solids-d_154.html',
     license: 'facts-only',
     retrieved: '2026-10-21',
   }),
   'engineeringtoolbox-thermal-conductivity': source({
     id: 'engineeringtoolbox-thermal-conductivity',
-    title: 'The Engineering ToolBox, Thermal Conductivity of Common Materials (porcelain 1.5 W/(m·K))',
+    title: 'The Engineering ToolBox, Thermal Conductivity of Common Materials (porcelain 1.5, natural rubber 0.13 W/(m·K))',
     url: 'https://www.engineeringtoolbox.com/thermal-conductivity-d_429.html',
     license: 'facts-only',
     retrieved: '2026-10-21',

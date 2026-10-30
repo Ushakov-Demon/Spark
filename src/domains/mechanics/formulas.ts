@@ -34,6 +34,9 @@ export const hydraulicForce = (f1: number, s1: number, s2: number): number => (f
 /** Two liquids balanced in communicating vessels (heights above their boundary): ρ₁·h₁ = ρ₂·h₂, so ρ₂ = ρ₁·h₁ / h₂. */
 export const balancedDensity = (rho1: number, h1: number, h2: number): number => (rho1 * h1) / h2;
 
+/** Boyle–Mariotte: a gas kept at one temperature — its pressure times its volume stays the same, p₁·V₁ = p₂·V₂, so V₂ = V₁·p₁ / p₂. */
+export const isothermalVolume = (volume: number, p1: number, p2: number): number => (volume * p1) / p2;
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

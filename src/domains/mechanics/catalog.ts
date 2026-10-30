@@ -36,6 +36,7 @@ const UA_FORCES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', g
 const UA_SPEED: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Прямолінійний нерівномірний рух. Середня швидкість нерівномірного руху.' }];
 const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Рівномірний рух матеріальної точки по колу. Період обертання.' }];
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
+const UA_DIVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'моделювання: … занурення і спливання підводного човна, риб' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
@@ -665,6 +666,34 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.efficiency,
     examples: [{ args: [0.337, 0.84], expected: 0.4011904761904762, note: 'a block with weights up a 0.6 m board raised 10 cm' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.boyle',
+    law: 'boyle-mariotte',
+    title: { uk: 'Закон Бойля — Маріотта', en: 'Boyle–Mariotte law' },
+    latex: 'V_2 = V_1 \\cdot \\dfrac{p_1}{p_2}',
+    plain: 'V₂ = V₁ · p₁ / p₂',
+    argSymbols: ['V₁', 'p₁', 'p₂'],
+    resultSymbol: 'V₂',
+    variables: {
+      'V₂': { name: { uk: 'об’єм газу під новим тиском', en: 'volume of the gas under the new pressure' }, unit: 'm³' },
+      'V₁': { name: { uk: 'об’єм газу спочатку', en: 'volume of the gas at first' }, unit: 'm³' },
+      'p₁': { name: { uk: 'тиск спочатку', en: 'pressure at first' }, unit: 'Pa' },
+      'p₂': { name: { uk: 'новий тиск', en: 'the new pressure' }, unit: 'Pa' },
+    },
+    curriculum: UA_DIVER,
+    beyondCurriculum: { uk: 'У 7 класі — якісно: газ легко стискається, рідина майже ні; сам закон — поза програмою 7–9 класів.', en: 'In grade 7 — qualitatively: a gas compresses easily, a liquid hardly at all; the law itself is beyond the grades 7–9 programme.' },
+    explanation: {
+      novice: { uk: 'Стисни повітря — і воно займе менше місця. Удвічі більший тиск — удвічі менший об’єм.', en: 'Squeeze air — and it takes less room. Twice the pressure — half the volume.' },
+      school: {
+        uk: 'Якщо газ не нагрівається й не охолоджується (стискають його повільно), добуток тиску на об’єм лишається сталим: p₁·V₁ = p₂·V₂. Рідини так не поводяться: вода під тим самим тиском стискається в десятки тисяч разів менше.',
+        en: 'If a gas is neither heated nor cooled (it is squeezed slowly), its pressure times its volume stays the same: p₁·V₁ = p₂·V₂. Liquids do not behave so: water under the same pressure compresses tens of thousands of times less.',
+      },
+    },
+    compute: f.isothermalVolume,
+    examples: [{ args: [1.38e-6, 101325, 116325], expected: 1.2020468e-6, note: 'the diver’s air, the bottle squeezed by 15 kPa' }],
     textSource: 'spark',
     reviewed: false,
   }),

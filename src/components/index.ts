@@ -31,6 +31,7 @@ import { TIN } from './tin.js';
 import type { Component } from './types.js';
 import { WATER } from './water.js';
 import { WOOD } from './wood.js';
+import { RUBBER } from './rubber.js';
 import { molarMassOf } from './elements.js';
 
 export * from './types.js';
@@ -71,6 +72,7 @@ const LIST = {
   graphite: GRAPHITE,
   'iron-ii-hydroxide': IRON_II_HYDROXIDE,
   wood: WOOD,
+  rubber: RUBBER,
 } as const satisfies Record<string, Component>;
 
 export type ComponentId = keyof typeof LIST;
