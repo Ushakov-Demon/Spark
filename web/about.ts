@@ -57,7 +57,7 @@ export function aboutHtml(l: Locale): string {
       <p>Every experiment is computed by a model of the phenomena themselves (today: heat flow and changes of state, dissolving, mechanics — motion, forces, pressure, simple machines, energy — electric current and magnetism) — not drawn from a script. Every number comes with its source (press “i” next to an item); values we could only estimate are marked “estimate”. The model is simplified — for example, a body has one temperature throughout — so results are approximate, though they follow the same laws as reality.</p>
 
       <h3>Free, for everyone, for good</h3>
-      <p>Spark is a social project. Everything in it is free and will stay free: no paid features, materials or options, no limits, no advertising. Nobody here will ever ask a student for money.</p>
+      <p>Spark is a social project. Everything in it is free and will stay free: no paid features, materials or options, no limits. Nobody here will ever ask a student for money.</p>
 
       <h3>Spark is growing</h3>
       <p>What is here now is a start. Physics: grade 7 — all five topics of the programme (measuring, motion, forces, pressure, work and energy); grade 8 — heat and electricity; grade 9 — current in different media, magnetism and electromagnetic induction. Chemistry: grade 8 shares experiments with physics (salt on winter roads, electrolysis), grade 9 begins with solutions. And experiments beyond the programme — a model of the Solar System to scale, the calendars that drift, a root that knows which way is down.</p>
@@ -74,7 +74,7 @@ export function aboutHtml(l: Locale): string {
       <p>Code — MIT License. Texts written for Spark — CC BY-SA 4.0. Data come from open sources (NIST, Wikipedia, Wikidata, OpenStax, handbooks, device data sheets) and keep their licences; each value names its source. Newspaper articles are taken live from Wikipedia (CC BY-SA 4.0), with the article named. The blackboard font is Caveat (SIL Open Font License 1.1).</p>
 
       <h3>Privacy</h3>
-      <p>Spark has no sign-up, no advertising and no analytics, and collects no personal data. Your settings (language, level, voice, sound) and saved experiments are kept only in your browser and disappear when you clear the site’s data. The newspaper loads articles from Wikipedia, Wikidata and Wikimedia, so your browser contacts their servers. The Professor’s voice uses your browser’s voices; some browsers process speech on their own servers. A mistake report is sent by you yourself and contains only what you see in it.</p>
+      <p>Spark has no sign-up and no analytics, and collects no personal data. Your settings (language, level, voice, sound) and saved experiments are kept only in your browser and disappear when you clear the site’s data. The newspaper loads articles from Wikipedia, Wikidata and Wikimedia, so your browser contacts their servers. The Professor’s voice uses your browser’s voices; some browsers process speech on their own servers. A mistake report is sent by you yourself and contains only what you see in it.</p>
 
       <h3>Developer</h3>
       <p>Spark is developed by ${dev}, the technical department of ${company}. A non-commercial social project.</p>
@@ -101,7 +101,7 @@ export function aboutHtml(l: Locale): string {
     <p>Кожен дослід рахує модель самих явищ (сьогодні це теплообмін і зміни агрегатного стану, розчинення, механіка — рух, сили, тиск, прості механізми, енергія, — електричний струм і магнітні явища), а не заздалегідь написаний сценарій. Кожне число має джерело (натисни «i» біля предмета); те, що вдалося лише оцінити, позначено «оцінка». Модель спрощена — наприклад, у кожного тіла одна температура на все тіло, — тож результати наближені, хоча підкоряються тим самим законам, що й у житті.</p>
 
     <h3>Безкоштовно, для всіх, назавжди</h3>
-    <p>Spark — соціальний проєкт. Усе в ньому безкоштовне й таким залишиться: жодних платних функцій, матеріалів чи можливостей, жодних обмежень і реклами. Ніхто тут ніколи не проситиме в учня грошей.</p>
+    <p>Spark — соціальний проєкт. Усе в ньому безкоштовне й таким залишиться: жодних платних функцій, матеріалів чи можливостей, жодних обмежень. Ніхто тут ніколи не проситиме в учня грошей.</p>
 
     <h3>Spark росте</h3>
     <p>Те, що є зараз, — лише початок. Фізика: 7 клас — усі п’ять тем програми (вимірювання, механічний рух, взаємодія тіл і сили, тиск, робота й енергія); 8 клас — теплові та електричні явища; 9 клас — струм у різних середовищах, магнітні явища й електромагнітна індукція. Хімія: у 8 класі — спільні з фізикою досліди (сіль на зимових дорогах, електроліз), у 9-му — розчини. А ще досліди поза програмою — модель Сонячної системи в масштабі, календарі, що збиваються з ліку, корінь, який знає, де низ.</p>
@@ -118,7 +118,7 @@ export function aboutHtml(l: Locale): string {
     <p>Код — ліцензія MIT. Тексти, написані для Spark, — CC BY-SA 4.0. Дані — з відкритих джерел (NIST, Вікіпедія, Wikidata, OpenStax, довідники, паспорти приладів) і зберігають їхні ліцензії; кожне значення вказує своє джерело. Статті «Наукового вісника» завантажуються з Вікіпедії (CC BY-SA 4.0) із зазначенням статті. Шрифт дошки — Caveat (SIL Open Font License 1.1).</p>
 
     <h3>Конфіденційність</h3>
-    <p>У Spark немає реєстрації, реклами й аналітики; персональних даних ми не збираємо. Налаштування (мова, рівень, голос, звук) і збережені досліди зберігаються лише у твоєму браузері й зникають, якщо очистити дані сайту. «Науковий вісник» завантажує статті з Вікіпедії, Wikidata та Wikimedia — для цього браузер звертається до їхніх серверів. Голос Професора — це голоси твого браузера; деякі браузери обробляють мовлення на своїх серверах. Повідомлення про помилку надсилаєш ти сам, і в ньому лише те, що ти бачиш.</p>
+    <p>У Spark немає реєстрації й аналітики; персональних даних ми не збираємо. Налаштування (мова, рівень, голос, звук) і збережені досліди зберігаються лише у твоєму браузері й зникають, якщо очистити дані сайту. «Науковий вісник» завантажує статті з Вікіпедії, Wikidata та Wikimedia — для цього браузер звертається до їхніх серверів. Голос Професора — це голоси твого браузера; деякі браузери обробляють мовлення на своїх серверах. Повідомлення про помилку надсилаєш ти сам, і в ньому лише те, що ти бачиш.</p>
 
     <h3>Розробник</h3>
     <p>Spark розробляє ${dev} — технічний відділ компанії ${company}. Некомерційний соціальний проєкт.</p>
