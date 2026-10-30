@@ -36,3 +36,33 @@ export const LAMINAR_REYNOLDS: SourcedValue = {
   citations: [{ source: 'wikipedia-reynolds-number', locator: 'Flow in a pipe: laminar when Re_D < 2300, turbulent when Re_D > 2900', conditions: 'round pipe', value: 2300 }],
   note: 'Between 2300 and 2900 the flow alternates; the edge is not sharp.',
 };
+
+/** The metric horsepower (кінська сила, PS), W — the unit Watt's horsepower became on the continent. */
+export const METRIC_HORSEPOWER: SourcedValue = {
+  value: 735.49875,
+  unit: 'W',
+  conditions: 'defined value',
+  verification: 'single-source',
+  tolerance: 0.0001,
+  citations: [{ source: 'wikipedia-horsepower', locator: 'Metric horsepower (PS): 735.49875 W', conditions: 'defined', value: 735.49875 }],
+  note: 'A defined unit; the imperial horsepower is a little larger, ≈ 745.7 W.',
+};
+/** What a healthy person's muscles give: for a short burst, and for as long as one likes, W. */
+export const HUMAN_POWER_BRIEF: SourcedValue = {
+  value: 890,
+  unit: 'W',
+  conditions: 'a healthy person, briefly',
+  verification: 'single-source',
+  tolerance: 0.05,
+  citations: [{ source: 'wikipedia-horsepower', locator: 'a healthy human can produce about 1.2 hp (0.89 kW) briefly', conditions: 'briefly', value: 890 }],
+  note: 'A rough figure: trained athletes reach about 2 kW briefly.',
+};
+export const HUMAN_POWER_SUSTAINED: SourcedValue = {
+  value: 70,
+  unit: 'W',
+  conditions: 'a healthy person, indefinitely',
+  verification: 'single-source',
+  tolerance: 0.1,
+  citations: [{ source: 'wikipedia-horsepower', locator: 'sustain about 0.1 hp (0.07 kW) indefinitely', conditions: 'indefinitely', value: 70 }],
+  note: 'A rough figure; Wikipedia’s «Human power» gives about 75 W for a labourer over a working day.',
+};

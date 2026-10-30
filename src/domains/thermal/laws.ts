@@ -380,20 +380,25 @@ export const THERMAL_LAWS: readonly LawSpec[] = [
     name: { uk: 'Потужність', en: 'Power' },
     statement: {
       novice: {
-        uk: 'Потужність показує, як швидко прилад віддає енергію. Потужніший нагрівач за той самий час дає більше теплоти.',
-        en: 'Power tells how fast a device delivers energy. A more powerful heater gives more heat in the same time.',
+        uk: 'Потужність показує, як швидко виконується робота чи віддається енергія. Ту саму гору бігом підіймаєшся потужніше, ніж пішки; потужніший нагрівач за той самий час дає більше теплоти.',
+        en: 'Power tells how fast work is done or energy delivered. Running up the same hill is more powerful than walking; a more powerful heater gives more heat in the same time.',
       },
       school: {
-        uk: 'Потужність — скільки енергії виділяється за секунду. За час t нагрівач потужністю P віддає E = P·t.',
-        en: 'Power is the energy delivered per second. In time t a heater of power P delivers E = P·t.',
+        uk: 'Потужність — робота (чи енергія) за одиницю часу: N = A/t, у ватах (1 Вт = 1 Дж/с). За час t прилад потужністю P віддає E = P·t. Стара одиниця — кінська сила (≈ 736 Вт).',
+        en: 'Power is the work (or energy) per unit of time: N = A/t, in watts (1 W = 1 J/s). In time t a device of power P delivers E = P·t. An old unit is the horsepower (≈ 736 W).',
       },
     },
     history: {
-      people: [],
+      people: [{ name: { uk: 'Джеймс Ватт', en: 'James Watt' }, born: 1736, died: 1819, wikidata: 'Q9041' }],
       role: 'associated',
-      when: '—',
-      story: { school: { uk: 'Це не відкриття, а означення фізичної величини.', en: 'This is not a discovery but the definition of a physical quantity.' } },
-      citations: [],
+      when: { uk: 'кінець XVIII ст.', en: 'the late 18th century' },
+      story: {
+        school: {
+          uk: 'Це означення фізичної величини. Шотландський інженер Джеймс Ватт, щоб продавати свої парові машини тим, хто досі крутив млини кіньми, порівняв машини з кіньми — так з’явилася «кінська сила».',
+          en: 'This is the definition of a physical quantity. The Scottish engineer James Watt, to sell his steam engines to those who still turned their mills with horses, compared the engines with horses — and so the «horsepower» appeared.',
+        },
+      },
+      citations: [{ source: 'wikipedia-horsepower', locator: 'History', claim: 'adopted in the late 18th century by James Watt to compare the output of steam engines with the power of draft horses; to sell engines to customers who used horses' }],
     },
   },
   {

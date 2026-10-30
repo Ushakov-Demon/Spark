@@ -59,6 +59,11 @@ export const pipeOutflowSpeed = (head: number, g: number, pipe: { readonly lengt
   return (-b + Math.sqrt(b * b + 4 * a * head)) / (2 * a);
 };
 
+/** Mechanical work of a force along the way the body goes: A = F·s. */
+export const work = (force: number, distance: number): number => force * distance;
+/** Power — how fast work is done: N = A / t. */
+export const power = (work: number, time: number): number => work / time;
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

@@ -502,4 +502,14 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     },
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення властивості речовини.', en: 'This is the definition of a property of a substance.' } }, citations: [] },
   },
+  {
+    id: 'mechanical-work',
+    kind: 'definition',
+    name: { uk: 'Механічна робота', en: 'Mechanical work' },
+    statement: {
+      novice: { uk: 'Сила виконує роботу, коли зрушує тіло. Тримаєш важку сумку на місці — втомлюєшся, але роботи (у фізиці) не виконуєш.', en: 'A force does work when it moves a body. Holding a heavy bag still tires you, but (in physics) does no work.' },
+      school: { uk: 'Механічна робота сили, що діє вздовж руху, — добуток сили на шлях: A = F·s. Якщо сила напрямлена проти руху, робота від’ємна; якщо перпендикулярно — нульова.', en: 'The mechanical work of a force acting along the motion is the force times the distance: A = F·s. If the force points against the motion the work is negative; if across it, zero.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
+  },
 ];

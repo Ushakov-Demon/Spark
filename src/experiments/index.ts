@@ -40,13 +40,14 @@ import { leverBalance } from './lever-balance/index.js';
 import { motionLabWorks } from './motion-lab-works/index.js';
 import { cartesianDiver } from './cartesian-diver/index.js';
 import { fountainModel } from './fountain-model/index.js';
+import { stairsPower } from './stairs-power/index.js';
 import type { CommandOf, ExperimentModule } from './types.js';
 
 /**
  * The experiments written as modules (src/experiments/<name>), one line each. The bench, the presets, the answers and
  * the board take them from here. Every experiment of the bench is one.
  */
-export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces, bodiesInLiquids, relativeMotion, depthPressure, communicatingVessels, hydrostaticParadox, hydraulicPress, atmosphericPressure, diodeBlackBox, electromagnet, electromagneticInduction, leverMoments, slopeEfficiency, resistorCircuit, twoResistors, hookeSpring, slidingFriction, blockPressure, leverBalance, motionLabWorks, cartesianDiver, fountainModel] as const;
+export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces, bodiesInLiquids, relativeMotion, depthPressure, communicatingVessels, hydrostaticParadox, hydraulicPress, atmosphericPressure, diodeBlackBox, electromagnet, electromagneticInduction, leverMoments, slopeEfficiency, resistorCircuit, twoResistors, hookeSpring, slidingFriction, blockPressure, leverBalance, motionLabWorks, cartesianDiver, fountainModel, stairsPower] as const;
 
 export type ExperimentKind = (typeof EXPERIMENTS)[number]['kind'];
 export type ExperimentCommand = CommandOf<(typeof EXPERIMENTS)[number]>;

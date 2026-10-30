@@ -38,6 +38,8 @@ const UA_PERIOD: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', g
 const UA_PENDULUM: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 9, depth: 'quantitative', quote: 'Період коливань математичного маятника.' }];
 const UA_DIVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'моделювання: … занурення і спливання підводного човна, риб' }];
 const UA_FOUNTAIN: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'конструювання: моделі фонтана' }];
+const UA_WORK: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна робота.' }];
+const UA_POWER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Потужність.' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
@@ -821,6 +823,52 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.compressedVolume,
     examples: [{ args: [1e-6, 4.6e-10, 100000], expected: 9.99954e-7, note: '1 mL of water under one more atmosphere' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.work',
+    law: 'mechanical-work',
+    title: { uk: 'Механічна робота', en: 'Mechanical work' },
+    latex: 'A = F \\cdot s',
+    plain: 'A = F · s',
+    argSymbols: ['F', 's'],
+    resultSymbol: 'A',
+    variables: {
+      A: { name: { uk: 'механічна робота', en: 'mechanical work' }, unit: 'J' },
+      F: { name: { uk: 'сила, що діє вздовж руху', en: 'force acting along the motion' }, unit: 'N' },
+      s: { name: { uk: 'шлях у напрямку сили', en: 'distance along the force' }, unit: 'm' },
+    },
+    curriculum: UA_WORK,
+    explanation: {
+      novice: { uk: 'Робота — це коли сила зрушує тіло: що більша сила і що далі зрушила, то більша робота.', en: 'Work is a force moving a body: the bigger the force and the farther it moved it, the more work.' },
+      school: { uk: 'Якщо сила діє вздовж руху, робота A = F·s, у джоулях: 1 Дж — робота сили 1 Н на шляху 1 м. Піднімаючи тіло, долаємо його вагу m·g на висоті h: A = m·g·h, хоч би якою дорогою піднімали.', en: 'If the force acts along the motion, the work A = F·s, in joules: 1 J is the work of 1 N over 1 m. Lifting a body we overcome its weight m·g over the height h: A = m·g·h, whatever the way up.' },
+    },
+    compute: f.work,
+    examples: [{ args: [490.3, 2.88], expected: 1412.064, note: '50 kg up one floor, 2.88 m' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.power',
+    law: 'power',
+    title: { uk: 'Потужність', en: 'Power' },
+    latex: 'N = \\dfrac{A}{t}',
+    plain: 'N = A / t',
+    argSymbols: ['A', 't'],
+    resultSymbol: 'N',
+    variables: {
+      N: { name: { uk: 'потужність', en: 'power' }, unit: 'W' },
+      A: { name: { uk: 'виконана робота', en: 'work done' }, unit: 'J' },
+      t: { name: { uk: 'час', en: 'time' }, unit: 's' },
+    },
+    curriculum: UA_POWER,
+    explanation: {
+      novice: { uk: 'Потужність — як швидко виконано роботу. Ту саму гору бігом підіймаєшся потужніше, ніж пішки.', en: 'Power is how fast work is done. Running up the same hill is more powerful than walking.' },
+      school: { uk: 'Потужність — робота за одиницю часу: N = A/t, у ватах: 1 Вт = 1 Дж/с. Та сама робота за коротший час — більша потужність.', en: 'Power is work per unit of time: N = A/t, in watts: 1 W = 1 J/s. The same work in less time — more power.' },
+    },
+    compute: f.power,
+    examples: [{ args: [1412.064, 4], expected: 353.016, note: 'one floor run up in 4 s' }],
     textSource: 'spark',
     reviewed: false,
   }),
