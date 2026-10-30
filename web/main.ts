@@ -1898,14 +1898,16 @@ function showOnlyWhatMatters() {
 
 const finger = createFinger();
 /**
- * Where to look next: the table empty — at the experiments (the shelf, or its strip when folded); an experiment chosen
+ * Where to look next: the table empty — at the experiments (their list, or the shelf's strip when folded; not in the
+ * sandbox); an experiment chosen
  * and not begun — at its first step's button. Only in the lab, not on the site's other pages.
  */
 function pointTheWay() {
   const lab = !onCatalog && !libraryTab && !onAbout;
-  if (lab && !preset && !tableSet) {
+  // (In the sandbox the table is built by hand: no finger.)
+  if (lab && !preset && !tableSet && shelfTab === 'experiments') {
     const folded = store.get('shelf') === 'folded';
-    return finger.point(() => document.querySelector(folded ? '#shelf-open' : shelfTab === 'experiments' ? '#presets-list' : '#shelf'), 'right');
+    return finger.point(() => document.querySelector(folded ? '#shelf-open' : '#presets-list'), 'right');
   }
   if (lab && preset && !running && plan.length === planTotal && planTotal > 0) return finger.point(() => document.querySelector('#quiz .guide button[data-plan]'), 'left');
   finger.point(null);
