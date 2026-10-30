@@ -84,6 +84,15 @@ export const gearTrain = (turns: number, teeth: readonly number[]): { readonly t
   sameDirection: (teeth.length - 1) % 2 === 0,
 });
 
+/**
+ * A load hung on pulleys, held by so many sections of one rope: the rope's pull F = (P + P_moving) / n (P_moving — the
+ * weight of the pulleys that rise with the load; friction left out). A fixed pulley alone: n = 1, it only turns the
+ * force; a movable one: n = 2.
+ */
+export const pulleyForce = (load: number, ropes: number, movingWeight = 0): number => (load + movingWeight) / ropes;
+/** The rope pulled to lift the load by h: every supporting section shortens by h, so s = n·h. */
+export const ropeTravel = (height: number, ropes: number): number => height * ropes;
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

@@ -35,11 +35,11 @@ export const preset_stairs_power: Preset = varied(
   {
     // The pupil's own measurements (an example by default): their mass, the stairs, the two times.
     controls: [
-      { id: 'mass', label: { uk: 'Твоя маса', en: 'Your mass' }, kind: 'number', unit: 'кг', min: 25, max: 120, step: 1, value: 50 },
-      { id: 'steps', label: { uk: 'Сходинок до поверху', en: 'Steps to the floor' }, kind: 'number', unit: '', min: 6, max: 40, step: 1, value: 18 },
-      { id: 'rise', label: { uk: 'Висота сходинки', en: 'A step’s height' }, kind: 'number', unit: 'см', min: 12, max: 20, step: 0.5, value: 16 },
-      { id: 'walk', label: { uk: 'Час кроком', en: 'Time walking' }, kind: 'number', unit: 'с', min: 3, max: 60, step: 0.5, value: 12 },
-      { id: 'run', label: { uk: 'Час бігом', en: 'Time running' }, kind: 'number', unit: 'с', min: 1.5, max: 30, step: 0.5, value: 4 },
+      { id: 'mass', label: { uk: 'Твоя маса', en: 'Your mass' }, kind: 'number', unit: 'кг', min: 20, max: 150, step: 0, value: 50 },
+      { id: 'steps', label: { uk: 'Сходинок до поверху', en: 'Steps to the floor' }, kind: 'number', unit: '', min: 3, max: 100, step: 1, value: 18 },
+      { id: 'rise', label: { uk: 'Висота сходинки', en: 'A step’s height' }, kind: 'number', unit: 'см', min: 10, max: 22, step: 0, value: 16 },
+      { id: 'walk', label: { uk: 'Час кроком', en: 'Time walking' }, kind: 'number', unit: 'с', min: 1, max: 600, step: 0, value: 12 },
+      { id: 'run', label: { uk: 'Час бігом', en: 'Time running' }, kind: 'number', unit: 'с', min: 1, max: 600, step: 0, value: 4 },
     ],
     build: (v) => {
       const mass = Number(v['mass']);

@@ -531,4 +531,31 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       ],
     },
   },
+  {
+    id: 'pulley',
+    kind: 'law',
+    name: { uk: 'Блок', en: 'The pulley' },
+    statement: {
+      novice: { uk: 'Нерухомий блок змінює напрям сили, рухомий — зменшує її вдвічі. Але що менша сила, то довше тягнути мотузку.', en: 'A fixed pulley turns the force, a movable one halves it. But the smaller the force, the longer the rope must be pulled.' },
+      school: { uk: 'Виграш у силі блоків дорівнює числу ділянок мотузки, що тримають вантаж: у нерухомого — 1 (він лише змінює напрям), у рухомого — 2. У стільки ж разів довшу мотузку треба протягнути: виграшу в роботі прості механізми не дають.', en: 'The gain in force of pulleys equals the number of rope sections holding the load: 1 for a fixed one (it only turns the force), 2 for a movable one. The rope must be pulled that many times farther: simple machines give no gain in work.' },
+    },
+    history: {
+      people: [ARCHIMEDES],
+      role: 'associated',
+      when: { uk: 'відомий щонайменше з XX ст. до н. е.', en: 'known since at least the 20th century BC' },
+      story: {
+        school: {
+          uk: 'Блоки знали ще в Єгипті часів XII династії (1991–1802 рр. до н. е.). Герон Александрійський зарахував блок до шести простих механізмів. А Плутарх розповідав, що Архімед складеними блоками сам підтягнув до себе повністю навантажене судно — «наче воно ковзало водою».',
+          en: 'Pulleys were known in the Egypt of the Twelfth Dynasty (1991–1802 BC). Hero of Alexandria counted the pulley among the six simple machines. And Plutarch told how Archimedes, with compound pulleys, single-handedly drew a fully laden ship towards him «as if it were gliding through water».',
+        },
+      },
+      citations: [
+        { source: 'wikipedia-pulley', locator: 'History', claim: 'Twelfth Dynasty Egypt; Hero of Alexandria — six simple machines; Plutarch on Archimedes and the ship' },
+        { source: 'wikipedia-pulley', locator: 'Mechanical advantage', claim: 'a fixed pulley changes the direction of the force; a single movable pulley has a mechanical advantage of two; the advantage equals the number of supporting rope sections' },
+      ],
+    },
+    limits: {
+      school: { uk: 'Так — без тертя в осі блока й з невагомою мотузкою; вагу рухомого блока доводиться піднімати разом із вантажем.', en: 'So — with no friction in the pulley’s axle and a weightless rope; the movable pulley’s own weight has to be lifted with the load.' },
+    },
+  },
 ];

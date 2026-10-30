@@ -101,7 +101,9 @@ import {
   presetSubjects,
   presetGradesIn,
   presetTopicIn,
+  type ControlUnit,
   type Preset,
+  type PresetControl,
   type ProtocolStep,
   LAB_KNOWLEDGE,
   type LabCommand,
@@ -1590,6 +1592,17 @@ function measuredDensity(): number | null {
  * temperature, a material) — only before it starts. Changing one starts it again with the new values;
  * "↺" brings back its own.
  */
+/** The unit each number with units is shown in (by its control's id), as the pupil chose it. */
+const varyUnits = new Map<string, string>();
+/** A number's unit on the page: the chosen one, or the largest the value is at least one of. */
+function varyUnitOf(c: Extract<PresetControl, { kind: 'number' }>, value: number): ControlUnit | undefined {
+  if (!c.units?.length) return undefined;
+  const chosen = c.units.find((x) => x.id === varyUnits.get(c.id));
+  if (chosen) return chosen;
+  const fit = [...c.units].sort((a, b) => b.factor - a.factor).find((x) => Math.abs(value) >= x.factor);
+  return fit ?? [...c.units].sort((a, b) => a.factor - b.factor)[0];
+}
+
 function renderVary() {
   const box = $('#vary');
   const chosen = presetGiven;
@@ -1599,7 +1612,7 @@ function renderVary() {
     box.hidden = true;
     return;
   }
-  const key = `${locale}|${chosen.id}|${JSON.stringify(presetVals)}`;
+  const key = `${locale}|${chosen.id}|${JSON.stringify(presetVals)}|${[...varyUnits].join()}`;
   box.hidden = false;
   if (box.dataset['k'] === key) return;
   box.dataset['k'] = key;
@@ -1616,8 +1629,12 @@ function renderVary() {
         const example = vals[c.id] === c.value || vals[c.id] === c.en;
         return `<label class="vary-item vary-place">${label}<input type="text" data-vary-place="${c.id}" list="vary-places" value="${escAttr(pl?.name ?? '')}" placeholder="${escAttr(u.placeHint)}" autocomplete="off" spellcheck="false"/><datalist id="vary-places"></datalist></label><span class="vary-note muted" data-place-note="1">${example ? u.placeExample : ''}</span><span class="vary-credit muted">${u.placeCredit}</span>`;
       }
+      // A number with units: the number in the unit shown, and the unit to choose.
+      const inUnit = c.kind === 'number' ? varyUnitOf(c, Number(vals[c.id])) : undefined;
+      if (c.kind === 'number' && inUnit && c.units)
+        return `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" step="any" value="${Number((Number(vals[c.id]) / inUnit.factor).toPrecision(10))}"/><select data-vary-unit="${c.id}">${c.units.map((x) => `<option value="${x.id}"${x.id === inUnit.id ? ' selected' : ''}>${tr(x.label, locale)}</option>`).join('')}</select></label>`;
       return c.kind === 'number'
-        ? `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${vals[c.id]}"/><span class="muted">${unit}</span></label>`
+        ? `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" min="${c.min}" max="${c.max}" step="${c.step || 'any'}" value="${vals[c.id]}"/><span class="muted">${unit}</span></label>`
         : `<label class="vary-item">${label}<select data-vary="${c.id}">${c.options.map((o) => `<option value="${o.id}"${o.id === vals[c.id] ? ' selected' : ''}>${tr(o.label, locale)}</option>`).join('')}</select></label>`;
     })
     .join('');
@@ -1629,12 +1646,25 @@ $('#vary').addEventListener('change', (e) => {
     void choosePlace(place, place.dataset['varyPlace']!);
     return;
   }
+  // Another unit chosen: the number stays as it was put in — in the new unit (300 g → 300 kg).
+  const unitSel = (e.target as HTMLElement).closest<HTMLSelectElement>('[data-vary-unit]');
+  if (unitSel && presetGiven?.vary) {
+    const id = unitSel.dataset['varyUnit']!;
+    varyUnits.set(id, unitSel.value);
+    const c = presetGiven.vary.controls.find((x) => x.id === id);
+    const unit = c?.kind === 'number' ? c.units?.find((x) => x.id === unitSel.value) : undefined;
+    const shown = Number(String(unitSel.closest('label')?.querySelector<HTMLInputElement>('[data-vary]')?.value ?? '').replace(',', '.'));
+    if (!c || c.kind !== 'number' || !unit || !Number.isFinite(shown)) return renderVary();
+    return startPreset(presetGiven, { ...presetVals, [id]: Math.min(c.max, Math.max(c.min, shown * unit.factor)) });
+  }
   const el = (e.target as HTMLElement).closest<HTMLInputElement | HTMLSelectElement>('[data-vary]');
   if (!el || !presetGiven?.vary) return;
   const c = presetGiven.vary.controls.find((x) => x.id === el.dataset['vary']);
   if (!c || c.kind === 'place') return;
-  // A number is kept within the experiment's frame (and on its step).
-  const value = c.kind === 'number' ? Math.min(c.max, Math.max(c.min, Math.round(Number(el.value) / c.step) * c.step)) : el.value;
+  // A number is kept within the experiment's frame (and on its step, if it has one: step 0 — any value); put in a unit — turned into the control's own.
+  const shownIn = c.kind === 'number' ? c.units?.find((x) => x.id === el.closest('label')?.querySelector<HTMLSelectElement>('[data-vary-unit]')?.value) : undefined;
+  const raw = Number(String(el.value).replace(',', '.')) * (shownIn?.factor ?? 1);
+  const value = c.kind === 'number' ? Math.min(c.max, Math.max(c.min, c.step ? Math.round(raw / c.step) * c.step : raw)) : el.value;
   startPreset(presetGiven, { ...presetVals, [c.id]: Number.isFinite(value as number) || typeof value === 'string' ? value : c.value });
 });
 // The city field: suggestions as one types (from three letters, a moment after the last key), the place once chosen.

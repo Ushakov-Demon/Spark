@@ -87,8 +87,16 @@ export interface Preset {
  * amount, a temperature, a material from a short list. The preset is built from the chosen values (its
  * setup, plan, question and choices follow them); the answer is worked out from the run as always.
  */
+/** A unit a number may be put in: its name and how many of the control's own units it is. */
+export interface ControlUnit {
+  readonly id: string;
+  readonly label: LocalizedText;
+  readonly factor: number;
+}
 export type PresetControl = { readonly id: string; readonly label: LocalizedText } & (
-  | { readonly kind: 'number'; readonly unit: string; readonly min: number; readonly max: number; readonly step: number; readonly value: number }
+  // A number within its frame; `step` 0 — any value at all (the pupil's own measurement), otherwise kept on its step.
+  // `units` — the units it may be put in (a number and a unit to choose): the value is kept in the one of factor 1.
+  | { readonly kind: 'number'; readonly unit: string; readonly min: number; readonly max: number; readonly step: number; readonly value: number; readonly units?: readonly ControlUnit[] }
   | { readonly kind: 'choice'; readonly options: readonly Choice[]; readonly value: string }
   // A place on the Earth, as «name|latitude|longitude»: the default for Ukrainian, another for English (an example each).
   | { readonly kind: 'place'; readonly value: string; readonly en: string }
@@ -983,7 +991,7 @@ export const PRESET_ORDER: readonly string[] = [
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'fountain-model', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'cartesian-diver', 'ice-level',
   // Mechanical work and energy: energy changing form; the lever and the slope (Kreminskyi: grade 8, lab works 1–2).
-  'stairs-power', 'rolling-energy', 'ball-bounce', 'lever-moments', 'slope-efficiency', 'gear-train',
+  'stairs-power', 'rolling-energy', 'ball-bounce', 'lever-moments', 'pulley', 'slope-efficiency', 'gear-train',
   // Chemistry, grade 9, topic 1: solutions.
   'mass-fraction', 'grow-crystals', 'heat-of-solution', 'supersaturated',
   // Grade 8. Thermal phenomena: heat balance (lab work 3), specific heat (4), melting (5), then solidifying,

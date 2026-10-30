@@ -42,6 +42,7 @@ const UA_WORK: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gra
 const UA_POWER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Потужність.' }];
 const UA_KINETIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'визначення: кінетичної та потенціальної енергії тіл' }];
 const UA_GEARS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Зубчасті передачі, шестірні.' }];
+const UA_SIMPLE_MACHINES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'моделювання й конструювання: простих механізмів' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
@@ -943,6 +944,30 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.gearTurns,
     examples: [{ args: [1, 24, 8], expected: 3, note: 'a 24-tooth gear turning an 8-tooth one' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.pulley',
+    law: 'pulley',
+    title: { uk: 'Блок: сила й шлях мотузки', en: 'A pulley: the rope’s force and travel' },
+    latex: 'F = \\dfrac{P + P_\\text{б}}{n}, \\quad s = n h',
+    plain: 'F = (P + P_б) / n,  s = n·h',
+    argSymbols: ['P', 'n', 'P_б'],
+    resultSymbol: 'F',
+    variables: {
+      F: { name: { uk: 'сила, з якою тягнуть мотузку', en: 'force pulling the rope' }, unit: 'N' },
+      P: { name: { uk: 'вага вантажу', en: 'weight of the load' }, unit: 'N' },
+      n: { name: { uk: 'скільки ділянок мотузки тримають вантаж', en: 'rope sections holding the load' }, unit: '1' },
+      'P_б': { name: { uk: 'вага рухомого блока', en: 'weight of the movable pulley' }, unit: 'N' },
+    },
+    curriculum: UA_SIMPLE_MACHINES,
+    explanation: {
+      novice: { uk: 'Нерухомий блок лише змінює напрям сили. Рухомий — дає виграш у силі вдвічі, але мотузку треба тягнути вдвічі довше.', en: 'A fixed pulley only turns the force. A movable one halves the force, but the rope must be pulled twice as far.' },
+      school: { uk: 'Вантаж тримають n ділянок однієї мотузки, і в кожній — та сама сила натягу: F = P/n (з вагою рухомого блока — (P + P_б)/n). Зате, щоб підняти вантаж на h, кожну ділянку треба вкоротити на h: s = n·h. У роботі виграшу немає — «золоте правило» механіки.', en: 'The load is held by n sections of one rope, each with the same tension: F = P/n (with the movable pulley’s weight, (P + P_b)/n). But to lift the load by h, each section must shorten by h: s = n·h. There is no gain in work — the «golden rule» of mechanics.' },
+    },
+    compute: f.pulleyForce,
+    examples: [{ args: [2.94, 2, 0.39], expected: 1.665, note: '300 g on a 40 g movable pulley' }],
     textSource: 'spark',
     reviewed: false,
   }),

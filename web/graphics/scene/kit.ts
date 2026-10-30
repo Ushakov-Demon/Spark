@@ -44,6 +44,14 @@ export function dynamometerSvg(x: number, y: number, horizontal: boolean, displa
     : `<rect class="dyn-case" x="${x - 9}" y="${y}" width="18" height="80" rx="5"/><g class="dyn-ticks">${Array.from({ length: 11 }, (_, i) => `<path d="M${x - 5},${y + 8 + i * 6.5} h${i % 5 === 0 ? 7 : 4}"/>`).join('')}</g><text class="dyn-text" x="${x + 14}" y="${y + 44}">${display}</text>`;
 }
 
+/**
+ * An electronic force gauge (crane scales) hanging upright at (x, y): a ring on top, a body with its display, a hook
+ * below (y + 80) — for forces beyond a lab dynamometer.
+ */
+export function forceGaugeSvg(x: number, y: number, display: string): string {
+  return `<circle cx="${x}" cy="${y + 4}" r="5" style="fill:none;stroke:${DARK};stroke-width:2.5"/><rect x="${x - 17}" y="${y + 9}" width="34" height="56" rx="6" style="fill:#e6b422;stroke:#8a6a10;stroke-width:1.5"/><rect x="${x - 13}" y="${y + 16}" width="26" height="14" rx="2" style="fill:#c9d8b6;stroke:#6f7f5c"/><path d="M${x},${y + 65} v8 q0,7 -6,7" style="fill:none;stroke:${DARK};stroke-width:2.5"/><text class="dyn-text" x="${x + 22}" y="${y + 40}">${display}</text>`;
+}
+
 /** A stopwatch standing on the table at x, its bottom just above it: its display (and, when the drawing is sped up, by how much). */
 export function stopwatchSvg(sw: { readonly display: string; readonly fast?: number }, x: number): string {
   const y = TABLE - 30;
