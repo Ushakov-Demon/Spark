@@ -37,6 +37,8 @@ export const balancedDensity = (rho1: number, h1: number, h2: number): number =>
 /** Boyle–Mariotte: a gas kept at one temperature — its pressure times its volume stays the same, p₁·V₁ = p₂·V₂, so V₂ = V₁·p₁ / p₂. */
 export const isothermalVolume = (volume: number, p1: number, p2: number): number => (volume * p1) / p2;
 
+/** A liquid under so many pascals more: its volume shrinks by the share κ·Δp, V′ = V·(1 − κ·Δp) (κ — its compressibility). */
+export const compressedVolume = (volume: number, compressibility: number, extra: number): number => volume * (1 - compressibility * extra);
 /** Torricelli: a liquid flows out from under a height h of itself as fast as a body falling from h, v = √(2·g·h). */
 export const outflowSpeed = (g: number, head: number): number => Math.sqrt(2 * g * head);
 /** Thrown straight up at a speed v, a body (a jet of water) rises until its kinetic energy is all potential: h = v² / (2·g). */

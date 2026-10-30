@@ -1,12 +1,11 @@
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
-import { cite, sv } from '../../components/sourced.js';
+import { SYRINGE_LARGE, SYRINGE_SMALL } from '../../scenarios/bench-kit.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { hydraulicForce } from '../../domains/mechanics/formulas.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
-import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
  * A model of a hydraulic machine (grade 7, «Закон Паскаля. Гідравлічна машина»): two syringes, a narrow and a wide
@@ -16,9 +15,6 @@ import type { SourcedValue } from '../../knowledge/types.js';
  * The pistons are taken as sliding without friction (real syringes need a little more force).
  */
 
-/** The syringes' inner diameters: a 5 mL one and a 50 mL one. */
-export const SYRINGE_SMALL: SourcedValue = sv(0.012, 'm', '5 mL syringe, inside', 'estimate', 0.15, [cite('spark', 'estimate', 'a 5 mL syringe is about 12 mm wide inside', 0.012)], 'Estimate: the ruler measures it all the same.');
-export const SYRINGE_LARGE: SourcedValue = sv(0.026, 'm', '50 mL syringe, inside', 'estimate', 0.15, [cite('spark', 'estimate', 'a 50 mL syringe is about 26–29 mm wide inside', 0.026)], 'Estimate: the ruler measures it all the same.');
 /** How far the narrow piston is pushed in the travel step. */
 export const PRESS_PUSH = 0.06;
 const WEIGHT = 0.1;
@@ -56,6 +52,7 @@ export const pressCommand: CommandHandler<PressCommand> = {
   },
 };
 
+export { SYRINGE_LARGE, SYRINGE_SMALL };
 export const PRESS_COMMANDS = [pressCommand] as const;
 
 const w = (n: number, uk: boolean) => (uk ? `${n} ${n === 1 ? 'тягарець' : n < 5 ? 'тягарці' : 'тягарців'}` : `${n} weight${n === 1 ? '' : 's'}`);

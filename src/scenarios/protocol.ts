@@ -29,6 +29,11 @@ export type ProtocolStep = OperationStep | AddStep | WeighStep | LevelStep | Han
 export interface BenchStep {
   readonly kind: 'bench';
   readonly command: BenchCommand;
+  /**
+   * From this step to the plan's end — a part one may skip (a «what if…» after the main experiment): the guide offers it
+   * in these words, with the step's own button and «skip» — which drops the rest of the plan and goes to the conclusion.
+   */
+  readonly optional?: LocalizedText;
 }
 
 export interface OperationStep {

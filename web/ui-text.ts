@@ -60,6 +60,8 @@ export interface UiText {
   putIn: string;
   guide: {
     step(k: number, n: number): string;
+    /** Skip the optional rest of the plan. */
+    skip: string;
     weigh(again: boolean): string;
     level(again: boolean, waited?: boolean): string;
     add(what: string): string;
@@ -378,6 +380,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     putIn: 'кладуть у рідину',
     guide: {
       step: (k, n) => `Крок ${k} з ${n}`,
+      skip: 'Пропустити →',
       weigh: (again) => (again ? 'Зваж мензурку ще раз — тепер разом із бруском.' : 'Зваж мензурку з водою на лабораторних терезах і запиши масу.'),
       level: (again, waited) => (waited ? 'Подивись на поділки ще раз: чи змінився рівень?' : again ? 'Подивись на поділки знову: на скільки піднялася вода?' : 'Подивись на поділки: скільки води в мензурці? Очі — на рівні меніска.'),
       add: (w) => `Обережно опусти ${w} у мензурку — по стінці, щоб не розбити скло й не розплескати воду.`,
@@ -684,6 +687,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     putIn: 'goes into a liquid',
     guide: {
       step: (k, n) => `Step ${k} of ${n}`,
+      skip: 'Skip →',
       weigh: (again) => (again ? 'Weigh the cylinder again — now with the block in it.' : 'Weigh the cylinder with water on the laboratory balance and note the mass.'),
       level: (again, waited) => (waited ? 'Read the marks once more: did the level change?' : again ? 'Read the marks again: how far did the water rise?' : 'Read the marks: how much water is in the cylinder? Eyes level with the meniscus.'),
       add: (w) => `Gently lower ${w} into the cylinder — along the wall, so the glass does not break and the water does not splash.`,

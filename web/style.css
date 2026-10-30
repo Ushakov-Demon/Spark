@@ -1053,3 +1053,9 @@ footer .library-links a { color: var(--accent); }
 .preset { scroll-margin-top: 12px; }
 .preset.flash { animation: preset-flash 1.4s ease-out; }
 @keyframes preset-flash { 0%, 30% { box-shadow: 0 0 0 3px var(--accent, #2f7fc1); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+/* ---------- an optional part of a guided experiment ---------- */
+.guide-buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.guide.optional { border-style: dashed; }
+.guide-offer { font-weight: 600; margin: 4px 0 2px; }
+.guide-skip { background: transparent; }

@@ -24,6 +24,10 @@ export const PAPER_ON_WOOD: SourcedValue = sv(0.4, '', 'paper on wood, sliding',
 export const BENCH_BLOCK = { substance: 'wood', edges: [0.12, 0.06, 0.04] as const };
 export const blockMass = (): number => BENCH_BLOCK.edges[0] * BENCH_BLOCK.edges[1] * BENCH_BLOCK.edges[2] * SUBSTANCES.wood.liquid.density.value;
 
+/** The syringes of the hydraulic and the pneumatic machine, their inner diameters: a 5 mL one and a 50 mL one. */
+export const SYRINGE_SMALL: SourcedValue = sv(0.012, 'm', '5 mL syringe, inside', 'estimate', 0.15, [cite('spark', 'estimate', 'a 5 mL syringe is about 12 mm wide inside', 0.012)], 'Estimate: the ruler measures it all the same.');
+export const SYRINGE_LARGE: SourcedValue = sv(0.026, 'm', '50 mL syringe, inside', 'estimate', 0.15, [cite('spark', 'estimate', 'a 50 mL syringe is about 26–29 mm wide inside', 0.026)], 'Estimate: the ruler measures it all the same.');
+
 /** A pupil's ruler: millimetre divisions. */
 export const RULER_DIVISION = 0.001;
 export const ruler = (x: number) => Math.round(x / RULER_DIVISION) * RULER_DIVISION;

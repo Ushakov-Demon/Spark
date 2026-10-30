@@ -52,6 +52,7 @@ export const WATER = {
         },
     },
     liquid: {
+      compressibility: sv(4.6e-10, '1/Pa', 'liquid, ≈ 20 °C, low pressure', 'single-source', 0.1, [{ source: 'wikipedia-properties-of-water', locator: 'Compressibility: 5.1×10⁻¹⁰ Pa⁻¹ at 0 °C, a minimum of 4.4×10⁻¹⁰ Pa⁻¹ around 45 °C (zero-pressure limit)', conditions: '0–45 °C', range: [4.4e-10, 5.1e-10] }], 'Between the source’s values at 0 °C and at its minimum near 45 °C: water at room temperature.'),
       viscosity: sv(1.0016e-3, 'Pa·s', 'liquid, 20 °C', 'single-source', 0.01, [cite('wikipedia-viscosity', 'Table: water, 1.0016 mPa·s at 20 °C', '20 °C', 1.0016e-3)], 'About 0.89 mPa·s at 25 °C: it falls with temperature.'),
       density: {
           value: 997.05,

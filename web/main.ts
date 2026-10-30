@@ -1696,7 +1696,10 @@ function renderGuide(): boolean {
     const btn = bench ? tr(bench.button, locale) : s.kind === 'fresh' ? `🔄 ${fresh}` : s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
     // Before the first step: the prediction, if the experiment asks for one.
     const q = k === 1 ? quizNow() : null;
-    setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide"><span class="guide-step">${u.step(k, planTotal)}</span><p>${say}</p><button type="button" class="primary" data-plan="1"${instrumentBusy ? ' disabled' : ''}>${btn}</button></div>`);
+    // A part one may skip: offered in its own words, with its first step's button and «skip».
+    const offer = s.kind === 'bench' && s.optional ? `<p class="guide-offer">${tr(s.optional, locale)}</p>` : '';
+    const skip = offer ? `<button type="button" class="guide-skip" data-skip="1"${instrumentBusy ? ' disabled' : ''}>${u.skip}</button>` : '';
+    setHtml('#quiz', `${q ? quizHtml(q) : ''}<div class="guide${offer ? ' optional' : ''}"><span class="guide-step">${u.step(k, planTotal)}</span>${offer}<p>${say}</p><div class="guide-buttons"><button type="button" class="primary" data-plan="1"${instrumentBusy ? ' disabled' : ''}>${btn}</button>${skip}</div></div>`);
     return true;
   }
   // Measured out: the answer to the question (and the verdict on the prediction), here under the scene.
@@ -4243,6 +4246,12 @@ $('#quiz').addEventListener('click', (e) => {
   }
   const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
   if (step) return nextPlanStep();
+  // The optional rest of the plan skipped: straight to the conclusion.
+  if ((e.target as HTMLElement).closest('button[data-skip]') && plan.length) {
+    planTotal -= plan.length;
+    plan = [];
+    return render();
+  }
   if ((e.target as HTMLElement).closest('button[data-show-answer]') && preset) {
     answerShown = preset.id;
     answerPreset();

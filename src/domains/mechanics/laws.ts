@@ -492,4 +492,14 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: { uk: 'Лише для спокійної (ламінарної) течії — у круглій трубі, поки число Рейнольдса менше за ≈ 2300; у бурхливій (турбулентній) тертя більше.', en: 'Only for smooth (laminar) flow — in a round pipe while the Reynolds number is below ≈ 2300; in a churning (turbulent) one the friction is greater.' },
     },
   },
+  {
+    id: 'compressibility',
+    kind: 'definition',
+    name: { uk: 'Стисливість', en: 'Compressibility' },
+    statement: {
+      novice: { uk: 'Стисливість показує, наскільки речовина зменшується, якщо на неї сильніше тиснути. Гази стискаються легко, рідини — ледь-ледь.', en: 'Compressibility tells how much a substance shrinks when pressed harder. Gases compress easily, liquids barely.' },
+      school: { uk: 'Стисливість κ — частка, на яку зменшується об’єм на кожен паскаль додаткового тиску: ΔV/V = −κ·Δp. У води κ ≈ 4,6·10⁻¹⁰ Па⁻¹; у повітря за сталої температури — 1/p, біля землі ≈ 10⁻⁵ Па⁻¹.', en: 'The compressibility κ is the share the volume shrinks by for each pascal of extra pressure: ΔV/V = −κ·Δp. For water κ ≈ 4.6·10⁻¹⁰ Pa⁻¹; for air at a constant temperature it is 1/p, near the ground ≈ 10⁻⁵ Pa⁻¹.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення властивості речовини.', en: 'This is the definition of a property of a substance.' } }, citations: [] },
+  },
 ];

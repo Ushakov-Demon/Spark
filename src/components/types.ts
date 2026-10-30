@@ -40,6 +40,8 @@ export interface PhaseProps {
   readonly conductivity?: SourcedValue; // W/(m·K)
   /** Dynamic viscosity, Pa·s (a liquid). */
   readonly viscosity?: SourcedValue;
+  /** Isothermal compressibility, 1/Pa (a liquid): the share its volume shrinks by per pascal more, ΔV/V = −κ·Δp. */
+  readonly compressibility?: SourcedValue;
 }
 
 /** Vapour pressure model for evaporation below the boiling point (data, so states stay JSON). */
