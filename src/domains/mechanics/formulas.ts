@@ -72,6 +72,18 @@ export const kineticEnergy = (mass: number, speed: number): number => (mass * sp
  */
 export const rollingSpeed = (g: number, height: number, inertiaShare = 2 / 5): number => Math.sqrt((2 * g * height) / (1 + inertiaShare));
 
+/** Two meshing gears: as many teeth pass the meeting point on each, so n₂ = n₁·z₁ / z₂ (turns, or turns a second). */
+export const gearTurns = (turns: number, teethDriver: number, teethDriven: number): number => (turns * teethDriver) / teethDriven;
+/**
+ * A train of gears, each meshing with the next (teeth from the driver on): the last one's turns and whether it turns the
+ * way the driver does. The middle gears do not change the ratio — only the first and the last count — but each mesh
+ * reverses the direction.
+ */
+export const gearTrain = (turns: number, teeth: readonly number[]): { readonly turns: number; readonly sameDirection: boolean } => ({
+  turns: teeth.length < 2 ? turns : gearTurns(turns, teeth[0]!, teeth[teeth.length - 1]!),
+  sameDirection: (teeth.length - 1) % 2 === 0,
+});
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

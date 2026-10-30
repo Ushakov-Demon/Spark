@@ -512,4 +512,23 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     },
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a physical quantity.' } }, citations: [] },
   },
+  {
+    id: 'gear-transmission',
+    kind: 'law',
+    name: { uk: 'Зубчаста передача', en: 'Gear transmission' },
+    statement: {
+      novice: { uk: 'Шестірні передають обертання одна одній: мала крутиться швидше, велика — повільніше, і кожна наступна — у протилежний бік.', en: 'Gears pass turning on to each other: a small one turns faster, a big one slower, and each next one the other way.' },
+      school: { uk: 'Кутові швидкості двох зчеплених шестірень обернено пропорційні числам їхніх зубців: n₁/n₂ = z₂/z₁. Проміжна (паразитна) шестірня цього відношення не змінює — лише повертає напрям обертання.', en: 'The angular speeds of two meshing gears are inversely proportional to their numbers of teeth: n₁/n₂ = z₂/z₁. An intermediate (idler) gear does not change this ratio — it only reverses the direction.' },
+    },
+    history: {
+      people: [],
+      role: 'associated',
+      when: { uk: 'II ст. до н. е. (Антикітерський механізм)', en: 'the 2nd century BC (the Antikythera mechanism)' },
+      story: { school: { uk: 'Зубчасті передачі знали ще в Стародавній Греції: Антикітерський механізм II століття до н. е. мав щонайменше 30 бронзових шестірень.', en: 'Gear trains were known in ancient Greece: the Antikythera mechanism of the 2nd century BC had at least 30 bronze gears.' } },
+      citations: [
+        { source: 'wikipedia-gear-train', locator: 'Mechanical advantage; Idler gears', claim: '|ω_A|/|ω_B| = N_B/N_A; an idler reverses the direction and does not affect the ratio' },
+        { source: 'wikipedia-antikythera', locator: 'lead', claim: '2nd century BC, at least 30 bronze gears' },
+      ],
+    },
+  },
 ];

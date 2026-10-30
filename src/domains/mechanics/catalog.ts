@@ -41,6 +41,7 @@ const UA_FOUNTAIN: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko',
 const UA_WORK: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна робота.' }];
 const UA_POWER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Потужність.' }];
 const UA_KINETIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'визначення: кінетичної та потенціальної енергії тіл' }];
+const UA_GEARS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Зубчасті передачі, шестірні.' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
@@ -918,6 +919,30 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.rollingSpeed,
     examples: [{ args: [9.80665, 0.1, 0.4], expected: 1.18363, note: 'a solid ball down 10 cm' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.gear-ratio',
+    law: 'gear-transmission',
+    title: { uk: 'Зубчаста передача', en: 'A gear pair' },
+    latex: 'n_2 = n_1 \\cdot \\dfrac{z_1}{z_2}',
+    plain: 'n₂ = n₁ · z₁ / z₂',
+    argSymbols: ['n₁', 'z₁', 'z₂'],
+    resultSymbol: 'n₂',
+    variables: {
+      'n₂': { name: { uk: 'обертів веденої шестірні', en: 'turns of the driven gear' }, unit: '1' },
+      'n₁': { name: { uk: 'обертів ведучої шестірні', en: 'turns of the driving gear' }, unit: '1' },
+      'z₁': { name: { uk: 'зубців у ведучої', en: 'teeth of the driver' }, unit: '1' },
+      'z₂': { name: { uk: 'зубців у веденої', en: 'teeth of the driven' }, unit: '1' },
+    },
+    curriculum: UA_GEARS,
+    explanation: {
+      novice: { uk: 'Мала шестірня крутиться швидше за велику — у стільки разів, у скільки в неї менше зубців.', en: 'A small gear turns faster than a big one — as many times as it has fewer teeth.' },
+      school: { uk: 'Зчеплені шестірні проводять повз точку зачеплення однаково зубців: n₁·z₁ = n₂·z₂. Тому n₂ = n₁·z₁/z₂: від великої до малої — швидше, від малої до великої — повільніше. Кожна пара міняє напрям обертання.', en: 'Meshing gears pass the same number of teeth by the meeting point: n₁·z₁ = n₂·z₂. So n₂ = n₁·z₁/z₂: from a big gear to a small one — faster, from a small to a big — slower. Each pair reverses the direction.' },
+    },
+    compute: f.gearTurns,
+    examples: [{ args: [1, 24, 8], expected: 3, note: 'a 24-tooth gear turning an 8-tooth one' }],
     textSource: 'spark',
     reviewed: false,
   }),

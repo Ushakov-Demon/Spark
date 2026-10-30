@@ -14,6 +14,7 @@ import { cartesianDiverScene } from './cartesian-diver/scene.js';
 import { fountainModelScene } from './fountain-model/scene.js';
 import { stairsPowerScene } from './stairs-power/scene.js';
 import { rollingEnergyScene } from './rolling-energy/scene.js';
+import { gearTrainScene } from './gear-train/scene.js';
 import { coinInertiaScene } from './coin-inertia/scene.js';
 import { snailSpeedScene } from './snail-speed/scene.js';
 import { strobePhotoScene } from './strobe-photo/scene.js';
@@ -45,7 +46,7 @@ import { motionLabWorksScene } from './motion-lab-works/scene.js';
 import type { ExperimentScene } from './types.js';
 
 /** The pictures of the experiment modules, by kind (one line each, beside src/experiments/index.ts). */
-const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene, windlassScene, smallBodiesScene, ballBounceScene, weightInLiftScene, addingForcesScene, bodiesInLiquidsScene, relativeMotionScene, depthPressureScene, communicatingVesselsScene, hydrostaticParadoxScene, hydraulicPressScene, atmosphericPressureScene, diodeBlackBoxScene, electromagnetScene, electromagneticInductionScene, leverMomentsScene, slopeEfficiencyScene, resistorCircuitScene, twoResistorsScene, hookeSpringScene, slidingFrictionScene, blockPressureScene, leverBalanceScene, motionLabWorksScene, cartesianDiverScene, fountainModelScene, stairsPowerScene, rollingEnergyScene] as unknown as readonly ExperimentScene<never>[];
+const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene, windlassScene, smallBodiesScene, ballBounceScene, weightInLiftScene, addingForcesScene, bodiesInLiquidsScene, relativeMotionScene, depthPressureScene, communicatingVesselsScene, hydrostaticParadoxScene, hydraulicPressScene, atmosphericPressureScene, diodeBlackBoxScene, electromagnetScene, electromagneticInductionScene, leverMomentsScene, slopeEfficiencyScene, resistorCircuitScene, twoResistorsScene, hookeSpringScene, slidingFrictionScene, blockPressureScene, leverBalanceScene, motionLabWorksScene, cartesianDiverScene, fountainModelScene, stairsPowerScene, rollingEnergyScene, gearTrainScene] as unknown as readonly ExperimentScene<never>[];
 
 const BY_KIND = new Map(SCENES.map((s) => [s.kind, s] as const));
 export const sceneOf = (kind: string): ExperimentScene<unknown> | undefined => BY_KIND.get(kind) as ExperimentScene<unknown> | undefined;
