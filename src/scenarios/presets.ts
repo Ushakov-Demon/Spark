@@ -983,7 +983,7 @@ export const PRESET_ORDER: readonly string[] = [
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'fountain-model', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'cartesian-diver', 'ice-level',
   // Mechanical work and energy: energy changing form; the lever and the slope (Kreminskyi: grade 8, lab works 1–2).
-  'stairs-power', 'ball-bounce', 'lever-moments', 'slope-efficiency',
+  'stairs-power', 'rolling-energy', 'ball-bounce', 'lever-moments', 'slope-efficiency',
   // Chemistry, grade 9, topic 1: solutions.
   'mass-fraction', 'grow-crystals', 'heat-of-solution', 'supersaturated',
   // Grade 8. Thermal phenomena: heat balance (lab work 3), specific heat (4), melting (5), then solidifying,

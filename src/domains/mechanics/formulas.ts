@@ -64,6 +64,14 @@ export const work = (force: number, distance: number): number => force * distanc
 /** Power — how fast work is done: N = A / t. */
 export const power = (work: number, time: number): number => work / time;
 
+/** The kinetic energy of a body moving at a speed v: E = m·v² / 2. */
+export const kineticEnergy = (mass: number, speed: number): number => (mass * speed * speed) / 2;
+/**
+ * A ball (a wheel) rolling down a height h without slipping: m·g·h = m·v²/2 · (1 + k), k = I/(m·r²) — part of the energy
+ * goes into the spin; so v = √(2·g·h / (1 + k)). A solid ball, k = 2/5.
+ */
+export const rollingSpeed = (g: number, height: number, inertiaShare = 2 / 5): number => Math.sqrt((2 * g * height) / (1 + inertiaShare));
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

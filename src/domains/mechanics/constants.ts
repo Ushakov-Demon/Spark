@@ -66,3 +66,14 @@ export const HUMAN_POWER_SUSTAINED: SourcedValue = {
   citations: [{ source: 'wikipedia-horsepower', locator: 'sustain about 0.1 hp (0.07 kW) indefinitely', conditions: 'indefinitely', value: 70 }],
   note: 'A rough figure; Wikipedia’s «Human power» gives about 75 W for a labourer over a working day.',
 };
+
+/** A solid ball's moment of inertia over m·r²: I = 2/5·m·r² — the share of its spin in rolling. */
+export const SOLID_BALL_INERTIA: SourcedValue = {
+  value: 0.4,
+  unit: '1',
+  conditions: 'a uniform solid sphere about its centre',
+  verification: 'single-source',
+  tolerance: 0.0001,
+  citations: [{ source: 'wikipedia-rolling', locator: 'with the List of moments of inertia: a solid sphere I = 2/5·m·r²', conditions: 'uniform solid sphere', value: 0.4 }],
+  note: 'Exact for a uniform solid ball.',
+};

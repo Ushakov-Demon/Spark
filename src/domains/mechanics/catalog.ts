@@ -40,6 +40,7 @@ const UA_DIVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gr
 const UA_FOUNTAIN: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'конструювання: моделі фонтана' }];
 const UA_WORK: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Механічна робота.' }];
 const UA_POWER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Потужність.' }];
+const UA_KINETIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'визначення: кінетичної та потенціальної енергії тіл' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
@@ -869,6 +870,54 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.power,
     examples: [{ args: [1412.064, 4], expected: 353.016, note: 'one floor run up in 4 s' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.kinetic-energy',
+    law: 'mechanical-energy',
+    title: { uk: 'Кінетична енергія', en: 'Kinetic energy' },
+    latex: 'E_k = \\dfrac{m v^2}{2}',
+    plain: 'Eₖ = m·v² / 2',
+    argSymbols: ['m', 'v'],
+    resultSymbol: 'Eₖ',
+    variables: {
+      'Eₖ': { name: { uk: 'кінетична енергія', en: 'kinetic energy' }, unit: 'J' },
+      m: { name: { uk: 'маса тіла', en: 'mass of the body' }, unit: 'kg' },
+      v: { name: { uk: 'швидкість тіла', en: 'speed of the body' }, unit: 'm/s' },
+    },
+    curriculum: UA_KINETIC,
+    explanation: {
+      novice: { uk: 'Що швидше й важче тіло, то більше в нього енергії руху. Удвічі швидше — учетверо більше.', en: 'The faster and heavier a body, the more energy of motion it has. Twice as fast — four times as much.' },
+      school: { uk: 'Кінетична енергія — енергія руху: Eₖ = m·v²/2. Вона росте з квадратом швидкості: удвічі швидший — у 4 рази більша енергія (тому гальмівний шлях авто так швидко росте зі швидкістю).', en: 'Kinetic energy is the energy of motion: Eₖ = m·v²/2. It grows with the square of the speed: twice as fast — 4 times the energy (which is why a car’s stopping distance grows so fast with speed).' },
+    },
+    compute: f.kineticEnergy,
+    examples: [{ args: [0.064, 1.2], expected: 0.04608, note: 'a 64 g ball at 1.2 m/s' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.rolling-speed',
+    law: 'mechanical-energy',
+    title: { uk: 'Швидкість кульки, що скотилася', en: 'Speed of a ball that has rolled down' },
+    latex: 'v = \\sqrt{\\dfrac{2 g h}{1 + k}}',
+    plain: 'v = √(2·g·h / (1 + k))',
+    argSymbols: ['g', 'h', 'k'],
+    resultSymbol: 'v',
+    variables: {
+      v: { name: { uk: 'швидкість унизу', en: 'speed at the bottom' }, unit: 'm/s' },
+      g: { name: { uk: 'прискорення вільного падіння', en: 'gravitational acceleration' }, unit: 'm/s²' },
+      h: { name: { uk: 'висота, з якої скотилася', en: 'height rolled down' }, unit: 'm' },
+      k: { name: { uk: 'частка обертання I/(m·r²)', en: 'share of the spin I/(m·r²)' }, unit: '1' },
+    },
+    curriculum: [],
+    beyondCurriculum: { uk: 'Енергія обертання — поза програмою 7–9 класів; у 7 класі — якісно: енергія не зникає, а розподіляється.', en: 'The energy of rotation is beyond the grades 7–9 programme; in grade 7 — qualitatively: energy does not vanish, it is shared out.' },
+    explanation: {
+      novice: { uk: 'Кулька не лише котиться вперед, а й крутиться — і на обертання теж іде енергія.', en: 'A ball not only goes forward but also spins — and the spin takes energy too.' },
+      school: { uk: 'Без ковзання m·g·h = m·v²/2 · (1 + k): частку k енергії руху вперед забирає обертання. У суцільної кульки k = 2/5, тож уперед іде лише 5/7 ≈ 71 % енергії.', en: 'Without slipping m·g·h = m·v²/2 · (1 + k): the spin takes the share k of the forward motion’s energy. For a solid ball k = 2/5, so only 5/7 ≈ 71 % of the energy goes forward.' },
+    },
+    compute: f.rollingSpeed,
+    examples: [{ args: [9.80665, 0.1, 0.4], expected: 1.18363, note: 'a solid ball down 10 cm' }],
     textSource: 'spark',
     reviewed: false,
   }),
