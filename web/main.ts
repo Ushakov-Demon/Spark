@@ -144,6 +144,7 @@ import { babble, canSpeak, currentVoice, fizz, giggle, hum, hush, plop, setSound
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
+import { createFinger } from './finger.js';
 
 // ---------- persistent preferences (per browser, optional) ----------
 const store = {
@@ -1895,10 +1896,27 @@ function showOnlyWhatMatters() {
   document.querySelector('#explain')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', !somethingToExplain || instrumentBusy);
 }
 
+const finger = createFinger();
+/**
+ * Where to look next: the table empty — at the experiments (the shelf, or its strip when folded); an experiment chosen
+ * and not begun — at its first step's button. Only in the lab, not on the site's other pages.
+ */
+function pointTheWay() {
+  const lab = !onCatalog && !libraryTab && !onAbout;
+  if (lab && !preset && !tableSet) {
+    const folded = store.get('shelf') === 'folded';
+    return finger.point(() => document.querySelector(folded ? '#shelf-open' : shelfTab === 'experiments' ? '#presets-list' : '#shelf'), 'right');
+  }
+  if (lab && preset && !running && plan.length === planTotal && planTotal > 0) return finger.point(() => document.querySelector('#quiz .guide button[data-plan]'), 'left');
+  finger.point(null);
+}
+
 function render() {
   const u = t();
   // Nothing on the table yet: no step, no instruments, no readings — only the choice.
   document.body.classList.toggle('table-bare', !preset && !tableSet);
+  pointTheWay();
+  $('#exp-title').classList.toggle('to-list', !!presetGiven);
   renderVary();
   document.documentElement.lang = locale;
   document.title = pageTitle();
@@ -3582,6 +3600,30 @@ function buildShelfTabs() {
     shelfTab === 'sandbox' ? (locale === 'uk' ? 'Пошук: речовина, посуд, прилад…' : 'Search: substance, vessel, device…') : locale === 'uk' ? 'Пошук: дослід, тема…' : 'Search: experiment, topic…';
   if (shelfTab === 'experiments') buildPresets();
 }
+// The experiment's title in the kitchen: the list of experiments scrolls (smoothly) to it — shown if filtered away.
+$('#exp-title').onclick = () => {
+  const p = presetGiven;
+  if (!p) return;
+  // (Already on the table: to the experiments' tab without clearing it.)
+  shelfTab = 'experiments';
+  store.set('shelfTab', shelfTab);
+  if (store.get('shelf') === 'folded') store.set('shelf', 'open'), renderSide();
+  buildShelfTabs();
+  const cardOf = () => document.querySelector<HTMLElement>(`#presets-list .preset[data-id="${p.id}"]`);
+  if (!cardOf()) {
+    query = '';
+    $<HTMLInputElement>('#search').value = '';
+    if (!presetSubjects(p).includes(presetSubject)) presetSubject = presetSubjects(p)[0] ?? presetSubject;
+    presetGrade = presetGradesIn(p, presetSubject)[0] ?? null;
+    buildPresets();
+  }
+  const card = cardOf();
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  card.classList.remove('flash');
+  void card.offsetWidth;
+  card.classList.add('flash');
+};
 // On a phone the panel stands below the scene: a button in the header goes down to the experiments.
 $('#shelf-jump').onclick = () => {
   if (shelfTab !== 'experiments') clearTable();
@@ -3682,10 +3724,15 @@ function buildPresets() {
     // The programmes in one line, cut with «…»; opened — each with its topic and the textbook's page.
     const programLine = presetPrograms(p).map((x) => `${tr(getCurriculum(x.program)!.short ?? getCurriculum(x.program)!.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}`).join(', ');
     const card = el('article', { className: `preset${preset && presetGiven?.id === p.id ? ' current' : ''}` });
+    card.dataset['id'] = p.id;
     card.innerHTML = `<div class="preset-side"><div class="preset-ic">${icon(OPERATIONS[p.params.action].icon, 'ic')}</div><button type="button" class="preset-more-btn" aria-haspopup="dialog" title="${escAttr(u.presetMore)}" aria-label="${escAttr(u.presetMore)}">ⓘ</button></div>
       <div><h4>${tr(p.title, locale)}</h4><p class="preset-q" title="${escAttr(question)}">${question}</p>${quotes.length && p.grade !== null ? `<p class="muted small preset-quote">${u.inProgramme}: «${quotes.join(' ')}»</p>` : ''}${topicLine ? `<p class="preset-topic small"><span class="muted">${u.topic}:</span> ${escAttr(topicLine)}</p>` : ''}${programs ? `<details class="programs"><summary><span class="muted">${u.programs}:</span> <span class="programs-line">${escAttr(programLine)}</span></summary><div class="programs-all">${programs}</div></details>` : ''}</div>`;
     const go = el('button', { type: 'button', className: 'primary preset-go' }, u.presetStart);
-    go.onclick = () => startPreset(p);
+    go.onclick = () => {
+      startPreset(p);
+      // The kitchen's top to the top of the screen (smoothly), whatever the screen.
+      $('.kitchen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
     card.append(go);
     // The full description: a page of a lab notebook, in the middle of the screen.
     card.querySelector<HTMLButtonElement>('.preset-more-btn')!.onclick = () => openLabSheet(p);

@@ -1037,3 +1037,19 @@ footer .library-links a { color: var(--accent); }
 .term-card .term-source { display: block; margin: 0 0 4px; font-size: 0.82rem; color: var(--muted); }
 .lib-source { margin: 2px 0 0; font-size: 0.85rem; }
 .lib-source a { color: var(--muted); }
+
+/* ---------- the pointing finger (web/finger.ts) ---------- */
+.guide-finger { position: fixed; left: 0; top: 0; z-index: 60; width: 48px; height: 48px; display: grid; place-items: center; font-size: 42px; line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
+.guide-finger[hidden] { display: none; }
+.guide-finger span { display: block; animation: finger-poke 1.1s ease-in-out infinite; }
+.guide-finger[data-dir='left'] span { --poke: translateX(-9px); }
+.guide-finger[data-dir='right'] span { --poke: translateX(9px); }
+.guide-finger[data-dir='up'] span { --poke: translateY(-9px); }
+.guide-finger[data-dir='down'] span { --poke: translateY(9px); }
+@keyframes finger-poke { 0%, 100% { transform: none; } 50% { transform: var(--poke); } }
+@media (prefers-reduced-motion: reduce) { .guide-finger span { animation: none; } }
+#exp-title.to-list { cursor: pointer; }
+#exp-title.to-list:hover { text-decoration: underline dotted; text-underline-offset: 4px; }
+.preset { scroll-margin-top: 12px; }
+.preset.flash { animation: preset-flash 1.4s ease-out; }
+@keyframes preset-flash { 0%, 30% { box-shadow: 0 0 0 3px var(--accent, #2f7fc1); } 100% { box-shadow: 0 0 0 0 transparent; } }

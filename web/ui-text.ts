@@ -490,7 +490,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     planDone: 'План виконано! Можна експериментувати далі самостійно.',
     prof: {
       idle: 'Обери, що робимо, і тисни «Старт». Або спершу спробуй передбачити результат!',
-      bare: 'Стіл порожній. Обери дослід ліворуч — або збери свій у «Пісочниці».',
+      bare: 'Стіл порожній. Обери дослід — або збери свій у «Пісочниці».',
       impossible: 'Хм… Так мети не досягти. Глянь підказку під графіком — я дещо придумав.',
       heating: 'Гріємо! Слідкуй за термометром.',
       cooling: 'Холоне… Тепло тікає в холодніше довкілля.',
@@ -796,7 +796,7 @@ export const UI: Readonly<Record<Locale, UiText>> = {
     planDone: 'Plan complete! Go on experimenting on your own.',
     prof: {
       idle: 'Choose what we do and press “Start”. Or try to predict the result first!',
-      bare: 'The table is empty. Choose an experiment on the left — or build your own in the “Sandbox”.',
+      bare: 'The table is empty. Choose an experiment — or build your own in the “Sandbox”.',
       impossible: 'Hmm… The goal can’t be reached like this. See the hint under the chart — I have an idea.',
       heating: 'Heating! Watch the thermometer.',
       cooling: 'Cooling… The heat escapes into the colder surroundings.',
