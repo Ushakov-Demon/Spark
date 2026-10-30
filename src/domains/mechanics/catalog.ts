@@ -43,6 +43,7 @@ const UA_POWER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gr
 const UA_KINETIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'визначення: кінетичної та потенціальної енергії тіл' }];
 const UA_GEARS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Зубчасті передачі, шестірні.' }];
 const UA_SIMPLE_MACHINES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'моделювання й конструювання: простих механізмів' }];
+const UA_LIFT: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'дії виштовхувальної й піднімальної сили' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
@@ -968,6 +969,32 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.pulleyForce,
     examples: [{ args: [2.94, 2, 0.39], expected: 1.665, note: '300 g on a 40 g movable pulley' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.lifting-force',
+    law: 'archimedes',
+    title: { uk: 'Піднімальна сила кулі', en: 'The lifting force of a balloon' },
+    latex: 'F = (\\rho_\\text{пов} - \\rho_\\text{г})\\, g V - m_\\text{об} g',
+    plain: 'F = (ρ_пов − ρ_г)·g·V − m_об·g',
+    argSymbols: ['ρ_пов', 'ρ_г', 'g', 'V', 'm_об'],
+    resultSymbol: 'F',
+    variables: {
+      F: { name: { uk: 'піднімальна сила', en: 'lifting force' }, unit: 'N' },
+      'ρ_пов': { name: { uk: 'густина повітря', en: 'density of the air' }, unit: 'kg/m³' },
+      'ρ_г': { name: { uk: 'густина газу в кулі', en: 'density of the gas inside' }, unit: 'kg/m³' },
+      g: { name: { uk: 'прискорення вільного падіння', en: 'gravitational acceleration' }, unit: 'm/s²' },
+      V: { name: { uk: 'об’єм кулі', en: 'volume of the balloon' }, unit: 'm³' },
+      'm_об': { name: { uk: 'маса оболонки', en: 'mass of the shell' }, unit: 'kg' },
+    },
+    curriculum: UA_LIFT,
+    explanation: {
+      novice: { uk: 'Повітря виштовхує кулю вгору, як вода — корок. Якщо газ у кулі разом з оболонкою легший за повітря того самого об’єму — куля злітає.', en: 'The air pushes a balloon up, as water pushes a cork. If the gas inside with the shell is lighter than the same volume of air — the balloon flies.' },
+      school: { uk: 'На кулю діє виштовхувальна сила повітря ρ_пов·g·V (закон Архімеда). Віднявши вагу газу ρ_г·g·V і оболонки m_об·g, маємо піднімальну силу. Вона росте з об’ємом (з кубом діаметра), а вага оболонки — лише з її площею, тому великі кулі піднімають більше.', en: 'The air’s buoyant force ρ_air·g·V acts on the balloon (Archimedes’ law). Less the weight of the gas ρ_gas·g·V and of the shell m_shell·g, that is the lifting force. It grows with the volume (the cube of the diameter), the shell’s weight only with its area — so big balloons lift more.' },
+    },
+    compute: f.liftingForce,
+    examples: [{ args: [1.2041, 0.1664, 9.80665, 0.014137, 0.003], expected: 0.1144, note: 'a 30 cm helium balloon, a 3 g shell' }],
     textSource: 'spark',
     reviewed: false,
   }),

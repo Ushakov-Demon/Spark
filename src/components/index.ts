@@ -14,6 +14,7 @@ import { GLYCEROL } from './glycerol.js';
 import { GRAPHITE } from './graphite.js';
 import { IRON_II_HYDROXIDE } from './iron-hydroxide.js';
 import { HYDROGEN } from './hydrogen.js';
+import { HELIUM } from './helium.js';
 import { IRON } from './iron.js';
 import { NITROGEN } from './nitrogen.js';
 import { OXYGEN } from './oxygen.js';
@@ -56,6 +57,7 @@ const LIST = {
   oxygen: OXYGEN,
   nitrogen: NITROGEN,
   hydrogen: HYDROGEN,
+  helium: HELIUM,
   'carbon-dioxide': CARBON_DIOXIDE,
   chlorine: CHLORINE,
   air: AIR,
@@ -82,3 +84,6 @@ export const isComponentId = (id: string): id is ComponentId => id in LIST;
 
 /** Molar mass, kg/mol — computed from the formula; undefined for materials without one. */
 export const molarMass = (c: Component): number | undefined => (c.composition ? molarMassOf(c.composition) : undefined);
+
+/** A material's molar mass, kg/mol: a mixture's own (air), or a pure substance's from its formula. */
+export const molarMassOfComponent = (c: Component): number | undefined => c.molarMass?.value ?? (c.composition ? molarMassOf(c.composition) : undefined);

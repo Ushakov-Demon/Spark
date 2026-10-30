@@ -98,3 +98,6 @@ export const crystalsOnCooling = (solubilityHot: number, solubilityCold: number,
 
 /** Heat a dissolving takes in or gives off: the amount of substance times its molar heat of solution, Q = n·ΔH. */
 export const heatOfSolution = (moles: number, molarHeat: number): number => moles * molarHeat;
+
+/** The density of a gas (an ideal one): ρ = p·M / (R·T) — the ideal gas law. */
+export const idealGasDensity = (pressure: number, molarMass: number, temperatureK: number, gasConstant: number): number => (pressure * molarMass) / (gasConstant * temperatureK);

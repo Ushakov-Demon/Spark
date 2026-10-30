@@ -431,6 +431,7 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
         { source: 'wikipedia-boyles-law', locator: 'lead', claim: 'pressure inversely proportional to the volume at constant temperature and amount of gas, in a closed system' },
         { source: 'wikipedia-boyles-law', locator: 'History', claim: 'Boyle published it in 1662; first noted by Richard Towneley and Henry Power' },
         { source: 'wikipedia-boyles-law', locator: 'History', claim: 'Mariotte discovered the same law independently of Boyle in 1679; called Mariotte’s law especially in France' },
+        { source: 'wikidata', locator: 'Q43393, Q319749 (P569, P570)', claim: 'life dates (Boyle 1627 – 1691; Mariotte c. 1620 – 1684)' },
       ],
     },
     limits: {
@@ -458,6 +459,7 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       citations: [
         { source: 'wikipedia-torricelli-law', locator: 'lead', claim: 'v = √(2gh), the speed a body would acquire falling freely from h' },
         { source: 'wikipedia-torricelli-law', locator: 'lead', claim: 'discovered (though not in this form) by Evangelista Torricelli in 1643; a particular case of Bernoulli’s principle' },
+        { source: 'wikidata', locator: 'Q102490 (P569, P570)', claim: 'life dates (1608 – 1647)' },
       ],
     },
     limits: {
@@ -486,6 +488,7 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
         { source: 'wikipedia-hagen-poiseuille', locator: 'lead', claim: 'Δp = 8μLQ/(πR⁴) for laminar flow of an incompressible Newtonian fluid in a long round pipe' },
         { source: 'wikipedia-hagen-poiseuille', locator: 'History', claim: 'derived experimentally and independently by Poiseuille and Hagen in 1838; published by Hagen in 1839, by Poiseuille in 1840–41 and 1846; Stokes’ theoretical justification in 1845' },
         { source: 'wikipedia-reynolds-number', locator: 'Flow in a pipe', claim: 'laminar flow occurs when Re_D < 2300' },
+        { source: 'wikidata', locator: 'Q62726, Q550943 (P569, P570)', claim: 'life dates (Hagen 1797 – 1884; Poiseuille 1797 – 1869)' },
       ],
     },
     limits: {

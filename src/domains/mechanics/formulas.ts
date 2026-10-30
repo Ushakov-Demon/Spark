@@ -93,6 +93,12 @@ export const pulleyForce = (load: number, ropes: number, movingWeight = 0): numb
 /** The rope pulled to lift the load by h: every supporting section shortens by h, so s = n·h. */
 export const ropeTravel = (height: number, ropes: number): number => height * ropes;
 
+/**
+ * The lifting force of a balloon (of a body lighter than the air about it): the air's buoyant force on its volume less
+ * the weight of its gas and its shell, F = (ρ_air − ρ_gas)·g·V − m_shell·g. Below zero — it does not rise.
+ */
+export const liftingForce = (airDensity: number, gasDensity: number, g: number, volume: number, shellMass: number): number => (airDensity - gasDensity) * g * volume - shellMass * g;
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

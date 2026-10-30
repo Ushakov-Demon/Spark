@@ -6,6 +6,7 @@ import type { SourcedValue } from '../knowledge/types.js';
  */
 export const ATOMIC_WEIGHTS = {
   H: 1.008,
+  He: 4.0026,
   C: 12.011,
   N: 14.007,
   O: 15.999,

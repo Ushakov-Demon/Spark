@@ -1,3 +1,4 @@
+import { COMPONENTS } from '../../components/index.js';
 import { MATERIALS } from './materials.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
@@ -34,7 +35,8 @@ const sv = (value: number, unit: string, conditions: string, citations: SourcedV
 });
 
 export const GAS_CONSTANT = sv(8.31446261815324, 'J/(K·mol)', 'exact (SI 2019)', [{ source: 'wikipedia-density-of-air', locator: 'Dry air: molar gas constant', conditions: '—', value: 8.31446261815324 }], 'single-source', 'Exact by definition of the SI units.');
-export const AIR_DENSITY = sv(1.2041, 'kg/m³', 'dry air, 20 °C, 101.325 kPa', [{ source: 'wikipedia-density-of-air', locator: 'Dry air at 20 °C', conditions: '20 °C, 101.325 kPa', value: 1.2041 }], 'single-source', 'Taken constant; colder air is denser.');
+/** The air's density, taken constant here (colder air is denser): the air's own, in the catalogue. */
+export const AIR_DENSITY = COMPONENTS.air.phases.gas!.density!;
 /** Le^(2/3) for water vapour in air; Le ≈ 0.85. */
 export const LEWIS_FACTOR = sv(0.9, '', 'water vapour in air', [{ source: 'spark', locator: 'estimate', conditions: 'Le ≈ 0.8–0.9', range: [0.86, 0.93] }], 'estimate', 'Lewis number of water vapour in air is close to 1; the analogy itself is an approximation for a still surface.');
 

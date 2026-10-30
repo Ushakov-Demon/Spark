@@ -1,6 +1,7 @@
 import type { LawSpec, Person } from '../../knowledge/types.js';
 
 /** Dates verified against Wikidata (P569/P570) on 2026-10-11. */
+const CLAPEYRON: Person = { name: { uk: 'Бенуа Поль Еміль Клапейрон', en: 'Benoît Paul Émile Clapeyron' }, born: 1799, died: 1864, wikidata: 'Q313551' };
 const NEWTON: Person = { name: { uk: 'Ісаак Ньютон', en: 'Isaac Newton' }, born: 1643, died: 1727, wikidata: 'Q935' };
 const FOURIER: Person = { name: { uk: 'Жан Батист Жозеф Фур’є', en: 'Joseph Fourier' }, born: 1768, died: 1830, wikidata: 'Q8772' };
 const BLACK: Person = { name: { uk: 'Джозеф Блек', en: 'Joseph Black' }, born: 1728, died: 1799, wikidata: 'Q272512' };
@@ -430,5 +431,25 @@ export const THERMAL_LAWS: readonly LawSpec[] = [
       school: { uk: 'Теплота розчинення — теплота, що поглинається або виділяється під час розчинення моля речовини: Q = n·ΔH. Її знак залежить від того, що переважає — руйнування кристала (енергія витрачається) чи гідратація йонів (енергія виділяється).', en: 'The heat of solution is the heat taken in or given off when a mole of a substance dissolves: Q = n·ΔH. Its sign depends on which wins — breaking the crystal (energy taken) or hydrating the ions (energy given).' },
     },
     history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення фізичної величини.', en: 'This is the definition of a quantity.' } }, citations: [] },
+  },
+  {
+    id: 'ideal-gas',
+    kind: 'law',
+    name: { uk: 'Рівняння стану ідеального газу', en: 'The ideal gas law' },
+    statement: {
+      novice: { uk: 'Тиск, об’єм і температура газу пов’язані між собою: нагрітий газ розширюється й стає легшим.', en: 'A gas’s pressure, volume and temperature are bound together: a heated gas expands and gets lighter.' },
+      school: { uk: 'p·V = (m/M)·R·T, або для густини ρ = p·M/(R·T): за того самого тиску газ тим густіший, що важчі його молекули й що він холодніший.', en: 'p·V = (m/M)·R·T, or for the density ρ = p·M/(R·T): at the same pressure a gas is the denser, the heavier its molecules and the colder it is.' },
+    },
+    history: {
+      people: [CLAPEYRON],
+      role: 'discovered',
+      when: { uk: '1834', en: '1834' },
+      story: { school: { uk: 'Рівняння вперше записав французький інженер і фізик Еміль Клапейрон 1834 року.', en: 'The equation was first stated by the French engineer and physicist Émile Clapeyron in 1834.' } },
+      citations: [
+        { source: 'wikipedia-ideal-gas-law', locator: 'lead', claim: 'first stated by Benoît Paul Émile Clapeyron in 1834; p = ρ·R_specific·T, R_specific = R/M' },
+        { source: 'wikidata', locator: 'Q313551 (P569, P570)', claim: 'life dates (1799 – 1864)' },
+      ],
+    },
+    limits: { school: { uk: 'Добре справджується для більшості газів за звичайних умов; гірше — під великим тиском і близько до зрідження.', en: 'It holds well for most gases under ordinary conditions; worse under high pressure and near liquefying.' } },
   },
 ];

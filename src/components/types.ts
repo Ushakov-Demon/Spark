@@ -172,6 +172,8 @@ export interface Component {
   readonly formula?: string;
   /** Atoms per formula unit; molar mass is computed from it with standard atomic weights. */
   readonly composition?: Readonly<Partial<Record<ElementSymbol, number>>>;
+  /** Molar mass, kg/mol, for a mixture of a known make-up (air) — a pure substance has it from its composition. */
+  readonly molarMass?: SourcedValue;
   /** For materials with a variable composition: main parts, mass fractions (approximate, for explanations). */
   readonly madeOf?: readonly { readonly part: LocalizedText; readonly fraction?: number }[];
   /** Wikidata item, e.g. 'Q283'. */

@@ -1,4 +1,5 @@
 import type { Component } from './types.js';
+import { cite, sv } from './sourced.js';
 
 export const AIR = {
   id: 'air',
@@ -7,9 +8,11 @@ export const AIR = {
   name: { uk: 'Повітря', en: 'Air' },
   gender: 'n',
   madeOf: [{ part: { uk: 'азот', en: 'nitrogen' }, fraction: 0.755 }, { part: { uk: 'кисень', en: 'oxygen' }, fraction: 0.231 }, { part: { uk: 'аргон', en: 'argon' }, fraction: 0.013 }],
+  molarMass: sv(0.0289644, 'kg/mol', 'dry air', 'single-source', 0.001, [cite('wikipedia-barometric-formula', 'U.S. Standard Atmosphere: M₀ = 28.9644 kg/kmol', 'dry air', 0.0289644)], 'The molar mass of dry air the standard atmosphere uses.'),
   stateAtRoom: 'gas',
   phases: {
     gas: {
+      density: sv(1.2041, 'kg/m³', 'dry air, 20 °C, 101.325 kPa', 'single-source', 0.001, [cite('wikipedia-density-of-air', 'Dry air at 20 °C', '20 °C, 101.325 kPa', 1.2041)], 'At other temperatures and pressures — by the ideal gas law.'),
       specificHeat: {
         value: 1012,
         unit: 'J/(kg·K)',
