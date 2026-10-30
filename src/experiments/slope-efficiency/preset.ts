@@ -20,7 +20,10 @@ export const preset_slope_efficiency: Preset = varied(
     choicesAt: 'end',
     answerOnBoard: ['eta:'],
     formulas: ['mechanics.efficiency', 'mechanics.weight'],
-    programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 2', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 2. Визначення ККД простого механізму.' }],
+    programs: [
+      { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 4. Механічна робота, потужність, енергія', match: 'same', quote: 'визначення: … коефіцієнту корисної дії; ККД простого механізму' },
+      { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 2', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 2. Визначення ККД простого механізму.' },
+    ],
     expect: 'reached',
   },
   {

@@ -28,7 +28,10 @@ export const preset_lever_moments: Preset = {
   choicesAt: 'end',
   answerOnBoard: ['M1:', 'M2:'],
   formulas: ['mechanics.moment', 'mechanics.weight'],
-  programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 1', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 1. Вивчення умови рівноваги важеля.' }],
+  programs: [
+    { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 4. Механічна робота, потужність, енергія', match: 'same', quote: 'Прості механізми. Важіль. Умова рівноваги важеля.' },
+    { program: 'ua-nus-2023-kreminskyi', grade: 8, item: 'ЛР № 1', topic: 'Тема 1. Момент сили. Механічна робота та енергія', match: 'same', quote: '№ 1. Вивчення умови рівноваги важеля.' },
+  ],
   expect: 'reached',
 };
 
