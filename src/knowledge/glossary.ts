@@ -26,6 +26,11 @@ export interface Term {
   readonly source?: string;
   /** A photograph of it (a source too): linked beside the source. */
   readonly photo?: string;
+  /**
+   * A reference of an experiment's story (a person, a map, an event — not a physics term): footnoted where it appears,
+   * but not listed in the glossary.
+   */
+  readonly reference?: boolean;
 }
 
 const t = (id: string, uk: string, en: string, stemsUk: string[], stemsEn: string[], textUk: string, textEn: string): Term => ({ id, name: { uk, en }, stems: { uk: stemsUk, en: stemsEn }, text: { uk: textUk, en: textEn } });
@@ -141,13 +146,19 @@ export const GLOSSARY: readonly Term[] = [
     'Scales where an electromagnet takes the place of the weight: the body’s weight is balanced by the force of a magnet on a coil carrying a current, and from the current and the voltage, with the Planck constant known, the mass is worked out. Bryan Kibble proposed the principle in 1975; since 2019 such balances realise the kilogram.'), source: 'wikipedia-kibble-balance' },
   { ...t('pale-blue-dot', '«Блідо-блакитна цятка»', 'Pale Blue Dot', ['блакитна цятка', 'блідо-блакитна цятка', 'pale blue dot'], ['pale blue dot'],
     'Знімок Землі, який зонд «Вояджер-1» зробив 14 лютого 1990 року з відстані понад 6 мільярдів кілометрів — за ідеєю астронома Карла Сагана. Земля на ньому займає 0,12 пікселя: крихітна цятка в промені розсіяного сонячного світла.',
-    'The picture of the Earth that the Voyager 1 probe took on 14 February 1990 from over 6 billion kilometres — on the astronomer Carl Sagan’s idea. The Earth fills 0.12 of a pixel in it: a tiny dot in a beam of scattered sunlight.'), source: 'wikipedia-pale-blue-dot', photo: 'nasa-pale-blue-dot-photo' },
+    'The picture of the Earth that the Voyager 1 probe took on 14 February 1990 from over 6 billion kilometres — on the astronomer Carl Sagan’s idea. The Earth fills 0.12 of a pixel in it: a tiny dot in a beam of scattered sunlight.'), source: 'wikipedia-pale-blue-dot', photo: 'nasa-pale-blue-dot-photo', reference: true },
   { ...t('hindenburg', '«Гінденбург»', 'The Hindenburg', ['гінденбург'], ['hindenburg'],
     'Пасажирський дирижабль, наповнений воднем. 6 травня 1937 року під час посадки в Лейкгерсті (США) він спалахнув і згорів приблизно за пів хвилини.',
-    'A passenger airship filled with hydrogen. On 6 May 1937, landing at Lakehurst (USA), it caught fire and burned in about half a minute.'), source: 'wikipedia-hindenburg-disaster', photo: 'commons-hindenburg-photo' },
+    'A passenger airship filled with hydrogen. On 6 May 1937, landing at Lakehurst (USA), it caught fire and burned in about half a minute.'), source: 'wikipedia-hindenburg-disaster', photo: 'commons-hindenburg-photo', reference: true },
+  { ...t('beauplan', 'Гійом Левассер де Боплан', 'Guillaume Le Vasseur de Beauplan', ['боплан'], ['beauplan'],
+    'Французько-польський картограф, інженер і архітектор (бл. 1600 – 1673). Автор «Генеральної карти України» (1648) і книжки «Опис України» (1660).',
+    'A French-Polish cartographer, engineer and architect (c. 1600 – 1673). The author of the «General Map of Ukraine» (1648) and of the book «Description d’Ukranie» (1660).'), source: 'wikipedia-beauplan', reference: true },
+  { ...t('beauplan-map', 'Генеральна карта України Боплана', 'Beauplan’s General Map of Ukraine', ['генеральн* карт*'], ['general map of'],
+    'Карта Гійома де Боплана 1648 року — «Генеральна карта Дикого Поля, у простій мові — України» — з докладно позначеними кордонами. Згодом Віллем Гондіус вигравіював дві карти Боплана — у масштабах 1 : 452 000 і 1 : 1 800 000.',
+    'Guillaume de Beauplan’s map of 1648 — the «General Map of the Wild Fields, in common speech Ukraine» — with its borders drawn in detail. Later Willem Hondius engraved two of Beauplan’s maps — at scales of 1 : 452,000 and 1 : 1,800,000.'), source: 'wikipedia-beauplan', reference: true },
   { ...t('led-zeppelin', 'Led Zeppelin', 'Led Zeppelin', ['led zeppelin'], ['led zeppelin'],
     'Рок-гурт. На обкладинці його першого альбому (1969) — малюнок Джорджа Гарді за фотографією палаючого «Гінденбурга», яку зробив Сем Шир 6 травня 1937 року. А сама назва — жарт: «злетить, як свинцевий дирижабль» (lead — свинець).',
-    'A rock band. The cover of its first album (1969) is George Hardie’s drawing of Sam Shere’s photograph of the burning Hindenburg, taken on 6 May 1937. The name itself is a joke: “it would go over like a lead balloon”.'), source: 'wikipedia-led-zeppelin-album' },
+    'A rock band. The cover of its first album (1969) is George Hardie’s drawing of Sam Shere’s photograph of the burning Hindenburg, taken on 6 May 1937. The name itself is a joke: “it would go over like a lead balloon”.'), source: 'wikipedia-led-zeppelin-album', reference: true },
   t('density', 'Густина', 'Density', ['густин'], ['density'],
     'Маса одиниці об’єму речовини: ρ = m/V. Тіло густіше за рідину тоне, рідше — спливає.',
     'The mass of a unit volume of a substance: ρ = m/V. A body denser than the liquid sinks, a less dense one floats.'),

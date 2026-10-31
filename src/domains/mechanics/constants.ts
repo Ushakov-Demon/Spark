@@ -77,3 +77,14 @@ export const SOLID_BALL_INERTIA: SourcedValue = {
   citations: [{ source: 'wikipedia-rolling', locator: 'with the List of moments of inertia: a solid sphere I = 2/5·m·r²', conditions: 'uniform solid sphere', value: 0.4 }],
   note: 'Exact for a uniform solid ball.',
 };
+
+/** The Earth's mean radius, m (IUGG): the ball the distances between places are taken on. */
+export const EARTH_MEAN_RADIUS: SourcedValue = {
+  value: 6_371_008.8,
+  unit: 'm',
+  conditions: 'IUGG arithmetic mean radius',
+  verification: 'single-source',
+  tolerance: 0.0001,
+  citations: [{ source: 'wikipedia-earth-radius', locator: 'IUGG arithmetic mean radius R₁ = 6,371.0087714 km', conditions: 'mean', value: 6_371_008.8 }],
+  note: 'The Earth is a little flattened: distances on a ball of this radius are right within about half a per cent.',
+};

@@ -1627,7 +1627,9 @@ function renderVary() {
       if (c.kind === 'place') {
         const pl = parsePlace(vals[c.id]);
         const example = vals[c.id] === c.value || vals[c.id] === c.en;
-        return `<label class="vary-item vary-place">${label}<input type="text" data-vary-place="${c.id}" list="vary-places" value="${escAttr(pl?.name ?? '')}" placeholder="${escAttr(u.placeHint)}" autocomplete="off" spellcheck="false"/><datalist id="vary-places"></datalist></label><span class="vary-note muted" data-place-note="1">${example ? u.placeExample : ''}</span><span class="vary-credit muted">${u.placeCredit}</span>`;
+        // (Several cities share one list of suggestions and one credit, after the last of them.)
+        const last = chosen.vary!.controls.filter((x) => x.kind === 'place').pop() === c;
+        return `<label class="vary-item vary-place">${label}<input type="text" data-vary-place="${c.id}" list="vary-places" value="${escAttr(pl?.name ?? '')}" placeholder="${escAttr(u.placeHint)}" autocomplete="off" spellcheck="false"/></label><span class="vary-note muted" data-place-note="${c.id}">${example ? u.placeExample : ''}</span>${last ? `<datalist id="vary-places"></datalist><span class="vary-credit muted">${u.placeCredit}</span>` : ''}`;
       }
       // A number with units: the number in the unit shown, and the unit to choose.
       const inUnit = c.kind === 'number' ? varyUnitOf(c, Number(vals[c.id])) : undefined;
@@ -1685,7 +1687,7 @@ async function choosePlace(el: HTMLInputElement, id: string) {
   if (!presetGiven) return;
   const text = el.value.trim();
   const value = placeFound.get(text) ?? (await searchPlaces(text, locale))[0]?.value;
-  const note = $('#vary').querySelector<HTMLElement>('[data-place-note]');
+  const note = $('#vary').querySelector<HTMLElement>(`[data-place-note="${id}"]`);
   if (!value) {
     if (note) note.textContent = t().placeNone;
     return;

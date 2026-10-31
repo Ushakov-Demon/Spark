@@ -81,7 +81,7 @@ export function installFootnotes(locale: () => Locale, glossary: (id: string) =>
     const t = termById(el.dataset['term'] ?? '', LAB_GLOSSARY);
     if (!t) return;
     current = el;
-    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p>${termSourceHtml(t.source, locale())}${termSourceHtml(t.photo, locale(), true)}<a href="${glossary(t.id)}" class="term-more">${ALL_TERMS[locale()]}</a>`;
+    card.innerHTML = `<strong>${tr(t.name, locale())}</strong><p>${tr(t.text, locale())}</p>${termSourceHtml(t.source, locale())}${termSourceHtml(t.photo, locale(), true)}${t.reference ? '' : `<a href="${glossary(t.id)}" class="term-more">${ALL_TERMS[locale()]}</a>`}`;
     card.hidden = false;
     const r = el.getBoundingClientRect();
     const w = Math.min(320, window.innerWidth - 24);

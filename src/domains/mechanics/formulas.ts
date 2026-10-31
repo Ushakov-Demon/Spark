@@ -99,6 +99,18 @@ export const ropeTravel = (height: number, ropes: number): number => height * ro
  */
 export const liftingForce = (airDensity: number, gasDensity: number, g: number, volume: number, shellMass: number): number => (airDensity - gasDensity) * g * volume - shellMass * g;
 
+/** A map or a plan at a scale of 1 : N: a length on it times N is the length on the ground, L = l·N. */
+export const groundDistance = (onMap: number, scaleDenominator: number): number => onMap * scaleDenominator;
+/**
+ * The shortest way between two places along the Earth's surface (a ball of radius R), by their latitudes and longitudes
+ * in degrees: the haversine formula.
+ */
+export const greatCircleDistance = (lat1: number, lon1: number, lat2: number, lon2: number, radius: number): number => {
+  const rad = Math.PI / 180;
+  const a = Math.sin(((lat2 - lat1) * rad) / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lon2 - lon1) * rad) / 2) ** 2;
+  return 2 * radius * Math.asin(Math.min(1, Math.sqrt(a)));
+};
+
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 

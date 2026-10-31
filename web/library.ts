@@ -86,7 +86,8 @@ const other = (l: Locale): Locale => (l === 'uk' ? 'en' : 'uk');
 /** Glossary: alphabetical, a letter bar on top; each term also named in the other language. */
 function glossaryHtml(c: Ctx): string {
   const u = LIBRARY_UI[c.locale];
-  const terms = [...LAB_GLOSSARY].sort((a, b) => tr(a.name, c.locale).localeCompare(tr(b.name, c.locale), c.locale));
+  // (A story's references are footnoted where they appear, not listed here.)
+  const terms = LAB_GLOSSARY.filter((t) => !t.reference).sort((a, b) => tr(a.name, c.locale).localeCompare(tr(b.name, c.locale), c.locale));
   const letters = [...new Set(terms.map((x) => tr(x.name, c.locale)[0]!.toUpperCase()))];
   const bar = `<nav class="lib-letters">${letters.map((l) => `<a href="#letter-${encodeURIComponent(l)}">${esc(l)}</a>`).join('')}</nav>`;
   const groups = letters
@@ -163,7 +164,7 @@ function equipmentHtml(c: Ctx): string {
 }
 
 const COUNT: Record<LibraryPage, () => number> = {
-  glossary: () => LAB_GLOSSARY.length,
+  glossary: () => LAB_GLOSSARY.filter((t) => !t.reference).length,
   substances: () => Object.keys(SUBSTANCES).length,
   equipment: () => EQUIPMENT.length,
 };

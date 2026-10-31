@@ -44,6 +44,7 @@ const UA_KINETIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', 
 const UA_GEARS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Зубчасті передачі, шестірні.' }];
 const UA_SIMPLE_MACHINES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'моделювання й конструювання: простих механізмів' }];
 const UA_LIFT: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'дії виштовхувальної й піднімальної сили' }];
+const UA_MAPS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання: … відстаней на планах і картах' }];
 const UA_HYDROSTATIC: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }];
 const UA_COMMUNICATING: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Сполучені посудини.' }];
 const UA_ATMOSPHERE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'вимірювання й визначення: атмосферного … тиску' }];
@@ -995,6 +996,56 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.liftingForce,
     examples: [{ args: [1.2041, 0.1664, 9.80665, 0.014137, 0.003], expected: 0.1144, note: 'a 30 cm helium balloon, a 3 g shell' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.map-scale',
+    law: 'map-scale',
+    title: { uk: 'Відстань за масштабом', en: 'A distance by the scale' },
+    latex: 'L = l \\cdot N',
+    plain: 'L = l · N',
+    argSymbols: ['l', 'N'],
+    resultSymbol: 'L',
+    variables: {
+      L: { name: { uk: 'відстань на місцевості', en: 'distance on the ground' }, unit: 'm' },
+      l: { name: { uk: 'відстань на карті', en: 'distance on the map' }, unit: 'm' },
+      N: { name: { uk: 'знаменник масштабу 1 : N', en: 'the scale’s denominator 1 : N' }, unit: '1' },
+    },
+    curriculum: UA_MAPS,
+    explanation: {
+      novice: { uk: 'Масштаб 1 : 1 000 000 означає: 1 см на карті — 1 000 000 см, тобто 10 км на місцевості.', en: 'A scale of 1 : 1,000,000 means 1 cm on the map is 1,000,000 cm — 10 km on the ground.' },
+      school: { uk: 'Карта зменшує все в N разів, тож відстань на місцевості L = l·N. Що дрібніший масштаб (більше N), то грубіше: міліметр лінійки — це N міліметрів землі.', en: 'A map makes everything N times smaller, so the distance on the ground L = l·N. The smaller the scale (the bigger N), the rougher: a millimetre of the ruler is N millimetres of ground.' },
+    },
+    compute: f.groundDistance,
+    examples: [{ args: [0.234, 2_000_000], expected: 468_000, note: '23.4 cm at 1 : 2,000,000' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.great-circle',
+    law: 'map-scale',
+    title: { uk: 'Відстань між містами по поверхні Землі', en: 'The distance between towns over the Earth' },
+    latex: 'L = 2R \\arcsin\\sqrt{\\sin^2\\tfrac{\\Delta\\varphi}{2} + \\cos\\varphi_1 \\cos\\varphi_2 \\sin^2\\tfrac{\\Delta\\lambda}{2}}',
+    plain: 'L = 2R·arcsin √(sin²(Δφ/2) + cos φ₁·cos φ₂·sin²(Δλ/2))',
+    argSymbols: ['φ₁', 'λ₁', 'φ₂', 'λ₂', 'R'],
+    resultSymbol: 'L',
+    variables: {
+      L: { name: { uk: 'найкоротша відстань по поверхні', en: 'shortest distance over the surface' }, unit: 'm' },
+      'φ₁': { name: { uk: 'широта першого місця', en: 'latitude of the first place' }, unit: '°' },
+      'λ₁': { name: { uk: 'довгота першого місця', en: 'longitude of the first place' }, unit: '°' },
+      'φ₂': { name: { uk: 'широта другого місця', en: 'latitude of the second place' }, unit: '°' },
+      'λ₂': { name: { uk: 'довгота другого місця', en: 'longitude of the second place' }, unit: '°' },
+      R: { name: { uk: 'радіус Землі', en: 'radius of the Earth' }, unit: 'm' },
+    },
+    curriculum: [],
+    beyondCurriculum: { uk: 'Поза шкільною програмою: так відстань між містами рахують навігатори й авіакомпанії.', en: 'Beyond the school course: this is how navigators and airlines reckon the distance between towns.' },
+    explanation: {
+      novice: { uk: 'Земля кругла, тож найкоротший шлях між містами — дуга на кулі.', en: 'The Earth is round, so the shortest way between towns is an arc on the ball.' },
+      school: { uk: 'За широтами й довготами двох місць знаходять кут між ними з центру Землі, а дуга — це кут, помножений на радіус.', en: 'From two places’ latitudes and longitudes one finds the angle between them at the Earth’s centre; the arc is that angle times the radius.' },
+    },
+    compute: f.greatCircleDistance,
+    examples: [{ args: [50.45, 30.5233, 49.8425, 24.03222, 6_371_008.8], expected: 467286.96164505347, note: 'Kyiv — Lviv' }],
     textSource: 'spark',
     reviewed: false,
   }),

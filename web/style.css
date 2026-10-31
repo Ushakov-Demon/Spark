@@ -1026,6 +1026,8 @@ footer .library-links a { color: var(--accent); }
 .vary-title { font-weight: 600; color: var(--muted); }
 .vary-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .vary-item input { width: 4.2em; min-height: 30px; padding: 3px 6px; }
+/* A number put in freely may be long (a map's 1 : 10 000 000): its field fits it. */
+.vary-item input[type='number'][step='any'] { width: 7.5em; }
 .vary-item select { min-height: 30px; padding: 3px 6px; }
 .vary-place input { width: 11em; }
 .vary-note { font-size: 0.85rem; }

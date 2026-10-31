@@ -561,4 +561,14 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: { uk: 'Так — без тертя в осі блока й з невагомою мотузкою; вагу рухомого блока доводиться піднімати разом із вантажем.', en: 'So — with no friction in the pulley’s axle and a weightless rope; the movable pulley’s own weight has to be lifted with the load.' },
     },
   },
+  {
+    id: 'map-scale',
+    kind: 'definition',
+    name: { uk: 'Масштаб', en: 'Scale' },
+    statement: {
+      novice: { uk: 'Масштаб показує, у скільки разів усе на карті чи плані менше, ніж насправді.', en: 'The scale tells how many times smaller everything on a map or a plan is than in reality.' },
+      school: { uk: 'Масштаб 1 : N — відношення відстані на карті до відстані на місцевості. Що більше N, то дрібніший масштаб і то менше подробиць (і точності) на карті.', en: 'A scale of 1 : N is the ratio of a distance on the map to the distance on the ground. The bigger N, the smaller the scale and the fewer details (and the less precision) on the map.' },
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: { uk: 'Це означення.', en: 'This is a definition.' } }, citations: [] },
+  },
 ];
