@@ -4399,10 +4399,35 @@ $<HTMLInputElement>('#search').addEventListener('input', (e) => {
   if (shelfTab === 'experiments') buildPresets();
 });
 
-// A shadow under the experiment's bar once it sticks to the top of the screen.
+// The experiment's bar sticks to the top of the screen with a shadow; scrolled on down it folds to one line (the
+// title and the buttons) so as not to hide the board, and a scroll back up unfolds it.
 {
   const head = document.querySelector<HTMLElement>('.kitchen-head');
-  if (head) window.addEventListener('scroll', () => head.classList.toggle('stuck', head.getBoundingClientRect().top <= 0.5 && window.scrollY > 0), { passive: true });
+  let lastY = window.scrollY;
+  // How far the page has gone one way in a row (a scroll comes in many small steps).
+  let run = 0;
+  if (head)
+    window.addEventListener(
+      'scroll',
+      () => {
+        const y = window.scrollY;
+        const dy = y - lastY;
+        lastY = y;
+        run = Math.sign(dy) === Math.sign(run) ? run + dy : dy;
+        const stuck = head.getBoundingClientRect().top <= 0.5 && y > 0;
+        head.classList.toggle('stuck', stuck);
+        // (A few pixels either way are not a direction: the bar does not flicker on a trembling scroll.)
+        const fold = stuck && (run > 12 || (head.classList.contains('compact') && run >= -12));
+        if (fold === head.classList.contains('compact')) return;
+        // Folding keeps the bar's room in the page (a margin under it), so the page below does not jump — which would
+        // read as a scroll back up and unfold it.
+        const before = head.offsetHeight;
+        head.style.marginBottom = '';
+        head.classList.toggle('compact', fold);
+        if (fold) head.style.marginBottom = `${parseFloat(getComputedStyle(head).marginBottom) + before - head.offsetHeight}px`;
+      },
+      { passive: true },
+    );
 }
 
 // Footnotes on terms (катод, розчинність…): the first mention in each text block is underlined, a tap shows the definition.

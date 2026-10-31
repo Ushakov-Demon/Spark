@@ -131,6 +131,13 @@ button.wide { width: 100%; }
 /* The experiment's title and its buttons ("Старт" first of all) stay in view while the page scrolls down to the Professor and below. */
 .kitchen-head { position: sticky; top: 0; z-index: 20; margin: -16px -16px 10px; padding: 12px 16px 10px; background: var(--card); border-radius: 14px 14px 0 0; }
 .kitchen-head.stuck { border-radius: 0 0 12px 12px; box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.35); }
+/* Folded while scrolling down: one line — the title (cut with «…») and the buttons; what stands on the table and the scales wait. */
+.kitchen-head { transition: padding 0.2s; }
+.kitchen-head.stuck.compact { flex-wrap: nowrap; align-items: center; padding-top: 6px; padding-bottom: 6px; }
+.kitchen-head.stuck.compact > div:first-child { min-width: 0; flex: 1 1 auto; }
+.kitchen-head.stuck.compact #setup-line, .kitchen-head.stuck.compact .weigh { display: none; }
+.kitchen-head.stuck.compact .exp-title-row { min-width: 0; }
+.kitchen-head.stuck.compact .exp-title-row h2 { font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kitchen-head .buttons { margin: 0; }
 .exp-title-row { display: flex; align-items: center; gap: 8px; }
 .exp-title-row h2 { margin: 0; }
@@ -845,10 +852,10 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .scene .furnace-in { fill: #3b2d28; stroke: #2a1f1b; stroke-width: 2; transition: fill 0.8s; }
 .scene .clay-triangle { fill: none; stroke: #e9e2d6; stroke-width: 4; stroke-linecap: round; }
 
-/* On a phone the stuck bar keeps only what runs the experiment: Start, Restart, the speed. */
+/* On a phone the bar folded keeps only what runs the experiment: Start, Restart, the speed. */
 @media (max-width: 700px) {
   .kitchen-head.stuck { padding-top: 8px; padding-bottom: 8px; }
-  .kitchen-head.stuck > div:first-child, .kitchen-head.stuck .weigh { display: none; }
+  .kitchen-head.stuck.compact > div:first-child, .kitchen-head.stuck .weigh { display: none; }
 }
 
 /* "About the project" and "Found a mistake?". */
