@@ -7,3 +7,7 @@ dist-web
 /*.png
 /*.mjs
 dist-offline
+
+# Local instructions for agents (kept out of the repository)
+AGENTS.md
+CLAUDE.md
