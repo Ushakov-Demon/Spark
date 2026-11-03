@@ -9,6 +9,7 @@
  * Scenario: heat water in a kettle, pour in cold water, switch the kettle off
  * and watch it cool. Then the engine explains what it computed.
  */
+import '../scripts/locales.js';
 import { createCommandRegistry, createSimulation, runExperiment, seconds, validateState } from '../src/core/index.js';
 import { celsius, kilograms } from '../src/core/units.js';
 import { createThermalSolver, THERMAL_COMMANDS, THERMAL_KNOWLEDGE, type ThermalCommand } from '../src/domains/thermal/index.js';

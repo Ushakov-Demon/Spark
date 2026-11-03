@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import { EARTH_MEAN_RADIUS } from '../../domains/mechanics/constants.js';
 import { greatCircleDistance } from '../../domains/mechanics/formulas.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import { measured, ruler, RULER_DIVISION } from '../../scenarios/bench-kit.js';
 import { parsePlace } from '../../scenarios/place.js';
 
@@ -24,27 +25,23 @@ export const mapCommand: CommandHandler<MapCommand> = {
   apply(state, c) {
     const a = parsePlace(c.from);
     const b = parsePlace(c.to);
-    if (!a || !b) return err({ uk: 'Обери два міста.', en: 'Choose two towns.' });
-    if (!(c.scale >= 1)) return err({ uk: 'Масштаб 1 : N — N не менше за 1.', en: 'A scale of 1 : N — N is at least 1.' });
+    if (!a || !b) return err(msg('map-scale-no-towns'));
+    if (!(c.scale >= 1)) return err(msg('map-scale-bad-scale'));
     const ground = greatCircleDistance(a.lat, a.lon, b.lat, b.lon, EARTH_MEAN_RADIUS.value);
-    if (ground < 1) return err({ uk: 'Це те саме місце — обери два різні міста.', en: 'That is the same place — choose two different towns.' });
+    if (ground < 1) return err(msg('map-scale-same-place'));
     const onMap = ground / c.scale;
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('ruler', 'length', ruler(onMap), onMap, { scale: c.scale, ground, division: RULER_DIVISION })] });
   },
 };
 
 /** 1 : 2 000 000, with the digits grouped. */
-export const scaleText = (n: number, uk: boolean): string => `1 : ${new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 0 }).format(n)}`;
+export const scaleText = (n: number, l: Locale): string => `1 : ${new Intl.NumberFormat(NUMBER_LOCALE[l], { maximumFractionDigits: 0 }).format(n)}`;
 const name = (v: string) => parsePlace(v)?.name ?? '?';
 
 export const MAP_TEXT: Record<MapCommand['type'], (c: MapCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.map': (x) => {
     const c = x as MapCommand;
-    const s = { uk: scaleText(c.scale, true), en: scaleText(c.scale, false) };
-    return {
-      say: { uk: `Карта масштабу ${s.uk}: приклади лінійку від ${name(c.from)} до ${name(c.to)}. Скільки міліметрів?`, en: `A map at ${s.en}: lay the ruler from ${name(c.from)} to ${name(c.to)}. How many millimetres?` },
-      button: { uk: `📏 Карта ${s.uk}`, en: `📏 The map at ${s.en}` },
-      plan: { uk: `виміряти на карті ${s.uk}`, en: `measure on the map at ${s.en}` },
-    };
+    const args = { scale: (l: Locale) => scaleText(c.scale, l), from: name(c.from), to: name(c.to) };
+    return { say: msg('map-scale-step-say', args), button: msg('map-scale-step-button', args), plan: msg('map-scale-step-plan', args) };
   },
 };

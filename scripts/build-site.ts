@@ -7,6 +7,7 @@
  *
  *   npm run web:build                       (the site's address: SPARK_SITE_URL=https://… npm run web:build)
  */
+import './locales.js';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { LOCALES, type Locale } from '../src/knowledge/i18n.js';

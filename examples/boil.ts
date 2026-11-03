@@ -8,6 +8,7 @@
  * Options: --liters, --start °C, --room °C, --pot steel|aluminium|iron, --pot-mass kg,
  *          --power W, --level, --lang uk|en, --full (whole report with laws and sources)
  */
+import '../scripts/locales.js';
 import { createCommandRegistry, createSimulation, entityId, runExperiment, seconds } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
 import {

@@ -1,3 +1,5 @@
+// The texts first: everything below may word a message as it loads.
+import './locales.js';
 import type { Subject } from '../src/knowledge/types.js';
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';

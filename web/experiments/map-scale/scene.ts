@@ -19,7 +19,6 @@ const Y0 = TABLE - 20 - H;
 
 function view({ last, command, plan, locale }: SceneContext): MapView {
   type Cmd = { from: string; to: string; scale: number };
-  const uk = locale === 'uk';
   const mc = command?.type === 'lab.map' ? (command as unknown as Cmd) : undefined;
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.map');
   const c = mc ?? (next?.kind === 'bench' ? (next.command as unknown as Cmd) : undefined);
@@ -31,7 +30,7 @@ function view({ last, command, plan, locale }: SceneContext): MapView {
   const n = Math.hypot(ex, ny) || 1;
   const r = mc && last ? readingsOf([last])[0]?.record : undefined;
   const onMap = r?.value ?? (c ? 0 : 0);
-  return { scale: c ? scaleText(c.scale, uk) : '', a: a.name, b: b.name, dx: ex / n, dy: -ny / n, onMap, ...(r ? { read: formatMeasured('length', r.value, 0.001, locale) } : {}) };
+  return { scale: c ? scaleText(c.scale, locale) : '', a: a.name, b: b.name, dx: ex / n, dy: -ny / n, onMap, ...(r ? { read: formatMeasured('length', r.value, 0.001, locale) } : {}) };
 }
 
 function svg(v: MapView): string {

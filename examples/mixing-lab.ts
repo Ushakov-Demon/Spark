@@ -10,6 +10,7 @@
  * Options: --cold kg, --cold-temp °C, --hot kg, --hot-temp °C, --pot aluminium|steel|glass,
  *          --pot-mass kg, --room °C, --wait s, --tol °C, --level, --lang uk|en, --full (whole report)
  */
+import '../scripts/locales.js';
 import {
   createCommandRegistry,
   createSimulation,

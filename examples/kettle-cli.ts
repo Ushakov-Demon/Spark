@@ -2,6 +2,7 @@
  * Console demo: boil a kettle.  Run with `npm run demo`.
  * Shows the engine working end-to-end without any UI.
  */
+import '../scripts/locales.js';
 import { createSimulation, entityId, seconds, toCelsius, validateState } from '../src/core/index.js';
 import { createThermalSolver, heatForTemperatureChange, isHeater, isThermalBody, MATERIALS } from '../src/domains/thermal/index.js';
 import { kettleScenario } from '../src/scenarios/index.js';

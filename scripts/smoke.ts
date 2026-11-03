@@ -9,6 +9,7 @@
  *
  * CHROME — the browser to drive (default /usr/bin/google-chrome).
  */
+import './locales.js';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readdirSync, readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
