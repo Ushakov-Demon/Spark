@@ -22,7 +22,7 @@ import {
 } from '../src/equipment/index.js';
 import { buildMeasuredReport, buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
 import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
-import { LEVEL_INFO, LEVELS, textFor, type Level } from '../src/knowledge/levels.js';
+import { textFor, type Level } from '../src/knowledge/levels.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
 import { getSource } from '../src/knowledge/sources.js';
 import {
@@ -176,10 +176,8 @@ let locale: Locale = (() => {
   const s = store.get('locale');
   return s && isLocale(s) ? s : browserLocale();
 })();
-let level: Level = (() => {
-  const s = store.get('level');
-  return s && (LEVELS as readonly string[]).includes(s) ? (s as Level) : 'school';
-})();
+/** The explanation's level: fixed for now — the experiments are not written per level yet, so the choice is hidden (docs/TODO.md). */
+const level: Level = 'school';
 
 
 // ---------- DOM helpers ----------
@@ -1960,7 +1958,6 @@ function render() {
   document.title = pageTitle();
   $('#title').textContent = u.title;
   $('#lbl-language').textContent = u.language;
-  $('#lbl-level').textContent = u.level;
   // A ready-made experiment is named: «2. Дослід: Як розтягується пружина?»
   $('#exp-title').textContent = preset ? `${u.experiment}: ${tr(preset.title, locale)}` : u.experiment;
   // The running experiment's page of the lab notebook, from its title.
@@ -3446,18 +3443,7 @@ function buildHeader() {
     renderSite();
     if ($('#report').innerHTML) explain();
   };
-  const lv = $<HTMLSelectElement>('#level');
-  lv.innerHTML = '';
-  for (const l of LEVELS) lv.append(el('option', { value: l, selected: l === level, title: tr(LEVEL_INFO[l].audience, locale) }, tr(LEVEL_INFO[l].name, locale)));
-  lv.onchange = () => {
-    level = lv.value as Level;
-    store.set('level', level);
-    buildShelf();
-    if (refTarget) openRef(refTarget);
-    renderLibrary(false);
-    renderAbout();
-    if ($('#report').innerHTML) explain();
-  };
+
 }
 
 function explain() {
