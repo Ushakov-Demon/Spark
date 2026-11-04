@@ -5,6 +5,7 @@ import type { SystemState } from '../core/state.js';
 import { getCurriculum } from '../knowledge/curricula.js';
 import { lifeYears, tr, type Locale } from '../knowledge/i18n.js';
 import { atLeast, LEVEL_INFO, textFor, type Level } from '../knowledge/levels.js';
+import { t as word } from '../knowledge/messages.js';
 import { getSource } from '../knowledge/sources.js';
 import { lawWhen, type FormulaSpec, type LawSpec } from '../knowledge/types.js';
 import { h, list, note, p, type Block } from './blocks.js';
@@ -177,8 +178,9 @@ function explainLaw<C extends Command>(
   }
 
   if (law.limits && atLeast(level, 'advanced')) out.push(p(`${m.limits}: ${t(textFor(law.limits, level))}`));
-  if (atLeast(level, 'expert') && history.citations.length) {
-    out.push(list(history.citations.map((c) => `${m.source}: ${getSource(c.source)?.title ?? c.source} [${c.locator}] — ${c.claim}`)));
+  if (history.citations.length) {
+    // At every level, folded: the sources would bury the law's text.
+    out.push({ kind: 'details', summary: word(locale, 'explain-sources', { n: history.citations.length }), blocks: [list(history.citations.map((c) => `${getSource(c.source)?.title ?? c.source} [${c.locator}] — ${c.claim}`))] });
   }
 
   for (const f of used) {

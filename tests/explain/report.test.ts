@@ -38,7 +38,7 @@ describe('experiment report', () => {
 
   it('expert: sources, numerics, energy residual, review status', () => {
     const t = report('expert');
-    expect(t).toContain('джерело:');
+    expect(t).toMatch(/Джерела \(\d+\)/);
     expect(t).toContain('explicit-euler');
     expect(t).toContain('Нев’язка балансу');
     expect(t).toContain('reviewed: false');

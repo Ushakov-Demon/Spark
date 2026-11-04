@@ -16,7 +16,6 @@ export interface ReportMessages {
   when: string;
   work: string;
   limits: string;
-  source: string;
   appliedTimes(count: number, objects: string): string;
   oneStep(time: string): string;
   oneStepIntro: string;
@@ -56,7 +55,6 @@ export const REPORT_MESSAGES: Readonly<Record<Locale, ReportMessages>> = {
     when: 'Коли',
     work: 'Праця',
     limits: 'Коли перестає працювати',
-    source: 'джерело',
     appliedTimes: (c, o) => `Застосовано ${c} разів; об’єкти: ${o}.`,
     oneStep: (t) => `Як обчислено один крок: момент ${t}`,
     oneStepIntro: 'Комп’ютер повторює такий розрахунок тисячі разів поспіль. Ось що він обчислив за один короткий крок:',
@@ -94,7 +92,6 @@ export const REPORT_MESSAGES: Readonly<Record<Locale, ReportMessages>> = {
     when: 'When',
     work: 'Work',
     limits: 'Where it stops working',
-    source: 'source',
     appliedTimes: (c, o) => `Applied ${c} times; objects: ${o}.`,
     oneStep: (t) => `How one step was computed: time ${t}`,
     oneStepIntro: 'The computer repeats this calculation thousands of times in a row. Here is what it computed in one short step:',
