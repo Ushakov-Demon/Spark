@@ -4,6 +4,7 @@ import { conic, radiusAt, reach } from '../../../src/domains/mechanics/orbit.js'
 import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { Channel, type Motion } from '../../motion.js';
+import { boom, splash, thud } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /**
@@ -76,6 +77,24 @@ const LANDS: readonly (readonly [number, number])[][] = [
   [[-0.56, -0.74], [-0.32, -0.82], [-0.36, -0.62], [-0.5, -0.58]],
 ];
 const CLOUDS: readonly (readonly [number, number, number])[] = [[-0.4, 0.3, 0.22], [0.1, 0.1, 0.18], [0.55, 0.45, 0.2], [-0.2, -0.55, 0.16], [0.65, -0.62, 0.14]];
+/** The polar caps as drawn: an ellipse at each pole, [centre y, half-width, half-height] in the unit circle. */
+const CAPS: readonly (readonly [number, number, number])[] = [[-1, 0.34, 0.07], [1, 0.4, 0.08]];
+/** Is this point of the unit circle in the drawn sea (not in a continent's outline, nor on the ice)? */
+function inSea(x: number, y: number): boolean {
+  const inside = (pts: readonly (readonly [number, number])[]) => {
+    let odd = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i]!;
+      const [xj, yj] = pts[j]!;
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) odd = !odd;
+    }
+    return odd;
+  };
+  return !LANDS.some(inside) && !CAPS.some(([cy, rx, ry]) => (x / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1);
+}
+/** Where a ball that came down `th` round from the top hits the picture: a little inside the rim, where the land is drawn. */
+const RIM = 0.97;
+
 /** A closed outline through the points, rounded (each corner smoothed through the midpoints). */
 function blob(pts: readonly (readonly [number, number])[], x: (u: number) => number, y: (u: number) => number): string {
   const mid = (a: readonly [number, number], b: readonly [number, number]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as const;
@@ -93,10 +112,11 @@ function earthSvg(cx: number, cy: number, r: number): string {
   const x = (u: number) => cx + u * r;
   const y = (u: number) => cy + u * r;
   const lands = LANDS.map((p) => `<path d="${blob(p, x, y)}" style="fill:url(#nc-land)"/>`).join('');
+  const caps = CAPS.map(([w, rx, ry]) => `<ellipse cx="${cx}" cy="${y(w)}" rx="${r * rx}" ry="${r * ry}" style="fill:#f3f7fa"/>`).join('');
   const clouds = CLOUDS.map(([u, w, s]) => `<ellipse cx="${x(u)}" cy="${y(w)}" rx="${s * r}" ry="${s * r * 0.32}" style="fill:rgba(255,255,255,0.55)"/>`).join('');
   return `<defs><radialGradient id="nc-sea" cx="0.36" cy="0.32" r="0.75"><stop offset="0" stop-color="#4f9de0"/><stop offset="0.7" stop-color="#1f5fa8"/><stop offset="1" stop-color="#0f2f5c"/></radialGradient><linearGradient id="nc-land" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f9c4a"/><stop offset="0.55" stop-color="#8a9a4c"/><stop offset="1" stop-color="#b89a5a"/></linearGradient><radialGradient id="nc-shade" cx="0.35" cy="0.3" r="0.8"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.45"/></radialGradient><clipPath id="nc-globe"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath></defs>`
     + `<circle cx="${cx}" cy="${cy}" r="${r * 1.04}" style="fill:rgba(140,200,255,0.25)"/>`
-    + `<g clip-path="url(#nc-globe)"><circle cx="${cx}" cy="${cy}" r="${r}" style="fill:url(#nc-sea)"/>${lands}<ellipse cx="${cx}" cy="${y(-1.0)}" rx="${r * 0.34}" ry="${r * 0.07}" style="fill:#f3f7fa"/><ellipse cx="${cx}" cy="${y(1.0)}" rx="${r * 0.4}" ry="${r * 0.08}" style="fill:#f3f7fa"/>${clouds}<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:url(#nc-shade)"/></g>`
+    + `<g clip-path="url(#nc-globe)"><circle cx="${cx}" cy="${cy}" r="${r}" style="fill:url(#nc-sea)"/>${lands}${caps}${clouds}<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:url(#nc-shade)"/></g>`
     + `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:none;stroke:rgba(170,215,255,0.7);stroke-width:1.2"/>`;
 }
 
@@ -173,13 +193,31 @@ function svg(v: CannonView): string {
   return `${earth}${paths}${mountain}${note}${read}`;
 }
 
-/** The ball flies its path: about three seconds. */
+/** The ball flies its path: about three seconds — a «пуух» as it leaves, a «бульк» in the sea or a «тук» on land as it comes down. */
 function motion(next: CannonView, draw: (v: CannonView) => void): Motion | null {
   if (!next.read) return null;
   const { read: _r, ...rest } = next;
   void _r;
   const clock = new Channel(0, 1, { kind: 'steady', speed: 1 / 3 }, 1e-6);
-  return { channels: [clock], frame: (done) => (done ? draw(next) : draw({ ...rest, along: clock.value })) };
+  const shot = next.shots[next.shots.length - 1];
+  let fired = false;
+  let fell = false;
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (!fired) {
+        fired = true;
+        boom();
+      }
+      if (done && !fell && shot?.outcome === OUTCOME.lands) {
+        fell = true;
+        if (inSea(RIM * Math.sin(shot.end), -RIM * Math.cos(shot.end))) splash();
+        else thud();
+      }
+      if (done) draw(next);
+      else draw({ ...rest, along: clock.value });
+    },
+  };
 }
 
 export const newtonCannonScene = defineScene({ kind: 'cannon', view, svg, motion });

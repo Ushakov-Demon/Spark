@@ -1,6 +1,6 @@
 /**
  * Sounds of the lab, synthesized in the browser (Web Audio) — no sound files.
- * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves.
+ * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down.
  * Off by the 🔇 button (remembered); browsers allow sound only after a click
  * or a key, which is always how these happen.
  */
@@ -40,13 +40,13 @@ function audio(): AudioContext | null {
   }
 }
 
-/** A water "plop": a short tone that rises fast (the bubble), a second smaller one, a little splash of noise. */
-export function plop(size = 1): void {
+/** A water "plop": a short tone that rises fast (the bubble), a second smaller one, a little splash of noise. `level` — how loud. */
+export function plop(size = 1, level = 0.35): void {
   const a = audio();
   if (!a) return;
   const t = a.currentTime;
   const out = a.createGain();
-  out.gain.value = 0.35;
+  out.gain.value = level;
   out.connect(a.destination);
   // Bigger bodies sound lower.
   const base = 260 / Math.max(0.6, Math.min(1.8, size));
@@ -115,6 +115,59 @@ export function hum(level: number, seconds?: number): void {
   }
   humming.out.gain.setTargetAtTime(0.05 + 0.1 * Math.min(1, level), t, 0.08);
   if (seconds) humOff = window.setTimeout(() => hum(0), seconds * 1000);
+}
+
+/**
+ * The sounds of a scene's event (a shot, a fall), a little louder than the background music (MUSIC_LEVEL): heard over
+ * it, not startling.
+ */
+const EVENT_LEVEL = 0.14;
+
+/** A cannon's «пуух»: a low thump falling in pitch under a burst of dull noise that dies away. */
+export function boom(): void {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime;
+  const out = a.createGain();
+  out.gain.value = EVENT_LEVEL;
+  out.connect(a.destination);
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(110, t);
+  o.frequency.exponentialRampToValueAtTime(38, t + 0.5);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(1, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+  o.connect(g).connect(out);
+  o.start(t);
+  o.stop(t + 0.65);
+  noise(a, out, t, 0.7, 380, 1.4);
+}
+
+/** A ball falling into the sea: a big, low «бульк». */
+export const splash = (): void => plop(1.8, EVENT_LEVEL);
+
+/** A ball falling on land: a dull «тук». */
+export function thud(): void {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime;
+  const out = a.createGain();
+  out.gain.value = EVENT_LEVEL;
+  out.connect(a.destination);
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(90, t);
+  o.frequency.exponentialRampToValueAtTime(50, t + 0.15);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(1, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+  o.connect(g).connect(out);
+  o.start(t);
+  o.stop(t + 0.25);
+  noise(a, out, t, 0.12, 900, 0.6);
 }
 
 /** Salt dissolving: a quiet fizz that fades. */
