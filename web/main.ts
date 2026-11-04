@@ -160,6 +160,9 @@ const phone = () => PHONE.matches;
 let drawerSettings = false;
 /** The page scrolls itself to the scene (a start or a step on a phone): the header stays away meanwhile. */
 let steering = false;
+/** How far (px) the scene's top is above the screen before the header may come back; how far a scroll up brings it. */
+const HEAD_AWAY = 40;
+const HEAD_SCROLL = 30;
 let foldedForStep = false;
 const browserLocale = (): Locale => (navigator.language.toLowerCase().startsWith('en') ? 'en' : 'uk');
 /** The page the address names (the site: /, /experiments/, /experiments/<id>/, the same under /en/). */
@@ -3967,8 +3970,12 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
     answerShown = p.id;
     goOnByItself();
   }
-  // On a phone the panel stands above the scene: go down to it.
-  if (phone()) toGame(() => {}, false);
+  // On a phone: the kitchen ready for the experiment — the scene, its step on the table, the panel folded to its tab.
+  if (phone()) {
+    $('.kitchen').classList.add('panel-folded');
+    renderGrip();
+    toGame(() => {}, false);
+  }
   else if (matchMedia('(max-width: 900px)').matches) $('.kitchen').scrollIntoView({ behavior: 'smooth' });
 }
 /** What a ready-made experiment puts into the vessel before the start (hot water, a block from boiling water). */
@@ -4396,16 +4403,26 @@ $('#rotate-go').onclick = () => {
     .then(() => orientation.lock?.('landscape'))
     .catch(() => {});
 };
-// The header folded over the scene comes back on a scroll up (with the experiment's name), and goes on a scroll down.
+// The header folded over the scene comes back on a scroll up away from it (with the experiment's name), and goes on a
+// scroll down — and whenever the scene is back at the screen's top. A scroll counts once it has gone some way one way
+// (Safari bounces and its bars move a few pixels at a time).
 {
   let lastY = window.scrollY;
+  let travel = 0;
+  const html = document.documentElement;
   window.addEventListener('scroll', () => {
     const y = window.scrollY;
-    // (The page's own scroll to the scene shows nothing.)
-    if (steering) lastY = y;
-    if (steering || Math.abs(y - lastY) < 6) return;
-    if (phone()) document.documentElement.classList.toggle('head-shown', y < lastY);
+    const dy = y - lastY;
     lastY = y;
+    // (The page's own scroll to the scene shows nothing.)
+    if (!phone() || steering) return void (travel = 0);
+    if ($('.kitchen').getBoundingClientRect().top > -HEAD_AWAY) {
+      html.classList.remove('head-shown');
+      return void (travel = 0);
+    }
+    travel = Math.sign(dy) === Math.sign(travel) ? travel + dy : dy;
+    if (travel < -HEAD_SCROLL) html.classList.add('head-shown');
+    else if (travel > HEAD_SCROLL / 3) html.classList.remove('head-shown');
   }, { passive: true });
 }
 // Scrolled away from the experiment (most of it off the screen): a button back up to it — on a phone, as a start

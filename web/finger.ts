@@ -17,6 +17,9 @@ export interface Finger {
   point(find: (() => Element | null) | null): void;
 }
 
+/** A target taller than a third of the screen: it is its beginning that is pointed at and scrolled to. */
+const tallTarget = (e: Element) => e.getBoundingClientRect().height > window.innerHeight / 3;
+
 export function createFinger(): Finger {
   const el = document.createElement('div');
   el.className = 'guide-finger';
@@ -29,18 +32,21 @@ export function createFinger(): Finger {
     const target = find?.();
     if (!target) return;
     const behavior: ScrollBehavior = moving() ? 'smooth' : 'auto';
+    // A tall one (the conclusion): its beginning to the top of the screen.
+    const tall = tallTarget(target);
     const panel = target.closest('.exp-panel-body');
-    if (!panel) return target.scrollIntoView({ behavior, block: 'center', inline: 'nearest' });
+    if (!panel) return target.scrollIntoView({ behavior, block: tall ? 'start' : 'center', inline: 'nearest' });
     const r = target.getBoundingClientRect();
     const p = panel.getBoundingClientRect();
-    panel.scrollBy({ top: r.top + r.height / 2 - (p.top + p.height / 2), behavior });
+    panel.scrollBy({ top: tall ? r.top - p.top - EDGE : r.top + r.height / 2 - (p.top + p.height / 2), behavior });
   };
   let frame = 0;
 
-  /** The finger at (x, y), pointing at the target's middle: the nearest of the four glyphs, turned by the rest of the angle. */
+  /** The finger at (x, y), pointing at the target's middle (at its beginning, when it is tall): the nearest of the four glyphs, turned by the rest of the angle. */
   const show = (x: number, y: number, r: DOMRect) => {
     el.hidden = false;
-    const angle = (Math.atan2(r.top + r.height / 2 - (y + SIZE / 2), r.left + r.width / 2 - (x + SIZE / 2)) * 180) / Math.PI;
+    const aimY = r.height > window.innerHeight / 3 ? r.top + EDGE : r.top + r.height / 2;
+    const angle = (Math.atan2(aimY - (y + SIZE / 2), r.left + r.width / 2 - (x + SIZE / 2)) * 180) / Math.PI;
     const quarter = Math.round(angle / 90);
     const dir: Direction = (['left', 'up', 'right', 'down', 'left'] as const)[quarter + 2]!;
     if (el.dataset['dir'] !== dir) {

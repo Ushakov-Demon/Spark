@@ -15,7 +15,7 @@ describe('the Professor’s bubble', () => {
     expect(pages.join(' ')).toBe(line);
   });
 
-  it('a sentence longer than a page is parted after its commas; one with none stays whole', () => {
+  it('a sentence longer than a page is parted after its commas; one with none — between its words', () => {
     const line = 'Щоразу виміряємо її масу (терезами: на скільки збільшилися покази) і об’єм (мензуркою: на скільки піднялася вода), подивимося, що з нею буде, і порівняємо її середню густину з густиною води.';
     const pages = bubblePages(line);
     expect(pages.length).toBe(2);
@@ -24,6 +24,9 @@ describe('the Professor’s bubble', () => {
     expect(pages[1]).toMatch(/^…/);
     expect(pages.join(' ').replaceAll('…', '')).toBe(line);
     const long = `${'дуже '.repeat(40)}довге речення.`;
-    expect(bubblePages(long)).toEqual([long]);
+    const parted = bubblePages(long);
+    expect(parted.length).toBeGreaterThan(1);
+    for (const p of parted) expect(p.length).toBeLessThanOrEqual(BUBBLE_PAGE);
+    expect(parted.join(' ').replaceAll('…', '')).toBe(long);
   });
 });

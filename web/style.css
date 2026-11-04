@@ -1139,6 +1139,10 @@ html.phone .top-exp:not(:empty) { display: block; margin: 0; font-weight: 600; f
 html.phone .brand { min-width: 0; }
 html.phone.playing header.top { position: fixed; top: 0; left: 0; right: 0; z-index: 65; background: var(--card); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); transform: translateY(-110%); transition: transform 0.25s ease; }
 html.phone.playing.head-shown header.top { transform: none; }
+/* Nothing to pan sideways (Safari lets the drawer folded off the screen be dragged in). */
+html.phone, html.phone body { overflow-x: clip; }
+/* Scrolled to by the finger: its beginning a little below the screen's top. */
+html.phone #quiz, html.phone #explain { scroll-margin-top: 16px; }
 html.phone .app { display: block; padding: 4px 6px 16px; }
 html.phone .console-fab, html.phone .console-dock { display: none; }
 /* The experiment's panel (main.ts moves all but the scene into it): in the flow when held upright (the lab asks to turn the phone then). */

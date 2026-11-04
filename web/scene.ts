@@ -17,6 +17,8 @@ import { play } from './motion.js';
 import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 import { BUBBLE_PAGE, BUBBLE_PAGE_PHONE, bubblePages } from './bubble.js';
+/** What a bubble takes besides its lines, px: its margin over the Professor, its padding, the page turn under the text, a gap at the top. */
+const BUBBLE_CHROME = 125;
 import { moving } from './prefs.js';
 
 // The drawings live in graphics/; the scene puts them together and moves the live parts.
@@ -149,7 +151,29 @@ export function createScene(): Scene {
   let saysLine: string | null = null;
   /** A phone's bubble is narrower: shorter pages, so the bubble stays inside the scene. */
   const phone = matchMedia('(max-width: 700px)');
+  /**
+   * A phone on its side: as many characters a page as the bubble holds above the Professor in this scene (a browser's
+   * bars make it lower), so that its top is never cut. Measured again only when the scene's size changes.
+   */
+  let room = { key: '', chars: BUBBLE_PAGE };
+  const pageRoom = () => {
+    const stage = root.querySelector<HTMLElement>('.scene-stage')!;
+    // (Not laid out yet — folded, or the page hidden: the phone's usual page meanwhile.)
+    if (!says.clientWidth || !profBox.offsetTop) return BUBBLE_PAGE_PHONE;
+    const key = `${stage.offsetHeight}:${profBox.offsetTop}:${says.clientWidth}`;
+    if (key === room.key) return room.chars;
+    const css = getComputedStyle(saysText);
+    const line = parseFloat(css.lineHeight) || 26;
+    const em = parseFloat(css.fontSize) || 16;
+    // Above the Professor, less the bubble's margin, padding, its foot (the page turn) and a gap under the scene's top.
+    const lines = Math.floor((profBox.offsetTop - BUBBLE_CHROME) / line);
+    // (A character is about 0.6 em wide on average with the spaces; words wrap whole, so a little less fits.)
+    const perLine = Math.max(10, Math.floor((says.clientWidth - 58) / (em * 0.6)));
+    room = { key, chars: Math.max(BUBBLE_PAGE_PHONE / 2, Math.min(BUBBLE_PAGE, lines * perLine)) };
+    return room.chars;
+  };
   let saysMax = 0;
+  let repaging: ResizeObserver | null = null;
   let saysPages: string[] = [];
   let saysAt = 0;
   let turnLabels = { next: '', back: '', fold: '', unfold: '' };
@@ -697,7 +721,7 @@ export function createScene(): Scene {
         chip.title = chip.ariaLabel = v.bubble.unfold;
         foldButton.title = foldButton.ariaLabel = v.bubble.fold;
       }
-      const max = phone.matches ? BUBBLE_PAGE_PHONE : BUBBLE_PAGE;
+      const max = phone.matches ? BUBBLE_PAGE_PHONE : document.documentElement.classList.contains('phone') ? pageRoom() : BUBBLE_PAGE;
       if (saysLine !== v.professor.says || saysMax !== max) {
         saysLine = v.professor.says;
         saysMax = max;
@@ -707,6 +731,20 @@ export function createScene(): Scene {
       showPage();
       says.hidden = !v.professor.says;
       chip.hidden = !folded || !v.professor.says;
+      if (!repaging) {
+        // The scene or the bubble resized (the phone turned, a browser's bar went, the bubble shown): its pages anew.
+        repaging = new ResizeObserver(() => {
+          if (!document.documentElement.classList.contains('phone') || phone.matches || !saysLine) return;
+          const m = pageRoom();
+          if (m === saysMax) return;
+          saysMax = m;
+          saysPages = bubblePages(saysLine, m);
+          saysAt = 0;
+          showPage();
+        });
+        repaging.observe(root.querySelector('.scene-stage')!);
+        repaging.observe(says);
+      }
   }
 }
 
