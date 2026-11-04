@@ -264,3 +264,16 @@ formula-mechanics-great-circle-r-name = radius of the Earth
 formula-mechanics-great-circle-mechanics-formulas-beyond-curriculum = Beyond the school course: this is how navigators and airlines reckon the distance between towns.
 formula-mechanics-great-circle-explanation-novice = The Earth is round, so the shortest way between towns is an arc on the ball.
 formula-mechanics-great-circle-explanation-school = From two places’ latitudes and longitudes one finds the angle between them at the Earth’s centre; the arc is that angle times the radius.
+formula-mechanics-rectangle-area = A rectangle’s area
+formula-mechanics-rectangle-area-s-name = the area
+formula-mechanics-rectangle-area-a-name = the length
+formula-mechanics-rectangle-area-b-name = the width
+formula-mechanics-rectangle-area-explanation-novice = A 6 cm by 4 cm rectangle is made of 4 rows of 6 squares of 1 cm × 1 cm — 24 cm² in all. That is why the area is the length times the width.
+formula-mechanics-rectangle-area-explanation-school = An area is how many unit squares a figure holds. A rectangle holds a·b of them; the unit of area is a square whose side is the unit of length: 1 m², 1 cm² = 0.0001 m². The ruler’s error (half a millimetre) is in each factor, so a short side gives a larger relative error.
+formula-mechanics-palette-area = A figure’s area by a palette
+formula-mechanics-palette-area-s-name = the figure’s area
+formula-mechanics-palette-area-whole-name = whole squares inside
+formula-mechanics-palette-area-cut-name = squares the edge cuts
+formula-mechanics-palette-area-square-name = one square’s area
+formula-mechanics-palette-area-explanation-novice = A palette is a transparent sheet ruled in squares. Lay it on the figure, count the squares wholly inside and those the edge cuts; a cut one is on average half inside, so take half of them.
+formula-mechanics-palette-area-explanation-school = S ≈ (N + n/2)·s₀: N whole squares, n cut by the edge, s₀ one square’s area. The error is only in the cut ones, and there are fewer of them against the whole ones when the squares are smaller — so the finer the palette, the more accurate (and the longer to count).

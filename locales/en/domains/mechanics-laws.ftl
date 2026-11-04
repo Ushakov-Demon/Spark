@@ -129,3 +129,7 @@ law-map-scale = Scale
 law-map-scale-statement-novice = The scale tells how many times smaller everything on a map or a plan is than in reality.
 law-map-scale-statement-school = A scale of 1 : N is the ratio of a distance on the map to the distance on the ground. The bigger N, the smaller the scale and the fewer details (and the less precision) on the map.
 law-map-scale-story-school = This is a definition.
+law-area = Area
+law-area-statement-novice = An area shows how much room a surface takes: how many squares of 1 cm × 1 cm (or 1 m × 1 m) fit on it.
+law-area-statement-school = An area S is how many unit squares a figure holds; its SI unit is 1 m². A rectangle’s S = a·b; a figure of irregular shape is measured with a palette: S ≈ (N + n/2)·s₀.
+law-area-story-school = This is a way of measuring.

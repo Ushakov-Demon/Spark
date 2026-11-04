@@ -196,13 +196,14 @@ export function readingText(r: MeasurementRecord, locale: 'uk' | 'en'): string {
   if (r.quantity === 'length') return formatMeasured('length', r.value, 0.001, locale);
   if (r.quantity === 'time') return formatMeasured('time', r.value, 0.01, locale);
   if (r.quantity === 'volume') return formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale);
+  if (r.quantity === 'area') return formatMeasured('area', r.value, r.inputs?.['division'] ?? 1e-6, locale);
   return formatMeasured('force', r.value, 0.1, locale);
 }
 
 /** A reading as an instrument shows it: "1 657 г", "62 мл", "0,6 Н"; null — out of range. */
 export function formatMeasured(quantity: MeasurementRecord['quantity'], value: number | null, division: number, locale: 'uk' | 'en'): string {
   if (value === null) return quantity === 'volume' ? (t(locale, 'measuring-format-measured')) : t(locale, 'measuring-format-measured-2');
-  const [k, unit] = quantity === 'mass' ? [1000, t(locale, 'unit-sym-g')] : quantity === 'volume' ? [1e6, t(locale, 'unit-sym-mL')] : quantity === 'length' ? [100, t(locale, 'unit-sym-cm')] : quantity === 'time' ? [1, t(locale, 'unit-sym-s')] : quantity === 'current' ? [1, t(locale, 'unit-sym-A')] : quantity === 'voltage' ? [1, t(locale, 'unit-sym-V')] : quantity === 'resistance' ? [1, t(locale, 'unit-sym-ohm')] : quantity === 'pressure' ? [0.01, t(locale, 'measuring-format-measured-kunit')] : quantity === 'angle' ? [1, '°'] : quantity === 'turns' ? [1, t(locale, 'measuring-format-measured-kunit-2')] : quantity === 'ratio' ? [1, ''] : quantity === 'days' ? [1, t(locale, 'measuring-format-measured-kunit-3')] : [1, t(locale, 'unit-sym-N')];
+  const [k, unit] = quantity === 'mass' ? [1000, t(locale, 'unit-sym-g')] : quantity === 'volume' ? [1e6, t(locale, 'unit-sym-mL')] : quantity === 'length' ? [100, t(locale, 'unit-sym-cm')] : quantity === 'area' ? [1e4, t(locale, 'unit-sym-cm2')] : quantity === 'time' ? [1, t(locale, 'unit-sym-s')] : quantity === 'current' ? [1, t(locale, 'unit-sym-A')] : quantity === 'voltage' ? [1, t(locale, 'unit-sym-V')] : quantity === 'resistance' ? [1, t(locale, 'unit-sym-ohm')] : quantity === 'pressure' ? [0.01, t(locale, 'measuring-format-measured-kunit')] : quantity === 'angle' ? [1, '°'] : quantity === 'turns' ? [1, t(locale, 'measuring-format-measured-kunit-2')] : quantity === 'ratio' ? [1, ''] : quantity === 'days' ? [1, t(locale, 'measuring-format-measured-kunit-3')] : [1, t(locale, 'unit-sym-N')];
   const digits = Math.max(0, Math.round(-Math.log10(division * k)));
   // (Turns are counted to a quarter: 4,75, but 12 — not 12,00.)
   const fraction = quantity === 'turns' ? { minimumFractionDigits: 0, maximumFractionDigits: 2 } : { minimumFractionDigits: digits, maximumFractionDigits: digits };

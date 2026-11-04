@@ -264,3 +264,16 @@ formula-mechanics-great-circle-r-name = радіус Землі
 formula-mechanics-great-circle-mechanics-formulas-beyond-curriculum = Поза шкільною програмою: так відстань між містами рахують навігатори й авіакомпанії.
 formula-mechanics-great-circle-explanation-novice = Земля кругла, тож найкоротший шлях між містами — дуга на кулі.
 formula-mechanics-great-circle-explanation-school = За широтами й довготами двох місць знаходять кут між ними з центру Землі, а дуга — це кут, помножений на радіус.
+formula-mechanics-rectangle-area = Площа прямокутника
+formula-mechanics-rectangle-area-s-name = площа
+formula-mechanics-rectangle-area-a-name = довжина
+formula-mechanics-rectangle-area-b-name = ширина
+formula-mechanics-rectangle-area-explanation-novice = Прямокутник 6 см на 4 см складається з 4 рядів по 6 квадратиків 1 см × 1 см — разом 24 см². Тому площу знаходять, множачи довжину на ширину.
+formula-mechanics-rectangle-area-explanation-school = Площа — скільки одиничних квадратів уміщує фігура. У прямокутнику їх a·b; одиниця площі — квадрат зі стороною одиниці довжини: 1 м², 1 см² = 0,0001 м². Похибка лінійки (пів міліметра) входить у кожен множник, тож мала сторона дає більшу відносну похибку.
+formula-mechanics-palette-area = Площа фігури за палеткою
+formula-mechanics-palette-area-s-name = площа фігури
+formula-mechanics-palette-area-whole-name = цілі квадратики всередині
+formula-mechanics-palette-area-cut-name = квадратики, які перетинає край
+formula-mechanics-palette-area-square-name = площа одного квадратика
+formula-mechanics-palette-area-explanation-novice = Палетка — прозора плівка з квадратиками. Кладемо її на фігуру, рахуємо квадратики, що повністю всередині, і ті, які перетинає край; перетнуті — в середньому наполовину всередині, тож беремо їх половину.
+formula-mechanics-palette-area-explanation-school = S ≈ (N + n/2)·s₀: N цілих квадратиків, n перетнутих краєм, s₀ — площа квадратика. Помиляємося тільки на перетнутих, а їх стає менше відносно цілих, коли квадратики дрібніші, — тож що дрібніша палетка, то точніше (і то довше рахувати).

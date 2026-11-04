@@ -140,6 +140,16 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
     history: { people: [], role: 'associated', when: '—', story: { school: msg('law-uniform-motion-story-school') }, citations: [] },
   },
   {
+    id: 'area',
+    kind: 'definition',
+    name: msg('law-area'),
+    statement: {
+      novice: msg('law-area-statement-novice'),
+      school: msg('law-area-statement-school'),
+    },
+    history: { people: [], role: 'associated', when: '—', story: { school: msg('law-area-story-school') }, citations: [] },
+  },
+  {
     id: 'row-method',
     kind: 'definition',
     name: msg('law-row-method'),

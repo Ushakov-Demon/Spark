@@ -81,6 +81,7 @@ export const GLOSSARY: readonly Term[] = [
   { ...term('planck-constant'), source: 'wikipedia-planck-constant' },
   { ...term('kibble-balance'), source: 'wikipedia-kibble-balance' },
   { ...term('pale-blue-dot'), source: 'wikipedia-pale-blue-dot', photo: 'nasa-pale-blue-dot-photo', reference: true },
+  { ...term('rhind-papyrus'), source: 'wikipedia-rhind-papyrus', reference: true },
   { ...term('hindenburg'), source: 'wikipedia-hindenburg-disaster', photo: 'commons-hindenburg-photo', reference: true },
   { ...term('beauplan'), source: 'wikipedia-beauplan', reference: true },
   { ...term('beauplan-map'), source: 'wikipedia-beauplan', reference: true },
@@ -105,6 +106,7 @@ export const GLOSSARY: readonly Term[] = [
   equipment('lever-balance'),
   equipment('thermometer'),
   equipment('test-tube'),
+  equipment('palette'),
 ];
 
 /** A term by its id (`terms` — the lab's whole glossary, laws included). */

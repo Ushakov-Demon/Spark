@@ -114,6 +114,12 @@ export const greatCircleDistance = (lat1: number, lon1: number, lat2: number, lo
 /** Average speed: the path over the time it took, v = l / t. */
 export const averageSpeed = (path: number, time: number): number => path / time;
 
+/** A rectangle's area: its length times its width, S = a·b. */
+export const rectangleArea = (a: number, b: number): number => a * b;
+
+/** An area by a palette (a transparent grid of squares): the whole squares and half the cut ones, S ≈ (N + n/2)·s₀. */
+export const paletteArea = (whole: number, cut: number, square: number): number => (whole + cut / 2) * square;
+
 /** The method of rows: a small body's size from a row of N of them, d = L / N. */
 export const rowSize = (length: number, count: number): number => length / count;
 
