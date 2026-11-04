@@ -16,6 +16,7 @@ import { isDrySample, LAB_ACTIONS, OPERATIONS, PRESETS, substancesFor, vesselsFo
 import { SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { COMPONENTS } from '../src/components/index.js';
 import { MATERIALS } from '../src/domains/thermal/materials.js';
+import { isOn, moving, resetSettings, store, type Switch } from './prefs.js';
 
 export interface ConsoleApi {
   locale(): Locale;
@@ -42,6 +43,8 @@ export interface ConsoleApi {
   scenes(): readonly string[];
   /** "By the way!..": the Professor's newspaper at once. */
   news(): void;
+  /** A setting of the user's (kept in the browser) turned on or off; it takes effect at once. */
+  setting(k: Switch, on: boolean): void;
   /** Weigh the vessel on these scales (none — the ones chosen on the page); returns what the Professor says. */
   weigh(scale?: ScaleId): string;
   voices(): readonly string[];
@@ -59,12 +62,25 @@ export interface ConsoleApi {
   playScene(name: string): void;
 }
 
+/** The console types its answer out at this many characters a second — or faster, to be done in TYPE_SECONDS. */
+const TYPE_RATE = 60;
+const TYPE_SECONDS = 2;
+/** The hint over the line is erased and typed at this many characters a second at least, within HINT_SECONDS. */
+const HINT_RATE = 240;
+const HINT_SECONDS = 0.4;
+/** How many commands the hint over the line offers at most. */
+const HINTS_SHOWN = 6;
+/** How many typed commands the console remembers. */
+const HISTORY_KEPT = 100;
+
 interface Cmd {
   readonly names: readonly string[];
   readonly usage: LocalizedText;
   readonly about: LocalizedText;
-  run(args: string[], api: ConsoleApi): string[];
+  run(args: string[], api: ConsoleApi): Out;
 }
+/** What a command prints: its lines — or how to word them, so that they are worded again in another language. */
+type Out = readonly string[] | (() => readonly string[]);
 
 const norm = (s: string) => s.toLowerCase().replace(/[’'ʼ`]/g, '').replace(/ё/g, 'е').trim();
 
@@ -106,6 +122,15 @@ export function createConsole(api: ConsoleApi): HTMLElement {
   const ambiguous = (items: readonly { name: LocalizedText }[]) => [`${t(loc(), 'console-which-one')}: ${items.map((x) => T(x.name)).join(', ')}`];
   const notFound = (what: string) => [t(loc(), 'console-unknown-word', { what })];
   const list = (title: string, items: readonly string[]) => [title, ...items.map((x) => `  • ${x}`)];
+  /** «on» / «off» (or «увімк» / «вимк»): the setting turned so; nothing — how it stands now. */
+  const toggle = (k: Switch, arg: string | undefined): Out => {
+    const a = norm(arg ?? '');
+    const on = ['on', '1', 'увімк', 'увімкнути', 'так'].includes(a) ? true : ['off', '0', 'вимк', 'вимкнути', 'ні'].includes(a) ? false : undefined;
+    if (arg && on === undefined) return () => [t(loc(), 'console-on-off')];
+    if (on !== undefined) api.setting(k, on);
+    const now = String(on ?? isOn(k));
+    return () => [t(loc(), `console-${k}-state`, { on: now })];
+  };
 
   const COMMANDS: Cmd[] = [
     {
@@ -115,16 +140,16 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       run(args) {
         if (args[0]) {
           const c = COMMANDS.find((x) => x.names.includes(norm(args[0]!)));
-          return c ? [`${T(c.usage)} — ${T(c.about)}`, ...(c.names.length > 1 ? [`${t(loc(), 'console-also-named')}: ${c.names.slice(1).join(', ')}`] : [])] : notFound(args[0]!);
+          return () => (c ? [`${T(c.usage)} — ${T(c.about)}`, ...(c.names.length > 1 ? [`${t(loc(), 'console-also-named')}: ${c.names.slice(1).join(', ')}`] : [])] : notFound(args[0]!));
         }
-        return [t(loc(), 'console-help-title'), ...COMMANDS.map((c) => `  ${T(c.usage).padEnd(36)} ${T(c.about)}`)];
+        return () => [t(loc(), 'console-help-title'), ...COMMANDS.map((c) => `  ${T(c.usage).padEnd(36)} ${T(c.about)}`)];
       },
     },
     {
       names: ['actions', 'дії'],
       usage: msg('console-actions-usage'),
       about: msg('console-actions-about'),
-      run: () => list(t(loc(), 'console-actions'), LAB_ACTIONS.map((a) => `${T(OPERATIONS[a].label)}${a === api.params().action ? ' ◀' : ''}`)),
+      run: () => () => list(t(loc(), 'console-actions'), LAB_ACTIONS.map((a) => `${T(OPERATIONS[a].label)}${a === api.params().action ? ' ◀' : ''}`)),
     },
     {
       names: ['action', 'do', 'дія'],
@@ -142,7 +167,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       names: ['substances', 'речовини'],
       usage: msg('console-substances-usage'),
       about: msg('console-substances-about'),
-      run: () => list(t(loc(), 'console-substances'), substancesFor(api.params().action).map((x) => `${T(x.name)}${x.id === api.params().substance ? ' ◀' : ''}`)),
+      run: () => () => list(t(loc(), 'console-substances'), substancesFor(api.params().action).map((x) => `${T(x.name)}${x.id === api.params().substance ? ' ◀' : ''}`)),
     },
     {
       names: ['substance', 'речовина'],
@@ -168,7 +193,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       names: ['vessels', 'посуд'],
       usage: msg('console-vessels-usage'),
       about: msg('console-vessels-about'),
-      run: () => list(t(loc(), 'console-vessels'), vesselsFor(api.params()).map((f) => `${T(f.vessel.name)} (${f.sizes.join(', ')} ${t(loc(), 'unit-sym-L')})${f.vessel.id === api.params().vessel ? ' ◀' : ''}`)),
+      run: () => () => list(t(loc(), 'console-vessels'), vesselsFor(api.params()).map((f) => `${T(f.vessel.name)} (${f.sizes.join(', ')} ${t(loc(), 'unit-sym-L')})${f.vessel.id === api.params().vessel ? ' ◀' : ''}`)),
     },
     {
       names: ['vessel', 'посудина'],
@@ -356,7 +381,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       usage: msg('console-voice-usage'),
       about: msg('console-voice-about'),
       run(args) {
-        if (!args[0]) return list(t(loc(), 'console-voices'), api.voices());
+        if (!args[0]) return () => list(t(loc(), 'console-voices'), api.voices());
         return api.voice(norm(args[0])) ? ['✓'] : notFound(args[0]);
       },
     },
@@ -403,7 +428,15 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       names: ['reset', 'спочатку'],
       usage: msg('console-reset-usage'),
       about: msg('console-reset-about'),
-      run() {
+      run(args) {
+        // «reset settings»: every setting back to its default. Loading the page again ends the experiment on the table:
+        // said first, done on «yes».
+        if (['settings', 'налаштування', 'prefs'].includes(norm(args[0] ?? ''))) {
+          if (!['yes', 'так', 'y'].includes(norm(args[1] ?? ''))) return () => [t(loc(), 'console-reset-settings-ask')];
+          resetSettings();
+          window.setTimeout(() => location.reload(), 600);
+          return [t(loc(), 'console-reset-settings-done')];
+        }
         api.reset();
         return ['↺'];
       },
@@ -458,7 +491,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       names: ['presets', 'досліди'],
       usage: msg('console-presets-usage'),
       about: msg('console-presets-about'),
-      run: () => list(t(loc(), 'console-presets'), PRESETS.map((p, i) => `${i + 1}. ${T(p.title)}${p.grade ? ` — ${p.grade} ${t(loc(), 'console-grade')}` : ''}`)),
+      run: () => () => list(t(loc(), 'console-presets'), PRESETS.map((p, i) => `${i + 1}. ${T(p.title)}${p.grade ? ` — ${p.grade} ${t(loc(), 'console-grade')}` : ''}`)),
     },
     {
       names: ['preset', 'дослід'],
@@ -494,7 +527,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       names: ['records', 'recordings', 'записи'],
       usage: msg('console-records-usage'),
       about: msg('console-records-about'),
-      run: () => list(t(loc(), 'console-records'), api.records().map((r, i) => `${i + 1}. ${r}`)),
+      run: () => () => list(t(loc(), 'console-records'), api.records().map((r, i) => `${i + 1}. ${r}`)),
     },
     {
       names: ['replay', 'повтор'],
@@ -510,10 +543,25 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       names: ['news', 'paper', 'btw', 'кстати', 'дореч', 'газета'],
       usage: msg('console-news-usage'),
       about: msg('console-news-about'),
-      run() {
-        api.news();
-        return [t(loc(), 'console-newspaper')];
+      run(args) {
+        if (!args[0]) {
+          api.news();
+          return () => [t(loc(), 'console-newspaper')];
+        }
+        return toggle('news', args[0]);
       },
+    },
+    {
+      names: ['speaker', 'спікер', 'ведучий'],
+      usage: msg('console-speaker-usage'),
+      about: msg('console-speaker-about'),
+      run: (args) => toggle('speaker', args[0]),
+    },
+    {
+      names: ['anim', 'animations', 'motion', 'анімації', 'анімація'],
+      usage: msg('console-anim-usage'),
+      about: msg('console-anim-about'),
+      run: (args) => toggle('motion', args[0]),
     },
     {
       names: ['prof', 'professor', 'проф'],
@@ -521,7 +569,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       about: msg('console-prof-about'),
       run(args) {
         const scenes = api.scenes();
-        if (!args[0]) return list(t(loc(), 'console-scenes'), scenes);
+        if (!args[0]) return () => list(t(loc(), 'console-scenes'), scenes);
         const f = scenes.find((x) => x.startsWith(norm(args[0]!)));
         if (!f) return notFound(args[0]!);
         api.playScene(f);
@@ -539,41 +587,173 @@ export function createConsole(api: ConsoleApi): HTMLElement {
   // ---- the element ----
   const root = document.createElement('div');
   root.className = 'console';
-  root.innerHTML = `<div class="console-out" role="log" aria-live="polite"></div><label class="console-in"><span aria-hidden="true">›</span><input type="text" spellcheck="false" autocomplete="off" autocapitalize="off"/></label>`;
+  root.innerHTML = `<canvas class="console-rain" aria-hidden="true"></canvas><div class="console-out" role="log" aria-live="polite"></div><div class="console-hint" hidden></div><label class="console-in"><span aria-hidden="true">›</span><input type="text" spellcheck="false" autocomplete="off" autocapitalize="off"/></label>`;
   const out = root.querySelector<HTMLElement>('.console-out')!;
   const input = root.querySelector<HTMLInputElement>('input')!;
-  const history: string[] = [];
-  let at = 0;
-  const print = (lines: readonly string[], cls = '') => {
+  const hint = root.querySelector<HTMLElement>('.console-hint')!;
+  // The commands typed before (↑/↓), kept in the browser between visits.
+  const history: string[] = (() => {
+    try {
+      const x = JSON.parse(store.get('console-history') ?? '[]') as unknown;
+      return Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string') : [];
+    } catch {
+      return [];
+    }
+  })();
+  let at = history.length;
+  // The answer is typed out, a character after another, behind a block cursor (what was typed in comes at once).
+  const queue: { readonly el: HTMLElement; readonly text: string; shown: number }[] = [];
+  const caret = document.createElement('span');
+  caret.className = 'console-caret';
+  let typing = 0;
+  let typedAt = 0;
+  /** Characters owed by the time passed (a fraction carried to the next frame). */
+  let owed = 0;
+  /** Characters a second for what is queued now: set when lines come, so a long answer ends in TYPE_SECONDS. */
+  let rate = TYPE_RATE;
+  /** Everything still being typed, written out at once (a new command, no motion). */
+  const flush = () => {
+    for (const q of queue.splice(0)) q.el.textContent = q.text;
+    caret.remove();
+    cancelAnimationFrame(typing);
+    typing = 0;
+    typedAt = 0;
+    owed = 0;
+    out.scrollTop = out.scrollHeight;
+  };
+  const type = (now: number) => {
+    owed += (Math.min(0.1, (now - (typedAt || now)) / 1000) || 1 / 60) * rate;
+    typedAt = now;
+    let n = Math.floor(owed);
+    owed -= n;
+    while (n > 0 && queue.length) {
+      const q = queue[0]!;
+      const k = Math.min(n, q.text.length - q.shown);
+      q.shown += k;
+      n -= k;
+      q.el.textContent = q.text.slice(0, q.shown);
+      q.el.append(caret);
+      if (q.shown >= q.text.length) queue.shift();
+    }
+    out.scrollTop = out.scrollHeight;
+    if (queue.length) typing = requestAnimationFrame(type);
+    else {
+      caret.remove();
+      typing = 0;
+      typedAt = 0;
+      owed = 0;
+    }
+  };
+  /** What was printed in words that can be worded again: re-worded when the page's language changes. */
+  let reworded: { els: HTMLElement[]; word: () => readonly string[]; cls: string }[] = [];
+  /** The lines of the list of commands printed by «help» (its title left out), each with its command. */
+  let helpLines: { el: HTMLElement; c: Cmd }[] = [];
+  const print = (what: Out, cls = '', at = false, help = false) => {
+    const lines = typeof what === 'function' ? what() : what;
+    const els: HTMLElement[] = [];
     for (const l of lines) {
       const d = document.createElement('div');
       if (cls) d.className = cls;
-      d.textContent = l;
       out.append(d);
+      els.push(d);
+      if (at || !moving()) d.textContent = l;
+      else queue.push({ el: d, text: l, shown: 0 });
     }
+    if (typeof what === 'function') reworded.push({ els, word: what, cls });
+    if (help) helpLines.push(...COMMANDS.map((c, i) => ({ el: els[i + 1]!, c })));
+    // The more there is to type, the faster: a short reply goes at TYPE_RATE, a long one (the whole «help») in TYPE_SECONDS.
+    rate = Math.max(TYPE_RATE, queue.reduce((k, q) => k + q.text.length - q.shown, 0) / TYPE_SECONDS);
+    if (queue.length && !typing) typing = requestAnimationFrame(type);
     out.scrollTop = out.scrollHeight;
   };
-  const greet = () => print([t(loc(), 'console-greet')], 'muted');
+  const greet = () => print(() => [t(loc(), 'console-greet')], 'muted');
   greet();
   input.placeholder = t(loc(), 'console-placeholder');
+
+  /**
+   * As a command is typed: the list of «help» in sight — the commands it cannot be fade; no list in sight — the
+   * commands it can be are offered over the line (and the one chosen, with its arguments, once a space follows it).
+   */
+  const suggest = () => {
+    const [head = '', ...rest] = input.value.trimStart().split(/\s+/);
+    const q = norm(head);
+    const fits = (c: Cmd) => c.names.some((n) => norm(n).startsWith(q));
+    const top = out.scrollTop;
+    const inSight = helpLines.filter((x) => x.el.isConnected && x.el.offsetTop + x.el.offsetHeight > top && x.el.offsetTop < top + out.clientHeight);
+    for (const x of helpLines) x.el.classList.toggle('dim', !!q && !fits(x.c));
+    const chosen = rest.length ? COMMANDS.find((c) => c.names.includes(q)) : undefined;
+    const offered = !q || inSight.length ? [] : chosen ? [chosen] : COMMANDS.filter(fits);
+    setHint(offered.length ? offered.slice(0, HINTS_SHOWN).map((c) => `${T(c.usage).padEnd(36)} ${T(c.about)}`).join('\n') + (offered.length > HINTS_SHOWN ? `\n… +${offered.length - HINTS_SHOWN}` : '') : '');
+  };
+  // The hint is typed too: what no longer fits is erased from its end (as with Backspace), then the rest typed on.
+  let hintWant = '';
+  let hintShown = '';
+  let hintFrame = 0;
+  let hintAt = 0;
+  let hintOwed = 0;
+  let hintRate = HINT_RATE;
+  const hintCaret = document.createElement('span');
+  hintCaret.className = 'console-caret';
+  const hintStep = (now: number) => {
+    hintOwed += (Math.min(0.1, (now - (hintAt || now)) / 1000) || 1 / 60) * hintRate;
+    hintAt = now;
+    for (; hintOwed >= 1 && hintShown !== hintWant; hintOwed--) hintShown = hintWant.startsWith(hintShown) ? hintWant.slice(0, hintShown.length + 1) : hintShown.slice(0, -1);
+    hint.textContent = hintShown;
+    if (hintShown !== hintWant) {
+      hint.append(hintCaret);
+      hintFrame = requestAnimationFrame(hintStep);
+      return;
+    }
+    hint.hidden = !hintShown;
+    hintFrame = hintAt = hintOwed = 0;
+  };
+  const setHint = (text: string) => {
+    if (text === hintWant) return;
+    hintWant = text;
+    if (!moving()) {
+      cancelAnimationFrame(hintFrame);
+      hintFrame = 0;
+      hintShown = text;
+      hint.textContent = text;
+      hint.hidden = !text;
+      return;
+    }
+    // Erased and typed within HINT_SECONDS, however much changes (at HINT_RATE at the least).
+    let common = 0;
+    while (common < hintShown.length && hintShown[common] === text[common]) common++;
+    hintRate = Math.max(HINT_RATE, (hintShown.length - common + text.length - common) / HINT_SECONDS);
+    hint.hidden = false;
+    if (!hintFrame) hintFrame = requestAnimationFrame(hintStep);
+  };
+  input.addEventListener('input', suggest);
+  input.addEventListener('keyup', (e) => {
+    // (After Enter, Tab and the history's ↑/↓ the line was changed by the console itself.)
+    if (['Enter', 'Tab', 'ArrowUp', 'ArrowDown'].includes(e.key)) suggest();
+  });
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const line = input.value.trim();
       input.value = '';
       if (!line) return;
-      history.push(line);
+      if (history[history.length - 1] !== line) history.push(line);
+      history.splice(0, history.length - HISTORY_KEPT);
+      store.set('console-history', JSON.stringify(history));
       at = history.length;
-      print([`› ${line}`], 'cmd');
+      flush();
+      print([`› ${line}`], 'cmd', true);
       const [head, ...args] = line.split(/\s+/);
       const c = COMMANDS.find((x) => x.names.includes(norm(head!)));
-      if (!c) return print([t(loc(), 'console-no-command', { head })], 'err');
+      if (!c) return print(() => [t(loc(), 'console-no-command', { head })], 'err');
       if (c.names[0] === 'clear') {
+        flush();
         out.innerHTML = '';
+        reworded = [];
+        helpLines = [];
         return greet();
       }
       try {
-        print(c.run(args, api));
+        print(c.run(args, api), '', false, c.names[0] === 'help' && !args.length);
       } catch (err) {
         print([String(err)], 'err');
       }
@@ -604,5 +784,69 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       else if (pool.length) print([pool.slice(0, 12).join('  ')], 'muted');
     }
   });
+  rain(root.querySelector<HTMLCanvasElement>('.console-rain')!, root);
+  // The page's language changed: the placeholder and every answer that can be worded again, in the new one
+  // (what an action did stays as it was printed: the action is not done again).
+  new MutationObserver(() => {
+    flush();
+    input.placeholder = t(loc(), 'console-placeholder');
+    for (const r of reworded) {
+      const lines = r.word();
+      const els = lines.map((l, i) => {
+        const d = r.els[i] ?? document.createElement('div');
+        if (r.cls) d.className = r.cls;
+        d.textContent = l;
+        return d;
+      });
+      r.els.at(-1)?.after(...els.slice(r.els.length));
+      for (const d of r.els.slice(lines.length)) d.remove();
+      r.els = els;
+    }
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   return root;
+}
+
+/** The glyphs that fall behind the console's text: katakana, as on the film's screens, digits and physics' signs. */
+const GLYPHS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン0123456789=+−×÷√∑∫λΩμπΔ';
+/** Columns of glyphs falling behind the text ("Matrix"): drawn only while the console is open and things may move. */
+function rain(canvas: HTMLCanvasElement, root: HTMLElement) {
+  const g = canvas.getContext('2d');
+  if (!g) return;
+  const size = 14;
+  let drops: number[] = [];
+  let last = 0;
+  const tick = (now: number) => {
+    requestAnimationFrame(tick);
+    const shown = !!root.closest('.open') && moving() && !document.hidden;
+    if (!shown) {
+      if (drops.length) {
+        g.clearRect(0, 0, canvas.width, canvas.height);
+        drops = [];
+      }
+      return;
+    }
+    // About 20 frames a second: a slow fall, little work.
+    if (now - last < 50) return;
+    last = now;
+    const w = root.clientWidth;
+    const h = root.clientHeight;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      drops = [];
+    }
+    const columns = Math.ceil(w / size);
+    if (drops.length !== columns) drops = Array.from({ length: columns }, () => Math.floor((Math.random() * -h) / size));
+    // The trail fades: each frame darkens what was drawn before.
+    g.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    g.fillRect(0, 0, w, h);
+    g.font = `${size}px ui-monospace, Menlo, Consolas, monospace`;
+    for (let i = 0; i < columns; i++) {
+      const y = drops[i]! * size;
+      g.fillStyle = Math.random() < 0.08 ? '#d8ffe0' : '#00ff41';
+      g.fillText(GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!, i * size, y);
+      drops[i] = y > h && Math.random() > 0.975 ? 0 : drops[i]! + 1;
+    }
+  };
+  requestAnimationFrame(tick);
 }

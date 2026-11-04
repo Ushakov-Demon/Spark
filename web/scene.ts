@@ -17,6 +17,7 @@ import { play } from './motion.js';
 import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 import { BUBBLE_PAGE, BUBBLE_PAGE_PHONE, bubblePages } from './bubble.js';
+import { moving } from './prefs.js';
 
 // The drawings live in graphics/; the scene puts them together and moves the live parts.
 export type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
@@ -393,7 +394,7 @@ export function createScene(): Scene {
         bench.dataset['k'] = bk;
         stopMotion();
         const draw = (x: BenchView) => (bench.innerHTML = benchSvg(x));
-        const motion = v.bench && !matchMedia('(prefers-reduced-motion: reduce)').matches ? benchMotion(benchShown, v.bench, draw) : null;
+        const motion = v.bench && moving() ? benchMotion(benchShown, v.bench, draw) : null;
         if (motion) stopMotion = play(motion, settled);
         else {
           bench.innerHTML = v.bench ? benchSvg(v.bench) : '';

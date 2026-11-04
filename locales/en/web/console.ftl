@@ -73,8 +73,8 @@ console-start-usage = start
 console-start-about = start (or continue) the experiment
 console-pause-usage = pause
 console-pause-about = stop the clock
-console-reset-usage = reset
-console-reset-about = start the experiment over
+console-reset-usage = reset [settings [yes]]
+console-reset-about = start the experiment over; reset settings — every setting as at first (language, voice, sound, panels, news, speaker, anim), recordings stay
 console-speed-usage = speed <1…3600>
 console-speed-about = how many times faster than real time
 console-status-usage = status
@@ -95,9 +95,28 @@ console-records-usage = records
 console-records-about = my recordings with numbers
 console-replay-usage = replay <number>
 console-replay-about = replay a recording step by step
-console-news-usage = news
-console-news-about = "By the way!.." — the Professor's newspaper: a curious fact or a page of history
+console-news-usage = news [on|off]
+console-news-about = the newspaper now; news off — do not bring it by itself, news on — bring it again
 console-prof-usage = prof [scene]
 console-prof-about = the Professor's scenes: prof coffee
 console-clear-usage = clear
 console-clear-about = clear the console
+console-speaker-usage = speaker [on|off]
+console-speaker-about = the speaker on the scene: speaker off — without him (his words stay in their box, no voice, no scenes)
+console-anim-usage = anim [on|off]
+console-anim-about = anim off — no animations and no prediction: the experiment runs by itself, its result at once; the steps stay in the protocol
+console-on-off = Type on or off.
+console-news-state = { $on ->
+        [true] ✓ the newspaper will come by itself when you are bored
+       *[other] ✓ the newspaper will not come by itself (news — show it now)
+    }
+console-speaker-state = { $on ->
+        [true] ✓ the speaker is on the scene
+       *[other] ✓ no speaker: just his words in their box
+    }
+console-motion-state = { $on ->
+        [true] ✓ with animations: every step seen, a prediction before the answer
+       *[other] ✓ no animations: the experiment runs by itself to its answer
+    }
+console-reset-settings-ask = Put every setting back to its default? The page will reload and the experiment will start again. Your recordings and the console history stay. Type "reset settings yes".
+console-reset-settings-done = ✓ settings are the defaults — reloading…

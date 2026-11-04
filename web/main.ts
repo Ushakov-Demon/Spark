@@ -151,24 +151,8 @@ import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
 import { createFinger } from './finger.js';
 import { answerLines } from '../src/scenarios/preset-kit.js';
+import { instant, isOn, moving, setOn, store } from './prefs.js';
 
-// ---------- persistent preferences (per browser, optional) ----------
-const store = {
-  get: (k: string): string | null => {
-    try {
-      return localStorage.getItem(`spark.${k}`);
-    } catch {
-      return null;
-    }
-  },
-  set: (k: string, v: string): void => {
-    try {
-      localStorage.setItem(`spark.${k}`, v);
-    } catch {
-      /* private mode etc. — preferences are optional */
-    }
-  },
-};
 const browserLocale = (): Locale => (navigator.language.toLowerCase().startsWith('en') ? 'en' : 'uk');
 /** The page the address names (the site: /, /experiments/, /experiments/<id>/, the same under /en/). */
 const where = parsePath(location.pathname);
@@ -203,6 +187,9 @@ const round = (x: number, digits = 2) => Math.round(x * 10 ** digits) / 10 ** di
 
 // ---------- experiment state ----------
 const DT = seconds(0.5);
+/** No motion: a step runs through in slices of this much model time (the chart's points are 5 s apart), for at most this many ms a frame. */
+const RUN_THROUGH_SLICE = seconds(10);
+const RUN_THROUGH_BUDGET = 40;
 // The electrical solver runs first: it sets the Joule heat the thermal solver then spreads.
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: DT });
 const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS);
@@ -416,7 +403,7 @@ function measureNow(command: LabCommand): string {
     hum(0.3 + amps / 2, 1.6);
   }
   // An instrument that moves on the scene (a balance, a spring, a pulled block): its reading is told once it is at rest.
-  instrumentBusy = entry.ok && (experimentOf(command.type)?.busy(command as never) ?? null) !== null && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  instrumentBusy = entry.ok && (experimentOf(command.type)?.busy(command as never) ?? null) !== null && moving();
   boardEpoch++;
   render();
   return measureSay();
@@ -680,9 +667,11 @@ const mayInterrupt = () => !libraryTab && !onAbout && !document.querySelector('d
 function byTheWay(now = performance.now(), asked = false) {
   const u = t();
   boredScenes = 0;
-  // Asked for it (the button): "a fresh newspaper!"; remembered by himself: "by the way!.."
-  idleAct = { name: 'bytheway', mood: asked ? 'happy' : 'surprised', length: 2600, lines: [asked ? u.byTheWay.fresh : u.byTheWay.say], started: now };
-  idleLine = 0;
+  // Asked for it (the button): "a fresh newspaper!"; remembered by himself: "by the way!.." (no speaker — no word: just the paper).
+  if (isOn('speaker')) {
+    idleAct = { name: 'bytheway', mood: asked ? 'happy' : 'surprised', length: 2600, lines: [asked ? u.byTheWay.fresh : u.byTheWay.say], started: now };
+    idleLine = 0;
+  }
   const token = ++paperToken;
   const shown = Date.now();
   void fetchArticle(locale, LAB_KNOWLEDGE.laws, level).then((a) => {
@@ -792,7 +781,7 @@ function idleTick(now: number): boolean {
     return true;
   }
   // Looking at a clean board for a while: the Professor mutters over his shoulder, then turns round, puzzled.
-  if (!scene.reading) {
+  if (!scene.reading || !isOn('speaker')) {
     readingSince = null;
     emptyBoardSeen = false;
   } else if (!running && !paper.open) {
@@ -806,11 +795,17 @@ function idleTick(now: number): boolean {
   }
   // New scenes only when nothing is going on.
   if (running || document.hidden || now < nextActAt || scene.reading || paper.open) return false;
-  if (boredScenes >= 2 && mayInterrupt()) {
+  // The newspaper comes by itself unless it was turned off («news off»).
+  if (boredScenes >= 2 && mayInterrupt() && isOn('news')) {
     byTheWay(now);
     return true;
   }
   boredScenes++;
+  // No speaker on the scene: no scenes to play; the time still passes (for the newspaper).
+  if (!isOn('speaker')) {
+    nextActAt = now + IDLE_START + Math.random() * IDLE_START * 0.8;
+    return false;
+  }
   const pool = ACTS.filter((a) => a.name !== lastActName);
   const a = pool[Math.floor(Math.random() * pool.length)]!;
   lastActName = a.name;
@@ -826,7 +821,18 @@ function idleTick(now: number): boolean {
 function frame(now: number) {
   const realDt = Math.min(0.1, (now - (lastFrame || now)) / 1000);
   lastFrame = now;
-  if (running && !finished) {
+  if (running && !finished && instant() && !replaying) {
+    // No motion («anim off»): the step runs through at once — in slices of model time, each on the chart and
+    // checked for a stall as usual, as many as fit in a frame.
+    const until = performance.now() + RUN_THROUGH_BUDGET;
+    while (running && performance.now() < until) {
+      const reached = session.advance(RUN_THROUGH_SLICE, (s) => labGoalReached(stepP, s));
+      record();
+      if (reached || stalled()) stop();
+    }
+    idleTick(now);
+    render();
+  } else if (running && !finished) {
     acc += realDt * speed;
     const steps = Math.floor(acc / DT);
     acc -= steps * DT;
@@ -886,6 +892,18 @@ function stop() {
   // A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind).
   if (!plan.length) answerPreset();
   setHeadline();
+  goOnByItself();
+}
+
+/**
+ * No motion («anim off»): a ready-made experiment goes on by itself, the next step as soon as this one is done, to
+ * its answer — no prediction asked; the steps stay in the protocol to look at again.
+ */
+function goOnByItself() {
+  if (!instant() || !preset || !plan.length || running) return;
+  window.setTimeout(() => {
+    if (instant() && preset && plan.length && !running && !instrumentBusy) nextPlanStep();
+  }, 0);
 }
 
 /** A ready-made experiment whose plan is done: answer its question from what happened (may re-run in the mind). */
@@ -1234,7 +1252,7 @@ scene.element.querySelector('.table-buttons')!.prepend(addOverButton, newsButton
 scene.onTurn((page) => {
   hush();
   window.clearTimeout(sayTimer);
-  scene.talk(babble(page, currentVoice(), locale));
+  if (isOn('speaker')) scene.talk(babble(page, currentVoice(), locale));
 });
 /** Bulk boiling in the last frames (boiled-off mass grew) — for the bubbles and the Professor. */
 let lastBoiled = 0;
@@ -2098,7 +2116,7 @@ function render() {
     const line = scene.page;
     // A catch sprung: first he giggles, then says it.
     const laugh = view.professor.act === 'giggle';
-    if (line && !scene.reading && !lookingAt)
+    if (line && !scene.reading && !lookingAt && isOn('speaker'))
       sayTimer = window.setTimeout(() => {
         const g = laugh ? giggle(currentVoice()) : 0;
         if (g) scene.talk(g);
@@ -3552,7 +3570,7 @@ function nextPlanStep() {
       if (s.kind === 'weigh') weighNow(s.scale);
       else measureNow(stepCommand(s, params));
       // The plan ended with a measurement: the question can be answered now (or once the table is looked into).
-      if (!plan.length && preset?.choicesAt !== 'end') {
+      if (!plan.length && (preset?.choicesAt !== 'end' || instant())) {
         // An instrument still moving: the answer comes once it is at rest.
         if (instrumentBusy) answerWhenSettled = true;
         else answerPreset();
@@ -3589,6 +3607,7 @@ function nextPlanStep() {
     break;
   }
   render();
+  goOnByItself();
 }
 
 // ---------- ready-made experiments ----------
@@ -3845,6 +3864,11 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
   buildExpect();
   newSession();
   presetSetup();
+  // No motion: no prediction asked — the answer comes with the result; the steps run by themselves.
+  if (instant()) {
+    answerShown = p.id;
+    goOnByItself();
+  }
   // On a phone the panel stands above the scene: go down to it.
   if (matchMedia('(max-width: 900px)').matches) $('.kitchen').scrollIntoView({ behavior: 'smooth' });
 }
@@ -4168,6 +4192,22 @@ const labConsole = createConsole({
   startPreset: (p) => startPreset(p),
   scenes: () => ACTS.map((a) => a.name),
   news: () => byTheWay(),
+  setting(k, on) {
+    setOn(k, on);
+    // The speaker gone: a scene that plays ends, and he stops talking.
+    if (k === 'speaker' && !on) {
+      idleAct = null;
+      idleLine = -1;
+      hush();
+      window.clearTimeout(sayTimer);
+    }
+    // No motion from now on: a ready-made experiment goes on to its result by itself.
+    if (k === 'motion' && !on && preset) {
+      answerShown = preset.id;
+      goOnByItself();
+    }
+    render();
+  },
   weigh: (sc) => weighNow(sc ?? scale),
   voices: () => VOICE_IDS.map((v) => `${v}${v === currentVoice() ? ' ◀' : ''} — ${t().voice.names[v]}`),
   voice(v) {

@@ -73,8 +73,8 @@ console-start-usage = start
 console-start-about = запустити (або продовжити) дослід
 console-pause-usage = pause
 console-pause-about = зупинити час
-console-reset-usage = reset
-console-reset-about = почати дослід заново
+console-reset-usage = reset [settings [yes]]
+console-reset-about = почати дослід заново; reset settings — усі налаштування як спочатку (мова, голос, звук, панелі, news, speaker, anim), записи дослідів лишаються
 console-speed-usage = speed <1…3600>
 console-speed-about = у скільки разів швидше за справжній час
 console-status-usage = status
@@ -95,9 +95,28 @@ console-records-usage = records
 console-records-about = мої записи з номерами
 console-replay-usage = replay <number>
 console-replay-about = повторити запис крок за кроком
-console-news-usage = news
-console-news-about = «До речі!..» — газета Професора: цікавий факт або історична довідка
+console-news-usage = news [on|off]
+console-news-about = газета зараз; news off — не приносити її самому, news on — знову приносити
 console-prof-usage = prof [scene]
 console-prof-about = сценки Професора: prof coffee
 console-clear-usage = clear
 console-clear-about = очистити консоль
+console-speaker-usage = speaker [on|off]
+console-speaker-about = ведучий на сцені: speaker off — без нього (його слова лишаються в рамці, без голосу й сценок)
+console-anim-usage = anim [on|off]
+console-anim-about = anim off — без анімацій і без прогнозу: дослід іде сам, одразу готовий результат; кроки лишаються в протоколі
+console-on-off = Напиши on або off.
+console-news-state = { $on ->
+        [true] ✓ газету приноситиме сам, коли тобі стане нудно
+       *[other] ✓ газету сам не приноситиме (news — показати зараз)
+    }
+console-speaker-state = { $on ->
+        [true] ✓ ведучий на сцені
+       *[other] ✓ без ведучого: лише його слова в рамці
+    }
+console-motion-state = { $on ->
+        [true] ✓ з анімаціями: кожен крок видно, прогноз — перед відповіддю
+       *[other] ✓ без анімацій: дослід іде сам до відповіді
+    }
+console-reset-settings-ask = Повернути всі налаштування до типових? Сторінка перезавантажиться, поточний дослід почнеться спочатку. Записи дослідів і історія консолі лишаться. Напиши «reset settings yes».
+console-reset-settings-done = ✓ налаштування типові — перезавантажую…

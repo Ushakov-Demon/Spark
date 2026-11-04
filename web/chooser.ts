@@ -4,6 +4,7 @@
  * flies down to its place on the table (a bottle tips over the vessel and pours). It draws and moves,
  * it decides nothing: what is offered and what a choice does come from the page.
  */
+import { moving } from './prefs.js';
 
 export interface ChoiceCard {
   readonly key: string;
@@ -33,7 +34,7 @@ export interface Chooser {
   hide(): void;
 }
 
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = () => !moving();
 
 export function createChooser(host: HTMLElement, words: () => { prev: string; next: string; close: string }): Chooser {
   const box = document.createElement('div');
