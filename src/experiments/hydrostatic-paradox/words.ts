@@ -1,12 +1,13 @@
 import type { MeasurementRecord } from '../../core/trace.js';
 import { sig } from '../../explain/format.js';
 import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { VESSEL_TEXT, type VesselCommand } from './bench.js';
 
-export const setup: LocalizedText = { uk: 'Прилад Паскаля: підставка з гумовим дном і три посудини різної форми з однаковим дном, рідинний (U-подібний) манометр, мензурка на 500 мл, вода, лінійка', en: 'Pascal’s device: a stand with a rubber bottom and three vessels of different shapes with the same bottom, a liquid (U-tube) manometer, a 500 mL measuring cylinder, water, a ruler' };
+export const setup: LocalizedText = msg('hydrostatic-paradox-setup');
 
 export const text = (c: VesselCommand): StepText => VESSEL_TEXT['lab.vessel'](c);
 
@@ -22,16 +23,14 @@ export function shown(_c: VesselCommand, recs: readonly MeasurementRecord[], loc
 
 /** The bottom; the water each vessel took and the manometer's reading. */
 export function say(c: VesselCommand, recs: readonly MeasurementRecord[], locale: Locale): string {
-  const uk = locale === 'uk';
-  if (c.step === 'bottom') return uk ? `Дно — ${cm(recs[0]?.value ?? 0, locale)} у діаметрі, однакове в усіх посудин.` : `The bottom is ${cm(recs[0]?.value ?? 0, locale)} across, the same for all the vessels.`;
+  if (c.step === 'bottom') return t(locale, 'hydrostatic-paradox-say', { recs: cm(recs[0]?.value ?? 0, locale) });
   const V = formatMeasured('volume', recs.find((x) => x.quantity === 'volume')?.value ?? 0, 5e-6, locale);
   const dh = cm(recs.find((x) => x.quantity === 'length')?.value ?? 0, locale);
-  return uk ? `Пішло ${V} води, а манометр показує ${dh}.` : `${V} of water went in, and the manometer shows ${dh}.`;
+  return t(locale, 'hydrostatic-paradox-say-2', { V, dh });
 }
 
 /** The board's lines for a done step. */
 export function board(c: VesselCommand, trace: readonly MeasurementRecord[], { index: i, locale, before }: BoardAt): BoardLine[] {
-  const uk = locale === 'uk';
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
   const out: BoardLine[] = [];
   const r = trace[0];
@@ -39,7 +38,7 @@ export function board(c: VesselCommand, trace: readonly MeasurementRecord[], { i
   const recs = trace;
   if (c.step === 'bottom') {
     const vesselArea = Math.PI * (r.value! / 2) ** 2;
-    out.push({ id: 'vS', title: uk ? 'площа дна' : 'the bottom’s area', formula: 'S = π·d² / 4', numbers: `${n(Math.PI)} · (${n(r.value! * 100)} ${uk ? 'см' : 'cm'})² / 4 ≈ ${n(vesselArea * 1e4)} ${uk ? 'см²' : 'cm²'}` });
+    out.push({ id: 'vS', title: t(locale, 'hydrostatic-paradox-v-s-title'), formula: 'S = π·d² / 4', numbers: `${n(Math.PI)} · (${n(r.value! * 100)} ${t(locale, 'unit-sym-cm')})² / 4 ≈ ${n(vesselArea * 1e4)} ${t(locale, 'unit-sym-cm2')}` });
     return out;
   }
   const V = recs.find((x) => x.quantity === 'volume');
@@ -52,8 +51,8 @@ export function board(c: VesselCommand, trace: readonly MeasurementRecord[], { i
   // (The bottom measured first: its area.)
   const d = earlier('bottom')?.value;
   const vesselArea = d ? Math.PI * (d / 2) ** 2 : null;
-  const what = { straight: uk ? 'пряма посудина' : 'the straight vessel', wide: uk ? 'посудина, що розширюється' : 'the widening vessel', narrow: uk ? 'посудина, що звужується' : 'the narrowing vessel' }[shape] ?? shape;
-  out.push({ id: `vP:${shape}`, title: uk ? `${what}: вага води` : `${what}: the water’s weight`, formula: 'P = ρ·g·V', numbers: `${n(rho, 4)} · ${n(g)} · ${n(V.value * 1e6)}·10⁻⁶ ≈ ${n(rho * g * V.value, 2)} ${uk ? 'Н' : 'N'}` });
-  if (vesselArea) out.push({ id: `vF:${shape}`, title: uk ? `${what}: сила тиску на дно` : `${what}: the force on the bottom`, formula: 'F = ρ·g·Δh·S', numbers: `${n(rho, 4)} · ${n(g)} · ${n(M.value, 3)} · ${n(vesselArea * 1e4)}·10⁻⁴ ≈ ${n(rho * g * M.value * vesselArea, 2)} ${uk ? 'Н' : 'N'}` });
+  const what = { straight: t(locale, 'hydrostatic-paradox-what-straight'), wide: t(locale, 'hydrostatic-paradox-what-wide'), narrow: t(locale, 'hydrostatic-paradox-what-narrow') }[shape] ?? shape;
+  out.push({ id: `vP:${shape}`, title: t(locale, 'hydrostatic-paradox-board-title', { what }), formula: 'P = ρ·g·V', numbers: `${n(rho, 4)} · ${n(g)} · ${n(V.value * 1e6)}·10⁻⁶ ≈ ${n(rho * g * V.value, 2)} ${t(locale, 'unit-sym-N')}` });
+  if (vesselArea) out.push({ id: `vF:${shape}`, title: t(locale, 'hydrostatic-paradox-board-title-2', { what }), formula: 'F = ρ·g·Δh·S', numbers: `${n(rho, 4)} · ${n(g)} · ${n(M.value, 3)} · ${n(vesselArea * 1e4)}·10⁻⁴ ≈ ${n(rho * g * M.value * vesselArea, 2)} ${t(locale, 'unit-sym-N')}` });
   return out;
 }

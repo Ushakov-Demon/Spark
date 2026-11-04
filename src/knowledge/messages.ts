@@ -8,8 +8,8 @@ import { LOCALES, NUMBER_LOCALE, type Locale, type LocalizedText } from './i18n.
  * scripts (scripts/locales.ts).
  */
 
-/** A message's argument: a number, a word, or one written per language (a formatted quantity, a name). */
-export type MessageArg = string | number | ((l: Locale) => string | number);
+/** A message's argument: a number, a word, or one written per language (a formatted quantity, a name); undefined reads «undefined», as in a template. */
+export type MessageArg = string | number | undefined | ((l: Locale) => string | number | undefined);
 export type MessageArgs = Readonly<Record<string, MessageArg>>;
 
 const bundles = new Map<Locale, FluentBundle>();
@@ -53,7 +53,10 @@ export function t(locale: Locale, id: string, args?: MessageArgs): string {
     const m = bundle?.getMessage(id);
     if (!bundle || !m?.value) continue;
     const values: Record<string, FluentVariable> = {};
-    for (const [k, v] of Object.entries(args ?? {})) values[k] = typeof v === 'function' ? v(locale) : v;
+    for (const [k, v] of Object.entries(args ?? {})) {
+      const x = typeof v === 'function' ? v(locale) : v;
+      values[k] = x ?? String(x);
+    }
     const errors: Error[] = [];
     const text = bundle.formatPattern(m.value, values, errors);
     if (errors.length && strict) throw new Error(`${l} ${id}: ${errors.map((e) => e.message).join('; ')}`);
@@ -75,3 +78,6 @@ export function msg(id: string, args?: MessageArgs): LocalizedText {
 
 /** No text, in every language. */
 export const NO_TEXT: LocalizedText = Object.fromEntries(LOCALES.map((l) => [l, ''])) as Record<Locale, string>;
+
+/** A text in every language from one function of the language (built of messages). */
+export const localized = (f: (l: Locale) => string): LocalizedText => Object.fromEntries(LOCALES.map((l) => [l, f(l)])) as Record<Locale, string>;

@@ -1,0 +1,42 @@
+## atmospheric-pressure
+atmospheric-pressure-atm-command-apply = Такого тиску повітря біля землі не буває.
+atmospheric-pressure-atm-command-apply-2 = Поршень витягують у межах шкали — до 1 мл.
+atmospheric-pressure-ml = ,
+atmospheric-pressure-labatm-say = Виміряй лінійкою, яку довжину на шприці займає шкала від 0 до 1 мл.
+atmospheric-pressure-labatm-button = 📏 Виміряти шкалу шприца
+atmospheric-pressure-labatm-plan = виміряти довжину шкали 1 мл
+atmospheric-pressure-labatm-say-2 = Подивись, що сьогодні показує барометр-анероїд.
+atmospheric-pressure-labatm-button-2 = 🧭 Подивитися на барометр
+atmospheric-pressure-labatm-plan-2 = зняти покази барометра
+atmospheric-pressure-labatm-say-3 = Носик шприца відкритий. Витягни динамометром поршень до позначки 1 мл. Яку силу показує динамометр?
+atmospheric-pressure-labatm-button-3 = ↑ Носик відкритий: витягти поршень
+atmospheric-pressure-labatm-plan-3 = витягти поршень відкритого шприца
+atmospheric-pressure-labatm-say-4 = Встав поршень до кінця, закрий носик ковпачком і повільно витягни поршень динамометром до позначки { $pulled }. Яку силу показує динамометр?
+atmospheric-pressure-labatm-button-4 = 🔒 Носик закритий: витягти до { $pulled }
+atmospheric-pressure-labatm-plan-4 = витягти поршень закритого шприца до { $pulled }
+atmospheric-pressure-ask = Чи покаже шприц такий самий тиск повітря, як барометр?
+atmospheric-pressure-title = Вимірюємо атмосферний тиск шприцом
+atmospheric-pressure-choices = Менший, ніж барометр
+atmospheric-pressure-choices-2 = Такий самий, як барометр
+atmospheric-pressure-choices-3 = Більший, ніж барометр
+atmospheric-pressure-air-label = Погода (тиск повітря)
+atmospheric-pressure-air-options = Циклон: 990 гПа
+atmospheric-pressure-air-options-2 = Звичайний день: 1013 гПа
+atmospheric-pressure-air-options-3 = Антициклон: 1035 гПа
+atmospheric-pressure-build-question = Шприц на 1 мл, динамометр, лінійка й барометр-анероїд. Виміряємо, яку довжину займає шкала шприца від 0 до 1 мл, і подивимося на барометр. Спершу витягнемо поршень динамометром із відкритим носиком, потім — закривши носик ковпачком: до позначок 0,25, 0,5 і 1 мл. Тиск повітря дасть сила, поділена на площу поршня. Чи покаже шприц такий самий тиск, як барометр?
+atmospheric-pressure-answer-why = Поки носик відкритий, повітря заходить у шприц слідом за поршнем і тисне на нього зсередини так само, як ззовні, — тягнути легко. Коли носик закритий, зсередини тиснути майже нічому, і повітря ззовні впирається в поршень з силою F = p·S. Але трохи повітря завжди лишається в носику. Коли поршень іде вгору, це повітря розходиться по всьому шприцу й тисне зсередини тим слабше, чим більше йому місця. Тому сила зростає, що далі витягнуто поршень, і наближається до p·S, але не досягає її: тиск зі шприца виходить трохи меншим, ніж показує барометр.
+atmospheric-pressure-answer-say = Шприц показав { $p }, барометр — { $p0 }.
+atmospheric-pressure-answer-say-2 = Подивімося, що показав динамометр.
+atmospheric-pressure-answer-text = той самий тиск у межах точності динамометра
+atmospheric-pressure-answer-text-2 = на { $short } % менше — тим ближче до барометра, що далі витягнуто поршень
+atmospheric-pressure-answer-text-3 = більше
+atmospheric-pressure-answer-text-4 = Шкала 1 мл займає { $len } см, тож площа поршня S = V / l ≈ { $value } см². З відкритим носиком динамометр показав { $open }. Із закритим: { $l } (p = F / S). Барометр показував { $p0 }: шприц дав { $value2 }. (Тертя поршня не враховано: у справжньому шприці воно додає до сили.)
+atmospheric-pressure-setup = Шприц на 1 мл із ковпачком на носик, динамометр, лінійка, барометр-анероїд
+atmospheric-pressure-say = Шкала від 0 до 1 мл займає { $v0 }.
+atmospheric-pressure-say-2 = Барометр показує { $value }.
+atmospheric-pressure-say-3 = З відкритим носиком поршень іде легко: { $F }.
+atmospheric-pressure-say-4 = Закритий носик, поршень до { $v } мл — динамометр показує { $F }!
+atmospheric-pressure-at-s-title = площа поршня зі шкали (1 мл)
+atmospheric-pressure-at-b-title = барометр
+atmospheric-pressure-at-o-title = носик відкритий
+atmospheric-pressure-board-title = носик закритий, поршень до { $v } мл

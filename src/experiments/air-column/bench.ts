@@ -3,6 +3,7 @@ import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { parsePlace, type Place } from '../../scenarios/place.js';
 
@@ -54,7 +55,7 @@ export interface AirCommand {
 export const airCommand: CommandHandler<AirCommand> = {
   type: 'lab.air',
   apply(state, c) {
-    if (!(c.where === 'ground' || c.where === 'ninth' || c.where === 'airship' || c.where === 'high')) return err({ uk: 'Такого місця в досліді немає.', en: 'No such place in the experiment.' });
+    if (!(c.where === 'ground' || c.where === 'ninth' || c.where === 'airship' || c.where === 'high')) return err(msg('air-column-command-apply'));
     const town = airPlace(c.place);
     const climb = airClimb(c.where);
     const h = (town.elevation ?? 0) + climb;
@@ -68,28 +69,28 @@ export const AIR_COMMANDS = [airCommand] as const;
 
 const WHERE: Record<AirWhere, { say: LocalizedText; button: LocalizedText; plan: LocalizedText; name: LocalizedText }> = {
   ground: {
-    say: { uk: 'Перший поверх багатоповерхівки. Відкриваємо в телефоні барометр: що він показує?', en: 'The ground floor of a block of flats. We open the barometer on a phone: what does it show?' },
-    button: { uk: '📱 Барометр на 1-му поверсі', en: '📱 The barometer on the ground floor' },
-    plan: { uk: 'барометр на 1-му поверсі', en: 'the barometer on the ground floor' },
-    name: { uk: '1-й поверх', en: 'the ground floor' },
+    say: msg('air-column-ground-say'),
+    button: msg('air-column-ground-button'),
+    plan: msg('air-column-ground-plan'),
+    name: msg('air-column-ground-name'),
   },
   ninth: {
-    say: { uk: 'Їдемо ліфтом на 9-й поверх — на 8 поверхів вище, по 2,8 м — і знову дивимося на барометр.', en: 'Up in the lift to the ninth floor — 8 storeys of 2.8 m higher — and look at the barometer again.' },
-    button: { uk: '🛗 Барометр на 9-му поверсі', en: '🛗 The barometer on the ninth floor' },
-    plan: { uk: 'барометр на 9-му поверсі', en: 'the barometer on the ninth floor' },
-    name: { uk: '9-й поверх', en: 'the ninth floor' },
+    say: msg('air-column-ninth-say'),
+    button: msg('air-column-ninth-button'),
+    plan: msg('air-column-ninth-plan'),
+    name: msg('air-column-ninth-name'),
   },
   airship: {
-    say: { uk: 'А тепер — політ на дирижаблі над містом. Сучасні дирижаблі наповнюють негорючим гелієм. Не воднем, як «Гінденбург»: 6 травня 1937 року він спалахнув під час посадки в Лейкгерсті й згорів приблизно за пів хвилини. Фото палаючого «Гінденбурга» згодом стало обкладинкою першого альбому Led Zeppelin (1969). Дирижабль зазвичай летить на висоті 300 м — що показує барометр?', en: 'And now — a flight in an airship over the town. Airships today are filled with non-flammable helium. Not with hydrogen, as the Hindenburg was: on 6 May 1937 it caught fire landing at Lakehurst and burned in about half a minute. A photograph of the burning Hindenburg later became the cover of Led Zeppelin’s first album (1969). An airship usually flies 300 m up — what does the barometer show?' },
-    button: { uk: '🎈 Дирижабль, 300 м', en: '🎈 The airship, 300 m' },
-    plan: { uk: 'барометр у дирижаблі на 300 м', en: 'the barometer in the airship at 300 m' },
-    name: { uk: 'дирижабль на 300 м', en: 'the airship at 300 m' },
+    say: msg('air-column-airship-say'),
+    button: msg('air-column-airship-button'),
+    plan: msg('air-column-airship-plan'),
+    name: msg('air-column-airship-name'),
   },
   high: {
-    say: { uk: 'Дирижабль набирає висоту — до 2 км над містом.', en: 'The airship climbs — to 2 km over the town.' },
-    button: { uk: '🎈 Дирижабль, 2 км', en: '🎈 The airship, 2 km' },
-    plan: { uk: 'барометр у дирижаблі на 2 км', en: 'the barometer in the airship at 2 km' },
-    name: { uk: 'дирижабль на 2 км', en: 'the airship at 2 km' },
+    say: msg('air-column-high-say'),
+    button: msg('air-column-high-button'),
+    plan: msg('air-column-high-plan'),
+    name: msg('air-column-high-name'),
   },
 };
 export const airPlaceName = (w: AirWhere) => WHERE[w].name;

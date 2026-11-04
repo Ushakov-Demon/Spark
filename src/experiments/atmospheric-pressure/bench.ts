@@ -3,7 +3,8 @@ import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -38,7 +39,7 @@ export type AtmCommand =
 export const atmCommand: CommandHandler<AtmCommand> = {
   type: 'lab.atm',
   apply(state, c) {
-    if (!(c.air >= 87_000 && c.air <= 108_500)) return err({ uk: 'Такого тиску повітря біля землі не буває.', en: 'There is no such air pressure at the ground.' });
+    if (!(c.air >= 87_000 && c.air <= 108_500)) return err(msg('atmospheric-pressure-atm-command-apply'));
     const l = ATM_SCALE.value;
     const done = (r: MeasurementRecord) => ok({ state, kind: 'measurement' as const, externalEnergy: 0, trace: [r] });
     if (c.step === 'scale') return done({ kind: 'measurement', instrument: 'ruler', quantity: 'length', value: Math.round(l / RULER) * RULER, exact: l, entities: [], inputs: { volume: 1e-6, division: RULER } });
@@ -47,7 +48,7 @@ export const atmCommand: CommandHandler<AtmCommand> = {
     const S = 1e-6 / l;
     // The open syringe: air comes in after the plunger, the pressures alike on both sides (friction left out).
     if (c.step === 'open') return done({ kind: 'measurement', instrument: 'dynamometer', quantity: 'force', value: 0, exact: 0, entities: [], inputs: { pulled: MAX_PULL, sealed: 0, area: S } });
-    if (!(c.pulled > 0 && c.pulled <= MAX_PULL)) return err({ uk: 'Поршень витягують у межах шкали — до 1 мл.', en: 'The plunger goes out within the scale — up to 1 mL.' });
+    if (!(c.pulled > 0 && c.pulled <= MAX_PULL)) return err(msg('atmospheric-pressure-atm-command-apply-2'));
     const V0 = ATM_DEAD.value;
     const V = c.pulled * 1e-6;
     const inside = (c.air * V0) / (V0 + V);
@@ -58,32 +59,32 @@ export const atmCommand: CommandHandler<AtmCommand> = {
 
 export const ATM_COMMANDS = [atmCommand] as const;
 
-const ml = (x: number, uk: boolean) => `${String(x).replace('.', uk ? ',' : '.')} ${uk ? 'мл' : 'mL'}`;
+const ml = (x: number, l: Locale) => `${String(x).replace('.', t(l, 'atmospheric-pressure-ml'))} ${t(l, 'unit-sym-mL')}`;
 export const ATM_TEXT: Record<AtmCommand['type'], (c: AtmCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.atm': (x) => {
     const c = x as AtmCommand;
     if (c.step === 'scale')
       return {
-        say: { uk: 'Виміряй лінійкою, яку довжину на шприці займає шкала від 0 до 1 мл.', en: 'Measure with the ruler how long the syringe’s scale from 0 to 1 mL is.' },
-        button: { uk: '📏 Виміряти шкалу шприца', en: '📏 Measure the syringe’s scale' },
-        plan: { uk: 'виміряти довжину шкали 1 мл', en: 'measure the length of the 1 mL scale' },
+        say: msg('atmospheric-pressure-labatm-say'),
+        button: msg('atmospheric-pressure-labatm-button'),
+        plan: msg('atmospheric-pressure-labatm-plan'),
       };
     if (c.step === 'barometer')
       return {
-        say: { uk: 'Подивись, що сьогодні показує барометр-анероїд.', en: 'Look what the aneroid barometer shows today.' },
-        button: { uk: '🧭 Подивитися на барометр', en: '🧭 Read the barometer' },
-        plan: { uk: 'зняти покази барометра', en: 'read the barometer' },
+        say: msg('atmospheric-pressure-labatm-say-2'),
+        button: msg('atmospheric-pressure-labatm-button-2'),
+        plan: msg('atmospheric-pressure-labatm-plan-2'),
       };
     if (c.step === 'open')
       return {
-        say: { uk: 'Носик шприца відкритий. Витягни динамометром поршень до позначки 1 мл. Яку силу показує динамометр?', en: 'The syringe’s nozzle is open. Pull the plunger out to the 1 mL mark with the dynamometer. What force does it show?' },
-        button: { uk: '↑ Носик відкритий: витягти поршень', en: '↑ Nozzle open: pull the plunger' },
-        plan: { uk: 'витягти поршень відкритого шприца', en: 'pull the plunger of the open syringe' },
+        say: msg('atmospheric-pressure-labatm-say-3'),
+        button: msg('atmospheric-pressure-labatm-button-3'),
+        plan: msg('atmospheric-pressure-labatm-plan-3'),
       };
     return {
-      say: { uk: `Встав поршень до кінця, закрий носик ковпачком і повільно витягни поршень динамометром до позначки ${ml(c.pulled, true)}. Яку силу показує динамометр?`, en: `Push the plunger all the way in, shut the nozzle with the cap and slowly pull the plunger out to the ${ml(c.pulled, false)} mark. What force does the dynamometer show?` },
-      button: { uk: `🔒 Носик закритий: витягти до ${ml(c.pulled, true)}`, en: `🔒 Nozzle shut: pull to ${ml(c.pulled, false)}` },
-      plan: { uk: `витягти поршень закритого шприца до ${ml(c.pulled, true)}`, en: `pull the shut syringe’s plunger to ${ml(c.pulled, false)}` },
+      say: msg('atmospheric-pressure-labatm-say-4', { pulled: (l: Locale) => ml(c.pulled, l) }),
+      button: msg('atmospheric-pressure-labatm-button-4', { pulled: (l: Locale) => ml(c.pulled, l) }),
+      plan: msg('atmospheric-pressure-labatm-plan-4', { pulled: (l: Locale) => ml(c.pulled, l) }),
     };
   },
 };

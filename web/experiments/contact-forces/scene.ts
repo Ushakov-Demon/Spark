@@ -1,4 +1,5 @@
 import type { TouchCase } from '../../../src/experiments/contact-forces/bench.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { standSvg, THREAD, weightsSvg } from '../../graphics/scene/kit.js';
@@ -14,7 +15,7 @@ function view({ last, command, plan, locale }: SceneContext): TouchView {
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.touch');
   const which = tc?.case ?? (next?.kind === 'bench' ? (next.command as unknown as { case: TouchCase }).case : 'magnet');
   const acts = r?.inputs?.['acts'] === 1;
-  return { case: which, k: tc ? 1 : 0, ...(tc && r ? { read: acts ? (locale === 'uk' ? 'діє без дотику' : 'acts without touching') : locale === 'uk' ? 'без дотику не діє' : 'no force without touching' } : {}) };
+  return { case: which, k: tc ? 1 : 0, ...(tc && r ? { read: acts ? tl(locale, 'contact-forces-shown') : tl(locale, 'contact-forces-shown-2') } : {}) };
 }
 
 /**

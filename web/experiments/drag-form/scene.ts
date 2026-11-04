@@ -1,4 +1,5 @@
 import { DRAG_FPS, DRAG_START, DRAG_TRACK, dragBody, dragFall, type DragShape, framesText } from '../../../src/experiments/drag-form/bench.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, PLASTICINE, STEEL } from '../../graphics/scene/kit.js';
@@ -25,8 +26,8 @@ function view({ last, command, plan, locale }: SceneContext): DragView {
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.drag');
   const cmd = dc ?? (next?.kind === 'bench' ? (next.command as unknown as Drag) : { shape: 'ball' as const, medium: 'water' as const });
   const frames = dc && r ? (r.inputs?.['frames'] ?? 0) : null;
-  const air = locale === 'uk' ? 'повітря' : 'air';
-  return { shape: cmd.shape, medium: cmd.medium, size: dragBody(cmd.shape).across, at: frames !== null ? 1 : 0, air, ...(frames !== null ? { count: String(frames), read: `${framesText(frames, locale === 'uk')} ≈ ${formatMeasured('time', r!.value, 0.01, locale)}`, slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×${DRAG_SLOW}` } : {}) };
+  const air = tl(locale, 'drag-form-view-air');
+  return { shape: cmd.shape, medium: cmd.medium, size: dragBody(cmd.shape).across, at: frames !== null ? 1 : 0, air, ...(frames !== null ? { count: String(frames), read: `${framesText(frames, locale)} ≈ ${formatMeasured('time', r!.value, 0.01, locale)}`, slow: `${tl(locale, 'drag-form-view-slow')} ×${DRAG_SLOW}` } : {}) };
 }
 
 /**

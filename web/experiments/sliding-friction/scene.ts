@@ -1,3 +1,4 @@
+import { t } from '../../../src/knowledge/messages.js';
 import { BENCH_BLOCK } from '../../../src/scenarios/bench-kit.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
@@ -18,7 +19,7 @@ function view({ last, command, locale }: SceneContext): FrictionView {
   if (!(c?.type === 'lab.pull' && r)) return { weights: 0, block: BENCH_BLOCK.edges };
   // Stood on its narrower face: as tall as it was wide.
   const [a, b, h] = BENCH_BLOCK.edges;
-  return { block: BENCH_BLOCK.edges, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE, ...(c['face'] === 'narrow' ? { block: [a, h, b] as const } : {}), ...(c['surface'] === 'paper' ? { paper: locale === 'uk' ? 'аркуш паперу' : 'a sheet of paper' } : {}) };
+  return { block: BENCH_BLOCK.edges, weights: Number(c['weights']), pull: show('force', r.value), slide: SLIDE, ...(c['face'] === 'narrow' ? { block: [a, h, b] as const } : {}), ...(c['surface'] === 'paper' ? { paper: t(locale, 'sliding-friction-view-paper') } : {}) };
 }
 
 /** The board on the table, the block on it (slid along so far), the dynamometer pulling it. */

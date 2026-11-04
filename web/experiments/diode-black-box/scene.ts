@@ -1,3 +1,4 @@
+import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK } from '../../graphics/scene/kit.js';
@@ -11,7 +12,7 @@ function view({ last, command, plan, locale }: SceneContext): BoxView {
   const bc = command?.type === 'lab.box' ? (command as unknown as { source: number; reversed: boolean }) : undefined;
   const planned = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.box');
   const first = planned?.kind === 'bench' ? (planned.command as { source: number }).source : 0;
-  const mA = bc && r && r.value !== null ? (r.value * 1000).toFixed(1).replace('.', locale === 'uk' ? ',' : '.') : undefined;
+  const mA = bc && r && r.value !== null ? (r.value * 1000).toFixed(1).replace('.', t(locale, 'diode-black-box-volts')) : undefined;
   return { source: bc?.source ?? first, reversed: !!bc?.reversed, ...(mA !== undefined ? { display: mA } : {}) };
 }
 

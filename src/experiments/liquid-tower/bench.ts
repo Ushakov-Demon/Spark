@@ -3,7 +3,8 @@ import { ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { COMPONENTS } from '../../components/index.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -30,11 +31,11 @@ export const towerLiquidDensity = (l: TowerLiquid): number => COMPONENTS[l].phas
 const ACRYLIC: SourcedValue = sv(1180, 'kg/m³', 'acrylic glass (PMMA)', 'single-source', 0.02, [cite('wikipedia-pmma', 'Infobox: density 1.18 g/cm³; text: 1.17–1.20', '—', 1180)], 'Within 1.17–1.20 g/cm³ it stays between water and glycerol.');
 const HDPE: SourcedValue = sv(961, 'kg/m³', 'high-density polyethylene', 'single-source', 0.02, [cite('wikipedia-hdpe', 'ca. 0.961 g/cm³; ranges from 930 to 970 kg/m³', '—', 961)], 'Within 930–970 kg/m³ it stays between oil and water.');
 
-export const TOWER_BODIES: Readonly<Record<TowerBody, { readonly density: () => number; readonly name: LocalizedText; readonly made: LocalizedText; /** The name is feminine (uk). */ readonly fem?: boolean }>> = {
-  nut: { density: () => COMPONENTS.steel.phases.solid!.density!.value, name: { uk: 'сталева гайка', en: 'a steel nut' }, made: { uk: 'сталь', en: 'steel' }, fem: true },
-  acrylic: { density: () => ACRYLIC.value, name: { uk: 'шматочок оргскла', en: 'a piece of acrylic glass' }, made: { uk: 'оргскло', en: 'acrylic glass' } },
-  hdpe: { density: () => HDPE.value, name: { uk: 'шматочок поліетилену', en: 'a piece of polyethylene' }, made: { uk: 'поліетилен', en: 'polyethylene' } },
-  pine: { density: () => COMPONENTS.wood.phases.solid!.density!.value, name: { uk: 'сосновий кубик', en: 'a pine cube' }, made: { uk: 'сосна', en: 'pine' } },
+export const TOWER_BODIES: Readonly<Record<TowerBody, { readonly density: () => number; readonly name: LocalizedText; readonly made: LocalizedText; }>> = {
+  nut: { density: () => COMPONENTS.steel.phases.solid!.density!.value, name: msg('liquid-tower-nut-name'), made: msg('liquid-tower-nut-made') },
+  acrylic: { density: () => ACRYLIC.value, name: msg('liquid-tower-acrylic-name'), made: msg('liquid-tower-acrylic-made') },
+  hdpe: { density: () => HDPE.value, name: msg('liquid-tower-hdpe-name'), made: msg('liquid-tower-hdpe-made') },
+  pine: { density: () => COMPONENTS.wood.phases.solid!.density!.value, name: msg('liquid-tower-pine-name'), made: msg('liquid-tower-pine-made') },
 };
 
 /** Where the body comes to rest: on the bottom; at the boundary over layer `lower` (its index), `share` of it in that layer; or floating on the top one. */
@@ -77,10 +78,10 @@ export const towerCommand: CommandHandler<TowerCommand> = {
 export const TOWER_COMMANDS = [towerCommand] as const;
 
 const LIQUID: Record<TowerLiquid, { name: LocalizedText; in: LocalizedText }> = {
-  glycerol: { name: { uk: 'гліцерин', en: 'glycerol' }, in: { uk: 'у гліцерині', en: 'in the glycerol' } },
-  water: { name: { uk: 'вода', en: 'water' }, in: { uk: 'у воді', en: 'in the water' } },
-  'sunflower-oil': { name: { uk: 'олія', en: 'oil' }, in: { uk: 'в олії', en: 'in the oil' } },
-  ethanol: { name: { uk: 'спирт', en: 'ethanol' }, in: { uk: 'у спирті', en: 'in the ethanol' } },
+  glycerol: { name: msg('liquid-tower-glycerol-name'), in: msg('liquid-tower-glycerol-in') },
+  water: { name: msg('liquid-tower-water-name'), in: msg('liquid-tower-water-in') },
+  'sunflower-oil': { name: msg('liquid-tower-sunflower-oil-name'), in: msg('liquid-tower-sunflower-oil-in') },
+  ethanol: { name: msg('liquid-tower-ethanol-name'), in: msg('liquid-tower-ethanol-in') },
 };
 export const towerLiquidName = (l: TowerLiquid) => LIQUID[l].name;
 export const towerLiquidIn = (l: TowerLiquid) => LIQUID[l].in;
@@ -90,15 +91,15 @@ export const TOWER_TEXT: Record<TowerCommand['type'], (c: TowerCommand) => { say
     const c = x as TowerCommand;
     if (c.step === 'pour')
       return {
-        say: { uk: 'Наливаємо в мірний циліндр по 50 мл: спершу гліцерин, потім воду, олію і спирт — повільно, по стінці. Воду й спирт підфарбуємо, щоб шари було видно.', en: 'Into the measuring cylinder go 50 mL each: first glycerol, then water, oil and ethanol — slowly, down the wall. The water and the ethanol are tinted so the layers show.' },
-        button: { uk: '🫗 Налити шари', en: '🫗 Pour the layers' },
-        plan: { uk: 'налити чотири рідини шарами', en: 'pour four liquids in layers' },
+        say: msg('liquid-tower-labtower-say'),
+        button: msg('liquid-tower-labtower-button'),
+        plan: msg('liquid-tower-labtower-plan'),
       };
     const b = TOWER_BODIES[c.body ?? 'nut'].name;
     return {
-      say: { uk: `Обережно опускаємо в циліндр ${b.uk}. Де ${TOWER_BODIES[c.body ?? 'nut'].fem ? 'вона' : 'він'} зупиниться?`, en: `Gently let ${b.en} into the cylinder. Where will it stop?` },
-      button: { uk: `⬇ ${b.uk.charAt(0).toUpperCase()}${b.uk.slice(1)}`, en: `⬇ ${b.en.charAt(0).toUpperCase()}${b.en.slice(1)}` },
-      plan: { uk: `опустити: ${b.uk}`, en: `let in ${b.en}` },
+      say: msg('liquid-tower-drop-say', { body: (l: Locale) => b[l], what: c.body ?? 'nut' }),
+      button: msg('liquid-tower-labtower-button-2', { b: (l: Locale) => b[l].charAt(0).toUpperCase(), b2: (l: Locale) => b[l].slice(1) }),
+      plan: msg('liquid-tower-labtower-plan-2', { b: (l: Locale) => b[l] }),
     };
   },
 };

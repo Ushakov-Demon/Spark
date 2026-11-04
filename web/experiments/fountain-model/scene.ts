@@ -1,3 +1,4 @@
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -18,7 +19,7 @@ function view({ last, command, locale }: SceneContext): FountainView {
   const r = last && fc ? readingsOf([last])[0]?.record : undefined;
   if (!fc || !r) return { head: 0, jet: 0 };
   const cm = Math.round((r.value ?? 0) * 100);
-  return { head: fc.head, jet: r.value ?? 0, ...(fc.head > 0 ? { read: `h = ${cm} ${locale === 'uk' ? 'см' : 'cm'}` } : {}) };
+  return { head: fc.head, jet: r.value ?? 0, ...(fc.head > 0 ? { read: `h = ${cm} ${tl(locale, 'unit-sym-cm')}` } : {}) };
 }
 
 /**

@@ -5,6 +5,7 @@ import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { BENCH_WEIGHT } from '../../scenarios/bench-kit.js';
 
@@ -50,14 +51,14 @@ export const liftCommand: CommandHandler<LiftCommand> = {
 export const LIFT_COMMANDS = [liftCommand] as const;
 
 const PHASE: Record<LiftPhase, { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
-  rest: { say: { uk: 'Ліфт стоїть на першому поверсі. Що показує динамометр?', en: 'The lift stands on the ground floor. What does the dynamometer show?' }, button: { uk: '⏸ Ліфт стоїть', en: '⏸ The lift stands' }, plan: { uk: 'ліфт стоїть', en: 'the lift stands' } },
-  'up-start': { say: { uk: 'Тиснемо кнопку — ліфт рушає вгору, розганяючись. Поглянь на динамометр!', en: 'Press the button — the lift starts up, speeding up. Look at the dynamometer!' }, button: { uk: '⏫ Рушає вгору', en: '⏫ Starts up' }, plan: { uk: 'ліфт рушає вгору', en: 'the lift starts up' } },
-  up: { say: { uk: 'Ліфт їде вгору рівномірно. А тепер?', en: 'The lift goes up steadily. And now?' }, button: { uk: '⬆ Їде вгору рівномірно', en: '⬆ Goes up steadily' }, plan: { uk: 'ліфт їде вгору рівномірно', en: 'the lift goes up steadily' } },
-  'up-stop': { say: { uk: 'Ліфт гальмує біля верхнього поверху. Що з показами?', en: 'The lift slows down at the top floor. What about the reading?' }, button: { uk: '⏬ Гальмує нагорі', en: '⏬ Slows at the top' }, plan: { uk: 'ліфт гальмує нагорі', en: 'the lift slows at the top' } },
-  'down-start': { say: { uk: 'Тепер униз: ліфт рушає, розганяючись.', en: 'Now down: the lift starts, speeding up.' }, button: { uk: '⏬ Рушає вниз', en: '⏬ Starts down' }, plan: { uk: 'ліфт рушає вниз', en: 'the lift starts down' } },
-  down: { say: { uk: 'Ліфт їде вниз рівномірно.', en: 'The lift goes down steadily.' }, button: { uk: '⬇ Їде вниз рівномірно', en: '⬇ Goes down steadily' }, plan: { uk: 'ліфт їде вниз рівномірно', en: 'the lift goes down steadily' } },
-  'down-stop': { say: { uk: 'Ліфт гальмує внизу. А тепер?', en: 'The lift slows down at the bottom. And now?' }, button: { uk: '⏫ Гальмує внизу', en: '⏫ Slows at the bottom' }, plan: { uk: 'ліфт гальмує внизу', en: 'the lift slows at the bottom' } },
-  fall: { say: { uk: 'Дослід із підручника: на мить відпустимо динамометр разом із тягарцями — хай падають на підлогу кабіни. Що він показує в польоті?', en: 'The textbook’s investigation: let the dynamometer go for a moment with its weights — let them fall to the cabin’s floor. What does it show in flight?' }, button: { uk: '🪂 Відпустити динамометр', en: '🪂 Let the dynamometer go' }, plan: { uk: 'відпустити динамометр із тягарцями', en: 'let the dynamometer go with the weights' } },
+  rest: { say: msg('weight-in-lift-rest-say'), button: msg('weight-in-lift-rest-button'), plan: msg('weight-in-lift-rest-plan') },
+  'up-start': { say: msg('weight-in-lift-up-start-say'), button: msg('weight-in-lift-up-start-button'), plan: msg('weight-in-lift-up-start-plan') },
+  up: { say: msg('weight-in-lift-up-say'), button: msg('weight-in-lift-up-button'), plan: msg('weight-in-lift-up-plan') },
+  'up-stop': { say: msg('weight-in-lift-up-stop-say'), button: msg('weight-in-lift-up-stop-button'), plan: msg('weight-in-lift-up-stop-plan') },
+  'down-start': { say: msg('weight-in-lift-down-start-say'), button: msg('weight-in-lift-down-start-button'), plan: msg('weight-in-lift-down-start-plan') },
+  down: { say: msg('weight-in-lift-down-say'), button: msg('weight-in-lift-down-button'), plan: msg('weight-in-lift-down-plan') },
+  'down-stop': { say: msg('weight-in-lift-down-stop-say'), button: msg('weight-in-lift-down-stop-button'), plan: msg('weight-in-lift-down-stop-plan') },
+  fall: { say: msg('weight-in-lift-fall-say'), button: msg('weight-in-lift-fall-button'), plan: msg('weight-in-lift-fall-plan') },
 };
 export const liftPhaseText = (p: LiftPhase) => PHASE[p];
 

@@ -5,7 +5,8 @@ import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { weight } from '../../domains/mechanics/formulas.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { BENCH_WEIGHT } from '../../scenarios/bench-kit.js';
 
@@ -49,14 +50,14 @@ export const forcesCommand: CommandHandler<ForcesCommand> = {
     if (c.hold === 'one') return trace([read(0, P + Pr)]);
     if (c.hold === 'two') {
       const x = c.at ?? L / 2;
-      if (!(x >= 0 && x <= L)) return err({ uk: 'Тягарці чіпляють на лінійку — від 0 до 30 см.', en: 'The weights hang on the ruler — 0 to 30 cm.' });
+      if (!(x >= 0 && x <= L)) return err(msg('adding-forces-command-apply'));
       // Moments about the right end give the left one's share, and the other way round; the ruler's own weight halves.
       const left = (P * (L - x)) / L + Pr / 2;
       const right = (P * x) / L + Pr / 2;
       return trace([read(0, left, { at: x }), read(1, right, { at: x })]);
     }
     const down = c.down ?? 1;
-    if (!(down > 0 && down <= 1.5)) return err({ uk: 'Униз тягнемо з силою до 1,5 Н.', en: 'Pull down with up to 1.5 N.' });
+    if (!(down > 0 && down <= 1.5)) return err(msg('adding-forces-command-apply-2'));
     // The upper one holds the load and the lower one's pull as well.
     return trace([read(0, P + Pr + down), read(1, down, { down: 1 })]);
   },
@@ -65,36 +66,36 @@ export const forcesCommand: CommandHandler<ForcesCommand> = {
 export const FORCES_COMMANDS = [forcesCommand] as const;
 
 const cm = (m: number) => Math.round(m * 100);
-const N = (x: number, uk: boolean) => `${String(x).replace('.', uk ? ',' : '.')} ${uk ? 'Н' : 'N'}`;
+const N = (x: number, l: Locale) => `${String(x).replace('.', t(l, 'unit-sym-dot'))} ${t(l, 'unit-sym-N')}`;
 
 export const FORCES_TEXT: Record<ForcesCommand['type'], (c: ForcesCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.forces': (x) => {
     const c = x as ForcesCommand;
     if (c.hold === 'one')
       return {
-        say: { uk: 'Почепи лінійку з тягарцями на один динамометр — за середину. Що він показує?', en: 'Hang the ruler with the weights on one dynamometer — by its middle. What does it show?' },
-        button: { uk: '⬆ Один динамометр', en: '⬆ One dynamometer' },
-        plan: { uk: 'тримати вантаж одним динамометром', en: 'hold the load by one dynamometer' },
+        say: msg('adding-forces-labforces-say'),
+        button: msg('adding-forces-labforces-button'),
+        plan: msg('adding-forces-labforces-plan'),
       };
     if (c.hold === 'two') {
       const mid = Math.abs((c.at ?? 0.15) - FORCES_RULER.length.value / 2) < 1e-6;
       return mid
         ? {
-            say: { uk: 'Тепер тримаймо лінійку двома динамометрами за кінці, тягарці — посередині. Що показують обидва?', en: 'Now hold the ruler by two dynamometers at its ends, the weights in the middle. What do both show?' },
-            button: { uk: '⬆⬆ Два динамометри, тягарці посередині', en: '⬆⬆ Two dynamometers, weights in the middle' },
-            plan: { uk: 'два динамометри, тягарці посередині', en: 'two dynamometers, weights in the middle' },
+            say: msg('adding-forces-labforces-say-2'),
+            button: msg('adding-forces-labforces-button-2'),
+            plan: msg('adding-forces-labforces-plan-2'),
           }
         : {
-            say: { uk: `Пересунь тягарці на ${cm(c.at!)} см від лівого кінця. Як змінилися покази?`, en: `Move the weights to ${cm(c.at!)} cm from the left end. How did the readings change?` },
-            button: { uk: `⬆⬆ Тягарці на ${cm(c.at!)} см`, en: `⬆⬆ Weights at ${cm(c.at!)} cm` },
-            plan: { uk: `два динамометри, тягарці на ${cm(c.at!)} см`, en: `two dynamometers, weights at ${cm(c.at!)} cm` },
+            say: msg('adding-forces-labforces-say-3', { at: String(cm(c.at!)) }),
+            button: msg('adding-forces-labforces-button-3', { at: String(cm(c.at!)) }),
+            plan: msg('adding-forces-labforces-plan-3', { at: String(cm(c.at!)) }),
           };
     }
     const d = c.down ?? 1;
     return {
-      say: { uk: `Знову один динамометр тримає лінійку за середину, а другим тягни тягарці вниз, доки він не покаже ${N(d, true)}. Що показує верхній?`, en: `Again one dynamometer holds the ruler by the middle, and pull the weights down with the other until it shows ${N(d, false)}. What does the upper one show?` },
-      button: { uk: `⬆⬇ Вгору й униз (${N(d, true)})`, en: `⬆⬇ Up and down (${N(d, false)})` },
-      plan: { uk: `один угору, другий униз з силою ${N(d, true)}`, en: `one up, the other down with ${N(d, false)}` },
+      say: msg('adding-forces-labforces-say-4', { d: (l: Locale) => N(d, l) }),
+      button: msg('adding-forces-labforces-button-4', { d: (l: Locale) => N(d, l) }),
+      plan: msg('adding-forces-labforces-plan-4', { d: (l: Locale) => N(d, l) }),
     };
   },
 };

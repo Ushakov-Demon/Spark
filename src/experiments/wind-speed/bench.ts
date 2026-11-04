@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { STOPWATCH_DIVISION } from '../motion-lab-works/bench.js';
 
@@ -18,9 +19,9 @@ export const WIND_TRACK = 6;
 
 /** The Beaufort forces met here: their names, speed ranges (m/s) and signs on land. */
 export const BEAUFORT: Readonly<Record<1 | 2 | 3, { readonly name: LocalizedText; readonly from: number; readonly to: number; readonly signs: LocalizedText }>> = {
-  1: { name: { uk: 'тихий', en: 'light air' }, from: 0.3, to: 1.5, signs: { uk: 'дим «пливе», флюгер не обертається', en: 'smoke drifts, the wind vane does not turn' } },
-  2: { name: { uk: 'легкий', en: 'light breeze' }, from: 1.6, to: 3.4, signs: { uk: 'вітер відчувається обличчям, шелестить листя', en: 'the wind is felt on the face, leaves rustle' } },
-  3: { name: { uk: 'слабкий', en: 'gentle breeze' }, from: 3.4, to: 5.4, signs: { uk: 'тріпоче листя, хитаються дрібні гілки, майорять прапори', en: 'leaves and small twigs move all the time, light flags fly' } },
+  1: { name: msg('wind-speed-1-name'), from: 0.3, to: 1.5, signs: msg('wind-speed-1-signs') },
+  2: { name: msg('wind-speed-2-name'), from: 1.6, to: 3.4, signs: msg('wind-speed-2-signs') },
+  3: { name: msg('wind-speed-3-name'), from: 3.4, to: 5.4, signs: msg('wind-speed-3-signs') },
 };
 
 /** The days' winds: in the middle of each force's range (the conditions of the experiment, not measured values). */
@@ -46,7 +47,7 @@ export const windCommand: CommandHandler<WindCommand> = {
   type: 'lab.wind',
   apply(state, c) {
     const wind = WIND_DAYS[c.day];
-    if (!wind) return err({ uk: 'Такого дня в досліді немає.', en: 'No such day in the experiment.' });
+    if (!wind) return err(msg('wind-speed-command-apply'));
     const t = WIND_TRACK / wind.value;
     const div = STOPWATCH_DIVISION.value;
     const record: MeasurementRecord = { kind: 'measurement', instrument: 'stopwatch', quantity: 'time', value: Math.round(t / div) * div, exact: t, entities: [], inputs: { track: WIND_TRACK, wind: wind.value, day: c.day, division: div } };
@@ -56,16 +57,16 @@ export const windCommand: CommandHandler<WindCommand> = {
 
 export const WIND_COMMANDS = [windCommand] as const;
 
-const DAY: Record<1 | 2 | 3, { uk: string; en: string }> = { 1: { uk: 'Перший день', en: 'The first day' }, 2: { uk: 'Другий день', en: 'The second day' }, 3: { uk: 'Третій день', en: 'The third day' } };
+const DAY: Record<1 | 2 | 3, { uk: string; en: string }> = { 1: msg('wind-speed-day-1'), 2: msg('wind-speed-day-2'), 3: msg('wind-speed-day-3') };
 
 export const WIND_TEXT: Record<WindCommand['type'], (c: WindCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.wind': (x) => {
     const c = x as WindCommand;
     const b = BEAUFORT[c.day];
     return {
-      say: { uk: `${DAY[c.day].uk}: ${b.signs.uk}. Видуй бульбашку біля першої позначки й засічи, коли вона мине другу, за 6 м.`, en: `${DAY[c.day].en}: ${b.signs.en}. Blow a bubble at the first mark and time it to the second, 6 m on.` },
-      button: { uk: `🫧 ${DAY[c.day].uk}: ${b.signs.uk.split(',')[c.day === 1 ? 0 : 1]!.trim()}`, en: `🫧 ${DAY[c.day].en}: ${b.signs.en.split(',')[c.day === 1 ? 0 : 1]!.trim()}` },
-      plan: { uk: `${DAY[c.day].uk.toLowerCase()}: бульбашка на 6 м`, en: `${DAY[c.day].en.toLowerCase()}: a bubble over 6 m` },
+      say: msg('wind-speed-labwind-say', { DAY: (l: Locale) => DAY[c.day][l], signs: (l: Locale) => b.signs[l] }),
+      button: msg('wind-speed-labwind-button', { DAY: (l: Locale) => DAY[c.day][l], signs: (l: Locale) => b.signs[l].split(',')[c.day === 1 ? 0 : 1]!.trim() }),
+      plan: msg('wind-speed-labwind-plan', { DAY: (l: Locale) => DAY[c.day][l].toLowerCase() }),
     };
   },
 };

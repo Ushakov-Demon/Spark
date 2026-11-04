@@ -1,3 +1,4 @@
+import { t } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { dynamometerSvg, rulerSvg, standSvg, THREAD, weightsSvg } from '../../graphics/scene/kit.js';
@@ -24,10 +25,10 @@ function view({ last, command, plan, locale }: SceneContext): CartsView {
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.carts');
   const cmd = cc ?? (next?.kind === 'bench' ? (next.command as unknown as Carts) : { mode: 'push' as const, weights: 0 });
   const recs = last && cc ? readingsOf([last]).map((x) => x.record) : [];
-  const cm = (x: number | null) => `${String(Math.round((x ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`;
+  const cm = (x: number | null) => `${String(Math.round((x ?? 0) * 1000) / 10).replace('.', t(locale, 'carts-mass-cm'))} ${t(locale, 'unit-sym-cm')}`;
   if (cmd.mode === 'weigh') return { mode: 'weigh', weights: cmd.weights, x1: 0, x2: 0, cart: cmd.cart ?? 1, ...(recs[0] ? { read: [formatMeasured('force', recs[0].value, 0.1, locale)] } : {}) };
   const done = recs.length === 2;
-  return { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×3` } : {}) };
+  return { mode: 'push', weights: cmd.weights, x1: done ? recs[0]!.value ?? 0 : 0, x2: done ? recs[1]!.value ?? 0 : 0, ...(done ? { read: recs.map((x) => cm(x.value)), slow: `${t(locale, 'carts-mass-view-slow')} ×3` } : {}) };
 }
 
 /**

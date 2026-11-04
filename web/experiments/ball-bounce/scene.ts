@@ -1,4 +1,5 @@
 import { BOUNCE_BALLS, type BounceBall, bounceTops } from '../../../src/experiments/ball-bounce/bench.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, STEEL, WOOD_EDGE } from '../../graphics/scene/kit.js';
@@ -32,8 +33,8 @@ function view({ last, command, plan, locale }: SceneContext): BounceView {
   const ball = bc?.ball ?? (next?.kind === 'bench' ? (next.command as unknown as Drop).ball : 'pingpong');
   const marks = bc ? bounceTops(bc.ball, bc.bounce).slice(1) : [];
   const end = marks.at(-1) ?? 1;
-  const labels: [string, string, string] = locale === 'uk' ? ['Eп', 'Eк', 'тепло'] : ['Eп', 'Eк', 'heat'];
-  return { ball, size: BOUNCE_BALLS[ball].size, y: end, squash: bc && end === 0 ? 1 : 0, mech: end, marks, labels, ...(bc && r ? { read: `${Math.round((r.value ?? 0) * 100)} ${locale === 'uk' ? 'см' : 'cm'}` } : {}) };
+  const labels: [string, string, string] = ['Eп', 'Eк', tl(locale, 'ball-bounce-view-labels')];
+  return { ball, size: BOUNCE_BALLS[ball].size, y: end, squash: bc && end === 0 ? 1 : 0, mech: end, marks, labels, ...(bc && r ? { read: `${Math.round((r.value ?? 0) * 100)} ${tl(locale, 'unit-sym-cm')}` } : {}) };
 }
 
 /**

@@ -5,7 +5,8 @@ import { cite, sv } from '../../components/sourced.js';
 import { COMPONENTS } from '../../components/index.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { AIR_DENSITY } from '../../domains/thermal/evaporation.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t as tl } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -81,7 +82,7 @@ export function dragFall(shape: DragShape, medium: DragMedium): { at: (t: number
 export const dragCommand: CommandHandler<DragCommand> = {
   type: 'lab.drag',
   apply(state, c) {
-    if (!(c.shape in DRAG_COEFFICIENTS) || !(c.medium === 'water' || c.medium === 'air')) return err({ uk: 'Такого тіла чи середовища в досліді немає.', en: 'No such body or medium in the experiment.' });
+    if (!(c.shape in DRAG_COEFFICIENTS) || !(c.medium === 'water' || c.medium === 'air')) return err(msg('drag-form-command-apply'));
     const f = dragFall(c.shape, c.medium);
     const t = f.timeTo(DRAG_START + DRAG_TRACK) - f.timeTo(DRAG_START);
     // (Counted in frames: the time is a whole number of 1/30 s.)
@@ -94,18 +95,13 @@ export const dragCommand: CommandHandler<DragCommand> = {
 export const DRAG_COMMANDS = [dragCommand] as const;
 
 const SHAPE: Record<DragShape, { name: LocalizedText; icon: string }> = {
-  ball: { name: { uk: 'кулька', en: 'the ball' }, icon: '⚫' },
-  cube: { name: { uk: 'кубик', en: 'the cube' }, icon: '◼' },
-  plate: { name: { uk: 'пластинка', en: 'the plate' }, icon: '▬' },
+  ball: { name: msg('drag-form-ball-name'), icon: '⚫' },
+  cube: { name: msg('drag-form-cube-name'), icon: '◼' },
+  plate: { name: msg('drag-form-plate-name'), icon: '▬' },
 };
 export const dragShapeName = (s: DragShape) => SHAPE[s].name;
 /** «1 кадр», «4 кадри», «11 кадрів». */
-export const framesText = (n: number, uk: boolean): string => {
-  if (!uk) return `${n} frame${n === 1 ? '' : 's'}`;
-  const d = n % 10;
-  const teen = n % 100 >= 11 && n % 100 <= 14;
-  return `${n} ${!teen && d === 1 ? 'кадр' : !teen && d >= 2 && d <= 4 ? 'кадри' : 'кадрів'}`;
-};
+export const framesText = (n: number, l: Locale): string => tl(l, 'count-frames', { n });
 
 export const DRAG_TEXT: Record<DragCommand['type'], (c: DragCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.drag': (x) => {
@@ -113,19 +109,19 @@ export const DRAG_TEXT: Record<DragCommand['type'], (c: DragCommand) => { say: L
     const n = SHAPE[c.shape].name;
     if (c.medium === 'air')
       return {
-        say: { uk: 'А тепер ту саму кульку відпустимо в повітрі — біля таких самих позначок — і знімемо так само.', en: 'And now the same ball is let go in the air — past the same marks — and filmed the same way.' },
-        button: { uk: '⚫ Кулька в повітрі', en: '⚫ The ball in the air' },
-        plan: { uk: 'кулька в повітрі', en: 'the ball in the air' },
+        say: msg('drag-form-labdrag-say'),
+        button: msg('drag-form-labdrag-button'),
+        plan: msg('drag-form-labdrag-plan'),
       };
     const say: Record<DragShape, LocalizedText> = {
-      ball: { uk: 'Скачаємо з 5 г пластиліну кульку й відпустимо її біля поверхні води. Знімаємо телефоном: за кадрами відео знайдемо, скільки часу вона йде між позначками.', en: 'Roll 5 g of plasticine into a ball and let it go at the water’s surface. We film it: the video’s frames will tell how long it takes between the marks.' },
-      cube: { uk: 'Ту саму грудку пластиліну зліпимо в кубик і відпустимо так само.', en: 'The same lump of plasticine is moulded into a cube and let go the same way.' },
-      plate: { uk: 'А тепер розплющимо її в пласку квадратну пластинку й відпустимо плазом.', en: 'Now it is pressed into a flat square plate and let go lying flat.' },
+      ball: msg('drag-form-say-ball'),
+      cube: msg('drag-form-say-cube'),
+      plate: msg('drag-form-say-plate'),
     };
     return {
       say: say[c.shape],
-      button: { uk: `${SHAPE[c.shape].icon} ${n.uk[0]!.toUpperCase()}${n.uk.slice(1)} у воді`, en: `${SHAPE[c.shape].icon} ${n.en[0]!.toUpperCase()}${n.en.slice(1)} in water` },
-      plan: { uk: `${n.uk} у воді`, en: `${n.en} in water` },
+      button: msg('drag-form-labdrag-button-2', { icon: SHAPE[c.shape].icon, n: (l: Locale) => n[l][0]!.toUpperCase(), n2: (l: Locale) => n[l].slice(1) }),
+      plan: msg('drag-form-labdrag-plan-2', { n: (l: Locale) => n[l] }),
     };
   },
 };

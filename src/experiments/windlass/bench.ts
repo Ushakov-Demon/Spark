@@ -1,7 +1,8 @@
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 
 /**
  * A mechanism turning straight motion into turning and back (grade 7, construction): a well's windlass made on a
@@ -31,12 +32,12 @@ export const winchCommand: CommandHandler<WinchCommand> = {
   apply(state, c) {
     const d = WINCH_SPOOLS[c.spool];
     if (c.mode === 'lower') {
-      if (!(c.amount > 0 && c.amount <= 0.5)) return err({ uk: 'Вантаж опускаємо до 50 см.', en: 'The load goes down up to 50 cm.' });
+      if (!(c.amount > 0 && c.amount <= 0.5)) return err(msg('windlass-winch-command-apply'));
       const n = c.amount / (Math.PI * d);
       const record: MeasurementRecord = { kind: 'measurement', instrument: 'eye', quantity: 'turns', value: Math.round(n / WINCH_TURN_DIVISION) * WINCH_TURN_DIVISION, exact: n, entities: [], inputs: { diameter: d, length: c.amount, division: WINCH_TURN_DIVISION } };
       return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [record] });
     }
-    if (!(c.amount > 0 && c.amount <= 20)) return err({ uk: 'Ручку повертаємо до 20 разів.', en: 'Turn the handle up to 20 times.' });
+    if (!(c.amount > 0 && c.amount <= 20)) return err(msg('windlass-winch-command-apply-2'));
     const l = Math.PI * d * c.amount;
     const record: MeasurementRecord = { kind: 'measurement', instrument: 'ruler', quantity: 'length', value: Math.round(l / WINCH_DIVISION) * WINCH_DIVISION, exact: l, entities: [], inputs: { diameter: d, turns: c.amount, division: WINCH_DIVISION } };
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [record] });
@@ -46,8 +47,8 @@ export const winchCommand: CommandHandler<WinchCommand> = {
 export const WINCH_COMMANDS = [winchCommand] as const;
 
 const SPOOL: Record<WinchSpool, { uk: string; en: string }> = {
-  reel: { uk: 'котушка від ниток (d = 2 см)', en: 'the cotton reel (d = 2 cm)' },
-  pencil: { uk: 'олівець (d = 8 мм)', en: 'the pencil (d = 8 mm)' },
+  reel: msg('windlass-spool-reel'),
+  pencil: msg('windlass-spool-pencil'),
 };
 export const winchSpoolName = (s: WinchSpool) => SPOOL[s];
 
@@ -58,15 +59,15 @@ export const WINCH_TEXT: Record<WinchCommand['type'], (c: WinchCommand) => { say
     if (c.mode === 'lower') {
       const cm = Math.round(c.amount * 100);
       return {
-        say: { uk: `Нитка намотана на ${sp.uk}. Опусти вантаж на ${cm} см і порахуй оберти за міткою на котушці.`, en: `The thread is wound on ${sp.en}. Let the load down by ${cm} cm and count the turns by the mark on the spool.` },
-        button: { uk: `⬇ Опустити на ${cm} см: ${c.spool === 'reel' ? 'котушка' : 'олівець'}`, en: `⬇ Let down ${cm} cm: ${c.spool === 'reel' ? 'the reel' : 'the pencil'}` },
-        plan: { uk: `${sp.uk}: опустити вантаж на ${cm} см`, en: `${sp.en}: let the load down ${cm} cm` },
+        say: msg('windlass-labwinch-say', { sp: (l: Locale) => sp[l], cm: String(cm) }),
+        button: msg('windlass-labwinch-button', { cm: String(cm), value: (l: Locale) => c.spool === 'reel' ? t(l, 'windlass-button-uk') : t(l, 'windlass-button-uk-2') }),
+        plan: msg('windlass-labwinch-plan', { sp: (l: Locale) => sp[l], cm: String(cm) }),
       };
     }
     return {
-      say: { uk: `А тепер навпаки: поверни ручку — ${sp.uk} — ${c.amount} разів і виміряй лінійкою, на скільки піднявся вантаж.`, en: `And now the other way: turn the handle — ${sp.en} — ${c.amount} times and measure by the ruler how far the load rose.` },
-      button: { uk: `🔄 ${c.amount} обертів ручки: ${c.spool === 'reel' ? 'котушка' : 'олівець'}`, en: `🔄 ${c.amount} turns of the handle: ${c.spool === 'reel' ? 'the reel' : 'the pencil'}` },
-      plan: { uk: `${sp.uk}: ${c.amount} обертів ручки`, en: `${sp.en}: ${c.amount} turns of the handle` },
+      say: msg('windlass-labwinch-say-2', { sp: (l: Locale) => sp[l], amount: String(c.amount) }),
+      button: msg('windlass-labwinch-button-2', { amount: String(c.amount), value: (l: Locale) => c.spool === 'reel' ? t(l, 'windlass-button-uk') : t(l, 'windlass-button-uk-2') }),
+      plan: msg('windlass-labwinch-plan-2', { sp: (l: Locale) => sp[l], amount: String(c.amount) }),
     };
   },
 };

@@ -1,3 +1,4 @@
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -20,7 +21,7 @@ function view({ last, command, locale }: SceneContext): DiverView {
   if (dc.step === 'volume') return { stage: 'cylinder', squeeze: 0, rise: 0, depth: 0, ...(r ? { cylinder: { after: r.inputs?.['after'] ?? 0, read: `V = ${formatMeasured('volume', r.value, 1e-7, locale)}` } } : {}) };
   const sinks = r?.inputs?.['sinks'] === 1;
   const rise = r?.value ?? 0;
-  const mm = `${Math.round(rise * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}`;
+  const mm = `${Math.round(rise * 1000)} ${tl(locale, 'unit-sym-mm')}`;
   return { stage: 'bottle', squeeze: dc.step === 'squeeze' ? Math.min(1, (dc.press ?? 0) / FULL_SQUEEZE) : 0, rise, depth: sinks ? 1 : 0, read: `Δh = ${mm}` };
 }
 

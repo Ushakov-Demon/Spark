@@ -2,6 +2,7 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import { parsePlace, type Place } from '../../scenarios/place.js';
 import { zoneOffset } from '../../scenarios/place-time.js';
 
@@ -105,7 +106,7 @@ export interface GnomonCommand {
 export const gnomonCommand: CommandHandler<GnomonCommand> = {
   type: 'lab.gnomon',
   apply(state, c) {
-    if (!(c.series in { morning: 1, noon: 1, afternoon: 1 })) return err({ uk: 'Такої серії в досліді немає.', en: 'No such series in the experiment.' });
+    if (!(c.series in { morning: 1, noon: 1, afternoon: 1 })) return err(msg('solar-noon-gnomon-command-apply'));
     const place = gnomonPlace(c.place);
     const { zone } = gnomonClock(place);
     const trace: MeasurementRecord[] = gnomonTimes(place)[c.series].map((time) => {
@@ -132,19 +133,19 @@ export const GNOMON_TEXT: Record<GnomonCommand['type'], (c: GnomonCommand) => { 
     const times = gnomonTimes(gnomonPlace(c.place))[c.series].map(clockText).join(', ');
     const what: Record<GnomonSeries, { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
       morning: {
-        say: { uk: `Ранок. Рулеткою міряємо тінь метрової палиці від її основи до кінця тіні — о ${times}.`, en: `Morning. With a tape we measure the metre stick's shadow from its foot to the shadow's end — at ${times}.` },
-        button: { uk: '🌅 Тінь уранці', en: '🌅 The shadow in the morning' },
-        plan: { uk: `тінь о ${times}`, en: `the shadow at ${times}` },
+        say: msg('solar-noon-morning-say', { times }),
+        button: msg('solar-noon-morning-button'),
+        plan: msg('solar-noon-morning-plan', { times }),
       },
       noon: {
-        say: { uk: `Далі — о ${times}.`, en: `Then — at ${times}.` },
-        button: { uk: '☀ Тінь опівдні', en: '☀ The shadow about noon' },
-        plan: { uk: `тінь о ${times}`, en: `the shadow at ${times}` },
+        say: msg('solar-noon-what-say', { times }),
+        button: msg('solar-noon-what-button'),
+        plan: msg('solar-noon-morning-plan', { times }),
       },
       afternoon: {
-        say: { uk: `Після полудня — ще чотири заміри: о ${times}.`, en: `After noon — four more: at ${times}.` },
-        button: { uk: '🌇 Тінь після полудня', en: '🌇 The shadow in the afternoon' },
-        plan: { uk: `тінь о ${times}`, en: `the shadow at ${times}` },
+        say: msg('solar-noon-afternoon-say', { times }),
+        button: msg('solar-noon-afternoon-button'),
+        plan: msg('solar-noon-morning-plan', { times }),
       },
     };
     return what[c.series];

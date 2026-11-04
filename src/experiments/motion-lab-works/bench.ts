@@ -4,7 +4,8 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { conicalPeriod, pendulumPeriodAt, rollingAcceleration } from '../../domains/mechanics/formulas.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import { msg, t as tl } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -69,7 +70,7 @@ export const grooveAcceleration = (raise = GROOVE_RAISE.value): number => rollin
 export const tapeCommand: CommandHandler<TapeCommand> = {
   type: 'lab.tape',
   apply(state, c) {
-    if (!(c.length > 0 && c.length <= 2)) return err({ uk: 'Стрічкою міряють до 2 м.', en: 'The tape measures up to 2 m.' });
+    if (!(c.length > 0 && c.length <= 2)) return err(msg('motion-lab-works-tape-command-apply'));
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('tape', 'length', tape(c.length), c.length, { division: TAPE_DIVISION })] });
   },
 };
@@ -77,9 +78,9 @@ export const tapeCommand: CommandHandler<TapeCommand> = {
 export const rollCommand: CommandHandler<RollCommand> = {
   type: 'lab.roll',
   apply(state, c) {
-    if (!(c.path > 0 && c.path <= GROOVE_LENGTH.value)) return err({ uk: 'Кулька котиться лише жолобом.', en: 'The ball rolls only along the groove.' });
+    if (!(c.path > 0 && c.path <= GROOVE_LENGTH.value)) return err(msg('motion-lab-works-roll-command-apply'));
     const raise = c.raise ?? GROOVE_RAISE.value;
-    if (!(raise > 0 && raise <= 0.3)) return err({ uk: 'Жолоб ставлять під невеликим кутом: верхній кінець — до 30 см.', en: 'The groove stands at a small angle: its upper end up to 30 cm.' });
+    if (!(raise > 0 && raise <= 0.3)) return err(msg('motion-lab-works-roll-command-apply-2'));
     // From rest, at a steady acceleration: l = a·t²/2.
     const a = grooveAcceleration(raise);
     const t = Math.sqrt((2 * c.path) / a);
@@ -91,8 +92,8 @@ export const whirlCommand: CommandHandler<WhirlCommand> = {
   type: 'lab.whirl',
   apply(state, c) {
     const r = CIRCLE_RADIUS.value;
-    if (!(c.thread > r && c.thread <= 1)) return err({ uk: 'Нитка має бути довшою за радіус кола.', en: 'The thread must be longer than the circle’s radius.' });
-    if (!(Number.isInteger(c.turns) && c.turns > 0)) return err({ uk: 'Скільки обертів рахувати?', en: 'How many turns to count?' });
+    if (!(c.thread > r && c.thread <= 1)) return err(msg('motion-lab-works-whirl-command-apply'));
+    if (!(Number.isInteger(c.turns) && c.turns > 0)) return err(msg('motion-lab-works-whirl-command-apply-2'));
     const T = conicalPeriod(c.thread, r, G);
     const t = T * c.turns;
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('stopwatch', 'time', stopwatch(t), t, { thread: c.thread, radius: r, turns: c.turns, period: T, division: STOPWATCH_DIVISION.value })] });
@@ -102,9 +103,9 @@ export const whirlCommand: CommandHandler<WhirlCommand> = {
 export const swingCommand: CommandHandler<SwingCommand> = {
   type: 'lab.swing',
   apply(state, c) {
-    if (!(c.length > 0.05 && c.length <= 1.2)) return err({ uk: 'Маятник — від 5 см до 1,2 м.', en: 'The pendulum is 5 cm to 1.2 m long.' });
-    if (!(c.amplitude > 0 && c.amplitude < c.length / 2)) return err({ uk: 'Відхили кульку трохи — на кілька сантиметрів.', en: 'Pull the ball aside a little — a few centimetres.' });
-    if (!(Number.isInteger(c.count) && c.count > 0)) return err({ uk: 'Скільки коливань рахувати?', en: 'How many swings to count?' });
+    if (!(c.length > 0.05 && c.length <= 1.2)) return err(msg('motion-lab-works-swing-command-apply'));
+    if (!(c.amplitude > 0 && c.amplitude < c.length / 2)) return err(msg('motion-lab-works-swing-command-apply-2'));
+    if (!(Number.isInteger(c.count) && c.count > 0)) return err(msg('motion-lab-works-swing-command-apply-3'));
     // The mass does not enter: the period follows from the length (and, a little, from the angle of the swing).
     const angle = Math.asin(c.amplitude / c.length);
     const T = pendulumPeriodAt(c.length, G, angle);
@@ -116,47 +117,45 @@ export const swingCommand: CommandHandler<SwingCommand> = {
 export const MOTION_COMMANDS = [tapeCommand, rollCommand, whirlCommand, swingCommand] as const;
 
 // To half a centimetre where it is one (an amplitude of 2,5 cm), whole ones otherwise.
-const num = (m: number, comma: boolean) => String(Math.round(m * 200) / 2).replace('.', comma ? ',' : '.');
-const cm = (m: number) => `${num(m, true)} см`;
-const cmEn = (m: number) => `${num(m, false)} cm`;
-const g = (kg: number) => `${Math.round(kg * 1000)} г`;
-const gEn = (kg: number) => `${Math.round(kg * 1000)} g`;
+const num = (m: number, l: Locale) => new Intl.NumberFormat(NUMBER_LOCALE[l], { maximumFractionDigits: 1, useGrouping: false }).format(Math.round(m * 200) / 2);
+const cm = (m: number, l: Locale) => `${num(m, l)} ${tl(l, 'unit-sym-cm')}`;
+const g = (kg: number, l: Locale) => `${Math.round(kg * 1000)} ${tl(l, 'unit-sym-g')}`;
 
 /** What a step of the motion bench asks to do and what its button says. */
 export const MOTION_TEXT: Record<MotionCommand['type'], (c: MotionCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.tape': (c) => {
     const t = c as TapeCommand;
     return t.what === 'path'
-      ? { say: { uk: 'Виміряй стрічкою відстань від позначки крейдою до циліндра — це шлях кульки.', en: 'Measure with the tape from the chalk mark to the cylinder — the ball’s path.' }, button: { uk: '📏 Виміряти шлях', en: '📏 Measure the path' }, plan: { uk: 'виміряти шлях кульки', en: 'measure the ball’s path' } }
-      : { say: { uk: `Виміряй довжину маятника — від точки підвісу до середини кульки: ${cm(t.length)}.`, en: `Measure the pendulum — from the point of suspension to the middle of the ball: ${cmEn(t.length)}.` }, button: { uk: '📏 Виміряти довжину', en: '📏 Measure the length' }, plan: { uk: 'виміряти довжину маятника', en: 'measure the pendulum' } };
+      ? { say: msg('motion-lab-works-labtape-say'), button: msg('motion-lab-works-labtape-button'), plan: msg('motion-lab-works-labtape-plan') }
+      : { say: msg('motion-lab-works-labtape-say-2', { length: (l: Locale) => cm(t.length, l) }), button: msg('motion-lab-works-labtape-button-2'), plan: msg('motion-lab-works-labtape-plan-2') };
   },
   'lab.roll': (c) => {
     const half = (c as RollCommand).path < ROLL_PATH - 1e-9;
     return half
-      ? { say: { uk: 'Тепер — лише половина шляху: постав циліндр посередині й знову відпусти кульку від позначки.', en: 'Now half the path: put the cylinder half-way and let the ball go from the mark again.' }, button: { uk: '⏱ Половина шляху', en: '⏱ Half the path' }, plan: { uk: 'скотити кульку на половині шляху', en: 'roll the ball half-way' } }
-      : { say: { uk: 'Відпусти кульку від позначки, не штовхаючи, і виміряй секундоміром, за який час вона докотиться до циліндра.', en: 'Let the ball go from the mark without pushing and time it with the stopwatch down to the cylinder.' }, button: { uk: '⏱ Відпустити кульку', en: '⏱ Let the ball go' }, plan: { uk: 'скотити кульку жолобом', en: 'roll the ball down the groove' } };
+      ? { say: msg('motion-lab-works-labroll-say'), button: msg('motion-lab-works-labroll-button'), plan: msg('motion-lab-works-labroll-plan') }
+      : { say: msg('motion-lab-works-labroll-say-2'), button: msg('motion-lab-works-labroll-button-2'), plan: msg('motion-lab-works-labroll-plan-2') };
   },
   'lab.whirl': (c) => {
     const w = c as WhirlCommand;
     return {
-      say: { uk: `Тримай нитку (${cm(w.thread)}) за петлю над центром кола й розкрути тіло так, щоб воно йшло по колу. Виміряй час ${w.turns} обертів.`, en: `Hold the thread (${cmEn(w.thread)}) by its loop over the centre of the circle and swing the body round it. Time ${w.turns} turns.` },
-      button: { uk: `⏱ ${w.turns} обертів (нитка ${cm(w.thread)})`, en: `⏱ ${w.turns} turns (thread ${cmEn(w.thread)})` },
-      plan: { uk: `${w.turns} обертів, нитка ${cm(w.thread)}`, en: `${w.turns} turns, thread ${cmEn(w.thread)}` },
+      say: msg('motion-lab-works-labwhirl-say', { thread: (l: Locale) => cm(w.thread, l), turns: String(w.turns) }),
+      button: msg('motion-lab-works-labwhirl-button', { turns: String(w.turns), thread: (l: Locale) => cm(w.thread, l) }),
+      plan: msg('motion-lab-works-labwhirl-plan', { turns: String(w.turns), thread: (l: Locale) => cm(w.thread, l) }),
     };
   },
   'lab.swing': (c) => {
     const s = c as SwingCommand;
     return {
-      say: { uk: `Маятник ${cm(s.length)}, кулька ${g(s.mass)}: відхили її на ${cm(s.amplitude)} і відпусти. Виміряй час ${s.count} коливань.`, en: `A ${cmEn(s.length)} pendulum with a ${gEn(s.mass)} ball: pull it ${cmEn(s.amplitude)} aside and let go. Time ${s.count} swings.` },
-      button: { uk: `⏱ ${s.count} коливань: ${cm(s.length)}, ${cm(s.amplitude)}, ${g(s.mass)}`, en: `⏱ ${s.count} swings: ${cmEn(s.length)}, ${cmEn(s.amplitude)}, ${gEn(s.mass)}` },
-      plan: { uk: `${cm(s.length)}, відхилення ${cm(s.amplitude)}, кулька ${g(s.mass)}`, en: `${cmEn(s.length)}, ${cmEn(s.amplitude)} aside, a ${gEn(s.mass)} ball` },
+      say: msg('motion-lab-works-labswing-say', { length: (l: Locale) => cm(s.length, l), mass: (l: Locale) => g(s.mass, l), amplitude: (l: Locale) => cm(s.amplitude, l), count: String(s.count) }),
+      button: msg('motion-lab-works-labswing-button', { count: String(s.count), length: (l: Locale) => cm(s.length, l), amplitude: (l: Locale) => cm(s.amplitude, l), mass: (l: Locale) => g(s.mass, l) }),
+      plan: msg('motion-lab-works-labswing-plan', { length: (l: Locale) => cm(s.length, l), amplitude: (l: Locale) => cm(s.amplitude, l), mass: (l: Locale) => g(s.mass, l) }),
     };
   },
 };
 
 /** What stands on the table for each of the motion benches. */
 export const MOTION_SETUP: Record<'incline' | 'circle' | 'pendulum', LocalizedText> = {
-  incline: { uk: 'Жолоб на штативі, сталева кулька, металевий циліндр, вимірювальна стрічка, секундомір', en: 'A groove on a stand, a steel ball, a metal cylinder, a measuring tape, a stopwatch' },
-  circle: { uk: 'Тіло на нитці з петлею, аркуш із колом радіусом 15 см, секундомір', en: 'A body on a thread with a loop, a sheet with a 15 cm circle, a stopwatch' },
-  pendulum: { uk: 'Штатив із кільцем, дві кульки на нитках, мірна стрічка, секундомір', en: 'A stand with a ring, two balls on threads, a measuring tape, a stopwatch' },
+  incline: msg('motion-lab-works-setup-incline'),
+  circle: msg('motion-lab-works-setup-circle'),
+  pendulum: msg('motion-lab-works-setup-pendulum'),
 };

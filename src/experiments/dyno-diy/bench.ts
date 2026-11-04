@@ -4,6 +4,7 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { BENCH_SPRING_K, BENCH_WEIGHT } from '../../scenarios/bench-kit.js';
 import { EGG } from '../scales-diy/bench.js';
@@ -60,7 +61,7 @@ export const dynoCommand: CommandHandler<DynoCommand> = {
         return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [{ kind: 'measurement', instrument: 'dynamometer-diy', quantity: 'force', value: Math.round(read / DYNO_DIVISION) * DYNO_DIVISION, exact: F, entities: [], inputs: { mass: m, g: G, pointer: pointerAt(F), division: DYNO_DIVISION } }] });
       }
       default:
-        return err({ uk: 'Такого кроку в досліді немає.', en: 'No such step in the experiment.' });
+        return err(msg('dyno-diy-command-apply'));
     }
   },
 };
@@ -69,24 +70,24 @@ export const DYNO_COMMANDS = [dynoCommand] as const;
 
 const STEP: Record<DynoStep, { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   marks: {
-    say: { uk: 'Динамометр майструємо так: на дощечку наклеюємо смужку паперу, зверху на цвях чіпляємо пружину з набору, а на її кінці — дротяну стрілку й гачок із канцелярської скріпки. Де стрілка без вантажу — ставимо нуль. Тепер чіплятимемо тягарці по 100 г — один, два, три — і щоразу ставитимемо олівцем риску біля стрілки.', en: 'We make the dynamometer like this: a strip of paper glued on a board, a spring of the set hung from a nail at the top, a wire pointer and a paper-clip hook at its end. Where the pointer stands unloaded, we put 0. Now we hang 100 g weights — one, two, three — and each time make a pencil mark by the pointer.' },
-    button: { uk: '✏ Риски від тягарців', en: '✏ Marks from the weights' },
-    plan: { uk: 'риски від одного, двох і трьох тягарців', en: 'marks from one, two and three weights' },
+    say: msg('dyno-diy-marks-say'),
+    button: msg('dyno-diy-marks-button'),
+    plan: msg('dyno-diy-marks-plan'),
   },
   scale: {
-    say: { uk: 'Тягарець 100 г тягне вниз із силою 0,98 Н. Лінійкою виміряємо, де лягли риски. Якщо відстані між ними однакові, шкалу можна розбити рівно: знайдемо, скільки міліметрів припадає на 1 Н, і нанесемо поділки через 0,1 Н.', en: 'A 100 g weight pulls down with 0.98 N. With a ruler we measure where the marks fell. If they are evenly spaced, the scale can be divided evenly: we find how many millimetres go to 1 N and put divisions every 0.1 N.' },
-    button: { uk: '📏 Розбити шкалу', en: '📏 Divide the scale' },
-    plan: { uk: 'розбити шкалу на ньютони', en: 'divide the scale into newtons' },
+    say: msg('dyno-diy-scale-say'),
+    button: msg('dyno-diy-scale-button'),
+    plan: msg('dyno-diy-scale-plan'),
   },
   apple: {
-    say: { uk: 'Чіпляємо невелике яблуко — грамів на сто. Кажуть, саме падіння яблука наштовхнуло Ісаака Ньютона на думку про тяжіння. Його приятель Вільям Стьюклі записав цю історію зі слів самого Ньютона й видав 1752 року: яблуко впало, коли Ньютон сидів, замислившись. А от про яблуко, що влучило в голову, там ні слова — це домалювали пізніше. Що покаже наш динамометр?', en: 'We hang a small apple — about a hundred grams. They say it was a falling apple that set Isaac Newton thinking about gravity. His friend William Stukeley wrote the story down from Newton’s own words and it came out in 1752: the apple fell as Newton sat in thought. Of an apple hitting his head there is not a word — that was drawn in later. What will our dynamometer show?' },
-    button: { uk: '🍎 Яблуко на динамометр', en: '🍎 The apple on the dynamometer' },
-    plan: { uk: 'яблуко на динамометр', en: 'the apple on the dynamometer' },
+    say: msg('dyno-diy-apple-say'),
+    button: msg('dyno-diy-apple-button'),
+    plan: msg('dyno-diy-apple-plan'),
   },
   egg: {
-    say: { uk: 'А тепер — у пакетику — яйце, яке ми зважили на саморобних терезах. Чи погодяться між собою два наші саморобні прилади?', en: 'And now — in a little bag — the egg we weighed on our home-made scales. Will our two home-made instruments agree?' },
-    button: { uk: '🥚 Яйце на динамометр', en: '🥚 The egg on the dynamometer' },
-    plan: { uk: 'яйце на динамометр', en: 'the egg on the dynamometer' },
+    say: msg('dyno-diy-egg-say'),
+    button: msg('dyno-diy-egg-button'),
+    plan: msg('dyno-diy-egg-plan'),
   },
 };
 

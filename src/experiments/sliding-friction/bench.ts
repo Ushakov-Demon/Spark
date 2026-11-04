@@ -1,9 +1,10 @@
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { slidingFriction, weight } from '../../domains/mechanics/formulas.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
+import { msg, t } from '../../knowledge/messages.js';
 import { BENCH_WEIGHT, blockMass, measured, PAPER_ON_WOOD, WOOD_ON_WOOD } from '../../scenarios/bench-kit.js';
 
 /** Sliding friction (grade 7): a wooden block pulled along a wooden board by a dynamometer. */
@@ -21,7 +22,7 @@ export interface PullCommand {
 export const pullCommand: CommandHandler<PullCommand> = {
   type: 'lab.pull',
   apply(state, c) {
-    if (!(c.weights >= 0 && c.weights <= 3 && Number.isInteger(c.weights))) return err({ uk: 'На брусок кладуть від 0 до 3 тягарців.', en: 'Put 0 to 3 weights on the block.' });
+    if (!(c.weights >= 0 && c.weights <= 3 && Number.isInteger(c.weights))) return err(msg('sliding-friction-pull-command-apply'));
     const N = weight(blockMass() + c.weights * BENCH_WEIGHT.value, G);
     // (Amontons' law: the face it lies on does not matter, only the pair of materials and the load.)
     const mu = (c.surface === 'paper' ? PAPER_ON_WOOD : WOOD_ON_WOOD).value;
@@ -37,19 +38,19 @@ export const PULL_TEXT = (c: PullCommand): { say: LocalizedText; button: Localiz
     const n = p.weights;
     if (p.face === 'narrow')
       return {
-        say: { uk: 'Тепер постав брусок на вужчу бічну грань — площа дотику з дошкою менша — і знову рівномірно тягни.', en: 'Now stand the block on its narrower side face — less area touching the board — and pull it steadily again.' },
-        button: { uk: '➡ Брусок на вужчій грані', en: '➡ The block on its narrower face' },
-        plan: { uk: 'брусок на вужчій грані', en: 'the block on its narrower face' },
+        say: msg('sliding-friction-pull-text-say'),
+        button: msg('sliding-friction-pull-text-button'),
+        plan: msg('sliding-friction-pull-text-plan'),
       };
     if (p.surface === 'paper')
       return {
-        say: { uk: 'Покладемо на дошку аркуш паперу й потягнемо брусок по ньому — тією самою широкою гранню.', en: 'Lay a sheet of paper on the board and pull the block over it — on the same wide face.' },
-        button: { uk: '➡ Брусок по папері', en: '➡ The block over paper' },
-        plan: { uk: 'брусок по аркушу паперу', en: 'the block over a sheet of paper' },
+        say: msg('sliding-friction-pull-text-say-2'),
+        button: msg('sliding-friction-pull-text-button-2'),
+        plan: msg('sliding-friction-pull-text-plan-2'),
       };
     return {
-      say: n === 0 ? { uk: 'Поклади брусок широкою гранню на дошку й рівномірно тягни його динамометром. Що він показує?', en: 'Lay the block on its widest face on the board and pull it at a steady speed with the dynamometer. What does it show?' } : { uk: `Поклади на брусок ${n === 1 ? 'тягарець' : `${n} тягарці`} і ${p.face ? 'рівномірно тягни його широкою гранню по дошці' : 'знову рівномірно тягни'}.`, en: `Put ${n === 1 ? 'a weight' : `${n} weights`} on the block and ${p.face ? 'pull it on its wide face along the board steadily' : 'pull it steadily again'}.` },
-      button: { uk: `➡ Тягти брусок${n ? ` (+${n} × 100 г)` : ''}`, en: `➡ Pull the block${n ? ` (+${n} × 100 g)` : ''}` },
-      plan: { uk: `тягти брусок${n === 1 ? ' із тягарцем' : n ? ` із ${n} тягарцями` : ''}`, en: `pull the block${n === 1 ? ' with a weight' : n ? ` with ${n} weights` : ''}` },
+      say: n === 0 ? msg('sliding-friction-pull-text-say-3') : msg('sliding-friction-pull-text-say-4', { value: (l: Locale) => n === 1 ? t(l, 'sliding-friction-say-uk') : t(l, 'sliding-friction-say-uk-2', { n: String(n) }), value2: (l: Locale) => p.face ? t(l, 'sliding-friction-say-uk-3') : t(l, 'sliding-friction-say-uk-4') }),
+      button: msg('sliding-friction-pull-text-button-3', { n: (l: Locale) => n ? t(l, 'sliding-friction-button-uk', { n: String(n) }) : '' }),
+      plan: msg('sliding-friction-pull-text-plan-3', { value: (l: Locale) => n === 1 ? t(l, 'sliding-friction-plan-uk') : n ? t(l, 'sliding-friction-plan-uk-2', { n: String(n) }) : '' }),
     };
   };

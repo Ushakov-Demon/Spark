@@ -4,7 +4,8 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { COMPONENTS } from '../../components/index.js';
 import { peakEmf, type CoilAndMagnet } from '../../domains/electrical/induction.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -57,8 +58,8 @@ export interface InductCommand {
 export const inductCommand: CommandHandler<InductCommand> = {
   type: 'lab.induct',
   apply(state, c) {
-    if (!(Number.isInteger(c.turns) && c.turns >= 50 && c.turns <= 1000)) return err({ uk: 'Котушка має від 50 до 1000 витків.', en: 'The coil has 50 to 1000 turns.' });
-    if (c.move !== 'still' && !(c.time >= 0.1 && c.time <= 5)) return err({ uk: 'Магніт рухають від 0,1 до 5 с.', en: 'The magnet moves for 0.1 to 5 s.' });
+    if (!(Number.isInteger(c.turns) && c.turns >= 50 && c.turns <= 1000)) return err(msg('electromagnetic-induction-induct-command-apply'));
+    if (c.move !== 'still' && !(c.time >= 0.1 && c.time <= 5)) return err(msg('electromagnetic-induction-induct-command-apply-2'));
     const setup: CoilAndMagnet = { turns: c.turns, radius: INDUCT_COIL.radius.value, length: INDUCT_COIL.length.value, remanence: (c.pole === 'S' ? -1 : 1) * BAR_MAGNET.remanence.value, magnetRadius: BAR_MAGNET.radius.value, magnetLength: BAR_MAGNET.length.value };
     // Only the motion of one against the other counts: the coil onto the magnet is the magnet into the coil.
     const emf = c.move === 'still' ? 0 : c.move === 'out' ? peakEmf(setup, 0, OUT, c.time) : peakEmf(setup, OUT, 0, c.time);
@@ -74,34 +75,34 @@ export const inductCommand: CommandHandler<InductCommand> = {
 
 export const INDUCT_COMMANDS = [inductCommand] as const;
 
-const s = (x: number, uk: boolean) => `${String(x).replace('.', uk ? ',' : '.')} ${uk ? 'с' : 's'}`;
-const POLE = { N: { uk: 'північним', en: 'north' }, S: { uk: 'південним', en: 'south' } } as const;
+const s = (x: number, l: Locale) => `${String(x).replace('.', t(l, 'electromagnetic-induction-s'))} ${t(l, 'unit-sym-s')}`;
+const POLE = { N: msg('electromagnetic-induction-pole-n'), S: msg('electromagnetic-induction-pole-s') } as const;
 export const INDUCT_TEXT: Record<InductCommand['type'], (c: InductCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.induct': (x) => {
     const c = x as InductCommand;
-    const pace = (uk: boolean) => (c.time <= 0.5 ? (uk ? 'швидко' : 'fast') : uk ? 'повільно' : 'slowly');
+    const pace = (l: Locale) => (c.time <= 0.5 ? t(l, 'electromagnetic-induction-labinduct-pace') : t(l, 'electromagnetic-induction-labinduct-pace-2'));
     if (c.move === 'still')
       return {
-        say: { uk: 'Магніт лежить усередині котушки й не рухається. Що показує міліамперметр?', en: 'The magnet lies inside the coil and does not move. What does the milliammeter show?' },
-        button: { uk: '🧲 Магніт у котушці, нерухомий', en: '🧲 The magnet in the coil, still' },
-        plan: { uk: 'магніт нерухомо в котушці', en: 'the magnet still in the coil' },
+        say: msg('electromagnetic-induction-labinduct-say'),
+        button: msg('electromagnetic-induction-labinduct-button'),
+        plan: msg('electromagnetic-induction-labinduct-plan'),
       };
     if (c.move === 'out')
       return {
-        say: { uk: `Витягни магніт із котушки — ${pace(true)}, за ${s(c.time, true)}. Куди відхилилася стрілка й на скільки?`, en: `Pull the magnet out of the coil — ${pace(false)}, in ${s(c.time, false)}. Which way and how far did the needle swing?` },
-        button: { uk: `⬅ Витягти магніт (${pace(true)})`, en: `⬅ Pull the magnet out (${pace(false)})` },
-        plan: { uk: `витягти магніт ${pace(true)}`, en: `pull the magnet out ${pace(false)}` },
+        say: msg('electromagnetic-induction-labinduct-say-2', { value: (l: Locale) => pace(l), time: (l: Locale) => s(c.time, l) }),
+        button: msg('electromagnetic-induction-labinduct-button-2', { value: (l: Locale) => pace(l) }),
+        plan: msg('electromagnetic-induction-labinduct-plan-2', { value: (l: Locale) => pace(l) }),
       };
     if (c.move === 'coil')
       return {
-        say: { uk: `Тепер магніт лежить нерухомо, а ти ${pace(true)} надінь на нього котушку — за ${s(c.time, true)}. Що покаже міліамперметр?`, en: `Now the magnet lies still and you slip the coil onto it ${pace(false)} — in ${s(c.time, false)}. What will the milliammeter show?` },
-        button: { uk: `➡ Надіти котушку на магніт (${pace(true)})`, en: `➡ Slip the coil onto the magnet (${pace(false)})` },
-        plan: { uk: `надіти котушку на нерухомий магніт ${pace(true)}`, en: `slip the coil onto the still magnet ${pace(false)}` },
+        say: msg('electromagnetic-induction-labinduct-say-3', { value: (l: Locale) => pace(l), time: (l: Locale) => s(c.time, l) }),
+        button: msg('electromagnetic-induction-labinduct-button-3', { value: (l: Locale) => pace(l) }),
+        plan: msg('electromagnetic-induction-labinduct-plan-3', { value: (l: Locale) => pace(l) }),
       };
     return {
-      say: { uk: `Встав магніт ${POLE[c.pole].uk} полюсом у котушку — ${pace(true)}, за ${s(c.time, true)}. Куди відхилилася стрілка й на скільки?`, en: `Push the magnet into the coil, ${POLE[c.pole].en} pole first — ${pace(false)}, in ${s(c.time, false)}. Which way and how far did the needle swing?` },
-      button: { uk: `➡ ${c.pole === 'N' ? 'Північним' : 'Південним'} полюсом у котушку (${pace(true)})`, en: `➡ ${c.pole === 'N' ? 'North' : 'South'} pole into the coil (${pace(false)})` },
-      plan: { uk: `встромити магніт ${POLE[c.pole].uk} полюсом ${pace(true)}`, en: `push the magnet in, ${POLE[c.pole].en} pole first, ${pace(false)}` },
+      say: msg('electromagnetic-induction-labinduct-say-4', { POLE: (l: Locale) => POLE[c.pole][l], value: (l: Locale) => pace(l), time: (l: Locale) => s(c.time, l) }),
+      button: msg('electromagnetic-induction-labinduct-button-4', { value: (l: Locale) => pace(l), value2: (l: Locale) => c.pole === 'N' ? t(l, 'electromagnetic-induction-button-uk') : t(l, 'electromagnetic-induction-button-uk-2') }),
+      plan: msg('electromagnetic-induction-labinduct-plan-4', { POLE: (l: Locale) => POLE[c.pole][l], value: (l: Locale) => pace(l) }),
     };
   },
 };

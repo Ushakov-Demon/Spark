@@ -1,4 +1,5 @@
 import { COIN_FRICTION } from '../../../src/experiments/coin-inertia/bench.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -32,8 +33,8 @@ function view({ last, command, locale }: SceneContext): CoinView {
   const inGlass = r.inputs?.['inGlass'] === 1;
   const v = r.inputs?.['speed'] ?? 0;
   const exit = r.inputs?.['time'] ?? 0;
-  const read = `${locale === 'uk' ? 'зсув' : 'moved'} ${Math.round(r.value! * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}`;
-  const slow = slipped ? `${locale === 'uk' ? 'уповільнено' : 'slowed'} ×${COIN_SLOW}` : undefined;
+  const read = `${tl(locale, 'coin-inertia-text-s')} ${Math.round(r.value! * 1000)} ${tl(locale, 'unit-sym-mm')}`;
+  const slow = slipped ? `${tl(locale, 'coin-inertia-view-slow')} ×${COIN_SLOW}` : undefined;
   // The end: in the glass on its bottom; off the rim on the table beside it; on the card, 15 cm aside.
   const coin = inGlass ? { card: 1, x: r.value!, drop: 0.095, tilt: 0 } : slipped ? { card: 1, x: 0.055, drop: 0.1, tilt: 0 } : { card: 0.15, x: 0.15, drop: 0, tilt: 0 };
   return { coin: { ...coin, read }, coinRun: { v, a: COIN_FRICTION.value * 9.80665, exit, slipped, inGlass, ...(slow ? { slow } : {}) } };

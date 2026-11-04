@@ -1,8 +1,9 @@
+import { localized, msg, t } from '../../knowledge/messages.js';
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
 import { beaker, both, ch, ELECTRIC, room, stepLine, STEPS_END, varied } from '../../scenarios/preset-kit.js';
 import type { Preset, PresetControl, PresetValues } from '../../scenarios/presets.js';
 import { AMMETER, LAB_RESISTOR, SET_RESISTORS, VOLTMETER } from './bench.js';
-import type { Locale } from '../../knowledge/i18n.js';
+import { NUMBER_LOCALE, type Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
 import { sig } from '../../explain/format.js';
 
@@ -14,42 +15,41 @@ import { sig } from '../../explain/format.js';
  */
 const CIRCUIT_RESISTOR = (unknown: boolean): PresetControl => ({
   id: 'resistor',
-  label: unknown ? { uk: 'Резистор (опір невідомий — його й знайдемо)', en: 'Resistor (its resistance unknown — that is what we find)' } : { uk: 'Резистор із набору', en: 'Resistor from the set' },
+  label: unknown ? msg('resistor-circuit-label') : msg('resistor-circuit-label-2'),
   kind: 'choice',
   options: SET_RESISTORS.map((r, k) => (unknown ? ch(String(r.value), `№ ${k + 1}`, `No. ${k + 1}`) : ch(String(r.value), `${r.value} Ом`, `${r.value} Ω`))),
   value: String(LAB_RESISTOR.value),
 });
+/** A voltage's number, with the language's decimal mark. */
+const num = (x: number, l: Locale) => new Intl.NumberFormat(NUMBER_LOCALE[l], { maximumFractionDigits: 3 }).format(x);
 const VOLT_SETS = [[1.5, 3, 4.5], [1, 2, 3, 4], [2, 4, 6]] as const;
 const CIRCUIT_VOLTS: PresetControl = {
   id: 'volts',
-  label: { uk: 'Напруга джерела', en: 'Source voltage' },
+  label: msg('resistor-circuit-volts-label'),
   kind: 'choice',
-  options: VOLT_SETS.map((set) => ch(set.join('-'), `${set.map((x) => String(x).replace('.', ',')).join(' · ')} В`, `${set.join(' · ')} V`)),
+  options: VOLT_SETS.map((set) => ch(set.join('-'), localized((l) => `${set.map((x) => num(x, l)).join(' · ')} ${t(l, 'unit-sym-V')}`))),
   value: '1.5-3-4.5',
 };
 const voltsOf = (v: PresetValues): number[] => String(v['volts']).split('-').map(Number);
 /** «1,5, 3 і 4,5 В» / «1.5, 3 and 4.5 V». */
-const voltsText = (volts: readonly number[], l: 'uk' | 'en') => {
-  const n = volts.map((x) => (l === 'uk' ? String(x).replace('.', ',') : String(x)));
-  return `${n.slice(0, -1).join(', ')} ${l === 'uk' ? 'і' : 'and'} ${n[n.length - 1]} ${l === 'uk' ? 'В' : 'V'}`;
+const voltsText = (volts: readonly number[], l: Locale) => {
+  const n = volts.map((x) => num(x, l));
+  return `${n.slice(0, -1).join(', ')} ${t(l, 'resistor-circuit-volts-text')} ${n[n.length - 1]} ${t(l, 'unit-sym-V')}`;
 };
 
 export const preset_conductor_resistance: Preset = varied(
   {
     id: 'conductor-resistance',
-    ask: { uk: 'Чи зміниться опір провідника, якщо збільшити напругу на ньому?', en: 'Will the conductor’s resistance change if the voltage across it is raised?' },
+    ask: msg('resistor-circuit-conductor-resistance-ask'),
     grade: 8,
     topic: ELECTRIC,
-    title: { uk: 'Вимірюємо опір провідника', en: 'Measuring the resistance of a conductor' },
-    question: {
-      uk: 'Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі 1,5, 3 і 4,5 В і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?',
-      en: 'We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to 1.5, 3 and 4.5 V, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?',
-    },
+    title: msg('resistor-circuit-conductor-resistance-title'),
+    question: msg('resistor-circuit-conductor-resistance-question'),
     params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
     guided: true,
     bench: 'circuit',
     plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value } }) as const),
-    choices: [ch('same', 'Ні — опір лишиться тим самим, зросте струм', 'No — the resistance stays, the current grows'), ch('grows', 'Так, зросте разом із напругою', 'Yes, it grows with the voltage'), ch('falls', 'Так, зменшиться', 'Yes, it falls')],
+    choices: [ch('same', msg('resistor-circuit-conductor-resistance-choices')), ch('grows', msg('resistor-circuit-conductor-resistance-choices-2')), ch('falls', msg('resistor-circuit-conductor-resistance-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['R:'],
     formulas: ['electrical.ohm-resistance'],
@@ -61,10 +61,7 @@ export const preset_conductor_resistance: Preset = varied(
     build: (v) => {
       const volts = voltsOf(v);
       return {
-        question: {
-          uk: `Зберемо коло: джерело струму, ключ, резистор і амперметр — послідовно, а вольтметр — паралельно до резистора. Ставитимемо на джерелі ${voltsText(volts, 'uk')} і щоразу записуватимемо покази амперметра й вольтметра, а тоді знайдемо опір R = U / I. Чи зміниться опір провідника, якщо збільшити напругу на ньому?`,
-          en: `We build a circuit: a source, a key, a resistor and an ammeter in series, and a voltmeter across the resistor. We set the source to ${voltsText(volts, 'en')}, write down the ammeter and the voltmeter each time, and find the resistance R = U / I. Will the conductor’s resistance change if the voltage across it is raised?`,
-        },
+        question: msg('resistor-circuit-build-question', { volts: (l: Locale) => voltsText(volts, l) }),
         plan: volts.map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: Number(v['resistor']) } }) as const),
       };
     },
@@ -88,13 +85,11 @@ export const answer_conductor_resistance = (run: PresetRun): PresetAnswer => {
   const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
   return {
     ...(rows.length >= 2 ? { correct: apart <= 0 ? 'same' : R[R.length - 1]! > R[0]! ? 'grows' : 'falls' } : {}),
-    why: both((l) => (l === 'uk' ? 'Напруга — це те, що змушує заряджені частинки (у металі — електрони) рухатися впорядковано; опір — те, наскільки провідник цьому заважає: електрони раз у раз натрапляють на коливні йони кристалічної ґратки й гальмуються. Удвічі більша напруга вдвічі сильніше підганяє електрони — і вони рухаються вдвічі швидше, тож струм удвічі більший; а «перешкоди» в провіднику ті самі. Тому відношення U / I не змінюється — це і є опір, властивість самого провідника: він залежить від матеріалу, довжини й товщини дроту, а не від приладів і не від напруги. Так буває, поки провідник не нагрівається: у нагрітому металі йони коливаються сильніше, і опір зростає (це видно в нитки лампи).' : 'The voltage is what makes charged particles (electrons, in a metal) move in an orderly way; the resistance is how much the conductor hinders that: the electrons keep running into the vibrating ions of the crystal lattice and are slowed. Twice the voltage drives the electrons twice as hard — they drift twice as fast, so the current is twice as large; the “obstacles” in the conductor are the same. So the ratio U / I stays — that is the resistance, a property of the conductor itself: it depends on the material, the length and the thickness of the wire, not on the instruments or the voltage. This holds while the conductor does not warm up: in a hot metal the ions vibrate harder, and the resistance grows (as in a lamp’s filament).')),
-    say: both((l) => (l === 'uk' ? `R ≈ ${sig(mean, 2, l)} Ом — за будь-якої напруги!` : `R ≈ ${sig(mean, 2, l)} Ω — at any voltage!`)),
+    why: msg('resistor-circuit-answer-conductor-resistance-why'),
+    say: both((l) => t(l, 'resistor-circuit-answer-conductor-resistance-say', { mean: sig(mean, 2, l) })),
     text: both((l) => {
-      const list = rows.map((x, k) => `I = ${A(x.I, l)}, U = ${V(x.U, l)} → R ≈ ${sig(R[k]!, 2, l)} ${l === 'uk' ? 'Ом' : 'Ω'}`).map(stepLine).join(';') + STEPS_END;
-      return l === 'uk'
-        ? `${list}. Напруга зростала — зростав і струм, і в стільки ж разів: опір R = U / I лишався майже тим самим, ≈ ${sig(mean, 2, l)} Ом. Розкид — від цін поділок: амперметр показує струм з точністю до 0,05 А, вольтметр — напругу до 0,2 В, тож що більші покази, то точніше R. Струм у провіднику прямо пропорційний напрузі на ньому — це закон Ома для ділянки кола: I = U / R.`
-        : `${list}. As the voltage rose, so did the current, and by as many times: the resistance R = U / I stayed about the same, ≈ ${sig(mean, 2, l)} Ω. The spread comes from the divisions: the ammeter reads the current to 0.05 A, the voltmeter the voltage to 0.2 V, so the larger the readings, the more precise R. The current in a conductor is proportional to the voltage across it — Ohm’s law for part of a circuit: I = U / R.`;
+      const list = rows.map((x, k) => `I = ${A(x.I, l)}, U = ${V(x.U, l)} → R ≈ ${sig(R[k]!, 2, l)} ${t(l, 'unit-sym-ohm')}`).map(stepLine).join(';') + STEPS_END;
+      return t(l, 'resistor-circuit-answer-conductor-resistance-text', { list, mean: sig(mean, 2, l) });
     }),
   };
 };
@@ -102,19 +97,16 @@ export const answer_conductor_resistance = (run: PresetRun): PresetAnswer => {
 export const preset_consumer_power: Preset = varied(
   {
     id: 'consumer-power',
-    ask: { uk: 'У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?', en: 'How many times does the power grow if the voltage across the resistor is doubled?' },
+    ask: msg('resistor-circuit-consumer-power-ask'),
     grade: 8,
     topic: ELECTRIC,
-    title: { uk: 'Вимірюємо потужність споживача', en: 'Measuring the power of a consumer' },
-    question: {
-      uk: 'У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі 1,5, 3 і 4,5 В, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?',
-      en: 'The circuit has a source, a key, a resistor (the consumer), an ammeter and a voltmeter. We set the source to 1.5, 3 and 4.5 V, write down the instruments each time and find the power P = U · I. How many times does the power grow if the voltage across the resistor is doubled?',
-    },
+    title: msg('resistor-circuit-consumer-power-title'),
+    question: msg('resistor-circuit-consumer-power-question'),
     params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
     guided: true,
     bench: 'circuit',
     plan: [1.5, 3, 4.5].map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: LAB_RESISTOR.value, power: true } }) as const),
-    choices: [ch('four', 'Учетверо', 'Four times'), ch('two', 'Удвічі', 'Twice'), ch('same', 'Не зміниться', 'It stays the same')],
+    choices: [ch('four', msg('resistor-circuit-consumer-power-choices')), ch('two', msg('resistor-circuit-consumer-power-choices-2')), ch('same', msg('resistor-circuit-consumer-power-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['P:'],
     formulas: ['electrical.power', 'electrical.ohm-resistance'],
@@ -126,10 +118,7 @@ export const preset_consumer_power: Preset = varied(
     build: (v) => {
       const volts = voltsOf(v);
       return {
-        question: {
-          uk: `У колі — джерело струму, ключ, резистор (споживач), амперметр і вольтметр. Ставитимемо на джерелі ${voltsText(volts, 'uk')}, щоразу записуватимемо покази приладів і знаходитимемо потужність P = U · I. У скільки разів зросте потужність, якщо напругу на резисторі збільшити вдвічі?`,
-          en: `The circuit has a source, a key, a resistor (the consumer), an ammeter and a voltmeter. We set the source to ${voltsText(volts, 'en')}, write down the instruments each time and find the power P = U · I. How many times does the power grow if the voltage across the resistor is doubled?`,
-        },
+        question: msg('resistor-circuit-build-question-2', { volts: (l: Locale) => voltsText(volts, l) }),
         plan: volts.map((source) => ({ kind: 'bench', command: { type: 'lab.circuit', source, resistor: Number(v['resistor']), power: true } }) as const),
       };
     },
@@ -145,16 +134,14 @@ export const answer_consumer_power = (run: PresetRun): PresetAnswer => {
   const ratio = P.length >= 2 ? P[1]! / P[0]! : 0;
   const A = (x: number, l: Locale) => formatMeasured('current', x, 0.01, l);
   const V = (x: number, l: Locale) => formatMeasured('voltage', x, 0.1, l);
-  const W = (x: number, l: Locale) => `${sig(x, 2, l)} ${l === 'uk' ? 'Вт' : 'W'}`;
+  const W = (x: number, l: Locale) => `${sig(x, 2, l)} ${t(l, 'unit-sym-W')}`;
   return {
     ...(P.length >= 2 ? { correct: ratio > 3 ? 'four' : ratio > 1.4 ? 'two' : 'same' } : {}),
-    why: both((l) => (l === 'uk' ? 'Потужність — це добуток двох величин: напруги й сили струму. А сила струму в резисторі сама пропорційна напрузі (закон Ома: I = U/R). Тож, подвоївши напругу, ми подвоюємо обидва множники: удвічі більша напруга «штовхає» удвічі більший струм — і потужність зростає в 2 · 2 = 4 рази: P = U²/R. Тому лампочка, розрахована на 220 В, у мережі зі 110 В світить ледь-ледь — її потужність учетверо менша, — а прилад, увімкнений на подвійну напругу, швидко перегріється.' : 'Power is the product of two quantities: the voltage and the current. And the current in a resistor is itself proportional to the voltage (Ohm’s law: I = U/R). So, doubling the voltage, we double both factors: twice the voltage drives twice the current — and the power grows 2 · 2 = 4 times: P = U²/R. That is why a bulb made for 220 V glows barely at 110 V — a quarter of its power — and a device put on twice its voltage soon overheats.')),
-    say: both((l) => (l === 'uk' ? `Удвічі більша напруга — у ${sig(ratio, 2, l)} раза більша потужність!` : `Twice the voltage — ${sig(ratio, 2, l)} times the power!`)),
+    why: msg('resistor-circuit-answer-consumer-power-why'),
+    say: both((l) => t(l, 'resistor-circuit-answer-consumer-power-say', { ratio: sig(ratio, 2, l) })),
     text: both((l) => {
       const list = rows.map((x, k) => `U = ${V(x.U, l)}, I = ${A(x.I, l)} → P ≈ ${W(P[k]!, l)}`).map(stepLine).join(';') + STEPS_END;
-      return l === 'uk'
-        ? `${list}. Напруга зросла вдвічі — потужність зросла в ${sig(ratio, 2, l)} раза, тобто майже вчетверо (розбіжність — від цін поділок приладів); утричі — у ${sig(P.length >= 3 ? P[2]! / P[0]! : 0, 2, l)} раза, майже вдев’ятеро. Потужність резистора пропорційна квадрату напруги: P = U · I = U² / R.`
-        : `${list}. The voltage doubled — the power grew ${sig(ratio, 2, l)} times, almost four times (the difference comes from the instruments’ divisions); tripled — ${sig(P.length >= 3 ? P[2]! / P[0]! : 0, 2, l)} times, almost nine. A resistor’s power is proportional to the square of the voltage: P = U · I = U² / R.`;
+      return t(l, 'resistor-circuit-answer-consumer-power-text', { list, ratio: sig(ratio, 2, l), P: sig(P.length >= 3 ? P[2]! / P[0]! : 0, 2, l) });
     }),
   };
 };

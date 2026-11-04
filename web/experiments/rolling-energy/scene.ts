@@ -1,3 +1,4 @@
+import { t } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -22,7 +23,7 @@ function view({ last, command, locale }: SceneContext): EnergyView {
   const recs = last && ec ? readingsOf([last]).map((x) => x.record) : [];
   if (!ec || ec.step === 'weigh') return { weigh: true, height: 0, at: 0, ...(recs[0] ? { mass: formatMeasured('mass', recs[0].value, 0.00001, locale) } : {}) };
   const n = recs.find((r) => r.inputs?.['which'] === 2)?.inputs?.['frames'] ?? 0;
-  return { weigh: false, height: ec.height ?? 0.1, at: 1, cm: locale === 'uk' ? 'см' : 'cm', frames: locale === 'uk' ? `${n} кадр${n % 10 === 1 && n % 100 !== 11 ? '' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'и' : 'ів'}` : `${n} frames` };
+  return { weigh: false, height: ec.height ?? 0.1, at: 1, cm: t(locale, 'unit-sym-cm'), frames: t(locale, 'count-frames', { n }) };
 }
 
 const ballSvg = (x: number, y: number) => `<defs><radialGradient id="en-steel" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.3" stop-color="#9aa6b2"/><stop offset="1" stop-color="#1f262d"/></radialGradient></defs><circle cx="${x}" cy="${y}" r="${R}" style="fill:url(#en-steel);stroke:#11161b;stroke-width:0.8"/>`;

@@ -1,4 +1,5 @@
 import { airPlace, type AirWhere } from '../../../src/experiments/air-column/bench.js';
+import { t } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -16,12 +17,11 @@ function view({ last, command, plan, locale }: SceneContext): AirView {
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.air');
   const cmd = ac ?? (next?.kind === 'bench' ? (next.command as unknown as { place: string; where: AirWhere }) : { place: '', where: 'ground' as const });
   const town = airPlace(cmd.place);
-  const uk = locale === 'uk';
-  const label = `${town.name}, ${Math.round(town.elevation ?? 0)} ${uk ? 'м над морем' : 'm above the sea'}`;
+  const label = `${town.name}, ${Math.round(town.elevation ?? 0)} ${t(locale, 'air-column-view-label')}`;
   // (The ninth floor before its reading: the phone still waits on the ground floor; the climb to 2 km — from 300 m.)
   // (Before the airship's first reading: still on the ninth floor.)
   const where = !ac && cmd.where === 'ninth' ? 'ground' : !ac && cmd.where === 'high' ? 'airship' : !ac && cmd.where === 'airship' ? 'ninth' : cmd.where;
-  return { where, floor: where === 'ninth' ? 9 : 1, label, air: uk ? 'повітря' : 'air', ...(ac && r ? { read: formatMeasured('pressure', r.value, 1, locale) } : {}) };
+  return { where, floor: where === 'ninth' ? 9 : 1, label, air: t(locale, 'air-column-view'), ...(ac && r ? { read: formatMeasured('pressure', r.value, 1, locale) } : {}) };
 }
 
 /**

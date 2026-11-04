@@ -5,7 +5,8 @@ import { cite, sv } from '../../components/sourced.js';
 import { COMPONENTS } from '../../components/index.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { terminalVelocity } from '../../domains/mechanics/settling.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t as tl } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { STOPWATCH_DIVISION } from '../motion-lab-works/bench.js';
 
@@ -60,8 +61,8 @@ export function sinkSpeed(body: 'bubble' | 'ball', diameter: number, l: SinkLiqu
 export const sinkCommand: CommandHandler<SinkCommand> = {
   type: 'lab.sink',
   apply(state, c) {
-    if (!(c.diameter > 0 && c.diameter <= 0.01)) return err({ uk: 'Тіло має бути до 1 см завбільшки.', en: 'The body has to be under 1 cm across.' });
-    if (!c.marks.length || c.marks.some((m) => !(m > 0 && m <= 0.3))) return err({ uk: 'Позначки — до 30 см від нульової.', en: 'The marks are up to 30 cm from the zero one.' });
+    if (!(c.diameter > 0 && c.diameter <= 0.01)) return err(msg('bodies-in-liquids-sink-command-apply'));
+    if (!c.marks.length || c.marks.some((m) => !(m > 0 && m <= 0.3))) return err(msg('bodies-in-liquids-sink-command-apply-2'));
     const liquid = liquidOf(c.liquid);
     const { speed, reynolds } = sinkSpeed(c.body, c.diameter, c.liquid);
     const div = STOPWATCH_DIVISION.value;
@@ -76,15 +77,13 @@ export const sinkCommand: CommandHandler<SinkCommand> = {
 
 export const SINK_COMMANDS = [sinkCommand] as const;
 
-const LIQUID: Record<SinkLiquid, { uk: string; en: string; in: { uk: string; en: string } }> = {
-  'washing-up': { uk: 'рідина для миття посуду', en: 'washing-up liquid', in: { uk: 'у рідині для миття посуду', en: 'in washing-up liquid' } },
-  glycerol: { uk: 'гліцерин', en: 'glycerol', in: { uk: 'у гліцерині', en: 'in glycerol' } },
-  'sunflower-oil': { uk: 'соняшникова олія', en: 'sunflower oil', in: { uk: 'в олії', en: 'in oil' } },
-  water: { uk: 'вода', en: 'water', in: { uk: 'у воді', en: 'in water' } },
-};
+/** A liquid's name, and with «у» (in it). */
+const LIQUID: Record<SinkLiquid, LocalizedText & { readonly in: LocalizedText }> = Object.fromEntries(
+  (['washing-up', 'glycerol', 'sunflower-oil', 'water'] as const).map((id) => [id, Object.assign(msg(`bodies-in-liquids-name-${id}`), { in: msg(`bodies-in-liquids-liquid-${id}`) })]),
+) as Record<SinkLiquid, LocalizedText & { readonly in: LocalizedText }>;
 export const sinkLiquidName = (l: SinkLiquid) => LIQUID[l];
 const mm = (d: number) => Math.round(d * 1000 * 10) / 10;
-const cmList = (marks: readonly number[], uk: boolean) => marks.map((m) => Math.round(m * 100)).join(uk ? ', ' : ', ') + (uk ? ' см' : ' cm');
+const cmList = (marks: readonly number[], l: Locale) => marks.map((m) => Math.round(m * 100)).join(', ') + tl(l, 'bodies-in-liquids-cm-list');
 
 export const SINK_TEXT: Record<SinkCommand['type'], (c: SinkCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.sink': (x) => {
@@ -92,14 +91,14 @@ export const SINK_TEXT: Record<SinkCommand['type'], (c: SinkCommand) => { say: L
     const L = LIQUID[c.liquid];
     if (c.body === 'bubble')
       return {
-        say: { uk: `Переверни пляшку й стеж за бульбашкою завбільшки ≈ ${mm(c.diameter)} мм. Запусти секундомір, коли вона мине нульову позначку, і засікай час на позначках ${cmList(c.marks, true)}.`, en: `Turn the bottle over and watch a bubble ≈ ${mm(c.diameter)} mm across. Start the stopwatch as it passes the zero mark and note the time at the marks ${cmList(c.marks, false)}.` },
-        button: { uk: `🫧 Бульбашка ≈ ${mm(c.diameter)} мм: засікти час`, en: `🫧 A ≈ ${mm(c.diameter)} mm bubble: time it` },
-        plan: { uk: `засікти бульбашку ≈ ${mm(c.diameter)} мм на позначках`, en: `time a ≈ ${mm(c.diameter)} mm bubble at the marks` },
+        say: msg('bodies-in-liquids-labsink-say', { diameter: String(mm(c.diameter)), marks: (l: Locale) => cmList(c.marks, l) }),
+        button: msg('bodies-in-liquids-labsink-button', { diameter: String(mm(c.diameter)) }),
+        plan: msg('bodies-in-liquids-labsink-plan', { diameter: String(mm(c.diameter)) }),
       };
     return {
-      say: { uk: `Опусти сталеву кульку ${L.in.uk}. Запусти секундомір, коли вона мине нульову позначку, і засікай час на позначках ${cmList(c.marks, true)}.`, en: `Drop the steel ball ${L.in.en}. Start the stopwatch as it passes the zero mark and note the time at the marks ${cmList(c.marks, false)}.` },
-      button: { uk: `⚪ Кулька ${L.in.uk}: засікти час`, en: `⚪ The ball ${L.in.en}: time it` },
-      plan: { uk: `засікти кульку ${L.in.uk}`, en: `time the ball ${L.in.en}` },
+      say: msg('bodies-in-liquids-labsink-say-2', { in: (l: Locale) => L.in[l], marks: (l: Locale) => cmList(c.marks, l) }),
+      button: msg('bodies-in-liquids-labsink-button-2', { in: (l: Locale) => L.in[l] }),
+      plan: msg('bodies-in-liquids-labsink-plan-2', { in: (l: Locale) => L.in[l] }),
     };
   },
 };

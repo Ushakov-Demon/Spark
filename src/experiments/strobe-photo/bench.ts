@@ -2,6 +2,7 @@ import type { CommandHandler } from '../../core/commands.js';
 import { ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import { grooveAcceleration, ROLL_PATH } from '../motion-lab-works/bench.js';
 
 /**
@@ -58,14 +59,14 @@ export const STROBE_TEXT: Record<StrobeCommand['type'], (c: StrobeCommand) => { 
     const c = x as StrobeCommand;
     return c.photo === 'table'
       ? {
-          say: { uk: 'Перше фото: кулька, скотившись із жолоба, котиться по столу. Приклади лінійку до фото й виміряй проміжки між зображеннями кульки.', en: 'The first photo: the ball, down from the groove, rolls along the table. Put a ruler to the photo and measure the gaps between the ball’s images.' },
-          button: { uk: '📷 Фото: кулька на столі', en: '📷 Photo: the ball on the table' },
-          plan: { uk: 'фото кульки на столі: проміжки', en: 'the photo of the ball on the table: the gaps' },
+          say: msg('strobe-photo-labstrobe-say'),
+          button: msg('strobe-photo-labstrobe-button'),
+          plan: msg('strobe-photo-labstrobe-plan'),
         }
       : {
-          say: { uk: 'Друге фото: кулька скочується жолобом без початкової швидкості. Виміряй проміжки між зображеннями й тут.', en: 'The second photo: the ball rolls down the groove from rest. Measure the gaps between the images here too.' },
-          button: { uk: '📷 Фото: кулька на жолобі', en: '📷 Photo: the ball in the groove' },
-          plan: { uk: 'фото кульки на жолобі: проміжки', en: 'the photo of the ball in the groove: the gaps' },
+          say: msg('strobe-photo-labstrobe-say-2'),
+          button: msg('strobe-photo-labstrobe-button-2'),
+          plan: msg('strobe-photo-labstrobe-plan-2'),
         };
   },
 };

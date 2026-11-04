@@ -4,7 +4,8 @@ import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { pulleyForce, ropeTravel, weight } from '../../domains/mechanics/formulas.js';
 import { SCALES } from '../../equipment/scales.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { measured, RULER_DIVISION } from '../../scenarios/bench-kit.js';
 
@@ -35,9 +36,9 @@ export type PulleyCommand = { readonly type: 'lab.pulley'; readonly how: PulleyH
 export const pulleyCommand: CommandHandler<PulleyCommand> = {
   type: 'lab.pulley',
   apply(state, c) {
-    if (!['straight', 'fixed', 'movable'].includes(c.how)) return err({ uk: 'Вантаж піднімають просто вгору, через нерухомий чи на рухомому блоці.', en: 'The load is lifted straight up, over a fixed or on a movable pulley.' });
-    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err({ uk: 'Маса вантажу має бути більшою за нуль.', en: 'The load’s mass must be more than zero.' });
-    if (!(c.lift > 0 && Number.isFinite(c.lift))) return err({ uk: 'Висота підйому має бути більшою за нуль.', en: 'The height must be more than zero.' });
+    if (!['straight', 'fixed', 'movable'].includes(c.how)) return err(msg('pulley-command-apply'));
+    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err(msg('pulley-command-apply-2'));
+    if (!(c.lift > 0 && Number.isFinite(c.lift))) return err(msg('pulley-command-apply-3'));
     const P = weight(c.mass, G);
     const movable = c.how === 'movable';
     const n = movable ? 2 : 1;
@@ -50,11 +51,11 @@ export const pulleyCommand: CommandHandler<PulleyCommand> = {
 };
 
 /** A number as the pupil put it in: up to a tenth, without trailing zeros. */
-const num = (x: number, uk: boolean) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 1 }).format(x);
+const num = (x: number, l: Locale) => new Intl.NumberFormat(NUMBER_LOCALE[l], { maximumFractionDigits: 1 }).format(x);
 /** A mass in the unit that suits it: grams, kilograms, tonnes. */
-export const massText = (kg: number, uk: boolean): string => (kg < 1 ? `${num(kg * 1000, uk)} ${uk ? 'г' : 'g'}` : kg < 1000 ? `${num(kg, uk)} ${uk ? 'кг' : 'kg'}` : `${num(kg / 1000, uk)} ${uk ? 'т' : 't'}`);
+export const massText = (kg: number, l: Locale): string => (kg < 1 ? `${num(kg * 1000, l)} ${t(l, 'unit-sym-g')}` : kg < 1000 ? `${num(kg, l)} ${t(l, 'unit-sym-kg')}` : `${num(kg / 1000, l)} ${t(l, 'unit-sym-t')}`);
 /** A height in centimetres or metres. */
-export const heightText = (m: number, uk: boolean): string => (m < 1 ? `${num(m * 100, uk)} ${uk ? 'см' : 'cm'}` : `${num(m, uk)} ${uk ? 'м' : 'm'}`);
+export const heightText = (m: number, l: Locale): string => (m < 1 ? `${num(m * 100, l)} ${t(l, 'unit-sym-cm')}` : `${num(m, l)} ${t(l, 'unit-sym-m')}`);
 const g = massText;
 const cm = heightText;
 export const PULLEY_TEXT: Record<PulleyCommand['type'], (c: PulleyCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -62,20 +63,20 @@ export const PULLEY_TEXT: Record<PulleyCommand['type'], (c: PulleyCommand) => { 
     const c = x as PulleyCommand;
     if (c.how === 'straight')
       return {
-        say: { uk: `Підніми вантаж ${g(c.mass, true)} динамометром просто вгору на ${cm(c.lift, true)}. Яку силу він показує й на скільки пройшла рука?`, en: `Lift a ${g(c.mass, false)} load straight up ${cm(c.lift, false)} with the dynamometer. What force does it show, and how far did your hand go?` },
-        button: { uk: '↑ Підняти просто вгору', en: '↑ Lift straight up' },
-        plan: { uk: 'підняти вантаж динамометром просто вгору', en: 'lift the load straight up with the dynamometer' },
+        say: msg('pulley-labpulley-say', { mass: (l: Locale) => g(c.mass, l), lift: (l: Locale) => cm(c.lift, l) }),
+        button: msg('pulley-labpulley-button'),
+        plan: msg('pulley-labpulley-plan'),
       };
     if (c.how === 'fixed')
       return {
-        say: { uk: `Перекинь мотузку через нерухомий блок угорі й тягни динамометром униз, поки вантаж не підніметься на ${cm(c.lift, true)}.`, en: `Throw the rope over the fixed pulley above and pull down with the dynamometer until the load rises ${cm(c.lift, false)}.` },
-        button: { uk: '⤵ Через нерухомий блок', en: '⤵ Over the fixed pulley' },
-        plan: { uk: 'підняти вантаж через нерухомий блок', en: 'lift the load over the fixed pulley' },
+        say: msg('pulley-labpulley-say-2', { lift: (l: Locale) => cm(c.lift, l) }),
+        button: msg('pulley-labpulley-button-2'),
+        plan: msg('pulley-labpulley-plan-2'),
       };
     return {
-      say: { uk: `Тепер повісь вантаж на рухомий блок: один кінець мотузки закріпи вгорі, другий — тягни динамометром угору, поки вантаж не підніметься на ${cm(c.lift, true)}.`, en: `Now hang the load on a movable pulley: fix one end of the rope above and pull the other up with the dynamometer until the load rises ${cm(c.lift, false)}.` },
-      button: { uk: '⤴ На рухомому блоці', en: '⤴ On a movable pulley' },
-      plan: { uk: 'підняти вантаж на рухомому блоці', en: 'lift the load on a movable pulley' },
+      say: msg('pulley-labpulley-say-3', { lift: (l: Locale) => cm(c.lift, l) }),
+      button: msg('pulley-labpulley-button-3'),
+      plan: msg('pulley-labpulley-plan-3'),
     };
   },
 };

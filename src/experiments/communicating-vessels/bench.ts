@@ -2,6 +2,7 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
+import { msg } from '../../knowledge/messages.js';
 import { SUBSTANCES } from '../../substances/catalog.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import type { SourcedValue } from '../../knowledge/types.js';
@@ -31,7 +32,7 @@ const read = (x: number) => Math.round(x / UTUBE_RULER_DIVISION) * UTUBE_RULER_D
 export const utubeCommand: CommandHandler<UtubeCommand> = {
   type: 'lab.utube',
   apply(state, c) {
-    if (!(c.poured >= 0 && c.poured <= 40)) return err({ uk: 'У коліно трубки влізе до 40 мл.', en: 'The arm takes up to 40 mL.' });
+    if (!(c.poured >= 0 && c.poured <= 40)) return err(msg('communicating-vessels-utube-command-apply'));
     const area = Math.PI * (UTUBE_DIAMETER.value / 2) ** 2;
     const rhoW = SUBSTANCES.water.liquid.density.value;
     const rhoO = SUBSTANCES[c.liquid].liquid.density.value;
@@ -52,14 +53,14 @@ export const UTUBE_TEXT: Record<UtubeCommand['type'], (c: UtubeCommand) => { say
     const c = x as UtubeCommand;
     return c.poured === 0
       ? {
-          say: { uk: 'Налий у U-подібну трубку води й порівняй лінійкою її рівні в обох колінах.', en: 'Pour water into the U-tube and compare its levels in the two arms with the ruler.' },
-          button: { uk: '💧 Налити воду й порівняти рівні', en: '💧 Pour water, compare the levels' },
-          plan: { uk: 'налити воду й порівняти рівні', en: 'pour water, compare the levels' },
+          say: msg('communicating-vessels-labutube-say'),
+          button: msg('communicating-vessels-labutube-button'),
+          plan: msg('communicating-vessels-labutube-plan'),
         }
       : {
-          say: { uk: `Долий у ліве коліно олії — щоб її стало ${c.poured} мл. Виміряй лінійкою висоту стовпа олії й висоту води в правому коліні — обидві від рівня межі між олією й водою.`, en: `Pour oil into the left arm — ${c.poured} mL of it in all. Measure the height of the oil column and of the water in the right arm — both from the level of the boundary between the oil and the water.` },
-          button: { uk: `🫗 Олії ${c.poured} мл: виміряти висоти`, en: `🫗 ${c.poured} mL of oil: measure the heights` },
-          plan: { uk: `долити олії до ${c.poured} мл і виміряти висоти`, en: `pour oil to ${c.poured} mL, measure the heights` },
+          say: msg('communicating-vessels-labutube-say-2', { poured: String(c.poured) }),
+          button: msg('communicating-vessels-labutube-button-2', { poured: String(c.poured) }),
+          plan: msg('communicating-vessels-labutube-plan-2', { poured: String(c.poured) }),
         };
   },
 };

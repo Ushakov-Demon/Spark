@@ -1,7 +1,8 @@
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t as tl } from '../../knowledge/messages.js';
 import { STOPWATCH_DIVISION } from '../motion-lab-works/bench.js';
 import { sinkSpeed } from '../bodies-in-liquids/bench.js';
 
@@ -29,7 +30,7 @@ export interface CarryCommand {
 export const carryCommand: CommandHandler<CarryCommand> = {
   type: 'lab.carry',
   apply(state, c) {
-    if (!(c.speed >= 0 && c.speed <= 0.02)) return err({ uk: 'Пляшку ведуть рукою — до 2 см/с.', en: 'The bottle is carried by hand — up to 2 cm/s.' });
+    if (!(c.speed >= 0 && c.speed <= 0.02)) return err(msg('relative-motion-carry-command-apply'));
     const { speed: v } = sinkSpeed('bubble', CARRY_BUBBLE, 'washing-up');
     const t = CARRY_RISE / v;
     const shift = c.speed * t;
@@ -48,21 +49,21 @@ export const carryCommand: CommandHandler<CarryCommand> = {
 
 export const CARRY_COMMANDS = [carryCommand] as const;
 
-const cms = (u: number, uk: boolean) => `${String(Math.round(u * 1000) / 10).replace('.', uk ? ',' : '.')} ${uk ? 'см/с' : 'cm/s'}`;
+const cms = (u: number, l: Locale) => `${String(Math.round(u * 1000) / 10).replace('.', tl(l, 'relative-motion-cms'))} ${tl(l, 'unit-sym-cm-per-s')}`;
 
 export const CARRY_TEXT: Record<CarryCommand['type'], (c: CarryCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.carry': (x) => {
     const c = x as CarryCommand;
     if (c.speed === 0)
       return {
-        say: { uk: 'Спершу пляшка стоїть. Переверни її, познач бульбашку на аркуші на нульовій позначці й на позначці 9 см і засічи час.', en: 'First the bottle stands. Turn it over, mark the bubble on the paper at the zero mark and at the 9 cm one, and time it.' },
-        button: { uk: '🫧 Пляшка стоїть', en: '🫧 The bottle stands' },
-        plan: { uk: 'пляшка стоїть', en: 'the bottle stands' },
+        say: msg('relative-motion-labcarry-say'),
+        button: msg('relative-motion-labcarry-button'),
+        plan: msg('relative-motion-labcarry-plan'),
       };
     return {
-      say: { uk: `Тепер, поки бульбашка спливає, веди пляшку вздовж лінійки рівномірно — ${cms(c.speed, true)}. Познач бульбашку на аркуші на старті й на 9 см.`, en: `Now, while the bubble rises, carry the bottle along the ruler steadily — ${cms(c.speed, false)}. Mark the bubble on the paper at the start and at 9 cm.` },
-      button: { uk: `➡ Вести пляшку: ${cms(c.speed, true)}`, en: `➡ Carry the bottle: ${cms(c.speed, false)}` },
-      plan: { uk: `вести пляшку ${cms(c.speed, true)}`, en: `carry the bottle at ${cms(c.speed, false)}` },
+      say: msg('relative-motion-labcarry-say-2', { speed: (l: Locale) => cms(c.speed, l) }),
+      button: msg('relative-motion-labcarry-button-2', { speed: (l: Locale) => cms(c.speed, l) }),
+      plan: msg('relative-motion-labcarry-plan-2', { speed: (l: Locale) => cms(c.speed, l) }),
     };
   },
 };

@@ -4,6 +4,7 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { COMPONENTS } from '../../components/index.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -71,7 +72,7 @@ export interface ScalesCommand {
 export const scalesCommand: CommandHandler<ScalesCommand> = {
   type: 'lab.scales',
   apply(state, c) {
-    if (!(c.step === 'zero' || c.step === 'check' || c.step === 'egg')) return err({ uk: 'Такого кроку в досліді немає.', en: 'No such step in the experiment.' });
+    if (!(c.step === 'zero' || c.step === 'check' || c.step === 'egg')) return err(msg('scales-diy-command-apply'));
     const last = scalesSequence(c.step).at(-1)!;
     const { left, right } = scalesMasses(last);
     const inputs = { sheets: last.sheets, water: last.water, tilt: scalesTilt(left, right), exactLeft: left, exactRight: right };
@@ -87,19 +88,19 @@ export const SCALES_COMMANDS = [scalesCommand] as const;
 
 const STEP: Record<ScalesCommand['step'], { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   zero: {
-    say: { uk: 'Терези готові: лінійка висить на нитці за середину, на кінцях — два стаканчики від йогурту. Але порожні стаканчики не врівноважені: один трохи важчий. Причепимо до легшого шматочок пластиліну — й відщипуватимемо, поки лінійка не стане рівно.', en: 'The scales are ready: a ruler hung by a thread at its middle, a yoghurt cup at each end. But the empty cups do not balance: one is a little heavier. We stick a bit of plasticine to the lighter one — and pinch it off until the ruler is level.' },
-    button: { uk: '⚖ Зрівняти порожні стаканчики', en: '⚖ Even out the empty cups' },
-    plan: { uk: 'зрівняти порожні стаканчики', en: 'even out the empty cups' },
+    say: msg('scales-diy-zero-say'),
+    button: msg('scales-diy-zero-button'),
+    plan: msg('scales-diy-zero-plan'),
   },
   check: {
-    say: { uk: 'Перевіримо терези. Аркуш офісного паперу A4 (80 г на квадратний метр) важить 5 г — складемо його й покладемо в лівий стаканчик. А в правий наберемо шприцом води: 1 мл води — це 1 г. Скільки мілілітрів знадобиться?', en: 'We check the scales. A sheet of A4 office paper (80 g a square metre) weighs 5 g — we fold it and put it in the left cup. Into the right one we squirt water from a syringe: 1 mL of water is 1 g. How many millilitres will it take?' },
-    button: { uk: '📄 Аркуш A4 проти води', en: '📄 A sheet of A4 against water' },
-    plan: { uk: 'аркуш A4 проти води зі шприца', en: 'a sheet of A4 against water from a syringe' },
+    say: msg('scales-diy-check-say'),
+    button: msg('scales-diy-check-button'),
+    plan: msg('scales-diy-check-plan'),
   },
   egg: {
-    say: { uk: 'Тепер — куряче яйце. Як із гирями: спершу великі — аркуші по 5 г, поки яйце переважує; а тоді дрібні — воду зі шприца, по мілілітру, поки лінійка не стане рівно.', en: 'Now a hen’s egg. As with weights: the big ones first — sheets of 5 g while the egg outweighs them; then the small ones — water from the syringe, a millilitre at a time, until the ruler is level.' },
-    button: { uk: '🥚 Зважити яйце', en: '🥚 Weigh the egg' },
-    plan: { uk: 'зважити яйце аркушами й водою', en: 'weigh the egg with sheets and water' },
+    say: msg('scales-diy-egg-say'),
+    button: msg('scales-diy-egg-button'),
+    plan: msg('scales-diy-egg-plan'),
   },
 };
 

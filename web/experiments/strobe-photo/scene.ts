@@ -1,4 +1,5 @@
 import { STROBE_SCALE, type StrobePhoto, strobePositions } from '../../../src/experiments/strobe-photo/bench.js';
+import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -16,7 +17,7 @@ function view({ last, command, plan, locale }: SceneContext): StrobeView {
   const photo = sc?.photo ?? (next?.kind === 'bench' ? (next.command as unknown as { photo: StrobePhoto }).photo : 'table');
   const at = strobePositions(photo).map((x) => (x * 1000) / STROBE_SCALE);
   const recs = last && sc ? readingsOf([last]).map((x) => x.record) : [];
-  return { photo, at, shown: sc ? at.length : 0, ...(recs.length ? { gaps: recs.map((x) => `${Math.round((x.value ?? 0) * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}`) } : {}) };
+  return { photo, at, shown: sc ? at.length : 0, ...(recs.length ? { gaps: recs.map((x) => `${Math.round((x.value ?? 0) * 1000)} ${t(locale, 'unit-sym-mm')}`) } : {}) };
 }
 
 /**

@@ -1,3 +1,4 @@
+import { msg, t } from '../../knowledge/messages.js';
 import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
 import { both, ch, PRESSURE, room, stepLine, STEPS_END, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
@@ -7,13 +8,13 @@ import { sig } from '../../explain/format.js';
 export const preset_depth_pressure: Preset = varied(
   {
     id: 'depth-pressure',
-    ask: { uk: 'Як тиск рідини залежить від глибини?', en: 'How does a liquid’s pressure depend on the depth?' },
+    ask: msg('depth-pressure-ask'),
     grade: 7,
     topic: PRESSURE,
-    title: { uk: 'Як тиск рідини залежить від глибини?', en: 'How does the pressure of a liquid depend on the depth?' },
+    title: msg('depth-pressure-title'),
     guided: true,
     bench: 'depth',
-    choices: [ch('proportional', 'Зростає пропорційно глибині: удвічі глибше — удвічі більший тиск', 'It grows in proportion: twice as deep — twice the pressure'), ch('same', 'Не залежить від глибини', 'It does not depend on the depth'), ch('slower', 'Зростає, але все повільніше', 'It grows, but ever more slowly')],
+    choices: [ch('proportional', msg('depth-pressure-choices')), ch('same', msg('depth-pressure-choices-2')), ch('slower', msg('depth-pressure-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['rhoD:'],
     formulas: ['mechanics.hydrostatic-pressure'],
@@ -22,15 +23,12 @@ export const preset_depth_pressure: Preset = varied(
   },
   {
     // Liquids of different densities: the manometer's water tells them apart (salt water deeper, oil less).
-    controls: [{ id: 'liquid', label: { uk: 'Рідина в стакані', en: 'Liquid in the beaker' }, kind: 'choice', options: [ch('water', 'Вода', 'Water'), ch('salt-water-20', 'Солона вода (20 %)', 'Salt water (20 %)'), ch('sunflower-oil', 'Соняшникова олія', 'Sunflower oil')], value: 'water' }],
+    controls: [{ id: 'liquid', label: msg('depth-pressure-liquid-label'), kind: 'choice', options: [ch('water', msg('depth-pressure-liquid-options')), ch('salt-water-20', msg('depth-pressure-liquid-options-2')), ch('sunflower-oil', msg('depth-pressure-liquid-options-3'))], value: 'water' }],
     build: (v) => {
       const liquid = String(v['liquid']) as 'water' | 'salt-water-20' | 'sunflower-oil';
-      const name = { water: { uk: 'водою', en: 'water' }, 'salt-water-20': { uk: 'солоною водою', en: 'salt water' }, 'sunflower-oil': { uk: 'соняшниковою олією', en: 'sunflower oil' } }[liquid];
+      const name = { water: msg('depth-pressure-name-water'), 'salt-water-20': msg('depth-pressure-name-salt-water-20'), 'sunflower-oil': msg('depth-pressure-name-sunflower-oil') }[liquid];
       return {
-        question: {
-          uk: `У стакані з ${name.uk} (рідини — на 12 см) опускатимемо воронку, затягнуту гумовою плівкою; трубка від неї йде до U-подібного манометра з водою. Записуватимемо, на скільки різняться рівні води в манометрі, коли плівка на глибині 3, 6 і 9 см, а наостанок на 9 см повернемо її вбік. Як тиск рідини залежить від глибини?`,
-          en: `Into a beaker of ${name.en} (12 cm of it) we lower a funnel covered with a rubber film; a tube leads from it to a U-tube manometer with water. We write down how far apart the water levels in the manometer are with the film 3, 6 and 9 cm deep, and at last turn it sideways at 9 cm. How does the liquid’s pressure depend on the depth?`,
-        },
+        question: msg('depth-pressure-build-question', { name: (l: Locale) => name[l] }),
         params: { ...room, vessel: 'beaker', size: 1, material: 'glass', liters: 0.9, action: 'settle', substance: liquid, startTemp: 20 },
         plan: [
           ...[0.03, 0.06, 0.09].map((depth) => ({ kind: 'bench', command: { type: 'lab.depth', depth } }) as const),
@@ -56,21 +54,15 @@ export const answer_depth_pressure = (run: PresetRun): PresetAnswer => {
   const correct = down.length < 2 ? undefined : spread <= err + 0.01 ? 'proportional' : last && first && p(last) > p(first) ? 'slower' : 'same';
   const rho = first ? mean / first.g : 0;
   const table = first?.rhoL ?? 0;
-  const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${l === 'uk' ? 'см' : 'cm'}`;
-  const Pa = (x: number, l: Locale) => `${sig(x, 3, l)} ${l === 'uk' ? 'Па' : 'Pa'}`;
+  const cm = (m: number, l: Locale) => `${sig(m * 100, 3, l)} ${t(l, 'unit-sym-cm')}`;
+  const Pa = (x: number, l: Locale) => `${sig(x, 3, l)} ${t(l, 'unit-sym-Pa')}`;
   const list = (l: Locale) => down.map((x) => `${cm(x.h, l)} — Δh = ${cm(x.dh, l)}, p ≈ ${Pa(p(x), l)}`).map(stepLine).join(';') + STEPS_END;
   return {
     ...(correct ? { correct } : {}),
-    why: both((l) =>
-      l === 'uk'
-        ? 'Рідина важка: кожен її шар тисне на шари під собою вагою всього, що над ним. На глибині h на кожен квадратний метр давить стовп рідини висотою h і масою ρ·h, тобто вагою ρ·g·h — тому тиск росте рівно пропорційно глибині. А частинки рідини легко зсуваються одна відносно одної й передають цей тиск в усі боки однаково (закон Паскаля): плівка, повернута вбік, відчуває той самий тиск.'
-        : 'A liquid is heavy: each layer presses on the layers below with the weight of all that is above it. At a depth h each square metre carries a column of liquid h high with a mass ρ·h, that is, a weight ρ·g·h — so the pressure grows exactly in proportion to the depth. And the bits of a liquid slide past each other easily and pass that pressure on in all directions alike (Pascal’s law): the film turned sideways feels the same pressure.',
-    ),
-    say: both((l) => (correct === 'proportional' ? (l === 'uk' ? 'Удвічі глибше — удвічі більший тиск!' : 'Twice as deep — twice the pressure!') : l === 'uk' ? 'Подивімося на манометр.' : 'Let us look at the manometer.')),
+    why: msg('depth-pressure-answer-why'),
+    say: both((l) => (correct === 'proportional' ? t(l, 'depth-pressure-answer-say') : t(l, 'depth-pressure-answer-say-2'))),
     text: both((l) =>
-      l === 'uk'
-        ? `${list(l)}. Тиск, який показує манометр (p = ρ_води·g·Δh), зростав пропорційно глибині: p / h скрізь ≈ ${sig(mean, 3, l)} Па/м. Звідси й густина рідини ρ = p / (g·h) ≈ ${sig(rho, 3, l)} кг/м³ (у таблиці — ${sig(table, 3, l)} кг/м³).${side ? ` Плівка, повернута вбік на ${cm(side.h, l)}, дала ті самі Δh = ${cm(side.dh, l)}: на одній глибині тиск однаковий в усі боки.` : ''}`
-        : `${list(l)}. The pressure the manometer shows (p = ρ_water·g·Δh) grew in proportion to the depth: p / h ≈ ${sig(mean, 3, l)} Pa/m everywhere. From it the liquid’s density ρ = p / (g·h) ≈ ${sig(rho, 3, l)} kg/m³ (the table gives ${sig(table, 3, l)} kg/m³).${side ? ` The film turned sideways at ${cm(side.h, l)} gave the same Δh = ${cm(side.dh, l)}: at one depth the pressure is the same in all directions.` : ''}`,
+      t(l, 'depth-pressure-answer-text-2', { l: list(l), mean: sig(mean, 3, l), rho: sig(rho, 3, l), table: sig(table, 3, l), h: side ? t(l, 'depth-pressure-answer-text', { h: cm(side.h, l), dh: cm(side.dh, l) }) : '' }),
     ),
   };
 };

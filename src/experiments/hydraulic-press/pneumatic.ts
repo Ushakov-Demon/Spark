@@ -4,7 +4,8 @@ import { COMPONENTS } from '../../components/index.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G, STANDARD_ATMOSPHERE } from '../../domains/mechanics/constants.js';
 import { compressedVolume, isothermalVolume, pressure, weight } from '../../domains/mechanics/formulas.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { BENCH_WEIGHT, measured, ruler, RULER_DIVISION, SYRINGE_LARGE, SYRINGE_SMALL } from '../../scenarios/bench-kit.js';
 import { PRESS_PUSH } from './bench.js';
@@ -40,7 +41,7 @@ export const pneumaticCommand: CommandHandler<PneumaticCommand> = {
     const d1 = SYRINGE_SMALL.value;
     const d2 = SYRINGE_LARGE.value;
     if (c.step === 'diameters') return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('ruler', 'length', ruler(d1), d1, { which: 1, division: RULER_DIVISION }), measured('ruler', 'length', ruler(d2), d2, { which: 2, division: RULER_DIVISION })] });
-    if (!(Number.isInteger(c.weights) && c.weights >= 1 && c.weights <= 8)) return err({ uk: 'На поршень ставлять від 1 до 8 тягарців.', en: 'The piston takes 1 to 8 weights.' });
+    if (!(Number.isInteger(c.weights) && c.weights >= 1 && c.weights <= 8)) return err(msg('hydraulic-press-command-apply'));
     const S1 = area(d1);
     const S2 = area(d2);
     // The load holds the wide piston down until the pressure inside grows by its weight over the piston's area.
@@ -58,23 +59,23 @@ export const pneumaticCommand: CommandHandler<PneumaticCommand> = {
   },
 };
 
-const w = (n: number, uk: boolean) => (uk ? `${n} ${n === 1 ? 'тягарець' : n < 5 ? 'тягарці' : 'тягарців'}` : `${n} weight${n === 1 ? '' : 's'}`);
+const w = (n: number, l: Locale) => t(l, 'count-weights', { n });
 export const PNEUMATIC_TEXT: Record<PneumaticCommand['type'], (c: PneumaticCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.pneumatic': (x) => {
     const c = x as PneumaticCommand;
     if (c.step === 'diameters')
       return {
-        say: { uk: 'Виміряй лінійкою діаметри обох поршнів — вузького й широкого шприца.', en: 'Measure the diameters of both pistons — of the narrow and the wide syringe — with the ruler.' },
-        button: { uk: '📏 Виміряти діаметри поршнів', en: '📏 Measure the pistons' },
-        plan: { uk: 'виміряти діаметри поршнів', en: 'measure the pistons’ diameters' },
+        say: msg('hydraulic-press-labpress-say'),
+        button: msg('hydraulic-press-labpress-button'),
+        plan: msg('hydraulic-press-labpress-plan'),
       };
     const water = c.medium === 'water';
     return {
       say: water
-        ? { uk: `У шприцах і трубці знову вода. ${w(c.weights, true)} на широкому поршні; втисни вузький на ті самі 6 см. Коли рушив вантаж і на скільки піднявся?`, en: `Water in the syringes and the tube again. ${w(c.weights, false)} on the wide piston; push the narrow one the same 6 cm in. When did the load move, and how far did it rise?` }
-        : { uk: `У шприцах і трубці — повітря. ${w(c.weights, true)} на широкому поршні; втисни вузький на ті самі 6 см. Коли рушив вантаж і на скільки піднявся?`, en: `Air in the syringes and the tube. ${w(c.weights, false)} on the wide piston; push the narrow one the same 6 cm in. When did the load move, and how far did it rise?` },
-      button: water ? { uk: `💧 Вода, ${w(c.weights, true)}: втиснути на 6 см`, en: `💧 Water, ${w(c.weights, false)}: push 6 cm in` } : { uk: `💨 Повітря, ${w(c.weights, true)}: втиснути на 6 см`, en: `💨 Air, ${w(c.weights, false)}: push 6 cm in` },
-      plan: water ? { uk: `вода, ${w(c.weights, true)} — втиснути вузький поршень на 6 см`, en: `water, ${w(c.weights, false)} — push the narrow piston 6 cm in` } : { uk: `повітря, ${w(c.weights, true)} — втиснути вузький поршень на 6 см`, en: `air, ${w(c.weights, false)} — push the narrow piston 6 cm in` },
+        ? msg('hydraulic-press-labpneumatic-say', { weights: (l: Locale) => w(c.weights, l) })
+        : msg('hydraulic-press-labpneumatic-say-2', { weights: (l: Locale) => w(c.weights, l) }),
+      button: water ? msg('hydraulic-press-labpneumatic-button', { weights: (l: Locale) => w(c.weights, l) }) : msg('hydraulic-press-labpneumatic-button-2', { weights: (l: Locale) => w(c.weights, l) }),
+      plan: water ? msg('hydraulic-press-labpneumatic-plan', { weights: (l: Locale) => w(c.weights, l) }) : msg('hydraulic-press-labpneumatic-plan-2', { weights: (l: Locale) => w(c.weights, l) }),
     };
   },
 };

@@ -3,7 +3,8 @@ import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { diodeLoop, type DiodeParams } from '../../domains/electrical/diode.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { localized, msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -43,7 +44,7 @@ export interface BoxCommand {
 export const boxCommand: CommandHandler<BoxCommand> = {
   type: 'lab.box',
   apply(state, c) {
-    if (!(c.source > 0 && c.source <= 6)) return err({ uk: 'Джерело дає від 0 до 6 В.', en: 'The source gives 0 to 6 V.' });
+    if (!(c.source > 0 && c.source <= 6)) return err(msg('diode-black-box-command-apply'));
     const r = BOX_RESISTOR.value + MILLIAMMETER.resistance.value;
     const { current, diodeVoltage } = diodeLoop(diode(), c.source, r, ROOM, c.reversed);
     const div = MILLIAMMETER.division.value;
@@ -57,15 +58,15 @@ export const boxCommand: CommandHandler<BoxCommand> = {
 
 export const BOX_COMMANDS = [boxCommand] as const;
 
-const volts = (x: number, uk: boolean) => `${String(x).replace('.', uk ? ',' : '.')} ${uk ? 'В' : 'V'}`;
+const volts = (x: number, l: Locale) => `${String(x).replace('.', t(l, 'diode-black-box-volts'))} ${t(l, 'unit-sym-V')}`;
 export const BOX_TEXT: Record<BoxCommand['type'], (c: BoxCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.box': (x) => {
     const c = x as BoxCommand;
-    const way = { uk: c.reversed ? 'скринька перевернута' : 'скринька — як стоїть', en: c.reversed ? 'the box turned round' : 'the box as it stands' };
+    const way = localized((l: Locale) => c.reversed ? t(l, 'diode-black-box-way-uk') : t(l, 'diode-black-box-way-uk-2'));
     return {
-      say: { uk: `Постав на джерелі ${volts(c.source, true)} (${way.uk}), замкни коло й подивись на міліамперметр.`, en: `Set the source to ${volts(c.source, false)} (${way.en}), close the circuit and look at the milliammeter.` },
-      button: { uk: `${c.reversed ? '⇄' : '→'} ${volts(c.source, true)}: виміряти струм`, en: `${c.reversed ? '⇄' : '→'} ${volts(c.source, false)}: measure the current` },
-      plan: { uk: `виміряти струм за ${volts(c.source, true)}${c.reversed ? ', скринька перевернута' : ''}`, en: `measure the current at ${volts(c.source, false)}${c.reversed ? ', the box turned round' : ''}` },
+      say: msg('diode-black-box-labbox-say', { source: (l: Locale) => volts(c.source, l), way: (l: Locale) => way[l] }),
+      button: msg('diode-black-box-labbox-button', { value: c.reversed ? '⇄' : '→', source: (l: Locale) => volts(c.source, l) }),
+      plan: msg('diode-black-box-labbox-plan', { source: (l: Locale) => volts(c.source, l), value: (l: Locale) => c.reversed ? t(l, 'diode-black-box-plan-uk') : '' }),
     };
   },
 };

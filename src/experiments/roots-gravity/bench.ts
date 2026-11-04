@@ -3,6 +3,7 @@ import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -43,7 +44,7 @@ export interface GraviCommand {
 export const graviCommand: CommandHandler<GraviCommand> = {
   type: 'lab.gravi',
   apply(state, c) {
-    if (!(c.step === 'upright' || c.step === 'side' || c.step === 'clino')) return err({ uk: 'Такого кроку в досліді немає.', en: 'No such step in the experiment.' });
+    if (!(c.step === 'upright' || c.step === 'side' || c.step === 'clino')) return err(msg('roots-gravity-gravi-command-apply'));
     const rec = (time: number, bend: number): MeasurementRecord => ({ kind: 'measurement', instrument: 'protractor', quantity: 'angle', value: Math.round(bend / PROTRACTOR) * PROTRACTOR, exact: bend, entities: [], inputs: { time, division: PROTRACTOR } });
     // Upright: the roots straight down — one photo. On the side: the bend from the horizontal. On the clinostat: none.
     const trace = c.step === 'upright' ? [rec(0, 0)] : PHOTO_TIMES.map((t) => rec(t, c.step === 'side' ? rootBend(t) : 0));
@@ -54,19 +55,19 @@ export const graviCommand: CommandHandler<GraviCommand> = {
 
 const STEP: Record<GraviCommand['step'], { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   upright: {
-    say: { uk: 'Зерна кукурудзи проросли в скляній банці між склом і вологим паперовим рушником. Банка стоїть — і корінці ростуть прямо вниз.', en: 'Maize grains have sprouted in a glass jar, between the glass and a wet paper towel. The jar stands upright — and the roots grow straight down.' },
-    button: { uk: '🌱 Банка стоїть', en: '🌱 The jar upright' },
-    plan: { uk: 'банка стоїть: корінці вниз', en: 'the jar upright: roots down' },
+    say: msg('roots-gravity-upright-say'),
+    button: msg('roots-gravity-upright-button'),
+    plan: msg('roots-gravity-upright-plan'),
   },
   side: {
-    say: { uk: 'Кладемо банку на бік: тепер корінці лежать горизонтально. Фотографуємо їх кожні 20 хвилин дві години поспіль і транспортиром міряємо на знімках, на скільки градусів загнувся кінчик кореня.', en: 'We lay the jar on its side: now the roots lie level. We photograph them every 20 minutes for two hours and measure on the photos with a protractor how many degrees the root tip has bent.' },
-    button: { uk: '↪ Покласти банку на бік', en: '↪ Lay the jar on its side' },
-    plan: { uk: 'банка на боці: знімки кожні 20 хвилин', en: 'the jar on its side: photos every 20 minutes' },
+    say: msg('roots-gravity-side-say'),
+    button: msg('roots-gravity-side-button'),
+    plan: msg('roots-gravity-side-plan'),
   },
   clino: {
-    say: { uk: 'А тепер — нова банка з прямими корінцями, і кладемо її на клиностат: моторчик повільно обертає її навколо горизонтальної осі, раз на хвилину. Низ для корінців весь час обходить коло. Знову знімаємо дві години.', en: 'Now a new jar with straight roots, laid on a clinostat: a little motor turns it slowly about a level axis, once a minute. For the roots, «down» keeps going round. Again we photograph for two hours.' },
-    button: { uk: '🔄 Банка на клиностаті', en: '🔄 The jar on a clinostat' },
-    plan: { uk: 'банка на клиностаті', en: 'the jar on a clinostat' },
+    say: msg('roots-gravity-clino-say'),
+    button: msg('roots-gravity-clino-button'),
+    plan: msg('roots-gravity-clino-plan'),
   },
 };
 

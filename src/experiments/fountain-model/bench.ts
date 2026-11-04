@@ -5,7 +5,8 @@ import { COMPONENTS } from '../../components/index.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G, LAMINAR_REYNOLDS } from '../../domains/mechanics/constants.js';
 import { laminarHeadLoss, outflowSpeed, pipeOutflowSpeed, reynolds, riseHeight } from '../../domains/mechanics/formulas.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -33,7 +34,7 @@ export type FountainCommand = { readonly type: 'lab.fountain'; readonly head: nu
 export const fountainCommand: CommandHandler<FountainCommand> = {
   type: 'lab.fountain',
   apply(state, c) {
-    if (!(c.head >= LOW && c.head <= HIGH)) return err({ uk: 'Штатив дає поставити пляшку від 10 см нижче сопла до 50 см вище.', en: 'The stand holds the bottle from 10 cm below the nozzle to 50 cm above it.' });
+    if (!(c.head >= LOW && c.head <= HIGH)) return err(msg('fountain-model-command-apply'));
     const water = COMPONENTS.water.phases.liquid!;
     const liquid = { density: water.density!.value, viscosity: water.viscosity!.value };
     const D = FOUNTAIN_TUBE.value;
@@ -41,7 +42,7 @@ export const fountainCommand: CommandHandler<FountainCommand> = {
     // The same water through the wider tube, slower.
     const vTube = v * (FOUNTAIN_NOZZLE / D) ** 2;
     const re = reynolds(liquid.density, vTube, D, liquid.viscosity);
-    if (re > LAMINAR_REYNOLDS.value) return err({ uk: 'Так швидко вода в трубці вже вирує — модель тут не працює.', en: 'So fast the water in the tube churns — the model does not hold here.' });
+    if (re > LAMINAR_REYNOLDS.value) return err(msg('fountain-model-command-apply-2'));
     const jet = v > 0 ? riseHeight(v, G) : 0;
     const record: MeasurementRecord = {
       kind: 'measurement',
@@ -61,11 +62,11 @@ export const FOUNTAIN_TEXT: Record<FountainCommand['type'], (c: FountainCommand)
   'lab.fountain': (x) => {
     const c = x as FountainCommand;
     const below = c.head <= 0;
-    const where = below ? { uk: `на ${cm(c.head)} см нижче сопла`, en: `${cm(c.head)} cm below the nozzle` } : { uk: `на ${cm(c.head)} см вище сопла`, en: `${cm(c.head)} cm above the nozzle` };
+    const where = below ? msg('fountain-model-labfountain-where', { head: String(cm(c.head)) }) : msg('fountain-model-labfountain-where-2', { head: String(cm(c.head)) });
     return {
-      say: { uk: `Постав пляшку так, щоб вода в ній стояла ${where.uk}, — і подивися на сопло.${below ? '' : ' На яку висоту б’є струмінь?'}`, en: `Set the bottle so that the water in it stands ${where.en} — and look at the nozzle.${below ? '' : ' How high does the jet go?'}` },
-      button: { uk: `${below ? '⬇' : '⬆'} Вода в пляшці ${where.uk}`, en: `${below ? '⬇' : '⬆'} The water in the bottle ${where.en}` },
-      plan: { uk: `вода в пляшці ${where.uk}`, en: `the water in the bottle ${where.en}` },
+      say: msg('fountain-model-labfountain-say', { where: (l: Locale) => where[l], value: (l: Locale) => below ? '' : t(l, 'fountain-model-say-uk') }),
+      button: msg('fountain-model-labfountain-button', { value: below ? '⬇' : '⬆', where: (l: Locale) => where[l] }),
+      plan: msg('fountain-model-labfountain-plan', { where: (l: Locale) => where[l] }),
     };
   },
 };

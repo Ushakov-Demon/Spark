@@ -1,5 +1,6 @@
 import { INNER, PLANETS, planetIds } from '../../../src/experiments/solar-system-model/bench.js';
-import { tr } from '../../../src/knowledge/i18n.js';
+import { NUMBER_LOCALE, tr } from '../../../src/knowledge/i18n.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, PLASTICINE, springSvg, STEEL, THREAD, weightsSvg, WOOD, WOOD_EDGE } from '../../graphics/scene/kit.js';
@@ -14,32 +15,31 @@ import { defineScene, type SceneContext } from '../types.js';
 export type PlanetsView = { readonly view: 'field' | 'orbits' | 'back'; readonly marks: readonly { readonly name: string; readonly distance: number; readonly size: number; readonly read: string; readonly color: string }[]; readonly range: number; readonly sun: string; readonly years?: number; readonly orbits?: readonly { readonly name: string; readonly a: number; readonly t: number; readonly color: string }[]; readonly dark?: number; readonly dot?: number; readonly caption?: string; readonly note?: string; /** The step just done, to be played. */ readonly anim?: 'ball' | 'inner' | 'outer' | 'kepler' | 'voyager' };
 
 function view({ log, command, locale }: SceneContext): PlanetsView {
-  const uk = locale === 'uk';
   const done = log.filter((e) => e.command.type === 'lab.planets');
   const step = (e: (typeof done)[number]) => (e.command as unknown as { step: string }).step;
   const ids = planetIds();
   // (Tenths: «21,5 м · 1,8 мм».)
-  const one = (x: number) => new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 1 }).format(x);
+  const one = (x: number) => new Intl.NumberFormat(NUMBER_LOCALE[locale], { maximumFractionDigits: 1 }).format(x);
   const color: Record<string, string> = { mercury: '#b0a89a', venus: '#e8d39a', earth: '#5a9fd8', mars: '#d9643a', jupiter: '#d8b48a', saturn: '#e6cf8c', uranus: '#9fd8e0', neptune: '#4a6fd8' };
   const marks = done.filter((e) => ['inner', 'outer'].includes(step(e))).flatMap((e) => readingsOf([e]).map((x) => {
     const id = ids[x.record.inputs?.['planet'] ?? 0]!;
     const size = x.record.inputs?.['size'] ?? 0;
-    return { name: tr(PLANETS[id].name, locale), distance: x.record.value ?? 0, size, read: `${one(x.record.value ?? 0)} ${uk ? 'м' : 'm'} · ${one(size * 1000)} ${uk ? 'мм' : 'mm'}`, color: color[id]! };
+    return { name: tr(PLANETS[id].name, locale), distance: x.record.value ?? 0, size, read: `${one(x.record.value ?? 0)} ${tl(locale, 'unit-sym-m')} · ${one(size * 1000)} ${tl(locale, 'unit-sym-mm')}`, color: color[id]! };
   }));
   const last = command?.type === 'lab.planets' ? (command as unknown as { step: string }).step : undefined;
-  const sun = uk ? 'Сонце, 20 см' : 'the Sun, 20 cm';
+  const sun = tl(locale, 'solar-system-model-view-sun');
   const outer = done.some((e) => step(e) === 'outer');
   if (last === 'kepler') {
     const recs = readingsOf([[...done].pop()!]).map((x) => x.record);
     const orbits = recs.filter((r) => INNER.includes(ids[r.inputs?.['planet'] ?? 0]!)).map((r) => { const id = ids[r.inputs?.['planet'] ?? 0]!; return { name: tr(PLANETS[id].name, locale), a: r.inputs?.['a'] ?? 1, t: r.inputs?.['t'] ?? 1, color: color[id]! }; });
-    return { view: 'orbits', marks, range: 700, sun, orbits, years: 2, anim: 'kepler', note: uk ? 'Юпітер і далі — за межами малюнка' : 'Jupiter and beyond — off the picture', caption: uk ? 'вид згори, відстані в масштабі' : 'from above, distances to scale' };
+    return { view: 'orbits', marks, range: 700, sun, orbits, years: 2, anim: 'kepler', note: tl(locale, 'solar-system-model-view-note'), caption: tl(locale, 'solar-system-model-view-caption') };
   }
   if (last === 'voyager') {
     const v = readingsOf([[...done].pop()!])[0]!.record;
-    const probe = { name: uk ? '«Вояджер-1»' : 'Voyager 1', distance: v.value ?? 0, size: 0, read: `${Math.round(v.value ?? 0)} ${uk ? 'м' : 'm'}`, color: '#d8e2ea' };
-    return { view: 'back', marks: [...marks, probe], range: 900, sun, dark: 1, dot: 1, anim: 'voyager', note: uk ? 'Земля — менше пікселя' : 'the Earth — less than a pixel' };
+    const probe = { name: tl(locale, 'solar-system-model-probe-name'), distance: v.value ?? 0, size: 0, read: `${Math.round(v.value ?? 0)} ${tl(locale, 'unit-sym-m')}`, color: '#d8e2ea' };
+    return { view: 'back', marks: [...marks, probe], range: 900, sun, dark: 1, dot: 1, anim: 'voyager', note: tl(locale, 'solar-system-model-view-note-2') };
   }
-  return { view: 'field', marks, range: outer ? 700 : 35, sun, caption: uk ? `поле: ${outer ? 700 : 35} м` : `the field: ${outer ? 700 : 35} m`, ...(last === 'ball' || last === 'inner' || last === 'outer' ? { anim: last } : {}) };
+  return { view: 'field', marks, range: outer ? 700 : 35, sun, caption: tl(locale, 'solar-system-model-view-caption-2', { value: outer ? 700 : 35 }), ...(last === 'ball' || last === 'inner' || last === 'outer' ? { anim: last } : {}) };
 }
 
 /**

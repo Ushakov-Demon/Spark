@@ -4,6 +4,7 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -47,7 +48,7 @@ export function coinShift(pull: CoinPull): { shift: number; slipped: boolean; ti
 export const coinCommand: CommandHandler<CoinCommand> = {
   type: 'lab.coin',
   apply(state, c) {
-    if (!(c.pull in COIN_PULLS)) return err({ uk: 'Як витягати картку?', en: 'How to take the card out?' });
+    if (!(c.pull in COIN_PULLS)) return err(msg('coin-inertia-command-apply'));
     const { shift, slipped, time } = coinShift(c.pull);
     const inGlass = shift < COIN_GAP.value;
     const record: MeasurementRecord = { kind: 'measurement', instrument: 'ruler', quantity: 'length', value: Math.round(shift / COIN_DIVISION) * COIN_DIVISION, exact: shift, entities: [], inputs: { speed: COIN_PULLS[c.pull], time, slipped: slipped ? 1 : 0, inGlass: inGlass ? 1 : 0, division: COIN_DIVISION } };
@@ -58,10 +59,10 @@ export const coinCommand: CommandHandler<CoinCommand> = {
 export const COIN_COMMANDS = [coinCommand] as const;
 
 const PULL: Record<CoinPull, { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
-  slow: { say: { uk: 'Повільно й плавно тягнемо картку вбік. Куди потрапить монета?', en: 'Slowly and smoothly draw the card aside. Where will the coin end up?' }, button: { uk: '🐢 Тягнути повільно', en: '🐢 Draw slowly' }, plan: { uk: 'тягнути картку повільно', en: 'draw the card slowly' } },
-  push: { say: { uk: 'Знову монета на картці. Тепер штовхаємо картку пальцем — зі швидкістю близько 0,5 м/с.', en: 'The coin on the card again. Now push the card with a finger — about 0.5 m/s.' }, button: { uk: '👉 Штовхнути: 0,5 м/с', en: '👉 Push: 0.5 m/s' }, plan: { uk: 'штовхнути картку (0,5 м/с)', en: 'push the card (0.5 m/s)' } },
-  flick: { say: { uk: 'Швидше: різко штовхаємо — близько 1 м/с.', en: 'Faster: a sharp push — about 1 m/s.' }, button: { uk: '👉 Різко: 1 м/с', en: '👉 Sharply: 1 m/s' }, plan: { uk: 'різко штовхнути (1 м/с)', en: 'push sharply (1 m/s)' } },
-  snap: { say: { uk: 'І найшвидше: клацаємо по картці пальцем — близько 3 м/с.', en: 'And fastest: flick the card with a finger — about 3 m/s.' }, button: { uk: '🫰 Клацнути: 3 м/с', en: '🫰 Flick: 3 m/s' }, plan: { uk: 'клацнути по картці (3 м/с)', en: 'flick the card (3 m/s)' } },
+  slow: { say: msg('coin-inertia-slow-say'), button: msg('coin-inertia-slow-button'), plan: msg('coin-inertia-slow-plan') },
+  push: { say: msg('coin-inertia-push-say'), button: msg('coin-inertia-push-button'), plan: msg('coin-inertia-push-plan') },
+  flick: { say: msg('coin-inertia-flick-say'), button: msg('coin-inertia-flick-button'), plan: msg('coin-inertia-flick-plan') },
+  snap: { say: msg('coin-inertia-snap-say'), button: msg('coin-inertia-snap-button'), plan: msg('coin-inertia-snap-plan') },
 };
 
 export const COIN_TEXT: Record<CoinCommand['type'], (c: CoinCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {

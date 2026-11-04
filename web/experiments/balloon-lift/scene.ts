@@ -28,13 +28,12 @@ const radius = (d: number) => Math.max(10, Math.min(60, 30 * Math.cbrt(d / 0.3))
 
 function view({ last, command, plan, locale }: SceneContext): LiftView {
   type Cmd = { step: string; gas?: string; diameter?: number };
-  const uk = locale === 'uk';
   const lc = command?.type === 'lab.balloon' ? (command as unknown as Cmd) : undefined;
   const any = [lc, ...plan.map((s) => (s.kind === 'bench' && s.command.type === 'lab.balloon' ? (s.command as unknown as Cmd) : undefined))];
   const gas = any.find((c) => c?.gas)?.gas ?? 'helium';
   const diameter = lc?.diameter ?? any.find((c) => c?.diameter)?.diameter ?? 0.3;
   const r = last && lc ? readingsOf([last])[0]?.record : undefined;
-  const base = { gas: lc?.gas ?? gas, diameter, size: `D = ${sizeText(diameter, uk)}`, up: 0, flies: false, gauge: false };
+  const base = { gas: lc?.gas ?? gas, diameter, size: `D = ${sizeText(diameter, locale)}`, up: 0, flies: false, gauge: false };
   if (!lc || lc.step === 'shell') return { ...base, stage: 'shell' };
   if (lc.step === 'size') return { ...base, stage: 'size' };
   const F = r?.value ?? 0;

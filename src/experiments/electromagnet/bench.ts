@@ -3,7 +3,8 @@ import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { CARBON_STEEL_MU, compassDeflection, EARTH_HORIZONTAL, electromagnetField } from '../../domains/electrical/magnet.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { AMMETER } from '../resistor-circuit/bench.js';
 
@@ -42,12 +43,12 @@ export interface MagnetCommand {
 export const magnetCommand: CommandHandler<MagnetCommand> = {
   type: 'lab.magnet',
   apply(state, c) {
-    if (!(c.current >= 0 && c.current <= AMMETER.max.value)) return err({ uk: 'Амперметр показує до 2 А.', en: 'The ammeter reads up to 2 A.' });
-    if (!(Number.isInteger(c.turns) && c.turns >= 10 && c.turns <= 300)) return err({ uk: 'Намотують від 10 до 300 витків.', en: 'Wind 10 to 300 turns.' });
+    if (!(c.current >= 0 && c.current <= AMMETER.max.value)) return err(msg('electromagnet-magnet-command-apply'));
+    if (!(Number.isInteger(c.turns) && c.turns >= 10 && c.turns <= 300)) return err(msg('electromagnet-magnet-command-apply-2'));
     const B = electromagnetField({ turns: c.turns, current: c.current, coilLength: NAIL.coil.value, radius: NAIL.radius.value, ...(c.core ? { core: { length: NAIL.length.value, mur: CARBON_STEEL_MU.value } } : {}) }, COMPASS_DISTANCE);
     const signed = c.reversed ? -B : B;
     const earth = c.earth ?? EARTH_HORIZONTAL.value;
-    if (!(earth > 1e-6 && earth < 50e-6)) return err({ uk: 'Тут поле Землі майже вертикальне: компас не працює.', en: 'Here the Earth’s field is almost vertical: a compass does not work.' });
+    if (!(earth > 1e-6 && earth < 50e-6)) return err(msg('electromagnet-magnet-command-apply-3'));
     const angle = compassDeflection(signed, earth);
     const inputs = { turns: c.turns, core: c.core ? 1 : 0, reversed: c.reversed ? 1 : 0, field: signed, earth, distance: COMPASS_DISTANCE, division: COMPASS_DIVISION };
     const compass: MeasurementRecord = { kind: 'measurement', instrument: 'compass', quantity: 'angle', value: Math.round(angle / COMPASS_DIVISION) * COMPASS_DIVISION, exact: angle, entities: [], inputs };
@@ -59,32 +60,32 @@ export const magnetCommand: CommandHandler<MagnetCommand> = {
 
 export const MAGNET_COMMANDS = [magnetCommand] as const;
 
-const amps = (x: number, uk: boolean) => `${String(x).replace('.', uk ? ',' : '.')} ${uk ? 'А' : 'A'}`;
+const amps = (x: number, l: Locale) => `${String(x).replace('.', t(l, 'electromagnet-amps'))} ${t(l, 'unit-sym-A')}`;
 export const MAGNET_TEXT: Record<MagnetCommand['type'], (c: MagnetCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.magnet': (x) => {
     const c = x as MagnetCommand;
     if (c.current === 0)
       return {
-        say: { uk: 'Ключ розімкнений, струму немає. Куди показує стрілка компаса?', en: 'The key is open, there is no current. Where does the compass needle point?' },
-        button: { uk: '🧭 Без струму: подивитися на компас', en: '🧭 No current: look at the compass' },
-        plan: { uk: 'подивитися на компас без струму', en: 'look at the compass with no current' },
+        say: msg('electromagnet-labmagnet-say'),
+        button: msg('electromagnet-labmagnet-button'),
+        plan: msg('electromagnet-labmagnet-plan'),
       };
     if (!c.core)
       return {
-        say: { uk: `Витягни цвях — котушка лишається на пластиковій трубочці. Знову струм ${amps(c.current, true)}. Що тепер показує компас?`, en: `Pull the nail out — the coil stays on a plastic straw. Again ${amps(c.current, false)}. What does the compass show now?` },
-        button: { uk: `🪛 Без цвяха: ${amps(c.current, true)}`, en: `🪛 No nail: ${amps(c.current, false)}` },
-        plan: { uk: `витягти цвях і пустити ${amps(c.current, true)}`, en: `pull the nail out, ${amps(c.current, false)}` },
+        say: msg('electromagnet-labmagnet-say-2', { current: (l: Locale) => amps(c.current, l) }),
+        button: msg('electromagnet-labmagnet-button-2', { current: (l: Locale) => amps(c.current, l) }),
+        plan: msg('electromagnet-labmagnet-plan-2', { current: (l: Locale) => amps(c.current, l) }),
       };
     if (c.reversed)
       return {
-        say: { uk: `Поміняй місцями дроти на клемах джерела — струм піде в інший бік. Знову ${amps(c.current, true)}. Куди тепер відхилиться стрілка?`, en: `Swap the wires at the source’s terminals — the current goes the other way. Again ${amps(c.current, false)}. Which way does the needle turn now?` },
-        button: { uk: `⇄ Струм в інший бік: ${amps(c.current, true)}`, en: `⇄ The current reversed: ${amps(c.current, false)}` },
-        plan: { uk: `змінити напрям струму, ${amps(c.current, true)}`, en: `reverse the current, ${amps(c.current, false)}` },
+        say: msg('electromagnet-labmagnet-say-3', { current: (l: Locale) => amps(c.current, l) }),
+        button: msg('electromagnet-labmagnet-button-3', { current: (l: Locale) => amps(c.current, l) }),
+        plan: msg('electromagnet-labmagnet-plan-3', { current: (l: Locale) => amps(c.current, l) }),
       };
     return {
-      say: { uk: `Замкни ключ і реостатом встанови струм ${amps(c.current, true)}. На скільки градусів відхилилася стрілка компаса?`, en: `Close the key and set ${amps(c.current, false)} with the rheostat. How many degrees did the compass needle turn?` },
-      button: { uk: `⚡ Струм ${amps(c.current, true)}: подивитися на компас`, en: `⚡ ${amps(c.current, false)}: look at the compass` },
-      plan: { uk: `встановити струм ${amps(c.current, true)}`, en: `set the current to ${amps(c.current, false)}` },
+      say: msg('electromagnet-labmagnet-say-4', { current: (l: Locale) => amps(c.current, l) }),
+      button: msg('electromagnet-labmagnet-button-4', { current: (l: Locale) => amps(c.current, l) }),
+      plan: msg('electromagnet-labmagnet-plan-4', { current: (l: Locale) => amps(c.current, l) }),
     };
   },
 };

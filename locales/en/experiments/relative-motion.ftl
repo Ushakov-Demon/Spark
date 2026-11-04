@@ -1,0 +1,29 @@
+## relative-motion
+relative-motion-carry-command-apply = The bottle is carried by hand — up to 2 cm/s.
+relative-motion-cms = {"."}
+relative-motion-labcarry-say = First the bottle stands. Turn it over, mark the bubble on the paper at the zero mark and at the 9 cm one, and time it.
+relative-motion-labcarry-button = 🫧 The bottle stands
+relative-motion-labcarry-plan = the bottle stands
+relative-motion-labcarry-say-2 = Now, while the bubble rises, carry the bottle along the ruler steadily — { $speed }. Mark the bubble on the paper at the start and at 9 cm.
+relative-motion-labcarry-button-2 = ➡ Carry the bottle: { $speed }
+relative-motion-labcarry-plan-2 = carry the bottle at { $speed }
+relative-motion-ask = Are the bubble’s path and trajectory the same relative to the bottle and to the table?
+relative-motion-title = The relativity of motion: a bubble in a moving bottle
+relative-motion-question = The upside-down bottle of thick washing-up liquid again, and a ≈ 4 mm bubble rising from the zero mark to the 9 cm one. A sheet of paper is fixed to the table behind the bottle: we mark on it with a marker where the bubble was at the start and at the finish, and measure the line between. First the bottle stands, then, while the bubble rises, we carry the bottle along a ruler — slowly and faster. Each time we time it and measure how far the bottle moved. Are the bubble’s path and trajectory the same relative to the bottle and to the table?
+relative-motion-choices = No: relative to the bottle the same 9 cm upright, relative to the table a slanted line and a longer path
+relative-motion-choices-2 = Yes: the bubble rises just the same
+relative-motion-choices-3 = No: the bubble rises slower while the bottle is carried
+relative-motion-answer-why = Motion is always described relative to something — a body of reference. Relative to the bottle the bubble rises straight up the same 9 cm in the same time each time: the liquid in the bottle knows nothing of the bottle being carried. But relative to the table the bubble at once rises and travels sideways with the bottle. The two uniform motions add up into one — along a slanted straight line — and the faster the bottle is carried, the longer that path and the faster the bubble goes relative to the table. So the trajectory, the path and the speed depend on what the motion is described relative to; the time of the rise does not. In the same way an apple dropped in a bus falls straight down for a passenger, but flies along a curve for someone at the stop.
+relative-motion-answer-say = Relative to the bottle — 9 cm up each time; relative to the table — from { $s } to { $s2 }, in the same time.
+relative-motion-parts-how = the bottle carried at { $u } cm/s
+relative-motion-parts-moved = the bottle did not move
+relative-motion-parts-moved-2 = the bottle moved { $x }
+relative-motion-text-parts = { $how }: { $t }, { $moved }, the bubble’s path relative to the table { $s }
+relative-motion-answer-text = {" "}Relative to the bottle the path is 9 cm each time.
+relative-motion-setup = An upside-down bottle of thick washing-up liquid with marks, a ruler on the table, a sheet of paper behind the bottle, a marker, a stopwatch
+relative-motion-busy = The bubble rises — carrying the bottle steadily…
+relative-motion-say = 9 cm up in { $T }; on the paper the same line, { $value }.
+relative-motion-say-2 = In { $T } the bottle went { $value }, and on the paper — a slanted line of { $value2 }.
+relative-motion-board-how = u = { $u } cm/s, moved { $value }
+relative-motion-board-title = { $how }: relative to the bottle
+relative-motion-board-title-2 = relative to the table

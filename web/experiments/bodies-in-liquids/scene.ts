@@ -1,5 +1,6 @@
 import { type SinkLiquid, sinkLiquidName } from '../../../src/experiments/bodies-in-liquids/bench.js';
-import { tr } from '../../../src/knowledge/i18n.js';
+import { tr, type Locale } from '../../../src/knowledge/i18n.js';
+import { localized, t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { PLAY_SECONDS } from '../../graphics/scene/bench-motion.js';
 import { TABLE } from '../../graphics/scene/constants.js';
@@ -27,7 +28,7 @@ function view({ last, command, plan, locale }: SceneContext): SinkView {
   const laps = last && sc ? readingsOf([last]).map((x) => x.record).filter((x) => x.quantity === 'time') : [];
   const lap = laps[laps.length - 1];
   const color = { 'washing-up': 'rgba(120,200,120,0.55)', glycerol: 'rgba(225,235,245,0.55)', 'sunflower-oil': 'rgba(240,200,80,0.6)', water: 'rgba(120,170,230,0.5)' }[cmd?.liquid ?? 'water'] ?? 'rgba(120,170,230,0.5)';
-  const label = cmd ? (cmd.body === 'bubble' ? `${locale === 'uk' ? 'бульбашка' : 'bubble'} ≈ ${String(cmd.diameter * 1000).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'мм' : 'mm'}` : tr({ uk: sinkLiquidName(cmd.liquid as SinkLiquid).uk, en: sinkLiquidName(cmd.liquid as SinkLiquid).en }, locale)) : undefined;
+  const label = cmd ? (cmd.body === 'bubble' ? `${tl(locale, 'bodies-in-liquids-view-label')} ≈ ${String(cmd.diameter * 1000).replace('.', tl(locale, 'bodies-in-liquids-view-label-2'))} ${tl(locale, 'unit-sym-mm')}` : tr(localized((l: Locale) => sinkLiquidName(cmd.liquid as SinkLiquid)[l]), locale)) : undefined;
   return { ...(lap ? { stopwatch: { display: formatMeasured('time', lap.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: lap.value ?? 0 } } : {}), sink: { body: cmd?.body ?? 'ball', color, marks: cmd?.marks ?? [], diameter: cmd?.diameter ?? 0.002, ...(lap ? { at: lap.inputs?.['mark'] ?? 0, speed: lap.inputs?.['speed'] ?? 0 } : {}), ...(label ? { label } : {}) } };
 }
 

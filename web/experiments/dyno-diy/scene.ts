@@ -1,3 +1,4 @@
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { BENCH_SPRING_K } from '../../../src/scenarios/bench-kit.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
@@ -25,7 +26,7 @@ function view({ log, last, command, plan, locale }: SceneContext): DynoView {
   const lastStep = done.length ? stepOf(done[done.length - 1]!) : undefined;
   const hangRec = lastStep === 'apple' || lastStep === 'egg' ? recOf(lastStep)[0] : undefined;
   const cs = command?.type === 'lab.dyno' ? (command as unknown as { step: Step }).step : undefined;
-  const unit = locale === 'uk' ? 'Н' : 'N';
+  const unit = tl(locale, 'unit-sym-N');
   const read = hangRec && cs ? formatMeasured('force', hangRec.value, 0.1, locale) : undefined;
   return { weights: lastStep === 'marks' ? 3 : 0, ...(hangRec ? { hang: lastStep as 'apple' | 'egg' } : {}), stretch: lastStep === 'marks' ? marks[2] ?? 0 : hangRec?.inputs?.['pointer'] ?? 0, marks, ...(newton ? { newton } : {}), unit, ...(read ? { read } : {}), ...(cs ? { anim: cs } : {}) };
 }

@@ -1,4 +1,5 @@
 import { scalesMasses, scalesSequence, scalesTilt, type ScalesLoad } from '../../../src/experiments/scales-diy/bench.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, PLASTICINE, springSvg, STEEL, THREAD, weightsSvg, WOOD, WOOD_EDGE } from '../../graphics/scene/kit.js';
@@ -19,7 +20,7 @@ function view({ log, last, command, plan, locale }: SceneContext): ScalesView {
   const cs = command?.type === 'lab.scales' ? (command as unknown as { step: Step }).step : undefined;
   const r = cs && last ? readingsOf([last]).map((x) => x.record)[0] : undefined;
   const read = r && cs !== 'zero' ? formatMeasured('mass', r.value, 0.001, locale) : undefined;
-  return { load, units: locale === 'uk' ? ['г', 'мл'] : ['g', 'mL'], ...(read ? { read } : {}), ...(cs ? { anim: cs } : {}) };
+  return { load, units: [tl(locale, 'scales-diy-view-units'), tl(locale, 'scales-diy-view-units-2')], ...(read ? { read } : {}), ...(cs ? { anim: cs } : {}) };
 }
 
 /**

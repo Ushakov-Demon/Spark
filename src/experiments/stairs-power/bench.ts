@@ -3,6 +3,7 @@ import { err, ok } from '../../core/result.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { power, weight, work } from '../../domains/mechanics/formulas.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import { measured, ruler, RULER_DIVISION } from '../../scenarios/bench-kit.js';
 
 /**
@@ -25,19 +26,18 @@ export type StairsCommand =
   | { readonly type: 'lab.stairs'; readonly step: 'climb'; readonly pace: Pace; readonly mass: number; readonly steps: number; readonly rise: number; readonly time: number };
 
 const round = (x: number, d: number) => Math.round(x / d) * d;
-const wrong = (uk: string, en: string) => err({ uk, en });
 
 export const stairsCommand: CommandHandler<StairsCommand> = {
   type: 'lab.stairs',
   apply(state, c) {
     const done = (...r: ReturnType<typeof measured>[]) => ok({ state, kind: 'measurement' as const, externalEnergy: 0, trace: r });
-    if (c.step !== 'measure' && !(c.mass >= 20 && c.mass <= 150)) return wrong('Маса людини — від 20 до 150 кг.', 'A person’s mass is 20 to 150 kg.');
+    if (c.step !== 'measure' && !(c.mass >= 20 && c.mass <= 150)) return err(msg('stairs-power-wrong-mass'));
     if (c.step === 'weigh') return done(measured('floor-scales', 'mass', round(c.mass, FLOOR_SCALES), c.mass, { division: FLOOR_SCALES }));
-    if (!(Number.isInteger(c.steps) && c.steps >= 3 && c.steps <= 100)) return wrong('Сходинок — від 3 до 100.', 'The steps: 3 to 100.');
-    if (!(c.rise >= 0.1 && c.rise <= 0.22)) return wrong('Сходинка буває заввишки від 10 до 22 см.', 'A step is 10 to 22 cm high.');
+    if (!(Number.isInteger(c.steps) && c.steps >= 3 && c.steps <= 100)) return err(msg('stairs-power-wrong-steps'));
+    if (!(c.rise >= 0.1 && c.rise <= 0.22)) return err(msg('stairs-power-wrong-rise'));
     const height = c.steps * c.rise;
     if (c.step === 'measure') return done(measured('ruler', 'length', ruler(c.rise), c.rise, { steps: c.steps, height, division: RULER_DIVISION }));
-    if (!(c.time > 0.5 && c.time <= 600)) return wrong('Час на сходах — від пів секунди до 10 хвилин.', 'The time on the stairs: half a second to 10 minutes.');
+    if (!(c.time > 0.5 && c.time <= 600)) return err(msg('stairs-power-wrong-time'));
     // Lifting oneself: a force equal to one's weight, along the height (the steps forward need no work against it).
     const F = weight(c.mass, G);
     const A = work(F, height);
@@ -51,26 +51,26 @@ export const STAIRS_TEXT: Record<StairsCommand['type'], (c: StairsCommand) => { 
     const c = x as StairsCommand;
     if (c.step === 'weigh')
       return {
-        say: { uk: 'Стань на підлогові ваги. Скільки ти важиш?', en: 'Stand on the floor scales. What is your mass?' },
-        button: { uk: '⚖ Зважитися', en: '⚖ Weigh yourself' },
-        plan: { uk: 'зважитися на підлогових вагах', en: 'weigh yourself on the floor scales' },
+        say: msg('stairs-power-labstairs-say'),
+        button: msg('stairs-power-labstairs-button'),
+        plan: msg('stairs-power-labstairs-plan'),
       };
     if (c.step === 'measure')
       return {
-        say: { uk: 'Виміряй лінійкою висоту однієї сходинки й порахуй сходинки до наступного поверху.', en: 'Measure the height of one step with a ruler and count the steps to the next floor.' },
-        button: { uk: '📏 Виміряти сходинку й порахувати сходинки', en: '📏 Measure a step and count the steps' },
-        plan: { uk: 'виміряти сходинку й порахувати сходинки', en: 'measure a step and count the steps' },
+        say: msg('stairs-power-labstairs-say-2'),
+        button: msg('stairs-power-labstairs-button-2'),
+        plan: msg('stairs-power-labstairs-plan-2'),
       };
     return c.pace === 'walk'
       ? {
-          say: { uk: 'Піднімися на поверх спокійним кроком — товариш засікає час секундоміром.', en: 'Walk up one floor at an easy pace — a friend times you with a stopwatch.' },
-          button: { uk: '🚶 Піднятися кроком', en: '🚶 Walk up' },
-          plan: { uk: 'піднятися на поверх кроком, з секундоміром', en: 'walk up one floor, with the stopwatch' },
+          say: msg('stairs-power-labstairs-say-3'),
+          button: msg('stairs-power-labstairs-button-3'),
+          plan: msg('stairs-power-labstairs-plan-3'),
         }
       : {
-          say: { uk: 'А тепер — ті самі сходи бігом! Секундомір готовий.', en: 'Now the same stairs at a run! The stopwatch is ready.' },
-          button: { uk: '🏃 Вибігти бігом', en: '🏃 Run up' },
-          plan: { uk: 'вибігти на поверх бігом, з секундоміром', en: 'run up one floor, with the stopwatch' },
+          say: msg('stairs-power-labstairs-say-4'),
+          button: msg('stairs-power-labstairs-button-4'),
+          plan: msg('stairs-power-labstairs-plan-4'),
         };
   },
 };

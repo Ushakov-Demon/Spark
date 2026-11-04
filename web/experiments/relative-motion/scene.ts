@@ -1,4 +1,5 @@
 import { CARRY_BUBBLE, CARRY_RISE } from '../../../src/experiments/relative-motion/bench.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { rulerSvg, stopwatchSvg } from '../../graphics/scene/kit.js';
@@ -19,7 +20,7 @@ function view({ last, command, locale }: SceneContext): CarryView {
   const recs = last && cc ? readingsOf([last]).map((x) => x.record) : [];
   const of = (w: number) => recs.find((x) => x.inputs?.['which'] === w);
   const t = of(0);
-  const cm = (x: number) => `${String(Math.round(x * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`;
+  const cm = (x: number) => `${String(Math.round(x * 1000) / 10).replace('.', tl(locale, 'relative-motion-cms'))} ${tl(locale, 'unit-sym-cm')}`;
   const sink = { body: 'bubble' as const, color: 'rgba(120,200,120,0.55)', marks: [0.03, 0.06, 0.09], diameter: CARRY_BUBBLE, ...(t ? { at: CARRY_RISE, speed: t.inputs?.['bubble'] ?? 0 } : {}) };
   return { sink, ...(t ? { stopwatch: { display: formatMeasured('time', t.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: t.value ?? 0 } } : {}), carry: { speed: cc?.speed ?? 0, shift: of(1)?.value ?? 0, ...(t ? { path: cm(of(2)?.value ?? 0), rise: cm(CARRY_RISE) } : {}) } };
 }

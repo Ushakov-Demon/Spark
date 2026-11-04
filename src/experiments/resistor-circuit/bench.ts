@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { localized, msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -39,11 +40,11 @@ const read = (x: number, div: number) => Math.round(x / div) * div;
 export const circuitCommand: CommandHandler<CircuitCommand> = {
   type: 'lab.circuit',
   apply(state, c) {
-    if (!(c.source > 0 && c.source <= VOLTMETER.max.value)) return err({ uk: 'Джерело дає від 0 до 6 В — не більше, ніж показує вольтметр.', en: 'The source gives 0 to 6 V — no more than the voltmeter reads.' });
-    if (!(c.resistor > 0)) return err({ uk: 'Який резистор?', en: 'Which resistor?' });
+    if (!(c.source > 0 && c.source <= VOLTMETER.max.value)) return err(msg('resistor-circuit-command-apply'));
+    if (!(c.resistor > 0)) return err(msg('resistor-circuit-command-apply-2'));
     // In series: the source drives the current through the resistor and the ammeter.
     const I = c.source / (c.resistor + AMMETER.resistance.value);
-    if (I > AMMETER.max.value) return err({ uk: 'Струм більший за 2 А — амперметр зашкалить. Зменш напругу.', en: 'The current is over 2 A — the ammeter would go off scale. Lower the voltage.' });
+    if (I > AMMETER.max.value) return err(msg('resistor-circuit-command-apply-3'));
     const U = I * c.resistor;
     const rec = (instrument: string, quantity: 'current' | 'voltage', exact: number, div: number): MeasurementRecord => ({ kind: 'measurement', instrument, quantity, value: read(exact, div), exact, entities: [], inputs: { source: c.source, resistor: c.resistor, division: div } });
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [rec('ammeter', 'current', I, AMMETER.division.value), rec('voltmeter', 'voltage', U, VOLTMETER.division.value)] });
@@ -82,7 +83,7 @@ export interface PairCommand {
 export const pairCommand: CommandHandler<PairCommand> = {
   type: 'lab.pair',
   apply(state, c) {
-    if (!(c.source > 0 && c.source <= VOLTMETER.max.value)) return err({ uk: 'Джерело дає від 0 до 6 В.', en: 'The source gives 0 to 6 V.' });
+    if (!(c.source > 0 && c.source <= VOLTMETER.max.value)) return err(msg('resistor-circuit-pair-command-apply'));
     const [r1, r2] = [LAB_PAIR[0].value, LAB_PAIR[1].value];
     const ra = AMMETER.resistance.value;
     let I: number;
@@ -104,7 +105,7 @@ export const pairCommand: CommandHandler<PairCommand> = {
       I = c.source / rm;
       U = I * (c.at === 'r1' ? r1 : r2);
     }
-    if (I > AMMETER.max.value) return err({ uk: 'Струм більший за 2 А — амперметр зашкалить. Зменш напругу.', en: 'The current is over 2 A — the ammeter would go off scale. Lower the voltage.' });
+    if (I > AMMETER.max.value) return err(msg('resistor-circuit-command-apply-3'));
     const rec = (instrument: string, quantity: 'current' | 'voltage', exact: number, div: number): MeasurementRecord => ({ kind: 'measurement', instrument, quantity, value: read(exact, div), exact, entities: [], inputs: { source: c.source, division: div } });
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [rec('ammeter', 'current', I, AMMETER.division.value), rec('voltmeter', 'voltage', U, VOLTMETER.division.value)] });
   },
@@ -112,28 +113,28 @@ export const pairCommand: CommandHandler<PairCommand> = {
 
 export const CIRCUIT_COMMANDS = [circuitCommand, pairCommand] as const;
 
-const v = (x: number, uk: boolean) => `${String(x).replace('.', uk ? ',' : '.')} ${uk ? 'В' : 'V'}`;
+const v = (x: number, l: Locale) => `${String(x).replace('.', t(l, 'resistor-circuit-v'))} ${t(l, 'unit-sym-V')}`;
 
-const where = (c: PairCommand, uk: boolean) =>
+const where = (c: PairCommand, l: Locale) =>
   c.connection === 'series'
-    ? c.at === 'both' ? (uk ? 'вольтметр — на обох резисторах разом' : 'the voltmeter across both resistors') : uk ? `вольтметр — на резисторі ${c.at === 'r1' ? 1 : 2}` : `the voltmeter across resistor ${c.at === 'r1' ? 1 : 2}`
-    : c.at === 'both' ? (uk ? 'амперметр — до розгалуження' : 'the ammeter before the fork') : uk ? `амперметр — у гілці з резистором ${c.at === 'r1' ? 1 : 2}` : `the ammeter in the branch of resistor ${c.at === 'r1' ? 1 : 2}`;
+    ? c.at === 'both' ? t(l, 'resistor-circuit-where') : t(l, 'resistor-circuit-where-2', { value: c.at === 'r1' ? 1 : 2 })
+    : c.at === 'both' ? t(l, 'resistor-circuit-where-3') : t(l, 'resistor-circuit-where-4', { value: c.at === 'r1' ? 1 : 2 });
 
 export const CIRCUIT_TEXT: Record<CircuitCommand['type'] | PairCommand['type'], (c: CircuitCommand | PairCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.pair': (x) => {
     const c = x as PairCommand;
     return {
-      say: { uk: `${where(c, true)[0]!.toUpperCase()}${where(c, true).slice(1)}. Замкни ключ і запиши покази амперметра й вольтметра.`, en: `${where(c, false)[0]!.toUpperCase()}${where(c, false).slice(1)}. Close the key and write down the ammeter and the voltmeter.` },
-      button: { uk: `⚡ ${where(c, true)}`, en: `⚡ ${where(c, false)}` },
-      plan: { uk: where(c, true), en: where(c, false) },
+      say: msg('resistor-circuit-labpair-say', { c: (l: Locale) => where(c, l)[0]!.toUpperCase(), c2: (l: Locale) => where(c, l).slice(1) }),
+      button: msg('resistor-circuit-labpair-button', { c: (l: Locale) => where(c, l) }),
+      plan: localized((l: Locale) => where(c, l)),
     };
   },
   'lab.circuit': (x) => {
     const c = x as CircuitCommand;
     return ({
-    say: { uk: `Постав на джерелі ${v(c.source, true)}, замкни ключ і запиши покази амперметра й вольтметра.`, en: `Set the source to ${v(c.source, false)}, close the key and write down the ammeter and the voltmeter.` },
-    button: { uk: `⚡ Джерело ${v(c.source, true)}: виміряти I та U`, en: `⚡ Source ${v(c.source, false)}: measure I and U` },
-    plan: { uk: `джерело ${v(c.source, true)} — виміряти I та U`, en: `source ${v(c.source, false)} — measure I and U` },
+    say: msg('resistor-circuit-labcircuit-say', { source: (l: Locale) => v(c.source, l) }),
+    button: msg('resistor-circuit-labcircuit-button', { source: (l: Locale) => v(c.source, l) }),
+    plan: msg('resistor-circuit-labcircuit-plan', { source: (l: Locale) => v(c.source, l) }),
   });
   },
 };

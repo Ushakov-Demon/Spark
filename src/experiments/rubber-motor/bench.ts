@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -49,32 +50,32 @@ export const rubberCommand: CommandHandler<RubberCommand> = {
       const record: MeasurementRecord = { kind: 'measurement', instrument: 'tape', quantity: 'length', value: Math.round(s / 0.01) * 0.01, exact: s, entities: [], inputs: { turns: c.turns, wound: woundOn(c.turns), k: BAND_K.value, drag: CAR_DRAG.value, division: 0.01 } };
       return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [record] });
     }
-    return err({ uk: 'Такого кроку в досліді немає.', en: 'No such step in the experiment.' });
+    return err(msg('rubber-motor-command-apply'));
   },
 };
 
 export const RUBBER_COMMANDS = [rubberCommand] as const;
 
 /** «3 оберти», «6 обертів». */
-export const turnsText = (n: number, uk: boolean): string => (uk ? `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'оберт' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'оберти' : 'обертів'}` : `${n} turn${n === 1 ? '' : 's'}`);
+export const turnsText = (n: number, l: Locale): string => t(l, 'count-turns', { n });
 
 export const RUBBER_TEXT: Record<RubberCommand['type'], (c: RubberCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.rubber': (x) => {
     const c = x as RubberCommand;
     if (c.step === 'band')
       return {
-        say: { uk: 'Спершу дізнаємося, наскільки жорстка наша гумка. Почепимо її на саморобний динамометр і розтягнемо на 10 см.', en: 'First we find out how stiff our band is. We hang it on the home-made dynamometer and stretch it 10 cm.' },
-        button: { uk: '🪢 Гумка на динамометрі', en: '🪢 The band on the dynamometer' },
-        plan: { uk: 'гумка на динамометрі: розтягнути на 10 см', en: 'the band on the dynamometer: stretched 10 cm' },
+        say: msg('rubber-motor-labrubber-say'),
+        button: msg('rubber-motor-labrubber-button'),
+        plan: msg('rubber-motor-labrubber-plan'),
       };
     const n = c.turns ?? 0;
     const first = n === RUBBER_TURNS[0];
     return {
       say: first
-        ? { uk: `Машинка: гумка одним кінцем зачеплена за передню вісь, другим — за задню, олівець. Крутимо задні колеса назад — гумка намотується на олівець. ${turnsText(n, true).replace(/^./, (s) => s.toUpperCase())} — відпускаємо! Рулеткою міряємо, скільки проїхала.`, en: `The car: the band is hooked to the front axle at one end and to the back one, a pencil, at the other. We turn the back wheels backwards — the band winds onto the pencil. ${turnsText(n, false).replace(/^./, (s) => s.toUpperCase())} — and let go! The tape measures how far it went.` }
-        : { uk: `Тепер — ${turnsText(n, true)}. Відпускаємо!`, en: `Now — ${turnsText(n, false)}. Let go!` },
-      button: { uk: `🚗 Закрутити на ${turnsText(n, true)}`, en: `🚗 Wind ${turnsText(n, false)}` },
-      plan: { uk: `машинка: ${turnsText(n, true)}`, en: `the car: ${turnsText(n, false)}` },
+        ? msg('rubber-motor-labrubber-say-2', { n: (l: Locale) => turnsText(n, l).replace(/^./, (s) => s.toUpperCase()) })
+        : msg('rubber-motor-labrubber-say-3', { n: (l: Locale) => turnsText(n, l) }),
+      button: msg('rubber-motor-labrubber-button-2', { n: (l: Locale) => turnsText(n, l) }),
+      plan: msg('rubber-motor-labrubber-plan-2', { n: (l: Locale) => turnsText(n, l) }),
     };
   },
 };

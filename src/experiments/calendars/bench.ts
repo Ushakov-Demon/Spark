@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -21,9 +22,9 @@ export const SUN_YEAR: SourcedValue = sv(365.24219, 'd', 'the mean tropical year
 export type CalendarId = 'egypt' | 'julian' | 'gregorian';
 /** The calendars' mean years, days. */
 export const CALENDARS: Readonly<Record<CalendarId, { readonly name: LocalizedText; readonly year: SourcedValue }>> = {
-  egypt: { name: { uk: 'Єгипетський календар', en: 'The Egyptian calendar' }, year: sv(365, 'd', 'the Egyptian civil year', 'single-source', 0, [wiki('wikipedia-egyptian-calendar', 'The civil year comprised exactly 365 days … did not have any leap years', 365)]) },
-  julian: { name: { uk: 'Юліанський календар', en: 'The Julian calendar' }, year: sv(365.25, 'd', 'the Julian year', 'single-source', 0, [wiki('wikipedia-julian-calendar', 'an average year of 365.25 days; a leap day every fourth year (without exception)', 365.25)]) },
-  gregorian: { name: { uk: 'Григоріанський календар', en: 'The Gregorian calendar' }, year: sv(365.2425, 'd', 'the Gregorian year', 'single-source', 0, [wiki('wikipedia-gregorian-calendar', '365.2425 days long rather than the Julian calendar’s 365+1⁄4 days', 365.2425)]) },
+  egypt: { name: msg('calendars-egypt-name'), year: sv(365, 'd', 'the Egyptian civil year', 'single-source', 0, [wiki('wikipedia-egyptian-calendar', 'The civil year comprised exactly 365 days … did not have any leap years', 365)]) },
+  julian: { name: msg('calendars-julian-name'), year: sv(365.25, 'd', 'the Julian year', 'single-source', 0, [wiki('wikipedia-julian-calendar', 'an average year of 365.25 days; a leap day every fourth year (without exception)', 365.25)]) },
+  gregorian: { name: msg('calendars-gregorian-name'), year: sv(365.2425, 'd', 'the Gregorian year', 'single-source', 0, [wiki('wikipedia-gregorian-calendar', '365.2425 days long rather than the Julian calendar’s 365+1⁄4 days', 365.2425)]) },
 };
 /** The Egyptian calendar runs this long in the model (four generations). */
 export const EGYPT_YEARS = 120;
@@ -92,29 +93,22 @@ export const calendarCommand: CommandHandler<CalendarCommand> = {
         return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [rec(shakespeare - cervantes, 1, { cervantes, shakespeare, month: s.m, day: s.d })] });
       }
       default:
-        return err({ uk: 'Такого кроку в моделі немає.', en: 'No such step in the model.' });
+        return err(msg('calendars-calendar-command-apply'));
     }
   },
 };
 
-/** «29,1 доби», «10 днів»… — days, the Ukrainian forms by the number. */
-export function daysText(n: number, uk: boolean, word: 'доба' | 'день' = 'доба'): string {
-  const v = new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 1 }).format(n);
-  if (!uk) return `${v} ${Math.abs(n) === 1 ? 'day' : 'days'}`;
-  const a = Math.abs(n);
-  const forms = word === 'доба' ? ['доба', 'доби', 'діб'] : ['день', 'дні', 'днів'];
-  if (!Number.isInteger(a)) return `${v} ${word === 'доба' ? 'доби' : 'дня'}`;
-  const k = a % 100 >= 11 && a % 100 <= 14 ? 2 : a % 10 === 1 ? 0 : a % 10 >= 2 && a % 10 <= 4 ? 1 : 2;
-  return `${v} ${forms[k]}`;
+/** «29,1 доби», «10 днів»… — days, in the form the number asks for: a day of 24 hours, or a calendar's day. */
+export function daysText(n: number, l: Locale, word: 'доба' | 'день' = 'доба'): string {
+  return t(l, word === 'доба' ? 'count-days' : 'count-days-calendar', { n: Math.round(n * 10) / 10 });
 }
 /** «19 квітня», «3 May»: a day of March counted from its 1st (0); or a month and a day. */
-export function dateText(m: number, d: number, uk: boolean): string {
-  const ukm = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
-  const enm = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  return uk ? `${d} ${ukm[m - 1]}` : `${d} ${enm[m - 1]}`;
+export function dateText(m: number, d: number, l: Locale): string {
+  // The language's own month names, in the form a date takes («19 квітня»); a common year.
+  return new Intl.DateTimeFormat(NUMBER_LOCALE[l], { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(Date.UTC(2001, m - 1, d));
 }
 /** The equinox's date from its day of March (0 — 1 March; past the 31st — April). */
-export const equinoxDate = (day: number, uk: boolean): string => {
+export const equinoxDate = (day: number, l: Locale): string => {
   const d = Math.round(day) + 1;
-  return d > 31 ? dateText(4, d - 31, uk) : dateText(3, d, uk);
+  return d > 31 ? dateText(4, d - 31, l) : dateText(3, d, l);
 };

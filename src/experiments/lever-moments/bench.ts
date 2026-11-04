@@ -4,9 +4,10 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { moment, slidingFriction, weight } from '../../domains/mechanics/formulas.js';
+import { msg, t } from '../../knowledge/messages.js';
 import { blockMass, WOOD_ON_WOOD } from '../../scenarios/bench-kit.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -33,8 +34,8 @@ const onLever = (x: number) => x > 0 && x <= LEVER_ARM + 1e-9 && Math.abs(x / LE
 export const leverCommand: CommandHandler<LeverCommand> = {
   type: 'lab.lever',
   apply(state, c) {
-    if (!onLever(c.left.at) || !onLever(c.right.at)) return err({ uk: 'Гачки чіпляють лише в отвори важеля — через 5 см, до 20 см від осі.', en: 'Hooks go only into the lever’s holes — every 5 cm, up to 20 cm from the axis.' });
-    if (!(Number.isInteger(c.left.weights) && c.left.weights >= 1 && c.left.weights <= 4)) return err({ uk: 'Ліворуч — від 1 до 4 тягарців.', en: 'On the left: 1 to 4 weights.' });
+    if (!onLever(c.left.at) || !onLever(c.right.at)) return err(msg('lever-moments-command-apply'));
+    if (!(Number.isInteger(c.left.weights) && c.left.weights >= 1 && c.left.weights <= 4)) return err(msg('lever-moments-command-apply-2'));
     const F1 = weight(c.left.weights * LEVER_WEIGHT, G);
     const M1 = moment(F1, c.left.at);
     if ('dynamometer' in c.right) {
@@ -75,7 +76,7 @@ export const slopeCommand: CommandHandler<SlopeCommand> = {
   type: 'lab.slope',
   apply(state, c) {
     const l = SLOPE_LENGTH.value;
-    if (!(c.height > 0 && c.height < l)) return err({ uk: 'Кінець дошки піднімають на висоту, меншу за її довжину.', en: 'The board’s end is raised less than its length.' });
+    if (!(c.height > 0 && c.height < l)) return err(msg('lever-moments-slope-command-apply'));
     const P = weight(slopeLoad(c.weights), G);
     const sin = c.height / l;
     const cos = Math.sqrt(1 - sin * sin);
@@ -89,29 +90,29 @@ export const slopeCommand: CommandHandler<SlopeCommand> = {
 export const LEVER_COMMANDS = [leverCommand, slopeCommand] as const;
 
 const cm = (m: number) => Math.round(m * 100);
-const w = (n: number, uk: boolean) => (uk ? (n === 1 ? '1 тягарець' : `${n} тягарці`) : n === 1 ? '1 weight' : `${n} weights`);
+const w = (n: number, l: Locale) => t(l, 'count-weights', { n });
 
 export const LEVER_TEXT: Record<LeverCommand['type'] | SlopeCommand['type'], (c: LeverCommand | SlopeCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.slope': (x) => {
     const c = x as SlopeCommand;
     return {
-    say: { uk: `Підніми кінець дошки на ${cm(c.height)} см і рівномірно тягни брусок із тягарцями вгору вздовж дошки динамометром. Що він показує?`, en: `Raise the board’s end ${cm(c.height)} cm and pull the block with its weights steadily up along the board with the dynamometer. What does it show?` },
-    button: { uk: `↗ Тягти вгору: h = ${cm(c.height)} см`, en: `↗ Pull up: h = ${cm(c.height)} cm` },
-    plan: { uk: `тягти брусок вгору, h = ${cm(c.height)} см`, en: `pull the block up, h = ${cm(c.height)} cm` },
+    say: msg('lever-moments-labslope-say', { height: String(cm(c.height)) }),
+    button: msg('lever-moments-labslope-button', { height: String(cm(c.height)) }),
+    plan: msg('lever-moments-labslope-plan', { height: String(cm(c.height)) }),
     };
   },
   'lab.lever': (x) => {
     const c = x as LeverCommand;
     const l = c.left;
     const r = c.right;
-    const left = { uk: `${w(l.weights, true)} на ${cm(l.at)} см ліворуч`, en: `${w(l.weights, false)} ${cm(l.at)} cm left` };
-    const right = 'dynamometer' in r ? { uk: `динамометр на ${cm(r.at)} см праворуч`, en: `the dynamometer ${cm(r.at)} cm right` } : { uk: `${w(r.weights, true)} на ${cm(r.at)} см праворуч`, en: `${w(r.weights, false)} ${cm(r.at)} cm right` };
+    const left = msg('lever-moments-lablever-left', { weights: (lang: Locale) => w(l.weights, lang), at: String(cm(l.at)) });
+    const right = 'dynamometer' in r ? msg('lever-moments-lablever-right', { at: String(cm(r.at)) }) : msg('lever-moments-lablever-right-2', { weights: (l: Locale) => w(r.weights, l), at: String(cm(r.at)) });
     return {
       say: 'dynamometer' in r
-        ? { uk: `Почепи ${left.uk}, а праворуч, на ${cm(r.at)} см, тягни динамометром униз, поки важіль не стане горизонтально. Що він показує?`, en: `Hang ${left.en}, and on the right, ${cm(r.at)} cm out, pull down with the dynamometer until the lever is level. What does it show?` }
-        : { uk: `Почепи ${left.uk} і ${right.uk}. Чи буде важіль у рівновазі?`, en: `Hang ${left.en} and ${right.en}. Will the lever balance?` },
-      button: { uk: `⚖ ${left.uk} · ${right.uk}`, en: `⚖ ${left.en} · ${right.en}` },
-      plan: { uk: `${left.uk}, ${right.uk}`, en: `${left.en}, ${right.en}` },
+        ? msg('lever-moments-lablever-say', { left: (l: Locale) => left[l], at: String(cm(r.at)) })
+        : msg('lever-moments-lablever-say-2', { left: (l: Locale) => left[l], right: (l: Locale) => right[l] }),
+      button: msg('lever-moments-lablever-button', { left: (l: Locale) => left[l], right: (l: Locale) => right[l] }),
+      plan: msg('lever-moments-lablever-plan', { left: (l: Locale) => left[l], right: (l: Locale) => right[l] }),
     };
   },
 };

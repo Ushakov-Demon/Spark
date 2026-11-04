@@ -1,3 +1,4 @@
+import type { Locale } from '../../../src/knowledge/i18n.js';
 import { forceDivision, heightText, massText } from '../../../src/experiments/pulley/bench.js';
 import { lengthText } from '../../../src/experiments/pulley/words.js';
 import { G } from '../../../src/domains/mechanics/constants.js';
@@ -34,15 +35,14 @@ type Cmd = { readonly how: PulleyView['how']; readonly mass: number; readonly li
 /** The instrument the force calls for (as the model reads it): the lab dynamometer, read finer, or a gauge beyond it. */
 const meterFor = (F: number): PulleyView['meter'] => (F > SCALES.dynamometer.spec.capacity.value ? 'gauge' : forceDivision(F) < SCALES.dynamometer.spec.resolution.value ? 'fine' : 'lab');
 /** The load: under 50 g — a small weight with its mass; under a kilogram — 100 g weights (one to four drawn); heavier — a crate. */
-const loadFor = (mass: number, uk: boolean): PulleyView['load'] => (mass < 0.05 ? { small: massText(mass, uk) } : mass < 1 ? { weights: Math.max(1, Math.min(4, Math.round(mass / 0.1))) } : { crate: massText(mass, uk) });
+const loadFor = (mass: number, l: Locale): PulleyView['load'] => (mass < 0.05 ? { small: massText(mass, l) } : mass < 1 ? { weights: Math.max(1, Math.min(4, Math.round(mass / 0.1))) } : { crate: massText(mass, l) });
 
 function view({ last, command, plan, locale }: SceneContext): PulleyView {
-  const uk = locale === 'uk';
   const pc = command?.type === 'lab.pulley' ? (command as unknown as Cmd) : undefined;
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.pulley');
   const c = pc ?? (next?.kind === 'bench' ? (next.command as unknown as Cmd) : undefined);
   const mass = c?.mass ?? 0.3;
-  const base = { load: loadFor(mass, uk), height: `h = ${heightText(c?.lift ?? 0.1, uk)}` };
+  const base = { load: loadFor(mass, locale), height: `h = ${heightText(c?.lift ?? 0.1, locale)}` };
   if (!pc || !last) return { how: c?.how ?? 'straight', up: 0, meter: meterFor(weight(mass, G)), ...base };
   const recs = readingsOf([last]).map((x) => x.record);
   const F = recs.find((r) => r.inputs?.['which'] === 1);

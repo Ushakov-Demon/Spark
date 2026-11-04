@@ -4,7 +4,8 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { BENCH_WEIGHT } from '../../scenarios/bench-kit.js';
 
@@ -48,7 +49,7 @@ export function cartSpeeds(weights: number): { m1: number; m2: number; v1: numbe
 export const cartsCommand: CommandHandler<CartsCommand> = {
   type: 'lab.carts',
   apply(state, c) {
-    if (!(Number.isInteger(c.weights) && c.weights >= 0 && c.weights <= 3)) return err({ uk: 'На візок — до трьох тягарців.', en: 'Up to three weights on the cart.' });
+    if (!(Number.isInteger(c.weights) && c.weights >= 0 && c.weights <= 3)) return err(msg('carts-mass-command-apply'));
     const { m1, m2, v1, v2 } = cartSpeeds(c.weights);
     if (c.mode === 'push') {
       const mm = (x: number) => Math.round(x / CART_DIVISION) * CART_DIVISION;
@@ -64,7 +65,7 @@ export const cartsCommand: CommandHandler<CartsCommand> = {
 
 export const CARTS_COMMANDS = [cartsCommand] as const;
 
-const W = (n: number, uk: boolean) => (uk ? (n === 1 ? 'один тягарець' : n === 2 ? 'два тягарці' : `${n} тягарці`) : n === 1 ? 'one weight' : `${n} weights`);
+const W = (n: number, l: Locale) => t(l, 'carts-mass-weights', { n });
 
 export const CARTS_TEXT: Record<CartsCommand['type'], (c: CartsCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.carts': (x) => {
@@ -72,21 +73,21 @@ export const CARTS_TEXT: Record<CartsCommand['type'], (c: CartsCommand) => { say
     if (c.mode === 'weigh') {
       const two = c.cart === 2;
       return {
-        say: two ? { uk: `А тепер другий візок із ${c.weights === 2 ? 'двома тягарцями' : W(c.weights, true)}. У скільки разів більша сила тяжіння?`, en: `And now the second cart with ${W(c.weights, false)}. How many times greater is the force of gravity?` } : { uk: 'Підвісимо перший візок на динамометр. Яка сила тяжіння на нього діє?', en: 'Hang the first cart on the dynamometer. What force of gravity acts on it?' },
-        button: two ? { uk: '⚖ Динамометр: візок 2', en: '⚖ Dynamometer: cart 2' } : { uk: '⚖ Динамометр: візок 1', en: '⚖ Dynamometer: cart 1' },
-        plan: two ? { uk: 'візок 2 на динамометрі', en: 'cart 2 on the dynamometer' } : { uk: 'візок 1 на динамометрі', en: 'cart 1 on the dynamometer' },
+        say: two ? msg('carts-mass-second-say', { n: c.weights }) : msg('carts-mass-labcarts-say'),
+        button: two ? msg('carts-mass-labcarts-button') : msg('carts-mass-labcarts-button-2'),
+        plan: two ? msg('carts-mass-labcarts-plan') : msg('carts-mass-labcarts-plan-2'),
       };
     }
     if (c.weights === 0)
       return {
-        say: { uk: 'Візки однакові. Перепалюємо нитку — пружина розштовхує їх. За кадрами відео міряємо, хто скільки проїхав за 0,5 с.', en: 'The carts are alike. We burn the thread — the spring pushes them apart. By the video’s frames we measure how far each went in 0.5 s.' },
-        button: { uk: '🔥 Однакові візки', en: '🔥 Alike carts' },
-        plan: { uk: 'однакові візки', en: 'alike carts' },
+        say: msg('carts-mass-labcarts-say-2'),
+        button: msg('carts-mass-labcarts-button-3'),
+        plan: msg('carts-mass-labcarts-plan-3'),
       };
     return {
-      say: { uk: `На другий візок — ${W(c.weights, true)} по 100 г. Знову стискаємо пружину й перепалюємо нитку.`, en: `On the second cart — ${W(c.weights, false)} of 100 g. Squeeze the spring again and burn the thread.` },
-      button: { uk: `🔥 Візок 2 + ${W(c.weights, true)}`, en: `🔥 Cart 2 + ${W(c.weights, false)}` },
-      plan: { uk: `візок 2 + ${W(c.weights, true)}`, en: `cart 2 + ${W(c.weights, false)}` },
+      say: msg('carts-mass-labcarts-say-3', { weights: (l: Locale) => W(c.weights, l) }),
+      button: msg('carts-mass-labcarts-button-4', { weights: (l: Locale) => W(c.weights, l) }),
+      plan: msg('carts-mass-labcarts-plan-4', { weights: (l: Locale) => W(c.weights, l) }),
     };
   },
 };

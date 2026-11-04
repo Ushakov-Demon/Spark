@@ -1,5 +1,6 @@
 import { TOWER_LIQUIDS, type TowerBody, towerLiquidName } from '../../../src/experiments/liquid-tower/bench.js';
 import { tr } from '../../../src/knowledge/i18n.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, WOOD, WOOD_EDGE } from '../../graphics/scene/kit.js';
@@ -39,7 +40,7 @@ function view({ log, command, locale }: SceneContext): TowerView {
     });
   const lastTower = command?.type === 'lab.tower' ? (command as unknown as { step: 'pour' | 'drop' }).step : undefined;
   const names = TOWER_LIQUIDS.map((l) => tr(towerLiquidName(l), locale));
-  return { poured, bodies, names, ml: locale === 'uk' ? 'мл' : 'mL', ...(lastTower ? { anim: lastTower } : {}) };
+  return { poured, bodies, names, ml: tl(locale, 'unit-sym-mL'), ...(lastTower ? { anim: lastTower } : {}) };
 }
 
 function towerSvg(t: TowerView): string {

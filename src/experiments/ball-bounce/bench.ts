@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -65,7 +66,7 @@ export function bounceTops(ball: BounceBall, bounces: number): number[] {
 export const bounceCommand: CommandHandler<BounceCommand> = {
   type: 'lab.bounce',
   apply(state, c) {
-    if (!(Number.isInteger(c.bounce) && c.bounce >= 1 && c.bounce <= 5)) return err({ uk: 'Стежимо за 1–5 відскоками.', en: 'Watch 1 to 5 bounces.' });
+    if (!(Number.isInteger(c.bounce) && c.bounce >= 1 && c.bounce <= 5)) return err(msg('ball-bounce-command-apply'));
     const b = BOUNCE_BALLS[c.ball];
     const h = bounceTops(c.ball, c.bounce).at(-1)!;
     const value = Math.round(h / BOUNCE_DIVISION) * BOUNCE_DIVISION;
@@ -77,13 +78,13 @@ export const bounceCommand: CommandHandler<BounceCommand> = {
 export const BOUNCE_COMMANDS = [bounceCommand] as const;
 
 const NAME: Record<BounceBall, LocalizedText> = {
-  pingpong: { uk: 'м’ячик для настільного тенісу', en: 'the table tennis ball' },
-  tennis: { uk: 'тенісний м’яч', en: 'the tennis ball' },
-  clay: { uk: 'пластилінова кулька', en: 'the plasticine ball' },
+  pingpong: msg('ball-bounce-name-pingpong'),
+  tennis: msg('ball-bounce-name-tennis'),
+  clay: msg('ball-bounce-name-clay'),
 };
 export const bounceBallName = (b: BounceBall): LocalizedText => NAME[b];
-const ORDINAL_UK = ['', 'перший', 'другий', 'третій', 'четвертий', 'п’ятий'];
-const ORDINAL_EN = ['', 'first', 'second', 'third', 'fourth', 'fifth'];
+/** The name with a capital letter, in the language. */
+const cap = (t: LocalizedText, l: Locale) => t[l].charAt(0).toUpperCase() + t[l].slice(1);
 const ICON: Record<BounceBall, string> = { pingpong: '🏓', tennis: '🎾', clay: '🟤' };
 
 export const BOUNCE_TEXT: Record<BounceCommand['type'], (c: BounceCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
@@ -92,15 +93,14 @@ export const BOUNCE_TEXT: Record<BounceCommand['type'], (c: BounceCommand) => { 
     const name = NAME[c.ball];
     if (c.bounce > 1)
       return {
-        say: { uk: `Знову з метра — і стежимо вже за ${c.bounce === 2 ? 'другим' : c.bounce === 3 ? 'третім' : `${c.bounce}-м`} відскоком. Наскільки він нижчий?`, en: `From a metre again — and now watch the ${ORDINAL_EN[c.bounce]} bounce. How much lower is it?` },
-        button: { uk: `${ICON[c.ball]} ${ORDINAL_UK[c.bounce]![0]!.toUpperCase()}${ORDINAL_UK[c.bounce]!.slice(1)} відскок`, en: `${ICON[c.ball]} The ${ORDINAL_EN[c.bounce]} bounce` },
-        plan: { uk: `${name.uk}: ${ORDINAL_UK[c.bounce]} відскок`, en: `${name.en}: the ${ORDINAL_EN[c.bounce]} bounce` },
+        say: msg('ball-bounce-again-say', { n: c.bounce }),
+        button: msg('ball-bounce-again-button', { icon: ICON[c.ball], n: c.bounce }),
+        plan: msg('ball-bounce-again-plan', { name: (l: Locale) => name[l], n: c.bounce }),
       };
-    const up = name.uk[0]!.toUpperCase() + name.uk.slice(1);
     return {
-      say: { uk: `${up}: відпускаємо з висоти 1 м над плитою. На яку висоту він підскочить?`.replace('він', c.ball === 'clay' ? 'вона' : 'він'), en: `${name.en[0]!.toUpperCase()}${name.en.slice(1)}: let go from 1 m above the plate. How high will it bounce?` },
-      button: { uk: `${ICON[c.ball]} ${up} з 1 м`, en: `${ICON[c.ball]} ${name.en[0]!.toUpperCase()}${name.en.slice(1)} from 1 m` },
-      plan: { uk: `${name.uk} з 1 м: перший відскок`, en: `${name.en} from 1 m: the first bounce` },
+      say: msg('ball-bounce-first-say', { name: (l: Locale) => cap(name, l), ball: c.ball }),
+      button: msg('ball-bounce-first-button', { icon: ICON[c.ball], name: (l: Locale) => cap(name, l) }),
+      plan: msg('ball-bounce-labbounce-plan', { name: (l: Locale) => name[l] }),
     };
   },
 };

@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -45,10 +46,10 @@ export const snailCommand: CommandHandler<SnailCommand> = {
 export const SNAIL_COMMANDS = [snailCommand] as const;
 
 const SURFACE: Record<SnailSurface, { name: LocalizedText; icon: string; say: LocalizedText }> = {
-  flat: { name: { uk: 'горизонтальний пластик', en: 'horizontal plastic' }, icon: '➡', say: { uk: 'Равлик повзе по горизонтальному пластиковому аркушу поруч із лінійкою. Знімаємо 30 с: скільки він проповзе?', en: 'The snail crawls on a horizontal plastic sheet beside a ruler. We film it for 30 s: how far will it go?' } },
-  wall: { name: { uk: 'вертикальна стінка', en: 'a vertical wall' }, icon: '⬆', say: { uk: 'Тепер аркуш ставимо вертикально — равлик повзе вгору. Знову 30 с.', en: 'Now the sheet stands upright — the snail crawls up. 30 s again.' } },
-  wet: { name: { uk: 'мокрий пластик', en: 'wet plastic' }, icon: '💧', say: { uk: 'Горизонтальний аркуш, але мокрий. 30 с.', en: 'The horizontal sheet, but wet. 30 s.' } },
-  sandpaper: { name: { uk: 'наждачний папір', en: 'sandpaper' }, icon: '🟫', say: { uk: 'А тепер — шорсткий наждачний папір (P120). 30 с.', en: 'And now rough sandpaper (P120). 30 s.' } },
+  flat: { name: msg('snail-speed-flat-name'), icon: '➡', say: msg('snail-speed-flat-say') },
+  wall: { name: msg('snail-speed-wall-name'), icon: '⬆', say: msg('snail-speed-wall-say') },
+  wet: { name: msg('snail-speed-wet-name'), icon: '💧', say: msg('snail-speed-wet-say') },
+  sandpaper: { name: msg('snail-speed-sandpaper-name'), icon: '🟫', say: msg('snail-speed-sandpaper-say') },
 };
 export const snailSurfaceName = (s: SnailSurface) => SURFACE[s].name;
 
@@ -56,6 +57,6 @@ export const SNAIL_TEXT: Record<SnailCommand['type'], (c: SnailCommand) => { say
   'lab.snail': (x) => {
     const c = x as SnailCommand;
     const s = SURFACE[c.surface];
-    return { say: s.say, button: { uk: `🐌 ${s.icon} ${s.name.uk}`, en: `🐌 ${s.icon} ${s.name.en}` }, plan: { uk: `равлик: ${s.name.uk}, 30 с`, en: `the snail: ${s.name.en}, 30 s` } };
+    return { say: s.say, button: msg('snail-speed-labsnail-button', { icon: s.icon, name: (l: Locale) => s.name[l] }), plan: msg('snail-speed-labsnail-plan', { name: (l: Locale) => s.name[l] }) };
   },
 };

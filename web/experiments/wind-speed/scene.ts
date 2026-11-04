@@ -1,4 +1,5 @@
 import { WIND_DAYS, WIND_TRACK } from '../../../src/experiments/wind-speed/bench.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, STEEL, stopwatchSvg } from '../../graphics/scene/kit.js';
@@ -17,7 +18,7 @@ function view({ last, command, plan, locale }: SceneContext): WindView {
   const day = wc?.day ?? (next?.kind === 'bench' ? (next.command as unknown as { day: 1 | 2 | 3 }).day : 1);
   const done = wc && r && r.value;
   const v = done ? WIND_TRACK / r.value! : 0;
-  return { wind: { day, speed: WIND_DAYS[day].value, ...(done ? { at: WIND_TRACK, read: `${String(Math.round(v * 10) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'м/с' : 'm/s'}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.value! } } : {}) };
+  return { wind: { day, speed: WIND_DAYS[day].value, ...(done ? { at: WIND_TRACK, read: `${String(Math.round(v * 10) / 10).replace('.', tl(locale, 'wind-speed-view-read'))} ${tl(locale, 'unit-sym-m-per-s')}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.value! } } : {}) };
 }
 
 /** The yard: the first and the second mark (6 m apart), units of the drawing. */

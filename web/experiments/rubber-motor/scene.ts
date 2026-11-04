@@ -1,4 +1,6 @@
 import { turnsText } from '../../../src/experiments/rubber-motor/bench.js';
+import { NUMBER_LOCALE } from '../../../src/knowledge/i18n.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { BENCH_SPRING_K } from '../../../src/scenarios/bench-kit.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
@@ -15,23 +17,22 @@ import { defineScene, type SceneContext } from '../types.js';
 export type RubberView = { readonly mode: 'band' | 'car'; readonly band?: DynoView; readonly x: number; readonly wound: number; readonly spin: number; readonly stops: readonly { readonly x: number; readonly label: string }[]; readonly range: number; readonly unit: string; readonly read?: string; /** The step just done, to be played: the band; the car's run of so many turns. */ readonly anim?: 'band' | 'run'; readonly turns?: number };
 
 function view({ log, command, plan, locale }: SceneContext): RubberView {
-  const uk = locale === 'uk';
   const done = log.filter((e) => e.ok && e.command.type === 'lab.rubber');
   const cr = command?.type === 'lab.rubber' ? (command as unknown as { step: 'band' | 'run'; turns?: number }) : undefined;
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.rubber');
   const step = cr?.step ?? (next?.kind === 'bench' ? (next.command as unknown as { step: 'band' | 'run' }).step : 'run');
-  const m = (x: number) => `${new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 2 }).format(x)} ${uk ? 'м' : 'm'}`;
+  const m = (x: number) => `${new Intl.NumberFormat(NUMBER_LOCALE[locale], { maximumFractionDigits: 2 }).format(x)} ${tl(locale, 'unit-sym-m')}`;
   const runs = done.filter((e) => (e.command as unknown as { step: string }).step === 'run').map((e) => ({ n: Number((e.command as unknown as { turns: number }).turns), s: readingsOf([e])[0]?.record.value ?? 0 }));
-  const unit = uk ? 'м' : 'm';
+  const unit = tl(locale, 'unit-sym-m');
   if (step === 'band') {
     const bandRec = done.length ? readingsOf([done[0]!])[0]?.record : undefined;
     const F = bandRec?.value ?? 0;
-    const band = { weights: 0, hang: 'band' as const, stretch: F / BENCH_SPRING_K.value, marks: [], newton: 1 / BENCH_SPRING_K.value, unit: uk ? 'Н' : 'N', ...(bandRec ? { read: formatMeasured('force', bandRec.value, 0.1, locale) } : {}) };
+    const band = { weights: 0, hang: 'band' as const, stretch: F / BENCH_SPRING_K.value, marks: [], newton: 1 / BENCH_SPRING_K.value, unit: tl(locale, 'unit-sym-N'), ...(bandRec ? { read: formatMeasured('force', bandRec.value, 0.1, locale) } : {}) };
     return { mode: 'band', band, x: 0, wound: 0, spin: 0, stops: [], range: 4, unit, ...(cr ? { anim: 'band' } : {}) };
   }
   const last = cr && runs.length ? runs[runs.length - 1]! : undefined;
-  const stops = runs.slice(0, last ? -1 : undefined).map((r) => ({ x: r.s, label: `${turnsText(r.n, uk)}: ${m(r.s)}` }));
-  return { mode: 'car', x: last?.s ?? 0, wound: 0, spin: 0, stops, range: 4, unit, ...(last ? { read: `${turnsText(last.n, uk)}: ${m(last.s)}`, anim: 'run', turns: last.n } : {}) };
+  const stops = runs.slice(0, last ? -1 : undefined).map((r) => ({ x: r.s, label: `${turnsText(r.n, locale)}: ${m(r.s)}` }));
+  return { mode: 'car', x: last?.s ?? 0, wound: 0, spin: 0, stops, range: 4, unit, ...(last ? { read: `${turnsText(last.n, locale)}: ${m(last.s)}`, anim: 'run', turns: last.n } : {}) };
 }
 
 /**

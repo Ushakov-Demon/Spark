@@ -77,7 +77,7 @@ spark/
 - Тест ([tests/knowledge/messages.test.ts](../tests/knowledge/messages.test.ts)): у каждого языка те же файлы, у украинского и английского — те же сообщения, каждый ключ из кода существует; «храповик» — развилок `l === 'uk' ? … : …` и литералов `{ uk, en }` в коде не становится больше (переезд идёт по [TODO](TODO.md), § 0).
 - Новый язык: строка в `LOCALES` и `NUMBER_LOCALE` (`src/knowledge/i18n.ts`) и папка `locales/<язык>/`.
 
-Переведён целиком: `map-scale`.
+Переведены: все опыты-модули (`src/experiments/*` и их сцены). Слова, чья форма зависит от числа, — в `locales/<язык>/counts.ftl` (`count-weights`, `count-turns`, `count-frames`, `count-days`, `count-times`); род и вид тела выбираются в сообщении по id (`{ $what -> [nut] лягла *[other] ліг }`), а не флагом в коде.
 
 ## Ключевые типы
 

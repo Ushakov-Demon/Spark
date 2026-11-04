@@ -1,17 +1,19 @@
 import { COMPONENTS } from '../components/index.js';
 import { sig } from '../explain/format.js';
-import type { Locale, LocalizedText } from '../knowledge/i18n.js';
+import { LOCALES, type Locale, type LocalizedText } from '../knowledge/i18n.js';
+import { t } from '../knowledge/messages.js';
 import type { Choice, Preset, PresetValues, PresetVary } from './presets.js';
 
 /**
  * What the ready-made experiments are written with, wherever they live: a choice, the lab's usual room and beaker
  * (a bench experiment keeps the vessel's parameters though it does not use them), the programmes' topic names.
  */
-export const ch = (id: string, uk: string, en: string): Choice => ({ id, label: { uk, en } });
+/** A choice: its id and its text (a message; the two languages' strings while a file still has them). */
+export const ch = (id: string, label: LocalizedText | string, en = ''): Choice => ({ id, label: typeof label === 'string' ? { uk: label, en } : label });
 export const room = { roomTemp: 20, lid: false } as const;
 export const beaker = { vessel: 'beaker', size: 0.25, material: 'glass', liters: 0.2 } as const;
-/** A text in both languages from one function. */
-export const both = (f: (l: Locale) => string): LocalizedText => ({ uk: f('uk'), en: f('en') });
+/** A text in every language from one function. */
+export const both = (f: (l: Locale) => string): LocalizedText => Object.fromEntries(LOCALES.map((l) => [l, f(l)])) as Record<Locale, string>;
 /** The values a preset starts with. */
 export const defaultValues = (p: Preset, locale: Locale = 'uk'): PresetValues => Object.fromEntries((p.vary?.controls ?? []).map((c) => [c.id, c.kind === 'place' && locale === 'en' ? c.en : c.value]));
 /** Define a preset whose setup depends on values: it is built with the defaults, and keeps how to rebuild it. */
@@ -32,13 +34,7 @@ export const MEDIA: LocalizedText = { uk: 'Електричний струм у 
 export const MAGNETIC: LocalizedText = { uk: 'Магнітні та електромагнітні явища', en: 'Magnetic and electromagnetic phenomena' };
 export const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
 /** "у 3 рази", "у 2,4 раза", "у 5 разів" — "3 times". */
-export const times = (x: number, l: Locale): string => {
-  const v = sig(x, 2, l);
-  if (l !== 'uk') return `${v} times`;
-  if (/[,.]/.test(v)) return `у ${v} раза`;
-  const n = Number(v.replace(/\s/g, ''));
-  return `у ${v} ${n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'рази' : 'разів'}`;
-};
+export const times = (x: number, l: Locale): string => t(l, 'count-times', { v: sig(x, 2, l), k: Number(sig(x, 2, 'en').replace(/,/g, '')) });
 /** Water's density, kg/m³ (the component model's). */
 export const WATER = COMPONENTS.water.phases.liquid!.density!.value;
 

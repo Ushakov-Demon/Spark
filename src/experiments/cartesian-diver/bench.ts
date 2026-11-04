@@ -7,6 +7,7 @@ import { G, STANDARD_ATMOSPHERE } from '../../domains/mechanics/constants.js';
 import { density, hydrostaticPressure, isothermalVolume } from '../../domains/mechanics/formulas.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -74,7 +75,7 @@ export const diverCommand: CommandHandler<DiverCommand> = {
       const after = read(CYLINDER_WATER + V);
       return done({ kind: 'measurement', instrument: 'cylinder', quantity: 'volume', value: after - CYLINDER_WATER, exact: V, entities: [], inputs: { before: CYLINDER_WATER, after, division: DIVER_CYLINDER } });
     }
-    if (!(c.press > 0 && c.press <= MAX_PRESS)) return err({ uk: 'Рукою пляшку стискають до кількох десятків кілопаскалів.', en: 'A hand squeezes a bottle up to a few tens of kilopascals.' });
+    if (!(c.press > 0 && c.press <= MAX_PRESS)) return err(msg('cartesian-diver-command-apply'));
     // Squeezed at the surface; let go — where the squeeze left it: at the bottom, the water above it still presses.
     const sankFirst = diverDensity(c.press) > water();
     const depth = c.step === 'release' && sankFirst ? BOTTLE_DEPTH.value : 0;
@@ -95,28 +96,28 @@ export const DIVER_TEXT: Record<DiverCommand['type'], (c: DiverCommand) => { say
     const c = x as DiverCommand;
     if (c.step === 'weigh')
       return {
-        say: { uk: 'Зваж водолаза — піпетку з гумовим ковпачком — на лабораторних терезах.', en: 'Weigh the diver — the dropper with its rubber cap — on the laboratory balance.' },
-        button: { uk: '⚖ Зважити водолаза', en: '⚖ Weigh the diver' },
-        plan: { uk: 'зважити водолаза', en: 'weigh the diver' },
+        say: msg('cartesian-diver-labdiver-say'),
+        button: msg('cartesian-diver-labdiver-button'),
+        plan: msg('cartesian-diver-labdiver-plan'),
       };
     if (c.step === 'volume')
       return {
-        say: { uk: 'Набери в піпетку трохи води, щоб водолаз ледь плавав, і втопи його тонким дротиком у мензурці: на скільки піднялася вода?', en: 'Let a little water into the dropper so that the diver just floats, and push it under on a thin wire in the measuring cylinder: how far did the water rise?' },
-        button: { uk: '🧪 Об’єм водолаза в мензурці', en: '🧪 The diver’s volume in the cylinder' },
-        plan: { uk: 'виміряти об’єм водолаза мензуркою', en: 'take the diver’s volume with the cylinder' },
+        say: msg('cartesian-diver-labdiver-say-2'),
+        button: msg('cartesian-diver-labdiver-button-2'),
+        plan: msg('cartesian-diver-labdiver-plan-2'),
       };
     if (c.step === 'squeeze') {
       const light = lightSqueeze(c.press);
       return {
-        say: light ? { uk: 'Водолаз плаває в повній пляшці, кришку закручено. Злегка стисни пляшку — і стеж за водою в трубці піпетки.', en: 'The diver floats in the full bottle, its cap screwed on. Squeeze the bottle lightly — and watch the water in the dropper’s tube.' } : { uk: 'А тепер стисни пляшку сильно — і стеж за водолазом і за водою в трубці.', en: 'Now squeeze the bottle hard — and watch the diver and the water in the tube.' },
-        button: light ? { uk: '✊ Злегка стиснути пляшку', en: '✊ Squeeze the bottle lightly' } : { uk: '✊ Сильно стиснути пляшку', en: '✊ Squeeze the bottle hard' },
-        plan: light ? { uk: 'злегка стиснути пляшку', en: 'squeeze the bottle lightly' } : { uk: 'сильно стиснути пляшку', en: 'squeeze the bottle hard' },
+        say: light ? msg('cartesian-diver-labdiver-say-3') : msg('cartesian-diver-labdiver-say-4'),
+        button: light ? msg('cartesian-diver-labdiver-button-3') : msg('cartesian-diver-labdiver-button-4'),
+        plan: light ? msg('cartesian-diver-labdiver-plan-3') : msg('cartesian-diver-labdiver-plan-4'),
       };
     }
     return {
-      say: { uk: 'Відпусти пляшку. Що буде з водолазом?', en: 'Let the bottle go. What happens to the diver?' },
-      button: { uk: '🖐 Відпустити пляшку', en: '🖐 Let the bottle go' },
-      plan: { uk: 'відпустити пляшку', en: 'let the bottle go' },
+      say: msg('cartesian-diver-labdiver-say-5'),
+      button: msg('cartesian-diver-labdiver-button-5'),
+      plan: msg('cartesian-diver-labdiver-plan-5'),
     };
   },
 };

@@ -1,7 +1,8 @@
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
 import { cite, sv } from '../../components/sourced.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import type { SubstanceId } from '../../substances/catalog.js';
 import { measured } from '../../scenarios/bench-kit.js';
@@ -25,8 +26,8 @@ export interface BalanceCommand {
 export const WEIGHT_SET: readonly number[] = [100, 50, 20, 20, 10, 5, 2, 2, 1, 0.5, 0.2, 0.2, 0.1, 0.05, 0.02, 0.02, 0.01].map((g) => g / 1000);
 export const WEIGHT_SET_SOURCE: SourcedValue = sv(0.00001, 'kg', 'the smallest weight of the set', 'single-source', 0.01, [cite('oiml-r111', 'R 111-1 (2004), 4.3.1: weight sequences (1; 2; 2; 5) × 10ⁿ kg', '—', 0.00001)], 'The set itself (100 g … 10 mg) is the usual school one; the standard fixes only the sequence of nominal values.');
 /** "100 г + 20 г + 5 г + 200 мг": the weights on the pan. */
-export function weightsText(weights: readonly number[], uk: boolean): string {
-  return weights.map((w) => (w >= 0.001 ? `${Math.round(w * 1000)} ${uk ? 'г' : 'g'}` : `${Math.round(w * 1e6)} ${uk ? 'мг' : 'mg'}`)).join(' + ');
+export function weightsText(weights: readonly number[], l: Locale): string {
+  return weights.map((w) => (w >= 0.001 ? `${Math.round(w * 1000)} ${t(l, 'unit-sym-g')}` : `${Math.round(w * 1e6)} ${t(l, 'unit-sym-mg')}`)).join(' + ');
 }
 /** The weights that balance a load, largest first (as one puts them on with tweezers); null — the set is not enough. */
 export function balanceWeights(mass: number): number[] | null {
@@ -46,7 +47,7 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
   apply(state, c) {
     let m: number;
     if (c.what === 'body') {
-      if (!c.substance || !(c.mass && c.mass > 0)) return err({ uk: 'Що зважувати?', en: 'What to weigh?' });
+      if (!c.substance || !(c.mass && c.mass > 0)) return err(msg('lever-balance-command-apply'));
       m = c.mass;
     } else {
       const w = weigh(state, 'lab-balance');
@@ -61,10 +62,10 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
 /** A step's button, its line in the plan, and what the Professor says doing it. */
 export const BALANCE_TEXT = (c: BalanceCommand): { say: LocalizedText; button: LocalizedText; plan: LocalizedText } => {
     const b = c as BalanceCommand;
-    const name = b.label ?? (b.what === 'vessel-empty' ? { uk: 'порожня посудина', en: 'the empty vessel' } : b.what === 'vessel' ? { uk: 'посудина з рідиною', en: 'the vessel with the liquid' } : { uk: 'тіло', en: 'the body' });
+    const name = b.label ?? (b.what === 'vessel-empty' ? msg('lever-balance-text-name') : b.what === 'vessel' ? msg('lever-balance-text-name-2') : msg('lever-balance-text-name-3'));
     return {
-      say: { uk: `Поклади на ліву шальку ${name.uk.toLowerCase()} і зрівноваж терези, додаючи пінцетом важки на праву — від більших до менших.`, en: `Put ${name.en.toLowerCase()} on the left pan and balance it, adding weights with tweezers on the right — from larger to smaller.` },
-      button: { uk: `⚖ Зважити: ${name.uk.toLowerCase()}`, en: `⚖ Weigh: ${name.en.toLowerCase()}` },
-      plan: { uk: `зважити: ${name.uk.toLowerCase()}`, en: `weigh ${name.en.toLowerCase()}` },
+      say: msg('lever-balance-text-say', { name: (l: Locale) => name[l].toLowerCase() }),
+      button: msg('lever-balance-text-button', { name: (l: Locale) => name[l].toLowerCase() }),
+      plan: msg('lever-balance-text-plan', { name: (l: Locale) => name[l].toLowerCase() }),
     };
   };

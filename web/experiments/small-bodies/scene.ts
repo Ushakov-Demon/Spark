@@ -1,4 +1,5 @@
 import { type RowBody, rowSizes } from '../../../src/experiments/small-bodies/bench.js';
+import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { WOOD, WOOD_EDGE } from '../../graphics/scene/kit.js';
@@ -15,7 +16,7 @@ function view({ last, command, plan, locale }: SceneContext): RowsView {
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.rows');
   const cmd = rc ?? (next?.kind === 'bench' ? (next.command as unknown as Row) : undefined);
   const sizes = cmd ? rowSizes(cmd.body, cmd.count) : [];
-  return { body: cmd?.body ?? 'pea', sizes, placed: rc ? sizes.length : 0, ...(rc && r ? { read: `${Math.round((r.value ?? 0) * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` } : {}) };
+  return { body: cmd?.body ?? 'pea', sizes, placed: rc ? sizes.length : 0, ...(rc && r ? { read: `${Math.round((r.value ?? 0) * 1000)} ${t(locale, 'unit-sym-mm')}` } : {}) };
 }
 
 /**

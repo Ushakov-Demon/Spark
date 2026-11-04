@@ -15,7 +15,7 @@ function view({ last, command, locale }: SceneContext): BalanceView {
   const c = command;
   const b = c?.type === 'lab.balance' ? (c as unknown as { what: string; substance?: string; label?: { uk: string; en: string } }) : undefined;
   const set = r?.value != null && b ? (balanceWeights(r.value) ?? []) : [];
-  return b ? { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, ...(r && r.value !== null ? { mass: r.exact } : {}), display: r?.value != null ? `${weightsText(set, locale === 'uk')} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' }  : null;
+  return b ? { load: b.what === 'body' ? 'body' : b.what === 'vessel' ? 'full' : 'empty', color: BODY_COLOR[b.substance ?? ''] ?? '#9aa1a8', weights: set, ...(r && r.value !== null ? { mass: r.exact } : {}), display: r?.value != null ? `${weightsText(set, locale)} = ${formatMeasured('mass', r.value, 0.00001, locale)}` : '' }  : null;
 }
 
 /**

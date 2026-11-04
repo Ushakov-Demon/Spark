@@ -1,6 +1,7 @@
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import { BENCH_BLOCK, measured, ruler, RULER_DIVISION } from '../../scenarios/bench-kit.js';
 
 /** The pressure of a block (grade 7): its edges measured with a ruler, its weight with a dynamometer. */
@@ -15,7 +16,7 @@ export const edgeCommand: CommandHandler<EdgeCommand> = {
   type: 'lab.edge',
   apply(state, c) {
     const e = BENCH_BLOCK.edges[c.edge];
-    if (e === undefined) return err({ uk: 'У бруска три ребра: довжина, ширина, висота.', en: 'A block has three edges: length, width, height.' });
+    if (e === undefined) return err(msg('block-pressure-edge-command-apply'));
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('ruler', 'length', ruler(e), e, { edge: c.edge, division: RULER_DIVISION })] });
   },
 };
@@ -23,6 +24,6 @@ export const edgeCommand: CommandHandler<EdgeCommand> = {
 /** A step's button, its line in the plan, and what the Professor says doing it. */
 export const EDGE_TEXT = (c: EdgeCommand): { say: LocalizedText; button: LocalizedText; plan: LocalizedText } => {
     const e = c.edge;
-    const what = [{ uk: 'довжину', en: 'the length' }, { uk: 'ширину', en: 'the width' }, { uk: 'висоту', en: 'the height' }][e]!;
-    return { say: { uk: `Приклади лінійку й виміряй ${what.uk} бруска.`, en: `Put the ruler to the block and measure ${what.en}.` }, button: { uk: `📏 Виміряти ${what.uk}`, en: `📏 Measure ${what.en}` }, plan: { uk: `виміряти ${what.uk}`, en: `measure ${what.en}` } };
+    const what = [msg('block-pressure-edge-text-what'), msg('block-pressure-edge-text-what-2'), msg('block-pressure-edge-text-what-3')][e]!;
+    return { say: msg('block-pressure-edge-text-say', { what: (l: Locale) => what[l] }), button: msg('block-pressure-edge-text-button', { what: (l: Locale) => what[l] }), plan: msg('block-pressure-edge-text-plan', { what: (l: Locale) => what[l] }) };
   };

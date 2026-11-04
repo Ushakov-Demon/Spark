@@ -2,7 +2,8 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -46,7 +47,7 @@ export function rowSizes(body: RowBody, count: number): number[] {
 export const rowsCommand: CommandHandler<RowsCommand> = {
   type: 'lab.rows',
   apply(state, c) {
-    if (!(Number.isInteger(c.count) && c.count >= 1 && c.count <= 60)) return err({ uk: 'У ряд — від 1 до 60.', en: 'In a row: 1 to 60.' });
+    if (!(Number.isInteger(c.count) && c.count >= 1 && c.count <= 60)) return err(msg('small-bodies-rows-command-apply'));
     const sizes = rowSizes(c.body, c.count);
     const L = sizes.reduce((a, x) => a + x, 0);
     const value = Math.round(L / ROW_DIVISION) * ROW_DIVISION;
@@ -58,9 +59,9 @@ export const rowsCommand: CommandHandler<RowsCommand> = {
 export const ROWS_COMMANDS = [rowsCommand] as const;
 
 const NAME: Record<RowBody, { one: LocalizedText; many: (n: number) => LocalizedText }> = {
-  pea: { one: { uk: 'горошину', en: 'a pea' }, many: (n) => ({ uk: `${n} горошин`, en: `${n} peas` }) },
-  millet: { one: { uk: 'пшоняне зернятко', en: 'a millet grain' }, many: (n) => ({ uk: `${n} зерняток пшона`, en: `${n} millet grains` }) },
-  thread: { one: { uk: 'нитку', en: 'the thread' }, many: (n) => ({ uk: `${n} витків нитки`, en: `${n} turns of thread` }) },
+  pea: { one: msg('small-bodies-pea-one'), many: (n) => msg('small-bodies-pea-many', { n: String(n) }) },
+  millet: { one: msg('small-bodies-millet-one'), many: (n) => msg('small-bodies-millet-many', { n: String(n) }) },
+  thread: { one: msg('small-bodies-thread-one'), many: (n) => msg('small-bodies-thread-many', { n: String(n) }) },
 };
 export const rowName = (b: RowBody, n: number): LocalizedText => (n === 1 ? NAME[b].one : NAME[b].many(n));
 
@@ -70,20 +71,20 @@ export const ROWS_TEXT: Record<RowsCommand['type'], (c: RowsCommand) => { say: L
     const what = rowName(c.body, c.count);
     if (c.count === 1)
       return {
-        say: { uk: `Приклади лінійку до однієї горошини. Скільки міліметрів?`, en: `Put the ruler to a single pea. How many millimetres?` },
-        button: { uk: '📏 Одна горошина', en: '📏 One pea' },
-        plan: { uk: 'виміряти одну горошину', en: 'measure one pea' },
+        say: msg('small-bodies-labrows-say'),
+        button: msg('small-bodies-labrows-button'),
+        plan: msg('small-bodies-labrows-plan'),
       };
     if (c.body === 'thread')
       return {
-        say: { uk: `Намотай на стрижень ${what.uk} — щільно, виток до витка, — і виміряй ширину намотки.`, en: `Wind ${what.en} on the rod — tightly, turn to turn — and measure the width of the winding.` },
-        button: { uk: `🧵 ${what.uk} на стрижні`, en: `🧵 ${what.en} on the rod` },
-        plan: { uk: `намотати ${what.uk} і виміряти`, en: `wind ${what.en} and measure` },
+        say: msg('small-bodies-labrows-say-2', { what: (l: Locale) => what[l] }),
+        button: msg('small-bodies-labrows-button-2', { what: (l: Locale) => what[l] }),
+        plan: msg('small-bodies-labrows-plan-2', { what: (l: Locale) => what[l] }),
       };
     return {
-      say: { uk: `Виклади вздовж лінійки ${what.uk} впритул, притисни ряд зубочистками й виміряй його довжину.`, en: `Lay ${what.en} along the ruler close together, press the row with the toothpicks and measure its length.` },
-      button: { uk: `📏 Ряд: ${what.uk}`, en: `📏 A row: ${what.en}` },
-      plan: { uk: `виміряти ряд: ${what.uk}`, en: `measure a row: ${what.en}` },
+      say: msg('small-bodies-labrows-say-3', { what: (l: Locale) => what[l] }),
+      button: msg('small-bodies-labrows-button-3', { what: (l: Locale) => what[l] }),
+      plan: msg('small-bodies-labrows-plan-3', { what: (l: Locale) => what[l] }),
     };
   },
 };

@@ -1,0 +1,24 @@
+## snail-speed
+snail-speed-flat-name = horizontal plastic
+snail-speed-flat-say = The snail crawls on a horizontal plastic sheet beside a ruler. We film it for 30 s: how far will it go?
+snail-speed-wall-name = a vertical wall
+snail-speed-wall-say = Now the sheet stands upright — the snail crawls up. 30 s again.
+snail-speed-wet-name = wet plastic
+snail-speed-wet-say = The horizontal sheet, but wet. 30 s.
+snail-speed-sandpaper-name = sandpaper
+snail-speed-sandpaper-say = And now rough sandpaper (P120). 30 s.
+snail-speed-labsnail-button = 🐌 { $icon } { $name }
+snail-speed-labsnail-plan = the snail: { $name }, 30 s
+snail-speed-ask = Where does the snail crawl slowest?
+snail-speed-title = How animals move: how fast a snail crawls
+snail-speed-question = A garden snail crawls beside a ruler, and we film it on a phone for 30 seconds — as researchers do. Then the video tells how many millimetres it went. Four surfaces: a horizontal plastic sheet, the same sheet upright (the snail crawls up), the sheet wet, and rough sandpaper. Where does the snail crawl slowest?
+snail-speed-choices = On rough sandpaper
+snail-speed-choices-2 = Up the vertical wall
+snail-speed-choices-3 = On the wet sheet
+snail-speed-answer-why = A snail crawls on a single «foot»: its muscles contract in turn, and waves run along the sole. Under the sole is a thin layer of mucus, and the waves, pushing off the surface through it, move the snail forward. The mucus is unusual: at rest it holds like glue, under stress it flows like a liquid. On rough sandpaper the snail crawls almost half as fast: the researchers suggest the roughness keeps the mucus from holding, and the snail has to make more of it. Up a wall it also holds its own weight, so it is a little slower; on a wet sheet water likely thins the mucus. These are the means of 87 snails in the study: single snails crawl faster or slower. 1.5 mm/s is about 5 metres an hour.
+snail-speed-answer-say = Slowest — { $surface }: { $l } mm in 30 s, { $slowest }.
+snail-speed-text-s = mm in 30 s
+snail-speed-answer-text = {" "}The means from Pembury Smith and Ruxton’s study (2021).
+snail-speed-setup = A garden snail, a plastic sheet (dry, wet, upright), P120 sandpaper, a ruler, a phone camera, a stopwatch
+snail-speed-busy = The snail crawls — filming for 30 seconds…
+snail-speed-say = In 30 s the snail went { $mm } mm.

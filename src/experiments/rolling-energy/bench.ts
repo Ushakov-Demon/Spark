@@ -6,6 +6,7 @@ import { G, SOLID_BALL_INERTIA } from '../../domains/mechanics/constants.js';
 import { kineticEnergy, potentialEnergy, rollingSpeed } from '../../domains/mechanics/formulas.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { measured, ruler, RULER_DIVISION } from '../../scenarios/bench-kit.js';
 
@@ -34,7 +35,7 @@ export const energyCommand: CommandHandler<EnergyCommand> = {
   apply(state, c) {
     const m = ballMass();
     if (c.step === 'weigh') return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('lab-balance', 'mass', scaleReading(SCALES['lab-balance'], m), m, {})] });
-    if (!(c.height >= 0.02 && c.height <= 0.3)) return err({ uk: 'Кульку пускають з висоти від 2 до 30 см.', en: 'The ball is let go from 2 to 30 cm up.' });
+    if (!(c.height >= 0.02 && c.height <= 0.3)) return err(msg('rolling-energy-command-apply'));
     const v = rollingSpeed(G, c.height, SOLID_BALL_INERTIA.value);
     // Between the marks: so many frames of the slow-motion video.
     const fps = SLOW_MOTION.value;
@@ -51,14 +52,14 @@ export const ENERGY_TEXT: Record<EnergyCommand['type'], (c: EnergyCommand) => { 
     const c = x as EnergyCommand;
     if (c.step === 'weigh')
       return {
-        say: { uk: 'Зваж сталеву кульку на лабораторних терезах.', en: 'Weigh the steel ball on the laboratory balance.' },
-        button: { uk: '⚖ Зважити кульку', en: '⚖ Weigh the ball' },
-        plan: { uk: 'зважити кульку', en: 'weigh the ball' },
+        say: msg('rolling-energy-labenergy-say'),
+        button: msg('rolling-energy-labenergy-button'),
+        plan: msg('rolling-energy-labenergy-plan'),
       };
     return {
-      say: { uk: `Пусти кульку з жолоба з висоти ${cm(c.height)} см над столом. Телефон знімає сповільнено: скільки кадрів вона котиться від крейдяної риски до риски (50 см)?`, en: `Let the ball go on the groove ${cm(c.height)} cm above the table. The phone films in slow motion: how many frames does it take from one chalk mark to the other (50 cm)?` },
-      button: { uk: `🎥 Пустити з ${cm(c.height)} см`, en: `🎥 Let go from ${cm(c.height)} cm` },
-      plan: { uk: `пустити кульку з ${cm(c.height)} см і зняти сповільнено`, en: `let the ball go from ${cm(c.height)} cm and film in slow motion` },
+      say: msg('rolling-energy-labenergy-say-2', { height: String(cm(c.height)) }),
+      button: msg('rolling-energy-labenergy-button-2', { height: String(cm(c.height)) }),
+      plan: msg('rolling-energy-labenergy-plan-2', { height: String(cm(c.height)) }),
     };
   },
 };

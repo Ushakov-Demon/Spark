@@ -1,4 +1,5 @@
 import { WINCH_SPOOLS, type WinchSpool } from '../../../src/experiments/windlass/bench.js';
+import { t } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { CM, DARK, rulerSvg, standSvg, STEEL, THREAD, weightsSvg, WOOD_EDGE } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -26,7 +27,7 @@ function view({ last, command, plan, locale }: SceneContext): WinchView {
   // Turned by the handle, the load starts low (where letting it down took it, and a little more).
   const drop = !done ? (cmd?.mode === 'turn' ? WINCH_LOW : 0) : wc.mode === 'lower' ? wc.amount : WINCH_LOW - Math.PI * d * wc.amount;
   const turned = !done ? 0 : wc.mode === 'lower' ? wc.amount / (Math.PI * d) : -wc.amount;
-  const read = done ? (wc.mode === 'lower' ? `n = ${formatMeasured('turns', r.value, 0.25, locale)}` : `h = ${String(Math.round((r.value ?? 0) * 1000) / 10).replace('.', locale === 'uk' ? ',' : '.')} ${locale === 'uk' ? 'см' : 'cm'}`) : undefined;
+  const read = done ? (wc.mode === 'lower' ? `n = ${formatMeasured('turns', r.value, 0.25, locale)}` : `h = ${String(Math.round((r.value ?? 0) * 1000) / 10).replace('.', t(locale, 'windlass-shown'))} ${t(locale, 'unit-sym-cm')}`) : undefined;
   return { spool: cmd?.spool ?? 'reel', d, turned, drop, ...(read ? { read } : {}) };
 }
 

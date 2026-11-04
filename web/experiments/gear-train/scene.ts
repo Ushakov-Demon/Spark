@@ -1,3 +1,4 @@
+import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -19,8 +20,7 @@ function view({ last, command, locale }: SceneContext): GearView {
   if (!gc || gc.step === 'count') return { train: [8, 24, 40], counted: !!gc, turned: 0 };
   const r = last ? readingsOf([last])[0]?.record : undefined;
   const n2 = r?.value ?? 0;
-  const uk = locale === 'uk';
-  return { train: gc.train ?? [24, 8], counted: true, turned: gc.turns ?? 1, read: `n₁ = ${String(gc.turns ?? 1).replace('.', uk ? ',' : '.')}, n₂ = ${String(n2).replace('.', uk ? ',' : '.')}` };
+  return { train: gc.train ?? [24, 8], counted: true, turned: gc.turns ?? 1, read: `n₁ = ${String(gc.turns ?? 1).replace('.', t(locale, 'gear-train-view-read'))}, n₂ = ${String(n2).replace('.', t(locale, 'gear-train-view-read'))}` };
 }
 
 /** A gear: its teeth (a ring of them), a hub, a chalk mark to count its turns by; turned by `angle` (radians). */

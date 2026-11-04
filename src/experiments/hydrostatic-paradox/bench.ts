@@ -4,8 +4,9 @@ import type { MeasurementRecord } from '../../core/trace.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { hydrostaticPressure } from '../../domains/mechanics/formulas.js';
+import { msg } from '../../knowledge/messages.js';
 import { SUBSTANCES } from '../../substances/catalog.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
 /**
@@ -43,7 +44,7 @@ export const vesselCommand: CommandHandler<VesselCommand> = {
       const r: MeasurementRecord = { kind: 'measurement', instrument: 'ruler', quantity: 'length', value: Math.round(d / RULER) * RULER, exact: d, entities: [], inputs: { division: RULER } };
       return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [r] });
     }
-    if (!(c.height > 0 && c.height <= 0.12)) return err({ uk: 'Посудини заввишки 12 см: воду наливають не вище.', en: 'The vessels are 12 cm tall: water goes no higher.' });
+    if (!(c.height > 0 && c.height <= 0.12)) return err(msg('hydrostatic-paradox-vessel-command-apply'));
     const rho = SUBSTANCES.water.liquid.density.value;
     // The width at the water's surface: the walls straight (a cone's), from the bottom to the width 10 cm up.
     const top = d + ((VESSEL_TOPS[c.shape] - d) * c.height) / REF;
@@ -60,14 +61,14 @@ export const vesselCommand: CommandHandler<VesselCommand> = {
 export const VESSEL_COMMANDS = [vesselCommand] as const;
 
 const NAME: Record<PascalVessel, LocalizedText> = {
-  straight: { uk: 'пряму (циліндр)', en: 'the straight one (a cylinder)' },
-  wide: { uk: 'ту, що розширюється догори', en: 'the one widening upwards' },
-  narrow: { uk: 'ту, що звужується догори', en: 'the one narrowing upwards' },
+  straight: msg('hydrostatic-paradox-name-straight'),
+  wide: msg('hydrostatic-paradox-name-wide'),
+  narrow: msg('hydrostatic-paradox-name-narrow'),
 };
 const SHORT: Record<PascalVessel, LocalizedText> = {
-  straight: { uk: 'пряма', en: 'straight' },
-  wide: { uk: 'розширюється', en: 'widening' },
-  narrow: { uk: 'звужується', en: 'narrowing' },
+  straight: msg('hydrostatic-paradox-short-straight'),
+  wide: msg('hydrostatic-paradox-short-wide'),
+  narrow: msg('hydrostatic-paradox-short-narrow'),
 };
 export const vesselName = (s: PascalVessel): LocalizedText => SHORT[s];
 
@@ -76,15 +77,15 @@ export const VESSEL_TEXT: Record<VesselCommand['type'], (c: VesselCommand) => { 
     const c = x as VesselCommand;
     if (c.step === 'bottom')
       return {
-        say: { uk: 'Виміряй лінійкою діаметр дна — він однаковий в усіх трьох посудин.', en: 'Measure the bottom’s diameter with the ruler — it is the same for all three vessels.' },
-        button: { uk: '📏 Виміряти дно', en: '📏 Measure the bottom' },
-        plan: { uk: 'виміряти діаметр дна', en: 'measure the bottom’s diameter' },
+        say: msg('hydrostatic-paradox-labvessel-say'),
+        button: msg('hydrostatic-paradox-labvessel-button'),
+        plan: msg('hydrostatic-paradox-labvessel-plan'),
       };
     const cm = Math.round(c.height * 100);
     return {
-      say: { uk: `Закрути на підставку ${NAME[c.shape].uk} посудину й налий із мензурки води до висоти ${cm} см. Скільки води пішло і що показує манометр?`, en: `Screw ${NAME[c.shape].en} onto the stand and pour water from the measuring cylinder up to ${cm} cm. How much water went in, and what does the manometer show?` },
-      button: { uk: `🫙 ${SHORT[c.shape].uk[0]!.toUpperCase()}${SHORT[c.shape].uk.slice(1)}: налити до ${cm} см`, en: `🫙 ${SHORT[c.shape].en[0]!.toUpperCase()}${SHORT[c.shape].en.slice(1)}: fill to ${cm} cm` },
-      plan: { uk: `налити воду до ${cm} см у посудину, що ${c.shape === 'straight' ? 'має прямі стінки' : SHORT[c.shape].uk + ' догори'}`, en: `fill the ${SHORT[c.shape].en} vessel to ${cm} cm` },
+      say: msg('hydrostatic-paradox-labvessel-say-2', { NAME: (l: Locale) => NAME[c.shape][l], cm: String(cm) }),
+      button: msg('hydrostatic-paradox-labvessel-button-2', { SHORT: (l: Locale) => SHORT[c.shape][l][0]!.toUpperCase(), SHORT2: (l: Locale) => SHORT[c.shape][l].slice(1), cm: String(cm) }),
+      plan: msg('hydrostatic-paradox-fill-plan', { cm: String(cm), shape: c.shape, short: (l: Locale) => SHORT[c.shape][l] }),
     };
   },
 };

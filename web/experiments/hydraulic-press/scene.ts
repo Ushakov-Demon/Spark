@@ -1,3 +1,4 @@
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { weightsSvg } from '../../graphics/scene/kit.js';
@@ -18,7 +19,7 @@ type Cmd = { readonly type: string; readonly step: string; readonly weights?: nu
 
 function view({ last, command, plan, locale }: SceneContext): PressView {
   const len = (v: number | null | undefined) => formatMeasured('length', v ?? 0, 0.001, locale);
-  const mm = (v: number | null | undefined) => `${Math.round((v ?? 0) * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}`;
+  const mm = (v: number | null | undefined) => `${Math.round((v ?? 0) * 1000)} ${tl(locale, 'unit-sym-mm')}`;
   const pc = command?.type === 'lab.press' || command?.type === 'lab.pneumatic' ? (command as unknown as Cmd) : undefined;
   const next = plan.find((s) => s.kind === 'bench' && (s.command.type === 'lab.press' || s.command.type === 'lab.pneumatic') && 'weights' in s.command);
   const weights = pc?.weights ?? (next?.kind === 'bench' ? ((next.command as { weights?: number }).weights ?? 0) : 0);

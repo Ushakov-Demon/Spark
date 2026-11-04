@@ -10,8 +10,8 @@ const code = ['src', 'web', 'scripts'].flatMap((d) => readdirSync(d, { recursive
  * Texts still written in the code, waiting to move to locales/: a language fork (`l === 'uk' ? … : …`) and a
  * `{ uk, en }` literal. They may only grow fewer — lower the numbers as files move (docs/TODO.md, § 0).
  */
-const FORKS_LEFT = 1478;
-const PAIRS_LEFT = 2338;
+const FORKS_LEFT = 419;
+const PAIRS_LEFT = 1420;
 
 describe('messages (locales/*.ftl)', () => {
   it('every language has a file of messages for each file of Ukrainian ones', () => {

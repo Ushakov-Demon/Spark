@@ -1,3 +1,5 @@
+import { NUMBER_LOCALE } from '../../../src/knowledge/i18n.js';
+import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { PLAY_SECONDS } from '../../graphics/scene/bench-motion.js';
 import { TABLE } from '../../graphics/scene/constants.js';
@@ -20,7 +22,7 @@ export type StairsView = {
   readonly read?: string;
   /** The floor's height, once the steps are measured. */
   readonly floor?: string;
-  /** The stopwatch writes a decimal comma (Ukrainian) or a point. */
+  /** The stopwatch writes a decimal comma (as in Ukrainian) or a point: the language's mark. */
   readonly comma?: boolean;
 };
 
@@ -35,11 +37,13 @@ function view({ last, command, plan, locale }: SceneContext): StairsView {
   const steps = stairs?.steps ?? 18;
   const rise = stairs?.rise ?? 0.16;
   const r = last && sc ? readingsOf([last])[0]?.record : undefined;
-  const base = { steps, rise, at: 0, run: false, comma: locale === 'uk' };
-  const comma = locale === 'uk';
-  const floor = `h = ${String(Math.round(steps * rise * 100) / 100).replace('.', comma ? ',' : '.')} ${comma ? 'м' : 'm'}`;
-  if (!sc || sc.step === 'weigh') return { ...base, where: 'scales', ...(r ? { read: `${(r.value ?? 0).toFixed(1).replace('.', comma ? ',' : '.')} ${comma ? 'кг' : 'kg'}` } : {}) };
-  if (sc.step === 'measure') return { ...base, where: 'ruler', floor, read: `h₁ = ${String(Math.round((r?.value ?? 0) * 1000) / 10).replace('.', comma ? ',' : '.')} ${comma ? 'см' : 'cm'}` };
+  // The language's decimal mark (the stopwatch writes it too).
+  const comma = new Intl.NumberFormat(NUMBER_LOCALE[locale]).format(1.5).includes(',');
+  const dec = (x: string) => x.replace('.', comma ? ',' : '.');
+  const base = { steps, rise, at: 0, run: false, comma };
+  const floor = `h = ${dec(String(Math.round(steps * rise * 100) / 100))} ${t(locale, 'unit-sym-m')}`;
+  if (!sc || sc.step === 'weigh') return { ...base, where: 'scales', ...(r ? { read: `${dec((r.value ?? 0).toFixed(1))} ${t(locale, 'unit-sym-kg')}` } : {}) };
+  if (sc.step === 'measure') return { ...base, where: 'ruler', floor, read: `h₁ = ${dec(String(Math.round((r?.value ?? 0) * 1000) / 10))} ${t(locale, 'unit-sym-cm')}` };
   const time = r?.value ?? 0;
   return { ...base, where: 'stairs', floor, at: 1, run: sc.pace === 'run', time, fast: Math.max(1, time / PLAY_SECONDS) };
 }

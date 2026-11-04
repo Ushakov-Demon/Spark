@@ -1,5 +1,6 @@
 import { CALENDARS, daysText, EQUINOX, gregorianDay, julianDay, NICAEA, REFORM } from '../../../src/experiments/calendars/bench.js';
-import { tr } from '../../../src/knowledge/i18n.js';
+import { NUMBER_LOCALE, tr } from '../../../src/knowledge/i18n.js';
+import { t as tl } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
@@ -15,28 +16,27 @@ export type CalendarView = { readonly view: 'drift' | 'october' | 'bard'; readon
 
 /** The calendar of this step (or the next one) running on; October 1582; Shakespeare and Cervantes. */
 function view({ command, last, plan, locale }: SceneContext): CalendarView {
-  const uk = locale === 'uk';
   type Step = 'egypt' | 'julian' | 'gregorian' | 'bard';
   const cc = command?.type === 'lab.calendar' ? (command as unknown as { step: Step }).step : undefined;
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.calendar');
   const step: Step = cc ?? (next?.kind === 'bench' ? (next.command as unknown as { step: Step }).step : 'egypt');
   const recs = cc && last ? readingsOf([last]).map((x) => x.record) : [];
-  const months = uk ? ['січ.', 'лют.', 'бер.', 'квіт.', 'трав.', 'черв.', 'лип.', 'серп.', 'вер.', 'жовт.', 'лист.', 'груд.'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const weekdays = uk ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  const months = [tl(locale, 'calendars-view-months'), tl(locale, 'calendars-view-months-2'), tl(locale, 'calendars-view-months-3'), tl(locale, 'calendars-view-months-4'), tl(locale, 'calendars-view-months-5'), tl(locale, 'calendars-view-months-6'), tl(locale, 'calendars-view-months-7'), tl(locale, 'calendars-view-months-8'), tl(locale, 'calendars-view-months-9'), tl(locale, 'calendars-view-months-10'), tl(locale, 'calendars-view-months-11'), tl(locale, 'calendars-view-months-12')];
+  const weekdays = [tl(locale, 'calendars-view-weekdays'), tl(locale, 'calendars-view-weekdays-2'), tl(locale, 'calendars-view-weekdays-3'), tl(locale, 'calendars-view-weekdays-4'), tl(locale, 'calendars-view-weekdays-5'), tl(locale, 'calendars-view-weekdays-6'), tl(locale, 'calendars-view-weekdays-7')];
   const anim = cc ? { anim: cc } : {};
   if (step === 'bard') {
-    return { view: 'bard', title: '', months, weekdays, names: uk ? ['Сервантес', 'Шекспір'] : ['Cervantes', 'Shakespeare'], sheets: uk ? ['Мадрид · григоріанський', 'Лондон · юліанський'] : ['Madrid · Gregorian', 'London · Julian'], strip: uk ? '1616 рік за григоріанським календарем' : '1616 by the Gregorian calendar', shift: cc ? 1 : 0, ...(recs[0] ? { read: daysText(recs[0].value ?? 0, uk) } : {}), ...anim };
+    return { view: 'bard', title: '', months, weekdays, names: [tl(locale, 'calendars-view-names'), tl(locale, 'calendars-board-formula-2')], sheets: [tl(locale, 'calendars-view-sheets'), tl(locale, 'calendars-view-sheets-2')], strip: tl(locale, 'calendars-view-strip'), shift: cc ? 1 : 0, ...(recs[0] ? { read: daysText(recs[0].value ?? 0, locale) } : {}), ...anim };
   }
   const id = step;
   const r = id === 'gregorian' ? recs[1] : recs[0];
   const from = id === 'egypt' ? 0 : id === 'julian' ? NICAEA : REFORM;
   const years = r?.inputs?.['years'] ?? 0;
-  const yearFmt: [string, string] = id === 'egypt' ? [uk ? 'рік ' : 'year ', ''] : uk ? ['', ' р.'] : ['', ''];
+  const yearFmt: [string, string] = id === 'egypt' ? [tl(locale, 'calendars-view-year-fmt'), ''] : ['', tl(locale, 'calendars-view-year-fmt-2')];
   const Y = CALENDARS[id].year.value;
   const title = tr(CALENDARS[id].name, locale);
-  const sub = `${uk ? 'рік —' : 'a year of'} ${new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 4 }).format(Y)} ${uk ? (Number.isInteger(Y) ? 'діб' : 'доби') : 'days'}`;
+  const sub = tl(locale, 'calendars-view-year', { y: Y });
   const startNote = `21 ${months[2]} · ${yearFmt[0]}${from}${yearFmt[1]}`;
-  return { view: 'drift', title, sub, month: uk ? 'Жовтень 1582 року' : 'October 1582', months, weekdays, year: from + years, yearFmt, start: EQUINOX, sun: EQUINOX + (r?.value ?? 0), startNote, ...(id === 'gregorian' ? { cut: 2 } : {}), ...(r ? { read: `${(r.value ?? 0) >= 0 ? '+' : '−'}${daysText(Math.abs(r.value ?? 0), uk)}` } : {}), ...anim };
+  return { view: 'drift', title, sub, month: tl(locale, 'calendars-view-month'), months, weekdays, year: from + years, yearFmt, start: EQUINOX, sun: EQUINOX + (r?.value ?? 0), startNote, ...(id === 'gregorian' ? { cut: 2 } : {}), ...(r ? { read: `${(r.value ?? 0) >= 0 ? '+' : '−'}${daysText(Math.abs(r.value ?? 0), locale)}` } : {}), ...anim };
 }
 
 /** Paper and ink of the calendar sheets; the Sun; the two men's colours. */

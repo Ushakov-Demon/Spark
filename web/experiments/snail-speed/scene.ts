@@ -1,3 +1,4 @@
+import { t } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, stopwatchSvg } from '../../graphics/scene/kit.js';
@@ -15,7 +16,7 @@ function view({ last, command, plan, locale }: SceneContext): SnailView {
   const next = plan.find((s) => s.kind === 'bench' && s.command.type === 'lab.snail');
   const surface = sc?.surface ?? (next?.kind === 'bench' ? (next.command as unknown as { surface: string }).surface : 'flat');
   const done = sc && r && r.value !== null;
-  return { snail: { surface, at: done ? r.value! : 0, ...(done ? { read: `${Math.round(r.value! * 1000)} ${locale === 'uk' ? 'мм' : 'mm'}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.inputs?.['time'] ?? 30, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.inputs?.['time'] ?? 30 } } : {}) };
+  return { snail: { surface, at: done ? r.value! : 0, ...(done ? { read: `${Math.round(r.value! * 1000)} ${t(locale, 'unit-sym-mm')}` } : {}) }, ...(done ? { stopwatch: { display: formatMeasured('time', r.inputs?.['time'] ?? 30, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: r.inputs?.['time'] ?? 30 } } : {}) };
 }
 
 /** The snail's drawing: the ruler's millimetres, units (the snail and its way some 3½ times larger than life). */

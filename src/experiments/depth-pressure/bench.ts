@@ -3,6 +3,7 @@ import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { hydrostaticPressure } from '../../domains/mechanics/formulas.js';
+import { msg } from '../../knowledge/messages.js';
 import { SUBSTANCES } from '../../substances/catalog.js';
 import type { LocalizedText } from '../../knowledge/i18n.js';
 import { sampleOf } from '../../scenarios/thermal-lab.js';
@@ -31,12 +32,12 @@ export const depthCommand: CommandHandler<DepthCommand> = {
     try {
       sample = sampleOf(state);
     } catch {
-      return err({ uk: 'Посудини з рідиною немає.', en: 'There is no vessel of liquid.' });
+      return err(msg('depth-pressure-command-apply'));
     }
     const sub = SUBSTANCES[(sample.params.substance ?? 'water') as keyof typeof SUBSTANCES];
     const rho = sub?.liquid.density.value ?? 1000;
     // (The experiment chooses depths within its liquid; here only that the funnel is in it at all.)
-    if (!(c.depth > 0 && c.depth <= 0.3)) return err({ uk: 'Воронку опускають у рідину, не глибше за дно.', en: 'The funnel goes into the liquid, no deeper than the bottom.' });
+    if (!(c.depth > 0 && c.depth <= 0.3)) return err(msg('depth-pressure-command-apply-2'));
     const p = hydrostaticPressure(rho, G, c.depth);
     const rhoM = SUBSTANCES.water.liquid.density.value;
     const dh = p / (rhoM * G);
@@ -54,14 +55,14 @@ export const DEPTH_TEXT: Record<DepthCommand['type'], (c: DepthCommand) => { say
     const c = x as DepthCommand;
     return c.sideways
       ? {
-          say: { uk: `Не змінюючи глибини (${cm(c.depth)} см), поверни воронку плівкою вбік. Що покаже манометр?`, en: `Keeping the depth (${cm(c.depth)} cm), turn the funnel with its film sideways. What will the manometer show?` },
-          button: { uk: `↪ ${cm(c.depth)} см, плівкою вбік`, en: `↪ ${cm(c.depth)} cm, film sideways` },
-          plan: { uk: `повернути воронку вбік на ${cm(c.depth)} см`, en: `turn the funnel sideways at ${cm(c.depth)} cm` },
+          say: msg('depth-pressure-labdepth-say', { depth: String(cm(c.depth)) }),
+          button: msg('depth-pressure-labdepth-button', { depth: String(cm(c.depth)) }),
+          plan: msg('depth-pressure-labdepth-plan', { depth: String(cm(c.depth)) }),
         }
       : {
-          say: { uk: `Опусти воронку плівкою донизу на глибину ${cm(c.depth)} см. На скільки різняться рівні води в манометрі?`, en: `Lower the funnel, film down, to a depth of ${cm(c.depth)} cm. How far apart are the water levels in the manometer?` },
-          button: { uk: `⬇ На глибину ${cm(c.depth)} см`, en: `⬇ To a depth of ${cm(c.depth)} cm` },
-          plan: { uk: `опустити воронку на ${cm(c.depth)} см`, en: `lower the funnel to ${cm(c.depth)} cm` },
+          say: msg('depth-pressure-labdepth-say-2', { depth: String(cm(c.depth)) }),
+          button: msg('depth-pressure-labdepth-button-2', { depth: String(cm(c.depth)) }),
+          plan: msg('depth-pressure-labdepth-plan-2', { depth: String(cm(c.depth)) }),
         };
   },
 };
