@@ -7,7 +7,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { VESSEL_TEXT, type VesselCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('hydrostatic-paradox-setup');
 
 export const text = (c: VesselCommand): StepText => VESSEL_TEXT['lab.vessel'](c);
 

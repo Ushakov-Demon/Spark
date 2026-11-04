@@ -24,4 +24,6 @@ export * from './electrode-bench.js';
 export * from './coil-bench.js';
 export * from './place-time.js';
 export * from '../experiments/calendars/bench.js';
-export { EXPERIMENTS, experimentOf, type ExperimentKind, type ExperimentCommand } from '../experiments/index.js';
+export type { ExperimentKind, ExperimentCommand } from '../experiments/index.js';
+export { experimentLoaded, experimentOf, registerExperiment } from '../experiments/registry.js';
+export { CARDS } from '../experiments/cards.js';

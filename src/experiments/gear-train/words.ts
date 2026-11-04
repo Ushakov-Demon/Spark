@@ -6,7 +6,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { GEAR_TEXT, type GearCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('gear-train-setup');
 
 export const text = (c: GearCommand): StepText => GEAR_TEXT['lab.gears'](c);
 

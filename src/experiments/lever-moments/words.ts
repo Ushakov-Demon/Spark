@@ -1,13 +1,12 @@
 import type { MeasurementRecord } from '../../core/trace.js';
 import { sig } from '../../explain/format.js';
-import { type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import { msg, t } from '../../knowledge/messages.js';
 import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { LEVER_TEXT, type LeverCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('lever-moments-setup');
 
 export const text = (c: LeverCommand): StepText => LEVER_TEXT['lab.lever'](c);
 

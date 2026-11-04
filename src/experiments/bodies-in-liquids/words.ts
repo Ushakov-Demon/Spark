@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { SINK_TEXT, type SinkCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('bodies-in-liquids-setup');
 
 export const text = (c: SinkCommand): StepText => SINK_TEXT['lab.sink'](c);
 

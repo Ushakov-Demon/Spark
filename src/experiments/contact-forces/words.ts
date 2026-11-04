@@ -5,7 +5,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { TOUCH_CASES, TOUCH_TEXT, type TouchCommand, touchSeen } from './bench.js';
 
-export const setup: LocalizedText = msg('contact-forces-setup');
 
 export const text = (c: TouchCommand): StepText => TOUCH_TEXT['lab.touch'](c);
 

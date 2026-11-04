@@ -1,26 +1,13 @@
 ## balloon-lift
-balloon-lift-command-apply = The shell’s mass must be more than zero.
-balloon-lift-command-apply-2 = The balloon’s diameter must be more than zero.
-balloon-lift-command-apply-3 = Hot air: warmer than 20 °C, colder than 400 °C (the shell would not stand it).
+
 balloon-lift-gas-name-helium = helium
 balloon-lift-gas-name-hydrogen = hydrogen
 balloon-lift-gas-name-hot-air = hot air
-balloon-lift-gas-name-air = air from the lungs
-balloon-lift-labballoon-say = Weigh the empty balloon — the shell with its string.
-balloon-lift-labballoon-button = ⚖ Weigh the shell
-balloon-lift-labballoon-plan = weigh the empty shell
-balloon-lift-labballoon-say-2 = Fill the balloon and measure its diameter.
-balloon-lift-labballoon-button-2 = 📏 Fill and measure
-balloon-lift-labballoon-plan-2 = fill the balloon and measure its diameter
-balloon-lift-labballoon-say-3 = A balloon of { $gas }, { $d } across: tie it to a weight on the balance. How much less will it show — and will it fly by itself?
-balloon-lift-labballoon-button-3 = 🎈 { $gas }, { $d }
-balloon-lift-labballoon-plan-3 = a balloon of { $gas }, { $d } — on the balance
 balloon-lift-ask = What decides whether a balloon flies?
 balloon-lift-title = The lifting force of a balloon
 balloon-lift-choices = On whether the gas with the shell is lighter than the same volume of air: a big helium balloon flies, a small one maybe not
 balloon-lift-choices-2 = Only on the gas: any helium balloon flies, however small
 balloon-lift-choices-3 = A balloon of air flies too, only weaker: air is light
-balloon-lift-asides = On 4 June 1783, in the town of Annonay, the Montgolfier brothers first publicly sent up a hot-air balloon: it flew about 2 km in 10 minutes. In September at Versailles a sheep, a duck and a rooster flew in a basket under the balloon — and landed safely. And on 21 November 1783 Pilâtre de Rozier and the marquis d’Arlandes made the first free flight over Paris: 9 km in 25 minutes. Ten days later Jacques Charles rose to about 3 km in a hydrogen balloon.
 balloon-lift-gas-label = Gas
 balloon-lift-gas-options = Helium
 balloon-lift-gas-options-2 = Hydrogen
@@ -28,43 +15,7 @@ balloon-lift-gas-options-3 = Hot air
 balloon-lift-diameter-label = The balloon’s diameter
 balloon-lift-shell-label = The shell’s mass
 balloon-lift-hot-label = Hot air, t
-balloon-lift-name-helium = of helium
-balloon-lift-name-hydrogen = of hydrogen
-balloon-lift-name-hot-air = of hot air
-balloon-lift-name-air = of air
-balloon-lift-answer-why =
-    Air is a «fluid» too, the one we live in, and Archimedes’ law works in it just the same: a buoyant force equal to the weight of the air in the balloon’s volume, ρ_air·g·V, acts on it. Pulling down are the weight of the gas inside, ρ_gas·g·V, and the shell’s weight. The balloon flies when the buoyant force beats both weights together: F = (ρ_air − ρ_gas)·g·V − m_shell·g > 0.
-
-    So not only the gas counts, but the size too. Helium and hydrogen are several times lighter than air, hot air thins (at a constant pressure a gas’s density goes inversely as its absolute temperature). But the difference of the densities is multiplied by the volume, which grows with the cube of the diameter, while the shell grows only with its area. A balloon half as wide has eight times less volume — and may no longer beat its shell’s weight. And a balloon of air from the lungs gains nothing by its gas, and its shell alone pulls it down.
-balloon-lift-answer-say = pulls up
-balloon-lift-answer-say-2 = does not fly
-balloon-lift-answer-say-3 = the one half as wide — no longer!
-balloon-lift-answer-say-4 = the one half as wide pulls too.
-balloon-lift-answer-say-5 = The big balloon { $gas } { $value }, and { $value2 }
-balloon-lift-text-list = flies
-balloon-lift-text-list-2 = { $d } { $gas }: ρ_gas ≈ { $gasDensity } kg/m³, { $rec }, F ≈ { $F } N — { $value }
-balloon-lift-answer-text = The air about is { $air } kg/m³ (20 °C).{ $steps }. (The gases’ densities by the ideal gas law; air from the lungs taken as the air about.)
 balloon-lift-setup = A balloon’s shell with its string, a gas cylinder (or a burner), a balance with a weight, a tape; for a big balloon — a force gauge on its tether
-balloon-lift-busy = Tying the balloon on…
-balloon-lift-text = less
-balloon-lift-text-2 = more
-balloon-lift-text-3 = the balance — { $dm } g { $value }
-balloon-lift-text-4 = the force gauge — { $F } N
-balloon-lift-shown = {" "}— it rises
-balloon-lift-shown-2 = {" "}— it lies
-balloon-lift-say = The empty shell — { $value }.
-balloon-lift-say-2 = The diameter — { $value }.
-balloon-lift-say-3 = the balloon pulls up — it would fly!
-balloon-lift-say-4 = the balloon will not fly by itself — it lies.
-balloon-lift-say-5 = { $r }: { $value }
-balloon-lift-board-title = the shell’s mass
-balloon-lift-board-title-2 = the balloon’s volume
-balloon-lift-name-helium-2 = helium
-balloon-lift-name-hydrogen-2 = hydrogen
-balloon-lift-name-hot-air-2 = hot air
-balloon-lift-name-air-2 = air
-balloon-lift-board-title-3 = { $name }, { $size }: the densities
-balloon-lift-board-title-4 = { $name }, { $size }: the lifting force
 balloon-lift-question = We weigh an empty balloon (a { $shell } shell), fill it with { $gas }{ $heated ->
         [no] {""}
        *[other] {" "}(heated to { $heated } °C)

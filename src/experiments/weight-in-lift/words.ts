@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { LIFT_TEXT, type LiftCommand, liftPhaseText } from './bench.js';
 
-export const setup: LocalizedText = msg('weight-in-lift-setup');
 
 export const text = (c: LiftCommand): StepText => LIFT_TEXT['lab.lift'](c);
 

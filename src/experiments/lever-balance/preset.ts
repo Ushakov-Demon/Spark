@@ -1,11 +1,9 @@
-import { msg, t } from '../../knowledge/messages.js';
-import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { both, ch, INTERACTION, room, stepLine, STEPS_END, varied, WATER } from '../../scenarios/preset-kit.js';
+import { msg } from '../../knowledge/messages.js';
+import { ch, INTERACTION, room, varied } from '../../scenarios/preset-kit.js';
 import type { Choice, Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
-import { formatMeasured } from '../../scenarios/measuring.js';
-import { sig } from '../../explain/format.js';
 import { type SubstanceId, SUBSTANCES } from '../../substances/catalog.js';
+import { defineCard } from '../types.js';
 
 /** Liquids whose density the lab work finds (all fit the balance in a 100 mL cylinder). */
 const LIQUIDS_FOR_DENSITY: readonly Choice[] = (['sunflower-oil', 'glycerol', 'ethanol', 'water'] as const).map((id) => ({ id, label: SUBSTANCES[id].name }));
@@ -30,24 +28,6 @@ export const preset_lever_balance: Preset = {
   formulas: ['mechanics.weight'],
   programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 4', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 4. Вимірювання маси тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 16, лабораторна робота № 4, с. 116' } }, { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }],
   expect: 'reached',
-};
-
-export const answer_lever_balance = (run: PresetRun): PresetAnswer => {
-  const r = (run.readings ?? []).filter((x) => x.command.type === 'lab.balance');
-  const at = (what: string) => r.find((x) => x.command['what'] === what)?.record.value ?? null;
-  const empty = at('vessel-empty');
-  const full = at('vessel');
-  const water = empty !== null && full !== null ? full - empty : null;
-  const g = (kg: number, l: Locale) => formatMeasured('mass', kg, 0.00001, l);
-  const name = (x: (typeof r)[number], l: Locale) => ((x.command['label'] as { uk: string; en: string } | undefined)?.[l] ?? '').toLowerCase();
-  return {
-    ...(water !== null ? { correct: 'diff' } : {}),
-    why: msg('lever-balance-answer-why'),
-    say: both((l) => (water !== null ? (t(l, 'lever-balance-answer-say', { water: g(water, l) })) : '—')),
-    text: both((l) =>
-      t(l, 'lever-balance-answer-text', { steps: r.map((x) => `${name(x, l)}: ${x.record.value !== null ? g(x.record.value, l) : '—'}`).map(stepLine).join(';') + STEPS_END, water: water !== null ? g(water, l) : '—' }),
-    ),
-  };
 };
 
 export const preset_liquid_density: Preset = varied(
@@ -88,28 +68,5 @@ export const preset_liquid_density: Preset = varied(
   },
 );
 
-export const answer_liquid_density = (run: PresetRun): PresetAnswer => {
-  const r = run.readings ?? [];
-  const empty = r.find((x) => x.command.type === 'lab.balance' && x.command['what'] === 'vessel-empty')?.record.value ?? null;
-  const full = r.find((x) => x.command.type === 'lab.balance' && x.command['what'] === 'vessel')?.record.value ?? null;
-  const V = r.find((x) => x.record.quantity === 'volume')?.record.value ?? null;
-  const m = empty !== null && full !== null ? full - empty : null;
-  const rho = m !== null && V ? m / V : null;
-  const correct = rho === null ? undefined : rho < WATER * 0.97 ? 'lighter' : rho > WATER * 1.03 ? 'heavier' : 'same';
-  // The liquid of this run, and its density in the tables.
-  const liquid = SUBSTANCES[run.steps[0]!.params.substance];
-  const table = liquid.liquid.density.value;
-  const name = (l: Locale) => liquid.name[l];
-  const g = (kg: number, l: Locale) => formatMeasured('mass', kg, 0.00001, l);
-  const cmp = (l: Locale) => (correct === 'lighter' ? t(l, 'lever-balance-answer-liquid-density-cmp') : correct === 'heavier' ? t(l, 'lever-balance-answer-liquid-density-cmp-2') : t(l, 'lever-balance-answer-liquid-density-cmp-3'));
-  return {
-    ...(correct ? { correct } : {}),
-    why: msg('lever-balance-answer-liquid-density-why'),
-    say: both((l) => (rho !== null ? `ρ ≈ ${sig(rho, 3, l)} ${t(l, 'unit-sym-kg-per-m3')} — ${cmp(l)}!` : '—')),
-    text: both((l) =>
-      rho === null
-        ? '—'
-        : t(l, 'lever-balance-answer-liquid-density-text', { full: g(full!, l), empty: g(empty!, l), m: g(m!, l), V: sig(V! * 1e6, 3, l), rho: sig(rho / 1000, 3, l), rho2: sig(rho, 3, l), l: name(l).toLowerCase(), l2: cmp(l), WATER: sig(WATER, 3, l), table: sig(table, 3, l) }),
-    ),
-  };
-};
+/** The experiment's card: its bench, what stands on it, its presets (all the lab needs before it is opened). */
+export const card = defineCard({ kind: 'balance', setup: msg('lever-balance-setup'), presets: [preset_lever_balance, preset_liquid_density] });

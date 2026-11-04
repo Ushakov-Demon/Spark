@@ -1,27 +1,10 @@
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import { paletteArea, rectangleArea } from '../../domains/mechanics/formulas.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
 import { msg } from '../../knowledge/messages.js';
 import { measured, ruler, RULER_DIVISION } from '../../scenarios/bench-kit.js';
-
-/**
- * A leaf's area (grade 7, introduction: «вимірювання фізичних величин (… площ …)»): a card is measured with a ruler
- * (S = a·b), a leaf of any length and form — with a palette, a transparent sheet ruled in squares of any size: the
- * whole squares and half the cut ones (the domain's palette area). The leaf's outline is the drawing's own, so its
- * exact area is known to check the palettes against. Here — only the card, the leaf and the palettes.
- */
-
-/** The leaf's forms (botany's names for a blade's outline): how wide for its length, and where it is widest. */
-export const LEAF_FORMS = {
-  /** Ovate: widest below the middle. */
-  ovate: { width: 0.62, a: 0.76, b: 0.9 },
-  /** Lanceolate: long and narrow, widest at the middle. */
-  lanceolate: { width: 0.22, a: 1, b: 1 },
-  /** Orbicular: almost round. */
-  orbicular: { width: 0.9, a: 1, b: 0.55 },
-} as const;
-export type LeafForm = keyof typeof LEAF_FORMS;
+import { LEAF_FORMS, type LeafForm } from './shared.js';
+export { LEAF_FORMS, type LeafForm, formName } from './shared.js';
 
 /** The blade's half-width at u (0 — the base, 1 — the tip), as a share of the leaf's width: one bulge, nothing outside. */
 export const leafProfile = (form: LeafForm, u: number): number => {
@@ -117,6 +100,3 @@ export const areaCommand: CommandHandler<AreaCommand> = {
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('palette', 'area', S, leafArea(c.form, c.length), { whole, cut, square, side: c.side, division: square / 2 })] });
   },
 };
-
-/** The leaf's form in words: «яйцеподібний». */
-export const formName = (f: LeafForm): LocalizedText => msg(`leaf-area-form-${f}`);

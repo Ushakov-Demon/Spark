@@ -7,6 +7,8 @@ import { conicalPeriod, pendulumPeriodAt, rollingAcceleration } from '../../doma
 import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/i18n.js';
 import { msg, t as tl } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
+import { ROLL_PATH } from './shared.js';
+export { ROLL_PATH, THREAD_LENGTH, PENDULUM_BALLS, MOTION_SETUP } from './shared.js';
 
 /**
  * The bench of grade 7 for motion (lab works 1–3): a ball rolling down a sloping groove, a body going round a
@@ -19,13 +21,8 @@ import type { SourcedValue } from '../../knowledge/types.js';
 /** The groove, m: as long as the textbook asks (1–1.5 m); its upper end raised on the stand so much. */
 export const GROOVE_LENGTH: SourcedValue = sv(1.2, 'm', 'the groove', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 1, обладнання: жолоб завдовжки 1–1,5 м', '—', 1.2)]);
 export const GROOVE_RAISE: SourcedValue = sv(0.1, 'm', 'how high the upper end is', 'estimate', 0.5, [cite('spark', 'estimate', '«під невеликим кутом до горизонту»', 0.1)], 'Estimate: the textbook says only «at a small angle».');
-/** From the chalk mark to the metal cylinder that stops the ball, m (the path), and half of it. */
-export const ROLL_PATH = 1.0;
 /** The circle on the sheet, m (radius), and the thread from the hand to the body. */
 export const CIRCLE_RADIUS: SourcedValue = sv(0.15, 'm', 'the circle on the sheet', 'single-source', 0.01, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 2: аркуш із зображенням кола радіусом 15 см', '—', 0.15)]);
-export const THREAD_LENGTH: SourcedValue = sv(0.5, 'm', 'the thread from the hand to the body', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 2: нитка завдовжки 50–60 см (з петлею)', '—', 0.5)]);
-/** The pendulum's balls, kg: «two small heavy balls of different masses» — the masses are an estimate (the period does not depend on them). */
-export const PENDULUM_BALLS = { light: 0.03, heavy: 0.1 } as const;
 /** A stopwatch that shows hundredths of a second (a phone's). */
 export const STOPWATCH_DIVISION: SourcedValue = sv(0.01, 's', 'electronic stopwatch', 'estimate', 0, [cite('spark', 'estimate', 'phone and electronic stopwatches show hundredths', 0.01)]);
 /** The measuring tape: millimetre marks. */
@@ -151,11 +148,4 @@ export const MOTION_TEXT: Record<MotionCommand['type'], (c: MotionCommand) => { 
       plan: msg('motion-lab-works-labswing-plan', { length: (l: Locale) => cm(s.length, l), amplitude: (l: Locale) => cm(s.amplitude, l), mass: (l: Locale) => g(s.mass, l) }),
     };
   },
-};
-
-/** What stands on the table for each of the motion benches. */
-export const MOTION_SETUP: Record<'incline' | 'circle' | 'pendulum', LocalizedText> = {
-  incline: msg('motion-lab-works-setup-incline'),
-  circle: msg('motion-lab-works-setup-circle'),
-  pendulum: msg('motion-lab-works-setup-pendulum'),
 };

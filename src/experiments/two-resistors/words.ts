@@ -1,12 +1,11 @@
 import type { MeasurementRecord } from '../../core/trace.js';
-import { type Locale, type LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import { msg, t } from '../../knowledge/messages.js';
 import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { CIRCUIT_TEXT, type PairCommand } from '../resistor-circuit/bench.js';
 
-export const setup: LocalizedText = msg('two-resistors-setup');
 
 export const text = (c: PairCommand): StepText => CIRCUIT_TEXT['lab.pair'](c);
 

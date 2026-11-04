@@ -7,17 +7,30 @@ import type { PresetAnswer, PresetRun } from '../scenarios/preset-answers.js';
 import type { Preset } from '../scenarios/presets.js';
 
 /**
- * An experiment of the bench, whole in one place: its physics (the commands), its words (the buttons, the Professor's
- * lines, the protocol, the board), its ready-made experiments and their answers. The general code — the lab, the
- * protocol, the board — only asks the experiment; nothing about one experiment is written anywhere else. Its picture
- * lives on the web side (web/experiments), by the same `kind`.
+ * An experiment's card: what the lab knows of it before it is opened — its bench, what stands on the table, its
+ * ready-made experiments (the catalogue, the search, the notebook's page). Light on purpose (the module's preset.ts,
+ * which imports no commands, no words, no answers): the page has every card from the start, and the rest of a module
+ * comes when its experiment opens.
  */
-export interface ExperimentModule<C extends { readonly type: string } = { readonly type: string }, K extends string = string> {
+export interface ExperimentCard<K extends string = string> {
   /** The bench's name: presets ask for it (`bench`), the scene draws it. */
   readonly kind: K;
-  readonly commands: readonly CommandHandler<C>[];
   /** What stands on the table, for the line under the experiment's title. */
   readonly setup: LocalizedText;
+  readonly presets: readonly Preset[];
+}
+
+/** An experiment's card, its `kind` kept as a literal. */
+export const defineCard = <const K extends string>(c: ExperimentCard<K>): ExperimentCard<K> => c;
+
+/**
+ * An experiment of the bench, whole in one place: its card, its physics (the commands), its words (the buttons, the
+ * Professor's lines, the protocol, the board) and its answers. The general code — the lab, the protocol, the board —
+ * only asks the experiment; nothing about one experiment is written anywhere else. Its picture lives on the web side
+ * (web/experiments), by the same `kind`.
+ */
+export interface ExperimentModule<C extends { readonly type: string } = { readonly type: string }, K extends string = string> extends ExperimentCard<K> {
+  readonly commands: readonly CommandHandler<C>[];
   /** A step's button, its line in the plan, and what the Professor says doing it. */
   readonly text: (c: C) => StepText;
   /** A done step's outcome in words: the protocol's line; capitalised, with a full stop, the Professor's. */
@@ -28,7 +41,6 @@ export interface ExperimentModule<C extends { readonly type: string } = { readon
   readonly busy: (c: C) => LocalizedText | null;
   /** The board's lines for a done step (`before` — the log up to it). */
   readonly board?: (c: C, recs: readonly MeasurementRecord[], at: BoardAt) => BoardLine[];
-  readonly presets: readonly Preset[];
   /** The answers to the presets' questions, by preset id. */
   readonly answers: Readonly<Record<string, (run: PresetRun) => PresetAnswer>>;
 }

@@ -6,7 +6,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { FOUNTAIN_TEXT, type FountainCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('fountain-model-setup');
 
 export const text = (c: FountainCommand): StepText => FOUNTAIN_TEXT['lab.fountain'](c);
 

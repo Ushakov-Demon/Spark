@@ -6,14 +6,12 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured, readingsOf } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import type { LuxmeterCommand } from './bench.js';
+import { fluxText, degText } from './shared.js';
+export { fluxText, wattText, degText } from './shared.js';
 
-export const setup: LocalizedText = msg('light-meter-setup');
 
 /** A distance: centimetres below a metre, metres from it («30 см», «1,5 м»). */
 export const lengthText = (m: number, l: Locale): string => (m < 1 ? `${sig(m * 100, 3, l)}\u00a0${t(l, 'unit-sym-cm')}` : `${sig(m, 3, l)}\u00a0${t(l, 'unit-sym-m')}`);
-export const fluxText = (lm: number, l: Locale): string => `${sig(lm, 3, l)}\u00a0${t(l, 'unit-sym-lm')}`;
-export const wattText = (w: number, l: Locale): string => `${sig(w, 3, l)}\u00a0${t(l, 'unit-sym-W')}`;
-export const degText = (d: number, l: Locale): string => `${sig(d, 3, l)}${t(l, 'unit-sym-deg')}`;
 /** A reading as the meter shows it. */
 export const reading = (r: MeasurementRecord | undefined, l: Locale): string => (r ? formatMeasured('illuminance', r.value, r.inputs?.['division'] ?? 1, l) : '');
 

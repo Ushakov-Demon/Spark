@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { CARRY_TEXT, type CarryCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('relative-motion-setup');
 
 export const text = (c: CarryCommand): StepText => CARRY_TEXT['lab.carry'](c);
 

@@ -9,7 +9,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { forceDivision, lengthDivision, PULLEY_TEXT, type PulleyCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('pulley-setup');
 
 export const text = (c: PulleyCommand): StepText => PULLEY_TEXT['lab.pulley'](c);
 

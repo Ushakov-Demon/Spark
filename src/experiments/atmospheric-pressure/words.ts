@@ -7,7 +7,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { ATM_TEXT, type AtmCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('atmospheric-pressure-setup');
 
 export const text = (c: AtmCommand): StepText => ATM_TEXT['lab.atm'](c);
 

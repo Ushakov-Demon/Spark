@@ -8,6 +8,8 @@
  *   npm run web:build                       (the site's address: SPARK_SITE_URL=https://… npm run web:build)
  */
 import './locales.js';
+// The whole lab: every experiment's steps are written on its page.
+import '../src/experiments/index.js';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { LOCALES, type Locale } from '../src/knowledge/i18n.js';

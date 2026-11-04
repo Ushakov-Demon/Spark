@@ -1,0 +1,60 @@
+import type { ExperimentCard } from './types.js';
+import { card as calendarsCard } from './calendars/preset.js';
+import { card as rootsGravityCard } from './roots-gravity/preset.js';
+import { card as scalesDiyCard } from './scales-diy/preset.js';
+import { card as dynoDiyCard } from './dyno-diy/preset.js';
+import { card as rubberMotorCard } from './rubber-motor/preset.js';
+import { card as solarSystemCard } from './solar-system-model/preset.js';
+import { card as airColumnCard } from './air-column/preset.js';
+import { card as solarNoonCard } from './solar-noon/preset.js';
+import { card as liquidTowerCard } from './liquid-tower/preset.js';
+import { card as dragFormCard } from './drag-form/preset.js';
+import { card as cartsMassCard } from './carts-mass/preset.js';
+import { card as contactForcesCard } from './contact-forces/preset.js';
+import { card as coinInertiaCard } from './coin-inertia/preset.js';
+import { card as snailSpeedCard } from './snail-speed/preset.js';
+import { card as strobePhotoCard } from './strobe-photo/preset.js';
+import { card as windSpeedCard } from './wind-speed/preset.js';
+import { card as windlassCard } from './windlass/preset.js';
+import { card as smallBodiesCard } from './small-bodies/preset.js';
+import { card as ballBounceCard } from './ball-bounce/preset.js';
+import { card as weightInLiftCard } from './weight-in-lift/preset.js';
+import { card as addingForcesCard } from './adding-forces/preset.js';
+import { card as bodiesInLiquidsCard } from './bodies-in-liquids/preset.js';
+import { card as relativeMotionCard } from './relative-motion/preset.js';
+import { card as depthPressureCard } from './depth-pressure/preset.js';
+import { card as communicatingVesselsCard } from './communicating-vessels/preset.js';
+import { card as hydrostaticParadoxCard } from './hydrostatic-paradox/preset.js';
+import { card as hydraulicPressCard } from './hydraulic-press/preset.js';
+import { card as atmosphericPressureCard } from './atmospheric-pressure/preset.js';
+import { card as diodeBlackBoxCard } from './diode-black-box/preset.js';
+import { card as electromagnetCard } from './electromagnet/preset.js';
+import { card as electromagneticInductionCard } from './electromagnetic-induction/preset.js';
+import { card as leverMomentsCard } from './lever-moments/preset.js';
+import { card as slopeEfficiencyCard } from './slope-efficiency/preset.js';
+import { card as resistorCircuitCard } from './resistor-circuit/preset.js';
+import { card as twoResistorsCard } from './two-resistors/preset.js';
+import { card as hookeSpringCard } from './hooke-spring/preset.js';
+import { card as slidingFrictionCard } from './sliding-friction/preset.js';
+import { card as blockPressureCard } from './block-pressure/preset.js';
+import { card as leverBalanceCard } from './lever-balance/preset.js';
+import { card as motionLabWorksCard } from './motion-lab-works/preset.js';
+import { card as cartesianDiverCard } from './cartesian-diver/preset.js';
+import { card as fountainModelCard } from './fountain-model/preset.js';
+import { card as stairsPowerCard } from './stairs-power/preset.js';
+import { card as rollingEnergyCard } from './rolling-energy/preset.js';
+import { card as gearTrainExperimentCard } from './gear-train/preset.js';
+import { card as pulleyExperimentCard } from './pulley/preset.js';
+import { card as balloonLiftCard } from './balloon-lift/preset.js';
+import { card as mapScaleCard } from './map-scale/preset.js';
+import { card as leafAreaCard } from './leaf-area/preset.js';
+import { card as readThermometerCard } from './read-thermometer/preset.js';
+import { card as lightMeterCard } from './light-meter/preset.js';
+import { card as plantMotionCard } from './plant-motion/preset.js';
+import { card as newtonCannonCard } from './newton-cannon/preset.js';
+
+/**
+ * The experiments' cards (each module's preset.ts), in the order of the modules (index.ts; a test keeps the two
+ * alike): the presets of the lab and what stands on each bench, all the page needs before an experiment opens.
+ */
+export const CARDS: readonly ExperimentCard[] = [calendarsCard, rootsGravityCard, scalesDiyCard, dynoDiyCard, rubberMotorCard, solarSystemCard, airColumnCard, solarNoonCard, liquidTowerCard, dragFormCard, cartsMassCard, contactForcesCard, coinInertiaCard, snailSpeedCard, strobePhotoCard, windSpeedCard, windlassCard, smallBodiesCard, ballBounceCard, weightInLiftCard, addingForcesCard, bodiesInLiquidsCard, relativeMotionCard, depthPressureCard, communicatingVesselsCard, hydrostaticParadoxCard, hydraulicPressCard, atmosphericPressureCard, diodeBlackBoxCard, electromagnetCard, electromagneticInductionCard, leverMomentsCard, slopeEfficiencyCard, resistorCircuitCard, twoResistorsCard, hookeSpringCard, slidingFrictionCard, blockPressureCard, leverBalanceCard, motionLabWorksCard, cartesianDiverCard, fountainModelCard, stairsPowerCard, rollingEnergyCard, gearTrainExperimentCard, pulleyExperimentCard, balloonLiftCard, mapScaleCard, leafAreaCard, readThermometerCard, lightMeterCard, plantMotionCard, newtonCannonCard];

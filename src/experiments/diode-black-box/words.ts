@@ -7,7 +7,6 @@ import { readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { BOX_TEXT, type BoxCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('diode-black-box-setup');
 
 export const text = (c: BoxCommand): StepText => BOX_TEXT['lab.box'](c);
 

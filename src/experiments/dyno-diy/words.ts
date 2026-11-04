@@ -7,7 +7,6 @@ import { formatMeasured, readingsOf } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { DYNO_TEXT, type DynoCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('dyno-diy-setup');
 
 export const text = (c: DynoCommand): StepText => DYNO_TEXT['lab.dyno'](c);
 

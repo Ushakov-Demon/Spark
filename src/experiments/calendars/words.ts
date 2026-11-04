@@ -8,7 +8,6 @@ import { CALENDARS, daysText, dateText, equinoxDate, EQUINOX, SUN_YEAR, type Cal
 
 /** The calendars' words: the steps' buttons and lines, the outcomes, the board. */
 
-export const setup: LocalizedText = msg('calendars-setup');
 
 const STEP: Record<CalendarCommand['step'], StepText> = {
   egypt: {

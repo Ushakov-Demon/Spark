@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { DEPTH_TEXT, type DepthCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('depth-pressure-setup');
 
 export const text = (c: DepthCommand): StepText => DEPTH_TEXT['lab.depth'](c);
 

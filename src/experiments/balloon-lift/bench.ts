@@ -6,9 +6,11 @@ import { liftingForce } from '../../domains/mechanics/formulas.js';
 import { GAS_CONSTANT } from '../../domains/thermal/evaporation.js';
 import { idealGasDensity } from '../../domains/thermal/formulas.js';
 import { SCALES } from '../../equipment/scales.js';
-import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/i18n.js';
-import { localized, msg, t } from '../../knowledge/messages.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { localized, msg } from '../../knowledge/messages.js';
 import { measured } from '../../scenarios/bench-kit.js';
+import { sizeText } from './shared.js';
+export { sizeText, massText } from './shared.js';
 
 /**
  * The lifting force of a balloon (grade 7, «дії виштовхувальної й піднімальної сили»): an empty balloon is weighed,
@@ -73,9 +75,6 @@ const GAS_NAME: Record<LiftGas, LocalizedText> = {
   'hot-air': msg('balloon-lift-gas-name-hot-air'),
   air: msg('balloon-lift-gas-name-air'),
 };
-const num = (x: number, l: Locale) => new Intl.NumberFormat(NUMBER_LOCALE[l], { maximumFractionDigits: 2 }).format(x);
-export const sizeText = (m: number, l: Locale): string => (m < 1 ? `${num(m * 100, l)} ${t(l, 'unit-sym-cm')}` : `${num(m, l)} ${t(l, 'unit-sym-m')}`);
-export const massText = (kg: number, l: Locale): string => (kg < 1 ? `${num(kg * 1000, l)} ${t(l, 'unit-sym-g')}` : kg < 1000 ? `${num(kg, l)} ${t(l, 'unit-sym-kg')}` : `${num(kg / 1000, l)} ${t(l, 'unit-sym-t')}`);
 
 export const LIFT_TEXT: Record<LiftCommand['type'], (c: LiftCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.balloon': (x) => {

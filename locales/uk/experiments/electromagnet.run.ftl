@@ -1,0 +1,38 @@
+## Що каже дослід під час роботи: кроки, дошка, відповідь. Ці тексти приходять разом із дослідом, коли його відкривають; картка досліду — у electromagnet.ftl.
+
+electromagnet-magnet-command-apply = Амперметр показує до 2 А.
+electromagnet-magnet-command-apply-2 = Намотують від 10 до 300 витків.
+electromagnet-magnet-command-apply-3 = Тут поле Землі майже вертикальне: компас не працює.
+electromagnet-labmagnet-say = Ключ розімкнений, струму немає. Куди показує стрілка компаса?
+electromagnet-labmagnet-button = 🧭 Без струму: подивитися на компас
+electromagnet-labmagnet-plan = подивитися на компас без струму
+electromagnet-labmagnet-say-2 = Витягни цвях — котушка лишається на пластиковій трубочці. Знову струм { $current }. Що тепер показує компас?
+electromagnet-labmagnet-button-2 = 🪛 Без цвяха: { $current }
+electromagnet-labmagnet-plan-2 = витягти цвях і пустити { $current }
+electromagnet-labmagnet-say-3 = Поміняй місцями дроти на клемах джерела — струм піде в інший бік. Знову { $current }. Куди тепер відхилиться стрілка?
+electromagnet-labmagnet-button-3 = ⇄ Струм в інший бік: { $current }
+electromagnet-labmagnet-plan-3 = змінити напрям струму, { $current }
+electromagnet-labmagnet-say-4 = Замкни ключ і реостатом встанови струм { $current }. На скільки градусів відхилилася стрілка компаса?
+electromagnet-labmagnet-button-4 = ⚡ Струм { $current }: подивитися на компас
+electromagnet-labmagnet-plan-4 = встановити струм { $current }
+electromagnet-answer-why = Струм у дроті створює магнітне поле, і поле кожного витка додається до поля інших — тому воно пропорційне силі струму й числу витків. Але сама котушка — слабкий магніт. Залізо ж складається з крихітних «магнітиків», які в полі котушки повертаються вздовж нього й додають своє поле — у десятки разів сильніше. Звідси й сила електромагніта. Змінимо напрям струму — поле котушки, а з ним і цвяха, повернеться навпаки: північний і південний полюси поміняються місцями.
+electromagnet-answer-say = Струм утричі більший — поле втричі сильніше, а без цвяха стрілка ледь ворухнулася!
+electromagnet-answer-say-2 = Подивімося, що показав компас.
+electromagnet-answer-text = , але в інший бік
+electromagnet-answer-text-2 = майже не ворухнулася ({ $bare })
+electromagnet-answer-text-3 = відхилилася лише на { $bare }
+electromagnet-answer-text-4 = { $turns } витків на цвяху. Без струму стрілка дивилася на північ. Зі струмом: { $l } — поле B = B_З·tg θ (B_З ≈ { $earth }: { $l2 }) зростало пропорційно силі струму, хоч кут — ні. Струм в інший бік — стрілка відхилилася на { $back }{ $value2 }: полюси електромагніта помінялися місцями. Без цвяха за того самого струму { $value } стрілка { $bare }: залізне осердя підсилює поле в десятки разів.
+electromagnet-busy = Стрілка компаса ще гойдається — чекаємо…
+electromagnet-busy-2 = Повільно витягую цвях із котушки…
+electromagnet-say = Струму немає — стрілка дивиться на північ.
+electromagnet-say-2 = майже не ворухнулася
+electromagnet-say-3 = відхилилася лише на { $deg }°
+electromagnet-say-4 = Без цвяха стрілка { $value }.
+electromagnet-say-5 = Стрілка відхилилася на { $deg }° — але в інший бік!
+electromagnet-say-6 = Стрілка компаса відхилилася на { $deg }°.
+electromagnet-board-what = без струму
+electromagnet-board-what-2 = , струм в інший бік
+electromagnet-board-what-3 = , без цвяха
+electromagnet-m0-title = компас { $what }
+electromagnet-m-e-title = поле Землі{ $where }
+electromagnet-board-title = поле електромагніта: { $what }

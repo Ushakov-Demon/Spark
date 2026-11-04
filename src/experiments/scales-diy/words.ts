@@ -7,7 +7,6 @@ import { formatMeasured, readingsOf } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { SCALES_TEXT, type ScalesCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('scales-diy-setup');
 
 export const text = (c: ScalesCommand): StepText => SCALES_TEXT['lab.scales'](c);
 

@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { clockText, equalShadowsNoon, GNOMON_HEIGHT, GNOMON_TEXT, type GnomonCommand, latitudeFrom, sunOf } from './bench.js';
 
-export const setup: LocalizedText = msg('solar-noon-setup');
 
 export const text = (c: GnomonCommand): StepText => GNOMON_TEXT['lab.gnomon'](c);
 

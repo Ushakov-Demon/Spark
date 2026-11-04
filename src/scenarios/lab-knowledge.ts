@@ -1,4 +1,4 @@
-import type { Command } from '../core/commands.js';
+import type { Command, CommandHandler } from '../core/commands.js';
 import type { ExperimentLogEntry, ExperimentResult } from '../core/experiment.js';
 import type { SystemState } from '../core/state.js';
 import { ELECTRICAL_FORMULAS, ELECTRICAL_LAWS, type ElectricalCommand } from '../domains/electrical/index.js';
@@ -19,12 +19,14 @@ import { formatMeasured, MEASURING_COMMANDS, readingsOf, type HangCommand, type 
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
 import { BENCH_COMMANDS, type BenchCommand } from './bench.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
+import { onExperiment } from '../experiments/registry.js';
 
 /** Everything the lab can do to an experiment: heat, pass a current, weigh. */
 export type LabCommand = ThermalCommand | ElectricalCommand | WeighCommand | LevelCommand | HangCommand | BenchCommand;
 
-/** The handlers of all lab commands, for a command registry. */
-export const LAB_COMMANDS = [...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS, ...WEIGH_COMMANDS, ...MEASURING_COMMANDS, ...BENCH_COMMANDS] as const;
+/** The handlers of all lab commands, for a command registry: an experiment module's join as it loads (a registry finds them then). */
+export const LAB_COMMANDS: CommandHandler<never>[] = [...THERMAL_COMMANDS, ...ELECTRICAL_COMMANDS, ...WEIGH_COMMANDS, ...MEASURING_COMMANDS, ...BENCH_COMMANDS] as CommandHandler<never>[];
+onExperiment((m) => LAB_COMMANDS.push(...(m.commands as readonly CommandHandler<never>[])));
 
 const isElectrical = (c: Command): c is ElectricalCommand => c.type.startsWith('electrical.');
 

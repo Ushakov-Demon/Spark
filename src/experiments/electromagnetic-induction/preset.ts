@@ -1,9 +1,7 @@
-import { msg, t } from '../../knowledge/messages.js';
-import type { PresetAnswer, PresetRun } from '../../scenarios/preset-answers.js';
-import { beaker, both, ch, MAGNETIC, room, varied } from '../../scenarios/preset-kit.js';
+import { msg } from '../../knowledge/messages.js';
+import { beaker, ch, MAGNETIC, room, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
-import type { Locale } from '../../knowledge/i18n.js';
-import { sig } from '../../explain/format.js';
+import { defineCard } from '../types.js';
 
 export const preset_electromagnetic_induction: Preset = varied(
   {
@@ -44,28 +42,5 @@ export const preset_electromagnetic_induction: Preset = varied(
   },
 );
 
-export const answer_electromagnetic_induction = (run: PresetRun): PresetAnswer => {
-  const R = (run.readings ?? []).filter((x) => x.command.type === 'lab.induct' && x.record.value !== null);
-  const find = (move: string, pole = 'N', fast?: boolean) => R.find((x) => x.command['move'] === move && x.command['pole'] === pole && (fast === undefined || (Number(x.command['time']) <= 0.5) === fast))?.record;
-  const still = find('still');
-  const inFast = find('in', 'N', true);
-  const out = find('out');
-  const inSlow = find('in', 'N', false);
-  const south = find('in', 'S', true);
-  const coil = find('coil');
-  const div = R[0]?.record.inputs?.['division'] ?? 0.002;
-  const moved = [inFast, out, inSlow, south, coil].filter((x) => x && Math.abs(x.value!) >= div);
-  const correct = !R.length ? undefined : still && Math.abs(still.value!) >= div ? 'inside' : moved.length ? 'motion' : 'never';
-  const mA = (x: number | null | undefined, l: Locale) => `${x! > 0 ? '+' : ''}${sig((x ?? 0) * 1000, 2, l).replace('-', '−')} ${t(l, 'unit-sym-mA')}`;
-  const turns = Number(R[0]?.command['turns'] ?? 200);
-  const Rc = inFast?.inputs?.['resistance'] ?? 7;
-  const emf = (x: number | null | undefined) => Math.abs(x ?? 0) * Rc;
-  return {
-    ...(correct ? { correct } : {}),
-    why: msg('electromagnetic-induction-answer-why'),
-    say: both((l) => (correct === 'motion' ? t(l, 'electromagnetic-induction-answer-say') : t(l, 'electromagnetic-induction-answer-say-2'))),
-    text: both((l) =>
-      t(l, 'electromagnetic-induction-answer-text', { turns: String(turns), Rc: sig(Rc, 2, l), value: mA(still?.value, l), value2: mA(out?.value, l), value3: mA(inFast?.value, l), value4: mA(inSlow?.value, l), value5: mA(south?.value, l), value6: mA(coil?.value, l), value7: sig(emf(inFast?.value), 2, l), value8: sig(emf(inSlow?.value), 2, l) }),
-    ),
-  };
-};
+/** The experiment's card: its bench, what stands on it, its presets (all the lab needs before it is opened). */
+export const card = defineCard({ kind: 'induct', setup: msg('electromagnetic-induction-setup'), presets: [preset_electromagnetic_induction] });

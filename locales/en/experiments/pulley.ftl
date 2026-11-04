@@ -1,45 +1,11 @@
 ## pulley
-pulley-command-apply = The load is lifted straight up, over a fixed or on a movable pulley.
-pulley-command-apply-2 = The load’s mass must be more than zero.
-pulley-command-apply-3 = The height must be more than zero.
-pulley-labpulley-say = Lift a { $mass } load straight up { $lift } with the dynamometer. What force does it show, and how far did your hand go?
-pulley-labpulley-button = ↑ Lift straight up
-pulley-labpulley-plan = lift the load straight up with the dynamometer
-pulley-labpulley-say-2 = Throw the rope over the fixed pulley above and pull down with the dynamometer until the load rises { $lift }.
-pulley-labpulley-button-2 = ⤵ Over the fixed pulley
-pulley-labpulley-plan-2 = lift the load over the fixed pulley
-pulley-labpulley-say-3 = Now hang the load on a movable pulley: fix one end of the rope above and pull the other up with the dynamometer until the load rises { $lift }.
-pulley-labpulley-button-3 = ⤴ On a movable pulley
-pulley-labpulley-plan-3 = lift the load on a movable pulley
+
 pulley-ask = What does a movable pulley give — and does it give a gain in work?
 pulley-title = A fixed and a movable pulley
 pulley-choices = Almost half the force — but the rope goes twice as far, so there is no gain in work
 pulley-choices-2 = Half the force — and half the work
 pulley-choices-3 = Nothing: a pulley only turns the force
-pulley-asides = Pulleys were known in Egypt almost four thousand years ago — under the Twelfth Dynasty. And the Greek historian Plutarch told of Archimedes: to show the power of mechanics, he single-handedly, with compound pulleys, drew a fully laden ship towards him «as if it were gliding through water». Compound pulleys — the block and tackle — still lift loads on building cranes.
 pulley-mass-label = The load’s mass
 pulley-lift-label = Lift by
 pulley-build-question = A load of { $mass } we lift { $lift } with a dynamometer: first straight up, then over a fixed pulley, and then on a movable pulley (one end of the rope fixed above, the other pulled up). Each time we read the force on the dynamometer and measure how far the rope went. What does a movable pulley give — and does it give a gain in work?
-pulley-name-straight = straight up
-pulley-name-fixed = fixed pulley
-pulley-name-movable = movable pulley
-pulley-answer-why =
-    A fixed pulley only turns the force: the rope over it pulls the load as hard as we pull — but pulling down is handier than lifting. A movable pulley holds the load on two sections of one rope, each pulled equally — so each takes only half the weight: F = (P + P_b)/2. But for the load to rise 10 cm, each of the two sections must shorten by 10 cm — the rope has to go 20.
-
-    We gained in force and lost in distance, and the work F·s comes out no less than the useful P·h: this is the «golden rule» of mechanics, no simple machine gives a gain in work. Even a little more: with the load we lift the movable pulley itself, and overcome the friction in its axle — so a movable pulley’s efficiency is below 100 %.
-pulley-answer-say = The movable pulley is heavier than the load — and it took more than straight up: { $F } against { $P }!
-pulley-answer-say-2 = The force — only { $F } instead of { $P }, but the rope went { $s }!
-pulley-answer-say-3 = Let us compare the forces and the work.
-pulley-answer-text = {" "}— the rest went into lifting the pulley itself
-pulley-answer-text-2 = {" "}— beside such a load the pulley itself weighs next to nothing
-pulley-answer-text-3 = {" "}On the movable pulley the force is half of (P + P_b), but the distance twice as long; efficiency ≈ { $eta } %{ $value }.
-pulley-answer-text-4 = The load weighs { $P }, we lift it { $h }: the useful work P·h ≈ { $P2 }.{ $steps }.{ $eta } (Friction in the axles is left out.)
 pulley-setup = A stand with an arm, a fixed and a movable pulley, a rope, three 100 g weights, a dynamometer, a ruler
-pulley-busy = Lifting the load…
-pulley-shown = F = { $recs }, the rope — { $recs2 }
-pulley-say = Straight up — { $F }, the hand went { $s }.
-pulley-say-2 = Over the fixed pulley — the same { $F }, and the rope went { $s }. But we pull down!
-pulley-say-3 = On the movable pulley — as much as { $F }: more than straight up! The pulley itself is heavier than such a load, and it has to be pulled too. And the rope — { $s } at that.
-pulley-say-4 = On the movable pulley — only { $F }! But the rope had to go { $s }.
-pulley-board-title = { $name }: the force and the rope
-pulley-board-title-2 = { $name }: the useful and the spent work, efficiency

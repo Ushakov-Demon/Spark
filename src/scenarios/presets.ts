@@ -2,7 +2,8 @@ import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { localized, msg } from '../knowledge/messages.js';
 import type { LabParams, LabStatus } from './thermal-lab.js';
 import type { ProtocolStep } from './protocol.js';
-import { EXPERIMENTS, type ExperimentKind } from '../experiments/index.js';
+import type { ExperimentKind } from '../experiments/index.js';
+import { CARDS } from '../experiments/cards.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { COMPONENTS } from '../components/index.js';
 import { sandFull, sandToFloatInside, tubeGlass, tubeVolume } from './test-tube.js';
@@ -954,8 +955,8 @@ export const PRESET_ORDER: readonly string[] = [
   // For everyone.
   'oil-does-not-boil', 'alcohol-in-freezer', 'weigh-the-water', 'grand-chain',
 ];
-/** The experiments of the bench modules (src/experiments) join the list. */
-const ALL: readonly Preset[] = [...LIST, ...EXPERIMENTS.flatMap((m) => m.presets)];
+/** The experiments of the bench modules (src/experiments: their cards) join the list. */
+const ALL: readonly Preset[] = [...LIST, ...CARDS.flatMap((c) => c.presets)];
 const rank = (p: Preset) => {
   const k = PRESET_ORDER.indexOf(p.id);
   return k < 0 ? PRESET_ORDER.length + ALL.indexOf(p) : k;

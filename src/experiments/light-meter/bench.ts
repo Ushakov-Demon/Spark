@@ -2,11 +2,13 @@ import { cite, sv } from '../../components/sourced.js';
 import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { MeasurementRecord } from '../../core/trace.js';
-import { isotropicIntensity, luminousFlux, pointIlluminance } from '../../domains/optics/formulas.js';
-import { lampEfficacy, type LampKind } from '../../equipment/lamps.js';
+import { isotropicIntensity, pointIlluminance } from '../../domains/optics/formulas.js';
+import type { LampKind } from '../../equipment/lamps.js';
 import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { lengthText } from './words.js';
+import { lampFlux } from './shared.js';
+export { lampFlux } from './shared.js';
 
 /**
  * Measuring illuminance (grade 7, the introduction: «вимірювання … освітленості»). A frosted lamp with no shade
@@ -23,9 +25,6 @@ export const METER_FIGURES = 3;
 
 /** The meter `r` metres from the lamp's centre, tilted `tilt` degrees (0 — face to the lamp); the lamp — of its kind, `power` W. */
 export type LuxmeterCommand = { readonly type: 'lab.luxmeter'; readonly lamp: LampKind; readonly power: number; readonly r: number; readonly tilt?: number };
-
-/** The lamp's luminous flux, lm. */
-export const lampFlux = (lamp: LampKind, power: number): number => luminousFlux(lampEfficacy(lamp, power), power);
 
 /** The meter's division at a reading: three figures, the range chosen by itself (1 lx at hundreds, 10 lx at thousands…). */
 export const meterDivision = (E: number): number => (E > 0 ? 10 ** (Math.floor(Math.log10(E)) - (METER_FIGURES - 1)) : 1);

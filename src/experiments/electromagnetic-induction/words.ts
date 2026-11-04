@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { INDUCT_TEXT, type InductCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('electromagnetic-induction-setup');
 
 export const text = (c: InductCommand): StepText => INDUCT_TEXT['lab.induct'](c);
 

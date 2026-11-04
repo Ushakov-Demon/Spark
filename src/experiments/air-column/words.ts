@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { AIR_TEXT, type AirCommand, airPlaceName, type AirWhere } from './bench.js';
 
-export const setup: LocalizedText = msg('air-column-setup');
 
 export const text = (c: AirCommand): StepText => AIR_TEXT['lab.air'](c);
 

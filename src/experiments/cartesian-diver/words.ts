@@ -9,7 +9,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { DIVER_TEXT, type DiverCommand, lightSqueeze } from './bench.js';
 
-export const setup: LocalizedText = msg('cartesian-diver-setup');
 
 export const text = (c: DiverCommand): StepText => DIVER_TEXT['lab.diver'](c);
 

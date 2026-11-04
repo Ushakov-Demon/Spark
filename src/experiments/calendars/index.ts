@@ -1,6 +1,7 @@
 import { defineExperiment } from '../types.js';
 import { calendarCommand } from './bench.js';
-import { answer, preset } from './preset.js';
-import { board, busy, setup, shown, text } from './words.js';
+import { answer } from './answer.js';
+import { card, preset } from './preset.js';
+import { board, busy, shown, text } from './words.js';
 
-export const calendars = defineExperiment({ kind: 'calendar', commands: [calendarCommand], setup, text, shown, busy, board, presets: [preset], answers: { [preset.id]: answer } });
+export const calendars = defineExperiment({ ...card, commands: [calendarCommand], text, shown, busy, board, answers: { [preset.id]: answer } });

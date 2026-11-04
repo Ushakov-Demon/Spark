@@ -11,7 +11,6 @@ import { PNEUMATIC_TEXT, type PneumaticCommand } from './pneumatic.js';
 /** The machine's steps: with water (`lab.press`), and its «what if…» with air (`lab.pneumatic`). */
 export type MachineCommand = PressCommand | PneumaticCommand;
 
-export const setup: LocalizedText = msg('hydraulic-press-setup');
 
 export const text = (c: MachineCommand): StepText => (c.type === 'lab.pneumatic' ? PNEUMATIC_TEXT['lab.pneumatic'](c) : PRESS_TEXT['lab.press'](c));
 

@@ -6,7 +6,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { SNAIL_TEXT, SNAIL_TIME, type SnailCommand, snailSurfaceName } from './bench.js';
 
-export const setup: LocalizedText = msg('snail-speed-setup');
 
 export const text = (c: SnailCommand): StepText => SNAIL_TEXT['lab.snail'](c);
 

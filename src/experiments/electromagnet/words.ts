@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { MAGNET_TEXT, type MagnetCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('electromagnet-setup');
 
 export const text = (c: MagnetCommand): StepText => MAGNET_TEXT['lab.magnet'](c);
 

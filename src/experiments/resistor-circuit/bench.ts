@@ -5,6 +5,7 @@ import { cite, sv } from '../../components/sourced.js';
 import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
 import { localized, msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
+export { LAB_RESISTOR, SET_RESISTORS } from './shared.js';
 
 /**
  * The circuit of grade 8 (lab work 6, the resistance of a conductor): a regulated source, a key, a resistor from
@@ -23,8 +24,6 @@ export const VOLTMETER = {
   max: sv(6, 'V', 'school lab voltmeter', 'estimate', 0, [cite('spark', 'estimate', 'school DC lab voltmeters read up to 6 V', 6)], 'Estimate: the make is not fixed.'),
   division: sv(0.2, 'V', 'one division', 'estimate', 0, [cite('spark', 'estimate', '30 divisions on a 6 V scale', 0.2)], 'Estimate.'),
 } as const;
-/** The resistor of the lab work (a wire resistor of the school set), Ω. */
-export const LAB_RESISTOR: SourcedValue = sv(5, 'Ω', 'wire resistor of the school set', 'estimate', 0.05, [cite('spark', 'estimate', 'school sets have 1–10 Ω wire resistors', 5)], 'Estimate: its value is what the lab work finds.');
 
 /** Set the source to so many volts, close the key; read the ammeter and the voltmeter. */
 export interface CircuitCommand {
@@ -50,17 +49,6 @@ export const circuitCommand: CommandHandler<CircuitCommand> = {
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [rec('ammeter', 'current', I, AMMETER.division.value), rec('voltmeter', 'voltage', U, VOLTMETER.division.value)] });
   },
 };
-
-/**
- * The resistors one may take from the set for the resistance and the power lab works, Ω: numbered, not
- * labelled (their value is what the lab work finds). Within the ammeter's 2 A at 4.5 V, and large enough
- * a current at 1.5 V for its 0.05 A divisions.
- */
-export const SET_RESISTORS: readonly SourcedValue[] = [
-  sv(3, 'Ω', 'wire resistor of the school set', 'estimate', 0.05, [cite('spark', 'estimate', 'school sets have 1–10 Ω wire resistors', 3)], 'Estimate.'),
-  LAB_RESISTOR,
-  sv(6, 'Ω', 'wire resistor of the school set', 'estimate', 0.05, [cite('spark', 'estimate', 'school sets have 1–10 Ω wire resistors', 6)], 'Estimate.'),
-];
 
 /** The two resistors of the series and parallel lab works (from the same school set), Ω. */
 export const LAB_PAIR: readonly [SourcedValue, SourcedValue] = [

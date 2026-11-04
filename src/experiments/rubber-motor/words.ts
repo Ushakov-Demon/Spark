@@ -7,7 +7,6 @@ import { formatMeasured, readingsOf } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { RUBBER_TEXT, turnsText, type RubberCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('rubber-motor-setup');
 
 export const text = (c: RubberCommand): StepText => RUBBER_TEXT['lab.rubber'](c);
 

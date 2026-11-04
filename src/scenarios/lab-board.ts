@@ -1,7 +1,7 @@
 import type { ExperimentLogEntry } from '../core/experiment.js';
 import type { SystemState } from '../core/state.js';
 import { tr, type Locale } from '../knowledge/i18n.js';
-import { experimentOf } from '../experiments/index.js';
+import { experimentOf } from '../experiments/registry.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBody } from '../domains/thermal/entities.js';

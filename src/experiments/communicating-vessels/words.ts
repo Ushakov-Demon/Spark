@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { UTUBE_TEXT, type UtubeCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('communicating-vessels-setup');
 
 export const text = (c: UtubeCommand): StepText => UTUBE_TEXT['lab.utube'](c);
 

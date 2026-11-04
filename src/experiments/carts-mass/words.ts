@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { CARTS_TEXT, type CartsCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('carts-mass-setup');
 
 export const text = (c: CartsCommand): StepText => CARTS_TEXT['lab.carts'](c);
 

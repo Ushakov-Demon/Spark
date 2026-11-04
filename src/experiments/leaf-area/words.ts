@@ -6,11 +6,9 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { formName, type AreaCommand } from './bench.js';
+import { sideText } from './shared.js';
+export { sideText } from './shared.js';
 
-export const setup: LocalizedText = msg('leaf-area-setup');
-
-/** A square's side: in millimetres below a centimetre, in centimetres from it («5 мм», «1 см»). */
-export const sideText = (side: number, l: Locale): string => (side < 0.01 ? `${sig(side * 1000, 3, l)} ${t(l, 'unit-sym-mm')}` : `${sig(side * 100, 3, l)} ${t(l, 'unit-sym-cm')}`);
 /** An area in square centimetres, as many figures as given. */
 export const cm2 = (S: number, l: Locale, digits = 3): string => `${sig(S * 1e4, digits, l)} ${t(l, 'unit-sym-cm2')}`;
 const cm = (x: number, l: Locale) => formatMeasured('length', x, 0.001, l);

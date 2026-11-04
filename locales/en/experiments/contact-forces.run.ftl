@@ -1,0 +1,32 @@
+## What the experiment says as it runs: its steps, board and answer. These texts come with the experiment when it opens; its card is in contact-forces.ftl.
+
+contact-forces-magnet-force = the magnetic force
+contact-forces-comb-force = the electric force
+contact-forces-lifted-force = friction
+contact-forces-fall-force = gravity
+contact-forces-magnet-say = A paper clip hangs on a thread. We bring a magnet up — leaving 2 cm of air between them. What happens?
+contact-forces-magnet-button = 🧲 A magnet 2 cm away
+contact-forces-magnet-plan = a magnet 2 cm from the clip
+contact-forces-magnet-seen = the clip leaned towards the magnet without touching it
+contact-forces-card-say = Now a card goes between the magnet and the clip.
+contact-forces-card-button = 🧲 Through a card
+contact-forces-card-plan = the magnet through a card
+contact-forces-card-seen = the clip is pulled just the same — through the card
+contact-forces-comb-say = Rub a plastic comb on hair and bring it to small bits of paper on the table.
+contact-forces-comb-button = 🪮 A comb and bits of paper
+contact-forces-comb-plan = a rubbed comb over bits of paper
+contact-forces-comb-seen = the bits of paper jumped up to the comb
+contact-forces-lifted-say = The block that slid on the table with friction is hung on a thread just clear of the table and pulled aside. Does friction act?
+contact-forces-lifted-button = 🧱 The block above the table
+contact-forces-lifted-plan = the block above the table: friction?
+contact-forces-lifted-seen = the block moves freely: no friction on the table
+contact-forces-fall-say = And at last: let a weight go above the table.
+contact-forces-fall-button = ⬇ Let a weight go
+contact-forces-fall-plan = let a weight go
+contact-forces-fall-seen = the weight falls — the Earth pulls it without touching
+contact-forces-answer-why = Some forces act at a distance: a magnet pulls iron across air and through a card, a charged body — light bits of paper, and the Earth pulls everything around — so the weight falls, though nothing pushes it. Such bodies act on each other through a field — magnetic, electric, gravitational. But friction and the elastic force are contact forces: they appear only when bodies touch. The block lifted above the table feels no friction on it; a spring pulls only what is hooked on it. The air passes nothing here: a magnet pulls a clip in a vacuum too.
+contact-forces-answer-say = Without touching acted the magnet, the comb and the Earth; friction vanished without touching.
+contact-forces-busy = Watching…
+contact-forces-shown = acts without touching
+contact-forces-shown-2 = no force without touching
+contact-forces-board-formula = does not act without touching

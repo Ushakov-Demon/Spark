@@ -5,6 +5,8 @@ import { cite, sv } from '../../components/sourced.js';
 import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
 import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
+import { RUBBER_TURNS } from './shared.js';
+export { RUBBER_TURNS } from './shared.js';
 
 /**
  * A rubber-band motor (grade 7, «конструювання: механізму на «гумовому двигуні»»): a little car whose rubber band is
@@ -23,7 +25,6 @@ export const BAND_STRETCH = 0.1;
 export const BAND_K: SourcedValue = sv(20, 'N/m', 'an office rubber band, stiffness', 'estimate', 0.3, [cite('spark', 'estimate', 'a band of the usual kind, read on the home-made dynamometer', 20)], 'Estimate: bands differ; the distances follow it, their ratios do not.');
 /** What holds the car back: friction in the axles and the wheels rolling, N. */
 export const CAR_DRAG: SourcedValue = sv(0.1, 'N', 'a toy car, the resistance to its motion', 'estimate', 0.5, [cite('spark', 'estimate', 'axles in cardboard, wheels of bottle caps on a floor', 0.1)], 'Estimate: it sets the distances, not their ratios.');
-export const RUBBER_TURNS = [3, 6, 9] as const;
 
 /** How far the band is wound on by N turns, m. */
 export const woundOn = (turns: number): number => turns * Math.PI * PENCIL.value;

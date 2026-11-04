@@ -6,7 +6,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { TOWER_BODIES, TOWER_LIQUIDS, TOWER_TEXT, type TowerBody, type TowerCommand, towerLiquidDensity, towerLiquidIn, towerLiquidName } from './bench.js';
 
-export const setup: LocalizedText = msg('liquid-tower-setup');
 
 export const text = (c: TowerCommand): StepText => TOWER_TEXT['lab.tower'](c);
 

@@ -6,7 +6,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { FORCES_TEXT, type ForcesCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('adding-forces-setup');
 
 export const text = (c: ForcesCommand): StepText => FORCES_TEXT['lab.forces'](c);
 

@@ -1,0 +1,39 @@
+## Що каже дослід під час роботи: кроки, дошка, відповідь. Ці тексти приходять разом із дослідом, коли його відкривають; картка досліду — у windlass.ftl.
+
+windlass-winch-command-apply = Вантаж опускаємо до 50 см.
+windlass-winch-command-apply-2 = Ручку повертаємо до 20 разів.
+windlass-spool-reel = котушка від ниток (d = 2 см)
+windlass-spool-pencil = олівець (d = 8 мм)
+windlass-labwinch-say = Нитка намотана на { $sp }. Опусти вантаж на { $cm } см і порахуй оберти за міткою на котушці.
+windlass-button-uk = котушка
+windlass-button-uk-2 = олівець
+windlass-labwinch-button = ⬇ Опустити на { $cm } см: { $value }
+windlass-labwinch-plan = { $sp }: опустити вантаж на { $cm } см
+windlass-labwinch-say-2 = А тепер навпаки: поверни ручку — { $sp } — { $amount } разів і виміряй лінійкою, на скільки піднявся вантаж.
+windlass-labwinch-button-2 = 🔄 { $amount } обертів ручки: { $value }
+windlass-labwinch-plan-2 = { $sp }: { $amount } обертів ручки
+windlass-answer-why = Нитка лежить на котушці кільцями. За один оберт котушки з неї змотується один виток — це довжина кола котушки, C = π·d. Тож вантаж, опускаючись на l, обертає котушку n = l / (π·d) разів: прямолінійний рух вантажу стає обертанням котушки. І навпаки: повертаючи ручку n разів, намотуємо n·π·d нитки — обертання стає прямолінійним рухом вантажу. Тонкий олівець має коротше коло, тож на ті самі 30 см обертається більше разів, а за ті самі 5 обертів піднімає вантаж менше. Так працюють ворот колодязя, котушка спінінга, рулетка; а рейка з шестірнею чи колесо, що котиться, роблять те саме без нитки. Товщину нитки тут не враховано — з нею кожен виток трохи довший.
+windlass-answer-say = { $spool }: { $v } оберту на 30 см — стільки разів π·d вміщується в довжину нитки.
+windlass-text-parts = { $spool }, вантаж опустився на { $amount } — { $v } об. (l / (π·d) = { $amount2 })
+windlass-text-parts-2 = { $spool }, { $amount } обертів ручки — вантаж піднявся на { $v } (π·d·n = { $PI })
+windlass-answer-text = {" "}Оберти лічено за міткою — до чверті оберту.
+windlass-busy = Котушка крутиться — рахую оберти…
+windlass-shown = ,
+windlass-board-what = олівець, d = 8 мм
+windlass-board-what-2 = котушка, d = 2 см
+windlass-board-title = { $what }: вантаж униз на { $amount }
+windlass-board-title-2 = за оберт — довжина кола
+windlass-board-numbers = 3,14
+windlass-board-title-3 = { $what }: { $amount } обертів ручки
+
+## $spool — pencil, reel; $count — the turns as counted; $n — their number (for the word's form).
+windlass-say-turns = { $spool ->
+        [pencil] Олівець зробив
+       *[reel] Котушка зробила
+    } { $count } { $n ->
+        [one] оберт
+        [few] оберти
+        [many] обертів
+       *[other] оберту
+    }.
+windlass-say-rose = Вантаж піднявся на { $cm } см.

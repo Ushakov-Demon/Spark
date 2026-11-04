@@ -6,6 +6,7 @@ import { averageSpeed } from '../../domains/mechanics/formulas.js';
 import { sig } from '../../explain/format.js';
 import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
+export { HOUR } from './shared.js';
 
 /**
  * How plants move (grade 7, topic 1: «моделювання: … рухів тварин і рослин»). A shoot of moso bamboo, the quickest
@@ -23,7 +24,6 @@ export const SHOOT_START: SourcedValue = sv(0.5, 'm', 'a young shoot just out of
 /** The pole beside the shoot: marked every centimetre. */
 export const POLE_DIVISION = 0.01;
 export const DAY = 86_400;
-export const HOUR = 3600;
 
 /** A Venus flytrap: how long its lobes take to snap shut, and the way a lobe's edge goes. */
 export const TRAP_CLOSE: SourcedValue = sv(0.1, 's', 'a Venus flytrap’s lobes snapping shut', 'single-source', 0.3, [cite('wikipedia-venus-flytrap', 'Carnivory', 'the lobes of the trap will snap shut, typically in about one-tenth of a second', 0.1)], 'Typical; the article gives no spread.');

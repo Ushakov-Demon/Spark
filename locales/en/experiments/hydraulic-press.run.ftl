@@ -1,0 +1,46 @@
+## What the experiment says as it runs: its steps, board and answer. These texts come with the experiment when it opens; its card is in hydraulic-press.ftl.
+
+hydraulic-press-command-apply = The piston takes 1 to 8 weights.
+hydraulic-press-labpress-say = Measure the diameters of both pistons — of the narrow and the wide syringe — with the ruler.
+hydraulic-press-labpress-button = 📏 Measure the pistons
+hydraulic-press-labpress-plan = measure the pistons’ diameters
+hydraulic-press-labpress-say-2 = Put { $weights } of 100 g on the wide piston and push the narrow one with the dynamometer until the load starts to rise. What force does it show?
+hydraulic-press-labpress-button-2 = 🏋 { $weights } on the wide one: push
+hydraulic-press-labpress-plan-2 = { $weights } on the wide piston — push the narrow one
+hydraulic-press-labpress-say-3 = Push the narrow piston 6 cm down and measure how far the wide one rose.
+hydraulic-press-labpress-button-3 = ↕ The narrow one 6 cm down: how far up the wide one?
+hydraulic-press-labpress-plan-3 = push the narrow piston 6 cm down
+hydraulic-press-labpneumatic-say = Water in the syringes and the tube again. { $weights } on the wide piston; push the narrow one the same 6 cm in. When did the load move, and how far did it rise?
+hydraulic-press-labpneumatic-say-2 = Air in the syringes and the tube. { $weights } on the wide piston; push the narrow one the same 6 cm in. When did the load move, and how far did it rise?
+hydraulic-press-labpneumatic-button = 💧 Water, { $weights }: push 6 cm in
+hydraulic-press-labpneumatic-button-2 = 💨 Air, { $weights }: push 6 cm in
+hydraulic-press-labpneumatic-plan = water, { $weights } — push the narrow piston 6 cm in
+hydraulic-press-labpneumatic-plan-2 = air, { $weights } — push the narrow piston 6 cm in
+hydraulic-press-asides = Air compresses — and that is put to use. On 13 April 1869 the American George Westinghouse patented an air brake for trains. In it the brakes act not when the pressure in the brake pipe grows but when it falls. So if a hose between the cars bursts, the train brakes by itself — the brake is fail-safe by its very design. Such train brakes have since been taken up nearly everywhere.
+hydraulic-press-answer-air-why = {"\u000A\u000A"}And air? It passes pressure on just the same — by Pascal’s law. But for the wide piston with its load to move, the pressure inside must grow by the load’s weight over the piston’s area, Δp = F₂/S₂. Water hardly compresses, so this pressure is there as soon as the narrow piston moves. Air compresses easily (at a constant temperature p·V = const — the Boyle–Mariotte law): until the pressure has grown, the narrow piston only squeezes the air, and the load stands. The heavier the load, the more the air must be squeezed — the longer this idle travel and the lower the rise. But air is springy, like a cushion: pneumatics pushes and brakes softly, hydraulics lifts precisely and strongly.
+hydraulic-press-answer-why = Water hardly compresses and passes the pressure the narrow piston makes on in all directions alike — under the wide piston too (Pascal’s law). Pressure is force on each square centimetre. Under the wide piston there are as many times more of those centimetres as its area is larger — and so as many times more force. And the area grows as the square of the diameter. But the gain in force is paid for in distance: the water from the narrow syringe, spread over the wide one, lifts its piston that many times less.
+hydraulic-press-answer-say = A gain in force of ≈ { $gain } times — the ratio of the areas!
+hydraulic-press-answer-say-2 = Let us look at the dynamometer.
+hydraulic-press-answer-text = The pistons are { $d1 } and { $d2 } across: the wide one is { $diam } times wider, and its area (d₂/d₁)² ≈ { $areas } times larger. { $l }: each time the wide piston lifted a load ≈ { $gain } times the force on the narrow one — the ratio of the areas, not of the diameters. But when the narrow piston went { $push } down, the wide one rose only { $rise }: the work F₁·l₁ ≈ { $F1 } J and F₂·l₂ ≈ { $F2 } J — almost the same, no gain in work. (The pistons’ friction is left out: with real syringes one has to push a little harder.)
+hydraulic-press-busy = Pushing the narrow piston in…
+hydraulic-press-shown = the load moved at once; it rose { $rise }
+hydraulic-press-shown-2 = the load moved when the piston had gone { $dead }; it rose { $rise }
+hydraulic-press-say = The narrow piston is { $recs } across, the wide one { $recs2 }.
+hydraulic-press-say-2 = The load moved at once — and rose { $rise }.
+hydraulic-press-say-3 = The piston went { $dead } while the load stood still — and only then did it rise { $rise }.
+hydraulic-press-say-4 = The { $value } load went up when the dynamometer showed only { $value2 }!
+hydraulic-press-say-5 = The narrow piston went 6 cm, and the wide one rose only { $value }.
+hydraulic-press-board-what = water
+hydraulic-press-board-what-2 = air
+hydraulic-press-board-title = { $what }: the narrow piston’s travel while the load stood
+hydraulic-press-board-numbers = { $squeezed } mL squeezed
+hydraulic-press-board-title-2 = { $what }: the wide piston rose by
+hydraulic-press-pd-title = the pistons’ diameters
+hydraulic-press-p-s-title = how many times larger the wide one’s area
+hydraulic-press-board-title-3 = the gain in force
+hydraulic-press-pl-title = water, 6 weights: the narrow piston 6 cm down — the wide one up by
+hydraulic-press-board-pressure = { $what }, { count-weights }: the pressure to move the load
+hydraulic-press-board-load = { count-weights } on the wide piston
+hydraulic-press-answer-air-text = { $l } — ≈ { $extra } kPa needed, the air shrank by { $squeezed } mL, the load moved after { $dead } and rose { $rise }
+hydraulic-press-answer-air-text-2 = {" "}With the water poured back, { $backWeights } weights went up at once, by { $backRise }.
+hydraulic-press-answer-air-text-3 = {" "}With air, the same 6 cm: { $steps } (with water — at once, by { $rise }).{ $backWeights }

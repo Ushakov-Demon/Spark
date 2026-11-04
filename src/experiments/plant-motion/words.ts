@@ -6,20 +6,11 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured, readingsOf } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { HOUR, type PlantCommand } from './bench.js';
+import { spanText, mmPerS } from './shared.js';
+export { spanText, mmPerS } from './shared.js';
 
-export const setup: LocalizedText = msg('plant-motion-setup');
-
-/** A span of time: seconds, minutes, hours or days, whichever reads best («40 хв», «6 год», «2 доби»). */
-export function spanText(s: number, l: Locale): string {
-  if (s < 60) return `${sig(s, 3, l)}\u00a0${t(l, 'unit-sym-s')}`;
-  if (s < HOUR) return `${sig(s / 60, 3, l)}\u00a0${t(l, 'unit-sym-min')}`;
-  if (s < 48 * HOUR) return `${sig(s / HOUR, 3, l)}\u00a0${t(l, 'unit-sym-h')}`;
-  return t(l, 'plant-motion-days', { n: Number((s / 86_400).toPrecision(3)) });
-}
 /** A height as the pole shows it: to a centimetre, in metres from one metre on (or whenever asked, to match another). */
 export const heightText = (m: number, l: Locale, metres = false): string => (m < 1 && !metres ? `${sig(m * 100, 3, l)}\u00a0${t(l, 'unit-sym-cm')}` : `${new Intl.NumberFormat(NUMBER_LOCALE[l], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(m)}\u00a0${t(l, 'unit-sym-m')}`);
-/** A speed in millimetres a second, three figures. */
-export const mmPerS = (v: number, l: Locale): string => `${sig(v * 1000, 3, l)}\u00a0${t(l, 'unit-sym-mm-per-s')}`;
 
 const args = (c: PlantCommand) => (c.step === 'shoot' ? { t: (l: Locale) => spanText(c.t, l), first: c.t === 0 ? 'yes' : 'no' } : { fps: (l: Locale) => sig(c.fps, 3, l) });
 

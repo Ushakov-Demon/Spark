@@ -7,7 +7,6 @@ import { GRAVI_TEXT, type GraviCommand } from './bench.js';
 
 /** The roots' words: the steps, the photos' angles, the board. */
 
-export const setup: LocalizedText = msg('roots-gravity-setup');
 
 export const text = (c: GraviCommand): StepText => GRAVI_TEXT['lab.gravi'](c);
 

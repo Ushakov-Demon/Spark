@@ -6,13 +6,9 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { earthR, mu, OUTCOME, type CannonCommand } from './bench.js';
 import { circularSpeed, escapeSpeed, gravityAt } from '../../domains/mechanics/formulas.js';
+import { speedText, kmText, degText } from './shared.js';
+export { speedText, kmText, degText } from './shared.js';
 
-export const setup: LocalizedText = msg('newton-cannon-setup');
-
-/** A speed: metres a second below a kilometre a second, kilometres a second from it. */
-export const speedText = (v: number, l: Locale): string => (v < 1000 ? `${sig(v, 3, l)} ${t(l, 'unit-sym-m-per-s')}` : `${sig(v / 1000, 3, l)} ${t(l, 'unit-sym-km-per-s')}`);
-/** A distance: metres below a kilometre, kilometres from it. */
-export const kmText = (m: number, l: Locale): string => (m < 1000 ? `${sig(m, 3, l)} ${t(l, 'unit-sym-m')}` : `${sig(m / 1000, 3, l)} ${t(l, 'unit-sym-km')}`);
 /** A time: seconds, minutes or hours. */
 export const timeText = (s: number, l: Locale): string => (s < 60 ? `${sig(s, 3, l)} ${t(l, 'unit-sym-s')}` : s < 3600 * 2 ? `${sig(s / 60, 3, l)} ${t(l, 'unit-sym-min')}` : `${sig(s / 3600, 3, l)} ${t(l, 'unit-sym-h')}`);
 
@@ -24,9 +20,6 @@ export const sci = (x: number, l: Locale): string => {
 };
 
 const outcomeOf = (r: MeasurementRecord) => (r.inputs?.['outcome'] === OUTCOME.lands ? 'lands' : r.inputs?.['outcome'] === OUTCOME.orbits ? 'orbits' : 'escapes');
-
-/** An angle to the horizon («30°»). */
-export const degText = (d: number, l: Locale): string => `${sig(d, 3, l)}${t(l, 'unit-sym-deg')}`;
 
 export const text = (c: CannonCommand): StepText => {
   const a = { v: (l: Locale) => speedText(c.v, l), angle: (l: Locale) => degText(c.angle ?? 0, l), level: (c.angle ?? 0) === 0 ? 'yes' : 'no' };

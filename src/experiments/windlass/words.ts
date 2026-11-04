@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { WINCH_TEXT, type WinchCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('windlass-setup');
 
 export const text = (c: WinchCommand): StepText => WINCH_TEXT['lab.winch'](c);
 

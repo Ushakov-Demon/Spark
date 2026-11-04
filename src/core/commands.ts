@@ -41,16 +41,26 @@ export interface CommandRegistry<C extends Command = Command> {
   apply(state: SystemState, command: C): Result<CommandEffect, LocalizedText>;
 }
 
+/**
+ * The handlers may grow (an experiment's join when it is loaded): a command of a type not seen yet is looked for
+ * among them again.
+ */
 export function createCommandRegistry<C extends Command>(
   handlers: readonly { [T in C['type']]: CommandHandler<Extract<C, { type: T }>> }[C['type']][],
 ): CommandRegistry<C> {
   const byType = new Map<string, CommandHandler<C>>();
-  for (const h of handlers) {
-    if (byType.has(h.type)) throw new Error(`Duplicate command handler "${h.type}"`);
-    byType.set(h.type, h as unknown as CommandHandler<C>);
-  }
+  let seen = 0;
+  const take = () => {
+    for (; seen < handlers.length; seen++) {
+      const h = handlers[seen]!;
+      if (byType.has(h.type)) throw new Error(`Duplicate command handler "${h.type}"`);
+      byType.set(h.type, h as unknown as CommandHandler<C>);
+    }
+  };
+  take();
   return {
     apply(state, command) {
+      if (!byType.has(command.type)) take();
       const h = byType.get(command.type);
       return h
         ? h.apply(state, command)

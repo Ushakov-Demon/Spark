@@ -6,7 +6,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { STROBE_INTERVAL, STROBE_SCALE, STROBE_TEXT, type StrobeCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('strobe-photo-setup');
 
 export const text = (c: StrobeCommand): StepText => STROBE_TEXT['lab.strobe'](c);
 

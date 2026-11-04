@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { MAP_TEXT, scaleText, type MapCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('map-scale-setup');
 
 export const text = (c: MapCommand): StepText => MAP_TEXT['lab.map'](c);
 

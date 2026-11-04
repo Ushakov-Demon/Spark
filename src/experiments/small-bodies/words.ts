@@ -5,7 +5,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { rowName, ROWS_TEXT, type RowsCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('small-bodies-setup');
 
 export const text = (c: RowsCommand): StepText => ROWS_TEXT['lab.rows'](c);
 

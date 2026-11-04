@@ -7,7 +7,6 @@ import type { BoardAt, StepText } from '../types.js';
 import { BOUNCE_TEXT, bounceBallName, type BounceCommand } from './bench.js';
 import { G } from '../../domains/mechanics/constants.js';
 
-export const setup: LocalizedText = msg('ball-bounce-setup');
 
 export const text = (c: BounceCommand): StepText => BOUNCE_TEXT['lab.bounce'](c);
 

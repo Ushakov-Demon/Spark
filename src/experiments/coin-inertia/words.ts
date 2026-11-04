@@ -6,7 +6,6 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import type { BoardAt, StepText } from '../types.js';
 import { COIN_TEXT, type CoinCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('coin-inertia-setup');
 
 export const text = (c: CoinCommand): StepText => COIN_TEXT['lab.coin'](c);
 

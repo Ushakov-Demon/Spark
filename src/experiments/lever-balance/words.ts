@@ -7,7 +7,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { BALANCE_TEXT, balanceWeights, type BalanceCommand, weightsText } from './bench.js';
 
-export const setup: LocalizedText = msg('lever-balance-setup');
 
 export const text = (c: BalanceCommand): StepText => BALANCE_TEXT(c);
 

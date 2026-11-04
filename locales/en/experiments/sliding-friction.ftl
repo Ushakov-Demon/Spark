@@ -1,58 +1,15 @@
 ## sliding-friction
-sliding-friction-pull-command-apply = Put 0 to 3 weights on the block.
-sliding-friction-pull-text-say = Now stand the block on its narrower side face — less area touching the board — and pull it steadily again.
-sliding-friction-pull-text-button = ➡ The block on its narrower face
-sliding-friction-pull-text-plan = the block on its narrower face
-sliding-friction-pull-text-say-2 = Lay a sheet of paper on the board and pull the block over it — on the same wide face.
-sliding-friction-pull-text-button-2 = ➡ The block over paper
-sliding-friction-pull-text-plan-2 = the block over a sheet of paper
-sliding-friction-pull-text-say-3 = Lay the block on its widest face on the board and pull it at a steady speed with the dynamometer. What does it show?
-sliding-friction-say-uk = a weight
-sliding-friction-say-uk-2 = { $n } weights
-sliding-friction-say-uk-3 = pull it on its wide face along the board steadily
-sliding-friction-say-uk-4 = pull it steadily again
-sliding-friction-pull-text-say-4 = Put { $value } on the block and { $value2 }.
-sliding-friction-button-uk = {" "}(+{ $n } × 100 g)
-sliding-friction-pull-text-button-3 = ➡ Pull the block{ $n }
-sliding-friction-plan-uk = {" "}with a weight
-sliding-friction-plan-uk-2 = {" "}with { $n } weights
-sliding-friction-pull-text-plan-3 = pull the block{ $value }
+
 sliding-friction-factors-ask = Does friction depend on which face the block lies on?
 sliding-friction-factors-title = What the force of sliding friction depends on
 sliding-friction-factors-question = We weigh a wooden block, put a 100 g weight on it and pull it steadily with a dynamometer along a wooden board: first on its wide face, then stood on a narrower one, then over a sheet of paper, and at last with three weights. The block stands on a narrower face — less of it touches the board. What happens to the friction?
-sliding-friction-plan-label = Wooden block
 sliding-friction-factors-choices = It stays the same
 sliding-friction-factors-choices-2 = It gets smaller: less area, less friction
 sliding-friction-factors-choices-3 = It grows: the block presses harder on the board
-sliding-friction-factors-trick = Most people think the block is easier to pull on its narrower face.
-sliding-friction-answer-factors-why =
-    It seems easier to pull the block on its narrower face: less area, less friction. Most people think so. But the area of a face is not yet the area of contact. Even surfaces that look smooth touch only at the tips of their bumps, and the real area of contact is a very small fraction of the face. On the wide face the block’s weight is shared among many bumps, each pressed lightly. On the narrower face there are fewer bumps, but each is pressed harder and squashed deeper. The real area of contact comes out about the same: it is set not by the size of the face but by how hard the block is pressed to the board. The weight has not changed — so neither has the friction. The materials are another matter: paper catches on wood differently from wood on wood. And the weights press the block harder — the bumps are squashed more, and the friction grows in proportion to the pressing force.
-
-    Mind: all this is about solid bodies (wood, metal, plastic, glass). For sticky and soft materials the rule fails: adhesive tape holds even when nothing presses it, and the wider the strip, the better it holds — here the area of contact matters. That is why drag racers have wide, sticky tyres. And even for solid bodies the law is approximate: friction grows with the load not strictly in proportion.
-sliding-friction-answer-factors-say = For solid bodies the area does not matter — the materials and the pressing force do!
-sliding-friction-answer-factors-text = The block with its weight on the wide face — { $wide }, on the narrower one — { $narrow }: one and a half times less area touching, the same friction. Over a sheet of paper — { $paper }: another pair of materials, μ = F / N ≈ { $value } (the textbook’s table: paper on wood 0.40, wood on wood 0.25). With three weights — { $heavy }: the pressing force grew from { $wide2 } to { $heavy2 } N, { $heavy3 } times, and the friction about as much. This is the Amontons–Coulomb law: sliding friction does not depend on the area of contact and is proportional to the normal force, F = μN, where μ depends on the materials and how the surfaces are finished. Leonardo da Vinci noticed it first (1493), but his notes were not published; in 1699 G. Amontons discovered the law anew, and C. Coulomb checked it. The law is about solid bodies: for sticky and soft materials (adhesive tape, racing tyres) the area of contact does affect friction.
 sliding-friction-coefficient-ask = How will the coefficient μ = F/N change as weights are added?
 sliding-friction-coefficient-title = Finding the coefficient of sliding friction
 sliding-friction-coefficient-question = We weigh a wooden block on a dynamometer, then pull it along a wooden board — first bare, then with one, two, three 100 g weights, writing down the dynamometer each time. What happens to the coefficient μ = F/N?
 sliding-friction-coefficient-choices = It stays about the same
 sliding-friction-coefficient-choices-2 = It grows too
 sliding-friction-coefficient-choices-3 = It gets smaller
-sliding-friction-answer-coefficient-why = Even surfaces that look smooth touch only at their bumps. The harder the block is pressed to the board, the more bumps meet and catch — the real area of contact, and with it the friction, grows in proportion to the pressing force. So the ratio F/N stays the same for a pair of materials — the coefficient of friction: it depends on what the surfaces are and how they are finished, not on the block’s weight.
-sliding-friction-answer-coefficient-say = μ ≈ { $mean } — for wood on wood!
-sliding-friction-answer-coefficient-text = ≈ 1.4 N
-sliding-friction-answer-coefficient-text-2 = N = { $N } N → F = { $F }, μ ≈ { $F2 }
-sliding-friction-answer-coefficient-text-3 = The block weighs { $P }; on a level board the normal force N equals the weight of the block with its weights. { $steps }. The friction grows with the load, while their ratio — the coefficient of friction — stays about the same: μ ≈ { $mean }. The textbook’s table gives 0.25 for wood on wood. The spread is there because the dynamometer reads only tenths of a newton, and pulling steadily is not easy. The coefficient depends on the materials and how the surfaces are finished, not on the block’s weight.
 sliding-friction-setup = A wooden block, a wooden board, 100 g weights, a dynamometer
-sliding-friction-busy = Pulling the block steadily…
-sliding-friction-say = On its narrower face the block slides steadily — the dynamometer shows { $F }.
-sliding-friction-say-2 = Over the paper the block slides steadily — the dynamometer shows { $F }.
-sliding-friction-board-how = , narrower face
-sliding-friction-board-how-2 = , over paper
-sliding-friction-board-title = alone
-sliding-friction-board-title-2 = and { $weights } × 100 g
-sliding-friction-board-title-3 = sliding friction: the block { $value }{ $how }
-sliding-friction-view-paper = a sheet of paper
-sliding-friction-say-weights = The block{ $n ->
-        [0] {""}
-       *[other] {" "}with { count-weights }
-    } slides steadily — the dynamometer shows { $F }. That is the force of sliding friction.

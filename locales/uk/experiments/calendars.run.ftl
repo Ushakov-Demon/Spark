@@ -1,0 +1,75 @@
+## Що каже дослід під час роботи: кроки, дошка, відповідь. Ці тексти приходять разом із дослідом, коли його відкривають; картка досліду — у calendars.ftl.
+
+calendars-egypt-name = Єгипетський календар
+calendars-julian-name = Юліанський календар
+calendars-gregorian-name = Григоріанський календар
+calendars-calendar-command-apply = Такого кроку в моделі немає.
+calendars-trick = Більшість думає, що однакова дата — це той самий день.
+calendars-answer-why =
+    Сонце не підлаштовується під календар: його рік — 365,24219 доби, а календар лічить цілі доби. Календар із 365 діб щороку не дораховує чверть доби — і пори року поволі пливуть його місяцями. Юліанський додає добу раз на чотири роки й трохи перебирає: на 11 хвилин щороку, на добу за 128 років. Григоріанський прибирає три високосні роки з чотирьох сотень — і помиляється на добу лише за понад три тисячі років.
+
+    Тому однакова дата в різних календарях — різні дні. 1616 року Іспанія вже жила за григоріанським календарем, а Англія — за юліанським, тож Шекспір помер на 11 днів пізніше за Сервантеса. Саме 23 квітня ЮНЕСКО 1995 року зробило Всесвітнім днем книги. А календарі змінюють і досі: Православна церква України 1 вересня 2023 року перейшла з юліанського на новоюліанський календар — у ньому рік 365,242 доби.
+calendars-answer-say = Однакова дата — ще не той самий день: між Сервантесом і Шекспіром — { $gap }.
+calendars-answer-text = { $name }: за { $years } років весняне рівнодення переїхало на { $value } пізніше — з 21 березня на { $EQUINOX }.
+calendars-answer-text-2 = Юліанський: із 325 по 1582 рік — на { $value } раніше, на { $EQUINOX }.
+calendars-egypt-say = Давні єгиптяни мали календар із 365 діб — без високосних років. А Сонце повертається до весняного рівнодення за 365,24219 доби. Запустимо такий календар на 120 років: куди переїде рівнодення?
+calendars-egypt-button = 🏺 Єгипетський календар: 365 діб
+calendars-egypt-plan = єгипетський календар на 120 років
+calendars-julian-say = Юлій Цезар 46 року до н. е. запровадив календар (він діяв із 45 року), у якому кожен четвертий рік — високосний: у середньому 365,25 доби. 325 року весняне рівнодення вважали 21 березня. Запустимо юліанський календар до 1582 року.
+calendars-julian-button = 🏛 Юліанський календар: 365¼ доби
+calendars-julian-plan = юліанський календар із 325 по 1582 рік
+calendars-gregorian-say = 1582 року календар виправили — за папи Григорія XIII. Спершу викреслили зайві дні: після четверга, 4 жовтня, настала п’ятниця, 15 жовтня. А тоді змінили правило: рік, що ділиться на 100, — не високосний, хіба що ділиться й на 400. Тож 1900 рік — не високосний, а 2000 — високосний. Скільки набіжить за ті самі 1257 років?
+calendars-gregorian-button = ✂ Григоріанська реформа
+calendars-gregorian-plan = григоріанська реформа
+calendars-bard-say = Мігель де Сервантес помер 22 квітня 1616 року, а 23-го його поховали — цю дату й пам’ятають. Вільям Шекспір помер 23 квітня 1616 року. Але Іспанія вже жила за новим календарем, а Англія — ще за юліанським: на новий вона перейшла аж 1752 року. Переведемо обидві дати в один календар.
+calendars-bard-button = ✒ Шекспір і Сервантес
+calendars-bard-plan = Шекспір і Сервантес: в один календар
+calendars-busy = Викреслюємо дні з жовтня 1582 року…
+calendars-busy-2 = Переводимо лондонську дату в григоріанський календар…
+calendars-busy-3 = Роки біжать — стежимо, де рівнодення…
+calendars-slide-when = пізніше
+calendars-slide-when-2 = раніше
+calendars-shown-slide = за { $years } років рівнодення — на { $v } { $when }, { $EQUINOX }
+calendars-shown = Сервантес — 22 квітня, Шекспір — { $month } за григоріанським: { $value }
+calendars-drift-title = { $name }, { $N } років
+calendars-board-title = 1582: чт 4 жовтня → пт 15 жовтня
+calendars-board-formula = викреслено 5 … 14 жовтня
+calendars-board-title-2 = Сервантес — 22.04 (григ.), Шекспір — 23.04 (юл.)
+calendars-board-formula-2 = Шекспір
+calendars-board-formula-3 = григоріанський
+calendars-view-months = січ.
+calendars-view-months-2 = лют.
+calendars-view-months-3 = бер.
+calendars-view-months-4 = квіт.
+calendars-view-months-5 = трав.
+calendars-view-months-6 = черв.
+calendars-view-months-7 = лип.
+calendars-view-months-8 = серп.
+calendars-view-months-9 = вер.
+calendars-view-months-10 = жовт.
+calendars-view-months-11 = лист.
+calendars-view-months-12 = груд.
+calendars-view-weekdays = Пн
+calendars-view-weekdays-2 = Вт
+calendars-view-weekdays-3 = Ср
+calendars-view-weekdays-4 = Чт
+calendars-view-weekdays-5 = Пт
+calendars-view-weekdays-6 = Сб
+calendars-view-weekdays-7 = Нд
+calendars-view-names = Сервантес
+calendars-view-sheets = Мадрид · григоріанський
+calendars-view-sheets-2 = Лондон · юліанський
+calendars-view-strip = 1616 рік за григоріанським календарем
+calendars-view-year-fmt = рік{" "}
+calendars-view-year-fmt-2 = {" "}р.
+calendars-view-sub = рік —
+calendars-view-month = Жовтень 1582 року
+calendars-answer-reform = Реформа 1582 року викреслила { $skip }; за ті самі { $years } років григоріанський календар зсуває рівнодення лише на { $drift }, а на цілу добу — приблизно за { $oneDay } років.
+calendars-answer-bard = Сервантес помер 22 квітня за григоріанським календарем; Шекспір — 23 квітня за юліанським, а це { $date } за григоріанським. Між ними — { $gap }.
+calendars-shown-gregorian = викреслено { $skip }; { $slide }
+calendars-view-year = { calendars-view-sub } { NUMBER($y, maximumFractionDigits: 4) } { $y ->
+        [one] доба
+        [few] доби
+        [many] діб
+       *[other] доби
+    }

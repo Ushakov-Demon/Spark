@@ -9,7 +9,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { ENERGY_TEXT, type EnergyCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('rolling-energy-setup');
 
 export const text = (c: EnergyCommand): StepText => ENERGY_TEXT['lab.energy'](c);
 

@@ -1,0 +1,52 @@
+## Що каже дослід під час роботи: кроки, дошка, відповідь. Ці тексти приходять разом із дослідом, коли його відкривають; картка досліду — у balloon-lift.ftl.
+
+balloon-lift-command-apply = Маса оболонки має бути більшою за нуль.
+balloon-lift-command-apply-2 = Діаметр кулі має бути більшим за нуль.
+balloon-lift-command-apply-3 = Гаряче повітря — тепліше за 20 °C і холодніше за 400 °C (оболонка не витримає).
+balloon-lift-gas-name-air = повітрям із легенів
+balloon-lift-labballoon-say = Зваж порожню кулю — оболонку з ниткою.
+balloon-lift-labballoon-button = ⚖ Зважити оболонку
+balloon-lift-labballoon-plan = зважити порожню оболонку
+balloon-lift-labballoon-say-2 = Наповни кулю й виміряй її діаметр.
+balloon-lift-labballoon-button-2 = 📏 Наповнити й виміряти
+balloon-lift-labballoon-plan-2 = наповнити кулю й виміряти діаметр
+balloon-lift-labballoon-say-3 = Куля з { $gas }, { $d } завширшки: прив’яжи її до тягарця на терезах. На скільки менше вони покажуть — і чи злетить вона сама?
+balloon-lift-labballoon-button-3 = 🎈 { $gas }, { $d }
+balloon-lift-labballoon-plan-3 = куля з { $gas }, { $d } — на терези
+balloon-lift-asides = 4 червня 1783 року в містечку Анноне брати Монгольф’є вперше привселюдно запустили кулю з гарячим повітрям: вона пролетіла близько 2 км за 10 хвилин. У вересні у Версалі в кошику під кулею полетіли баран, качка й півень — і благополучно приземлилися. А 21 листопада 1783 року Пілатр де Розьє й маркіз д’Арланд уперше вільно полетіли над Парижем: 9 км за 25 хвилин. Уже за десять днів Жак Шарль піднявся на кулі з воднем приблизно на 3 км.
+balloon-lift-name-helium = з гелієм
+balloon-lift-name-hydrogen = з воднем
+balloon-lift-name-hot-air = з гарячим повітрям
+balloon-lift-name-air = з повітрям
+balloon-lift-answer-why =
+    Повітря — теж «рідина», у якій ми живемо, і закон Архімеда діє в ньому так само: на кулю діє виштовхувальна сила, що дорівнює вазі повітря в її об’ємі, ρ_пов·g·V. Униз тягнуть вага газу всередині, ρ_г·g·V, і вага оболонки. Куля злітає, коли виштовхувальна сила більша за обидві ваги разом: F = (ρ_пов − ρ_г)·g·V − m_об·g > 0.
+
+    Тому важливий не лише газ, а й розмір. Гелій і водень у кілька разів легші за повітря, гаряче повітря рідшає (за сталого тиску густина газу обернено пропорційна його абсолютній температурі). Але різниця густин множиться на об’єм, а він росте з кубом діаметра, тоді як оболонка — лише з площею поверхні. Удвічі менша куля має вісім разів менший об’єм — і вагу оболонки вона може вже не подолати. А куля з повітрям із легенів газом нічого не виграє, і її тягне вниз сама оболонка.
+balloon-lift-answer-say = тягне вгору
+balloon-lift-answer-say-2 = не злітає
+balloon-lift-answer-say-3 = удвічі менша — уже ні!
+balloon-lift-answer-say-4 = удвічі менша — теж тягне.
+balloon-lift-answer-say-5 = Велика куля { $gas } { $value }, а { $value2 }
+balloon-lift-text-list = злітає
+balloon-lift-text-list-2 = { $d } { $gas }: ρ_г ≈ { $gasDensity } кг/м³, { $rec }, F ≈ { $F } Н — { $value }
+balloon-lift-answer-text = Повітря навколо — { $air } кг/м³ (20 °C).{ $steps }. (Густини газів — за рівнянням стану ідеального газу; повітря з легенів вважаємо таким самим, як навколо.)
+balloon-lift-busy = Прив’язую кулю…
+balloon-lift-text = менше
+balloon-lift-text-2 = більше
+balloon-lift-text-3 = терези — на { $dm } г { $value }
+balloon-lift-text-4 = силомір — { $F } Н
+balloon-lift-shown = {" "}— злітає
+balloon-lift-shown-2 = {" "}— лежить
+balloon-lift-say = Порожня оболонка — { $value }.
+balloon-lift-say-2 = Діаметр — { $value }.
+balloon-lift-say-3 = куля тягне вгору — злетіла б!
+balloon-lift-say-4 = куля сама не злетить — лежить.
+balloon-lift-say-5 = { $r }: { $value }
+balloon-lift-board-title = маса оболонки
+balloon-lift-board-title-2 = об’єм кулі
+balloon-lift-name-helium-2 = гелій
+balloon-lift-name-hydrogen-2 = водень
+balloon-lift-name-hot-air-2 = гаряче повітря
+balloon-lift-name-air-2 = повітря
+balloon-lift-board-title-3 = { $name }, { $size }: густини
+balloon-lift-board-title-4 = { $name }, { $size }: піднімальна сила

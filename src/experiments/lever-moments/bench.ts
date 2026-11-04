@@ -5,10 +5,12 @@ import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { moment, slidingFriction, weight } from '../../domains/mechanics/formulas.js';
 import { msg, t } from '../../knowledge/messages.js';
-import { blockMass, WOOD_ON_WOOD } from '../../scenarios/bench-kit.js';
+import { WOOD_ON_WOOD } from '../../scenarios/bench-kit.js';
 import { SCALES, scaleReading } from '../../equipment/scales.js';
 import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
 import type { SourcedValue } from '../../knowledge/types.js';
+import { SLOPE_WEIGHTS, slopeLoad } from './shared.js';
+export { SLOPE_WEIGHTS, slopeLoad } from './shared.js';
 
 /**
  * The lever of grade 8 (lab work 1, the condition of a lever's balance): a ruler on an axis at its middle,
@@ -58,11 +60,6 @@ export const leverCommand: CommandHandler<LeverCommand> = {
  * dynamometer shows F = P·(sin α + μ·cos α) — gravity along the board and sliding friction, wood on wood.
  */
 export const SLOPE_LENGTH: SourcedValue = sv(0.6, 'm', 'the board raised as a slope', 'estimate', 0.3, [cite('spark', 'estimate', 'the school wooden board, 0.5–0.8 m', 0.6)], 'Estimate: its length is measured by the ruler all the same.');
-/** Weights on the block (two of 100 g by default): the dynamometer reads more of a newton, and less of the error. */
-export const SLOPE_WEIGHTS = 2;
-const SLOPE_WEIGHT = 0.1;
-/** The block and its weights, kg. */
-export const slopeLoad = (weights = SLOPE_WEIGHTS): number => blockMass() + weights * SLOPE_WEIGHT;
 
 /** Raise the board's end so high and pull the block up along it steadily; read the dynamometer. */
 export interface SlopeCommand {

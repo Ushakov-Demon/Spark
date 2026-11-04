@@ -8,7 +8,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { STRETCH_TEXT, type StretchCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('hooke-spring-setup');
 
 export const text = (c: StretchCommand): StepText => STRETCH_TEXT(c);
 

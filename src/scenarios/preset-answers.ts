@@ -15,7 +15,7 @@ import { LAB_VESSEL_ID, sampleOf, type LabParams, type LabStatus } from './therm
 import { formatReading, weigh } from './weighing.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { formatMeasured } from './measuring.js';
-import { EXPERIMENTS } from '../experiments/index.js';
+import { onExperiment } from '../experiments/registry.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { createExperimentSession } from '../core/experiment.js';
 import { kilograms, seconds } from '../core/units.js';
@@ -784,5 +784,7 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
   },
 };
 /** The answers by preset id: these, and the experiment modules' own. */
-export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> = { ...LOCAL_ANSWERS, ...Object.assign({}, ...EXPERIMENTS.map((m) => m.answers)) };
+/** The answers by preset id: an experiment module's join as it loads. */
+export const PRESET_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> = { ...LOCAL_ANSWERS };
+onExperiment((m) => Object.assign(PRESET_ANSWERS, m.answers));
 

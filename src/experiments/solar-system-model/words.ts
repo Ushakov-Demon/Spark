@@ -7,7 +7,6 @@ import { formatMeasured, readingsOf } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { PLANETS, PLANETS_TEXT, planetIds, SUN_RADIUS, type PlanetsCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('solar-system-model-setup');
 
 export const text = (c: PlanetsCommand): StepText => PLANETS_TEXT['lab.planets'](c);
 

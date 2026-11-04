@@ -38,8 +38,12 @@ function singleFile(): Plugin {
 // The site (default): the lab's script and styles as files of their own, shared by all the site's pages
 // (scripts/build-site.ts writes them). `--mode single`: the lab as one self-contained file, to open by
 // double-click or send to students.
-/** Each language's texts in a chunk of their own, loaded when the language is chosen (web/locales.ts); its name comes with the page. */
+/**
+ * Each language's texts in a chunk of their own, loaded when the language is chosen (web/locales.ts); its name comes
+ * with the page, an experiment's run texts with the experiment.
+ */
 function localeChunk(id: string): string | undefined {
+  if (/\.run\.ftl/.test(id)) return undefined;
   const m = /\/locales\/([a-z]+)\/(?!language\.ftl)/.exec(id);
   return m ? `locale-${m[1]}` : undefined;
 }

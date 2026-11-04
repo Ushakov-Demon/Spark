@@ -1,0 +1,35 @@
+## What the experiment says as it runs: its steps, board and answer. These texts come with the experiment when it opens; its card is in coin-inertia.ftl.
+
+coin-inertia-command-apply = How to take the card out?
+coin-inertia-slow-say = Slowly and smoothly draw the card aside. Where will the coin end up?
+coin-inertia-slow-button = 🐢 Draw slowly
+coin-inertia-slow-plan = draw the card slowly
+coin-inertia-push-say = The coin on the card again. Now push the card with a finger — about 0.5 m/s.
+coin-inertia-push-button = 👉 Push: 0.5 m/s
+coin-inertia-push-plan = push the card (0.5 m/s)
+coin-inertia-flick-say = Faster: a sharp push — about 1 m/s.
+coin-inertia-flick-button = 👉 Sharply: 1 m/s
+coin-inertia-flick-plan = push sharply (1 m/s)
+coin-inertia-snap-say = And fastest: flick the card with a finger — about 3 m/s.
+coin-inertia-snap-button = 🫰 Flick: 3 m/s
+coin-inertia-snap-plan = flick the card (3 m/s)
+coin-inertia-answer-why = Inertia is the keeping of a body’s speed when no other bodies act on it, or their actions balance. The coin lay still, and for it to move the card has to speed it up — by friction. But friction is weak and cannot speed the coin up fast. When the card is drawn slowly, friction keeps up: the coin goes with the card. When the card is snatched, it leaves from under the coin in hundredths of a second — in that time friction hardly moves the coin, and it, staying almost where it was, drops into the glass. The faster the card goes, the less the coin moves. In the same way, when a bus starts sharply, the passengers lean back.
+coin-inertia-answer-say = The flick: the card went in { $t } s, the coin moved just { $s } mm — and dropped into the glass.
+coin-inertia-how-slow = slowly
+coin-inertia-how-push = pushed (0.5 m/s)
+coin-inertia-how-flick = sharply (1 m/s)
+coin-inertia-how-snap = flicked (3 m/s)
+coin-inertia-text-s = moved
+coin-inertia-answer-text = {" "}To drop into the glass, the coin had to move less than 19 mm.
+coin-inertia-busy = Filming — watching frame by frame…
+coin-inertia-board-res = in the glass
+coin-inertia-board-res-2 = missed the glass
+coin-inertia-board-res-3 = went with the card
+coin-inertia-board-title = the card at { $v } m/s: the coin moved { $value } mm — { $res }
+coin-inertia-view-slow = slowed
+coin-inertia-answer-where = the coin dropped into the glass
+coin-inertia-answer-where-2 = the coin hit the rim and fell beside
+coin-inertia-answer-where-3 = the coin went with the card
+coin-inertia-say = The coin moved just { $mm } mm — and dropped into the glass!
+coin-inertia-say-2 = The coin moved { $mm } mm, hit the rim and fell beside.
+coin-inertia-say-3 = The coin went with the card.

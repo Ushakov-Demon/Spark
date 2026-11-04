@@ -7,8 +7,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { MOTION_SETUP, MOTION_TEXT, type MotionCommand } from './bench.js';
 
-/** (Each experiment names its own set: the groove, the body on a thread, the pendulum — `benchSetup`.) */
-export const setup: LocalizedText = MOTION_SETUP.incline;
 
 export const text = (c: MotionCommand): StepText => MOTION_TEXT[c.type](c);
 

@@ -8,7 +8,6 @@ import type { BoardAt, StepText } from '../types.js';
 import { DRAG_MASS, DRAG_TEXT, dragBody, type DragCommand, dragShapeName, framesText } from './bench.js';
 import { G } from '../../domains/mechanics/constants.js';
 
-export const setup: LocalizedText = msg('drag-form-setup');
 
 export const text = (c: DragCommand): StepText => DRAG_TEXT['lab.drag'](c);
 

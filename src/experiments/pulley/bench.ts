@@ -4,10 +4,12 @@ import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { pulleyForce, ropeTravel, weight } from '../../domains/mechanics/formulas.js';
 import { SCALES } from '../../equipment/scales.js';
-import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/i18n.js';
-import { msg, t } from '../../knowledge/messages.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { measured, RULER_DIVISION } from '../../scenarios/bench-kit.js';
+import { massText, heightText } from './shared.js';
+export { massText, heightText } from './shared.js';
 
 /**
  * Fixed and movable pulleys (grade 7, «моделювання й конструювання: простих механізмів»): a load of any mass is
@@ -49,13 +51,6 @@ export const pulleyCommand: CommandHandler<PulleyCommand> = {
     return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('dynamometer', 'force', read(F, forceDivision(F)), F, { ...inputs, which: 1, division: forceDivision(F) }), measured('ruler', 'length', read(s, lengthDivision(s)), s, { ...inputs, which: 2, division: lengthDivision(s) })] });
   },
 };
-
-/** A number as the pupil put it in: up to a tenth, without trailing zeros. */
-const num = (x: number, l: Locale) => new Intl.NumberFormat(NUMBER_LOCALE[l], { maximumFractionDigits: 1 }).format(x);
-/** A mass in the unit that suits it: grams, kilograms, tonnes. */
-export const massText = (kg: number, l: Locale): string => (kg < 1 ? `${num(kg * 1000, l)} ${t(l, 'unit-sym-g')}` : kg < 1000 ? `${num(kg, l)} ${t(l, 'unit-sym-kg')}` : `${num(kg / 1000, l)} ${t(l, 'unit-sym-t')}`);
-/** A height in centimetres or metres. */
-export const heightText = (m: number, l: Locale): string => (m < 1 ? `${num(m * 100, l)} ${t(l, 'unit-sym-cm')}` : `${num(m, l)} ${t(l, 'unit-sym-m')}`);
 const g = massText;
 const cm = heightText;
 export const PULLEY_TEXT: Record<PulleyCommand['type'], (c: PulleyCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {

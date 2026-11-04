@@ -7,7 +7,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { BEAUFORT, beaufortOf, WIND_TEXT, WIND_TRACK, type WindCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('wind-speed-setup');
 
 export const text = (c: WindCommand): StepText => WIND_TEXT['lab.wind'](c);
 

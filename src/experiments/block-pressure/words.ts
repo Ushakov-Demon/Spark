@@ -8,7 +8,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { EDGE_TEXT, type EdgeCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('block-pressure-setup');
 
 export const text = (c: EdgeCommand): StepText => EDGE_TEXT(c);
 

@@ -8,7 +8,6 @@ import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { PULL_TEXT, type PullCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('sliding-friction-setup');
 
 export const text = (c: PullCommand): StepText => PULL_TEXT(c);
 

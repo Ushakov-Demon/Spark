@@ -9,7 +9,6 @@ import { formatMeasured } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { STAIRS_TEXT, type StairsCommand } from './bench.js';
 
-export const setup: LocalizedText = msg('stairs-power-setup');
 
 export const text = (c: StairsCommand): StepText => STAIRS_TEXT['lab.stairs'](c);
 

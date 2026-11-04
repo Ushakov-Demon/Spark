@@ -119,7 +119,7 @@ import {
   experimentOf,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
-import { loadScene, sceneOf } from './experiments/index.js';
+import { loadAllExperiments, loadExperiment, sceneOf } from './experiments/index.js';
 import { BODY_COLOR } from './graphics/scene/kit.js';
 import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, type ComponentId } from '../src/components/index.js';
@@ -4005,6 +4005,8 @@ function renderLabSheetHand() {
   b.setAttribute('aria-pressed', String(printed));
 }
 function openLabSheet(p: Preset, running = false) {
+  // Its steps are worded by its module: that comes first.
+  if (p.bench && !sceneOf(p.bench)) return void loadExperiment(p.bench).then(() => openLabSheet(p, running), (e: unknown) => console.error(e));
   labSheetFor = p;
   $('#lab-sheet-body').innerHTML = labSheetHtml(p, running);
   renderLabSheetHand();
@@ -4028,8 +4030,8 @@ $('#lab-sheet').addEventListener('click', (e) => {
 });
 
 function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
-  // The experiment's picture comes with it (a chunk of its own): it starts once that is here.
-  if (chosen.bench && !sceneOf(chosen.bench)) return void loadScene(chosen.bench).then(() => startPreset(chosen, chosenValues), (e: unknown) => console.error(e));
+  // The experiment's module and picture come when it opens (chunks of their own): it starts once they are here.
+  if (chosen.bench && !sceneOf(chosen.bench)) return void loadExperiment(chosen.bench).then(() => startPreset(chosen, chosenValues), (e: unknown) => console.error(e));
   closeChooser();
   // (A place's example follows the language: Kyiv, New York.)
   const values = { ...defaultValues(chosen, locale), ...chosenValues };
@@ -4141,6 +4143,9 @@ function saveRecording(name: string): string {
 
 /** Replay a recording on the page: the first step from a fresh setup, then each from where the last ended. */
 function startReplay(rec: Recording) {
+  // A step of an experiment not opened yet: the experiments come first (a command is known by its module).
+  const unknown = rec.steps.some((st) => st.commands.some((x) => !LAB_COMMANDS.some((h) => h.type === x.command.type)));
+  if (unknown) return void loadAllExperiments().then(() => startReplay(rec), (e: unknown) => console.error(e));
   closeChooser();
   tableSet = true;
   preset = null;
@@ -4982,7 +4987,7 @@ function whenLoaded(start: () => void) {
   // The experiment the address names comes before the Professor goes: no bare table between.
   const r = where.route;
   const bench = r.page === 'experiment' ? PRESETS.find((p) => p.id === r.id)?.bench : undefined;
-  const scene = bench ? loadScene(bench).catch(() => undefined) : undefined;
+  const scene = bench ? loadExperiment(bench).catch(() => undefined) : undefined;
   void Promise.all([loaded, document.fonts?.ready, walked, scene]).then(start);
 }
 buildShelfTabs();
