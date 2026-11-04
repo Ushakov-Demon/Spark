@@ -77,6 +77,8 @@ export const GLOSSARY: readonly Term[] = [
   // ---------------------------------------------------------------- substances
   term('stearic-acid'),
   // ---------------------------------------------------------------- mechanics
+  term('support'),
+  term('drag'),
   { ...term('airship'), source: 'wikipedia-zeppelin-nt' },
   { ...term('planck-constant'), source: 'wikipedia-planck-constant' },
   { ...term('kibble-balance'), source: 'wikipedia-kibble-balance' },
@@ -86,6 +88,8 @@ export const GLOSSARY: readonly Term[] = [
   { ...term('pierre-bouguer'), source: 'wikipedia-pierre-bouguer', reference: true },
   { ...term('bouguer-essai'), source: 'wikipedia-pierre-bouguer', reference: true },
   { ...term('sun-moon-light'), source: 'wikipedia-apparent-magnitude', reference: true },
+  { ...term('sergei-korolev'), source: 'wikipedia-sergei-korolev', reference: true },
+  { ...term('de-mundi-systemate'), source: 'wikipedia-newtons-cannonball', reference: true },
   { ...term('hindenburg'), source: 'wikipedia-hindenburg-disaster', photo: 'commons-hindenburg-photo', reference: true },
   { ...term('beauplan'), source: 'wikipedia-beauplan', reference: true },
   { ...term('beauplan-map'), source: 'wikipedia-beauplan', reference: true },

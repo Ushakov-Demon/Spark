@@ -285,3 +285,30 @@ formula-mechanics-scale-division-b-name = менше з них
 formula-mechanics-scale-division-n-name = кількість поділок між ними
 formula-mechanics-scale-division-explanation-novice = Візьми дві сусідні позначки з числами, від більшого числа відніми менше й поділи на кількість поділок між ними.
 formula-mechanics-scale-division-explanation-school = Так знаходять, скільки одиниць величини припадає на одну поділку будь-якого приладу — лінійки, мензурки, термометра. Точніше ніж до половини поділки за шкалою не прочитаєш.
+
+formula-mechanics-gravity-at = Сила тяжіння на висоті
+formula-mechanics-gravity-at-g-name = сила тяжіння на кожен кілограм
+formula-mechanics-gravity-at-mu-name = гравітаційний параметр Землі (G·M)
+formula-mechanics-gravity-at-r-name = відстань від центра Землі
+formula-mechanics-gravity-at-explanation-novice = Що далі від Землі, то слабше вона притягує. Але на висоті кількох сотень кілометрів — майже так само, як на поверхні.
+formula-mechanics-gravity-at-explanation-school = Сила тяжіння слабне обернено пропорційно квадрату відстані до центра Землі: g = μ / r², де μ = G·M. На поверхні це близько 9,8 Н/кг, на висоті 200 км — близько 9,2 Н/кг.
+formula-mechanics-circular-speed = Швидкість руху по коловій орбіті (перша космічна)
+formula-mechanics-circular-speed-v-name = швидкість на коловій орбіті
+formula-mechanics-circular-speed-mu-name = гравітаційний параметр Землі (G·M)
+formula-mechanics-circular-speed-r-name = відстань від центра Землі
+formula-mechanics-circular-speed-explanation-novice = Тіло, кинуте вбік так швидко, що, падаючи, воно щоразу оминає Землю, облітає її по колу — стає супутником.
+formula-mechanics-circular-speed-explanation-school = На коловій орбіті тяжіння лише повертає швидкість, не змінюючи її величини: v₁ = √(μ / r). Біля поверхні Землі це близько 7,9 км/с, вище — менше.
+formula-mechanics-escape-speed = Швидкість, щоб полетіти від Землі (друга космічна)
+formula-mechanics-escape-speed-v-name = швидкість, з якої тіло вже не повертається
+formula-mechanics-escape-speed-mu-name = гравітаційний параметр Землі (G·M)
+formula-mechanics-escape-speed-r-name = відстань від центра Землі
+formula-mechanics-escape-speed-beyond-curriculum = Другу космічну швидкість у 7 класі не обчислюють; формула — поза програмою.
+formula-mechanics-escape-speed-explanation-novice = Ще швидше — і тіло вже не облітає Землю, а відлітає назавжди.
+formula-mechanics-escape-speed-explanation-school = v₂ = √(2μ / r) — у √2 ≈ 1,41 раза більша за колову на тій самій відстані. Біля поверхні Землі — близько 11,2 км/с.
+formula-mechanics-orbit-period = Період обертання по орбіті
+formula-mechanics-orbit-period-t-name = період обертання
+formula-mechanics-orbit-period-mu-name = гравітаційний параметр Землі (G·M)
+formula-mechanics-orbit-period-a-name = велика піввісь орбіти (для кола — її радіус)
+formula-mechanics-orbit-period-beyond-curriculum = Період за третім законом Кеплера в 7 класі не обчислюють; формула — поза програмою.
+formula-mechanics-orbit-period-explanation-novice = Що вища орбіта, то довше супутник облітає Землю.
+formula-mechanics-orbit-period-explanation-school = За третім законом Кеплера T = 2π √(a³ / μ): квадрат періоду пропорційний кубу великої півосі орбіти.

@@ -47,3 +47,4 @@ unit-sym-lm = lm
 unit-sym-deg = °
 unit-sym-h = h
 unit-sym-day = day
+unit-sym-km-per-s = km/s

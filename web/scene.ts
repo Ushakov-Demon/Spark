@@ -261,7 +261,10 @@ export function createScene(): Scene {
   const benchBox = (bench: SVGGElement) => {
     const inner = bench.firstElementChild as SVGGElement | null;
     try {
-      const b = inner?.getBBox();
+      // What flies off (a part marked data-free: a cannonball's path) does not count: the apparatus is measured without it.
+      const free = inner?.querySelector(':scope > [data-free]');
+      const kept = free && inner ? [...inner.children].filter((e): e is SVGGraphicsElement => !e.hasAttribute('data-free') && e instanceof SVGGraphicsElement).map((e) => e.getBBox()) : [];
+      const b = kept.length ? new DOMRect(Math.min(...kept.map((x) => x.x)), Math.min(...kept.map((x) => x.y)), Math.max(...kept.map((x) => x.x + x.width)) - Math.min(...kept.map((x) => x.x)), Math.max(...kept.map((x) => x.y + x.height)) - Math.min(...kept.map((x) => x.y))) : inner?.getBBox();
       return inner && b && b.width ? { inner, b } : null;
     } catch {
       return null;

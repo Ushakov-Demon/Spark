@@ -165,3 +165,15 @@ export const moment = (force: number, arm: number): number => force * arm;
 
 /** Efficiency of a machine: the useful work over the work done, η = A_useful / A_done. */
 export const efficiency = (useful: number, done: number): number => useful / done;
+
+/** Gravity's pull per kilogram at a distance r from the centre of a body of gravitational parameter μ: g = μ / r². */
+export const gravityAt = (mu: number, r: number): number => mu / (r * r);
+
+/** The speed of a circular orbit at a distance r from the centre: v = √(μ / r) (the first cosmic speed at the surface). */
+export const circularSpeed = (mu: number, r: number): number => Math.sqrt(mu / r);
+
+/** The speed that takes a body away for good from a distance r: v = √(2μ / r). */
+export const escapeSpeed = (mu: number, r: number): number => Math.sqrt((2 * mu) / r);
+
+/** The period of an orbit with semi-major axis a: T = 2π √(a³ / μ) (Kepler's third law). */
+export const orbitPeriod = (mu: number, a: number): number => 2 * Math.PI * Math.sqrt((a * a * a) / mu);

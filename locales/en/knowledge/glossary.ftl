@@ -31,6 +31,12 @@ term-current-text = How much charge passes through a conductor per second; measu
 term-resistance = Resistance
     .stems = resistance
 term-resistance-text = How strongly a conductor “resists” the current; measured in ohms (Ω). By Ohm’s law I = U/R.
+term-support = Support
+    .stems = =support, area of support, support reaction
+term-support-text = What a body rests on or hangs from: a table, the floor, a hanger. The body presses on its support with its weight, and the support acts on the body with the support reaction.
+term-drag = Drag
+    .stems = air resistance, drag force, =drag
+term-drag-text = The force with which air or a liquid holds back a body moving through it. The faster the body and the larger its cross-section, the larger it is; the body’s shape matters too.
 term-specific-heat = Specific heat capacity
     .stems = specific heat, heat capacity
 term-specific-heat-text = How much heat it takes to warm 1 kg of a substance by 1 °C. Water’s is very large — ≈ 4200 J/(kg·°C), so water warms up and cools down slowly.
@@ -208,6 +214,12 @@ term-bouguer-essai-text = «An optical essay on the gradation of light» — Pie
 term-sun-moon-light = The Sun and the Moon
     .stems = 300 000 times
 term-sun-moon-light-text = Was Bouguer right? Nearly. By modern measurements the Sun’s apparent magnitude is −26.8 and the full Moon’s −12.7; a difference of 5 magnitudes is a factor of 100 in brightness, so the Sun is about 400 000 times brighter. Bouguer was out by about a quarter — very close for the first measurement of light with a number.
+term-sergei-korolev = Sergei Korolev
+    .stems = korolev
+term-sergei-korolev-text = A rocket engineer and spacecraft designer (1907–1966), born in Zhytomyr. Under his leadership the first artificial satellite of the Earth was launched.
+term-de-mundi-systemate = «De mundi systemate»
+    .stems = de mundi systemate
+term-de-mundi-systemate-text = «On the System of the World» (Latin). The same year, 1728, an English translation came out too — «A Treatise of the System of the World».
 term-palette = Palette
     .stems = palette
 term-palette-text = A transparent sheet (or paper) ruled in equal squares — to find the area of a figure of irregular shape.

@@ -138,3 +138,8 @@ law-scale-division = The value of a division
 law-scale-division-statement-novice = The value of a division is how much of a quantity one division of an instrument’s scale stands for.
 law-scale-division-statement-school = The value of a division c = (a − b)/n, where a and b are neighbouring numbers on the scale and n the divisions between them. It sets how finely the reading can be taken.
 law-scale-division-story-school = This is a way of measuring.
+law-universal-gravitation = The law of universal gravitation
+law-universal-gravitation-statement-novice = All bodies attract one another. The larger their masses and the nearer they are, the stronger.
+law-universal-gravitation-statement-school = Two bodies attract with a force F = G · m₁ · m₂ / r², proportional to the product of their masses and inversely proportional to the square of the distance between their centres.
+law-universal-gravitation-story-school = Isaac Newton set out the law in the «Mathematical Principles of Natural Philosophy» (the Principia), first published on 5 July 1687. In «De mundi systemate», published after his death, in 1728, he imagined a stone thrown from the top of a very high mountain: the faster it is thrown, the farther it falls, and a very fast one goes round the Earth and comes back to the mountain.
+law-universal-gravitation-limits-school = For a ball the law works as if all its mass were at the centre. Near very massive bodies (black holes) and for very precise measurements general relativity is needed.

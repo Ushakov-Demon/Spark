@@ -88,3 +88,14 @@ export const EARTH_MEAN_RADIUS: SourcedValue = {
   citations: [{ source: 'wikipedia-earth-radius', locator: 'IUGG arithmetic mean radius R₁ = 6,371.0087714 km', conditions: 'mean', value: 6_371_008.8 }],
   note: 'The Earth is a little flattened: distances on a ball of this radius are right within about half a per cent.',
 };
+
+/** The Earth's gravitational parameter μ = GM, m³/s² (the geocentric gravitational constant). */
+export const EARTH_GM: SourcedValue = {
+  value: 3.986004418e14,
+  unit: 'm³/s²',
+  conditions: 'the geocentric gravitational constant GM',
+  verification: 'single-source',
+  tolerance: 1e-8,
+  citations: [{ source: 'wikipedia-standard-gravitational-parameter', locator: 'Solar system: «It equals (3.986004418±0.000000008)×10^14 m3⋅s−2»', conditions: 'Earth', value: 3.986004418e14 }],
+  note: 'Known far better than G and the Earth’s mass apart: their product is what an orbit shows.',
+};

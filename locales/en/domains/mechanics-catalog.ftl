@@ -285,3 +285,30 @@ formula-mechanics-scale-division-b-name = the smaller of them
 formula-mechanics-scale-division-n-name = the number of divisions between them
 formula-mechanics-scale-division-explanation-novice = Take two neighbouring numbered marks, subtract the smaller number from the larger and divide by the number of divisions between them.
 formula-mechanics-scale-division-explanation-school = This is how one finds how much of a quantity one division of any instrument stands for — a ruler’s, a measuring cylinder’s, a thermometer’s. A scale is not read finer than half a division.
+
+formula-mechanics-gravity-at = Gravity at a height
+formula-mechanics-gravity-at-g-name = gravity’s pull per kilogram
+formula-mechanics-gravity-at-mu-name = the Earth’s gravitational parameter (G·M)
+formula-mechanics-gravity-at-r-name = the distance from the Earth’s centre
+formula-mechanics-gravity-at-explanation-novice = The farther from the Earth, the weaker it pulls. But a few hundred kilometres up it pulls nearly as at the surface.
+formula-mechanics-gravity-at-explanation-school = Gravity weakens as the inverse square of the distance to the Earth’s centre: g = μ / r², where μ = G·M. At the surface it is about 9.8 N/kg, 200 km up about 9.2 N/kg.
+formula-mechanics-circular-speed = The speed on a circular orbit (the first cosmic speed)
+formula-mechanics-circular-speed-v-name = the speed on a circular orbit
+formula-mechanics-circular-speed-mu-name = the Earth’s gravitational parameter (G·M)
+formula-mechanics-circular-speed-r-name = the distance from the Earth’s centre
+formula-mechanics-circular-speed-explanation-novice = A body thrown sideways so fast that, falling, it misses the Earth every time goes round it in a circle — it becomes a satellite.
+formula-mechanics-circular-speed-explanation-school = On a circular orbit gravity only turns the velocity, not changing its size: v₁ = √(μ / r). Near the Earth’s surface it is about 7.9 km/s, higher up — less.
+formula-mechanics-escape-speed = The speed to leave the Earth (the second cosmic speed)
+formula-mechanics-escape-speed-v-name = the speed from which a body does not come back
+formula-mechanics-escape-speed-mu-name = the Earth’s gravitational parameter (G·M)
+formula-mechanics-escape-speed-r-name = the distance from the Earth’s centre
+formula-mechanics-escape-speed-beyond-curriculum = The second cosmic speed is not calculated in grade 7; the formula is beyond the programme.
+formula-mechanics-escape-speed-explanation-novice = Faster still — and the body no longer goes round the Earth but flies away for good.
+formula-mechanics-escape-speed-explanation-school = v₂ = √(2μ / r) — √2 ≈ 1.41 times the circular speed at the same distance. Near the Earth’s surface it is about 11.2 km/s.
+formula-mechanics-orbit-period = The period of an orbit
+formula-mechanics-orbit-period-t-name = the period
+formula-mechanics-orbit-period-mu-name = the Earth’s gravitational parameter (G·M)
+formula-mechanics-orbit-period-a-name = the orbit’s semi-major axis (for a circle, its radius)
+formula-mechanics-orbit-period-beyond-curriculum = The period by Kepler’s third law is not calculated in grade 7; the formula is beyond the programme.
+formula-mechanics-orbit-period-explanation-novice = The higher the orbit, the longer a satellite takes to go round the Earth.
+formula-mechanics-orbit-period-explanation-school = By Kepler’s third law T = 2π √(a³ / μ): the square of the period is proportional to the cube of the orbit’s semi-major axis.

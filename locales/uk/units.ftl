@@ -47,3 +47,4 @@ unit-sym-lm = лм
 unit-sym-deg = °
 unit-sym-h = год
 unit-sym-day = доба
+unit-sym-km-per-s = км/с

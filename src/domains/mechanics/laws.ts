@@ -14,6 +14,7 @@ const BOYLE: Person = { name: msg('person-boyle'), born: 1627, died: 1691, wikid
 const MARIOTTE: Person = { name: msg('person-mariotte'), born: 1620, died: 1684, wikidata: 'Q319749' };
 const HAGEN: Person = { name: msg('person-hagen'), born: 1797, died: 1884, wikidata: 'Q62726' };
 const POISEUILLE: Person = { name: msg('person-poiseuille'), born: 1797, died: 1869, wikidata: 'Q550943' };
+const NEWTON: Person = { name: msg('person-newton'), born: 1643, died: 1727, wikidata: 'Q935' };
 const PASCAL: Person = { name: msg('person-pascal'), born: 1623, died: 1662, wikidata: 'Q1290' };
 
 /**
@@ -534,5 +535,27 @@ export const MECHANICS_LAWS: readonly LawSpec[] = [
       school: msg('law-map-scale-statement-school'),
     },
     history: { people: [], role: 'associated', when: '—', story: { school: msg('law-map-scale-story-school') }, citations: [] },
+  },
+  {
+    id: 'universal-gravitation',
+    kind: 'law',
+    name: msg('law-universal-gravitation'),
+    statement: {
+      novice: msg('law-universal-gravitation-statement-novice'),
+      school: msg('law-universal-gravitation-statement-school'),
+    },
+    history: {
+      people: [NEWTON],
+      role: 'discovered',
+      when: '1687',
+      work: 'Philosophiæ Naturalis Principia Mathematica',
+      story: { school: msg('law-universal-gravitation-story-school') },
+      citations: [
+        { source: 'wikipedia-newtons-law-of-gravitation', locator: 'Lead', claim: 'formulated in the Principia, first published on 5 July 1687' },
+        { source: 'wikipedia-newtons-cannonball', locator: 'Lead', claim: 'a stone projected from the top of a high mountain; in the posthumously published 1728 De mundi systemate' },
+        { source: 'wikidata', locator: 'Q935 (P569, P570)', claim: 'life dates (1643 – 1727)' },
+      ],
+    },
+    limits: { school: msg('law-universal-gravitation-limits-school') },
   },
 ];
