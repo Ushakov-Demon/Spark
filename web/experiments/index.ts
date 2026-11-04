@@ -1,60 +1,42 @@
-import { calendarScene } from './calendars/scene.js';
-import { rootsGravityScene } from './roots-gravity/scene.js';
-import { dynoDiyScene } from './dyno-diy/scene.js';
-import { rubberMotorScene } from './rubber-motor/scene.js';
-import { scalesDiyScene } from './scales-diy/scene.js';
-import { solarSystemScene } from './solar-system-model/scene.js';
-import { airColumnScene } from './air-column/scene.js';
-import { solarNoonScene } from './solar-noon/scene.js';
-import { liquidTowerScene } from './liquid-tower/scene.js';
-import { dragFormScene } from './drag-form/scene.js';
-import { cartsMassScene } from './carts-mass/scene.js';
-import { contactForcesScene } from './contact-forces/scene.js';
-import { cartesianDiverScene } from './cartesian-diver/scene.js';
-import { fountainModelScene } from './fountain-model/scene.js';
-import { stairsPowerScene } from './stairs-power/scene.js';
-import { rollingEnergyScene } from './rolling-energy/scene.js';
-import { gearTrainScene } from './gear-train/scene.js';
-import { pulleyScene } from './pulley/scene.js';
-import { balloonLiftScene } from './balloon-lift/scene.js';
-import { mapScaleScene } from './map-scale/scene.js';
-import { leafAreaScene } from './leaf-area/scene.js';
-import { readThermometerScene } from './read-thermometer/scene.js';
-import { lightMeterScene } from './light-meter/scene.js';
-import { plantMotionScene } from './plant-motion/scene.js';
-import { newtonCannonScene } from './newton-cannon/scene.js';
-import { coinInertiaScene } from './coin-inertia/scene.js';
-import { snailSpeedScene } from './snail-speed/scene.js';
-import { strobePhotoScene } from './strobe-photo/scene.js';
-import { windSpeedScene } from './wind-speed/scene.js';
-import { windlassScene } from './windlass/scene.js';
-import { smallBodiesScene } from './small-bodies/scene.js';
-import { ballBounceScene } from './ball-bounce/scene.js';
-import { weightInLiftScene } from './weight-in-lift/scene.js';
-import { addingForcesScene } from './adding-forces/scene.js';
-import { bodiesInLiquidsScene } from './bodies-in-liquids/scene.js';
-import { relativeMotionScene } from './relative-motion/scene.js';
-import { depthPressureScene } from './depth-pressure/scene.js';
-import { communicatingVesselsScene } from './communicating-vessels/scene.js';
-import { hydrostaticParadoxScene } from './hydrostatic-paradox/scene.js';
-import { hydraulicPressScene } from './hydraulic-press/scene.js';
-import { atmosphericPressureScene } from './atmospheric-pressure/scene.js';
-import { diodeBlackBoxScene } from './diode-black-box/scene.js';
-import { electromagnetScene } from './electromagnet/scene.js';
-import { electromagneticInductionScene } from './electromagnetic-induction/scene.js';
-import { leverMomentsScene } from './lever-moments/scene.js';
-import { slopeEfficiencyScene } from './slope-efficiency/scene.js';
-import { resistorCircuitScene } from './resistor-circuit/scene.js';
-import { twoResistorsScene } from './two-resistors/scene.js';
-import { hookeSpringScene } from './hooke-spring/scene.js';
-import { slidingFrictionScene } from './sliding-friction/scene.js';
-import { blockPressureScene } from './block-pressure/scene.js';
-import { leverBalanceScene } from './lever-balance/scene.js';
-import { motionLabWorksScene } from './motion-lab-works/scene.js';
+/// <reference types="vite/client" />
 import type { ExperimentScene } from './types.js';
 
-/** The pictures of the experiment modules, by kind (one line each, beside src/experiments/index.ts). */
-const SCENES = [calendarScene, rootsGravityScene, scalesDiyScene, dynoDiyScene, rubberMotorScene, solarSystemScene, airColumnScene, solarNoonScene, liquidTowerScene, dragFormScene, cartsMassScene, contactForcesScene, coinInertiaScene, snailSpeedScene, strobePhotoScene, windSpeedScene, windlassScene, smallBodiesScene, ballBounceScene, weightInLiftScene, addingForcesScene, bodiesInLiquidsScene, relativeMotionScene, depthPressureScene, communicatingVesselsScene, hydrostaticParadoxScene, hydraulicPressScene, atmosphericPressureScene, diodeBlackBoxScene, electromagnetScene, electromagneticInductionScene, leverMomentsScene, slopeEfficiencyScene, resistorCircuitScene, twoResistorsScene, hookeSpringScene, slidingFrictionScene, blockPressureScene, leverBalanceScene, motionLabWorksScene, cartesianDiverScene, fountainModelScene, stairsPowerScene, rollingEnergyScene, gearTrainScene, pulleyScene, balloonLiftScene, mapScaleScene, leafAreaScene, readThermometerScene, lightMeterScene, plantMotionScene, newtonCannonScene] as unknown as readonly ExperimentScene<never>[];
+/**
+ * The pictures of the experiment modules: web/experiments/<folder>/scene.ts, beside its module src/experiments/<folder>
+ * (nothing to register by hand). Each comes in a chunk of its own when its experiment opens (`loadScene`), so the page's
+ * start does not grow with the number of experiments; from then on it is drawn (`sceneOf`).
+ */
+const FILES = import.meta.glob<Readonly<Record<string, unknown>>>('./*/scene.ts');
+/** The modules themselves (already in the page): which folder a kind of bench is in. */
+const MODULES = import.meta.glob<Readonly<Record<string, unknown>>>('../../src/experiments/*/index.ts', { eager: true });
 
-const BY_KIND = new Map(SCENES.map((s) => [s.kind, s] as const));
-export const sceneOf = (kind: string): ExperimentScene<unknown> | undefined => BY_KIND.get(kind) as ExperimentScene<unknown> | undefined;
+const isKinded = (x: unknown): x is { readonly kind: string } => typeof x === 'object' && x !== null && typeof (x as { kind?: unknown }).kind === 'string';
+const FOLDER = new Map<string, string>(Object.entries(MODULES).flatMap(([path, m]) => Object.values(m).filter(isKinded).map((x) => [x.kind, path.split('/')[4]!] as const)));
+
+const loaded = new Map<string, ExperimentScene<unknown>>();
+const loading = new Map<string, Promise<void>>();
+
+/** The scene of a kind of bench, once loaded (undefined — not a module's bench, or not loaded yet). */
+export const sceneOf = (kind: string): ExperimentScene<unknown> | undefined => loaded.get(kind);
+
+/** Loads the scene of a kind of bench (once; at once for a bench with none). A failed load may be tried again. */
+export function loadScene(kind: string): Promise<void> {
+  const file = FILES[`./${FOLDER.get(kind)}/scene.ts`];
+  if (loaded.has(kind) || !file) return Promise.resolve();
+  let p = loading.get(kind);
+  if (!p) {
+    p = file().then(
+      (m) => {
+        const scene = Object.values(m).find((x): x is ExperimentScene<unknown> => isKinded(x) && x.kind === kind);
+        if (!scene) throw new Error(`web/experiments/${FOLDER.get(kind)}/scene.ts: no scene of kind ${kind}`);
+        loaded.set(kind, scene);
+      },
+      (e: unknown) => {
+        loading.delete(kind);
+        throw e;
+      },
+    );
+    loading.set(kind, p);
+  }
+  return p;
+}

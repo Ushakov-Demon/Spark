@@ -20,6 +20,15 @@ export function setStrictMessages(on: boolean): void {
   strict = on;
 }
 
+/** Languages whose files have not all come yet (the page loads a language when it is chosen, web/locales.ts). */
+const pending = new Set<Locale>();
+export function setLocalePending(locale: Locale, on: boolean): void {
+  if (on) pending.add(locale);
+  else pending.delete(locale);
+}
+/** Are all the language's files here? */
+export const localeReady = (locale: Locale): boolean => !pending.has(locale);
+
 /** Adds one file of messages for `locale`; a message defined twice or a syntax error throws, naming the file. */
 export function addMessages(locale: Locale, source: string, file = '?'): void {
   let bundle = bundles.get(locale);
@@ -107,7 +116,28 @@ export function form(text: LocalizedText, name: string): LocalizedText {
 export const NO_TEXT: LocalizedText = Object.fromEntries(LOCALES.map((l) => [l, ''])) as Record<Locale, string>;
 
 /** A text in every language from one function of the language (built of messages). */
-export const localized = (f: (l: Locale) => string): LocalizedText => Object.fromEntries(LOCALES.map((l) => [l, f(l)])) as Record<Locale, string>;
+export const localized = (f: (l: Locale) => string): LocalizedText => perLocale(f);
 
 /** A language's set of texts (labels, phrases), built for each language from messages. */
-export const byLocale = <T>(f: (l: Locale) => T): Readonly<Record<Locale, T>> => Object.fromEntries(LOCALES.map((l) => [l, f(l)])) as Record<Locale, T>;
+export const byLocale = <T>(f: (l: Locale) => T): Readonly<Record<Locale, T>> => perLocale(f);
+
+/**
+ * One value per language, made when first read: a module may build its texts as it loads, before the page has the
+ * language's files. Kept once they are all here; till then made anew at each reading.
+ */
+function perLocale<T>(f: (l: Locale) => T): Record<Locale, T> {
+  const out = {} as Record<Locale, T>;
+  for (const l of LOCALES) {
+    let kept: { readonly value: T } | undefined;
+    Object.defineProperty(out, l, {
+      enumerable: true,
+      get: () => {
+        if (kept) return kept.value;
+        const value = f(l);
+        if (!pending.has(l)) kept = { value };
+        return value;
+      },
+    });
+  }
+  return out;
+}

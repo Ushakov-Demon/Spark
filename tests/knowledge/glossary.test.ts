@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GLOSSARY, termMatcher } from '../../src/knowledge/glossary.js';
+import { explainedIn, GLOSSARY, termMatcher } from '../../src/knowledge/glossary.js';
 import { LAB_GLOSSARY, LAB_KNOWLEDGE } from '../../src/scenarios/lab-knowledge.js';
 
 /** The terms a text mentions, in order. */
@@ -17,6 +17,10 @@ describe('glossary: laws become terms by themselves', () => {
     // Latent heat is a written term already; the law does not get a second entry.
     expect(asTerms.map((t) => t.law)).not.toContain('latent-heat');
     expect(new Set(LAB_GLOSSARY.map((t) => t.id)).size).toBe(LAB_GLOSSARY.length);
+  });
+
+  it('the languages agree which laws a written term explains (the page builds the glossary with one language loaded)', () => {
+    for (const law of LAB_KNOWLEDGE.laws.filter((l) => l.kind === 'law')) expect([law.id, explainedIn(GLOSSARY, law.name, 'uk')]).toEqual([law.id, explainedIn(GLOSSARY, law.name, 'en')]);
   });
 
   it('Faraday’s law: statement, discoverer, date', () => {

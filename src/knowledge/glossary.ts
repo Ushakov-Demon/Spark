@@ -150,13 +150,17 @@ function whoFound(law: LawSpec, l: Locale): string {
   return ` ${tl(l, h.role === 'associated' ? 'glossary-associated' : 'glossary-discovered', { count: names.length, list, when })}`;
 }
 
-/** Does the name start with a word some term of `terms` already explains (latent heat, heat balance)? */
-function explainedBy(terms: readonly Term[], name: LocalizedText): boolean {
-  return LOCALES.some((l) => {
-    const spoken = spokenName(name[l]);
-    return terms.some((t) => t.stems[l].some((st) => !st.startsWith('=') && !st.includes('*') && spoken.startsWith(st.toLowerCase())));
-  });
+/** Does the name, in one language, start with a word some term of `terms` already explains (latent heat, heat balance)? */
+export function explainedIn(terms: readonly Term[], name: LocalizedText, l: Locale): boolean {
+  const spoken = spokenName(name[l]);
+  return terms.some((t) => t.stems[l].some((st) => !st.startsWith('=') && !st.includes('*') && spoken.startsWith(st.toLowerCase())));
 }
+
+/**
+ * In any language. The languages agree on it (a test): the page builds the glossary as it loads, when only its own
+ * language's files have come.
+ */
+const explainedBy = (terms: readonly Term[], name: LocalizedText): boolean => LOCALES.some((l) => explainedIn(terms, name, l));
 
 /**
  * Every law (not a definition or a model) as a glossary term: its name, its school statement and who found

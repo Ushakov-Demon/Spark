@@ -23,7 +23,7 @@ export const preset_newton_cannon: Preset = varied(
     bench: 'cannon',
     choices: (['no-gravity', 'misses', 'engines'] as const).map((id) => ch(id, msg(`newton-cannon-choice-${id}`))),
     answerOnBoard: ['cn-v1', 'cn-shot:', 'cn-low:'],
-    asides: [msg('newton-cannon-aside-newton'), msg('newton-cannon-aside-sputnik')],
+    asides: [msg('newton-cannon-aside-sputnik')],
     formulas: ['mechanics.circular-speed', 'mechanics.gravity-at'],
     programs: [
       { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Рухи небесних тіл та штучних супутників Землі.' },

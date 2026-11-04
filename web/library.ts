@@ -9,7 +9,7 @@ import { EQUIPMENT } from '../src/equipment/catalog.js';
 import { CATEGORIES } from '../src/equipment/taxonomy.js';
 import type { CategoryId, EquipmentItem } from '../src/equipment/types.js';
 import { NUMBER_LOCALE, tr, type Locale } from '../src/knowledge/i18n.js';
-import { byLocale, t as tl } from '../src/knowledge/messages.js';
+import { byLocale, localeReady, t as tl } from '../src/knowledge/messages.js';
 import { getSource } from '../src/knowledge/sources.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
@@ -68,7 +68,8 @@ interface Ctx {
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** The name's other language under it: English, or — on the English page — Ukrainian. */
-const other = (l: Locale): Locale => (l === 'en' ? 'uk' : 'en');
+/** The language a glossary term is also named in (the page loads it when the glossary opens). */
+export const otherLocale = (l: Locale): Locale => (l === 'en' ? 'uk' : 'en');
 
 /** Glossary: alphabetical, a letter bar on top; each term also named in the other language. */
 function glossaryHtml(c: Ctx): string {
@@ -83,7 +84,7 @@ function glossaryHtml(c: Ctx): string {
         .filter((x) => tr(x.name, c.locale)[0]!.toUpperCase() === l)
         .map(
           (x) => `<article class="lib-term lib-entry" id="term-${x.id}" data-term-id="${x.id}">
-  <h3><a href="#${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> <span class="muted lib-other" lang="${other(c.locale)}">${esc(tr(x.name, other(c.locale)))}</span>${x.law ? ` <span class="lib-badge">${esc(u.law)}</span>` : ''}</h3>
+  <h3><a href="#${x.id}" class="lib-anchor">${esc(tr(x.name, c.locale))}</a> ${localeReady(otherLocale(c.locale)) ? `<span class="muted lib-other" lang="${otherLocale(c.locale)}">${esc(tr(x.name, otherLocale(c.locale)))}</span>` : ''}${x.law ? ` <span class="lib-badge">${esc(u.law)}</span>` : ''}</h3>
   <p class="lib-desc">${esc(tr(x.text, c.locale))}</p>${x.more ? `<p class="lib-desc lib-more">${esc(tr(x.more, c.locale))}</p>` : ''}${sourceLink(x.source, c.locale)}${sourceLink(x.photo, c.locale, true)}
 </article>`,
         )

@@ -1,6 +1,6 @@
-// The texts first: everything below may word a message as it loads.
-import './locales.js';
-import { localized, msg, t as tl } from '../src/knowledge/messages.js';
+// The texts are here already (boot.ts loads the page's language before this module).
+import { loadLocale, openingLocale } from './locales.js';
+import { localeReady, localized, msg, t as tl } from '../src/knowledge/messages.js';
 import type { Subject } from '../src/knowledge/types.js';
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
@@ -24,7 +24,7 @@ import {
   type ElectrodeMaterial,
 } from '../src/equipment/index.js';
 import { buildMeasuredReport, buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
-import { isLocale, LOCALES, NUMBER_LOCALE, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
+import { LOCALES, NUMBER_LOCALE, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
 import { getSource } from '../src/knowledge/sources.js';
@@ -119,7 +119,7 @@ import {
   experimentOf,
 } from '../src/scenarios/index.js';
 import type { ExperimentResult } from '../src/core/experiment.js';
-import { sceneOf } from './experiments/index.js';
+import { loadScene, sceneOf } from './experiments/index.js';
 import { BODY_COLOR } from './graphics/scene/kit.js';
 import type { SystemState } from '../src/core/state.js';
 import { COMPONENTS, type ComponentId } from '../src/components/index.js';
@@ -135,7 +135,7 @@ import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
 import type { BenchView } from './graphics/scene/bench.js';
-import { LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute, type LibraryPage } from './library.js';
+import { LIBRARY_PAGES, LIBRARY_UI, libraryHtml, libraryRoute, otherLocale, type LibraryPage } from './library.js';
 import { createChooser, fly, type ChoiceCard, type ChooserStage } from './chooser.js';
 import { deviceSvg } from './graphics/scene/devices.js';
 import { baseFor, vesselGeom } from './graphics/scene/vessels.js';
@@ -164,16 +164,10 @@ let steering = false;
 const HEAD_AWAY = 40;
 const HEAD_SCROLL = 30;
 let foldedForStep = false;
-const browserLocale = (): Locale => (navigator.language.toLowerCase().startsWith('en') ? 'en' : 'uk');
 /** The page the address names (the site: /, /experiments/, /experiments/<id>/, the same under /en/). */
 const where = parsePath(location.pathname);
-let locale: Locale = (() => {
-  // A page of the site is in the language of its address (it was found, or shared, in it); the lab's front door — as chosen before.
-  if (where.locale) return where.locale;
-  if (where.route.page !== 'lab') return 'uk';
-  const s = store.get('locale');
-  return s && isLocale(s) ? s : browserLocale();
-})();
+/** The language boot.ts loaded the texts of. */
+let locale: Locale = openingLocale();
 /** The explanation's level: fixed for now — the experiments are not written per level yet, so the choice is hidden (docs/TODO.md). */
 const level: Level = 'school';
 
@@ -262,6 +256,8 @@ let presetVals: PresetValues = {};
 let plan: ProtocolStep[] = [];
 /** The answer to a ready-made experiment's question, once its plan is done. */
 let presetAnswer: PresetAnswer | 'computing' | null = null;
+/** The experiment's story (its LZ) that closes «Чому так?» in the answer — not in «Пояснити». */
+let presetAside: LocalizedText | undefined;
 /** Changes that would make the goal reachable (offered with buttons). */
 let fixes: LabFix[] | 'computing' = [];
 let warnings: readonly LocalizedText[] = [];
@@ -950,8 +946,8 @@ function answerPreset() {
   const aside = asides.length ? asides[Math.floor(Math.random() * asides.length)] : undefined;
   window.setTimeout(() => {
     const a = answerOf({ steps, simulation, readings });
-    const why = a.why;
-    presetAnswer = aside && why ? { ...a, why: msg('main-why-with-aside', { why: (l: Locale) => why[l], aside: (l: Locale) => aside[l] }) } : a;
+    presetAside = aside;
+    presetAnswer = a;
     render();
   }, 30);
 }
@@ -1186,11 +1182,11 @@ function buildAdd() {
   const open = box.open;
   box.innerHTML = '';
   box.append(el('summary', {}, u.addTitle));
-  const sub = SUBSTANCES[addSub];
   const sel = el('select', {});
   // Only what the engine can really put into these contents (a dry run of the add command).
   const addable = new Set(addableTo(session.state, commands).map((x) => x.id));
   if (!addable.has(addSub)) addSub = ([...addable][0] as SubstanceId | undefined) ?? addSub;
+  const sub = SUBSTANCES[addSub];
   for (const f of SUBSTANCE_FAMILIES) {
     const g = el('optgroup', { label: tr(f.name, locale) });
     for (const x of Object.values(SUBSTANCES).filter((y) => f.categories.includes(y.category) && addable.has(y.id))) g.append(el('option', { value: x.id, selected: x.id === addSub }, tr(x.name, locale)));
@@ -1986,7 +1982,10 @@ function showAnswerButton(): string {
 /** «Чому так?»: the reasoning behind the answer, when it has one. */
 function whyHtml(): string {
   // (ρ_тіла, F_A: subscripts, as on the board.)
-  const why = presetAnswer && presetAnswer !== 'computing' && presetAnswer.why ? tr(presetAnswer.why, locale).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>').replace(/\n\n/g, '<br><br>') : '';
+  const reason = presetAnswer && presetAnswer !== 'computing' ? presetAnswer.why : undefined;
+  const aside = presetAside;
+  const text = reason && aside ? msg('main-why-with-aside', { why: (l: Locale) => reason[l], aside: (l: Locale) => aside[l] }) : reason;
+  const why = text ? tr(text, locale).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>').replace(/\n\n/g, '<br><br>') : '';
   return why ? `<div class="answer-why"><strong>${t().whyTitle}</strong> ${why}</div>` : '';
 }
 /** An experiment with a catch, answered: the prediction fell for it, or there was none — the Professor giggles. */
@@ -3643,8 +3642,11 @@ function buildHeader() {
   const lang = $<HTMLSelectElement>('#language');
   lang.innerHTML = '';
   for (const l of LOCALES) lang.append(el('option', { value: l, selected: l === locale }, tl(l, 'language-name')));
-  lang.onchange = () => {
-    locale = lang.value as Locale;
+  lang.onchange = async () => {
+    const next = lang.value as Locale;
+    // Another language's texts come when it is chosen; the page stays in its own till then.
+    await loadLocale(next);
+    locale = next;
     store.set('locale', locale);
     renderDrawer();
     renderGrip();
@@ -4026,6 +4028,8 @@ $('#lab-sheet').addEventListener('click', (e) => {
 });
 
 function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
+  // The experiment's picture comes with it (a chunk of its own): it starts once that is here.
+  if (chosen.bench && !sceneOf(chosen.bench)) return void loadScene(chosen.bench).then(() => startPreset(chosen, chosenValues), (e: unknown) => console.error(e));
   closeChooser();
   // (A place's example follows the language: Kyiv, New York.)
   const values = { ...defaultValues(chosen, locale), ...chosenValues };
@@ -4937,7 +4941,10 @@ function renderLibrary(toTop = true) {
     libraryShown = '';
     return;
   }
-  const key = `${route.page}|${locale}|${level}`;
+  // The glossary names each term in the other language too: its texts come now, and the page is drawn again.
+  const other = otherLocale(locale);
+  if (route.page === 'glossary' && !localeReady(other)) void loadLocale(other).then(() => renderLibrary(false));
+  const key = `${route.page}|${locale}|${level}|${localeReady(other)}`;
   if (key !== libraryShown) {
     const query = libraryShown.startsWith(`${route.page}|`) ? (lib.querySelector<HTMLInputElement>('.lib-search')?.value ?? '') : '';
     libraryShown = key;
@@ -4962,13 +4969,21 @@ buildHeader();
 buildInfo();
 renderLibrary();
 renderAbout();
+/** The walking Professor stays at least this long from the page's start, so a fast load does not flash him by. */
+const PRELOADER_LEAST_MS = 1000;
+
 /**
- * The lab starts when the page has loaded whole (its pictures and fonts too): the walking Professor fades away, the
- * experiment the address names is chosen (a shared link opens on it), the scene begins to move.
+ * The lab starts when the page has loaded whole (its pictures and fonts too) and the Professor has walked his while:
+ * he fades away, the experiment the address names is chosen (a shared link opens on it), the scene begins to move.
  */
 function whenLoaded(start: () => void) {
   const loaded = document.readyState === 'complete' ? Promise.resolve() : new Promise<void>((done) => window.addEventListener('load', () => done(), { once: true }));
-  void Promise.all([loaded, document.fonts?.ready]).then(start);
+  const walked = new Promise<void>((done) => window.setTimeout(done, Math.max(0, PRELOADER_LEAST_MS - performance.now())));
+  // The experiment the address names comes before the Professor goes: no bare table between.
+  const r = where.route;
+  const bench = r.page === 'experiment' ? PRESETS.find((p) => p.id === r.id)?.bench : undefined;
+  const scene = bench ? loadScene(bench).catch(() => undefined) : undefined;
+  void Promise.all([loaded, document.fonts?.ready, walked, scene]).then(start);
 }
 buildShelfTabs();
 buildShelf();

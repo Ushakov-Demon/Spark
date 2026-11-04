@@ -14,6 +14,7 @@ import { getCurriculum } from '../src/knowledge/curricula.js';
 import { byLocale, msg, t } from '../src/knowledge/messages.js';
 import type { Subject } from '../src/knowledge/types.js';
 import { PRESETS, presetAsk, presetGradesIn, presetPrograms, presetSubjects, type Preset } from '../src/scenarios/index.js';
+import { addressParts } from './address.js';
 import { esc, presetEquipment, presetLabNumber, presetTopic } from './experiment-sheet.js';
 import { UI } from './ui-text.js';
 import { LIBRARY_UI } from './library.js';
@@ -70,9 +71,9 @@ export function pagePath(r: Route, l: Locale): string {
  * Ukrainian) and the page. Unknown experiments are the lab.
  */
 export function parsePath(pathname: string): { readonly root: string; readonly locale: Locale | null; readonly route: Route } {
-  const m = /^(.*?\/)(?:(en)\/)?(?:(experiments|glossary|substances|equipment|about)(?:\/(?:([a-z0-9-]+)\/?)?)?)?(?:index\.html)?$/.exec(pathname);
-  if (!m) return { root: '/', locale: null, route: { page: 'lab' } };
-  const [, root = '/', lang, section, id] = m;
+  const a = addressParts(pathname);
+  if (!a) return { root: '/', locale: null, route: { page: 'lab' } };
+  const { root, locale, section, id } = a;
   const route: Route =
     section === 'experiments'
       ? id === undefined
@@ -85,7 +86,7 @@ export function parsePath(pathname: string): { readonly root: string; readonly l
         : (LIBRARY_TABS as readonly string[]).includes(section ?? '') && id === undefined
           ? { page: 'library', tab: section as LibraryTab }
           : { page: 'lab' };
-  return { root, locale: lang === 'en' ? 'en' : null, route };
+  return { root, locale, route };
 }
 const absolute = (path: string) => (SITE.url ? `${SITE.url.replace(/\/$/, '')}/${path}` : '');
 

@@ -1,7 +1,7 @@
 import { COMPONENTS } from '../components/index.js';
 import { sig } from '../explain/format.js';
-import { LOCALES, type Locale, type LocalizedText } from '../knowledge/i18n.js';
-import { msg, t } from '../knowledge/messages.js';
+import type { Locale, LocalizedText } from '../knowledge/i18n.js';
+import { localized, msg, t } from '../knowledge/messages.js';
 import type { Choice, Preset, PresetValues, PresetVary } from './presets.js';
 
 /**
@@ -13,7 +13,7 @@ export const ch = (id: string, label: LocalizedText | string, en = ''): Choice =
 export const room = { roomTemp: 20, lid: false } as const;
 export const beaker = { vessel: 'beaker', size: 0.25, material: 'glass', liters: 0.2 } as const;
 /** A text in every language from one function. */
-export const both = (f: (l: Locale) => string): LocalizedText => Object.fromEntries(LOCALES.map((l) => [l, f(l)])) as Record<Locale, string>;
+export const both = (f: (l: Locale) => string): LocalizedText => localized(f);
 /** The values a preset starts with. */
 export const defaultValues = (p: Preset, locale: Locale = 'uk'): PresetValues => Object.fromEntries((p.vary?.controls ?? []).map((c) => [c.id, c.kind === 'place' && locale === 'en' ? c.en : c.value]));
 /** Define a preset whose setup depends on values: it is built with the defaults, and keeps how to rebuild it. */
