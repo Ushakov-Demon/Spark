@@ -1,16 +1,17 @@
-import type { LocalizedText } from '../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../knowledge/i18n.js';
+import { localized, msg } from '../knowledge/messages.js';
 import { hasFlatBottom, vesselGeometry } from './geometry.js';
 import type { ElectrodesSpec, HeaterItem, VesselItem } from './types.js';
 
 export type Compatibility = { readonly ok: true } | { readonly ok: false; readonly reason: LocalizedText };
 
 const MATERIAL_NAMES: Readonly<Record<string, LocalizedText>> = {
-  steel: { uk: 'сталь', en: 'steel' },
-  aluminium: { uk: 'алюміній', en: 'aluminium' },
-  iron: { uk: 'чавун', en: 'cast iron' },
-  glass: { uk: 'скло', en: 'glass' },
-  copper: { uk: 'мідь', en: 'copper' },
-  brass: { uk: 'латунь', en: 'brass' },
+  steel: msg('compatibility-material-names-steel'),
+  aluminium: msg('compatibility-material-names-aluminium'),
+  iron: msg('compatibility-material-names-iron'),
+  glass: msg('compatibility-material-names-glass'),
+  copper: msg('compatibility-material-names-copper'),
+  brass: msg('compatibility-material-names-brass'),
 };
 
 /**
@@ -23,49 +24,34 @@ export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string
   const spec = heater.spec;
   const req = spec.requiresMaterial;
   if (req && !req.materials.includes(material)) {
-    const m = MATERIAL_NAMES[material] ?? { uk: material, en: material };
+    const m = MATERIAL_NAMES[material] ?? localized((l: Locale) => material);
     return {
       ok: false,
-      reason: {
-        uk: `${heater.name.uk} не гріє посуд із матеріалу «${m.uk}»: потрібен магнітний метал (чавун, магнітна сталь). Плита просто не «бачить» посуд.`,
-        en: `${heater.name.en} does not heat a ${m.en} vessel: it needs a magnetic metal (cast iron, magnetic steel). The hob simply does not «see» it.`,
-      },
+      reason: msg('compatibility-can-heat-reason', { name: (l: Locale) => heater.name[l], m: (l: Locale) => m[l] }),
     };
   }
   if (vessel.spec.measuringOnly) {
     return {
       ok: false,
-      reason: {
-        uk: `${vessel.name.uk} не нагрівають: це посудина для вимірювання об’єму, від нагрівання поділки «попливуть», а скло може тріснути.`,
-        en: `A ${vessel.name.en.toLowerCase()} is not heated: it is for measuring volume; heat would spoil its marks and may crack the glass.`,
-      },
+      reason: msg('compatibility-measuring-only', { name: (l: Locale) => vessel.name[l], lower: (l: Locale) => vessel.name[l].toLowerCase() }),
     };
   }
   if (vessel.spec.flameOnly && !(spec.method === 'flame' && heater.category === 'device.heater.laboratory')) {
     return {
       ok: false,
-      reason: {
-        uk: `${vessel.name.uk} не ставлять на плиту: його гріють у полум’ї лабораторного пальника чи спиртівки (на триніжку з порцеляновим трикутником) або в муфельній печі.`,
-        en: `A ${vessel.name.en.toLowerCase()} is not put on a hob: it is heated in the flame of a lab burner or spirit lamp (on a tripod with a pipe-clay triangle), or in a muffle furnace.`,
-      },
+      reason: msg('compatibility-flame-only', { name: (l: Locale) => vessel.name[l], lower: (l: Locale) => vessel.name[l].toLowerCase() }),
     };
   }
   if (vessel.spec.jacket && spec.method !== 'immersion') {
     return {
       ok: false,
-      reason: {
-        uk: `${vessel.name.uk} не ставлять на плиту чи над вогнем: повітряний проміжок не пропускає теплоту. Його вміст гріють зсередини — кип’ятильником.`,
-        en: `A ${vessel.name.en.toLowerCase()} is not put on a hob or over a flame: its air gap keeps the heat out. Its contents are heated from inside — with an immersion heater.`,
-      },
+      reason: msg('compatibility-jacket', { name: (l: Locale) => vessel.name[l], lower: (l: Locale) => vessel.name[l].toLowerCase() }),
     };
   }
   if ((spec.method === 'contact' || spec.method === 'induction') && !hasFlatBottom(vessel.spec.shape)) {
     return {
       ok: false,
-      reason: {
-        uk: `${vessel.name.uk} має кругле дно: на плиті вона торкається її лише в одній точці й майже не нагрівається. Такий посуд гріють над полум’ям або в спеціальному нагрівачі.`,
-        en: `${vessel.name.en} has a round bottom: on a hob it touches it at a single point and hardly heats up. Such vessels are heated over a flame or in a heating mantle.`,
-      },
+      reason: msg('compatibility-can-heat-reason-2', { name: (l: Locale) => vessel.name[l] }),
     };
   }
   if (spec.method === 'immersion' && spec.elementDiameter) {
@@ -74,10 +60,7 @@ export function canHeat(heater: HeaterItem, vessel: VesselItem, material: string
       const mm = (x: number) => Math.round(x * 1000);
       return {
         ok: false,
-        reason: {
-          uk: `Кип’ятильник (діаметр ≈ ${mm(spec.elementDiameter.value)} мм) не проходить в отвір посуду «${vessel.name.uk}» (≈ ${mm(g.opening)} мм).`,
-          en: `The immersion heater (≈ ${mm(spec.elementDiameter.value)} mm wide) does not fit through the opening of the ${vessel.name.en.toLowerCase()} (≈ ${mm(g.opening)} mm).`,
-        },
+        reason: msg('compatibility-heater-too-wide', { name: (l: Locale) => vessel.name[l], lower: (l: Locale) => vessel.name[l].toLowerCase(), heater: String(mm(spec.elementDiameter.value)), opening: String(mm(g.opening)) }),
       };
     }
   }
@@ -92,10 +75,7 @@ export function canHoldElectrodes(electrodes: ElectrodesSpec, vessel: VesselItem
   const mm = (x: number) => Math.round(x * 1000);
   return {
     ok: false,
-    reason: {
-      uk: `Два електроди (потрібно ≈ ${mm(need)} мм) не вміщаються в отвір посуду «${vessel.name.uk}» (≈ ${mm(g.opening)} мм).`,
-      en: `Two electrodes (≈ ${mm(need)} mm needed) do not fit into the opening of the ${vessel.name.en.toLowerCase()} (≈ ${mm(g.opening)} mm).`,
-    },
+    reason: msg('compatibility-electrodes-too-wide', { name: (l: Locale) => vessel.name[l], lower: (l: Locale) => vessel.name[l].toLowerCase(), need: String(mm(need)), opening: String(mm(g.opening)) }),
   };
 }
 

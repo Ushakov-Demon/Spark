@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, estimate, sv } from './sourced.js';
 
 /** Blue crystals of copper(II) sulfate pentahydrate (CuSO₄·5H₂O). */
@@ -6,9 +7,7 @@ export const COPPER_SULFATE = {
   id: 'copper-sulfate',
   kind: 'compound',
   group: 'salt',
-  name: { uk: 'Мідний купорос', en: 'Copper sulfate' },
-  genitive: { uk: 'мідного купоросу', en: 'copper sulfate' },
-  gender: 'm',
+  name: msg('component-copper-sulfate'),
   formula: 'CuSO₄·5H₂O',
   composition: { Cu: 1, S: 1, O: 9, H: 10 },
   wikidata: 'Q6135414',
@@ -21,7 +20,7 @@ export const COPPER_SULFATE = {
   },
   decomposes: {
     point: sv(650, '°C', 'anhydrous CuSO₄', 'single-source', 0.02, [cite('wikipedia-copper-sulfate', 'Chembox: decomposes to cupric oxide at 650 °C', '—', 650)], 'The pentahydrate loses its water and turns white much earlier; that temperature is not checked yet.'),
-    into: { uk: 'оксид міді (CuO) і оксиди сірки', en: 'copper oxide (CuO) and sulfur oxides' },
+    into: msg('component-copper-sulfate-decomposes-into'),
   },
   inWater: {
     solubility: sv(20.1, 'g CuSO₄/100 mL water', '20 °C', 'single-source', 0.01, [cite('wikipedia-copper-sulfate', 'Chembox: anhydrous 201 g/L at 20 °C', '20 °C', 20.1)], 'Given for the anhydrous salt, per volume of water. Second source not checked yet.'),
@@ -38,10 +37,7 @@ export const COPPER_SULFATE = {
       voltage: sv(0.892, 'V', 'CuSO₄ solution: copper + oxygen', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', '1.229 V (O₂/H₂O) − 0.337 V (Cu²⁺/Cu)', '298.15 K', 0.892)], 'Thermodynamic minimum from standard potentials; real cells need more (overpotentials).'),
       cathode: { component: 'copper', electrons: 2, potential: sv(0.337, 'V', 'Cu²⁺ + 2e⁻ ⇌ Cu', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', 'Cu²⁺ + 2e⁻ ⇌ Cu(s): 0.337 V', '298.15 K', 0.337)], 'Only one table checked.') },
       anode: { component: 'oxygen', electrons: 4, potential: sv(1.229, 'V', 'O₂ + 4H⁺ + 4e⁻ ⇌ 2H₂O', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', 'O₂(g) + 4H⁺ + 4e⁻ ⇌ 2H₂O: 1.229 V', '298.15 K', 1.229)], 'The solution turns acidic at the anode (sulfuric acid forms), so the acid form of the reaction.') },
-      note: {
-        uk: 'Під струмом на катоді осідає мідь (Cu²⁺ + 2e⁻ → Cu), на аноді виділяється кисень, а в розчині лишається сульфатна кислота: 2CuSO₄ + 2H₂O → 2Cu + O₂ + 2H₂SO₄. Розчин поступово світлішає — йонів міді меншає.',
-        en: 'Under current copper settles on the cathode (Cu²⁺ + 2e⁻ → Cu), oxygen forms at the anode, and sulfuric acid stays in the solution: 2CuSO₄ + 2H₂O → 2Cu + O₂ + 2H₂SO₄. The solution slowly pales as the copper ions are used up.',
-      },
+      note: msg('component-copper-sulfate-electrolysis-note'),
     },
     solubilityTable: {
       t: [0, 10, 20, 30, 40, 60, 80, 100],
@@ -53,16 +49,10 @@ export const COPPER_SULFATE = {
   magnetic: 'paramagnetic',
   hazards: { irritant: true },
   description: {
-    novice: {
-      uk: 'Яскраво-сині кристали. З його розчину легко виростити великий синій кристал. Якщо кристали нагріти, вони втрачають воду й біліють, а від краплі води знову синіють.',
-      en: 'Bright blue crystals. A big blue crystal is easy to grow from its solution. Heated, the crystals lose water and turn white; a drop of water turns them blue again.',
-    },
-    school: {
-      uk: 'Синій колір дають молекули води, зв’язані з йонами міді (п’ятиводний гідрат CuSO₄·5H₂O). Розчин проводить струм; на катоді при електролізі осідає мідь.',
-      en: 'The blue colour comes from water molecules bound to copper ions (the pentahydrate CuSO₄·5H₂O). The solution conducts electricity; in electrolysis copper deposits on the cathode.',
-    },
+    novice: msg('component-copper-sulfate-description-novice'),
+    school: msg('component-copper-sulfate-description-school'),
   },
-  safety: { school: { uk: 'Шкідливий, якщо проковтнути, подразнює очі й шкіру. Працюй у рукавичках і мий руки.', en: 'Harmful if swallowed, irritates eyes and skin. Wear gloves and wash your hands.' } },
+  safety: { school: msg('component-copper-sulfate-safety-school') },
   media: [],
-  modelNotes: [{ uk: 'Теплоту розчинення ще не перевірено за джерелами, тому в моделі розчинення не змінює температуру.', en: 'The enthalpy of solution is not checked against sources yet, so in the model dissolving does not change the temperature.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-copper-sulfate-model-notes')],
+} as const satisfies ComponentData;

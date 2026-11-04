@@ -1,13 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 export const IRON = {
   id: 'iron',
   kind: 'element',
   group: 'metal',
-  name: { uk: 'Залізо', en: 'Iron' },
-  genitive: { uk: 'заліза', en: 'iron' },
-  gender: 'n',
+  name: msg('component-iron'),
   formula: 'Fe',
   composition: { Fe: 1 },
   wikidata: 'Q677',
@@ -46,8 +45,8 @@ export const IRON = {
   electrical: { conducts: 'metal', resistivity: sv(96.1e-9, 'Ω·m', 'solid, 20 °C', 'single-source', 0.01, [cite('wikipedia-iron', 'Infobox: electrical resistivity at 20 °C, 96.1 nΩ·m', '20 °C', 96.1e-9)], 'Only the Wikipedia infobox checked so far.'), electrode: { ion: 'Fe²⁺', electrons: 2, potential: sv(-0.44, 'V', 'Fe²⁺ + 2e⁻ ⇌ Fe', 'single-source', 0.02, [cite('wikipedia-standard-electrode-potentials', 'Fe²⁺ + 2e⁻ ⇌ Fe(s): −0.44 V', '298.15 K', -0.44)], 'Only one table checked.'), hydroxide: 'iron-ii-hydroxide' } },
   magnetic: 'ferromagnetic',
   description: {
-    novice: { uk: 'Метал, який притягується магнітом. Чисте залізо м’яке; майже все «залізо» навколо нас — це сталь і чавун, сплави заліза з вуглецем.', en: "A metal attracted by magnets. Pure iron is soft; almost all the “iron” around us is steel or cast iron — alloys of iron and carbon." },
-    school: { uk: 'Залізо — феромагнетик: саме тому індукційна плита гріє чавунний посуд. Плавиться при 1538 °C.', en: "Iron is ferromagnetic — that is why an induction hob heats cast-iron cookware. It melts at 1538 °C." },
+    novice: msg('component-iron-description-novice'),
+    school: msg('component-iron-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

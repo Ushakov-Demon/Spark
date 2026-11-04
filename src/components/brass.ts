@@ -1,13 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 
 export const BRASS = {
   id: 'brass',
   kind: 'material',
   group: 'alloy',
-  name: { uk: 'Латунь', en: 'Brass' },
-  genitive: { uk: 'латуні', en: 'brass' },
-  gender: 'f',
-  madeOf: [{ part: { uk: 'мідь', en: 'copper' }, fraction: 0.7 }, { part: { uk: 'цинк', en: 'zinc' }, fraction: 0.3 }],
+  name: msg('component-brass'),
+  madeOf: [{ part: msg('component-brass-made-of-part'), fraction: 0.7 }, { part: msg('component-brass-made-of-part-2'), fraction: 0.3 }],
   stateAtRoom: 'solid',
   phases: {
     solid: {
@@ -47,8 +46,8 @@ export const BRASS = {
   },
   magnetic: 'diamagnetic',
   description: {
-    novice: { uk: 'Жовтий сплав міді з цинком. З латуні роблять турки, крани, музичні інструменти.', en: "A yellow alloy of copper and zinc. Used for cezves, taps, musical instruments." },
-    school: { uk: 'Латунь проводить теплоту в 2,5 раза гірше за чисту мідь, але значно краще за сталь.', en: "Brass conducts heat 2.5 times worse than pure copper, but much better than steel." },
+    novice: msg('component-brass-description-novice'),
+    school: msg('component-brass-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

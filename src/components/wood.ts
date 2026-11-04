@@ -1,12 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 
 export const WOOD = {
   id: 'wood',
   kind: 'material',
   group: 'material',
-  name: { uk: 'Деревина', en: 'Wood' },
-  gender: 'f',
-  madeOf: [{ part: { uk: 'целюлоза', en: 'cellulose' } }, { part: { uk: 'лігнін', en: 'lignin' } }],
+  name: msg('component-wood'),
+  madeOf: [{ part: msg('component-wood-made-of-part') }, { part: msg('component-wood-made-of-part-2') }],
   stateAtRoom: 'solid',
   phases: {
     solid: {
@@ -51,8 +51,8 @@ export const WOOD = {
   electrical: { conducts: 'insulator' },
   hazards: { flammable: true },
   description: {
-    novice: { uk: 'Природний матеріал із дерев. Погано проводить теплоту, тому дерев’яні ручки посуду не обпікають.', en: "A natural material from trees. It conducts heat poorly, so wooden handles do not burn your hand." },
-    school: { uk: 'Теплопровідність деревини в сотні разів менша, ніж у металів. Вона горить, тому тримай її подалі від вогню.', en: "Wood conducts heat hundreds of times worse than metals. It burns, so keep it away from flames." },
+    novice: msg('component-wood-description-novice'),
+    school: msg('component-wood-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

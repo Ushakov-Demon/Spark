@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /**
@@ -11,9 +12,7 @@ export const SODIUM_ACETATE = {
   id: 'sodium-acetate',
   kind: 'compound',
   group: 'salt',
-  name: { uk: 'Натрій ацетат (тригідрат)', en: 'Sodium acetate (trihydrate)' },
-  genitive: { uk: 'натрій ацетату', en: 'sodium acetate' },
-  gender: 'm',
+  name: msg('component-sodium-acetate'),
   formula: 'CH₃COONa·3H₂O',
   composition: { Na: 1, C: 2, H: 9, O: 5 },
   stateAtRoom: 'solid',
@@ -43,16 +42,10 @@ export const SODIUM_ACETATE = {
   electrical: { conducts: 'ions-in-solution' },
   hazards: { irritant: true },
   description: {
-    novice: {
-      uk: 'Білі кристали — з них роблять багаторазові грілки для рук. Його розчин може «забути» закристалізуватися, а від одного кристалика раптом твердне й нагрівається.',
-      en: 'White crystals — reusable hand warmers are made of them. Its solution can "forget" to crystallise, and then from a single crystal it suddenly sets and warms up.',
-    },
-    school: {
-      uk: 'Гарячий розчин натрій ацетату можна охолодити нижче насичення, і він лишиться рідким — пересичений розчин. Досить кинути в нього кристалик (затравку), і зайва речовина кристалізується, віддаючи теплоту розчинення: розчин нагрівається.',
-      en: 'A hot sodium acetate solution can be cooled below saturation and stay liquid — a supersaturated solution. Drop in a crystal (a seed), and the excess crystallises, giving off its heat of solution: the solution warms up.',
-    },
+    novice: msg('component-sodium-acetate-description-novice'),
+    school: msg('component-sodium-acetate-description-school'),
   },
-  safety: { school: { uk: 'Подразнює очі. Гарячий розчин може обпекти.', en: 'Irritates the eyes. The hot solution can burn.' } },
+  safety: { school: msg('component-sodium-acetate-safety-school') },
   media: [],
-  modelNotes: [{ uk: 'Кристалізація — миттєва: щойно в пересиченому розчині з’являється затравка, він доходить до рівноваги; росту кристалів у часі модель не рахує. Сам, без затравки, розчин у моделі не кристалізується.', en: 'Crystallisation is instant: as soon as a supersaturated solution has a seed, it comes to equilibrium; the model does not compute crystals growing over time. Without a seed the solution does not crystallise by itself in the model.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-sodium-acetate-model-notes')],
+} as const satisfies ComponentData;

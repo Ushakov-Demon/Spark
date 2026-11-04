@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Cp 29.378 J/(mol·K), ΔfusH 0.444 kJ/mol, ΔvapH 6.82 kJ/mol ÷ 0.031998 kg/mol. */
@@ -6,9 +7,7 @@ export const OXYGEN = {
   id: 'oxygen',
   kind: 'element',
   group: 'gas',
-  name: { uk: 'Кисень', en: 'Oxygen' },
-  genitive: { uk: 'кисню', en: 'oxygen' },
-  gender: 'm',
+  name: msg('component-oxygen'),
   formula: 'O₂',
   composition: { O: 2 },
   wikidata: 'Q5203615',
@@ -32,15 +31,9 @@ export const OXYGEN = {
   magnetic: 'paramagnetic',
   hazards: { oxidizer: true },
   description: {
-    novice: {
-      uk: 'Газ, яким ми дихаємо: його у повітрі приблизно п’ята частина. Без кисню не горить вогонь.',
-      en: 'The gas we breathe: about a fifth of the air. Without oxygen there is no fire.',
-    },
-    school: {
-      uk: 'Кисень підтримує горіння — у чистому кисні жевріюча скіпка спалахує. Рідкий кисень блакитний і притягується магнітом.',
-      en: 'Oxygen supports burning — a glowing splint bursts into flame in pure oxygen. Liquid oxygen is pale blue and is attracted by a magnet.',
-    },
+    novice: msg('component-oxygen-description-novice'),
+    school: msg('component-oxygen-description-school'),
   },
-  safety: { school: { uk: 'Чистий кисень робить горіння дуже бурхливим: поруч із ним не можна олії, жиру й відкритого вогню.', en: 'Pure oxygen makes things burn violently: keep oil, grease and open flames away from it.' } },
+  safety: { school: msg('component-oxygen-safety-school') },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

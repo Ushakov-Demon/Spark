@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { NACL_SOLUTE } from './sodium-chloride.js';
 import { cite, sv } from './sourced.js';
 
@@ -7,9 +8,7 @@ export const AMMONIUM_CHLORIDE = {
   id: 'ammonium-chloride',
   kind: 'compound',
   group: 'salt',
-  name: { uk: 'Амоній хлорид (нашатир)', en: 'Ammonium chloride (sal ammoniac)' },
-  genitive: { uk: 'амоній хлориду', en: 'ammonium chloride' },
-  gender: 'm',
+  name: msg('component-ammonium-chloride'),
   formula: 'NH₄Cl',
   composition: { N: 1, H: 4, Cl: 1 },
   stateAtRoom: 'solid',
@@ -21,7 +20,7 @@ export const AMMONIUM_CHLORIDE = {
   },
   decomposes: {
     point: sv(337.6, '°C', '1 atm', 'single-source', 0.01, [cite('wikipedia-ammonium-chloride', 'Chembox: decomposes at 337.6 °C at 1 atm', '1 atm', 337.6)], 'It does not melt: on heating it breaks into ammonia and hydrogen chloride, which join again on a cold surface — it seems to sublime.'),
-    into: { uk: 'аміак і хлороводень (на холодному вони знову з’єднуються в білий наліт)', en: 'ammonia and hydrogen chloride (on a cold surface they join again as a white coating)' },
+    into: msg('component-ammonium-chloride-decomposes-into'),
   },
   inWater: {
     solubility: sv(37.2, 'g/100 mL water', '20 °C', 'cross-checked', 0.03, [cite('wikipedia-solubility-table', 'Ammonium chloride row: 37.2 at 20 °C', '20 °C', 37.2), cite('wikipedia-ammonium-chloride', 'Chembox: 383.0 g/L at 25 °C', '25 °C', 38.3)]),
@@ -39,24 +38,15 @@ export const AMMONIUM_CHLORIDE = {
     enthalpyOfSolution: sv(14.78, 'kJ/mol', 'infinite dilution, 25 °C', 'single-source', 0.01, [cite('crc-enthalpy-of-solution', 'NH4Cl (c): 14.78 kJ/mol', '25 °C', 14.78)], 'At infinite dilution; the model uses it at any concentration — an approximation.'),
     electrolysis: {
       ...NACL_SOLUTE.electrolysis!,
-      note: {
-        uk: 'Під струмом, як і в солоній воді, на катоді виділяється водень, а на аноді — хлор: обидва з хлорид-йонів і води.',
-        en: 'Under current, as in salt water, hydrogen forms at the cathode and chlorine at the anode: both from chloride ions and water.',
-      },
+      note: msg('component-ammonium-chloride-electrolysis-note'),
     },
   },
   electrical: { conducts: 'ions-in-solution' },
   hazards: { irritant: true },
   description: {
-    novice: {
-      uk: 'Білі кристалики, схожі на сіль. Якщо розчинити їх у воді, вода помітно холоне — так працюють «холодні» пакети першої допомоги.',
-      en: 'White crystals that look like salt. Dissolved in water, they make it noticeably colder — that is how first-aid cold packs work.',
-    },
-    school: {
-      uk: 'Розчинення NH₄Cl поглинає теплоту (+14,8 кДж/моль): енергії на руйнування кристала йде більше, ніж виділяється, коли йони оточує вода. Тому розчин охолоджується. Під час кристалізації ця теплота повертається.',
-      en: 'Dissolving NH₄Cl takes in heat (+14.8 kJ/mol): breaking up the crystal takes more energy than is released as water surrounds the ions. So the solution cools down. On crystallising the heat comes back.',
-    },
+    novice: msg('component-ammonium-chloride-description-novice'),
+    school: msg('component-ammonium-chloride-description-school'),
   },
-  safety: { school: { uk: 'Шкідливий, якщо проковтнути, і подразнює очі. Працюй в окулярах. Під час нагрівання виділяє подразливі гази.', en: 'Harmful if swallowed and irritates the eyes. Wear goggles. When heated it gives off irritating gases.' } },
+  safety: { school: msg('component-ammonium-chloride-safety-school') },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

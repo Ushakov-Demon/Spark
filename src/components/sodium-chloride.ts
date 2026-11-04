@@ -1,5 +1,6 @@
+import { msg } from '../knowledge/messages.js';
 import type { SourcedValue } from '../knowledge/types.js';
-import type { Component, SoluteModel } from './types.js';
+import type { ComponentData, SoluteModel } from './types.js';
 import { cite, sv } from './sourced.js';
 import { WATER_TO_HYDROGEN } from './water.js';
 
@@ -113,10 +114,7 @@ export const NACL_SOLUTE: SoluteModel = {
     voltage: sv(2.19, 'V', 'NaCl solution: chlorine + hydrogen', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', '1.36 V (Cl₂/Cl⁻) − (−0.8277 V) (2H₂O/H₂ + 2OH⁻)', '298.15 K, standard conditions', 2.1877)], 'Thermodynamic minimum from standard potentials; real cells need more because of overpotentials.'),
     cathode: { component: 'hydrogen', electrons: 2, potential: WATER_TO_HYDROGEN },
     anode: { component: 'chlorine', electrons: 2, potential: sv(1.36, 'V', 'Cl₂ + 2e⁻ ⇌ 2Cl⁻', 'single-source', 0.01, [cite('wikipedia-standard-electrode-potentials', 'Cl₂(g) + 2e⁻ ⇌ 2Cl⁻: 1.36 V', '298.15 K', 1.36)], 'Only one table checked. Oxygen (1.23 V) would come first by the numbers, but it needs a large overpotential, so a concentrated chloride gives chlorine at a graphite anode.') },
-    note: {
-      uk: 'Під струмом солона вода розкладається: на катоді виділяється водень, на аноді — хлор, а в розчині лишається натрієвий луг (NaOH): 2NaCl + 2H₂O → Cl₂ + H₂ + 2NaOH.',
-      en: 'Under current salt water decomposes: hydrogen forms at the cathode, chlorine at the anode, and caustic soda (NaOH) stays in the solution: 2NaCl + 2H₂O → Cl₂ + H₂ + 2NaOH.',
-    },
+    note: msg('component-sodium-chloride-electrolysis-note'),
   },
 };
 
@@ -124,9 +122,7 @@ export const SODIUM_CHLORIDE = {
   id: 'sodium-chloride',
   kind: 'compound',
   group: 'salt',
-  name: { uk: 'Хлорид натрію (кухонна сіль)', en: 'Sodium chloride (table salt)' },
-  genitive: { uk: 'кухонної солі', en: 'table salt' },
-  gender: 'm',
+  name: msg('component-sodium-chloride'),
   formula: 'NaCl',
   composition: { Na: 1, Cl: 1 },
   wikidata: 'Q2314',
@@ -151,14 +147,8 @@ export const SODIUM_CHLORIDE = {
   electrical: { conducts: 'ions-in-solution' },
   magnetic: 'diamagnetic',
   description: {
-    novice: {
-      uk: 'Хлорид натрію (NaCl) — звичайна сіль. Добре розчиняється у воді: у 100 г води — до ≈ 36 г. Якщо солі більше, решта лежить на дні кристалами.',
-      en: 'Sodium chloride (NaCl) — ordinary salt. It dissolves well in water: up to ≈ 36 g in 100 g of water. Any more stays on the bottom as crystals.',
-    },
-    school: {
-      uk: 'Розчинність NaCl майже не залежить від температури: ≈ 35,7 г на 100 г води при 0 °C і ≈ 39 г при 100 °C. Тому сіль зручно добувати випарюванням, а не охолодженням. У воді сіль розпадається на йони Na⁺ і Cl⁻ — тому солона вода проводить струм.',
-      en: 'The solubility of NaCl barely depends on temperature: ≈ 35.7 g per 100 g of water at 0 °C and ≈ 39 g at 100 °C. So salt is obtained by evaporation rather than by cooling. In water salt splits into Na⁺ and Cl⁻ ions — that is why salt water conducts electricity.',
-    },
+    novice: msg('component-sodium-chloride-description-novice'),
+    school: msg('component-sodium-chloride-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

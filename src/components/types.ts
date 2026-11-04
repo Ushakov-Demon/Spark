@@ -159,14 +159,18 @@ export interface Hazards {
   readonly flashPoint?: SourcedValue;
 }
 
+/** A component as its file writes it: the forms of its name live in the messages, not here. */
+export type ComponentData = Omit<Component, 'genitive' | 'gender'>;
+
 export interface Component {
   readonly id: string;
   readonly kind: ComponentKind;
   readonly group: ComponentGroup;
+  /** The name, a message: its forms are the message's attributes, each language's own (`.genitive`, `.gender`). */
   readonly name: LocalizedText;
-  /** "Скільки чого": the name after an amount ("200 мл водню"); defaults to the name. */
+  /** The name after an amount («200 мл водню»): the name's `.genitive` where the language has one. */
   readonly genitive?: LocalizedText;
-  /** Grammatical gender of the name in Ukrainian — verbs agree with it. */
+  /** The Ukrainian name's gender (its `.gender`), for the texts still worded in the code. */
   readonly gender: 'f' | 'm' | 'n';
   /** Chemical formula for display (H₂O). */
   readonly formula?: string;

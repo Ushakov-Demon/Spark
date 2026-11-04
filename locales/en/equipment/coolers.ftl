@@ -1,0 +1,21 @@
+## Coolers: the name, where the vessel stands, the description.
+cooler-freezer = Freezer
+cooler-freezer-phrase = in a freezer
+cooler-freezer-description-novice = A cold cabinet where the air is kept at about −18 °C. A fan moves the cold air around, so food cools faster.
+cooler-freezer-description-school = A refrigeration machine takes heat from inside the cabinet and releases it into the room. A body inside gives heat to the cold air; to freeze, it must also give away its latent heat.
+cooler-fridge = Refrigerator
+cooler-fridge-phrase = in a refrigerator
+cooler-fridge-description-novice = A refrigerator keeps about +4 °C — cold, but water does not freeze.
+cooler-fridge-description-school = The air inside is still, so bodies cool more slowly in a refrigerator than in a freezer with a fan.
+cooler-ice-bath = Ice bath (ice + water)
+cooler-ice-bath-phrase = in an ice bath
+cooler-ice-bath-description-novice = A bowl of crushed ice and water. While the ice melts, the mixture stays at exactly 0 °C.
+cooler-ice-bath-description-school = Heat from the vessel goes into melting ice, so the bath temperature does not change — latent heat again. Water in the bath takes heat far better than air.
+cooler-ice-salt-bath = Ice-salt bath
+cooler-ice-salt-bath-phrase = in an ice-salt bath
+cooler-ice-salt-bath-description-novice = Ice sprinkled with salt melts and gets much colder than 0 °C — down to about −21 °C.
+cooler-ice-salt-bath-description-school = Salt water freezes at a lower temperature than water, so ice in it melts, taking latent heat, and the mixture cools to the freezing point of the brine — at best −21.1 °C (at 23.3 % salt).
+cooler-muffle-furnace = Muffle furnace
+cooler-muffle-furnace-phrase = in a muffle furnace
+cooler-muffle-furnace-description-novice = A small electric furnace with thick firebrick walls. Inside it keeps the set temperature — up to 1100 °C.
+cooler-muffle-furnace-description-school = The glowing walls of the furnace give heat to the crucible mostly by radiation; a controller holds the set temperature. Salt and aluminium are melted in such a furnace.

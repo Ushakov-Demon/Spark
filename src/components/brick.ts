@@ -1,12 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 
 export const BRICK = {
   id: 'brick',
   kind: 'material',
   group: 'material',
-  name: { uk: 'Цегла', en: 'Brick' },
-  gender: 'f',
-  madeOf: [{ part: { uk: 'випалена глина', en: 'fired clay' } }],
+  name: msg('component-brick'),
+  madeOf: [{ part: msg('component-brick-made-of-part') }],
   stateAtRoom: 'solid',
   phases: {
     solid: {
@@ -36,8 +36,8 @@ export const BRICK = {
   },
   electrical: { conducts: 'insulator' },
   description: {
-    novice: { uk: 'Будівельний матеріал із випаленої глини. Повільно нагрівається й повільно віддає теплоту.', en: "A building material made of fired clay. It warms up slowly and gives its heat back slowly." },
-    school: { uk: 'Цегла має невелику теплопровідність, тому з неї кладуть печі: вона довго тримає теплоту.', en: "Brick has a low thermal conductivity, which is why stoves are built of it: it holds heat for a long time." },
+    novice: msg('component-brick-description-novice'),
+    school: msg('component-brick-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

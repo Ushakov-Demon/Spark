@@ -3,6 +3,7 @@ import { sv } from '../components/sourced.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { equilibriumAt, mixtureBoilingPoint } from '../domains/thermal/mixture.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
+import { attribute, form, msg } from '../knowledge/messages.js';
 import type { SourcedValue } from '../knowledge/types.js';
 import { RECIPES, type Recipe, type RecipeId } from '../recipes/index.js';
 import type { SubstanceCategory, SubstanceItem } from './types.js';
@@ -14,9 +15,8 @@ import type { SubstanceCategory, SubstanceItem } from './types.js';
 
 /** The product on the shelf may have its own name: the component is "water", the bottle says "distilled water". */
 interface ShelfName {
+  /** A message `shelf-<id>`: its forms (`.genitive`, `.gender`) are its attributes. */
   readonly name: LocalizedText;
-  readonly genitive?: LocalizedText;
-  readonly gender: Component['gender'];
   readonly bodyShape?: 'block' | 'ball';
 }
 
@@ -57,8 +57,10 @@ function fromComponent(c: Component, id: string = c.id, shelfName?: ShelfName): 
     component: c.id,
     category,
     name: shelfName?.name ?? c.name,
-    ...((shelfName?.genitive ?? c.genitive) ? { genitive: (shelfName?.genitive ?? c.genitive)! } : {}),
-    gender: shelfName?.gender ?? c.gender,
+    genitive: shelfName ? form(shelfName.name, 'genitive') : c.genitive ?? c.name,
+    get gender() {
+      return shelfName ? ((attribute('uk', `shelf-${id}`, 'gender') ?? 'm') as Component['gender']) : c.gender;
+    },
     ...(shelfName?.bodyShape ? { bodyShape: shelfName.bodyShape } : {}),
     ...(solid?.name ? { solidName: solid.name } : {}),
     description: c.description,
@@ -108,7 +110,9 @@ function fromRecipe(r: Recipe): SubstanceItem {
     recipe: r.id,
     category: 'liquid.solution',
     name: r.name,
-    gender: r.gender,
+    get gender() {
+      return (attribute('uk', `recipe-${r.id}`, 'gender') ?? 'm') as SubstanceItem['gender'];
+    },
     description: r.description,
     media: [],
     mixture: { saltFraction: w },
@@ -133,7 +137,7 @@ function fromRecipe(r: Recipe): SubstanceItem {
 
 /** What is on the shelf, in UI order: a component id, a recipe id, or a shelf name for a component. */
 const SHELF = [
-  { id: 'water', component: 'water', as: { name: { uk: 'Дистильована вода', en: 'Distilled water' }, genitive: { uk: 'дистильованої води', en: 'distilled water' }, gender: 'f' } },
+  { id: 'water', component: 'water', as: { name: msg('shelf-water') } },
   { id: 'sea-water', recipe: 'sea-water' },
   { id: 'salt-water-10', recipe: 'salt-water-10' },
   { id: 'salt-water-20', recipe: 'salt-water-20' },
@@ -141,7 +145,7 @@ const SHELF = [
   { id: 'glycerol', component: 'glycerol' },
   { id: 'acetic-acid', component: 'acetic-acid' },
   { id: 'sunflower-oil', component: 'sunflower-oil' },
-  { id: 'table-salt', component: 'sodium-chloride', as: { name: { uk: 'Кухонна сіль', en: 'Table salt' }, genitive: { uk: 'кухонної солі', en: 'table salt' }, gender: 'f' } },
+  { id: 'table-salt', component: 'sodium-chloride', as: { name: msg('shelf-table-salt') } },
   { id: 'aluminium', component: 'aluminium' },
   { id: 'copper', component: 'copper' },
   { id: 'iron', component: 'iron' },
@@ -160,9 +164,9 @@ const SHELF = [
   { id: 'graphite', component: 'graphite' },
   { id: 'porcelain', component: 'porcelain' },
   { id: 'brick', component: 'brick' },
-  { id: 'wood', component: 'wood', as: { name: { uk: 'Дерев’яний брусок (сосна)', en: 'Wooden block (pine)' }, gender: 'm' } },
-  { id: 'glass', component: 'glass', as: { name: { uk: 'Скляна кулька', en: 'Glass marble' }, gender: 'f', bodyShape: 'ball' } },
-  { id: 'rubber', component: 'rubber', as: { name: { uk: 'Гумовий корок', en: 'Rubber stopper' }, gender: 'm' } },
+  { id: 'wood', component: 'wood', as: { name: msg('shelf-wood') } },
+  { id: 'glass', component: 'glass', as: { name: msg('shelf-glass'), bodyShape: 'ball' } },
+  { id: 'rubber', component: 'rubber', as: { name: msg('shelf-rubber') } },
 ] as const satisfies readonly ({ id: string; component: ComponentId; as?: ShelfName } | { id: string; recipe: RecipeId })[];
 
 export type SubstanceId = (typeof SHELF)[number]['id'];
@@ -171,25 +175,25 @@ export const SUBSTANCES: Readonly<Record<SubstanceId, SubstanceItem>> = Object.f
   SHELF.map((s) => [s.id, 'recipe' in s ? fromRecipe(RECIPES[s.recipe]) : fromComponent(COMPONENTS[s.component], s.id, 'as' in s ? s.as : undefined)]),
 ) as Record<SubstanceId, SubstanceItem>;
 
-export const SUBSTANCE_CATEGORIES: readonly { readonly id: SubstanceItem['category']; readonly name: { uk: string; en: string } }[] = [
-  { id: 'liquid.water', name: { uk: 'Вода', en: 'Water' } },
-  { id: 'liquid.solution', name: { uk: 'Розчини', en: 'Solutions' } },
-  { id: 'liquid.alcohol', name: { uk: 'Спирти', en: 'Alcohols' } },
-  { id: 'liquid.acid', name: { uk: 'Кислоти', en: 'Acids' } },
-  { id: 'liquid.oil', name: { uk: 'Олії', en: 'Oils' } },
-  { id: 'solid.salt', name: { uk: 'Солі', en: 'Salts' } },
-  { id: 'solid.metal', name: { uk: 'Метали й сплави', en: 'Metals and alloys' } },
-  { id: 'solid.material', name: { uk: 'Інші тверді тіла', en: 'Other solids' } },
+export const SUBSTANCE_CATEGORIES: readonly { readonly id: SubstanceItem['category']; readonly name: LocalizedText }[] = [
+  { id: 'liquid.water', name: msg('shelf-group-liquid-water') },
+  { id: 'liquid.solution', name: msg('shelf-group-liquid-solution') },
+  { id: 'liquid.alcohol', name: msg('shelf-group-liquid-alcohol') },
+  { id: 'liquid.acid', name: msg('shelf-group-liquid-acid') },
+  { id: 'liquid.oil', name: msg('shelf-group-liquid-oil') },
+  { id: 'solid.salt', name: msg('shelf-group-solid-salt') },
+  { id: 'solid.metal', name: msg('shelf-group-solid-metal') },
+  { id: 'solid.material', name: msg('shelf-group-solid-material') },
 ];
 
 /**
  * Families of the shelf, as the experimenter looks for things: liquids, solutions,
  * salts and minerals, metals, other solids. Each groups some categories.
  */
-export const SUBSTANCE_FAMILIES: readonly { readonly id: string; readonly name: { uk: string; en: string }; readonly categories: readonly SubstanceItem['category'][] }[] = [
-  { id: 'liquids', name: { uk: 'Рідини', en: 'Liquids' }, categories: ['liquid.water', 'liquid.alcohol', 'liquid.acid', 'liquid.oil'] },
-  { id: 'solutions', name: { uk: 'Розчини', en: 'Solutions' }, categories: ['liquid.solution'] },
-  { id: 'salts', name: { uk: 'Солі й мінерали', en: 'Salts and minerals' }, categories: ['solid.salt'] },
-  { id: 'metals', name: { uk: 'Метали й сплави', en: 'Metals and alloys' }, categories: ['solid.metal'] },
-  { id: 'solids', name: { uk: 'Інші тверді тіла', en: 'Other solids' }, categories: ['solid.material'] },
+export const SUBSTANCE_FAMILIES: readonly { readonly id: string; readonly name: LocalizedText; readonly categories: readonly SubstanceItem['category'][] }[] = [
+  { id: 'liquids', name: msg('shelf-group-liquids'), categories: ['liquid.water', 'liquid.alcohol', 'liquid.acid', 'liquid.oil'] },
+  { id: 'solutions', name: msg('shelf-group-solutions'), categories: ['liquid.solution'] },
+  { id: 'salts', name: msg('shelf-group-salts'), categories: ['solid.salt'] },
+  { id: 'metals', name: msg('shelf-group-metals'), categories: ['solid.metal'] },
+  { id: 'solids', name: msg('shelf-group-solids'), categories: ['solid.material'] },
 ];

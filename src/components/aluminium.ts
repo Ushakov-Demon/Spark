@@ -1,13 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 export const ALUMINIUM = {
   id: 'aluminium',
   kind: 'element',
   group: 'metal',
-  name: { uk: 'Алюміній', en: 'Aluminium' },
-  genitive: { uk: 'алюмінію', en: 'aluminium' },
-  gender: 'm',
+  name: msg('component-aluminium'),
   formula: 'Al',
   composition: { Al: 1 },
   wikidata: 'Q663',
@@ -54,8 +53,8 @@ export const ALUMINIUM = {
   electrical: { conducts: 'metal', resistivity: sv(26.5e-9, 'Ω·m', 'solid, 20 °C', 'single-source', 0.01, [cite('wikipedia-aluminium', 'Infobox: electrical resistivity at 20 °C, 26.5 nΩ·m', '20 °C', 26.5e-9)], 'Only the Wikipedia infobox checked so far.') },
   magnetic: 'paramagnetic',
   description: {
-    novice: { uk: 'Легкий метал (майже втричі легший за сталь), який добре проводить теплоту й електрику. З нього роблять каструлі, фольгу, дроти.', en: "A light metal (almost three times lighter than steel) that conducts heat and electricity well. Used for pots, foil, wires." },
-    school: { uk: 'Теплопровідність алюмінію приблизно в 5 разів більша, ніж у сталі, тому дно алюмінієвої каструлі прогрівається рівномірно. Плавиться при 660 °C.', en: "Aluminium conducts heat about 5 times better than steel, so an aluminium pot heats evenly. It melts at 660 °C." },
+    novice: msg('component-aluminium-description-novice'),
+    school: msg('component-aluminium-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

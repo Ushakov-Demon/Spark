@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Cp 59.5 J/(mol·K) ÷ 0.039997 kg/mol. Dissolving it gives off a lot of heat. */
@@ -6,9 +7,7 @@ export const SODIUM_HYDROXIDE = {
   id: 'sodium-hydroxide',
   kind: 'compound',
   group: 'salt',
-  name: { uk: 'Натрій гідроксид (їдкий натр)', en: 'Sodium hydroxide (caustic soda)' },
-  genitive: { uk: 'натрій гідроксиду', en: 'sodium hydroxide' },
-  gender: 'm',
+  name: msg('component-sodium-hydroxide'),
   formula: 'NaOH',
   composition: { Na: 1, O: 1, H: 1 },
   stateAtRoom: 'solid',
@@ -37,21 +36,12 @@ export const SODIUM_HYDROXIDE = {
   electrical: { conducts: 'ions-in-solution' },
   hazards: { corrosive: true },
   description: {
-    novice: {
-      uk: 'Білі гранули. Дуже їдка речовина — роз’їдає шкіру. Коли розчиняється у воді, вода сильно нагрівається.',
-      en: 'White pellets. A very caustic substance — it eats into skin. Dissolving in water, it heats the water strongly.',
-    },
-    school: {
-      uk: 'Луг NaOH: у воді розпадається на йони Na⁺ і OH⁻. Розчинення виділяє багато теплоти (−44,5 кДж/моль) — розчин розігрівається, інколи аж до бризок.',
-      en: 'The alkali NaOH: in water it splits into Na⁺ and OH⁻ ions. Dissolving gives off a lot of heat (−44.5 kJ/mol) — the solution heats up, sometimes enough to spatter.',
-    },
+    novice: msg('component-sodium-hydroxide-description-novice'),
+    school: msg('component-sodium-hydroxide-description-school'),
   },
   safety: {
-    school: {
-      uk: 'Небезпечно: спричиняє тяжкі опіки шкіри й очей. У школі — лише вчитель, у захисних окулярах і рукавичках; гранули сиплють у воду потроху, а не воду на гранули.',
-      en: 'Dangerous: causes severe burns to skin and eyes. At school only the teacher handles it, with goggles and gloves; the pellets go into the water a little at a time, never water onto the pellets.',
-    },
+    school: msg('component-sodium-hydroxide-safety-school'),
   },
   media: [],
-  modelNotes: [{ uk: 'Теплота розчинення взята для нескінченно розбавленого розчину; у концентрованому вона менша.', en: 'The enthalpy of solution is for an infinitely dilute solution; in a concentrated one it is smaller.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-sodium-hydroxide-model-notes')],
+} as const satisfies ComponentData;

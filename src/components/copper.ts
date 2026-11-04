@@ -1,13 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 export const COPPER = {
   id: 'copper',
   kind: 'element',
   group: 'metal',
-  name: { uk: 'Мідь', en: 'Copper' },
-  genitive: { uk: 'міді', en: 'copper' },
-  gender: 'f',
+  name: msg('component-copper'),
   formula: 'Cu',
   composition: { Cu: 1 },
   wikidata: 'Q753',
@@ -53,8 +52,8 @@ export const COPPER = {
   electrical: { conducts: 'metal', resistivity: sv(16.78e-9, 'Ω·m', 'solid, 20 °C', 'single-source', 0.01, [cite('wikipedia-copper', 'Infobox: electrical resistivity at 20 °C, 16.78 nΩ·m', '20 °C', 16.78e-9)], 'Only the Wikipedia infobox checked so far.'), temperatureCoefficient: sv(3.93e-3, '1/K', '20 °C, annealed copper (winding wire)', 'cross-checked', 0.03, [cite('wikipedia-resistivity', 'Table: annealed copper, α = 3.93·10⁻³ K⁻¹', '20 °C', 3.93e-3), cite('hyperphysics-resistivity', 'Table: copper, annealed, α = 0.00393 (CRC Handbook, 64th ed.)', '20 °C', 3.93e-3)], 'Winding wire is annealed copper; for pure copper the tables give 3.86–4.04·10⁻³.'), electrode: { ion: 'Cu²⁺', electrons: 2, potential: sv(0.337, 'V', 'Cu²⁺ + 2e⁻ ⇌ Cu', 'single-source', 0.02, [cite('wikipedia-standard-electrode-potentials', 'Cu²⁺ + 2e⁻ ⇌ Cu(s): +0.337 V', '298.15 K', 0.337)], 'Only one table checked.') } },
   magnetic: 'diamagnetic',
   description: {
-    novice: { uk: 'Червонуватий метал, який найкраще (після срібла) проводить електрику й теплоту. З міді роблять дроти й дорогий посуд.', en: "A reddish metal, the best conductor of electricity and heat after silver. Used for wires and good cookware." },
-    school: { uk: 'Питомий опір міді лише 0,017 мкОм·м — тому майже всі електричні дроти мідні. Теплопровідність ≈ 400 Вт/(м·K), у 9 разів більша, ніж у сталі.', en: "Copper's resistivity is only 0.017 µΩ·m — that is why almost all electric wires are copper. Its thermal conductivity ≈ 400 W/(m·K) is 9 times that of steel." },
+    novice: msg('component-copper-description-novice'),
+    school: msg('component-copper-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

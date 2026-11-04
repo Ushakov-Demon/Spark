@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Cp 33.949 J/(mol·K), ΔfusH 6.406 kJ/mol, ΔvapH 20.41 kJ/mol ÷ 0.0709 kg/mol. */
@@ -6,9 +7,7 @@ export const CHLORINE = {
   id: 'chlorine',
   kind: 'element',
   group: 'gas',
-  name: { uk: 'Хлор', en: 'Chlorine' },
-  genitive: { uk: 'хлору', en: 'chlorine' },
-  gender: 'm',
+  name: msg('component-chlorine'),
   formula: 'Cl₂',
   composition: { Cl: 2 },
   wikidata: 'Q688',
@@ -32,20 +31,11 @@ export const CHLORINE = {
   magnetic: 'diamagnetic',
   hazards: { oxidizer: true, irritant: true },
   description: {
-    novice: {
-      uk: 'Жовто-зелений газ із різким запахом — так пахне хлорка. Отруйний. Виділяється, коли крізь солону воду пропускають струм.',
-      en: 'A yellow-green gas with a sharp smell — the smell of bleach. Poisonous. It forms when current passes through salt water.',
-    },
-    school: {
-      uk: 'Хлор у 2,5 раза важчий за повітря і збирається внизу. У малих дозах ним знезаражують воду в басейнах і водогоні.',
-      en: 'Chlorine is 2.5 times heavier than air and collects low down. In small doses it disinfects swimming pools and tap water.',
-    },
+    novice: msg('component-chlorine-description-novice'),
+    school: msg('component-chlorine-description-school'),
   },
   safety: {
-    school: {
-      uk: 'Отруйний: подразнює очі й легені. Справжній електроліз солоної води роблять лише з малим струмом, у провітрюваному місці або під витяжкою.',
-      en: 'Poisonous: irritates eyes and lungs. Real electrolysis of salt water is done only with a small current, in a ventilated place or under a fume hood.',
-    },
+    school: msg('component-chlorine-safety-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

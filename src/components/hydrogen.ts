@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Cp 28.836 J/(mol·K), ΔfusH 0.117 kJ/mol, ΔvapH 0.904 kJ/mol ÷ 0.002016 kg/mol. */
@@ -6,9 +7,7 @@ export const HYDROGEN = {
   id: 'hydrogen',
   kind: 'element',
   group: 'gas',
-  name: { uk: 'Водень', en: 'Hydrogen' },
-  genitive: { uk: 'водню', en: 'hydrogen' },
-  gender: 'm',
+  name: msg('component-hydrogen'),
   formula: 'H₂',
   composition: { H: 2 },
   wikidata: 'Q3027893',
@@ -32,15 +31,9 @@ export const HYDROGEN = {
   magnetic: 'diamagnetic',
   hazards: { flammable: true },
   description: {
-    novice: {
-      uk: 'Найлегший газ: у 14 разів легший за повітря. Горить, а з повітрям утворює вибухову суміш. Виділяється, наприклад, коли струм проходить крізь воду.',
-      en: 'The lightest gas: 14 times lighter than air. It burns, and with air forms an explosive mixture. It is released, for example, when current passes through water.',
-    },
-    school: {
-      uk: 'Водень має найбільшу питому теплоємність серед газів (≈ 14 кДж/(кг·K)) і дуже добре проводить теплоту. Згоряючи, утворює лише воду.',
-      en: 'Hydrogen has the highest specific heat of all gases (≈ 14 kJ/(kg·K)) and conducts heat very well. Burning, it forms only water.',
-    },
+    novice: msg('component-hydrogen-description-novice'),
+    school: msg('component-hydrogen-description-school'),
   },
-  safety: { school: { uk: 'Суміш водню з повітрям вибухає від іскри. Справжні досліди з воднем роблять лише з малими кількостями й подалі від вогню.', en: 'A hydrogen–air mixture explodes from a spark. Real experiments with hydrogen use only small amounts, away from flames.' } },
+  safety: { school: msg('component-hydrogen-safety-school') },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Graphite: the electrodes of school electrolysis — they conduct but do not react. */
@@ -6,9 +7,7 @@ export const GRAPHITE = {
   id: 'graphite',
   kind: 'element',
   group: 'material',
-  name: { uk: 'Графіт', en: 'Graphite' },
-  genitive: { uk: 'графіту', en: 'graphite' },
-  gender: 'm',
+  name: msg('component-graphite'),
   formula: 'C',
   composition: { C: 1 },
   wikidata: 'Q5309',
@@ -27,8 +26,8 @@ export const GRAPHITE = {
     },
   },
   description: {
-    novice: { uk: 'Чорно-сірий, м’який, з нього роблять стрижні олівців. Добре проводить струм і майже ні з чим не реагує — тому з графіту роблять електроди.', en: 'Black-grey and soft; pencil leads are made of it. It conducts current well and hardly reacts with anything — that is why electrodes are made of graphite.' },
-    school: { uk: 'Графіт — одна з форм вуглецю. На графітовому аноді під час електролізу окиснюється не електрод, а речовина в розчині: у розчині кухонної солі виділяється хлор.', en: 'Graphite is a form of carbon. At a graphite anode it is not the electrode but the solution that is oxidised: a salt solution gives chlorine.' },
+    novice: msg('component-graphite-description-novice'),
+    school: msg('component-graphite-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

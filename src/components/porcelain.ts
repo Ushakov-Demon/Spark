@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Porcelain: what crucibles are made of — it stands red heat. */
@@ -6,9 +7,8 @@ export const PORCELAIN = {
   id: 'porcelain',
   kind: 'material',
   group: 'material',
-  name: { uk: 'Порцеляна', en: 'Porcelain' },
-  gender: 'f',
-  madeOf: [{ part: { uk: 'випалена біла глина (каолін), кварц і польовий шпат', en: 'fired white clay (kaolin), quartz and feldspar' } }],
+  name: msg('component-porcelain'),
+  madeOf: [{ part: msg('component-porcelain-made-of-part') }],
   stateAtRoom: 'solid',
   phases: {
     solid: {
@@ -18,8 +18,8 @@ export const PORCELAIN = {
     },
   },
   description: {
-    novice: { uk: 'Біла випалена кераміка. Не горить, не плавиться у вогні й майже не проводить теплоту — тому з неї роблять тиглі.', en: 'White fired ceramic. It does not burn or melt in a flame and hardly conducts heat — that is why crucibles are made of it.' },
-    school: { uk: 'Порцеляновий тигель витримує нагрівання до ≈ 1150 °C. Теплопровідність порцеляни ≈ 1,5 Вт/(м·К) — у десятки разів менша, ніж у сталі.', en: 'A porcelain crucible stands heating up to ≈ 1150 °C. Porcelain conducts heat at ≈ 1.5 W/(m·K) — tens of times less than steel.' },
+    novice: msg('component-porcelain-description-novice'),
+    school: msg('component-porcelain-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

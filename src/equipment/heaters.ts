@@ -1,3 +1,4 @@
+import { msg } from '../knowledge/messages.js';
 import type { HeaterItem } from './types.js';
 
 
@@ -12,13 +13,13 @@ const HEATER_LIST = {
   'electric-hotplate': {
     id: 'electric-hotplate',
     look: 'hotplate',
-    phrase: { uk: 'на електроплиті', en: 'on an electric hob' },
-    name: { uk: 'Електроплита (чавунна конфорка)', en: 'Electric hob (cast-iron plate)' },
+    phrase: msg('heater-electric-hotplate-phrase'),
+    name: msg('heater-electric-hotplate'),
     kind: 'heater',
     category: 'device.heater.household',
     description: {
-      novice: { uk: 'Усередині чавунного диска — нагрівальна спіраль. Струм нагріває диск, а диск передає теплоту дну посуду дотиком. Сам диск розігрівається і холоне повільно.', en: 'Inside the cast-iron disc there is a heating coil. Electric current heats the disc, and the disc passes heat to the bottom of the pot by touch. The disc itself warms up and cools down slowly.' },
-      school: { uk: 'Електричний струм нагріває спіраль у чавунному диску (закон Джоуля–Ленца). Диск передає теплоту посуду теплопровідністю через площу дотику; частина теплоти йде від розжареного диска в повітря.', en: 'Current heats a coil inside a cast-iron disc (Joule heating). The disc passes heat to the vessel by conduction through the contact area; part of the heat leaves the hot disc into the air.' },
+      novice: msg('heater-electric-hotplate-description-novice'),
+      school: msg('heater-electric-hotplate-description-school'),
     },
     media: [],
     spec: {
@@ -65,13 +66,13 @@ const HEATER_LIST = {
   'induction-hob': {
     id: 'induction-hob',
     look: 'induction',
-    phrase: { uk: 'на індукційній плиті', en: 'on an induction hob' },
-    name: { uk: 'Індукційна плита', en: 'Induction hob' },
+    phrase: msg('heater-induction-hob-phrase'),
+    name: msg('heater-induction-hob'),
     kind: 'heater',
     category: 'device.heater.household',
     description: {
-      novice: { uk: 'Під склом схована котушка. Її змінне магнітне поле створює електричні струми просто в дні каструлі — і дно нагрівається саме. Тому плита гріє лише посуд із магнітного металу.', en: 'A coil is hidden under the glass. Its changing magnetic field creates electric currents right in the bottom of the pot — so the bottom heats itself. That is why the hob only heats pots made of a magnetic metal.' },
-      school: { uk: 'Змінний струм у котушці створює змінне магнітне поле; воно наводить вихрові струми в дні посуду з феромагнітного металу (чавун, магнітні марки сталі), і дно нагрівається. Алюміній і мідь такі плити зазвичай не гріють.', en: 'Alternating current in a coil makes a changing magnetic field; it induces eddy currents in the base of a ferromagnetic pot (cast iron, magnetic steels), which heats it. Aluminium and copper are usually not heated.' },
+      novice: msg('heater-induction-hob-description-novice'),
+      school: msg('heater-induction-hob-description-school'),
     },
     media: [],
     spec: {
@@ -120,13 +121,13 @@ const HEATER_LIST = {
   'gas-hob': {
     id: 'gas-hob',
     look: 'gas',
-    phrase: { uk: 'на газовій кухонній плиті', en: 'on a kitchen gas hob' },
-    name: { uk: 'Газова плита (кухонна конфорка)', en: 'Gas hob (kitchen burner)' },
+    phrase: msg('heater-gas-hob-phrase'),
+    name: msg('heater-gas-hob'),
     kind: 'heater',
     category: 'device.heater.household',
     description: {
-      novice: { uk: 'Горить природний газ. Гарячі гази полум’я обтікають дно посуду, але багато теплоти проходить повз нього в кімнату.', en: 'Natural gas burns. Hot flame gases flow around the bottom of the pot, but much of the heat goes past it into the room.' },
-      school: { uk: 'Під час горіння газу виділяється теплота. Посуд отримує лише її частину: за вимірюваннями — приблизно 30–44 %; решта нагріває повітря навколо.', en: 'Burning gas releases heat. The pot receives only part of it — about 30–44 % by measurements; the rest heats the air around.' },
+      novice: msg('heater-gas-hob-description-novice'),
+      school: msg('heater-gas-hob-description-school'),
     },
     media: [],
     spec: {
@@ -178,15 +179,15 @@ const HEATER_LIST = {
   'immersion-heater': {
     id: 'immersion-heater',
     look: 'immersion',
-    phrase: { uk: 'кип’ятильником', en: 'with an immersion heater' },
-    name: { uk: 'Кип’ятильник', en: 'Immersion heater' },
+    phrase: msg('heater-immersion-heater-phrase'),
+    name: msg('heater-immersion-heater'),
     kind: 'heater',
     category: 'device.heater.household',
     description: {
-      novice: { uk: 'Нагрівальний елемент опускають просто у воду, тому майже вся теплота йде у воду.', en: 'The heating element goes straight into the water, so almost all the heat goes into the water.' },
-      school: { uk: 'Струм нагріває металеву трубку з ізольованою спіраллю всередині; трубка віддає теплоту воді, яка оточує її з усіх боків. Втрат на нагрівання посуду й повітря мало.', en: 'Current heats a metal tube with an insulated coil inside; the tube gives heat to the water surrounding it on all sides. Little is lost to the vessel and the air.' },
+      novice: msg('heater-immersion-heater-description-novice'),
+      school: msg('heater-immersion-heater-description-school'),
     },
-    safety: { school: { uk: 'Не вмикати кип’ятильник без води: вода має покривати нагрівальну частину.', en: 'Never switch an immersion heater on outside water: the water must cover the heating part.' } },
+    safety: { school: msg('heater-immersion-heater-safety-school') },
     media: [],
     spec: {
       method: 'immersion',
@@ -227,13 +228,13 @@ const HEATER_LIST = {
   'bunsen-burner': {
     id: 'bunsen-burner',
     look: 'bunsen',
-    phrase: { uk: 'над газовим пальником', en: 'over a Bunsen burner' },
-    name: { uk: 'Газовий пальник (лабораторний)', en: 'Bunsen burner' },
+    phrase: msg('heater-bunsen-burner-phrase'),
+    name: msg('heater-bunsen-burner'),
     kind: 'heater',
     category: 'device.heater.laboratory',
     description: {
-      novice: { uk: 'Лабораторний газовий пальник. Кількість газу регулюють вентилем, а кількість повітря — заслінкою; від цього залежить, яке полум’я.', en: 'A laboratory gas burner. A valve sets how much gas flows, a collar sets how much air mixes in — this changes the flame.' },
-      school: { uk: 'Газ змішується з повітрям усередині трубки й згоряє над нею. Вентиль регулює витрату газу, отже, і потужність; посуд ставлять на триногу над полум’ям.', en: 'Gas mixes with air inside the tube and burns above it. The valve sets the gas flow and therefore the power; vessels stand on a tripod above the flame.' },
+      novice: msg('heater-bunsen-burner-description-novice'),
+      school: msg('heater-bunsen-burner-description-school'),
     },
     media: [],
     spec: {
@@ -283,13 +284,13 @@ const HEATER_LIST = {
   'spirit-lamp': {
     id: 'spirit-lamp',
     look: 'spirit',
-    phrase: { uk: 'над спиртівкою', en: 'over a spirit lamp' },
-    name: { uk: 'Спиртівка', en: 'Spirit lamp' },
+    phrase: msg('heater-spirit-lamp-phrase'),
+    name: msg('heater-spirit-lamp'),
     kind: 'heater',
     category: 'device.heater.laboratory',
     description: {
-      novice: { uk: 'Спирт піднімається ґнотом і горить невеликим полум’ям. Спиртівкою гріють пробірки й невеликі об’єми.', en: 'Alcohol rises up a wick and burns with a small flame. Spirit lamps heat test tubes and small amounts of liquid.' },
-      school: { uk: 'Потужність спиртівки невелика, і точних даних про неї ми не знайшли — тут вона оцінена. Її можна виміряти самостійно: нагріти відому масу води й порахувати Q = c·m·Δt.', en: 'A spirit lamp has low power, and we found no reliable measurement — it is an estimate here. You can measure it yourself: heat a known mass of water and compute Q = c·m·Δt.' },
+      novice: msg('heater-spirit-lamp-description-novice'),
+      school: msg('heater-spirit-lamp-description-school'),
     },
     media: [],
     spec: {

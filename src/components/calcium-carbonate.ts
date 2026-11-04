@@ -1,13 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 export const CALCIUM_CARBONATE = {
   id: 'calcium-carbonate',
   kind: 'compound',
   group: 'mineral',
-  name: { uk: 'Крейда (карбонат кальцію)', en: 'Chalk (calcium carbonate)' },
-  genitive: { uk: 'крейди', en: 'chalk' },
-  gender: 'f',
+  name: msg('component-calcium-carbonate'),
   formula: 'CaCO₃',
   composition: { Ca: 1, C: 1, O: 3 },
   wikidata: 'Q23767',
@@ -24,15 +23,9 @@ export const CALCIUM_CARBONATE = {
   electrical: { conducts: 'insulator' },
   hazards: {},
   description: {
-    novice: {
-      uk: 'З нього складаються крейда, мармур, вапняк, яєчна шкаралупа й черепашки. У воді майже не розчиняється, а в оцті — шипить і поступово зникає.',
-      en: 'Chalk, marble, limestone, eggshells and seashells are made of it. It barely dissolves in water, but in vinegar it fizzes and slowly disappears.',
-    },
-    school: {
-      uk: 'Карбонат кальцію реагує з кислотами, виділяючи вуглекислий газ. При сильному нагріванні розкладається на негашене вапно (CaO) і CO₂.',
-      en: 'Calcium carbonate reacts with acids, releasing carbon dioxide. Strongly heated, it breaks down into quicklime (CaO) and CO₂.',
-    },
+    novice: msg('component-calcium-carbonate-description-novice'),
+    school: msg('component-calcium-carbonate-description-school'),
   },
   media: [],
-  modelNotes: [{ uk: 'Температуру розкладання ще не перевірено за джерелами, тому в моделі крейда не розкладається.', en: 'The decomposition temperature is not checked against sources yet, so chalk does not decompose in the model.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-calcium-carbonate-model-notes')],
+} as const satisfies ComponentData;

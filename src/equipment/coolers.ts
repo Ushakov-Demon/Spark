@@ -1,3 +1,4 @@
+import { msg } from '../knowledge/messages.js';
 import type { CoolerItem } from './types.js';
 
 /**
@@ -11,17 +12,11 @@ const LIST = {
     look: 'freezer',
     kind: 'cooler',
     category: 'device.cooler.household',
-    name: { uk: 'Морозильна камера', en: 'Freezer' },
-    phrase: { uk: 'у морозильній камері', en: 'in a freezer' },
+    name: msg('cooler-freezer'),
+    phrase: msg('cooler-freezer-phrase'),
     description: {
-      novice: {
-        uk: 'Холодна шафа, у якій повітря тримається приблизно при −18 °C. Вентилятор ганяє холодне повітря, тож продукти остигають швидше.',
-        en: 'A cold cabinet where the air is kept at about −18 °C. A fan moves the cold air around, so food cools faster.',
-      },
-      school: {
-        uk: 'Холодильна машина забирає теплоту зсередини камери й віддає її в кімнату. Тіло в камері віддає теплоту холодному повітрю; щоб замерзнути, воно має віддати ще й приховану теплоту.',
-        en: 'A refrigeration machine takes heat from inside the cabinet and releases it into the room. A body inside gives heat to the cold air; to freeze, it must also give away its latent heat.',
-      },
+      novice: msg('cooler-freezer-description-novice'),
+      school: msg('cooler-freezer-description-school'),
     },
     media: [],
     spec: {
@@ -44,17 +39,11 @@ const LIST = {
     look: 'fridge',
     kind: 'cooler',
     category: 'device.cooler.household',
-    name: { uk: 'Холодильник', en: 'Refrigerator' },
-    phrase: { uk: 'у холодильнику', en: 'in a refrigerator' },
+    name: msg('cooler-fridge'),
+    phrase: msg('cooler-fridge-phrase'),
     description: {
-      novice: {
-        uk: 'У холодильнику тримається приблизно +4 °C — холодно, але вода не замерзає.',
-        en: 'A refrigerator keeps about +4 °C — cold, but water does not freeze.',
-      },
-      school: {
-        uk: 'Повітря в камері нерухоме, тому тіла остигають у холодильнику повільніше, ніж у морозилці з вентилятором.',
-        en: 'The air inside is still, so bodies cool more slowly in a refrigerator than in a freezer with a fan.',
-      },
+      novice: msg('cooler-fridge-description-novice'),
+      school: msg('cooler-fridge-description-school'),
     },
     media: [],
     spec: {
@@ -76,17 +65,11 @@ const LIST = {
     look: 'ice-bath',
     kind: 'cooler',
     category: 'device.cooler.laboratory',
-    name: { uk: 'Льодяна баня (лід + вода)', en: 'Ice bath (ice + water)' },
-    phrase: { uk: 'у льодяній бані', en: 'in an ice bath' },
+    name: msg('cooler-ice-bath'),
+    phrase: msg('cooler-ice-bath-phrase'),
     description: {
-      novice: {
-        uk: 'Миска з подрібненим льодом і водою. Поки лід тане, суміш тримає рівно 0 °C.',
-        en: 'A bowl of crushed ice and water. While the ice melts, the mixture stays at exactly 0 °C.',
-      },
-      school: {
-        uk: 'Теплота від посуду йде на плавлення льоду, тому температура бані не змінюється — це та сама прихована теплота. Вода в бані віддає теплоту набагато краще за повітря.',
-        en: 'Heat from the vessel goes into melting ice, so the bath temperature does not change — latent heat again. Water in the bath takes heat far better than air.',
-      },
+      novice: msg('cooler-ice-bath-description-novice'),
+      school: msg('cooler-ice-bath-description-school'),
     },
     media: [],
     spec: {
@@ -111,17 +94,11 @@ const LIST = {
     look: 'ice-salt-bath',
     kind: 'cooler',
     category: 'device.cooler.laboratory',
-    name: { uk: 'Охолоджувальна суміш (лід + сіль)', en: 'Ice-salt bath' },
-    phrase: { uk: 'в охолоджувальній суміші льоду й солі', en: 'in an ice-salt bath' },
+    name: msg('cooler-ice-salt-bath'),
+    phrase: msg('cooler-ice-salt-bath-phrase'),
     description: {
-      novice: {
-        uk: 'Лід, посипаний сіллю, тане й стає набагато холоднішим за 0 °C — аж до приблизно −21 °C.',
-        en: 'Ice sprinkled with salt melts and gets much colder than 0 °C — down to about −21 °C.',
-      },
-      school: {
-        uk: 'Солоний розчин замерзає при нижчій температурі, ніж вода, тож лід у ньому тане, забираючи приховану теплоту, і суміш охолоджується до температури замерзання розчину — найнижча можлива −21,1 °C (при 23,3 % солі).',
-        en: 'Salt water freezes at a lower temperature than water, so ice in it melts, taking latent heat, and the mixture cools to the freezing point of the brine — at best −21.1 °C (at 23.3 % salt).',
-      },
+      novice: msg('cooler-ice-salt-bath-description-novice'),
+      school: msg('cooler-ice-salt-bath-description-school'),
     },
     media: [],
     spec: {
@@ -144,17 +121,11 @@ const LIST = {
     look: 'furnace',
     kind: 'cooler',
     category: 'device.furnace.laboratory',
-    name: { uk: 'Муфельна піч', en: 'Muffle furnace' },
-    phrase: { uk: 'у муфельній печі', en: 'in a muffle furnace' },
+    name: msg('cooler-muffle-furnace'),
+    phrase: msg('cooler-muffle-furnace-phrase'),
     description: {
-      novice: {
-        uk: 'Маленька електропіч із товстими стінками з вогнетривкої цегли. Усередині тримається задана температура — аж до 1100 °C.',
-        en: 'A small electric furnace with thick firebrick walls. Inside it keeps the set temperature — up to 1100 °C.',
-      },
-      school: {
-        uk: 'Розжарені стінки печі віддають теплоту тиглю переважно випромінюванням; терморегулятор тримає задану температуру. У такій печі плавлять сіль і алюміній.',
-        en: 'The glowing walls of the furnace give heat to the crucible mostly by radiation; a controller holds the set temperature. Salt and aluminium are melted in such a furnace.',
-      },
+      novice: msg('cooler-muffle-furnace-description-novice'),
+      school: msg('cooler-muffle-furnace-description-school'),
     },
     media: [],
     spec: {

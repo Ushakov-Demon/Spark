@@ -29,7 +29,8 @@ import { STEEL } from './steel.js';
 import { SUCROSE } from './sucrose.js';
 import { SUNFLOWER_OIL } from './sunflower-oil.js';
 import { TIN } from './tin.js';
-import type { Component } from './types.js';
+import { attribute, form } from '../knowledge/messages.js';
+import type { Component, ComponentData } from './types.js';
 import { WATER } from './water.js';
 import { WOOD } from './wood.js';
 import { RUBBER } from './rubber.js';
@@ -75,10 +76,19 @@ const LIST = {
   'iron-ii-hydroxide': IRON_II_HYDROXIDE,
   wood: WOOD,
   rubber: RUBBER,
-} as const satisfies Record<string, Component>;
+} as const satisfies Record<string, ComponentData>;
 
 export type ComponentId = keyof typeof LIST;
-export const COMPONENTS: Readonly<Record<ComponentId, Component>> = LIST;
+/** A component with its name's forms, read from the messages when asked for. */
+function withForms(c: ComponentData): Component {
+  const id = `component-${c.id}`;
+  return Object.defineProperties({ ...c }, {
+    genitive: { enumerable: true, get: () => form(c.name, 'genitive') },
+    gender: { enumerable: true, get: () => (attribute('uk', id, 'gender') ?? 'm') as Component['gender'] },
+  }) as Component;
+}
+
+export const COMPONENTS: Readonly<Record<ComponentId, Component>> = Object.fromEntries(Object.entries(LIST).map(([k, c]) => [k, withForms(c)])) as Record<ComponentId, Component>;
 
 export const isComponentId = (id: string): id is ComponentId => id in LIST;
 

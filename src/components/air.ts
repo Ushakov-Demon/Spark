@@ -1,13 +1,13 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 export const AIR = {
   id: 'air',
   kind: 'material',
   group: 'gas',
-  name: { uk: 'Повітря', en: 'Air' },
-  gender: 'n',
-  madeOf: [{ part: { uk: 'азот', en: 'nitrogen' }, fraction: 0.755 }, { part: { uk: 'кисень', en: 'oxygen' }, fraction: 0.231 }, { part: { uk: 'аргон', en: 'argon' }, fraction: 0.013 }],
+  name: msg('component-air'),
+  madeOf: [{ part: msg('component-air-made-of-part'), fraction: 0.755 }, { part: msg('component-air-made-of-part-2'), fraction: 0.231 }, { part: msg('component-air-made-of-part-3'), fraction: 0.013 }],
   molarMass: sv(0.0289644, 'kg/mol', 'dry air', 'single-source', 0.001, [cite('wikipedia-barometric-formula', 'U.S. Standard Atmosphere: M₀ = 28.9644 kg/kmol', 'dry air', 0.0289644)], 'The molar mass of dry air the standard atmosphere uses.'),
   stateAtRoom: 'gas',
   phases: {
@@ -41,9 +41,9 @@ export const AIR = {
   },
   electrical: { conducts: 'insulator' },
   description: {
-    novice: { uk: 'Суміш газів навколо нас: здебільшого азот і кисень. Погано проводить теплоту — тому теплий одяг і подвійні вікна тримають тепло.', en: "The mixture of gases around us: mostly nitrogen and oxygen. It conducts heat poorly — that is why warm clothes and double windows keep heat in." },
-    school: { uk: 'Теплопровідність повітря ≈ 0,026 Вт/(м·K) — у 20 разів менша, ніж у води. Нерухоме повітря — один із найкращих теплоізоляторів.', en: "Air conducts heat at ≈ 0.026 W/(m·K) — 20 times less than water. Still air is one of the best heat insulators." },
+    novice: msg('component-air-description-novice'),
+    school: msg('component-air-description-school'),
   },
   media: [],
-  modelNotes: [{ uk: 'Склад повітря наведено приблизно, за масою; у моделі повітря — одна речовина зі своїми властивостями.', en: 'The composition of air is approximate, by mass; in the model air is one substance with its own properties.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-air-model-notes')],
+} as const satisfies ComponentData;

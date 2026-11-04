@@ -1,13 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, estimate, sv } from './sourced.js';
 
 export const ETHANOL = {
   id: 'ethanol',
   kind: 'compound',
   group: 'alcohol',
-  name: { uk: 'Спирт (етанол)', en: 'Alcohol (ethanol)' },
-  genitive: { uk: 'спирту', en: 'alcohol' },
-  gender: 'm',
+  name: msg('component-ethanol'),
   formula: 'C₂H₅OH',
   composition: { C: 2, H: 6, O: 1 },
   wikidata: 'Q153',
@@ -44,20 +43,11 @@ export const ETHANOL = {
   electrical: { conducts: 'insulator' },
   hazards: { flammable: true },
   description: {
-    novice: {
-      uk: 'Безбарвна рідина, яка кипить уже при 78 °C, а замерзає лише при −114 °C — жодна домашня морозилка її не заморозить.',
-      en: 'A colourless liquid that boils already at 78 °C and freezes only at −114 °C — no home freezer can freeze it.',
-    },
-    school: {
-      uk: 'Питома теплоємність спирту приблизно на 40 % менша, ніж у води, а теплота пароутворення — у 2,6 раза менша. Тому спирт нагрівається і википає значно швидше.',
-      en: 'Ethanol has about 40 % lower specific heat than water and a 2.6 times lower heat of vaporisation. So it heats up and boils away much faster.',
-    },
+    novice: msg('component-ethanol-description-novice'),
+    school: msg('component-ethanol-description-school'),
   },
   safety: {
-    school: {
-      uk: 'Спирт легко займається, а його пара — вибухонебезпечна. Справжній спирт не гріють на відкритому вогні.',
-      en: 'Alcohol catches fire easily and its vapour can explode. Real alcohol is never heated over an open flame.',
-    },
+    school: msg('component-ethanol-safety-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

@@ -1,14 +1,13 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 export const STEEL = {
   id: 'steel',
   kind: 'material',
   group: 'alloy',
-  name: { uk: 'Сталь (вуглецева)', en: 'Carbon steel' },
-  genitive: { uk: 'сталі', en: 'steel' },
-  gender: 'f',
-  madeOf: [{ part: { uk: 'залізо', en: 'iron' }, fraction: 0.98 }, { part: { uk: 'вуглець', en: 'carbon' } }],
+  name: msg('component-steel'),
+  madeOf: [{ part: msg('component-steel-made-of-part'), fraction: 0.98 }, { part: msg('component-steel-made-of-part-2') }],
   stateAtRoom: 'solid',
   phases: {
     solid: {
@@ -51,9 +50,9 @@ export const STEEL = {
   electrical: { conducts: 'metal', electrode: { metal: 'iron', ion: 'Fe²⁺', electrons: 2, potential: sv(-0.44, 'V', 'Fe²⁺ + 2e⁻ ⇌ Fe', 'single-source', 0.02, [cite('wikipedia-standard-electrode-potentials', 'Fe²⁺ + 2e⁻ ⇌ Fe(s): −0.44 V', '298.15 K', -0.44)], 'Iron’s value: steel is mostly iron; carbon and alloying elements change it little for this. Stainless steel is protected by a film of chromium oxide and dissolves far less — not modelled.'), hydroxide: 'iron-ii-hydroxide' } },
   magnetic: 'ferromagnetic',
   description: {
-    novice: { uk: 'Сплав заліза з невеликою кількістю вуглецю — міцніший за чисте залізо. З нього роблять каструлі, інструменти, конструкції.', en: "An alloy of iron with a little carbon — stronger than pure iron. Used for pots, tools, structures." },
-    school: { uk: 'Сталь проводить теплоту приблизно в 5 разів гірше за алюміній, зате міцна й не боїться високих температур.', en: "Steel conducts heat about 5 times worse than aluminium, but it is strong and withstands high temperatures." },
+    novice: msg('component-steel-description-novice'),
+    school: msg('component-steel-description-school'),
   },
   media: [],
-  modelNotes: [{ uk: 'Властивості сталі залежать від марки: нержавіюча сталь проводить теплоту в 2–3 рази гірше за вуглецеву, а деякі її марки не магнітні.', en: 'Steel properties depend on the grade: stainless steel conducts heat 2–3 times worse than carbon steel, and some grades are not magnetic.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-steel-model-notes')],
+} as const satisfies ComponentData;

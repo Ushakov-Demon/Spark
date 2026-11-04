@@ -1,0 +1,21 @@
+## The sandbox shelf: the shelf's own names for substances, its sections and families.
+shelf-water = Distilled water
+    .genitive = distilled water
+shelf-table-salt = Table salt
+    .genitive = table salt
+shelf-wood = Wooden block (pine)
+shelf-glass = Glass marble
+shelf-rubber = Rubber stopper
+shelf-group-liquid-water = Water
+shelf-group-liquid-solution = Solutions
+shelf-group-liquid-alcohol = Alcohols
+shelf-group-liquid-acid = Acids
+shelf-group-liquid-oil = Oils
+shelf-group-solid-salt = Salts
+shelf-group-solid-metal = Metals and alloys
+shelf-group-solid-material = Other solids
+shelf-group-liquids = Liquids
+shelf-group-solutions = Solutions
+shelf-group-salts = Salts and minerals
+shelf-group-metals = Metals and alloys
+shelf-group-solids = Other solids

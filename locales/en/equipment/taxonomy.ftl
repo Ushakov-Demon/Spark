@@ -1,0 +1,19 @@
+## The tree of devices and vessels.
+category-device = Devices
+category-device-heater = Heaters
+category-device-heater-household = Household heaters
+category-device-heater-laboratory = Laboratory heaters
+category-device-cooler = Coolers
+category-device-cooler-household = Household coolers
+category-device-cooler-laboratory = Laboratory cooling baths
+category-device-furnace = Furnaces
+category-device-furnace-laboratory = Laboratory furnaces
+category-device-power = Power sources
+category-device-power-household = Household power sources
+category-device-power-laboratory = Laboratory power supplies
+category-device-measuring = Measuring instruments
+category-device-measuring-household = Household measuring instruments
+category-device-measuring-laboratory = Laboratory measuring instruments
+category-vessel = Vessels
+category-vessel-household = Household vessels
+category-vessel-laboratory = Laboratory glassware

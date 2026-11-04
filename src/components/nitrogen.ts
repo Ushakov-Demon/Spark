@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Cp 29.124 J/(mol·K), ΔfusH 0.72 kJ/mol, ΔvapH 5.57 kJ/mol ÷ 0.028014 kg/mol. */
@@ -6,8 +7,7 @@ export const NITROGEN = {
   id: 'nitrogen',
   kind: 'element',
   group: 'gas',
-  name: { uk: 'Азот', en: 'Nitrogen' },
-  gender: 'm',
+  name: msg('component-nitrogen'),
   formula: 'N₂',
   composition: { N: 2 },
   wikidata: 'Q2370426',
@@ -31,15 +31,9 @@ export const NITROGEN = {
   magnetic: 'diamagnetic',
   hazards: { asphyxiant: true },
   description: {
-    novice: {
-      uk: 'Газ, якого в повітрі найбільше — приблизно три чверті. Не горить і не підтримує горіння. Рідкий азот кипить при −196 °C і миттєво заморожує квіти й фрукти.',
-      en: 'The gas that makes up most of the air — about three quarters. It neither burns nor supports burning. Liquid nitrogen boils at −196 °C and instantly freezes flowers and fruit.',
-    },
-    school: {
-      uk: 'Азот хімічно малоактивний, тому ним заповнюють пакети з чипсами: продукти не окиснюються.',
-      en: 'Nitrogen is chemically inactive, which is why crisp packets are filled with it: the food does not oxidise.',
-    },
+    novice: msg('component-nitrogen-description-novice'),
+    school: msg('component-nitrogen-description-school'),
   },
-  safety: { school: { uk: 'Рідкий азот спричиняє холодові опіки, а його пара в закритому приміщенні витісняє кисень.', en: 'Liquid nitrogen causes cold burns, and its vapour displaces oxygen in a closed room.' } },
+  safety: { school: msg('component-nitrogen-safety-school') },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

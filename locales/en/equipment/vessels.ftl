@@ -1,0 +1,44 @@
+## Vessels: the name, what of (the material), the description.
+vessel-pot = Pot
+vessel-pot-phrase-in-steel = in a steel pot
+vessel-pot-phrase-in-aluminium = in an aluminium pot
+vessel-pot-phrase-in-iron = in a cast-iron pot
+vessel-pot-description-novice = An ordinary kitchen pot. Metal conducts heat well, so the bottom quickly passes it to the water. With a lid the water heats faster.
+vessel-pot-description-school = Thin metal walls conduct heat well and hardly slow heating down; but the pot itself also takes heat — Q = c·m·Δt for its mass. A lid reduces heat loss from the water surface.
+vessel-turka = Cezve (Turkish coffee pot)
+vessel-turka-phrase-in-copper = in a copper cezve
+vessel-turka-phrase-in-brass = in a brass cezve
+vessel-turka-phrase-in-steel = in a steel cezve
+vessel-turka-phrase-in-aluminium = in an aluminium cezve
+vessel-turka-description-novice = A small coffee pot with a wide bottom and a narrower neck. It can be copper, brass, steel or aluminium — and each heats differently.
+vessel-turka-description-school = Copper conducts heat about 9 times better than steel, brass about 2.5 times better; so a copper wall warms more evenly. For a thin wall, however, what matters more is how much heat the metal itself takes: Q = c·m·Δt.
+vessel-beaker = Beaker
+vessel-beaker-phrase-in-glass = in a glass beaker
+vessel-beaker-description-novice = A glass vessel with a spout and volume marks. Glass conducts heat poorly, so water in it heats more slowly than in a metal pot.
+vessel-beaker-description-school = Glass conducts heat tens to hundreds of times worse than metals, so the beaker wall noticeably slows heat transfer to the water. Over a flame a beaker stands on a tripod; an induction hob does not heat glass.
+vessel-calorimeter = Calorimeter
+vessel-calorimeter-phrase-in-aluminium = in a calorimeter
+vessel-calorimeter-description-novice = A thin aluminium cup set inside a bigger one with a layer of air between them, so heat hardly escapes. Water is mixed in it and heated bodies are dropped in to measure how much heat they gave.
+vessel-calorimeter-description-school = Air conducts heat thousands of times worse than metal, so the air gap between the cups is a good insulator. There are losses, but smaller than in an ordinary beaker: the heat balance comes out closer. A calorimeter is heated from inside — with an immersion heater, not on a hob.
+vessel-cylinder = Measuring cylinder
+vessel-cylinder-phrase-in-glass = in a measuring cylinder
+vessel-cylinder-description-novice = A tall narrow glass vessel with marks. It measures the volume of a liquid — and of a body: drop it into the water and see how far the level rises.
+vessel-cylinder-description-school = One division is 1 mL. Read the level at the bottom of the meniscus with your eyes at its height. The volume of an odd-shaped body is V₂ − V₁. A cylinder is never heated.
+vessel-flask-conical = Conical (Erlenmeyer) flask
+vessel-flask-conical-phrase-in-glass = in a conical flask
+vessel-flask-conical-description-novice = A glass flask with a flat wide bottom and a narrow neck. It can stand on a hot plate, and liquid splashes out less.
+vessel-flask-conical-description-school = The wide bottom takes heat from a plate well, and the narrow neck reduces the open liquid surface — less heat escapes into the air.
+vessel-flask-round = Round-bottom flask
+vessel-flask-round-phrase-in-glass = in a round-bottom flask
+vessel-flask-round-description-novice = A ball-shaped flask with a narrow neck. It cannot stand on its own — it is held in a clamp.
+vessel-flask-round-description-school = A round bottom touches a flat plate at a single point, so such a flask is heated over a flame or in a heating mantle that wraps around it.
+vessel-test-tube = Test tube
+vessel-test-tube-phrase-in-glass = in a test tube
+vessel-test-tube-description-novice = A narrow glass tube with a rounded bottom for small amounts of a substance. It is held with a holder over a flame.
+vessel-test-tube-description-school = A test tube holds little liquid, so even a weak spirit-lamp flame heats it quickly.
+vessel-test-tube-safety-school = When heating, never point the open end of a test tube at yourself or others.
+vessel-crucible = Crucible
+vessel-crucible-phrase-in-porcelain = in a porcelain crucible
+vessel-crucible-description-novice = A small thick-walled porcelain cup. Substances are heated red-hot and melted in it right in the flame: porcelain does not burn or melt.
+vessel-crucible-description-school = A crucible sits in a pipe-clay triangle on a tripod over a burner, or in a muffle furnace. Porcelain stands ≈ 1150 °C but cracks from a sudden change of temperature — a hot crucible is never put on anything cold.
+vessel-crucible-safety-school = A red-hot crucible is handled only with crucible tongs and put down on a ceramic tile.

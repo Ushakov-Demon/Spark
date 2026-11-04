@@ -1,3 +1,4 @@
+import { msg } from '../knowledge/messages.js';
 import type { VesselItem } from './types.js';
 
 /**
@@ -10,21 +11,15 @@ const VESSEL_LIST = {
     look: 'pot',
     kind: 'vessel',
     category: 'vessel.household',
-    name: { uk: 'Каструля', en: 'Pot' },
+    name: msg('vessel-pot'),
     phraseIn: {
-      steel: { uk: 'у сталевій каструлі', en: 'in a steel pot' },
-      aluminium: { uk: 'в алюмінієвій каструлі', en: 'in an aluminium pot' },
-      iron: { uk: 'у чавунній каструлі', en: 'in a cast-iron pot' },
+      steel: msg('vessel-pot-phrase-in-steel'),
+      aluminium: msg('vessel-pot-phrase-in-aluminium'),
+      iron: msg('vessel-pot-phrase-in-iron'),
     },
     description: {
-      novice: {
-        uk: 'Звичайна кухонна каструля. Метал добре проводить теплоту, тому дно швидко передає її воді. З кришкою вода нагрівається швидше.',
-        en: 'An ordinary kitchen pot. Metal conducts heat well, so the bottom quickly passes it to the water. With a lid the water heats faster.',
-      },
-      school: {
-        uk: 'Металеві стінки тонкі й добре проводять теплоту, тож майже не заважають нагріванню; але сама каструля теж забирає частину теплоти — Q = c·m·Δt для її маси. Кришка зменшує тепловіддачу з поверхні води.',
-        en: 'Thin metal walls conduct heat well and hardly slow heating down; but the pot itself also takes heat — Q = c·m·Δt for its mass. A lid reduces heat loss from the water surface.',
-      },
+      novice: msg('vessel-pot-description-novice'),
+      school: msg('vessel-pot-description-school'),
     },
     media: [],
     spec: {
@@ -67,22 +62,16 @@ const VESSEL_LIST = {
     look: 'turka',
     kind: 'vessel',
     category: 'vessel.household',
-    name: { uk: 'Турка (джезва)', en: 'Cezve (Turkish coffee pot)' },
+    name: msg('vessel-turka'),
     phraseIn: {
-      copper: { uk: 'у мідній турці', en: 'in a copper cezve' },
-      brass: { uk: 'у латунній турці', en: 'in a brass cezve' },
-      steel: { uk: 'у сталевій турці', en: 'in a steel cezve' },
-      aluminium: { uk: 'в алюмінієвій турці', en: 'in an aluminium cezve' },
+      copper: msg('vessel-turka-phrase-in-copper'),
+      brass: msg('vessel-turka-phrase-in-brass'),
+      steel: msg('vessel-turka-phrase-in-steel'),
+      aluminium: msg('vessel-turka-phrase-in-aluminium'),
     },
     description: {
-      novice: {
-        uk: 'Невеликий посуд для кави з широким дном і вужчим горлом. Буває мідний, латунний, сталевий, алюмінієвий — і нагрівається по-різному.',
-        en: 'A small coffee pot with a wide bottom and a narrower neck. It can be copper, brass, steel or aluminium — and each heats differently.',
-      },
-      school: {
-        uk: 'Мідь проводить теплоту приблизно в 9 разів краще за сталь, латунь — приблизно в 2,5 раза краще; тому стінка мідної турки рівномірніше прогрівається. Але для тонкої стінки важливіше інше — скільки теплоти забирає сам метал: Q = c·m·Δt.',
-        en: 'Copper conducts heat about 9 times better than steel, brass about 2.5 times better; so a copper wall warms more evenly. For a thin wall, however, what matters more is how much heat the metal itself takes: Q = c·m·Δt.',
-      },
+      novice: msg('vessel-turka-description-novice'),
+      school: msg('vessel-turka-description-school'),
     },
     media: [],
     spec: {
@@ -105,17 +94,11 @@ const VESSEL_LIST = {
     look: 'beaker',
     kind: 'vessel',
     category: 'vessel.laboratory',
-    name: { uk: 'Хімічний стакан', en: 'Beaker' },
-    phraseIn: { glass: { uk: 'у скляному хімічному стакані', en: 'in a glass beaker' } },
+    name: msg('vessel-beaker'),
+    phraseIn: { glass: msg('vessel-beaker-phrase-in-glass') },
     description: {
-      novice: {
-        uk: 'Скляна посудина з носиком і поділками для вимірювання об’єму. Скло погано проводить теплоту, тому вода в ньому нагрівається повільніше, ніж у металевій каструлі.',
-        en: 'A glass vessel with a spout and volume marks. Glass conducts heat poorly, so water in it heats more slowly than in a metal pot.',
-      },
-      school: {
-        uk: 'Скло проводить теплоту в десятки й сотні разів гірше за метали, тому стінка стакана помітно гальмує передачу теплоти воді. Над полум’ям стакан ставлять на триногу; індукційна плита скло не гріє.',
-        en: 'Glass conducts heat tens to hundreds of times worse than metals, so the beaker wall noticeably slows heat transfer to the water. Over a flame a beaker stands on a tripod; an induction hob does not heat glass.',
-      },
+      novice: msg('vessel-beaker-description-novice'),
+      school: msg('vessel-beaker-description-school'),
     },
     media: [],
     spec: {
@@ -154,17 +137,11 @@ const VESSEL_LIST = {
     look: 'calorimeter',
     kind: 'vessel',
     category: 'vessel.laboratory',
-    name: { uk: 'Калориметр', en: 'Calorimeter' },
-    phraseIn: { aluminium: { uk: 'у калориметрі', en: 'in a calorimeter' } },
+    name: msg('vessel-calorimeter'),
+    phraseIn: { aluminium: msg('vessel-calorimeter-phrase-in-aluminium') },
     description: {
-      novice: {
-        uk: 'Тонкий алюмінієвий стаканчик, вставлений у більший стакан. Між ними — шар повітря, тож теплота майже не тікає назовні. У ньому змішують воду й опускають нагріті тіла, щоб виміряти, скільки теплоти вони віддали.',
-        en: 'A thin aluminium cup set inside a bigger one with a layer of air between them, so heat hardly escapes. Water is mixed in it and heated bodies are dropped in to measure how much heat they gave.',
-      },
-      school: {
-        uk: 'Повітря проводить теплоту в тисячі разів гірше за метал, тому повітряний проміжок між стаканами — добрий теплоізолятор. Втрати є, але менші, ніж у звичайному стакані: тепловий баланс сходиться точніше. Гріють калориметр зсередини — кип’ятильником, а не на плиті.',
-        en: 'Air conducts heat thousands of times worse than metal, so the air gap between the cups is a good insulator. There are losses, but smaller than in an ordinary beaker: the heat balance comes out closer. A calorimeter is heated from inside — with an immersion heater, not on a hob.',
-      },
+      novice: msg('vessel-calorimeter-description-novice'),
+      school: msg('vessel-calorimeter-description-school'),
     },
     media: [],
     spec: {
@@ -192,17 +169,11 @@ const VESSEL_LIST = {
     look: 'cylinder',
     kind: 'vessel',
     category: 'vessel.laboratory',
-    name: { uk: 'Мірний циліндр (мензурка)', en: 'Measuring cylinder' },
-    phraseIn: { glass: { uk: 'у мірному циліндрі', en: 'in a measuring cylinder' } },
+    name: msg('vessel-cylinder'),
+    phraseIn: { glass: msg('vessel-cylinder-phrase-in-glass') },
     description: {
-      novice: {
-        uk: 'Висока вузька скляна посудина з поділками. Нею вимірюють об’єм рідини, а ще — об’єм тіла: кинь його у воду й подивись, на скільки піднявся рівень.',
-        en: 'A tall narrow glass vessel with marks. It measures the volume of a liquid — and of a body: drop it into the water and see how far the level rises.',
-      },
-      school: {
-        uk: 'Ціна поділки 1 мл. Рівень читають по нижньому краю меніска, тримаючи очі на його висоті. Об’єм тіла неправильної форми = V₂ − V₁. Мензурку не нагрівають.',
-        en: 'One division is 1 mL. Read the level at the bottom of the meniscus with your eyes at its height. The volume of an odd-shaped body is V₂ − V₁. A cylinder is never heated.',
-      },
+      novice: msg('vessel-cylinder-description-novice'),
+      school: msg('vessel-cylinder-description-school'),
     },
     media: [],
     spec: {
@@ -226,17 +197,11 @@ const VESSEL_LIST = {
     look: 'flask-conical',
     kind: 'vessel',
     category: 'vessel.laboratory',
-    name: { uk: 'Конічна колба', en: 'Conical (Erlenmeyer) flask' },
-    phraseIn: { glass: { uk: 'у конічній колбі', en: 'in a conical flask' } },
+    name: msg('vessel-flask-conical'),
+    phraseIn: { glass: msg('vessel-flask-conical-phrase-in-glass') },
     description: {
-      novice: {
-        uk: 'Скляна колба з плоским широким дном і вузьким горлом. Її можна ставити на плитку, а рідина в ній менше розхлюпується.',
-        en: 'A glass flask with a flat wide bottom and a narrow neck. It can stand on a hot plate, and liquid splashes out less.',
-      },
-      school: {
-        uk: 'Широке дно добре приймає теплоту від плитки, а вузьке горло зменшує відкриту поверхню рідини — менше теплоти йде в повітря.',
-        en: 'The wide bottom takes heat from a plate well, and the narrow neck reduces the open liquid surface — less heat escapes into the air.',
-      },
+      novice: msg('vessel-flask-conical-description-novice'),
+      school: msg('vessel-flask-conical-description-school'),
     },
     media: [],
     spec: {
@@ -259,17 +224,11 @@ const VESSEL_LIST = {
     look: 'flask-round',
     kind: 'vessel',
     category: 'vessel.laboratory',
-    name: { uk: 'Круглодонна колба', en: 'Round-bottom flask' },
-    phraseIn: { glass: { uk: 'у круглодонній колбі', en: 'in a round-bottom flask' } },
+    name: msg('vessel-flask-round'),
+    phraseIn: { glass: msg('vessel-flask-round-phrase-in-glass') },
     description: {
-      novice: {
-        uk: 'Колба-куля з вузьким горлом. Сама вона не стоїть — її закріплюють у штативі.',
-        en: 'A ball-shaped flask with a narrow neck. It cannot stand on its own — it is held in a clamp.',
-      },
-      school: {
-        uk: 'Кругле дно торкається плоскої плитки лише в одній точці, тому таку колбу гріють над полум’ям або в спеціальному нагрівачі, що охоплює її знизу.',
-        en: 'A round bottom touches a flat plate at a single point, so such a flask is heated over a flame or in a heating mantle that wraps around it.',
-      },
+      novice: msg('vessel-flask-round-description-novice'),
+      school: msg('vessel-flask-round-description-school'),
     },
     media: [],
     spec: {
@@ -288,23 +247,14 @@ const VESSEL_LIST = {
     look: 'test-tube',
     kind: 'vessel',
     category: 'vessel.laboratory',
-    name: { uk: 'Пробірка', en: 'Test tube' },
-    phraseIn: { glass: { uk: 'у пробірці', en: 'in a test tube' } },
+    name: msg('vessel-test-tube'),
+    phraseIn: { glass: msg('vessel-test-tube-phrase-in-glass') },
     description: {
-      novice: {
-        uk: 'Вузька скляна трубка із заокругленим дном для невеликих кількостей речовини. Її тримають тримачем над полум’ям.',
-        en: 'A narrow glass tube with a rounded bottom for small amounts of a substance. It is held with a holder over a flame.',
-      },
-      school: {
-        uk: 'Рідини в пробірці мало, тож навіть слабке полум’я спиртівки швидко її нагріває.',
-        en: 'A test tube holds little liquid, so even a weak spirit-lamp flame heats it quickly.',
-      },
+      novice: msg('vessel-test-tube-description-novice'),
+      school: msg('vessel-test-tube-description-school'),
     },
     safety: {
-      school: {
-        uk: 'Під час нагрівання отвір пробірки не спрямовують на себе чи інших людей.',
-        en: 'When heating, never point the open end of a test tube at yourself or others.',
-      },
+      school: msg('vessel-test-tube-safety-school'),
     },
     media: [],
     spec: {
@@ -323,23 +273,14 @@ const VESSEL_LIST = {
     look: 'crucible',
     kind: 'vessel',
     category: 'vessel.laboratory',
-    name: { uk: 'Тигель', en: 'Crucible' },
-    phraseIn: { porcelain: { uk: 'у порцеляновому тиглі', en: 'in a porcelain crucible' } },
+    name: msg('vessel-crucible'),
+    phraseIn: { porcelain: msg('vessel-crucible-phrase-in-porcelain') },
     description: {
-      novice: {
-        uk: 'Маленька товстостінна чашечка з порцеляни. У ній розжарюють і плавлять речовини просто у вогні: порцеляна не горить і не плавиться.',
-        en: 'A small thick-walled porcelain cup. Substances are heated red-hot and melted in it right in the flame: porcelain does not burn or melt.',
-      },
-      school: {
-        uk: 'Тигель ставлять у порцеляновий трикутник на триногу над пальником або в муфельну піч. Порцеляна витримує ≈ 1150 °C, але тріскає від різкої зміни температури — гарячий тигель не ставлять на холодне.',
-        en: 'A crucible sits in a pipe-clay triangle on a tripod over a burner, or in a muffle furnace. Porcelain stands ≈ 1150 °C but cracks from a sudden change of temperature — a hot crucible is never put on anything cold.',
-      },
+      novice: msg('vessel-crucible-description-novice'),
+      school: msg('vessel-crucible-description-school'),
     },
     safety: {
-      school: {
-        uk: 'Розжарений тигель беруть лише тигельними щипцями й ставлять на керамічну плитку.',
-        en: 'A red-hot crucible is handled only with crucible tongs and put down on a ceramic tile.',
-      },
+      school: msg('vessel-crucible-safety-school'),
     },
     media: [],
     spec: {

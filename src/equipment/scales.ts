@@ -1,3 +1,4 @@
+import { msg } from '../knowledge/messages.js';
 import type { ScaleItem } from './types.js';
 
 /**
@@ -10,16 +11,10 @@ const LIST = {
     look: 'kitchen-scale',
     kind: 'scale',
     category: 'device.measuring.household',
-    name: { uk: 'Кухонні ваги (до 5 кг)', en: 'Kitchen scales (up to 5 kg)' },
+    name: msg('scale-kitchen'),
     description: {
-      novice: {
-        uk: 'Ставиш на них каструлю — і на екрані маса в грамах. Тримають до 5 кілограмів.',
-        en: 'Put a pot on them and the screen shows its mass in grams. They hold up to 5 kilograms.',
-      },
-      school: {
-        uk: 'Електронні ваги з ціною поділки 1 г: менші зміни маси вони не помітять. Кнопка «тара» обнуляє покази, щоб зважувати лише вміст посуду.',
-        en: 'Electronic scales with a 1 g division: they do not notice smaller changes of mass. The "tare" button zeroes the reading to weigh only what is in the vessel.',
-      },
+      novice: msg('scale-kitchen-scale-description-novice'),
+      school: msg('scale-kitchen-scale-description-school'),
     },
     media: [],
     spec: {
@@ -38,16 +33,10 @@ const LIST = {
     look: 'lab-balance',
     kind: 'scale',
     category: 'device.measuring.laboratory',
-    name: { uk: 'Лабораторні ваги (до 620 г)', en: 'Laboratory balance (up to 620 g)' },
+    name: msg('scale-lab-balance'),
     description: {
-      novice: {
-        uk: 'Точні ваги для лабораторії: показують масу до сотої частки грама. Але важке на них не постав — тримають лише 620 грамів.',
-        en: 'Precise laboratory scales: they show mass to a hundredth of a gram. But nothing heavy — they hold only 620 grams.',
-      },
-      school: {
-        uk: 'Ціна поділки 0,01 г — у сто разів дрібніша, ніж у кухонних ваг: видно, як із води потроху випаровується кілька десятих грама. Що точніші ваги, то менша їхня найбільша межа зважування.',
-        en: 'The division is 0.01 g — a hundred times finer than kitchen scales: you can see a few tenths of a gram of water evaporate. The more precise the scales, the smaller their maximum load.',
-      },
+      novice: msg('scale-lab-balance-description-novice'),
+      school: msg('scale-lab-balance-description-school'),
     },
     media: [],
     spec: {
@@ -66,16 +55,10 @@ const LIST = {
     look: 'dynamometer',
     kind: 'scale',
     category: 'device.measuring.laboratory',
-    name: { uk: 'Динамометр (до 5 Н)', en: 'Dynamometer (up to 5 N)' },
+    name: msg('scale-dynamometer'),
     description: {
-      novice: {
-        uk: 'Пружина зі шкалою і гачком. Підвісиш тіло — пружина розтягнеться, а стрілка покаже, з якою силою тіло тягне вниз.',
-        en: 'A spring with a scale and a hook. Hang a body on it — the spring stretches and the pointer shows how hard the body pulls down.',
-      },
-      school: {
-        uk: 'Вимірює силу в ньютонах (до 5 Н, ціна поділки 0,1 Н). Тіло у повітрі тягне з силою P = m·g; занурене у воду — слабше, на величину архімедової сили.',
-        en: 'Measures force in newtons (up to 5 N, division 0.1 N). A body in air pulls with P = m·g; under water less, by the buoyant force.',
-      },
+      novice: msg('scale-dynamometer-description-novice'),
+      school: msg('scale-dynamometer-description-school'),
     },
     media: [],
     spec: {

@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, estimate, sv } from './sourced.js';
 
 /** Stearic acid: a waxy fatty acid that melts at 69 °C — the classic cooling-curve substance. */
@@ -6,9 +7,7 @@ export const STEARIC_ACID = {
   id: 'stearic-acid',
   kind: 'compound',
   group: 'material',
-  name: { uk: 'Стеаринова кислота', en: 'Stearic acid' },
-  genitive: { uk: 'стеаринової кислоти', en: 'stearic acid' },
-  gender: 'f',
+  name: msg('component-stearic-acid'),
   formula: 'C₁₈H₃₆O₂',
   composition: { C: 18, H: 36, O: 2 },
   stateAtRoom: 'solid',
@@ -28,9 +27,9 @@ export const STEARIC_ACID = {
   },
   hazards: { flashPoint: sv(205, '°C', 'not stated', 'single-source', 0.02, [cite('wikipedia-stearic-acid', 'Chembox: flash point 205 °C', '—', 205)], 'Only the Wikipedia chembox checked so far.') },
   description: {
-    novice: { uk: 'Білий воскоподібний порошок або грудочки. Плавиться в гарячій воді (при 69 °C), з неї роблять свічки й мило.', en: 'A white waxy powder or lumps. It melts in hot water (at 69 °C); candles and soap are made of it.' },
-    school: { uk: 'Поки розплавлена стеаринова кислота твердне, вона віддає приховану теплоту, і її температура тримається біля 69 °C — на графіку охолодження з’являється «полиця».', en: 'While molten stearic acid sets, it gives off latent heat and its temperature stays near 69 °C — the cooling graph shows a flat “shelf”.' },
+    novice: msg('component-stearic-acid-description-novice'),
+    school: msg('component-stearic-acid-description-school'),
   },
-  safety: { school: { uk: 'Розплав гарячий (понад 69 °C) — можна обпектися. Вище 200 °C пара може зайнятися.', en: 'The melt is hot (over 69 °C) — it can burn. Above 200 °C its vapour can catch fire.' } },
+  safety: { school: msg('component-stearic-acid-safety-school') },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

@@ -1,0 +1,19 @@
+## Дерево приладів і посуду.
+category-device = Прилади
+category-device-heater = Нагрівачі
+category-device-heater-household = Побутові нагрівачі
+category-device-heater-laboratory = Лабораторні нагрівачі
+category-device-cooler = Охолоджувачі
+category-device-cooler-household = Побутові охолоджувачі
+category-device-cooler-laboratory = Лабораторні охолоджувачі
+category-device-furnace = Печі
+category-device-furnace-laboratory = Лабораторні печі
+category-device-power = Джерела струму
+category-device-power-household = Побутові джерела струму
+category-device-power-laboratory = Лабораторні джерела струму
+category-device-measuring = Вимірювальні прилади
+category-device-measuring-household = Побутові вимірювальні прилади
+category-device-measuring-laboratory = Лабораторні вимірювальні прилади
+category-vessel = Посуд
+category-vessel-household = Побутовий посуд
+category-vessel-laboratory = Лабораторний посуд

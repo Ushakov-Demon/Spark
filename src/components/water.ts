@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 const LATENT_FUSION = sv(334_000, 'J/kg', 'at 0 °C, 1 atm', 'cross-checked', 0.01, [
@@ -17,15 +18,14 @@ export const WATER = {
   id: 'water',
   kind: 'compound',
   group: 'water',
-  name: { uk: 'Вода', en: 'Water' },
-  gender: 'f',
+  name: msg('component-water'),
   formula: 'H₂O',
   composition: { H: 2, O: 1 },
   wikidata: 'Q283',
   stateAtRoom: 'liquid',
   phases: {
     solid: {
-      name: { uk: 'Лід', en: 'Ice' },
+      name: msg('component-water-solid-name'),
       density: sv(916.7, 'kg/m³', 'ice at 0 °C', 'single-source', 0.01, [cite('wikidata', 'Q23392 density', '0 °C', 916.7)], 'Ice is lighter than water — that is why it floats.'),
       specificHeat: {
           value: 2090,
@@ -123,14 +123,8 @@ export const WATER = {
     },
   },
   description: {
-    novice: {
-      uk: 'Чиста вода без домішок. При нормальному тиску замерзає при 0 °C і кипить при 100 °C.',
-      en: 'Pure water without impurities. At normal pressure it freezes at 0 °C and boils at 100 °C.',
-    },
-    school: {
-      uk: 'Має дуже велику питому теплоємність (≈ 4200 Дж/(кг·°C)), тому нагрівається й остигає повільно. Щоб розтопити 1 кг льоду, потрібно 334 кДж, а щоб випарувати 1 кг води — 2256 кДж.',
-      en: 'It has a very high specific heat (≈ 4200 J/(kg·°C)), so it warms up and cools down slowly. Melting 1 kg of ice takes 334 kJ, boiling away 1 kg of water 2256 kJ.',
-    },
+    novice: msg('component-water-description-novice'),
+    school: msg('component-water-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

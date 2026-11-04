@@ -11,9 +11,8 @@ import type { SourcedValue } from '../knowledge/types.js';
  */
 export interface Recipe {
   readonly id: string;
+  /** The name, a message (its forms — the message's attributes, each language's own). */
   readonly name: LocalizedText;
-  /** Grammatical gender of the name in Ukrainian. */
-  readonly gender: 'f' | 'm' | 'n';
   readonly description: LeveledText;
   /** Mass fractions; they add up to 1. */
   readonly parts: readonly { readonly component: ComponentId; readonly fraction: number }[];

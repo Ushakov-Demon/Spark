@@ -73,7 +73,34 @@ export function t(locale: Locale, id: string, args?: MessageArgs): string {
 export function msg(id: string, args?: MessageArgs): LocalizedText {
   const text = {} as Record<Locale, string>;
   for (const l of LOCALES) Object.defineProperty(text, l, { enumerable: true, get: () => t(l, id, args) });
+  Object.defineProperty(text, MESSAGE_ID, { value: id });
   return text;
+}
+
+/** Where a text made by `msg` keeps its message's id (to find the word's forms). */
+const MESSAGE_ID = Symbol('message');
+
+/** A form of the message's word in `locale` — its attribute (`.genitive`, `.gender`); undefined where the language has none. */
+export function attribute(locale: Locale, id: string, name: string): string | undefined {
+  for (const l of chain(locale)) {
+    const bundle = bundles.get(l);
+    const a = bundle?.getMessage(id)?.attributes[name];
+    if (bundle && a) return bundle.formatPattern(a);
+    if (bundle?.hasMessage(id)) return undefined;
+  }
+  return undefined;
+}
+
+/**
+ * A form of a word made by `msg` («кисню» for «Кисень»: `.genitive`), in every language: the language's own form, or
+ * the word itself where it has none (English needs no genitive).
+ */
+export function form(text: LocalizedText, name: string): LocalizedText {
+  const id = (text as unknown as Record<symbol, string | undefined>)[MESSAGE_ID];
+  if (!id) return text;
+  const out = {} as Record<Locale, string>;
+  for (const l of LOCALES) Object.defineProperty(out, l, { enumerable: true, get: () => attribute(l, id, name) ?? text[l] });
+  return out;
 }
 
 /** No text, in every language. */

@@ -1,8 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LOCALES } from '../../src/knowledge/i18n.js';
-import { hasMessage, messageIds, msg, t } from '../../src/knowledge/messages.js';
+import { attribute, form, hasMessage, messageIds, msg, t } from '../../src/knowledge/messages.js';
 import { localeFiles } from '../../scripts/locales.js';
+import { COMPONENTS } from '../../src/components/index.js';
+import { CATEGORIES } from '../../src/equipment/taxonomy.js';
+import { RECIPES } from '../../src/recipes/index.js';
 
 const code = ['src', 'web', 'scripts'].flatMap((d) => readdirSync(d, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.ts')).map((f) => [`${d}/${f}`, readFileSync(`${d}/${f}`, 'utf8')] as const));
 
@@ -11,7 +14,7 @@ const code = ['src', 'web', 'scripts'].flatMap((d) => readdirSync(d, { recursive
  * `{ uk, en }` literal. They may only grow fewer — lower the numbers as files move (docs/TODO.md, § 0).
  */
 const FORKS_LEFT = 419;
-const PAIRS_LEFT = 1420;
+const PAIRS_LEFT = 1089;
 
 describe('messages (locales/*.ftl)', () => {
   it('every language has a file of messages for each file of Ukrainian ones', () => {
@@ -27,6 +30,19 @@ describe('messages (locales/*.ftl)', () => {
   it('every message the code names exists', () => {
     const missing = code.flatMap(([f, s]) => [...s.matchAll(/\b(?:msg\(|t\((?:l|locale|lang), )'([a-z][\w-]*)'/g)].map((m) => m[1]!).filter((id) => !hasMessage('uk', id)).map((id) => `${f}: ${id}`));
     expect(missing).toEqual([]);
+  });
+
+  it('every substance, recipe and equipment category has its name in Ukrainian and English (their ids are built from the data)', () => {
+    const ids = [...Object.keys(COMPONENTS).map((id) => `component-${id}`), ...Object.keys(RECIPES).map((id) => `recipe-${id}`), ...CATEGORIES.map((c) => `category-${c.id.replace(/\./g, '-')}`)];
+    for (const l of ['uk', 'en'] as const) expect(ids.filter((id) => !hasMessage(l, id)), l).toEqual([]);
+    // The Ukrainian names carry their gender (verbs agree with it).
+    expect(Object.keys(COMPONENTS).filter((id) => !attribute('uk', `component-${id}`, 'gender'))).toEqual([]);
+  });
+
+  it('a word’s forms: the language’s own, or the word itself', () => {
+    expect(form(msg('component-oxygen'), 'genitive').uk).toBe('кисню');
+    expect(form(msg('component-water'), 'genitive').en).toBe('Water');
+    expect(attribute('en', 'component-oxygen', 'gender')).toBeUndefined();
   });
 
   it('a message is worded with its arguments, in each language', () => {

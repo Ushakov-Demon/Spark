@@ -1,3 +1,4 @@
+import { msg } from '../knowledge/messages.js';
 import type { ElectrodesSpec, SupplyItem } from './types.js';
 
 /**
@@ -10,17 +11,11 @@ const LIST = {
     look: 'battery',
     kind: 'supply',
     category: 'device.power.household',
-    name: { uk: 'Батарейка 9 В («крона»)', en: '9 V battery' },
-    phrase: { uk: 'з електродами від батарейки 9 В', en: 'with electrodes on a 9 V battery' },
+    name: msg('supply-battery-9v'),
+    phrase: msg('supply-battery-9v-phrase'),
     description: {
-      novice: {
-        uk: 'Прямокутна батарейка з двома кнопками-контактами зверху. Дає 9 вольт, але недовго: коли заряд закінчується, струму більше немає.',
-        en: 'A rectangular battery with two snap terminals on top. It gives 9 volts, but not for long: when the charge runs out, there is no more current.',
-      },
-      school: {
-        uk: 'Усередині — шість елементів по 1,5 В. Лужна батарейка вміщує ≈ 550 мА·год: наприклад, струм 0,55 А протягом години. Під навантаженням напруга трохи просідає через внутрішній опір.',
-        en: 'Inside are six 1.5 V cells. An alkaline battery holds ≈ 550 mA·h: for example, 0.55 A for an hour. Under load its voltage sags a little because of the internal resistance.',
-      },
+      novice: msg('supply-battery-9v-description-novice'),
+      school: msg('supply-battery-9v-description-school'),
     },
     media: [],
     spec: {
@@ -41,17 +36,11 @@ const LIST = {
     look: 'usb',
     kind: 'supply',
     category: 'device.power.household',
-    name: { uk: 'USB-заряджання (5 В)', en: 'USB charger (5 V)' },
-    phrase: { uk: 'з електродами від USB-заряджання', en: 'with electrodes on a USB charger' },
+    name: msg('supply-usb-charger'),
+    phrase: msg('supply-usb-charger-phrase'),
     description: {
-      novice: {
-        uk: 'Звичайний USB-роз’єм дає 5 вольт. Через нього живлять і заряджають телефони.',
-        en: 'An ordinary USB port gives 5 volts. Phones are powered and charged through it.',
-      },
-      school: {
-        uk: 'Стандартний порт USB 2.0 віддає до 2,5 Вт, тобто до 0,5 А при 5 В; якщо струм більший, захист його вимикає.',
-        en: 'A standard USB 2.0 port gives up to 2.5 W, that is up to 0.5 A at 5 V; a larger current trips its protection.',
-      },
+      novice: msg('supply-usb-charger-description-novice'),
+      school: msg('supply-usb-charger-description-school'),
     },
     media: [],
     spec: {
@@ -70,17 +59,11 @@ const LIST = {
     look: 'supply',
     kind: 'supply',
     category: 'device.power.laboratory',
-    name: { uk: 'Лабораторний блок живлення 0–30 В', en: 'Laboratory power supply 0–30 V' },
-    phrase: { uk: 'з електродами від лабораторного блока живлення', en: 'with electrodes on a laboratory power supply' },
+    name: msg('supply-bench'),
+    phrase: msg('supply-bench-phrase'),
     description: {
-      novice: {
-        uk: 'Прилад із ручкою, якою можна плавно задати напругу від 0 до 30 вольт. Показує, який струм іде.',
-        en: 'A device with a knob to set any voltage from 0 to 30 volts. It shows how much current flows.',
-      },
-      school: {
-        uk: 'Блок живлення тримає задану напругу, а якщо струм перевищує 5 А, обмежує його. Безпечна напруга для дослідів — до 30–40 В.',
-        en: 'The supply holds the set voltage, and if the current exceeds 5 A it limits it. Voltages up to 30–40 V are safe for experiments.',
-      },
+      novice: msg('supply-bench-supply-description-novice'),
+      school: msg('supply-bench-supply-description-school'),
     },
     media: [],
     spec: {

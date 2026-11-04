@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, estimate, sv } from './sourced.js';
 
 /**
@@ -9,9 +10,7 @@ export const ACETIC_ACID = {
   id: 'acetic-acid',
   kind: 'compound',
   group: 'acid',
-  name: { uk: 'Оцтова кислота', en: 'Acetic acid' },
-  genitive: { uk: 'оцтової кислоти', en: 'acetic acid' },
-  gender: 'f',
+  name: msg('component-acetic-acid'),
   formula: 'CH₃COOH',
   composition: { C: 2, H: 4, O: 2 },
   wikidata: 'Q47512',
@@ -46,21 +45,12 @@ export const ACETIC_ACID = {
     flashPoint: sv(39, '°C', 'closed cup', 'single-source', 0.05, [cite('wikidata', 'Q47512 P2128', '—', 39)], 'Only Wikidata checked (it also lists 103 °F ≈ 39.4 °C, Pensky–Martens closed cup).'),
   },
   description: {
-    novice: {
-      uk: 'Кислота з різким запахом оцту. Столовий оцет — це 6–9 % розчин оцтової кислоти у воді. Чиста кислота замерзає вже при 16,6 °C, тому її називають «льодяною».',
-      en: 'An acid with a sharp vinegar smell. Table vinegar is a 6–9 % solution of acetic acid in water. The pure acid freezes already at 16.6 °C, which is why it is called “glacial”.',
-    },
-    school: {
-      uk: 'Слабка кислота: у воді на йони розпадається лише мала частка молекул. Реагує з содою й крейдою, виділяючи вуглекислий газ.',
-      en: 'A weak acid: only a small share of its molecules split into ions in water. It reacts with baking soda and chalk, releasing carbon dioxide.',
-    },
+    novice: msg('component-acetic-acid-description-novice'),
+    school: msg('component-acetic-acid-description-school'),
   },
   safety: {
-    school: {
-      uk: 'Концентрована оцтова кислота роз’їдає шкіру й очі, а її пара горить. Працюють із нею лише в окулярах і рукавичках.',
-      en: 'Concentrated acetic acid burns skin and eyes, and its vapour is flammable. Work with it only in goggles and gloves.',
-    },
+    school: msg('component-acetic-acid-safety-school'),
   },
   media: [],
-  modelNotes: [{ uk: 'Випаровування оцтової кислоти нижче температури кипіння поки не враховано: немає перевірених даних про тиск її пари.', en: 'Evaporation of acetic acid below its boiling point is not modelled yet: no checked vapour-pressure data.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-acetic-acid-model-notes')],
+} as const satisfies ComponentData;

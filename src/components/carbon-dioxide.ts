@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Cp 37.135 J/(mol·K) ÷ 0.044009 kg/mol. */
@@ -6,15 +7,14 @@ export const CARBON_DIOXIDE = {
   id: 'carbon-dioxide',
   kind: 'compound',
   group: 'gas',
-  name: { uk: 'Вуглекислий газ', en: 'Carbon dioxide' },
-  gender: 'm',
+  name: msg('component-carbon-dioxide'),
   formula: 'CO₂',
   composition: { C: 1, O: 2 },
   wikidata: 'Q1997',
   stateAtRoom: 'gas',
   phases: {
     solid: {
-      name: { uk: 'Сухий лід', en: 'Dry ice' },
+      name: msg('component-carbon-dioxide-solid-name'),
       density: sv(1562, 'kg/m³', 'solid, −78.5 °C, 1 atm', 'single-source', 0.01, [cite('wikipedia-carbon-dioxide', 'Chembox: 1562 kg/m³ solid at 1 atm and −78.5 °C', '—', 1562)], 'Wikidata lists 1560 for the solid, but with a wrong unit (g/m³), so it is not counted.'),
     },
     gas: {
@@ -31,15 +31,9 @@ export const CARBON_DIOXIDE = {
   electrical: { conducts: 'insulator' },
   hazards: { asphyxiant: true },
   description: {
-    novice: {
-      uk: 'Газ без кольору, який ми видихаємо. Саме він робить газовану воду газованою. Замерзлий — це «сухий лід»: він не тане, а одразу перетворюється на газ.',
-      en: 'A colourless gas that we breathe out. It is what makes soda water fizzy. Frozen, it is “dry ice”: it does not melt but turns straight into gas.',
-    },
-    school: {
-      uk: 'При звичайному тиску CO₂ не буває рідким: при −78,5 °C твердий CO₂ сублімує — переходить у газ, минаючи рідину. Газ важчий за повітря.',
-      en: 'At normal pressure CO₂ is never liquid: at −78.5 °C solid CO₂ sublimes — turns into gas, skipping the liquid. The gas is heavier than air.',
-    },
+    novice: msg('component-carbon-dioxide-description-novice'),
+    school: msg('component-carbon-dioxide-description-school'),
   },
-  safety: { school: { uk: 'У великій кількості витісняє кисень. Сухий лід спричиняє холодові опіки — бери його лише рукавичками.', en: 'In large amounts it displaces oxygen. Dry ice causes cold burns — handle it only with gloves.' } },
+  safety: { school: msg('component-carbon-dioxide-safety-school') },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

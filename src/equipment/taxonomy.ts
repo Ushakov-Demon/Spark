@@ -1,3 +1,4 @@
+import { msg } from '../knowledge/messages.js';
 import type { Category, CategoryId } from './types.js';
 
 /**
@@ -6,27 +7,28 @@ import type { Category, CategoryId } from './types.js';
  * lab equipment only. New branches (measuring instruments, chemistry glassware…)
  * are added here first.
  */
-const c = (id: CategoryId, parent: CategoryId | null, uk: string, en: string): Category => ({ id, parent, name: { uk, en } });
+/** A category: its name is the message `category-<id>` (dots as hyphens). */
+const c = (id: CategoryId, parent: CategoryId | null): Category => ({ id, parent, name: msg(`category-${id.replace(/\./g, '-')}`) });
 
 export const CATEGORIES: readonly Category[] = [
-  c('device', null, 'Прилади', 'Devices'),
-  c('device.heater', 'device', 'Нагрівачі', 'Heaters'),
-  c('device.heater.household', 'device.heater', 'Побутові нагрівачі', 'Household heaters'),
-  c('device.heater.laboratory', 'device.heater', 'Лабораторні нагрівачі', 'Laboratory heaters'),
-  c('device.cooler', 'device', 'Охолоджувачі', 'Coolers'),
-  c('device.cooler.household', 'device.cooler', 'Побутові охолоджувачі', 'Household coolers'),
-  c('device.cooler.laboratory', 'device.cooler', 'Лабораторні охолоджувачі', 'Laboratory cooling baths'),
-  c('device.furnace', 'device', 'Печі', 'Furnaces'),
-  c('device.furnace.laboratory', 'device.furnace', 'Лабораторні печі', 'Laboratory furnaces'),
-  c('device.power', 'device', 'Джерела струму', 'Power sources'),
-  c('device.power.household', 'device.power', 'Побутові джерела струму', 'Household power sources'),
-  c('device.power.laboratory', 'device.power', 'Лабораторні джерела струму', 'Laboratory power supplies'),
-  c('device.measuring', 'device', 'Вимірювальні прилади', 'Measuring instruments'),
-  c('device.measuring.household', 'device.measuring', 'Побутові вимірювальні прилади', 'Household measuring instruments'),
-  c('device.measuring.laboratory', 'device.measuring', 'Лабораторні вимірювальні прилади', 'Laboratory measuring instruments'),
-  c('vessel', null, 'Посуд', 'Vessels'),
-  c('vessel.household', 'vessel', 'Побутовий посуд', 'Household vessels'),
-  c('vessel.laboratory', 'vessel', 'Лабораторний посуд', 'Laboratory glassware'),
+  c('device', null),
+  c('device.heater', 'device'),
+  c('device.heater.household', 'device.heater'),
+  c('device.heater.laboratory', 'device.heater'),
+  c('device.cooler', 'device'),
+  c('device.cooler.household', 'device.cooler'),
+  c('device.cooler.laboratory', 'device.cooler'),
+  c('device.furnace', 'device'),
+  c('device.furnace.laboratory', 'device.furnace'),
+  c('device.power', 'device'),
+  c('device.power.household', 'device.power'),
+  c('device.power.laboratory', 'device.power'),
+  c('device.measuring', 'device'),
+  c('device.measuring.household', 'device.measuring'),
+  c('device.measuring.laboratory', 'device.measuring'),
+  c('vessel', null),
+  c('vessel.household', 'vessel'),
+  c('vessel.laboratory', 'vessel'),
 ];
 
 const byId = new Map(CATEGORIES.map((x) => [x.id, x]));

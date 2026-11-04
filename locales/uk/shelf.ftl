@@ -1,0 +1,26 @@
+## Полиця пісочниці: власні назви речовин на полиці, розділи й родини.
+shelf-water = Дистильована вода
+    .genitive = дистильованої води
+    .gender = f
+shelf-table-salt = Кухонна сіль
+    .genitive = кухонної солі
+    .gender = f
+shelf-wood = Дерев’яний брусок (сосна)
+    .gender = m
+shelf-glass = Скляна кулька
+    .gender = f
+shelf-rubber = Гумовий корок
+    .gender = m
+shelf-group-liquid-water = Вода
+shelf-group-liquid-solution = Розчини
+shelf-group-liquid-alcohol = Спирти
+shelf-group-liquid-acid = Кислоти
+shelf-group-liquid-oil = Олії
+shelf-group-solid-salt = Солі
+shelf-group-solid-metal = Метали й сплави
+shelf-group-solid-material = Інші тверді тіла
+shelf-group-liquids = Рідини
+shelf-group-solutions = Розчини
+shelf-group-salts = Солі й мінерали
+shelf-group-metals = Метали й сплави
+shelf-group-solids = Інші тверді тіла

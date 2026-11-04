@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, estimate, sv } from './sourced.js';
 
 /** Tin: melts at 232 °C — low enough for a spirit lamp. The classic melting graph of grade 8. */
@@ -6,9 +7,7 @@ export const TIN = {
   id: 'tin',
   kind: 'element',
   group: 'metal',
-  name: { uk: 'Олово', en: 'Tin' },
-  genitive: { uk: 'олова', en: 'tin' },
-  gender: 'n',
+  name: msg('component-tin'),
   formula: 'Sn',
   composition: { Sn: 1 },
   wikidata: 'Q1096',
@@ -32,11 +31,11 @@ export const TIN = {
   electrical: { conducts: 'metal', resistivity: sv(115e-9, 'Ω·m', 'solid, 0 °C', 'single-source', 0.01, [cite('wikipedia-tin', 'Infobox: electrical resistivity at 0 °C, 115 nΩ·m', '0 °C', 115e-9)], 'Only the Wikipedia infobox checked so far.') },
   magnetic: 'paramagnetic',
   description: {
-    novice: { uk: 'Сріблястий м’який метал. Плавиться вже при 232 °C — його можна розплавити навіть над спиртівкою. Оловом паяють дроти.', en: 'A soft silvery metal. It melts at just 232 °C — even a spirit lamp can melt it. Tin is used to solder wires.' },
-    school: { uk: 'Олово плавиться при 231,9 °C, питома теплота плавлення ≈ 59 кДж/кг. Поки олово плавиться, його температура не змінюється — на графіку нагрівання з’являється «полиця».', en: 'Tin melts at 231.9 °C; its latent heat of fusion is ≈ 59 kJ/kg. While it melts its temperature stays the same — the heating graph shows a flat “shelf”.' },
+    novice: msg('component-tin-description-novice'),
+    school: msg('component-tin-description-school'),
   },
   safety: {
-    school: { uk: 'Розплавлене олово дуже гаряче (понад 230 °C) і спричиняє сильні опіки. Вода в розплаві миттєво закипає й розбризкує метал.', en: 'Molten tin is very hot (over 230 °C) and causes bad burns. Water in the melt boils at once and spatters the metal.' },
+    school: msg('component-tin-safety-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

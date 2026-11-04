@@ -1,12 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 
 export const GLASS = {
   id: 'glass',
   kind: 'material',
   group: 'material',
-  name: { uk: 'Скло', en: 'Glass' },
-  gender: 'n',
-  madeOf: [{ part: { uk: 'діоксид кремнію (пісок)', en: 'silicon dioxide (sand)' }, fraction: 0.7 }],
+  name: msg('component-glass'),
+  madeOf: [{ part: msg('component-glass-made-of-part'), fraction: 0.7 }],
   stateAtRoom: 'solid',
   phases: {
     solid: {
@@ -49,8 +49,8 @@ export const GLASS = {
   electrical: { conducts: 'insulator' },
   magnetic: 'diamagnetic',
   description: {
-    novice: { uk: 'Прозорий твердий матеріал, який погано проводить теплоту. Лабораторний посуд роблять із термостійкого скла.', en: "A transparent solid that conducts heat poorly. Lab glassware is made of heat-resistant glass." },
-    school: { uk: 'Скло проводить теплоту в десятки й сотні разів гірше за метали, тому скляний стакан нагрівається повільно. Термостійке (боросилікатне) скло не тріскається від різкого нагрівання.', en: "Glass conducts heat tens to hundreds of times worse than metals, so a glass beaker heats slowly. Heat-resistant (borosilicate) glass does not crack when heated quickly." },
+    novice: msg('component-glass-description-novice'),
+    school: msg('component-glass-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

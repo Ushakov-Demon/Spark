@@ -1,12 +1,12 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 
 export const RUBBER = {
   id: 'rubber',
   kind: 'material',
   group: 'material',
-  name: { uk: 'Гума', en: 'Rubber' },
-  gender: 'f',
-  madeOf: [{ part: { uk: 'вулканізований каучук', en: 'vulcanised caoutchouc' }, fraction: 1 }],
+  name: msg('component-rubber'),
+  madeOf: [{ part: msg('component-rubber-made-of-part'), fraction: 1 }],
   stateAtRoom: 'solid',
   phases: {
     solid: {
@@ -41,8 +41,8 @@ export const RUBBER = {
   },
   electrical: { conducts: 'insulator' },
   description: {
-    novice: { uk: 'Пружний матеріал: розтягується й стискається, а тоді повертає свою форму. З неї роблять ковпачки піпеток, кульки, шланги.', en: 'An elastic material: it stretches and squeezes, then comes back to its shape. Dropper caps, balloons and hoses are made of it.' },
-    school: { uk: 'Гуму роблять із каучуку, нагріваючи його із сіркою (вулканізація). Звичайна м’яка гума трохи густіша за воду — 1,1 г/см³ — і тоне; чистий каучук легший за воду.', en: 'Rubber is made of caoutchouc heated with sulphur (vulcanisation). Ordinary soft rubber is a little denser than water — 1.1 g/cm³ — and sinks; pure caoutchouc is lighter than water.' },
+    novice: msg('component-rubber-description-novice'),
+    school: msg('component-rubber-description-school'),
   },
   media: [],
-} as const satisfies Component;
+} as const satisfies ComponentData;

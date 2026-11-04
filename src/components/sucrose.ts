@@ -1,4 +1,5 @@
-import type { Component } from './types.js';
+import { msg } from '../knowledge/messages.js';
+import type { ComponentData } from './types.js';
 import { cite, sv } from './sourced.js';
 
 /** Cp 424.30 J/(mol·K) ÷ 0.342297 kg/mol (molar mass from the formula). */
@@ -6,9 +7,7 @@ export const SUCROSE = {
   id: 'sucrose',
   kind: 'compound',
   group: 'sugar',
-  name: { uk: 'Цукор (сахароза)', en: 'Sugar (sucrose)' },
-  genitive: { uk: 'цукру', en: 'sugar' },
-  gender: 'm',
+  name: msg('component-sucrose'),
   formula: 'C₁₂H₂₂O₁₁',
   composition: { C: 12, H: 22, O: 11 },
   wikidata: 'Q4027534',
@@ -21,7 +20,7 @@ export const SUCROSE = {
   },
   decomposes: {
     point: sv(189, '°C', 'melts and decomposes (caramelises)', 'cross-checked', 0.02, [cite('wikipedia-sucrose', 'Chembox: melting point 189 °C', '—', 189), cite('wikidata', 'Q4027534 P2101', '—', 188)], 'Wikidata also lists 183 °C: the "melting" of sucrose depends on the heating rate because it decomposes at the same time.'),
-    into: { uk: 'карамель, воду, а далі вуглець (обвуглюється)', en: 'caramel, water and then carbon (it chars)' },
+    into: msg('component-sucrose-decomposes-into'),
   },
   inWater: {
     solubility: sv(200, 'g/100 g water', '20 °C', 'cross-checked', 0.01, [cite('wikidata', 'Q4027534 P2177', '68 °F, water', 200), cite('wikipedia-sucrose', 'Chembox: solubility 2.01 g/mL at 20 °C', '20 °C', 201)]),
@@ -36,15 +35,9 @@ export const SUCROSE = {
   electrical: { conducts: 'insulator' },
   hazards: {},
   description: {
-    novice: {
-      uk: 'Звичайний цукор. Дуже добре розчиняється у воді — у склянці води можна розчинити вдвічі більше цукру за масою, ніж самої води. При нагріванні не плавиться спокійно, а карамелізується й обвуглюється.',
-      en: 'Ordinary sugar. It dissolves extremely well in water — a glass of water can dissolve twice its own mass of sugar. Heated, it does not simply melt but caramelises and chars.',
-    },
-    school: {
-      uk: 'На відміну від солі, цукор у воді не розпадається на йони, тому розчин цукру не проводить електричний струм. Його розчинність сильно зростає з температурою — так виготовляють сиропи й вирощують цукрові кристали.',
-      en: 'Unlike salt, sugar does not split into ions in water, so a sugar solution does not conduct electricity. Its solubility rises strongly with temperature — that is how syrups are made and sugar crystals grown.',
-    },
+    novice: msg('component-sucrose-description-novice'),
+    school: msg('component-sucrose-description-school'),
   },
   media: [],
-  modelNotes: [{ uk: 'Теплоту розчинення ще не перевірено за джерелами, тому в моделі розчинення не змінює температуру.', en: 'The enthalpy of solution is not checked against sources yet, so in the model dissolving does not change the temperature.' }],
-} as const satisfies Component;
+  modelNotes: [msg('component-sucrose-model-notes')],
+} as const satisfies ComponentData;
