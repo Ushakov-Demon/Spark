@@ -1,5 +1,6 @@
 ## Деревина
 component-wood = Деревина
+    .genitive = деревини
     .gender = f
 component-wood-made-of-part = целюлоза
 component-wood-made-of-part-2 = лігнін

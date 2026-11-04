@@ -286,6 +286,10 @@ formula-mechanics-scale-division-n-name = the number of divisions between them
 formula-mechanics-scale-division-explanation-novice = Take two neighbouring numbered marks, subtract the smaller number from the larger and divide by the number of divisions between them.
 formula-mechanics-scale-division-explanation-school = This is how one finds how much of a quantity one division of any instrument stands for — a ruler’s, a measuring cylinder’s, a thermometer’s. A scale is not read finer than half a division.
 
+formula-mechanics-gravity-force = The force of gravity
+formula-mechanics-gravity-force-f-name = the force of gravity
+formula-mechanics-gravity-force-explanation-novice = The Earth pulls every kilogram alike, so a body twice as massive is pulled twice as hard.
+formula-mechanics-gravity-force-explanation-school = The force of gravity is proportional to the body’s mass: F = m·g, with g ≈ 9.8 N/kg at the Earth’s surface — the same for bodies of any substance.
 formula-mechanics-gravity-at = Gravity at a height
 formula-mechanics-gravity-at-g-name = gravity’s pull per kilogram
 formula-mechanics-gravity-at-mu-name = the Earth’s gravitational parameter (G·M)

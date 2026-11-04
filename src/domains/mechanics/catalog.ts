@@ -55,6 +55,7 @@ const UA_LEVER: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', gr
 const UA_EFFICIENCY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Корисна й затрачена робота. Коефіцієнт корисної дії.' }];
 const UA_SATELLITES: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'Рухи небесних тіл та штучних супутників Землі.' }];
 const UA_GRAVITY: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'qualitative', quote: 'Гравітація. Сила тяжіння Землі.' }];
+const UA_GRAVITY_MASS: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Зв’язок сили тяжіння і маси.' }];
 const UA_PRESSURE: readonly CurriculumRef[] = [{ program: 'ua-nus-2023-holovko', grade: 7, depth: 'quantitative', quote: 'Тиск твердих тіл на поверхню.' }];
 
 export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
@@ -1102,6 +1103,29 @@ export const MECHANICS_FORMULAS: readonly FormulaSpec[] = [
     },
     compute: f.greatCircleDistance,
     examples: [{ args: [50.45, 30.5233, 49.8425, 24.03222, 6_371_008.8], expected: 467286.96164505347, note: 'Kyiv — Lviv' }],
+    textSource: 'spark',
+    reviewed: false,
+  }),
+  defineFormula({
+    id: 'mechanics.gravity-force',
+    law: 'universal-gravitation',
+    title: msg('formula-mechanics-gravity-force'),
+    latex: 'F_{тяж} = m \\cdot g',
+    plain: 'F_тяж = m · g',
+    argSymbols: ['m', 'g'],
+    resultSymbol: 'F_тяж',
+    variables: {
+      F_тяж: { name: msg('formula-mechanics-gravity-force-f-name'), unit: 'N' },
+      m: { name: msg('formula-mechanics-weight-m-name'), unit: 'kg' },
+      g: { name: msg('formula-mechanics-weight-g-name'), unit: 'N/kg' },
+    },
+    curriculum: UA_GRAVITY_MASS,
+    explanation: {
+      novice: msg('formula-mechanics-gravity-force-explanation-novice'),
+      school: msg('formula-mechanics-gravity-force-explanation-school'),
+    },
+    compute: f.gravityForce,
+    examples: [{ args: [0.4, 9.80665], expected: 3.92266, note: 'four 100 g weights' }],
     textSource: 'spark',
     reviewed: false,
   }),

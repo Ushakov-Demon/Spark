@@ -286,6 +286,10 @@ formula-mechanics-scale-division-n-name = кількість поділок мі
 formula-mechanics-scale-division-explanation-novice = Візьми дві сусідні позначки з числами, від більшого числа відніми менше й поділи на кількість поділок між ними.
 formula-mechanics-scale-division-explanation-school = Так знаходять, скільки одиниць величини припадає на одну поділку будь-якого приладу — лінійки, мензурки, термометра. Точніше ніж до половини поділки за шкалою не прочитаєш.
 
+formula-mechanics-gravity-force = Сила тяжіння
+formula-mechanics-gravity-force-f-name = сила тяжіння
+formula-mechanics-gravity-force-explanation-novice = Земля притягує кожен кілограм однаково, тож удвічі масивніше тіло вона тягне вдвічі сильніше.
+formula-mechanics-gravity-force-explanation-school = Сила тяжіння пропорційна масі тіла: F_тяж = m·g, де g ≈ 9,8 Н/кг біля поверхні Землі — однакове для тіл з будь-якої речовини.
 formula-mechanics-gravity-at = Сила тяжіння на висоті
 formula-mechanics-gravity-at-g-name = сила тяжіння на кожен кілограм
 formula-mechanics-gravity-at-mu-name = гравітаційний параметр Землі (G·M)

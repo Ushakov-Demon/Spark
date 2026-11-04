@@ -1,6 +1,7 @@
 import type { MeasurementRecord } from '../core/trace.js';
 import { cite, sv } from '../components/sourced.js';
 import type { SourcedValue } from '../knowledge/types.js';
+import { SCALES } from '../equipment/scales.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 
 /**
@@ -21,6 +22,11 @@ export const WOOD_ON_WOOD: SourcedValue = sv(0.25, '', 'dry wood on dry wood, sl
 /** Paper on wood: the block slid on a sheet of paper laid on the board (the same pair of materials). */
 export const PAPER_ON_WOOD: SourcedValue = sv(0.4, '', 'paper on wood, sliding', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', '§ 26, таблиця «Значення коефіцієнтів тертя ковзання»: папір по дереву 0,40', '—', 0.4)], 'A table’s mean value for the pair of materials.');
 /** The pine block of the lab works: its edges, m (a block of the lab; its mass follows from the wood's density). */
+/**
+ * The division a force is read to, by the instrument that suits it: the lab dynamometer (0.1 N) from 0.5 to its 5 N;
+ * beyond either, a force gauge read to three figures.
+ */
+export const forceDivision = (F: number): number => (F >= 5 * SCALES.dynamometer.spec.resolution.value && F <= SCALES.dynamometer.spec.capacity.value ? SCALES.dynamometer.spec.resolution.value : 10 ** (Math.floor(Math.log10(F)) - 2));
 export const BENCH_BLOCK = { substance: 'wood', edges: [0.12, 0.06, 0.04] as const };
 export const blockMass = (): number => BENCH_BLOCK.edges[0] * BENCH_BLOCK.edges[1] * BENCH_BLOCK.edges[2] * SUBSTANCES.wood.liquid.density.value;
 

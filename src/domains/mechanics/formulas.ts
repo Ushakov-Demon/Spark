@@ -166,6 +166,9 @@ export const moment = (force: number, arm: number): number => force * arm;
 /** Efficiency of a machine: the useful work over the work done, η = A_useful / A_done. */
 export const efficiency = (useful: number, done: number): number => useful / done;
 
+/** The force of gravity on a body near the Earth: its mass times the pull per kilogram, F = m·g. */
+export const gravityForce = (mass: number, g: number): number => mass * g;
+
 /** Gravity's pull per kilogram at a distance r from the centre of a body of gravitational parameter μ: g = μ / r². */
 export const gravityAt = (mu: number, r: number): number => mu / (r * r);
 

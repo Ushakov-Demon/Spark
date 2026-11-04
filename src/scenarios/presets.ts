@@ -936,7 +936,7 @@ export const PRESET_ORDER: readonly string[] = [
   // Grade 7. The introduction: measuring; mechanical motion.
   'small-bodies', 'leaf-area', 'read-thermometer', 'light-meter', 'bubble-speed', 'relative-motion', 'average-speed', 'wind-speed', 'map-scale', 'strobe-photo', 'snail-speed', 'plant-motion', 'rotation-period', 'pendulum', 'windlass',
   // Interaction of bodies. Force: mass, density, elasticity, friction.
-  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'roots-gravity', 'air-column', 'solar-system-model', 'calendars', 'newton-cannon', 'scales-diy', 'dyno-diy', 'rubber-motor',
+  'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'mass-gravity', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'roots-gravity', 'air-column', 'solar-system-model', 'calendars', 'newton-cannon', 'scales-diy', 'dyno-diy', 'rubber-motor',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
   'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'fountain-model', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'cartesian-diver', 'ice-level', 'balloon-lift',

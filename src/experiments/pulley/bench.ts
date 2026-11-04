@@ -3,11 +3,11 @@ import { err, ok } from '../../core/result.js';
 import { cite, sv } from '../../components/sourced.js';
 import { G } from '../../domains/mechanics/constants.js';
 import { pulleyForce, ropeTravel, weight } from '../../domains/mechanics/formulas.js';
-import { SCALES } from '../../equipment/scales.js';
 import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
-import { measured, RULER_DIVISION } from '../../scenarios/bench-kit.js';
+import { forceDivision, measured, RULER_DIVISION } from '../../scenarios/bench-kit.js';
+export { forceDivision } from '../../scenarios/bench-kit.js';
 import { massText, heightText } from './shared.js';
 export { massText, heightText } from './shared.js';
 
@@ -22,12 +22,7 @@ export { massText, heightText } from './shared.js';
 
 /** The movable pulley of the lab set, with its hook. */
 export const MOVABLE_PULLEY: SourcedValue = sv(0.04, 'kg', 'a school pulley with its hook', 'estimate', 0.3, [cite('spark', 'estimate', 'a lab pulley in its frame weighs some 30–50 g', 0.04)], 'Estimate: the dynamometer shows its share all the same. The same lab pulley whatever the load.');
-/**
- * The instruments suit the load: the lab dynamometer (0.1 N) from 0.5 to its 5 N, beyond either — a force gauge read to
- * three figures;
- * the rope's travel — a ruler (1 mm) up to a metre, a tape (1 cm) beyond.
- */
-export const forceDivision = (F: number): number => (F >= 5 * SCALES.dynamometer.spec.resolution.value && F <= SCALES.dynamometer.spec.capacity.value ? SCALES.dynamometer.spec.resolution.value : 10 ** (Math.floor(Math.log10(F)) - 2));
+/** The instruments suit the load: the force — bench-kit's `forceDivision`; the rope's travel — a ruler (1 mm) up to a metre, a tape (1 cm) beyond. */
 export const lengthDivision = (s: number): number => (s <= 1 ? RULER_DIVISION : 0.01);
 const read = (x: number, d: number) => Math.round(x / d) * d;
 

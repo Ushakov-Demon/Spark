@@ -1,5 +1,6 @@
 ## Цегла
 component-brick = Цегла
+    .genitive = цегли
     .gender = f
 component-brick-made-of-part = випалена глина
 component-brick-description-novice = Будівельний матеріал із випаленої глини. Повільно нагрівається й повільно віддає теплоту.

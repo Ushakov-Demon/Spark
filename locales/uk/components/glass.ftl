@@ -1,5 +1,6 @@
 ## Скло
 component-glass = Скло
+    .genitive = скла
     .gender = n
 component-glass-made-of-part = діоксид кремнію (пісок)
 component-glass-description-novice = Прозорий твердий матеріал, який погано проводить теплоту. Лабораторний посуд роблять із термостійкого скла.
