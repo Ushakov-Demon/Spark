@@ -441,9 +441,15 @@ function benchView(): BenchView | null {
   if (c?.type === 'lab.hang' && r) return { ...base, hang: show('force', r.value) };
   // An experiment module draws itself (web/experiments).
   const scene = sceneOf(kind);
-  if (scene) return { ...base, scene: scene.view({ log, ...(last ? { last } : {}), ...(c ? { command: c } : {}), plan, substance: params.substance, locale }) };
-  return base;
+  if (!scene) return base;
+  const view = scene.view({ log, ...(last ? { last } : {}), ...(c ? { command: c } : {}), plan, substance: params.substance, locale });
+  // The knobs on the scene hold only till the next step (or another experiment).
+  const at = `${preset?.id}|${log.length}`;
+  if (live && live.at !== at) live = null;
+  return live && scene.live ? { ...base, scene: scene.live.apply(view, live.values), live: true } : { ...base, scene: view };
 }
+/** The scene's knobs as turned since the last step (`at` — which experiment and step they belong to). */
+let live: { readonly at: string; readonly values: Readonly<Record<string, number>> } | null = null;
 /** The latest level reading or dynamometer reading while nothing has happened since. */
 function showingMeasure() {
   if (!lastMeasure || lastMeasure.step !== session || running || session.state.time !== lastMeasure.at) return null;
@@ -1283,8 +1289,98 @@ function nextMove(): HTMLButtonElement | null {
 const goButton = el('button', { type: 'button', className: 'scene-go primary' });
 scene.element.querySelector('.scene-stage')!.append(goButton);
 goButton.onclick = () => nextMove()?.click();
+/** A knob turned (on its slider or by dragging the drawing). */
+function setLive(id: string, x: number) {
+  // Only the knobs turned since the step: the others stay as the step left them (or as the next step will set them).
+  const at = liveAt();
+  live = { at, values: { ...(live?.at === at ? live.values : {}), [id]: x } };
+  render();
+}
+const liveAt = () => `${preset?.id}|${session.result().log.filter((e) => e.ok).length}`;
+/** A step measures what the scene's knobs show (the lamp where it was dragged): the knobs' values into its command. */
+function takeLive(c: LabCommand): LabCommand {
+  const own = preset?.bench ? sceneOf(preset.bench) : undefined;
+  return live && live.at === liveAt() && own?.live?.take ? (own.live.take(c as never, live.values) as unknown as LabCommand) : c;
+}
+// A knob's field in the drawing (the lamp's height): typed in, taken on Enter or on leaving it.
+scene.element.addEventListener('change', (e) => {
+  const f = (e.target as Element).closest<HTMLInputElement>('input[data-live-field]');
+  const x = f ? Number(f.value) * Number(f.dataset['factor'] ?? 1) : NaN;
+  if (f && Number.isFinite(x) && x > 0) setLive(f.dataset['liveField']!, x);
+});
+// A part of the drawing that is a knob (the lamp on its arm): dragged, it turns the knob; the tap after it does no step.
+let dragged = false;
+scene.element.addEventListener('pointerdown', (e) => {
+  const part = (e.target as Element).closest<SVGElement>('#sc-bench [data-live]');
+  const own = preset?.bench ? sceneOf(preset.bench) : undefined;
+  const g = part?.closest<SVGGraphicsElement>('.bench-at');
+  if (!part || !g || !own?.live?.drag || liveBox.hidden) return;
+  e.preventDefault();
+  const knob = part.dataset['live']!;
+  const svgEl = g.ownerSVGElement!;
+  svgEl.setPointerCapture(e.pointerId);
+  dragged = false;
+  // Where it took hold, and the view then: the knob goes as far as the pointer goes (no jump to the pointer).
+  const at = (ev: PointerEvent) => {
+    const m = scene.element.querySelector<SVGGraphicsElement>('#sc-bench .bench-at')?.getScreenCTM();
+    return m ? new DOMPoint(ev.clientX, ev.clientY).matrixTransform(m.inverse()) : null;
+  };
+  const from = at(e);
+  const held = benchView()?.scene;
+  if (!from || held === undefined) return;
+  const move = (ev: PointerEvent) => {
+    // (The bench is drawn anew as the knob turns: its group taken afresh each time.)
+    const to = at(ev);
+    if (!to) return;
+    dragged = true;
+    setLive(knob, own.live!.drag!(held as never, knob, { x: from.x, y: from.y }, { x: to.x, y: to.y }));
+  };
+  document.documentElement.classList.add('live-dragging');
+  const up = () => {
+    document.documentElement.classList.remove('live-dragging');
+    svgEl.removeEventListener('pointermove', move);
+    svgEl.removeEventListener('pointerup', up);
+    svgEl.removeEventListener('pointercancel', up);
+  };
+  svgEl.addEventListener('pointermove', move);
+  svgEl.addEventListener('pointerup', up);
+  svgEl.addEventListener('pointercancel', up);
+});
+/** The scene's knobs (an experiment's own, between its steps): built when they change, else only their values set. */
+const liveBox = el('div', { className: 'scene-live' });
+scene.element.querySelector('.scene-stage')!.after(liveBox);
+liveBox.addEventListener('click', (e) => e.stopPropagation());
+function renderLive() {
+  const kind = preset?.bench;
+  const own = kind ? sceneOf(kind) : undefined;
+  const bench = !running && !instrumentBusy && own?.live ? benchView() : null;
+  const controls = bench?.scene !== undefined && own?.live ? own.live.controls(bench.scene as never) : [];
+  liveBox.hidden = controls.length === 0;
+  const key = controls.map((c) => `${c.id}:${c.label}:${c.min}:${c.max}`).join('|');
+  if (liveBox.dataset['k'] !== key) {
+    liveBox.dataset['k'] = key;
+    liveBox.replaceChildren(
+      ...controls.map((c) => {
+        const input = el('input', { type: 'range', min: String(c.min), max: String(c.max), step: String(c.step) });
+        input.dataset['id'] = c.id;
+        input.oninput = () => setLive(c.id, Number(input.value));
+        return el('label', { className: 'scene-live-knob' }, el('span', { className: 'scene-live-name' }, c.label), input, el('span', { className: 'scene-live-value' }));
+      }),
+    );
+  }
+  for (const c of controls) {
+    const input = liveBox.querySelector<HTMLInputElement>(`input[data-id="${c.id}"]`);
+    if (!input) continue;
+    if (document.activeElement !== input) input.value = String(c.value);
+    input.closest('label')!.querySelector('.scene-live-value')!.textContent = c.text;
+  }
+}
 // The things on the table are buttons too: a tap on the ball rolls it, on the pot starts the heating.
 scene.element.addEventListener('click', (e) => {
+  if (dragged || (e.target as Element).closest('[data-live], [data-live-field]')) {
+    dragged = false;
+    return;
+  }
   if ((e.target as Element).closest('.scene-svg #sc-bench, .scene-svg .items')) nextMove()?.click();
 });
 /**
@@ -2056,6 +2152,7 @@ function render() {
   pointTheWay();
   // (When the buttons below are drawn.)
   queueMicrotask(renderGo);
+  queueMicrotask(renderLive);
   $('#exp-title').classList.toggle('to-list', !!presetGiven);
   renderVary();
   document.documentElement.lang = locale;
@@ -3669,7 +3766,7 @@ function nextPlanStep() {
     if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang' || s.kind === 'bench') {
       // Stop at the instrument: the reading (and the Professor's question) first, the next step on the next press.
       if (s.kind === 'weigh') weighNow(s.scale);
-      else measureNow(stepCommand(s, params));
+      else measureNow(s.kind === 'bench' ? takeLive(stepCommand(s, params)) : stepCommand(s, params));
       // The plan ended with a measurement: the question can be answered now (or once the table is looked into).
       if (!plan.length && (preset?.choicesAt !== 'end' || instant())) {
         // An instrument still moving: the answer comes once it is at rest.

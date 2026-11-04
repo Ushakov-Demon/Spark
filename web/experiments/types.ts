@@ -26,6 +26,31 @@ export interface ExperimentScene<V, K extends string = string> {
   readonly svg: (v: V) => string;
   /** The motion from the previous picture (`prev`, when it was this experiment's too) to `next`; null — nothing to play. */
   readonly motion: (next: V, draw: (v: V) => void, prev: V | null) => Motion | null;
+  /**
+   * Knobs on the scene to turn between the steps: the picture and the instrument answer at once, and nothing goes
+   * into the run (the next step sets them back). `controls` — what to show for this view (none — no knobs);
+   * `apply` — the view with the knobs' values. A part of the drawing marked `data-live="<knob>"` can be dragged:
+   * `drag` turns the pointer's way (from where it took hold to where it is, in the drawing's own units; `v` — the view
+   * when it took hold) into that knob's value. `take` — the next step
+   * measures what the knobs show: their values into its command.
+   */
+  readonly live?: {
+    readonly controls: (v: V) => readonly LiveControl[];
+    readonly apply: (v: V, values: Readonly<Record<string, number>>) => V;
+    readonly drag?: (v: V, knob: string, from: { readonly x: number; readonly y: number }, to: { readonly x: number; readonly y: number }) => number;
+    readonly take?: (command: { readonly type: string } & Record<string, unknown>, values: Readonly<Record<string, number>>) => { readonly type: string } & Record<string, unknown>;
+  };
+}
+
+/** A knob on the scene: a slider from `min` to `max`, its value and how the value reads («8 Вт», «60°»). */
+export interface LiveControl {
+  readonly id: string;
+  readonly label: string;
+  readonly min: number;
+  readonly max: number;
+  readonly step: number;
+  readonly value: number;
+  readonly text: string;
 }
 
 export const defineScene = <V, const K extends string>(s: ExperimentScene<V, K>): ExperimentScene<V, K> => s;

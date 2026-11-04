@@ -14,6 +14,7 @@ person-henry = Джозеф Генрі
 person-hooke = Роберт Гук
 person-huygens = Крістіан Гюйгенс
 person-joule = Джеймс Прескотт Джоуль
+person-lambert = Йоганн Генріх Ламберт
 person-kepler = Йоганн Кеплер
 person-kirchhoff = Густав Кірхгоф
 person-lenz = Генріх (Емілій) Ленц

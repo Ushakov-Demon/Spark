@@ -14,6 +14,7 @@ person-henry = Joseph Henry
 person-hooke = Robert Hooke
 person-huygens = Christiaan Huygens
 person-joule = James Prescott Joule
+person-lambert = Johann Heinrich Lambert
 person-kepler = Johannes Kepler
 person-kirchhoff = Gustav Kirchhoff
 person-lenz = Heinrich (Emil) Lenz

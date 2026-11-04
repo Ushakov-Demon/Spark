@@ -15,6 +15,8 @@ export interface BenchView {
   readonly block: readonly [number, number, number];
   /** An experiment module's own view (web/experiments), drawn by its scene. */
   readonly scene?: unknown;
+  /** The view as the scene's knobs set it (between the steps): drawn at once. */
+  readonly live?: boolean;
 }
 
 /** A dynamometer hanging from the stand with the block on its hook (weighing the block). */

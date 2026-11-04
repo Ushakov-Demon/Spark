@@ -193,7 +193,8 @@ export function createScene(): Scene {
     const set = (el: HTMLElement, text: string) => {
       if (el.textContent !== text) el.textContent = text;
     };
-    set(saysText, saysPages[saysAt] ?? '');
+    // A unit with a slash («мм/с», «см/год») is not parted at the line's end: a word joiner after the slash.
+    set(saysText, (saysPages[saysAt] ?? '').replace(/(\p{L})\/(\p{L})/gu, '$1/\u2060$2'));
     const many = saysPages.length > 1;
     saysFoot.hidden = !many;
     if (!many) return;

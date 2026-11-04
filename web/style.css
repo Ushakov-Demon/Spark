@@ -1240,3 +1240,20 @@ html.no-motion .preloader-walk, html.no-motion .preloader .p-leg-l, html.no-moti
 /* Back up to the experiment (main.ts): shown while the lab is scrolled away from it. */
 .to-kitchen { position: fixed; right: 16px; bottom: 16px; z-index: 64; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1.3rem; background: var(--card); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
 .to-kitchen[hidden] { display: none; }
+
+/* The scene's own knobs (an experiment's, between its steps): a row of small sliders under the scene. */
+.scene-live { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; align-items: center; width: fit-content; max-width: 100%; margin: 8px auto 0; padding: 5px 14px; border-radius: 999px; background: rgba(30, 33, 38, 0.86); color: #f1ead7; font: 600 0.85rem system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.scene-live[hidden] { display: none; }
+.scene-live-knob { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.scene-live-knob input { width: clamp(90px, 12vw, 160px); accent-color: #ffd166; }
+.scene-live-value { min-width: 3.4em; color: #ffd166; font-variant-numeric: tabular-nums; }
+/* On a phone the scene fills the screen: the knobs over the board's top edge. */
+html.phone .scene { position: relative; }
+html.phone .scene-live { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); flex-wrap: nowrap; width: max-content; margin: 0; padding: 2px 10px; gap: 10px; z-index: 4; font-size: 0.75rem; }
+html.phone .scene-live-knob input { width: 72px; }
+/* A knob's field drawn on the scene (the lamp's height): a small box to type a number in. */
+.scene-field { display: flex; align-items: center; gap: 3px; font: 700 12px system-ui, sans-serif; color: #ffd166; }
+.scene-field input { width: 56px; padding: 2px 4px; border: 1px solid #ffd166; border-radius: 5px; background: rgba(20, 24, 28, 0.85); color: #ffd166; font: inherit; text-align: right; }
+/* A part of the drawing that can be dragged (the lamp on its arm): an open hand over it, a closed one while dragged. */
+.scene [data-live] { cursor: grab; }
+html.live-dragging, html.live-dragging * { cursor: grabbing !important; }

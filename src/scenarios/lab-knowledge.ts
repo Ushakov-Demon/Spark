@@ -4,6 +4,7 @@ import type { SystemState } from '../core/state.js';
 import { ELECTRICAL_FORMULAS, ELECTRICAL_LAWS, type ElectricalCommand } from '../domains/electrical/index.js';
 import { THERMAL_KNOWLEDGE, type ThermalCommand } from '../domains/thermal/index.js';
 import { MECHANICS_FORMULAS, MECHANICS_LAWS } from '../domains/mechanics/index.js';
+import { OPTICS_FORMULAS, OPTICS_LAWS } from '../domains/optics/index.js';
 import type { DomainKnowledge } from '../explain/domain.js';
 import { formatQuantity, type ExplainContext } from '../explain/format.js';
 
@@ -33,8 +34,8 @@ const isElectrical = (c: Command): c is ElectricalCommand => c.type.startsWith('
  * Faraday next to the heat formulas when a current was passed.
  */
 export const LAB_KNOWLEDGE: DomainKnowledge<LabCommand> = {
-  formulas: [...THERMAL_KNOWLEDGE.formulas, ...ELECTRICAL_FORMULAS, ...MECHANICS_FORMULAS],
-  laws: [...THERMAL_KNOWLEDGE.laws, ...ELECTRICAL_LAWS, ...MECHANICS_LAWS],
+  formulas: [...THERMAL_KNOWLEDGE.formulas, ...ELECTRICAL_FORMULAS, ...MECHANICS_FORMULAS, ...OPTICS_FORMULAS],
+  laws: [...THERMAL_KNOWLEDGE.laws, ...ELECTRICAL_LAWS, ...MECHANICS_LAWS, ...OPTICS_LAWS],
   timeline: (result, ctx) => THERMAL_KNOWLEDGE.timeline(result as ExperimentResult<ThermalCommand>, ctx),
   describeCommand(entry: ExperimentLogEntry<LabCommand>, ctx: ExplainContext, state: SystemState) {
     const c = entry.command;

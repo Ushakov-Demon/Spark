@@ -13,6 +13,7 @@ export const PLAY_SECONDS = 6;
 /** The motion from the previous picture to the new one; null — nothing moves (it is drawn at once). */
 export function benchMotion(prev: BenchView | null, next: BenchView, draw: (v: BenchView) => void): Motion | null {
   const scene = sceneOf(next.kind);
-  if (!scene || next.scene === undefined) return null;
+  // (A knob turned on the scene: drawn at once, nothing to play.)
+  if (!scene || next.scene === undefined || next.live) return null;
   return scene.motion(next.scene, (v) => draw({ ...next, scene: v }), prev?.kind === next.kind && prev.scene !== undefined ? prev.scene : null);
 }
