@@ -5,6 +5,7 @@ import { VESSELS, type VesselId } from '../equipment/vessels.js';
 import { placeHeater, placeVessel } from '../domains/thermal/assembly.js';
 import { reservoir } from '../domains/thermal/entities.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
+import { msg } from '../knowledge/messages.js';
 
 /** Everything the experimenter chooses for "heat water". */
 export interface HeatingParams {
@@ -78,7 +79,7 @@ export function heatingSetup(p: HeatingParams = DEFAULT_HEATING): HeatingSetup {
   });
   const room = celsius(p.roomTemp);
   const state = createState({
-    entities: [...vessel.entities, ...heater.entities, reservoir({ id: ROOM_ID, label: { uk: 'Повітря в кімнаті', en: 'Room air' }, temperature: room })],
+    entities: [...vessel.entities, ...heater.entities, reservoir({ id: ROOM_ID, label: msg('boil-entities-label'), temperature: room })],
     connections: [...vessel.connections, ...heater.connections],
     environment: { ambientTemperature: room },
   });

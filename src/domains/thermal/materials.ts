@@ -1,3 +1,4 @@
+import { msg } from '../../knowledge/messages.js';
 import type { SourcedValue, LocalizedText } from '../../knowledge/types.js';
 import { heatTransferCoeff, type Density, type HeatTransferCoeff, type SpecificHeat, type ThermalConductivity } from '../../core/units.js';
 import { AIR } from '../../components/air.js';
@@ -137,7 +138,7 @@ export const SURFACES: Partial<Record<MaterialName, Surface>> = {
       value: 0.2, unit: '', conditions: 'oxidised aluminium', verification: 'single-source', tolerance: 0.3,
       citations: [{ source: 'engineeringtoolbox-emissivity', locator: 'Aluminum heavily oxidized 0.2–0.31; commercial sheet 0.09', conditions: '300 K', range: [0.09, 0.31] }, { source: 'wikipedia-emissivity', locator: 'Aluminium, rough, oxidized 0.2', conditions: '300 K', value: 0.2 }],
     },
-    limit: { temperature: MATERIAL_MELTING.aluminium, what: { uk: 'алюміній плавиться і дно прогорає', en: 'the aluminium melts and the bottom burns through' } },
+    limit: { temperature: MATERIAL_MELTING.aluminium, what: msg('thermal-materials-limit-what') },
   },
   iron: {
     emissivity: {
@@ -151,7 +152,7 @@ export const SURFACES: Partial<Record<MaterialName, Surface>> = {
       citations: [{ source: 'wikipedia-emissivity', locator: 'Copper, polished 0.04; oxidized 0.87', conditions: '300 K', range: [0.04, 0.87] }],
       note: 'Polished copper hardly radiates; heated in air it darkens with oxide.',
     },
-    limit: { temperature: MATERIAL_MELTING.copper, what: { uk: 'мідь плавиться', en: 'the copper melts' } },
+    limit: { temperature: MATERIAL_MELTING.copper, what: msg('thermal-materials-limit-what-2') },
   },
   brass: {
     emissivity: {
@@ -170,7 +171,7 @@ export const SURFACES: Partial<Record<MaterialName, Surface>> = {
         citations: [{ source: 'arborsci-glassware', locator: 'Borosilicate: max working temperature 500 °C (short-term 520 °C)', conditions: 'not stated', value: 500 }, { source: 'schott-duran', locator: 'Transformation temperature 525 °C', conditions: 'DURAN', value: 525 }],
         note: 'Above it the glass starts to soften; a sudden change of a hundred degrees or so can crack it much earlier (not modelled).',
       },
-      what: { uk: 'скло розм’якне й може тріснути', en: 'the glass softens and may crack' },
+      what: msg('thermal-materials-limit-what-3'),
     },
   },
   porcelain: {
@@ -183,7 +184,7 @@ export const SURFACES: Partial<Record<MaterialName, Surface>> = {
         value: 1150, unit: '°C', conditions: 'porcelain crucible, maximum use temperature', verification: 'cross-checked', tolerance: 0.05,
         citations: [{ source: 'fishersci-porcelain-crucible-30', locator: 'Maximum temperature 1150 °C', conditions: '30 mL high form', value: 1150 }, { source: 'sigma-coors-crucible-30', locator: 'max. use temp. 1150 °C', conditions: '30 mL wide form', value: 1150 }],
       },
-      what: { uk: 'порцеляна може тріснути', en: 'the porcelain may crack' },
+      what: msg('thermal-materials-limit-what-4'),
     },
   },
 };

@@ -1,6 +1,7 @@
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { NUMBER_LOCALE, type Locale } from '../knowledge/i18n.js';
 import type { Level } from '../knowledge/levels.js';
+import { byLocale, t as tl } from '../knowledge/messages.js';
 
 /** Who we are explaining to. */
 export interface ExplainContext {
@@ -21,18 +22,11 @@ export const fixed = (v: number, decimals: number, locale: Locale): string =>
   nf(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(Math.abs(v) < 0.5 * 10 ** -decimals ? 0 : v);
 
 /** Unit symbols per language (SI symbols are international, but Ukrainian uses Cyrillic ones). */
-const UNITS: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
-  uk: {
-    J: 'Дж', kJ: 'кДж', W: 'Вт', kg: 'кг', s: 'с', min: 'хв', 'J/kg': 'Дж/кг', 'kg/s': 'кг/с', 'm/s': 'м/с', 'kg/m³': 'кг/м³', 'kg/mol': 'кг/моль', 'g/100 g water': 'г на 100 г води', 'g/100 mL water': 'г на 100 мл води', 'g CuSO₄/100 mL water': 'г CuSO₄ на 100 мл води', '1/K': '1/К', 'A·h': 'А·год', m: 'м', 'm²': 'м²', K: 'K', '°C': '°C',
-    'W/K': 'Вт/К', 'J/K': 'Дж/К', 'W/(m·K)': 'Вт/(м·К)', 'W/(m²·K)': 'Вт/(м²·К)', 'J/(kg·K)': 'Дж/(кг·К)', 'J/(kg·°C)': 'Дж/(кг·°C)',
-    A: 'А', V: 'В', 'Ω': 'Ом', C: 'Кл', mL: 'мл', 'S/m': 'См/м', 'Ω·m': 'Ом·м', 'C/mol': 'Кл/моль', mol: 'моль', '1/m': 'м⁻¹', N: 'Н', 'm³': 'м³', 'm/s²': 'м/с²', 'N/kg': 'Н/кг', '': '',
-  },
-  en: {
-    J: 'J', kJ: 'kJ', W: 'W', kg: 'kg', s: 's', min: 'min', 'J/kg': 'J/kg', 'kg/s': 'kg/s', 'm/s': 'm/s', 'kg/m³': 'kg/m³', 'kg/mol': 'kg/mol', 'g/100 g water': 'g per 100 g of water', 'g/100 mL water': 'g per 100 mL of water', 'g CuSO₄/100 mL water': 'g CuSO₄ per 100 mL of water', '1/K': '1/K', 'A·h': 'A·h', m: 'm', 'm²': 'm²', K: 'K', '°C': '°C',
-    'W/K': 'W/K', 'J/K': 'J/K', 'W/(m·K)': 'W/(m·K)', 'W/(m²·K)': 'W/(m²·K)', 'J/(kg·K)': 'J/(kg·K)', 'J/(kg·°C)': 'J/(kg·°C)',
-    A: 'A', V: 'V', 'Ω': 'Ω', C: 'C', mL: 'mL', 'S/m': 'S/m', 'Ω·m': 'Ω·m', 'C/mol': 'C/mol', mol: 'mol', '1/m': '1/m', N: 'N', 'm³': 'm³', 'm/s²': 'm/s²', 'N/kg': 'N/kg', '': '',
-  },
-};
+const UNITS: Readonly<Record<Locale, Readonly<Record<string, string>>>> = byLocale((l: Locale) => ({
+    J: tl(l, 'explain-format-units-j'), kJ: tl(l, 'explain-format-units-k-j'), W: tl(l, 'explain-format-units-w'), kg: tl(l, 'explain-format-units-kg'), s: tl(l, 'explain-format-units-s'), min: tl(l, 'explain-format-units-min'), 'J/kg': tl(l, 'explain-format-units-jkg'), 'kg/s': tl(l, 'explain-format-units-kgs'), 'm/s': tl(l, 'explain-format-units-ms'), 'kg/m³': tl(l, 'explain-format-units-kgm'), 'kg/mol': tl(l, 'explain-format-units-kgmol'), 'g/100 g water': tl(l, 'explain-format-units-g100gwater'), 'g/100 mL water': tl(l, 'explain-format-units-g100m-lwater'), 'g CuSO₄/100 mL water': tl(l, 'explain-format-units-gcu-so100m-lwater'), '1/K': tl(l, 'explain-format-units-1k'), 'A·h': tl(l, 'explain-format-units-ah'), m: tl(l, 'explain-format-units-m'), 'm²': tl(l, 'explain-format-units-m-2'), K: 'K', '°C': '°C',
+    'W/K': tl(l, 'explain-format-units-wk'), 'J/K': tl(l, 'explain-format-units-jk'), 'W/(m·K)': tl(l, 'explain-format-units-wmk'), 'W/(m²·K)': tl(l, 'explain-format-units-wmk-2'), 'J/(kg·K)': tl(l, 'explain-format-units-jkgk'), 'J/(kg·°C)': tl(l, 'explain-format-units-jkgc'),
+    A: tl(l, 'explain-format-units-a'), V: tl(l, 'explain-format-units-v'), 'Ω': tl(l, 'explain-format-units'), C: tl(l, 'explain-format-units-c'), mL: tl(l, 'explain-format-units-m-l'), 'S/m': tl(l, 'explain-format-units-sm'), 'Ω·m': tl(l, 'explain-format-units-m-3'), 'C/mol': tl(l, 'explain-format-units-cmol'), mol: tl(l, 'explain-format-units-mol'), '1/m': tl(l, 'explain-format-units-1m'), N: tl(l, 'explain-format-units-n'), 'm³': tl(l, 'explain-format-units-m-4'), 'm/s²': tl(l, 'explain-format-units-ms-2'), 'N/kg': tl(l, 'explain-format-units-nkg'), '': '',
+  }));
 
 /** Unit label alone (for "where c — specific heat, J/(kg·°C)"). */
 export function unitLabel(unit: string, { level, locale }: ExplainContext): string {
@@ -64,7 +58,7 @@ export function formatQuantity(value: number, unit: string, ctx: ExplainContext)
       return `${fixed(value, DELTA_DECIMALS[level], locale)} ${unitLabel(unit, ctx)}`;
     case 'kg':
       // Below a kilogram, grams read better ("30 г", not "0,03 кг").
-      if (Math.abs(value) < 1 && level !== 'expert') return `${sig(value * 1000, n, locale)} ${locale === 'uk' ? 'г' : 'g'}`;
+      if (Math.abs(value) < 1 && level !== 'expert') return `${sig(value * 1000, n, locale)} ${tl(locale, 'unit-sym-g')}`;
       return `${sig(value, n, locale)} ${unitLabel(unit, ctx)}`;
     case 'J':
       if (Math.abs(value) >= 1000 && level !== 'expert') return `${sig(value / 1000, n, locale)} ${UNITS[locale]['kJ']}`;
@@ -92,7 +86,7 @@ export function formatDuration(seconds: number, locale: Locale): string {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  const [H, M, S] = locale === 'uk' ? ['год', 'хв', 'с'] : ['h', 'min', 's'];
+  const [H, M, S] = [tl(locale, 'explain-format-duration-hms'), tl(locale, 'explain-format-units-min'), tl(locale, 'explain-format-units-s')];
   if (h) return m ? `${h} ${H} ${m} ${M}` : `${h} ${H}`;
   if (m) return s ? `${m} ${M} ${s} ${S}` : `${m} ${M}`;
   return `${s} ${S}`;

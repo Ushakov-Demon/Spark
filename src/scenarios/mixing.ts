@@ -5,6 +5,8 @@ import type { ThermalCommand } from '../domains/thermal/commands.js';
 import { thermalBody, reservoir } from '../domains/thermal/entities.js';
 import { convectionLink } from '../domains/thermal/links.js';
 import { CONVECTION, MATERIALS } from '../domains/thermal/materials.js';
+import type { Locale } from '../knowledge/i18n.js';
+import { msg } from '../knowledge/messages.js';
 
 export type PotMaterial = 'aluminium' | 'steel' | 'glass';
 
@@ -56,7 +58,7 @@ export function mixingLab(p: MixingParams = DEFAULT_MIXING): MixingSetup {
     entities: [
       thermalBody({
         id: 'pot',
-        label: { uk: `Каструля (${pot.name.uk.toLowerCase()})`, en: `Pot (${pot.name.en.toLowerCase()})` },
+        label: msg('mixing-pot-entities-label', { name: (l: Locale) => pot.name[l].toLowerCase() }),
         mass: kilograms(p.potMass),
         specificHeat: pot.specificHeat.value,
         material: p.potMaterial,
@@ -64,13 +66,13 @@ export function mixingLab(p: MixingParams = DEFAULT_MIXING): MixingSetup {
       }),
       thermalBody({
         id: 'water',
-        label: { uk: 'Вода', en: 'Water' },
+        label: msg('mixing-water-entities-label'),
         mass: kilograms(p.coldMass),
         specificHeat: MATERIALS.water.specificHeat.value,
         material: 'water',
         temperature: celsius(p.coldTemp),
       }),
-      reservoir({ id: 'room', label: { uk: 'Повітря в кімнаті', en: 'Room air' }, temperature: celsius(p.roomTemp) }),
+      reservoir({ id: 'room', label: msg('mixing-room-entities-label'), temperature: celsius(p.roomTemp) }),
     ],
     connections: [
       convectionLink({ id: 'pot-water', a: 'pot', b: 'water', coefficient: CONVECTION.stillWater.value, area: squareMeters(0.05), dataRef: 'stillWater' }),

@@ -1,4 +1,5 @@
 import type { LocalizedText } from './i18n.js';
+import { msg } from './messages.js';
 
 /**
  * Experimenter level. Drives wording, which details are shown, units and precision.
@@ -19,20 +20,20 @@ export type Level = (typeof LEVELS)[number];
 
 export const LEVEL_INFO: Readonly<Record<Level, { readonly name: LocalizedText; readonly audience: LocalizedText }>> = {
   novice: {
-    name: { uk: 'Перші кроки', en: 'First steps' },
-    audience: { uk: '≈10–13 років: суть явищ і причини, без формул', en: '≈10–13 years: what happens and why, no formulas' },
+    name: msg('level-novice-name'),
+    audience: msg('level-novice-audience'),
   },
   school: {
-    name: { uk: 'Базовий', en: 'Core' },
-    audience: { uk: '≈13–15 років: формули, зміст кожної величини, справжні числа', en: '≈13–15 years: formulas, meaning of every quantity, real numbers' },
+    name: msg('level-school-name'),
+    audience: msg('level-school-audience'),
   },
   advanced: {
-    name: { uk: 'Поглиблений', en: 'In depth' },
-    audience: { uk: '≈15–18 років: закони, їхні автори, межі застосування', en: '≈15–18 years: laws, who found them, where they stop working' },
+    name: msg('level-advanced-name'),
+    audience: msg('level-advanced-audience'),
   },
   expert: {
-    name: { uk: 'Експерт', en: 'Expert' },
-    audience: { uk: 'вчителі, олімпіадники: чисельний метод, походження даних, джерела', en: 'teachers, olympiad students: numerics, data provenance, sources' },
+    name: msg('level-expert-name'),
+    audience: msg('level-expert-audience'),
   },
 };
 

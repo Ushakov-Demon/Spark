@@ -75,7 +75,7 @@ function gradesIn(p: Preset, subject: Subject): number[] {
 /**
  * The topic an experiment is under in a subject: that subject's programme names its own («Тема 2. Досліджуємо
  * хімічні реакції в розчинах» for salt on the roads, not «Теплові явища» of physics). The programmes' topics are
- * quoted in their own language (Ukrainian); in another language — the experiment's own topic.
+ * quoted in their own language; to those reading in another — the experiment's own topic.
  */
 export function presetTopicIn(p: Preset, subject: Subject, locale: Locale): string {
   // Under its own subject (the first of its programmes) an experiment keeps its own topic.
@@ -84,5 +84,5 @@ export function presetTopicIn(p: Preset, subject: Subject, locale: Locale): stri
   const topicOf = (x: PresetProgram) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined);
   const mine = presetPrograms(p).find((x) => x.match !== 'related' && topicOf(x) && getCurriculum(x.program)?.subject === subject);
   const own = mine && topicOf(mine);
-  return own && locale === 'uk' ? own : tr(p.topic, locale);
+  return own && getCurriculum(mine.program)?.language === locale ? own : tr(p.topic, locale);
 }

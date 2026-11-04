@@ -1,4 +1,4 @@
-import type { LocalizedText } from '../knowledge/i18n.js';
+import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import type { CommandHandler } from '../core/commands.js';
 import type { ExperimentLogEntry } from '../core/experiment.js';
 import { entityId } from '../core/ids.js';
@@ -12,6 +12,7 @@ import { bodyMass, isThermalBody, type ThermalBody } from '../domains/thermal/en
 import { solutionDensity, soluteBehaviour } from '../domains/thermal/mixture.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
+import { msg, t } from '../knowledge/messages.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import type { SubstanceItem } from '../substances/types.js';
 import { LAB_VESSEL_ID, SAMPLE_ID } from './thermal-lab.js';
@@ -140,9 +141,9 @@ export const levelCommand: CommandHandler<LevelCommand> = {
   type: 'lab.read-level',
   apply(state, c) {
     const item = VESSELS[c.vessel as VesselId];
-    if (!item) return err({ uk: `Невідомий посуд «${c.vessel}»`, en: `Unknown vessel "${c.vessel}"` });
+    if (!item) return err(msg('measuring-level-command-apply', { vessel: c.vessel }));
     const division = item.spec.graduation?.value;
-    if (!division) return err({ uk: `На посуді «${item.name.uk}» немає поділок — об’єм не виміряти. Візьми мірний циліндр.`, en: `The ${item.name.en.toLowerCase()} has no volume marks. Take a measuring cylinder.` });
+    if (!division) return err(msg('measuring-no-marks', { name: (l: Locale) => item.name[l], lower: (l: Locale) => item.name[l].toLowerCase() }));
     const exact = levelVolume(state);
     // Above the top mark there is nothing to read (and soon it overflows).
     const value = exact > (c.size / 1000) * 1.0001 ? null : Math.round(exact / division) * division;
@@ -155,8 +156,8 @@ export const hangCommand: CommandHandler<HangCommand> = {
   type: 'lab.hang',
   apply(state, c) {
     const sub = SUBSTANCES[c.substance as SubstanceId];
-    if (!sub || !sub.category.startsWith('solid.')) return err({ uk: 'На динамометр підвішують тверде тіло: брусок, кульку.', en: 'Hang a solid body on the dynamometer: a block, a marble.' });
-    if (!(c.mass > 0)) return err({ uk: 'Маса має бути > 0', en: 'Mass must be > 0' });
+    if (!sub || !sub.category.startsWith('solid.')) return err(msg('measuring-hang-command-apply'));
+    if (!(c.mass > 0)) return err(msg('measuring-hang-command-apply-2'));
     const rb = sub.liquid.density.value;
     const volume = c.mass / rb;
     const P = weight(c.mass, G);
@@ -164,7 +165,7 @@ export const hangCommand: CommandHandler<HangCommand> = {
     const inputs: Record<string, number> = { mass: c.mass, volume, g: G, P };
     if (c.into === 'liquid') {
       const rl = liquidDensity(state);
-      if (rl === null) return err({ uk: 'У посуді немає рідини, у яку можна занурити тіло.', en: 'There is no liquid in the vessel to lower the body into.' });
+      if (rl === null) return err(msg('measuring-hang-command-apply-3'));
       // A body less dense than the liquid floats: the spring goes slack.
       const share = submergedShare(rb, rl);
       const F = buoyantForce(rl, G, share * volume);
@@ -200,13 +201,12 @@ export function readingText(r: MeasurementRecord, locale: 'uk' | 'en'): string {
 
 /** A reading as an instrument shows it: "1 657 г", "62 мл", "0,6 Н"; null — out of range. */
 export function formatMeasured(quantity: MeasurementRecord['quantity'], value: number | null, division: number, locale: 'uk' | 'en'): string {
-  const uk = locale === 'uk';
-  if (value === null) return quantity === 'volume' ? (uk ? 'вище за поділки' : 'above the marks') : uk ? 'перевантаження' : 'overload';
-  const [k, unit] = quantity === 'mass' ? [1000, uk ? 'г' : 'g'] : quantity === 'volume' ? [1e6, uk ? 'мл' : 'mL'] : quantity === 'length' ? [100, uk ? 'см' : 'cm'] : quantity === 'time' ? [1, uk ? 'с' : 's'] : quantity === 'current' ? [1, uk ? 'А' : 'A'] : quantity === 'voltage' ? [1, uk ? 'В' : 'V'] : quantity === 'resistance' ? [1, uk ? 'Ом' : 'Ω'] : quantity === 'pressure' ? [0.01, uk ? 'гПа' : 'hPa'] : quantity === 'angle' ? [1, '°'] : quantity === 'turns' ? [1, uk ? 'об.' : 'turns'] : quantity === 'ratio' ? [1, ''] : quantity === 'days' ? [1, uk ? 'діб' : 'd'] : [1, uk ? 'Н' : 'N'];
+  if (value === null) return quantity === 'volume' ? (t(locale, 'measuring-format-measured')) : t(locale, 'measuring-format-measured-2');
+  const [k, unit] = quantity === 'mass' ? [1000, t(locale, 'unit-sym-g')] : quantity === 'volume' ? [1e6, t(locale, 'unit-sym-mL')] : quantity === 'length' ? [100, t(locale, 'unit-sym-cm')] : quantity === 'time' ? [1, t(locale, 'unit-sym-s')] : quantity === 'current' ? [1, t(locale, 'unit-sym-A')] : quantity === 'voltage' ? [1, t(locale, 'unit-sym-V')] : quantity === 'resistance' ? [1, t(locale, 'unit-sym-ohm')] : quantity === 'pressure' ? [0.01, t(locale, 'measuring-format-measured-kunit')] : quantity === 'angle' ? [1, '°'] : quantity === 'turns' ? [1, t(locale, 'measuring-format-measured-kunit-2')] : quantity === 'ratio' ? [1, ''] : quantity === 'days' ? [1, t(locale, 'measuring-format-measured-kunit-3')] : [1, t(locale, 'unit-sym-N')];
   const digits = Math.max(0, Math.round(-Math.log10(division * k)));
   // (Turns are counted to a quarter: 4,75, but 12 — not 12,00.)
   const fraction = quantity === 'turns' ? { minimumFractionDigits: 0, maximumFractionDigits: 2 } : { minimumFractionDigits: digits, maximumFractionDigits: digits };
-  return `${new Intl.NumberFormat(uk ? 'uk-UA' : 'en-GB', fraction).format(value * k)}${unit === '°' || unit === '' ? '' : ' '}${unit}`;
+  return `${new Intl.NumberFormat(NUMBER_LOCALE[locale], fraction).format(value * k)}${unit === '°' || unit === '' ? '' : ' '}${unit}`;
 }
 
 export const MEASURING_COMMANDS = [levelCommand, hangCommand] as const;

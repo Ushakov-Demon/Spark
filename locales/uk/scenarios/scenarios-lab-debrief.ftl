@@ -1,0 +1,26 @@
+## lab-debrief
+lab-debrief-goal-options-label = Інша модель нагрівача, на повну
+lab-debrief-goal-options-label-2 = Повернути ручку на максимум
+lab-debrief-goal-options-label-3 = Накрити кришкою
+lab-debrief-goal-options-label-4 = Взяти менше речовини
+lab-debrief-part-names-sample = на саму речовину (нагрівання, плавлення)
+lab-debrief-part-names-vessel = на нагрівання посуду
+lab-debrief-part-names-lid = на нагрівання кришки
+lab-debrief-part-names-pieces = на нагрівання того, що поклали в рідину
+lab-debrief-part-names-heater = залишилось у розжареному нагрівачі
+lab-debrief-part-names-air = пішло в повітря (тепловіддача)
+lab-debrief-part-names-flame = полум’я пройшло повз посуд
+lab-debrief-part-names-vapour = забрала пара (випаровування й кипіння)
+lab-debrief-out = Розбір
+lab-debrief-head = Ціль
+lab-debrief-head-2 = Прогноз
+lab-debrief-text = мети не досягнуто
+lab-debrief-verdict = влучно (різниця { $dev })
+lab-debrief-verdict-2 = насправді довше на { $dev }
+lab-debrief-verdict-3 = насправді швидше на { $value }
+lab-debrief-text-2 = результат
+lab-debrief-text-3 = Розрахунок «на папері» (вся енергія нагрівача йде лише в речовину): { $paper }.
+lab-debrief-text-4 = Насправді з { $produced }, які виділив нагрівач:
+lab-debrief-text-5 = Прогноз збігається з розрахунком «на папері»: формулу застосовано правильно. Різницю дали «невидимі учасники» — посуд, повітря, пара.
+lab-debrief-text-6 = Що змінити, щоб устигнути (кожен варіант окремо, перевірено повторним дослідом):
+lab-debrief-text-7 = Жодна окрема зміна (потужність, кришка, менше речовини) не дає вкластися в цей час.

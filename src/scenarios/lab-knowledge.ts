@@ -11,7 +11,8 @@ import { ELECTRICAL_COMMANDS } from '../domains/electrical/commands.js';
 import { THERMAL_COMMANDS } from '../domains/thermal/commands.js';
 import { SCALES } from '../equipment/scales.js';
 import { GLOSSARY, lawTerms, type Term } from '../knowledge/glossary.js';
-import { tr } from '../knowledge/i18n.js';
+import { tr, type Locale } from '../knowledge/i18n.js';
+import { localized, t } from '../knowledge/messages.js';
 import { formatReading, WEIGH_COMMANDS, weighingsOf, type WeighCommand } from './weighing.js';
 import { formatMeasured, MEASURING_COMMANDS, readingsOf, type HangCommand, type LevelCommand } from './measuring.js';
 import { VESSELS, type VesselId } from '../equipment/vessels.js';
@@ -39,28 +40,26 @@ export const LAB_KNOWLEDGE: DomainKnowledge<LabCommand> = {
     const c = entry.command;
     if (c.type === 'lab.read-level' || c.type === 'lab.hang') {
       const r = readingsOf([entry])[0]?.record;
-      const uk = ctx.locale === 'uk';
       if (c.type === 'lab.read-level') {
         const shown = formatMeasured('volume', r?.value ?? null, r?.inputs?.['division'] ?? 1e-6, ctx.locale);
-        return uk ? `Подивилися на поділки (${tr(VESSELS[c.vessel as VesselId].name, ctx.locale).toLowerCase()}): ${shown}` : `Read the marks (${tr(VESSELS[c.vessel as VesselId].name, ctx.locale).toLowerCase()}): ${shown}`;
+        return t(ctx.locale, 'lab-knowledge-describe-command', { name: tr(VESSELS[c.vessel as VesselId].name, ctx.locale).toLowerCase(), shown });
       }
       const shown = formatMeasured('force', r?.value ?? null, 0.1, ctx.locale);
-      const what = tr(SUBSTANCES[c.substance as SubstanceId]?.name ?? { uk: c.substance, en: c.substance }, ctx.locale);
-      return uk ? `${what} на динамометрі ${c.into === 'air' ? 'у повітрі' : 'у рідині'}: ${shown}` : `${what} on the dynamometer ${c.into === 'air' ? 'in the air' : 'in the liquid'}: ${shown}`;
+      const what = tr(SUBSTANCES[c.substance as SubstanceId]?.name ?? localized((l: Locale) => c.substance), ctx.locale);
+      return t(ctx.locale, 'lab-knowledge-describe-command-4', { what, shown, value: c.into === 'air' ? t(ctx.locale, 'lab-knowledge-describe-command-2') : t(ctx.locale, 'lab-knowledge-describe-command-3') });
     }
     if (c.type === 'lab.weigh') {
       const w = weighingsOf([entry])[0];
       const shown = formatReading(c.scale, w?.reading ?? null, ctx.locale);
-      return ctx.locale === 'uk' ? `Зважили (${tr(SCALES[c.scale].name, ctx.locale)}): ${shown}` : `Weighed (${tr(SCALES[c.scale].name, ctx.locale)}): ${shown}`;
+      return t(ctx.locale, 'lab-knowledge-describe-command-5', { name: tr(SCALES[c.scale].name, ctx.locale), shown });
     }
     if (!isElectrical(c)) return THERMAL_KNOWLEDGE.describeCommand(entry as ExperimentLogEntry<ThermalCommand>, ctx, state);
-    const uk = ctx.locale === 'uk';
-    if (c.on === false) return uk ? 'Джерело струму вимкнули' : 'The power source was switched off';
+    if (c.on === false) return t(ctx.locale, 'lab-knowledge-describe-command-6');
     if (c.voltage !== undefined) {
       const v = formatQuantity(c.voltage, 'V', { locale: ctx.locale, level: ctx.level });
-      return uk ? `Напругу на електродах змінили на ${v}` : `The electrode voltage was set to ${v}`;
+      return t(ctx.locale, 'lab-knowledge-describe-command-7', { v });
     }
-    return uk ? 'Джерело струму увімкнули' : 'The power source was switched on';
+    return t(ctx.locale, 'lab-knowledge-describe-command-8');
   },
   energyBalance: (result, ctx) => THERMAL_KNOWLEDGE.energyBalance(result as ExperimentResult<ThermalCommand>, ctx),
   dataUsed: (state) => THERMAL_KNOWLEDGE.dataUsed(state),

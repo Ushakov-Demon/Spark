@@ -26,7 +26,7 @@ export const preset_hydrostatic_paradox: Preset = varied(
   },
   {
     // How high the water stands: the manometer follows it, the shapes do not matter.
-    controls: [{ id: 'height', label: msg('hydrostatic-paradox-height-label'), kind: 'number', unit: 'см', min: 6, max: 12, step: 2, value: 10 }],
+    controls: [{ id: 'height', label: msg('hydrostatic-paradox-height-label'), kind: 'number', unit: 'cm', min: 6, max: 12, step: 2, value: 10 }],
     build: (v) => {
       const cm = Number(v['height']);
       const height = cm / 100;

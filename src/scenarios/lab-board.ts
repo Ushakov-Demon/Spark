@@ -1,6 +1,6 @@
 import type { ExperimentLogEntry } from '../core/experiment.js';
 import type { SystemState } from '../core/state.js';
-import { tr } from '../knowledge/i18n.js';
+import { tr, type Locale } from '../knowledge/i18n.js';
 import { experimentOf } from '../experiments/index.js';
 import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
@@ -8,8 +8,8 @@ import { bodyEnergy, bodyMass, isBurner, isHeater, isThermalBody, type ThermalBo
 import { mixtureHeatCapacity } from '../domains/thermal/mixture.js';
 import { inWaterFamily } from '../domains/thermal/dissolve.js';
 import { sig } from '../explain/format.js';
-import type { Locale } from '../knowledge/i18n.js';
 import { COMPONENTS, molarMass, type ComponentId } from '../components/index.js';
+import { msg, t as tl } from '../knowledge/messages.js';
 import { SUBSTANCES, type SubstanceId } from '../substances/catalog.js';
 import { liquidHeat } from '../substances/types.js';
 import { formatReading, weigh } from './weighing.js';
@@ -50,17 +50,16 @@ const boiled = (b: ThermalBody) => b.state.boiledOff ?? 0;
 
 /** The board for a step: `states` are the step's states in time order (the recorded samples and now); `weighed` — the scales used in it, latest last. */
 export function boardLines(p: LabParams, states: readonly SystemState[], locale: Locale, weighed: readonly ScaleId[] = [], finished = false, log: readonly ExperimentLogEntry<{ type: string }>[] = []): BoardLine[] {
-  const uk = locale === 'uk';
   const sub = SUBSTANCES[p.substance];
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
   // Δt to a tenth of a degree (as a thermometer reads): rounded to whole degrees the product would not match (864 · 0,1 · 30 ≠ 2 620).
   const dt = (x: number) => sig(Math.round(Math.abs(x) * 10) / 10, 6, locale);
-  const kJ = (j: number) => (Math.abs(j) >= 1e4 ? `${n(j / 1000)} ${uk ? 'кДж' : 'kJ'}` : `${n(j)} ${uk ? 'Дж' : 'J'}`);
+  const kJ = (j: number) => (Math.abs(j) >= 1e4 ? `${n(j / 1000)} ${tl(locale, 'unit-sym-kJ')}` : `${n(j)} ${tl(locale, 'unit-sym-J')}`);
   const out: BoardLine[] = [];
   if (!states.length) return out;
-  const name = (uk ? (sub.genitive?.uk ?? sub.name.uk) : sub.name.en).toLowerCase();
+  const name = tr(sub.genitive ?? sub.name, locale).toLowerCase();
   // The solid state: ice for water and the like; a metal or salt is a solid under its own name.
-  const iceName = sub.melt ? name : uk ? 'льоду' : 'ice';
+  const iceName = sub.melt ? name : tl(locale, 'lab-board-lines-ice-name');
 
   // Split the step into phases: runs of states where the sample is all solid, all liquid or both.
   const bodies = states.map(sampleOf);
@@ -86,7 +85,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
         const m = Math.abs(dm);
         out.push({
           id,
-          title: dm > 0 ? (uk ? `кристалізація${over ? `: ${sub.melt ? 'затверділо' : 'замерзло'} ${n(m * 1000)} г` : ''}` : `freezing${over ? `: ${n(m * 1000)} g froze` : ''}`) : uk ? `плавлення${over ? `: ${sub.melt ? 'розплавилося' : 'розтануло'} ${n(m * 1000)} г` : ''}` : `melting${over ? `: ${n(m * 1000)} g melted` : ''}`,
+          title: tl(locale, dm > 0 ? 'lab-board-freezing' : 'lab-board-melting', { grams: over ? n(m * 1000) : 'none', melt: sub.melt ? 'yes' : 'no' }),
           formula: 'Q = λ·m',
           ...(over ? { numbers: `${n(lambda)} · ${n(m)} ≈ ${kJ(lambda * m)}` } : {}),
         });
@@ -101,10 +100,10 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
       const m = bodyMass(b);
       if (c && Math.abs(dT) >= 0.05) {
         // A solution by its own name ("розчину мідного купоросу"), not the water it was made from.
-        const what = ph === 'solid' ? iceName : b.state.mixture?.solutes.length && b.label ? `${uk ? 'розчину' : 'the solution'}${b.label.uk.startsWith('Розчин ') ? (uk ? b.label.uk.slice(6) : '') : ''}` : name;
+        const what = ph === 'solid' ? iceName : b.state.mixture?.solutes.length && b.label ? tl(locale, 'lab-board-lines-what', { of: b.label.uk.startsWith('Розчин ') ? b.label.uk.slice(6) : '' }) : name;
         out.push({
           id,
-          title: dT > 0 ? (uk ? `нагрівання ${what}` : `warming the ${what}`) : uk ? `охолодження ${what}` : `cooling the ${what}`,
+          title: dT > 0 ? (tl(locale, 'lab-board-lines-title', { what })) : tl(locale, 'lab-board-lines-title-2', { what }),
           formula: 'Q = c·m·Δt',
           ...(over ? { numbers: `${n(c)} · ${n(m)} · ${dt(dT)} ≈ ${kJ(c * m * Math.abs(dT))}` } : {}),
         });
@@ -125,7 +124,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
       const [a, b] = parts as [{ mass: number; temperature: number }, { mass: number; temperature: number }];
       mixes.push({
         id: `mix:${i}`,
-        title: uk ? 'змішування: температура суміші' : 'mixing: the temperature of the mixture',
+        title: tl(locale, 'lab-board-lines-title-3'),
         formula: 'θ = (m₁t₁ + m₂t₂) / (m₁ + m₂)',
         numbers: `(${n(a.mass)}·${n(C(a.temperature))} + ${n(b.mass)}·${n(C(b.temperature))}) / (${n(a.mass)} + ${n(b.mass)}) ≈ ${n(C(r.output))} °C`,
       });
@@ -148,14 +147,14 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     // A solid piece (a metal block) by its solid heat capacity — its params hold the melt's.
     const c = (piece.state.solidFraction ?? 0) >= 1 && piece.params.phase?.specificHeatSolid ? piece.params.phase.specificHeatSolid : piece.params.specificHeat;
     const m = bodyMass(piece);
-    const name = piece.params.substance && piece.params.substance in SUBSTANCES ? tr(SUBSTANCES[piece.params.substance as keyof typeof SUBSTANCES].name, locale) : tr(piece.label ?? { uk: 'тіло', en: 'body' }, locale);
+    const name = piece.params.substance && piece.params.substance in SUBSTANCES ? tr(SUBSTANCES[piece.params.substance as keyof typeof SUBSTANCES].name, locale) : tr(piece.label ?? msg('lab-board-lines-name'), locale);
     const q = c * m * Math.abs(dT);
     if (dT < 0) given += q;
     else taken += q;
     if (Math.abs(dT) < 0.05) continue;
     out.push({
       id: `piece:${piece.id}`,
-      title: `${name} — ${dT < 0 ? (uk ? 'охолодження' : 'cooling') : uk ? 'нагрівання' : 'warming'}`,
+      title: `${name} — ${dT < 0 ? (tl(locale, 'lab-board-lines-title-4')) : tl(locale, 'lab-board-lines-title-5')}`,
       formula: 'Q = c·m·Δt',
       ...(finished ? { numbers: `${n(c)} · ${n(m)} · ${dt(dT)} ≈ ${kJ(q)}` } : {}),
     });
@@ -169,7 +168,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     if (given > 0 && taken > 0) {
       out.push({
         id: 'balance',
-        title: uk ? 'тепловий баланс: скільки віддали — стільки й отримали (різниця — посуд і повітря)' : 'heat balance: what was given was taken (the rest went into the vessel and the air)',
+        title: tl(locale, 'lab-board-balance-lines-title'),
         formula: 'c₁m₁(t₁ − θ) = c₂m₂(θ − t₂)',
         numbers: `${kJ(given)} ≈ ${kJ(taken)}`,
       });
@@ -181,7 +180,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
   const L = sub.boiling?.latentHeat.value;
   // A tenth of a gram: less is the very first bubbles, not boiling yet worth a line.
   if (L && steam >= 1e-4) {
-    out.push({ id: 'boil', title: uk ? `кипіння${finished ? `: википіло ${n(steam * 1000)} г` : ''}` : `boiling${finished ? `: ${n(steam * 1000)} g boiled off` : ''}`, formula: 'Q = L·m', ...(finished ? { numbers: `${n(L)} · ${n(steam)} ≈ ${kJ(L * steam)}` } : {}) });
+    out.push({ id: 'boil', title: tl(locale, 'lab-board-boil-lines-title-2', { steam: finished ? tl(locale, 'lab-board-boil-lines-title', { steam: n(steam * 1000) }) : '' }), formula: 'Q = L·m', ...(finished ? { numbers: `${n(L)} · ${n(steam)} ≈ ${kJ(L * steam)}` } : {}) });
   }
 
   // A current through the liquid: Ohm's law and the heat it releases (Joule–Lenz).
@@ -190,9 +189,9 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     const I = sup.state.current;
     const R = sup.state.resistance;
     const t = sup.state.time;
-    const amps = I < 0.1 ? `${n(I * 1000, 2)} ${uk ? 'мА' : 'mA'}` : `${n(I, 3)} ${uk ? 'А' : 'A'}`;
-    out.push({ id: 'ohm', title: uk ? 'струм у рідині' : 'current in the liquid', formula: 'I = U/R', ...(finished ? { numbers: `${n(I * R, 3)} ${uk ? 'В' : 'V'} / ${n(R, 3)} ${uk ? 'Ом' : 'Ω'} ≈ ${amps}` } : {}) });
-    if (t > 0) out.push({ id: 'joule', title: uk ? 'теплота від струму' : 'heat from the current', formula: 'Q = I²·R·t', ...(finished ? { numbers: `${n(I, 3)}² · ${n(R, 3)} · ${n(t, 3)} ≈ ${kJ(I * I * R * t)}` } : {}) });
+    const amps = I < 0.1 ? `${n(I * 1000, 2)} ${tl(locale, 'unit-sym-mA')}` : `${n(I, 3)} ${tl(locale, 'unit-sym-A')}`;
+    out.push({ id: 'ohm', title: tl(locale, 'lab-board-ohm-lines-title'), formula: 'I = U/R', ...(finished ? { numbers: `${n(I * R, 3)} ${tl(locale, 'unit-sym-V')} / ${n(R, 3)} ${tl(locale, 'unit-sym-ohm')} ≈ ${amps}` } : {}) });
+    if (t > 0) out.push({ id: 'joule', title: tl(locale, 'lab-board-joule-lines-title'), formula: 'Q = I²·R·t', ...(finished ? { numbers: `${n(I, 3)}² · ${n(R, 3)} · ${n(t, 3)} ≈ ${kJ(I * I * R * t)}` } : {}) });
   }
   // The heater: how much it gave (E = P·t) and how much of it the substance got (efficiency) — at the end of the step.
   const first = states[0]!;
@@ -204,13 +203,13 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     return e0 && (isHeater(e0) || isBurner(e0)) ? sum + (e as typeof e0).state.energyDelivered - e0.state.energyDelivered : sum;
   }, 0);
   if (finished && E > 1 && t > 0) {
-    out.push({ id: 'heater', title: uk ? 'нагрівач віддав' : 'the heater gave', formula: 'E = P·t', numbers: `${n(E / t)} · ${n(t)} ≈ ${kJ(E)}` });
+    out.push({ id: 'heater', title: tl(locale, 'lab-board-heater-lines-title'), formula: 'E = P·t', numbers: `${n(E / t)} · ${n(t)} ≈ ${kJ(E)}` });
     // What the substance itself got: the change of the energy stored in the sample and what was added to it.
     const useful = Object.values(last.entities).reduce((sum, e) => {
       const e0 = first.entities[e.id];
       return isThermalBody(e) && e0 && isThermalBody(e0) && (e.id === SAMPLE_ID || e.id.startsWith(`${SAMPLE_ID}+`)) ? sum + bodyEnergy(e) - bodyEnergy(e0) : sum;
     }, 0);
-    if (useful > 0) out.push({ id: 'efficiency', title: uk ? 'ККД: скільки дісталося речовині' : 'efficiency: what the substance got', formula: 'η = Q/E', numbers: `${kJ(useful)} / ${kJ(E)} ≈ ${Math.round((useful / E) * 100)} %` });
+    if (useful > 0) out.push({ id: 'efficiency', title: tl(locale, 'lab-board-efficiency-lines-title'), formula: 'η = Q/E', numbers: `${kJ(useful)} / ${kJ(E)} ≈ ${Math.round((useful / E) * 100)} %` });
   }
 
   out.push(...measuredLines(log, locale));
@@ -223,7 +222,7 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
     const w = weigh(states[states.length - 1]!, scale);
     if (w.reading !== null && w.tare !== null) {
       const g = (kg: number) => formatReading(scale, kg, locale);
-      out.push({ id: 'weigh', title: uk ? 'зважування: посуд + вміст' : 'weighing: vessel + contents', formula: 'm = m₁ + m₂', numbers: `${g(w.tare)} + ${g(w.reading - w.tare)} = ${g(w.reading)}` });
+      out.push({ id: 'weigh', title: tl(locale, 'lab-board-weigh-lines-title'), formula: 'm = m₁ + m₂', numbers: `${g(w.tare)} + ${g(w.reading - w.tare)} = ${g(w.reading)}` });
       out.push(...massFractionLines(states[states.length - 1]!, scale, locale));
     }
   }
@@ -235,7 +234,6 @@ export function boardLines(p: LabParams, states: readonly SystemState[], locale:
  * its component, CRC), for what of it is dissolved now.
  */
 function dissolvingHeatLines(log: readonly ExperimentLogEntry<{ type: string }>[], state: SystemState, locale: Locale): BoardLine[] {
-  const uk = locale === 'uk';
   const b = sampleOf(state);
   const mix = 'mixture' in b.state ? b.state.mixture : undefined;
   if (!mix) return [];
@@ -253,13 +251,13 @@ function dissolvingHeatLines(log: readonly ExperimentLogEntry<{ type: string }>[
     const n = M ? (solute.mass - solute.crystals) / M : 0;
     if (n <= 0) continue;
     const q = n * Math.abs(h.value);
-    const what = (uk ? (c.genitive?.uk ?? c.name.uk) : c.name.en).toLowerCase();
+    const what = tr(c.genitive ?? c.name, locale).toLowerCase();
     const s = (x: number, d = 3) => sig(x, d, locale);
     out.push({
       id: `dissolve-heat:${id}`,
-      title: uk ? `розчинення ${what}: теплоту ${h.value > 0 ? 'поглинуто' : 'виділено'}` : `dissolving ${what}: heat ${h.value > 0 ? 'taken in' : 'given off'}`,
+      title: tl(locale, 'lab-board-dissolving-heat-lines-title-3', { what, value: h.value > 0 ? tl(locale, 'lab-board-dissolving-heat-lines-title') : tl(locale, 'lab-board-dissolving-heat-lines-title-2') }),
       formula: 'Q = n·ΔH',
-      numbers: `${s(n)} ${uk ? 'моль' : 'mol'} · ${s(Math.abs(h.value), 4)} ${uk ? 'кДж/моль' : 'kJ/mol'} ≈ ${s(q, 2)} ${uk ? 'кДж' : 'kJ'}`,
+      numbers: `${s(n)} ${tl(locale, 'lab-board-dissolving-heat-lines-numbers')} · ${s(Math.abs(h.value), 4)} ${tl(locale, 'lab-board-dissolving-heat-lines-numbers-2')} ≈ ${s(q, 2)} ${tl(locale, 'unit-sym-kJ')}`,
     });
   }
   return out;
@@ -273,17 +271,16 @@ function massFractionLines(state: SystemState, scale: ScaleId, locale: Locale): 
   const b = sampleOf(state);
   const mix = 'mixture' in b.state ? b.state.mixture : undefined;
   if (!mix || !mix.solutes.length) return [];
-  const uk = locale === 'uk';
   const dissolved = mix.solutes.map((x) => ({ component: x.component, mass: x.mass - x.crystals })).filter((x) => x.mass > 1e-7);
   const solution = mix.water - mix.ice + dissolved.reduce((a, x) => a + x.mass, 0);
   const g = (kg: number) => formatReading(scale, kg, locale);
   return dissolved.map((x) => {
     const c = COMPONENTS[x.component as ComponentId];
-    const what = c ? (uk ? (c.genitive?.uk ?? c.name.uk) : c.name.en).toLowerCase() : x.component;
+    const what = c ? tr(c.genitive ?? c.name, locale).toLowerCase() : x.component;
     return {
       id: `fraction:${x.component}`,
-      title: uk ? `масова частка ${what} в розчині` : `the mass fraction of ${what} in the solution`,
-      formula: uk ? 'w = m(речовини) / m(розчину)' : 'w = m(substance) / m(solution)',
+      title: tl(locale, 'lab-board-mass-fraction-lines-title', { what }),
+      formula: tl(locale, 'lab-board-mass-fraction-lines-formula'),
       numbers: `${g(x.mass)} / ${g(solution)} ≈ ${sig((x.mass / solution) * 100, 3, locale)} %`,
     };
   });
@@ -296,7 +293,6 @@ function massFractionLines(state: SystemState, scale: ScaleId, locale: Locale): 
  */
 /** Only what was measured (a lab work where heating is just the way to a temperature: no heat balance on the board). */
 export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>[], locale: Locale): BoardLine[] {
-  const uk = locale === 'uk';
   const n = (x: number, d = 3) => sig(x, d, locale).replace('-', '−');
   const out: BoardLine[] = [];
   let lastV: { v: number; div: number; at: number } | null = null;
@@ -314,7 +310,7 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   const liquidDensityLine = (i: number) => {
     if (liquidDone || liquidMass === null || liquidVolume === null || !(liquidVolume > 0)) return;
     liquidDone = true;
-    out.push({ id: `rhoL:${i}`, title: uk ? 'густина рідини' : 'the density of the liquid', formula: 'ρ = m / V', numbers: `${n(liquidMass * 1000)} ${uk ? 'г' : 'g'} / ${n(liquidVolume * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(liquidMass / liquidVolume / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(liquidMass / liquidVolume)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+    out.push({ id: `rhoL:${i}`, title: tl(locale, 'lab-board-liquid-density-line-title'), formula: 'ρ = m / V', numbers: `${n(liquidMass * 1000)} ${tl(locale, 'unit-sym-g')} / ${n(liquidVolume * 1e6)} ${tl(locale, 'unit-sym-cm3')} ≈ ${n(liquidMass / liquidVolume / 1000)} ${tl(locale, 'unit-sym-g-per-cm3')} = ${n(liquidMass / liquidVolume)} ${tl(locale, 'unit-sym-kg-per-m3')}` });
   };
   const count = { volume: 0, mass: 0 };
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
@@ -350,10 +346,10 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const div = r.inputs?.['division'] ?? 0.01;
       const Om = (x: number) => formatMeasured('resistance', x, div, locale);
       const key = Math.round(t);
-      out.push({ id: `ohm:${key}`, title: uk ? `опір котушки за ${n(t, 3)} °C` : `the coil’s resistance at ${n(t, 3)} °C`, formula: `R = ${Om(r.value)}` });
+      out.push({ id: `ohm:${key}`, title: tl(locale, 'lab-board-measured-lines-title', { t: n(t, 3) }), formula: `R = ${Om(r.value)}` });
       const r0 = Math.round((r.inputs?.['r20'] ?? 0) / div) * div;
       const dt = t - 20;
-      if (dt > 1 && r0 > 0) out.push({ id: `alphaT:${key}`, title: uk ? `температурний коефіцієнт опору (нагріли на ${n(dt, 3)} °C)` : `the temperature coefficient (warmed by ${n(dt, 3)} °C)`, formula: 'α = (R − R₀) / (R₀·Δt)', numbers: `(${n(r.value, 4)} − ${n(r0, 4)}) / (${n(r0, 4)} · ${n(dt, 3)}) ≈ ${n((r.value - r0) / (r0 * dt), 2)} ${uk ? '1/°C' : '1/°C'}` });
+      if (dt > 1 && r0 > 0) out.push({ id: `alphaT:${key}`, title: tl(locale, 'lab-board-measured-lines-title-2', { dt: n(dt, 3) }), formula: 'α = (R − R₀) / (R₀·Δt)', numbers: `(${n(r.value, 4)} − ${n(r0, 4)}) / (${n(r0, 4)} · ${n(dt, 3)}) ≈ ${n((r.value - r0) / (r0 * dt), 2)} ${'1/°C'}` });
       return;
     }
     // The cathode on the balance: before the current, then after — the copper it gained, and k = Δm / (I·t).
@@ -361,7 +357,7 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const g = (kg: number) => formatMeasured('mass', kg, 0.00001, locale);
       const metal = r.inputs?.['metal'] ?? 0;
       if (metal <= 0) {
-        out.push({ id: `cath1:${i}`, title: uk ? 'маса катода до досліду' : 'the cathode before', formula: `m₁ = ${g(r.value)}` });
+        out.push({ id: `cath1:${i}`, title: tl(locale, 'lab-board-measured-lines-title-3'), formula: `m₁ = ${g(r.value)}` });
         return;
       }
       // (The weighing before is the plate without what settled since — the same reading as then.)
@@ -371,9 +367,9 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const q = r.inputs?.['charge'] ?? 0;
       const t = r.inputs?.['time'] ?? 0;
       const I = t > 0 ? q / t : 0;
-      out.push({ id: `cath2:${i}`, title: uk ? 'маса катода після досліду' : 'the cathode after', formula: `m₂ = ${g(r.value)}` });
-      out.push({ id: `dm:${i}`, title: uk ? 'маса міді, що осіла на катоді' : 'the copper settled on the cathode', formula: 'Δm = m₂ − m₁', numbers: `${g(r.value)} − ${g(before)} = ${g(dm)}` });
-      if (I > 0) out.push({ id: `kEq:${i}`, title: uk ? `електрохімічний еквівалент (I ≈ ${n(I, 2)} А, t = ${n(t / 60, 3)} хв)` : `the electrochemical equivalent (I ≈ ${n(I, 2)} A, t = ${n(t / 60, 3)} min)`, formula: 'k = Δm / (I·t)', numbers: `${n(dm * 1e6, 3)} ${uk ? 'мг' : 'mg'} / (${n(I, 2)} ${uk ? 'А' : 'A'} · ${n(t, 4)} ${uk ? 'с' : 's'}) ≈ ${n((dm * 1e6) / (I * t), 2)} ${uk ? 'мг/Кл' : 'mg/C'}` });
+      out.push({ id: `cath2:${i}`, title: tl(locale, 'lab-board-measured-lines-title-4'), formula: `m₂ = ${g(r.value)}` });
+      out.push({ id: `dm:${i}`, title: tl(locale, 'lab-board-measured-lines-title-5'), formula: 'Δm = m₂ − m₁', numbers: `${g(r.value)} − ${g(before)} = ${g(dm)}` });
+      if (I > 0) out.push({ id: `kEq:${i}`, title: tl(locale, 'lab-board-measured-lines-title-6', { I: n(I, 2), t: n(t / 60, 3) }), formula: 'k = Δm / (I·t)', numbers: `${n(dm * 1e6, 3)} ${tl(locale, 'unit-sym-mg')} / (${n(I, 2)} ${tl(locale, 'unit-sym-A')} · ${n(t, 4)} ${tl(locale, 'unit-sym-s')}) ≈ ${n((dm * 1e6) / (I * t), 2)} ${tl(locale, 'lab-board-measured-lines-numbers')}` });
       return;
     }
     if (r.quantity === 'volume' && liquidVolume === null && emptyVessel !== null) {
@@ -383,25 +379,25 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     if (r.quantity === 'volume') {
       const div = r.inputs?.['division'] ?? 1e-6;
       // Written down as in a lab notebook: V₁ = 50 мл, then V₂…
-      out.push({ id: `recV:${i}`, title: uk ? (addedSince.v ? 'рівень після того, як опустили тіло' : 'рівень рідини за поділками') : addedSince.v ? 'the level after the body went in' : 'the level by the marks', formula: `V${sub(++count.volume)} = ${formatMeasured('volume', r.value, div, locale)}` });
+      out.push({ id: `recV:${i}`, title: (addedSince.v ? tl(locale, 'lab-board-measured-lines-title-7') : tl(locale, 'lab-board-measured-lines-title-8')), formula: `V${sub(++count.volume)} = ${formatMeasured('volume', r.value, div, locale)}` });
       if (lastV && addedSince.v) {
         const dv = r.value - lastV.v;
         body = { ...body, v: dv };
-        out.push({ id: `vol:${i}`, title: uk ? 'на скільки піднялася рідина — об’єм витісненої води' : 'how far the liquid rose — the volume of water pushed aside', formula: 'V = V₂ − V₁', numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', dv, div, locale)}` });
+        out.push({ id: `vol:${i}`, title: tl(locale, 'lab-board-measured-lines-title-9'), formula: 'V = V₂ − V₁', numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', dv, div, locale)}` });
       }
       // Read again with nothing put in since — after melting, warming…: did the level change?
       if (lastV && !addedSince.v && e.time > lastV.at + 1e-9) {
-        out.push({ id: `dV:${i}`, title: uk ? 'як змінився рівень' : 'how the level changed', formula: `ΔV = V${sub(count.volume)} − V${sub(count.volume - 1)}`, numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', r.value - lastV.v, div, locale)}` });
+        out.push({ id: `dV:${i}`, title: tl(locale, 'lab-board-measured-lines-title-10'), formula: `ΔV = V${sub(count.volume)} − V${sub(count.volume - 1)}`, numbers: `${formatMeasured('volume', r.value, div, locale)} − ${formatMeasured('volume', lastV.v, div, locale)} = ${formatMeasured('volume', r.value - lastV.v, div, locale)}` });
       }
       lastV = { v: r.value, div, at: e.time };
       addedSince = { ...addedSince, v: false };
     } else if (r.quantity === 'mass') {
       const scale = r.instrument;
-      out.push({ id: `recM:${i}`, title: uk ? (addedSince.m ? (dissolvedAdded ? 'покази терезів разом із доданою речовиною' : 'покази терезів разом із тілом') : 'покази терезів') : addedSince.m ? (dissolvedAdded ? 'the scales with the substance added' : 'the scales with the body') : 'the scales', formula: `m${sub(++count.mass)} = ${formatReading(scale as ScaleId, r.value, locale)}` });
+      out.push({ id: `recM:${i}`, title: (addedSince.m ? (dissolvedAdded ? tl(locale, 'lab-board-measured-lines-title-11') : tl(locale, 'lab-board-measured-lines-title-12')) : tl(locale, 'lab-board-measured-lines-title-13')), formula: `m${sub(++count.mass)} = ${formatReading(scale as ScaleId, r.value, locale)}` });
       if (lastM && addedSince.m && lastM.scale === scale) {
         const dm = r.value - lastM.m;
         body = { ...body, m: dm };
-        out.push({ id: `mass:${i}`, title: dissolvedAdded ? (uk ? 'маса доданої речовини — на скільки збільшилися покази терезів' : 'the mass of the substance added — how much the reading grew') : uk ? 'маса тіла — на скільки збільшилися покази терезів' : 'the mass of the body — how much the reading grew', formula: 'm = m₂ − m₁', numbers: `${formatReading(scale as ScaleId, r.value, locale)} − ${formatReading(scale as ScaleId, lastM.m, locale)} = ${formatReading(scale as ScaleId, dm, locale)}` });
+        out.push({ id: `mass:${i}`, title: dissolvedAdded ? (tl(locale, 'lab-board-measured-lines-title-14')) : tl(locale, 'lab-board-measured-lines-title-15'), formula: 'm = m₂ − m₁', numbers: `${formatReading(scale as ScaleId, r.value, locale)} − ${formatReading(scale as ScaleId, lastM.m, locale)} = ${formatReading(scale as ScaleId, dm, locale)}` });
       }
       lastM = { m: r.value, scale };
       addedSince = { ...addedSince, m: false };
@@ -411,17 +407,17 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const N = (x: number) => formatMeasured('force', x, 0.01, locale);
       if (c['into'] === 'air') {
         airByBody.set(key, r.value);
-        out.push({ id: `P:${i}`, title: uk ? 'вага тіла у повітрі' : 'the weight of the body in the air', formula: 'P = m·g', numbers: `${n(Number(c['mass']))} · ${n(g, 3)} ≈ ${N(Number(c['mass']) * g)} (${uk ? 'динамометр' : 'dynamometer'}: ${formatMeasured('force', r.value, 0.1, locale)})` });
+        out.push({ id: `P:${i}`, title: tl(locale, 'lab-board-measured-lines-title-16'), formula: 'P = m·g', numbers: `${n(Number(c['mass']))} · ${n(g, 3)} ≈ ${N(Number(c['mass']) * g)} (${tl(locale, 'lab-board-measured-lines-numbers-2')}: ${formatMeasured('force', r.value, 0.1, locale)})` });
       } else {
         const air = airByBody.get(key);
         if ((r.inputs?.['share'] ?? 1) < 1) {
-          out.push({ id: `float:${i}`, title: uk ? 'тіло плаває: архімедова сила зрівнялася з вагою' : 'the body floats: the buoyant force equals its weight', formula: 'F_A = P', numbers: `ρ_т < ρ_р: ${n(Number(c['mass']) / (r.inputs?.['volume'] ?? 1))} < ${n(r.inputs?.['rhoLiquid'] ?? 1000)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+          out.push({ id: `float:${i}`, title: tl(locale, 'lab-board-measured-lines-title-17'), formula: 'F_A = P', numbers: `ρ_т < ρ_р: ${n(Number(c['mass']) / (r.inputs?.['volume'] ?? 1))} < ${n(r.inputs?.['rhoLiquid'] ?? 1000)} ${tl(locale, 'unit-sym-kg-per-m3')}` });
           return;
         }
-        if (air !== undefined) out.push({ id: `FA:${i}`, title: uk ? 'архімедова сила — за показами динамометра' : 'the buoyant force — from the dynamometer', formula: 'F_A = P − P′', numbers: `${formatMeasured('force', air, 0.1, locale)} − ${formatMeasured('force', r.value, 0.1, locale)} = ${formatMeasured('force', air - r.value, 0.1, locale)}` });
+        if (air !== undefined) out.push({ id: `FA:${i}`, title: tl(locale, 'lab-board-measured-lines-title-18'), formula: 'F_A = P − P′', numbers: `${formatMeasured('force', air, 0.1, locale)} − ${formatMeasured('force', r.value, 0.1, locale)} = ${formatMeasured('force', air - r.value, 0.1, locale)}` });
         const rho = r.inputs?.['rhoLiquid'];
         const V = r.inputs?.['volume'];
-        if (rho && V) out.push({ id: `FAr:${i}`, title: uk ? 'архімедова сила — за законом Архімеда' : 'the buoyant force — by Archimedes', formula: 'F_A = ρ·g·V', numbers: `${n(rho)} · ${n(g, 3)} · ${n(V)} ≈ ${N(rho * g * V)}` });
+        if (rho && V) out.push({ id: `FAr:${i}`, title: tl(locale, 'lab-board-measured-lines-title-19'), formula: 'F_A = ρ·g·V', numbers: `${n(rho)} · ${n(g, 3)} · ${n(V)} ≈ ${N(rho * g * V)}` });
       }
     }
     // Both the mass and the volume of the body are known: its density.
@@ -429,7 +425,7 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       const rho = body.m / body.v;
       // A closed hollow body (a stoppered test tube with sand): its density is the mean one, not a substance's.
       const hollow = log.some((e) => e.ok && e.command.type === 'thermal.add' && (e.command as { volume?: number }).volume);
-      out.push({ id: `rho:${i}`, title: hollow ? (uk ? 'середня густина тіла' : 'the mean density of the body') : uk ? 'густина речовини тіла' : 'the density of the body', formula: 'ρ = m / V', numbers: `${n(body.m * 1000)} ${uk ? 'г' : 'g'} / ${n(body.v * 1e6)} ${uk ? 'см³' : 'cm³'} ≈ ${n(rho / 1000)} ${uk ? 'г/см³' : 'g/cm³'} = ${n(rho)} ${uk ? 'кг/м³' : 'kg/m³'}` });
+      out.push({ id: `rho:${i}`, title: hollow ? (tl(locale, 'lab-board-measured-lines-title-20')) : tl(locale, 'lab-board-measured-lines-title-21'), formula: 'ρ = m / V', numbers: `${n(body.m * 1000)} ${tl(locale, 'unit-sym-g')} / ${n(body.v * 1e6)} ${tl(locale, 'unit-sym-cm3')} ≈ ${n(rho / 1000)} ${tl(locale, 'unit-sym-g-per-cm3')} = ${n(rho)} ${tl(locale, 'unit-sym-kg-per-m3')}` });
       body = {};
     }
     liquidDensityLine(i);

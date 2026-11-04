@@ -1,5 +1,6 @@
 // The texts first: everything below may word a message as it loads.
 import './locales.js';
+import { localized, msg, t as tl } from '../src/knowledge/messages.js';
 import type { Subject } from '../src/knowledge/types.js';
 import { createCommandRegistry, createExperimentSession, createSimulation, entityId, seconds, type ExperimentSession } from '../src/core/index.js';
 import { celsius, kelvin, toCelsius } from '../src/core/units.js';
@@ -23,7 +24,7 @@ import {
   type ElectrodeMaterial,
 } from '../src/equipment/index.js';
 import { buildMeasuredReport, buildReport, entityLabel, formatDuration, formatQuantity, renderHtml, sig, type Block, type ExplainContext } from '../src/explain/index.js';
-import { isLocale, LOCALES, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
+import { isLocale, LOCALES, NUMBER_LOCALE, tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
 import { getSource } from '../src/knowledge/sources.js';
@@ -462,7 +463,7 @@ function ohmShown(): string {
 function allReadings() {
   return [...history.map((h) => h.result.log), session.result().log].flatMap((l) => readingsOf(l));
 }
-const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? { uk: id, en: id }, locale);
+const nameOfBody = (id: string) => tr(SUBSTANCES[id as SubstanceId]?.name ?? localized(() => id), locale);
 function measureSay(): string {
   const u = t().measure;
   const m = showingMeasure();
@@ -476,8 +477,6 @@ function measureSay(): string {
     const rise = prev && r.value !== null && r.value - prev.record.value! > div / 2 ? formatMeasured('volume', r.value - prev.record.value!, div, locale) : null;
     return u.levelSay(formatMeasured('volume', r.value, div, locale), rise);
   }
-  // The bench: the ruler at the spring or the block, the dynamometer pulling the block.
-  const uk = locale === 'uk';
   const modBusy = instrumentBusy ? experimentOf(m.command.type)?.busy(m.command as never) : null;
   if (modBusy) return tr(modBusy, locale);
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
@@ -487,18 +486,18 @@ function measureSay(): string {
     const t = sig(r.inputs?.['temperature'] ?? 20, 3, locale);
     const first = all.find((x) => x.command.type === 'lab.ohm' && x.record.value !== null);
     if (r.value === null) return '';
-    if (!first || first.record === r) return uk ? `Вода — ${t} °C, мультиметр показує R = ${Om(r.value)}.` : `The water is at ${t} °C, the multimeter shows R = ${Om(r.value)}.`;
+    if (!first || first.record === r) return tl(locale, 'main-resistance-first', { t, value: Om(r.value) });
     const dr = r.value - first.record.value!;
-    return uk ? `Вода — ${t} °C, а опір уже ${Om(r.value)}: на ${Om(dr)} більше, ніж спочатку.` : `The water is at ${t} °C, and the resistance is ${Om(r.value)}: ${Om(dr)} more than at first.`;
+    return tl(locale, 'main-resistance-grown', { t, value: Om(r.value), dr: Om(dr) });
   }
   // The cathode on the balance: its mass, and after the current — how much heavier it came out.
   if (m.command.type === 'lab.cathode') {
     const g = (x: number) => formatReading('lab-balance', x, locale);
     const before = [...all.slice(0, i)].reverse().find((x) => x.command.type === 'lab.cathode' && x.record.value !== null);
     if (r.value === null) return '';
-    if (!before) return uk ? `Катод (пластина «−») важить ${g(r.value)}.` : `The cathode (the “−” plate) weighs ${g(r.value)}.`;
+    if (!before) return tl(locale, 'main-cathode-first', { value: g(r.value) });
     const dm = r.value - before.record.value!;
-    return uk ? `Тепер катод важить ${g(r.value)} — на ${g(dm)} більше: на ньому осіла мідь.` : `Now the cathode weighs ${g(r.value)} — ${g(dm)} more: copper has settled on it.`;
+    return tl(locale, 'main-cathode-grown', { value: g(r.value), dm: g(dm) });
   }
   // An experiment module: its own words for the step.
   const mod = experimentOf(m.command.type);
@@ -904,7 +903,8 @@ function answerPreset() {
   const aside = asides.length ? asides[Math.floor(Math.random() * asides.length)] : undefined;
   window.setTimeout(() => {
     const a = answerOf({ steps, simulation, readings });
-    presetAnswer = aside && a.why ? { ...a, why: { uk: `${a.why.uk}\n\n${aside.uk}`, en: `${a.why.en}\n\n${aside.en}` } } : a;
+    const why = a.why;
+    presetAnswer = aside && why ? { ...a, why: msg('main-why-with-aside', { why: (l: Locale) => why[l], aside: (l: Locale) => aside[l] }) } : a;
     render();
   }, 30);
 }
@@ -1035,7 +1035,7 @@ function droppedDissolves(): string {
 function solutionLines(mix: NonNullable<ThermalBody['state']['mixture']>, temperature?: number): string[] {
   const u = t();
   const kg = (m: number) => formatQuantity(m, 'kg', { locale, level: 'school' });
-  const name = (c: string) => lowerFirst(tr(COMPONENTS[c as ComponentId]?.genitive ?? COMPONENTS[c as ComponentId]?.name ?? { uk: c, en: c }, locale));
+  const name = (c: string) => lowerFirst(tr(COMPONENTS[c as ComponentId]?.genitive ?? COMPONENTS[c as ComponentId]?.name ?? localized(() => c), locale));
   const liquid = mix.water - mix.ice + mix.salt - mix.crystals;
   const out: string[] = [];
   if (mix.solutes.length === 1 && mix.solutes[0]!.component === 'sodium-chloride') out.push(u.salinity(sig(liquidConcentration(mix) * 100, 3, locale)));
@@ -1053,10 +1053,10 @@ function seededSay(): string {
   const id = SUBSTANCES[(last.command as unknown as { substance: SubstanceId }).substance].component!;
   const own = b.state.mixture!.solutes.find((x) => x.component === id)!;
   const c = COMPONENTS[id as ComponentId];
-  const name = lowerFirst(tr(c?.genitive ?? c?.name ?? { uk: id, en: id }, locale));
+  const name = lowerFirst(tr(c?.genitive ?? c?.name ?? localized(() => id), locale));
   const T = b.state.temperature;
   // Crystallising gives back the heat its dissolving took: a substance that cools water as it dissolves warms it as it crystallises.
-  return t().guide.seeded(name, `${sig(own.crystals * 1000, 2, locale)} ${locale === 'uk' ? 'г' : 'g'}`, `${sig(T - 273.15, 3, locale)} °C`, (c?.inWater?.enthalpyOfSolution?.value ?? 0) >= 0);
+  return t().guide.seeded(name, `${sig(own.crystals * 1000, 2, locale)} ${tl(locale, 'unit-sym-g')}`, `${sig(T - 273.15, 3, locale)} °C`, (c?.inWater?.enthalpyOfSolution?.value ?? 0) >= 0);
 }
 function saltLeftSay(): string {
   const mix = sampleOf(session.state).state.mixture!;
@@ -1067,7 +1067,7 @@ function saltLeftSay(): string {
   const now = solubilityAt(left.component, T);
   const hot = solubilityAt(left.component, 100);
   const heatHelps = left.mass <= (mix.water * hot) / 100;
-  const name = lowerFirst(tr(COMPONENTS[left.component as ComponentId]?.genitive ?? COMPONENTS[left.component as ComponentId]?.name ?? { uk: left.component, en: left.component }, locale));
+  const name = lowerFirst(tr(COMPONENTS[left.component as ComponentId]?.genitive ?? COMPONENTS[left.component as ComponentId]?.name ?? localized(() => left.component), locale));
   return t().guide.saltLeft(g(left.mass - left.crystals), g(left.crystals), sig(T, 3, locale), sig(now, 3, locale), heatHelps, sig(hot, 3, locale), name);
 }
 const lowerFirst = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
@@ -1390,7 +1390,7 @@ function sceneView(): SceneView {
     ...(sludgeGrams > 0.01 ? { sludge: { color: 'rgba(110, 138, 80, 0.92)', amount: Math.min(1, sludgeGrams / 2) } } : {}),
     ...(params.cooler ? { setpoint: params.cooler.setpoint } : {}),
     running,
-    decimal: locale === 'uk' ? ',' : '.',
+    decimal: (1.5).toLocaleString(NUMBER_LOCALE[locale]).charAt(1) as ',' | '.',
     professor,
     pieces: Object.values(session.state.entities).flatMap((e): NonNullable<SceneView['pieces']>[number][] => {
       if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`)) return [];
@@ -1622,7 +1622,7 @@ function renderVary() {
   const controls = chosen.vary.controls
     .map((c) => {
       const label = `<span>${tr(c.label, locale)}</span>`;
-      const unit = c.kind === 'number' ? (locale === 'uk' ? c.unit : c.unit.replace('мл', 'mL').replace(/^г$/, 'g')) : '';
+      const unit = c.kind === 'number' && c.unit ? tl(locale, `unit-sym-${c.unit}`) : '';
       // A city: typed with suggestions (the Earth's field is worked out for it); the default is an example.
       if (c.kind === 'place') {
         const pl = parsePlace(vals[c.id]);
@@ -1634,7 +1634,7 @@ function renderVary() {
       // A number with units: the number in the unit shown, and the unit to choose.
       const inUnit = c.kind === 'number' ? varyUnitOf(c, Number(vals[c.id])) : undefined;
       if (c.kind === 'number' && inUnit && c.units)
-        return `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" step="any" value="${Number((Number(vals[c.id]) / inUnit.factor).toPrecision(10))}"/><select data-vary-unit="${c.id}">${c.units.map((x) => `<option value="${x.id}"${x.id === inUnit.id ? ' selected' : ''}>${tr(x.label, locale)}</option>`).join('')}</select></label>`;
+        return `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" step="any" value="${Number((Number(vals[c.id]) / inUnit.factor).toPrecision(10))}"/><select data-vary-unit="${c.id}">${c.units.map((x) => `<option value="${x.id}"${x.id === inUnit.id ? ' selected' : ''}>${tl(locale, `unit-sym-${x.id}`)}</option>`).join('')}</select></label>`;
       return c.kind === 'number'
         ? `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" min="${c.min}" max="${c.max}" step="${c.step || 'any'}" value="${vals[c.id]}"/><span class="muted">${unit}</span></label>`
         : `<label class="vary-item">${label}<select data-vary="${c.id}">${c.options.map((o) => `<option value="${o.id}"${o.id === vals[c.id] ? ' selected' : ''}>${tr(o.label, locale)}</option>`).join('')}</select></label>`;
@@ -1723,7 +1723,7 @@ function renderGuide(): boolean {
     // Time has passed since the last look at the marks (the ice melted): did the level change?
     const lastLevel = [...done].reverse().find((x) => x.record.quantity === 'volume');
     const waited = !!lastLevel && session.state.time > lastLevel.time + 1e-9 || history.length > 0 && !!lastLevel;
-    const fresh = s.kind === 'fresh' ? tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale) : '';
+    const fresh = s.kind === 'fresh' ? tr(s.label ?? msg('main-start-afresh'), locale) : '';
     const bench = s.kind === 'bench' ? BENCH_TEXT[s.command.type](s.command) : null;
     const say = bench ? tr(bench.say, locale) : s.kind === 'fresh' ? u.fresh(fresh) : s.kind === 'weigh' ? u.weigh(again('mass') && added) : s.kind === 'level' ? u.level(again('volume') && added, waited) : s.kind === 'add' ? (salt ? u.dissolve(what) : liquid ? u.pour(what, temp) : u.add(what)) : s.kind === 'hang' ? u.hang(what, s.into) : u.wait(op);
     const btn = bench ? tr(bench.button, locale) : s.kind === 'fresh' ? `🔄 ${fresh}` : s.kind === 'weigh' ? u.btnWeigh : s.kind === 'level' ? u.btnLevel : s.kind === 'add' ? (salt ? u.btnDissolve(what) : liquid ? u.btnPour(what, temp) : u.btnAdd(what)) : s.kind === 'hang' ? u.btnHang(s.into) : u.btnRun(op, opKind);
@@ -1767,7 +1767,7 @@ function renderGuide(): boolean {
         return `<tr class="${cls}"><td>${tr(c.label, locale)}</td><td class="num">${sig(x.liquid.density.value, 4, locale)}</td><td>${revealed ? (cls === 'right' ? '✓' : cls === 'wrong' ? '✗' : '') : `<button type="button" data-choice="${c.id}">${u.pick}</button>`}</td></tr>`;
       })
       .join('');
-    const rhoText = rho === null ? '—' : `${sig(rho / 1000, 3, locale)} ${locale === 'uk' ? 'г/см³' : 'g/cm³'} = ${sig(rho, 3, locale)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'}`;
+    const rhoText = rho === null ? '—' : `${sig(rho / 1000, 3, locale)} ${tl(locale, 'unit-sym-g-per-cm3')} = ${sig(rho, 3, locale)} ${tl(locale, 'unit-sym-kg-per-m3')}`;
     const verdict = predictionVerdict();
     const answer = revealed && presetAnswer && presetAnswer !== 'computing' ? `${verdict ? `<p class="verdict">${verdict}</p>` : ''}<p class="answer-text">${answerLines(tr(presetAnswer.text, locale)).join('<br>')}</p>${whyHtml()}` : '';
     setHtml('#quiz', `<div class="guide table"><p class="guide-title">${u.tableTitle(rhoText)}</p>${answer}<table class="density-table"><thead><tr><th>${u.tableName}</th><th class="num">${u.tableDensity}</th><th></th></tr></thead><tbody>${rows}</tbody></table>${revealed ? renewButton() : showAnswerButton()}</div>`);
@@ -1814,7 +1814,7 @@ function tricked(): boolean {
 /** The verdict on a prediction, once the run has answered the question. */
 function predictionVerdict(): string {
   const q = t().quiz;
-  const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? { uk: id, en: id }, locale);
+  const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? localized(() => id), locale);
   if (tricked()) {
     const real = label((presetAnswer as PresetAnswer).correct!);
     return prediction && prediction.preset === preset!.id ? q.trickWrong(label(prediction.choice), real) : q.trickNone(tr(preset!.trick!, locale), real);
@@ -1984,8 +1984,8 @@ function render() {
     const parts: string[] = [];
     const s = b.state.solidFraction ?? 0;
     const mix = b.state.mixture;
-    if (mix && mix.water > 1e-9) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
-    else if (!mix) parts.push(s >= 1 ? tr(sub.solidName ?? { uk: 'тверде', en: 'solid' }, locale).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
+    if (mix && mix.water > 1e-9) parts.push(s >= 1 ? (sub.solidName ? tr(sub.solidName, locale) : tl(locale, 'main-solid')).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
+    else if (!mix) parts.push(s >= 1 ? (sub.solidName ? tr(sub.solidName, locale) : tl(locale, 'main-solid')).toLowerCase() : s > 0 ? u.solidShare(Math.round(s * 100)) : u.liquid);
     if (mix && s < 1 && mix.water - mix.ice > 1e-9) parts.push(...solutionLines(mix, b.state.temperature));
     for (const e of Object.values(session.state.entities)) {
       if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`) || !e.label) continue;
@@ -2003,7 +2003,7 @@ function render() {
     const gasList = (['hydrogen', 'chlorine', 'oxygen'] as const)
       .map((c) => ({ c, v: (gasMoles(c) * GAS_CONSTANT * celsius(params.roomTemp)) / 101_325 }))
       .filter((x) => x.v > 5e-8);
-    if (gasList.length) parts.push(u.gases(gasList.map((x) => `${formatQuantity(x.v * 1e6, 'mL', { locale, level: 'school' })} ${tr(COMPONENTS[x.c].genitive ?? COMPONENTS[x.c].name, locale).toLowerCase()}`).join(locale === 'uk' ? ' і ' : ' and ')));
+    if (gasList.length) parts.push(u.gases(gasList.map((x) => `${formatQuantity(x.v * 1e6, 'mL', { locale, level: 'school' })} ${tr(COMPONENTS[x.c].genitive ?? COMPONENTS[x.c].name, locale).toLowerCase()}`).join(tl(locale, 'main-and'))));
     return parts.join(', ');
   })();
   $('#r-time').innerHTML = `<span>${u.time}</span><strong>${formatDuration(Math.floor(session.state.time), locale)}</strong>`;
@@ -2021,7 +2021,7 @@ function render() {
     const pw = src && (isHeater(src) || isBurner(src)) && src.params.on ? src.params.power : 0;
     const thermo = Object.values(session.state.entities).find((e) => e.kind === 'thermal.thermostat') as { state: { heating: boolean } } | undefined;
     const blocked = thermo && !thermo.state.heating;
-    $('#r-power').innerHTML = `<span>${u.power}</span><strong>${pw > 0 && !blocked ? formatQuantity(pw, 'W', { locale, level: 'school' }) : u.off}</strong>${thermo ? `<small>${locale === 'uk' ? 'терморегулятор' : 'thermostat'}</small>` : ''}`;
+    $('#r-power').innerHTML = `<span>${u.power}</span><strong>${pw > 0 && !blocked ? formatQuantity(pw, 'W', { locale, level: 'school' }) : u.off}</strong>${thermo ? `<small>${tl(locale, 'main-thermostat')}</small>` : ''}`;
   } else {
     const around = params.cooler ? params.cooler.setpoint : params.roomTemp;
     const name = params.cooler ? tr(COOLERS[params.cooler.id].name, locale) : u.justRoom;
@@ -2049,8 +2049,8 @@ function render() {
     scaleSel.innerHTML = scaleOpts;
     scaleSel.dataset['html'] = scaleOpts;
   }
-  $('#console-toggle').title = locale === 'uk' ? 'Консоль команд' : 'Command console';
-  $('#console-grip').setAttribute('aria-label', locale === 'uk' ? 'Потягни, щоб змінити висоту консолі' : 'Drag to resize the console');
+  $('#console-toggle').title = tl(locale, 'main-console');
+  $('#console-grip').setAttribute('aria-label', tl(locale, 'main-console-resize'));
   $('#lbl-speed').textContent = u.speed;
 
   // Knob, switch or nothing (cooling has no knob: the cooler holds its setpoint).
@@ -2066,7 +2066,7 @@ function render() {
     knob.setDisabled(finished);
     knob.value = params.supply!.knob;
     knob.setLabels({ min: u.min, max: u.max, off: u.off }, Array.from({ length: 7 }, (_, i) => String(Math.round(sp.min + (i * (sp.max - sp.min)) / 6))));
-    knob.element.setAttribute('aria-label', locale === 'uk' ? 'Напруга' : 'Voltage');
+    knob.element.setAttribute('aria-label', tl(locale, 'main-voltage'));
   } else if (h && params.heater) {
     knob.setDisabled(finished);
     knob.value = params.heater.knob;
@@ -2179,7 +2179,7 @@ function render() {
     $('#energy').innerHTML = `<h3>${u.energyTitle}</h3><p>${u.produced(E(split.produced))}</p><ul class="shares">${rows.join('')}</ul>`;
   } else {
     const gave = -(split.shares.find((s) => s.entity === SAMPLE_ID)?.energy ?? 0);
-    $('#energy').innerHTML = gave > 1 ? `<h3>${u.energyTitle}</h3><p>${locale === 'uk' ? `Речовина віддала навколишньому ${E(gave)} теплоти.` : `The substance gave ${E(gave)} of heat to its surroundings.`}</p>` : '';
+    $('#energy').innerHTML = gave > 1 ? `<h3>${u.energyTitle}</h3><p>${tl(locale, 'main-heat-given', { gave: E(gave) })}</p>` : '';
   }
 
   // Chart with the phase temperatures of this substance.
@@ -2189,7 +2189,7 @@ function render() {
   const heating = op.direction === 'heating';
   if (sub.freezing && op.markers.includes('freezing') && (!heating || params.startTemp <= sub.freezing.point.value)) markers.push({ v: sub.freezing.point.value, label: `${u.meltLine} ${sub.freezing.point.value} °C` });
   if (sub.boiling && op.markers.includes('boiling')) markers.push({ v: sub.boiling.point.value, label: `${u.boilLine} ${sub.boiling.point.value} °C` });
-  if (!sub.boiling && sub.decomposes && op.markers.includes('smoke')) markers.push({ v: sub.decomposes.value, label: `${locale === 'uk' ? 'димлення' : 'smoke'} ${sub.decomposes.value} °C` });
+  if (!sub.boiling && sub.decomposes && op.markers.includes('smoke')) markers.push({ v: sub.decomposes.value, label: `${tl(locale, 'main-smoke')} ${sub.decomposes.value} °C` });
   if (params.target !== undefined && op.target) markers.push({ v: params.target, label: `${u.targetLine} ${params.target} °C` });
   const sampleName = tr(b?.state.mixture && b.label ? b.label : sub.name, locale);
   $('#legend').innerHTML = [['water', sampleName], ['pot', u.potTemp], ...(h?.spec.method === 'contact' ? [['source', tr(h.name, locale)]] : [])]
@@ -2216,7 +2216,7 @@ function renderProtocol() {
   const lids = new Set([...history.map((h) => !!h.params.lid), !!params.lid]);
   const lidNote = (p: LabParams) => (lids.size > 1 ? (p.lid ? u.withLid : u.withoutLid) : '');
   const what = (p: LabParams) =>
-    `${tr(OPERATIONS[p.action].label, locale).replace('…', '')}${lidNote(p)}${p.target !== undefined && OPERATIONS[p.action].target ? ` ${p.target} °C` : ''}${p.duration !== undefined && OPERATIONS[p.action].duration ? `, ${p.duration} ${locale === 'uk' ? 'хв' : 'min'}` : ''}`;
+    `${tr(OPERATIONS[p.action].label, locale).replace('…', '')}${lidNote(p)}${p.target !== undefined && OPERATIONS[p.action].target ? ` ${p.target} °C` : ''}${p.duration !== undefined && OPERATIONS[p.action].duration ? `, ${p.duration} ${tl(locale, 'unit-sym-min')}` : ''}`;
   const adds = (a: readonly Added[]) => a.map((x) => `<span class="added">${u.added(tr(x.what, locale).toLowerCase(), formatQuantity(x.mass, 'kg', { locale, level: 'school' }))}</span>`).join('');
   const outcome = (st: LabStatus, r: ExperimentResult<LabCommand>, p: LabParams) =>
     st.kind === 'reached' && OPERATIONS[p.action].duration ? `✓ ${D(st.at)}` : st.kind === 'reached' ? u.stepReached(D(st.at)) : st.kind === 'will-reach' ? u.stepStopped(D(r.final.time - r.initial.time)) : u.stepFailed;
@@ -2371,7 +2371,7 @@ function materialChoices(): Choice[] {
   const fit = experimentStarted() ? undefined : vesselsFor(params).find((f) => f.vessel.id === params.vessel);
   if (!fit || fit.materials.length < 2) return [];
   const shape = (fit.vessel.look ?? 'pot') as VesselShape;
-  return fit.materials.map((m) => ({ key: m, name: { uk: UI.uk.materials[m] ?? m, en: UI.en.materials[m] ?? m }, look: { vessel: shape, material: m }, selected: m === params.material, pick: () => pickParams({ ...params, material: m }, freshSetup) }));
+  return fit.materials.map((m) => ({ key: m, name: localized((l: Locale) => UI[l].materials[m] ?? m), look: { vessel: shape, material: m }, selected: m === params.material, pick: () => pickParams({ ...params, material: m }, freshSetup) }));
 }
 const flat = (gs: readonly ChoiceGroup[]) => gs.flatMap((g) => g.items);
 function choicesFor(at: Exclude<AssemblyStage, 'what'>): { title: string; choices: Choice[] } {
@@ -2393,7 +2393,7 @@ function choicesFor(at: Exclude<AssemblyStage, 'what'>): { title: string; choice
         ...c,
         key: `${c.key}|${m}`,
         // (The material in the name: the pictures at the sides show no notes.)
-        name: f.materials.length > 1 ? { uk: `${c.name.uk} (${UI.uk.materials[m] ?? m})`, en: `${c.name.en} (${UI.en.materials[m] ?? m})` } : c.name,
+        name: f.materials.length > 1 ? msg('main-name-material', { name: (l: Locale) => c.name[l], materials: (l: Locale) => UI[l].materials[m] ?? m }) : c.name,
         note: `${volume(f.sizes[0]!)}${f.sizes.length > 1 ? `–${volume(f.sizes.at(-1)!)}` : ''}`,
         look: { vessel: shape, material: m },
         selected: c.selected && m === params.material,
@@ -2530,7 +2530,7 @@ function openAdding(error?: string) {
   const u = t();
   const addable = new Set(addableTo(session.state, commands).map((x) => x.id));
   const list = SUBSTANCE_FAMILIES.flatMap((f) => Object.values(SUBSTANCES).filter((x) => f.categories.includes(x.category) && addable.has(x.id)));
-  const g = (x: number) => `${sig(x, 3, locale)} ${locale === 'uk' ? 'г' : 'g'}`;
+  const g = (x: number) => `${sig(x, 3, locale)} ${tl(locale, 'unit-sym-g')}`;
   // The one chosen in the "add" panel keeps its settings there; another comes with its usual ones.
   const portion = (id: SubstanceId) => (id === addSub ? { frozen: addFrozen, temp: addTemp, grams: addGrams } : addDefaults(id));
   chooser.show(
@@ -2706,8 +2706,8 @@ function buildShelf() {
     track.append(...items);
     const prev = el('button', { type: 'button', className: 'car-btn' }, '‹');
     const next = el('button', { type: 'button', className: 'car-btn' }, '›');
-    prev.setAttribute('aria-label', locale === 'uk' ? 'Попередні' : 'Previous');
-    next.setAttribute('aria-label', locale === 'uk' ? 'Наступні' : 'Next');
+    prev.setAttribute('aria-label', tl(locale, 'main-previous'));
+    next.setAttribute('aria-label', tl(locale, 'main-next'));
     const pages = Math.ceil(items.length / perPage);
     const dots = el('div', { className: 'car-dots' }, ...Array.from({ length: pages > 1 ? pages : 0 }, () => el('span')));
     const sync = () => {
@@ -2866,7 +2866,7 @@ function buildShelf() {
             name: x.name,
             pic: devPic(x.look),
             ref: `equipment:${id}`,
-            note: `${force ? `${num(x.spec.capacity.value)} ${locale === 'uk' ? 'Н' : 'N'}` : formatReading(id, x.spec.capacity.value, locale)} · ${locale === 'uk' ? 'поділка' : 'division'} ${formatMeasured(unit, x.spec.resolution.value, x.spec.resolution.value, locale)}`,
+            note: `${force ? `${num(x.spec.capacity.value)} ${tl(locale, 'unit-sym-N')}` : formatReading(id, x.spec.capacity.value, locale)} · ${tl(locale, 'main-division')} ${formatMeasured(unit, x.spec.resolution.value, x.spec.resolution.value, locale)}`,
             selected: !force && id === scale,
             onPick: () => {
               if (force) {
@@ -2887,7 +2887,7 @@ function buildShelf() {
   );
 
   // 6. Conditions.
-  if (!query) section('conditions', locale === 'uk' ? 'Умови' : 'Conditions', `${params.roomTemp} °C`, number(u.room, params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x })));
+  if (!query) section('conditions', tl(locale, 'main-conditions'), `${params.roomTemp} °C`, number(u.room, params.roomTemp, -20, 45, 1, (x) => (params = { ...params, roomTemp: x })));
 
   shelf.scrollTop = scroll;
 }
@@ -2936,7 +2936,7 @@ function deviceChoices(matches: Matches = everything): { title: string; groups: 
   const started = experimentStarted();
   const v = vesselItem();
   const room = (selected: boolean, pick: () => void): Choice[] =>
-    matches({ uk: UI.uk.justRoom, en: UI.en.justRoom }) ? [{ key: 'room', name: { uk: UI.uk.justRoom, en: UI.en.justRoom }, look: { device: 'none', icon: 'room' }, note: `${params.roomTemp} °C`, selected, pick }] : [];
+    matches(localized((l: Locale) => UI[l].justRoom)) ? [{ key: 'room', name: localized((l: Locale) => UI[l].justRoom), look: { device: 'none', icon: 'room' }, note: `${params.roomTemp} °C`, selected, pick }] : [];
   if (uses === 'supply') {
     return {
       title: u.supplyWhat,
@@ -2986,7 +2986,7 @@ function deviceChoices(matches: Matches = everything): { title: string; groups: 
     }));
     if (uses === 'either') {
       groups.unshift({
-        label: locale === 'uk' ? 'Без нагрівача' : 'No heater',
+        label: tl(locale, 'main-no-heater'),
         items: room(!params.heater && !params.cooler, () => {
           const { heater: _h, cooler: _c, ...rest } = params;
           void _h;
@@ -3023,7 +3023,7 @@ function deviceChoices(matches: Matches = everything): { title: string; groups: 
     title: u.coolWhere,
     groups: [
       {
-        label: locale === 'uk' ? 'Без охолоджувача' : 'No cooler',
+        label: tl(locale, 'main-no-cooler'),
         items: room(!params.cooler, () => {
           const { cooler: _c, ...rest } = params;
           void _c;
@@ -3116,7 +3116,7 @@ function substanceChoices(matches: Matches = everything): ChoiceGroup[] {
               name: x.name,
               look: { substance: x },
               ref: `substance:${x.id}`,
-              note: `ρ ${num(x.liquid.density.value)} ${locale === 'uk' ? 'кг/м³' : 'kg/m³'} · ${dissolves(x) ? u.dissolves : u.putIn}`,
+              note: `ρ ${num(x.liquid.density.value)} ${tl(locale, 'unit-sym-kg-per-m3')} · ${dissolves(x) ? u.dissolves : u.putIn}`,
               ...(hasEstimate([x.liquid.density, x.liquid.specificHeat]) ? { badge: u.estimateBadge } : {}),
               // Heating or melting it dry: it becomes the sample itself; otherwise it is put into the liquid.
               selected: asSample(x) ? x.id === params.substance : x.id === addSub && $<HTMLDetailsElement>('#add').open,
@@ -3426,8 +3426,7 @@ $('#exp-share').onclick = () => presetGiven && void shareExperiment(presetGiven,
 function buildHeader() {
   const lang = $<HTMLSelectElement>('#language');
   lang.innerHTML = '';
-  const names: Record<Locale, string> = { uk: 'Українська', en: 'English' };
-  for (const l of LOCALES) lang.append(el('option', { value: l, selected: l === locale }, names[l]));
+  for (const l of LOCALES) lang.append(el('option', { value: l, selected: l === locale }, tl(l, 'language-name')));
   lang.onchange = () => {
     locale = lang.value as Locale;
     store.set('locale', locale);
@@ -3461,7 +3460,7 @@ function explain() {
     const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: answerLines(tr(presetAnswer.text, locale)).join('\n') } as Block, ...(presetAnswer.why ? tr(presetAnswer.why, locale).split('\n\n').map((text, k) => ({ kind: 'paragraph', text: k ? text : `${t().whyTitle} ${text}` }) as Block) : [])] : [];
     $('#report').innerHTML = renderHtml(
       buildMeasuredReport({
-        title: locale === 'uk' ? 'Що виміряли і чому так вийшло' : 'What was measured and why it came out so',
+        title: tl(locale, 'main-explain-measured'),
         level,
         locale,
         country: 'UA',
@@ -3477,22 +3476,21 @@ function explain() {
   }
   const result = last.result;
   if (!headline) setHeadline();
-  const uk = locale === 'uk';
   const ctx = { locale, level };
-  const title = uk ? 'Що відбулося і чому' : 'What happened and why';
+  const title = tl(locale, 'main-explain-happened');
   const notes: Block[] = (substance().modelNotes ?? []).map((n) => ({ kind: 'note', tone: 'info', text: tr(n, locale) }));
   const course = steps.length > 1 || result.log.length ? labCourse(steps, ctx) : [];
   const n = steps.indexOf(last) + 1;
-  const lastTitle: Block[] = steps.length > 1 ? [{ kind: 'heading', depth: 2, text: uk ? `Крок ${n} докладно` : `Step ${n} in detail` }] : [];
+  const lastTitle: Block[] = steps.length > 1 ? [{ kind: 'heading', depth: 2, text: tl(locale, 'main-step-in-detail', { n: String(n) }) }] : [];
   // The earlier steps, each with its own explanation, folded.
   const earlier: Block[] = ran.slice(0, -1).map((x) => ({
     kind: 'details',
-    summary: `${uk ? 'Крок' : 'Step'} ${steps.indexOf(x) + 1}. ${tr(OPERATIONS[x.params.action].label, locale).replace('…', '')} — ${uk ? 'розібрати докладно' : 'explain in detail'}`,
+    summary: `${tl(locale, 'main-step')} ${steps.indexOf(x) + 1}. ${tr(OPERATIONS[x.params.action].label, locale).replace('…', '')} — ${tl(locale, 'main-explain-in-detail')}`,
     blocks: buildReport({ title: stepPlace(x.params, locale), level, locale, country: 'UA', result: x.result, simulation, domain: LAB_KNOWLEDGE, focusTime: (x.result.initial.time + x.result.final.time) / 2, summary: labSummary(x.params, x.result, x.status, ctx) }),
   }));
   $('#report').innerHTML = renderHtml([
     ...buildReport({ title, level, locale, country: 'UA', result, simulation, domain: LAB_KNOWLEDGE, focusTime: (result.initial.time + result.final.time) / 2, summary: [...headline!(), ...notes, ...course, ...lastTitle] }),
-    ...(earlier.length ? [{ kind: 'heading', depth: 2, text: uk ? 'Попередні кроки' : 'Earlier steps' } as Block, ...earlier] : []),
+    ...(earlier.length ? [{ kind: 'heading', depth: 2, text: tl(locale, 'main-earlier-steps') } as Block, ...earlier] : []),
   ]);
   render();
   $('#report').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3508,7 +3506,7 @@ function planLabel(steps: readonly ProtocolStep[]): string {
       break;
     }
     if (s.kind === 'weigh' || s.kind === 'level' || s.kind === 'hang') {
-      parts.push(s.kind === 'weigh' ? (locale === 'uk' ? 'зважити' : 'weigh') : s.kind === 'level' ? u.measure.planLevel : u.measure.planHang((s.label ? tr(s.label, locale) : nameOfBody(s.substance)).toLowerCase(), s.into));
+      parts.push(s.kind === 'weigh' ? (tl(locale, 'main-weigh')) : s.kind === 'level' ? u.measure.planLevel : u.measure.planHang((s.label ? tr(s.label, locale) : nameOfBody(s.substance)).toLowerCase(), s.into));
       // A measurement is a stop of its own: the reading first.
       break;
     }
@@ -3520,14 +3518,14 @@ function planLabel(steps: readonly ProtocolStep[]): string {
       continue;
     }
     if (s.kind === 'fresh') {
-      parts.push(tr(s.label ?? { uk: 'почати знову', en: 'start afresh' }, locale).toLowerCase());
+      parts.push(tr(s.label ?? msg('main-start-afresh-lower'), locale).toLowerCase());
       break;
     }
     // The step's own name, or the operation's — with its target ("охолодити до 22 °C").
     parts.push(s.label ? lowerFirst(tr(s.label, locale)) : `${tr(OPERATIONS[s.action].label, locale).replace('…', '').toLowerCase()}${s.target !== undefined ? ` ${s.target} °C` : ''}`);
     break;
   }
-  return parts.join(locale === 'uk' ? ', потім ' : ', then ');
+  return parts.join(tl(locale, 'main-then'));
 }
 
 /** Do the next plan steps: additions at once, then the operation runs as a new protocol step. */
@@ -3623,7 +3621,7 @@ function buildShelfTabs() {
   $('#setup').hidden = shelfTab !== 'sandbox';
   $('#presets').hidden = shelfTab !== 'experiments';
   $<HTMLInputElement>('#search').placeholder =
-    shelfTab === 'sandbox' ? (locale === 'uk' ? 'Пошук: речовина, посуд, прилад…' : 'Search: substance, vessel, device…') : locale === 'uk' ? 'Пошук: дослід, тема…' : 'Search: experiment, topic…';
+    shelfTab === 'sandbox' ? (tl(locale, 'main-search-sandbox')) : tl(locale, 'main-search-experiments');
   if (shelfTab === 'experiments') buildPresets();
 }
 // The experiment's title in the kitchen: the list of experiments scrolls (smoothly) to it — shown if filtered away.
@@ -3745,8 +3743,8 @@ function buildPresets() {
     // The topic of the programme it is in (of this subject first): «Тема 3. Взаємодія тіл. Сили в природі».
     const progs = presetPrograms(p).filter((x) => x.match !== 'related');
     const topicOf = (x: (typeof progs)[number]) => x.topic ?? (x.item?.startsWith('Тема') ? x.item : undefined);
-    // (The programmes' wording is Ukrainian only: in another language — the experiment's own topic.)
-    const topicLine = locale === 'uk' ? [...progs.filter((x) => getCurriculum(x.program)?.subject === presetSubject), ...progs].map(topicOf).find(Boolean)?.replace(TOPIC_NUMBER, '') : tr(p.topic, locale);
+    // (A programme's topic is quoted in its own language: to those reading in another — the experiment's own topic.)
+    const topicLine = [...progs.filter((x) => getCurriculum(x.program)?.subject === presetSubject), ...progs].filter((x) => getCurriculum(x.program)?.language === locale).map(topicOf).find(Boolean)?.replace(TOPIC_NUMBER, '') ?? tr(p.topic, locale);
     // The programmes in one line, cut with «…»; opened — each with its topic and the textbook's page.
     const programLine = presetPrograms(p).map((x) => `${tr(getCurriculum(x.program)!.short ?? getCurriculum(x.program)!.name, locale)}${x.grade !== undefined ? ` · ${u.grade(x.grade)}` : ''}`).join(', ');
     const card = el('article', { className: `preset${preset && presetGiven?.id === p.id ? ' current' : ''}` });
@@ -4012,7 +4010,7 @@ function renderRecords() {
     play.onclick = () => startReplay(r);
     const file = el('button', { type: 'button' }, u.download);
     file.onclick = () => download(r);
-    const del = el('button', { type: 'button', title: locale === 'uk' ? 'Видалити' : 'Delete' }, u.remove);
+    const del = el('button', { type: 'button', title: tl(locale, 'main-delete') }, u.remove);
     del.onclick = () => {
       saveRecords(list.filter((_, j) => j !== i));
       renderRecords();
@@ -4158,7 +4156,7 @@ const labConsole = createConsole({
     const sup = Object.values(session.state.entities).find(isSupply);
     if (sup) lines.push(`${u.current}: ${formatQuantity(sup.state.current, 'A', { locale, level: 'school' })}${sup.state.resistance !== null ? ` · ${formatQuantity(sup.state.resistance, 'Ω', { locale, level: 'school' })}` : ''}`);
     lines.push(`${u.setup}: ${labSubject(params, locale, session.state)}`);
-    lines.push(running ? (locale === 'uk' ? '▶ іде' : '▶ running') : finished ? (locale === 'uk' ? '■ крок завершено' : '■ step done') : locale === 'uk' ? '⏸ стоїть' : '⏸ paused');
+    lines.push(running ? (tl(locale, 'main-running')) : finished ? (tl(locale, 'main-step-done')) : tl(locale, 'main-paused'));
     return lines;
   },
   explain: () => explain(),

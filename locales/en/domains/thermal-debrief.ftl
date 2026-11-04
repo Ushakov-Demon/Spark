@@ -1,0 +1,21 @@
+## thermal-debrief
+thermal-debrief-msg-title = Debrief
+thermal-debrief-msg-result = "{ $n }" at the end of the experiment: { $t }.
+thermal-debrief-msg-prediction = Prediction
+thermal-debrief-msg-goal = Goal
+thermal-debrief-msg-hit = hit: off by { $d } (tolerance ±{ $tol }).
+thermal-debrief-msg-miss-higher = the result is { $d } higher.
+thermal-debrief-msg-miss-lower = the result is { $d } lower.
+thermal-debrief-msg-naive = A simple heat-balance calculation (only the mixed portions, no other bodies) gives { $t }.
+thermal-debrief-msg-why = Why the result differs — other bodies took part in the experiment:
+thermal-debrief-msg-no-others = Other bodies barely mattered: the simple calculation works here.
+thermal-debrief-msg-took = "{ $n }": −{ $d } (heat taken{ $e })
+thermal-debrief-msg-gave = "{ $n }": +{ $d } (heat added{ $e })
+thermal-debrief-msg-interventions = manual intervention changed the temperature by { $d }
+thermal-debrief-msg-prediction-was-naive = The prediction matches the simple calculation: the heat balance was applied correctly. What is missing are the other participants ({ $o }) — a real experiment always has such «invisible participants».
+thermal-debrief-msg-prediction-note = Compare the prediction with the simple calculation and with the result: where exactly did the difference appear?
+thermal-debrief-msg-change = What to change to hit the goal (each option on its own):
+thermal-debrief-msg-knob-found = { $l }: { $to } instead of { $from } → gives { $a }
+thermal-debrief-msg-knob-unreachable = { $l }: this alone cannot hit the goal — even at { $c } the result is { $a }
+thermal-debrief-msg-residual = The contributions add up to the result within { $r } (rounding error).
+thermal-debrief-msg-try-next = Change the conditions — materials, masses, time — and see how the contributions change.

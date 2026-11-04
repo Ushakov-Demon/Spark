@@ -3,6 +3,7 @@ import { watts } from '../../core/units.js';
 import { cellConstant, supplyVoltage } from '../../equipment/supplies.js';
 import type { ElectrodesSpec } from '../../equipment/types.js';
 import type { SupplyItem } from '../../equipment/types.js';
+import { msg } from '../../knowledge/messages.js';
 import { burner } from '../thermal/entities.js';
 import { supplyLink } from '../thermal/links.js';
 import { supply } from './entities.js';
@@ -28,7 +29,7 @@ export function placeSupply(o: { readonly item: SupplyItem; readonly id: string;
         electrodes: { material: o.electrodes.material, width: o.electrodes.width, height: o.electrodes.height, gap: o.electrodes.gap },
         heatSource: heatId,
       }),
-      burner({ id: heatId, label: { uk: 'Теплота струму', en: 'Heat of the current' }, power: watts(0), device: o.item.id, driven: true }),
+      burner({ id: heatId, label: msg('electrical-assembly-entities-label'), power: watts(0), device: o.item.id, driven: true }),
     ],
     connections: [supplyLink({ id: `${heatId}=>${o.bodyId}`, a: heatId, b: o.bodyId, share: 1, dataRef: o.item.id })],
   };

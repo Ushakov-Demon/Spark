@@ -6,6 +6,7 @@
  */
 import { termById, termMatcher, type TermMatcher } from '../src/knowledge/glossary.js';
 import { tr, type Locale } from '../src/knowledge/i18n.js';
+import { msg } from '../src/knowledge/messages.js';
 import { getSource } from '../src/knowledge/sources.js';
 import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
 
@@ -53,9 +54,9 @@ export function annotate(root: Element, l: Locale, skip?: string): void {
   }
 }
 
-const ALL_TERMS: Record<Locale, string> = { uk: 'Відкрити в глосарії →', en: 'Open in the glossary →' };
-const SOURCE: Record<Locale, string> = { uk: 'Джерело', en: 'Source' };
-const PHOTO: Record<Locale, string> = { uk: 'Фото', en: 'Photo' };
+const ALL_TERMS: Record<Locale, string> = msg('terms-all');
+const SOURCE: Record<Locale, string> = msg('terms-source');
+const PHOTO: Record<Locale, string> = msg('terms-photo');
 
 /** A term's source as a link: «Джерело: en.wikipedia.org» (opens in a new tab); '' when it has none. `photo` — «Фото: …». */
 export function termSourceHtml(id: string | undefined, l: Locale, photo = false): string {

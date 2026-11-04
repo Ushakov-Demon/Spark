@@ -3,10 +3,11 @@ import { celsius, kilograms, meters, specificHeat, squareMeters, thermalConducta
 import { canHeat, powerAt, typicalVesselMass } from '../../equipment/compatibility.js';
 import { vesselGeometry } from '../../equipment/geometry.js';
 import type { CoolerItem, HeaterItem, VesselItem } from '../../equipment/types.js';
+import { msg, t } from '../../knowledge/messages.js';
 import type { SubstanceItem } from '../../substances/types.js';
 import { substanceThermal } from './substance.js';
 import { equilibriumAt, solutionDensity } from './mixture.js';
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import { burner, heater, mixtureBody, reservoir, thermalBody } from './entities.js';
 import { convectionLink, supplyLink, thermalLink, wallLink } from './links.js';
 import { CONVECTION, MATERIALS, SURFACES, type MaterialName } from './materials.js';
@@ -68,11 +69,8 @@ export function placeVessel(v: VesselPlacement): Piece {
   const outside = v.outside ?? { id: v.roomId, convection: 'stillAir' as const, bottom: false };
   const surfaceTo = v.surfaceTo ?? v.roomId;
   const startsSolid = 'phase' in contents && contents.phase?.meltingPoint !== undefined && celsius(v.startTemp) < contents.phase.meltingPoint;
-  const liquidLabel = substance ? (startsSolid && substance.solidName ? substance.solidName : substance.name) : { uk: 'Вода', en: 'Water' };
-  const label = {
-    uk: `${v.item.name.uk} (${plain(material.name.uk)}${lid ? ', з кришкою' : ''})`,
-    en: `${v.item.name.en} (${plain(material.name.en)}${lid ? ', with lid' : ''})`,
-  };
+  const liquidLabel = substance ? (startsSolid && substance.solidName ? substance.solidName : substance.name) : msg('thermal-assembly-place-vessel-liquid-label');
+  const label = msg('thermal-assembly-place-vessel-label', { name: (l: Locale) => v.item.name[l], name2: (l: Locale) => plain(material.name[l]), value: (l: Locale) => lid ? t(l, 'thermal-assembly-label-uk') : '' });
 
   // A metal or salt poured in dry is one solid body (salt melts on its own, not as brine).
   const dry = substance?.melt !== undefined || (substance?.category.startsWith('solid.') ?? false);
@@ -144,7 +142,7 @@ export function placeVessel(v: VesselPlacement): Piece {
     entities.push(
       thermalBody({
         id: lidId,
-        label: { uk: 'Кришка', en: 'Lid' },
+        label: msg('thermal-assembly-place-vessel-label-2'),
         mass: kilograms(mass * (spec.lidMassFraction?.value ?? 0.25)),
         specificHeat: material.specificHeat.value,
         material: v.material,

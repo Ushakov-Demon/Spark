@@ -1,3 +1,4 @@
+import { msg } from '../knowledge/messages.js';
 import { err, type Result } from './result.js';
 import type { SystemState } from './state.js';
 import type { TraceRecord } from './trace.js';
@@ -53,7 +54,7 @@ export function createCommandRegistry<C extends Command>(
       const h = byType.get(command.type);
       return h
         ? h.apply(state, command)
-        : err({ uk: `Невідома команда «${command.type}»`, en: `Unknown command "${command.type}"` });
+        : err(msg('commands-unknown', { type: command.type }));
     },
   };
 }

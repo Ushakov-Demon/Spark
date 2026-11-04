@@ -8,7 +8,8 @@ import { COMPONENTS, type ComponentId } from '../src/components/index.js';
 import { EQUIPMENT } from '../src/equipment/catalog.js';
 import { CATEGORIES } from '../src/equipment/taxonomy.js';
 import type { CategoryId, EquipmentItem } from '../src/equipment/types.js';
-import { tr, type Locale } from '../src/knowledge/i18n.js';
+import { NUMBER_LOCALE, tr, type Locale } from '../src/knowledge/i18n.js';
+import { byLocale, t as tl } from '../src/knowledge/messages.js';
 import { getSource } from '../src/knowledge/sources.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
 import { LAB_GLOSSARY } from '../src/scenarios/lab-knowledge.js';
@@ -19,7 +20,7 @@ import type { SubstanceItem } from '../src/substances/types.js';
 function sourceLink(id: string | undefined, l: Locale, photo = false): string {
   const s = id ? getSource(id as never) : undefined;
   if (!s?.url) return '';
-  return `<p class="lib-source"><a href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(s.title)}">${photo ? (l === 'uk' ? 'Фото' : 'Photo') : l === 'uk' ? 'Джерело' : 'Source'}: ${esc(new URL(s.url).hostname.replace(/^www\./, ''))}</a></p>`;
+  return `<p class="lib-source"><a href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(s.title)}">${photo ? (tl(l, 'library-photo')) : tl(l, 'library-source')}: ${esc(new URL(s.url).hostname.replace(/^www\./, ''))}</a></p>`;
 }
 
 export const LIBRARY_PAGES = ['glossary', 'substances', 'equipment'] as const;
@@ -32,42 +33,27 @@ export function libraryRoute(hash: string): { page: LibraryPage; item?: string }
   return item ? { page: page as LibraryPage, item: decodeURIComponent(item) } : { page: page as LibraryPage };
 }
 
-export const LIBRARY_UI: Record<Locale, { open: string; law: string; title: string; back: string; search: string; more: string; nothing: string; allTerms: string; tabs: Record<LibraryPage, string>; intro: Record<LibraryPage, string>; count: (n: number) => string }> = {
-  uk: {
-    open: 'Довідник',
-    law: 'закон',
-    title: 'Довідник лабораторії',
-    back: '← До лабораторії',
-    search: 'Пошук…',
-    more: 'Довідка →',
-    nothing: 'Нічого не знайдено.',
-    allTerms: 'Усі терміни →',
-    tabs: { glossary: 'Глосарій', substances: 'Речовини й матеріали', equipment: 'Обладнання' },
-    intro: {
-      glossary: 'Терміни й закони, які трапляються в лабораторії. У текстах дослідів вони підкреслені пунктиром: торкніться слова, щоб побачити пояснення.',
-      substances: 'Усе, що є на полиці лабораторії. У довідці кожної речовини — її властивості, умови, за яких їх виміряно, і джерела.',
-      equipment: 'Прилади й посуд, з якими можна працювати в лабораторії, з їхніми характеристиками.',
-    },
-    count: (n) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'запис' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'записи' : 'записів'}`,
-  },
-  en: {
-    open: 'Library',
-    law: 'law',
-    title: 'Lab library',
-    back: '← Back to the lab',
-    search: 'Search…',
-    more: 'Details →',
-    nothing: 'Nothing found.',
-    allTerms: 'All terms →',
-    tabs: { glossary: 'Glossary', substances: 'Substances and materials', equipment: 'Equipment' },
-    intro: {
-      glossary: 'Terms and laws you meet in the lab. In the experiments’ texts they are underlined with dots: tap a word to see what it means.',
-      substances: 'Everything on the lab’s shelf. Each substance’s card gives its properties, the conditions they were measured under, and the sources.',
-      equipment: 'The devices and vessels you can work with in the lab, with their specifications.',
-    },
-    count: (n) => `${n} ${n === 1 ? 'entry' : 'entries'}`,
-  },
-};
+export const LIBRARY_UI: Record<Locale, { open: string; law: string; title: string; back: string; search: string; more: string; nothing: string; allTerms: string; tabs: Record<LibraryPage, string>; intro: Record<LibraryPage, string>; count: (n: number) => string }> = byLocale((l: Locale) => ({
+  open: tl(l, 'library-open'),
+  law: tl(l, 'library-law'),
+  title: tl(l, 'library-title'),
+  back: tl(l, 'library-back'),
+  search: tl(l, 'library-search'),
+  more: tl(l, 'library-more'),
+  nothing: tl(l, 'library-nothing'),
+  allTerms: tl(l, 'library-all-terms'),
+  tabs: {
+  glossary: tl(l, 'library-tabs-glossary'),
+  substances: tl(l, 'library-tabs-substances'),
+  equipment: tl(l, 'library-tabs-equipment'),
+},
+  intro: {
+  glossary: tl(l, 'library-intro-glossary'),
+  substances: tl(l, 'library-intro-substances'),
+  equipment: tl(l, 'library-intro-equipment'),
+},
+  count: (n) => tl(l, 'count-entries', { n }),
+}));
 
 interface Ctx {
   readonly locale: Locale;
@@ -81,7 +67,8 @@ interface Ctx {
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-const other = (l: Locale): Locale => (l === 'uk' ? 'en' : 'uk');
+/** The name's other language under it: English, or — on the English page — Ukrainian. */
+const other = (l: Locale): Locale => (l === 'en' ? 'uk' : 'en');
 
 /** Glossary: alphabetical, a letter bar on top; each term also named in the other language. */
 function glossaryHtml(c: Ctx): string {
@@ -112,17 +99,16 @@ const formulaOf = (s: SubstanceItem): string => (s.component ? (COMPONENTS[s.com
 /** Substances: by the shelf's families, a card each. */
 function substancesHtml(c: Ctx): string {
   const u = LIBRARY_UI[c.locale];
-  const uk = c.locale === 'uk';
-  const num = (x: number) => x.toLocaleString(c.locale === 'uk' ? 'uk-UA' : 'en-GB', { maximumFractionDigits: 1 });
+  const num = (x: number) => x.toLocaleString(NUMBER_LOCALE[c.locale], { maximumFractionDigits: 1 });
   return SUBSTANCE_FAMILIES.map((f) => {
     const items = Object.values(SUBSTANCES).filter((x) => f.categories.includes(x.category));
     if (!items.length) return '';
     const cards = items
       .map((x) => {
         const facts = [
-          x.melt ? `${uk ? 'плавиться' : 'melts'} ${num(x.melt.point.value)} °C` : x.freezing ? `${uk ? 'замерзає' : 'freezes'} ${num(x.freezing.point.value)} °C` : null,
-          x.boiling ? `${uk ? 'кипить' : 'boils'} ${num(x.boiling.point.value)} °C` : null,
-          `ρ ${num(x.liquid.density.value)} ${uk ? 'кг/м³' : 'kg/m³'}`,
+          x.melt ? `${tl(c.locale, 'library-melts')} ${num(x.melt.point.value)} °C` : x.freezing ? `${tl(c.locale, 'library-freezes')} ${num(x.freezing.point.value)} °C` : null,
+          x.boiling ? `${tl(c.locale, 'library-boils')} ${num(x.boiling.point.value)} °C` : null,
+          `ρ ${num(x.liquid.density.value)} ${tl(c.locale, 'unit-sym-kg-per-m3')}`,
         ].filter((f): f is string => !!f);
         const formula = formulaOf(x);
         return `<article class="lib-card lib-entry" id="item-${x.id}">

@@ -1,0 +1,26 @@
+## lab-debrief
+lab-debrief-goal-options-label = Another heater model, at full
+lab-debrief-goal-options-label-2 = Turn the knob to maximum
+lab-debrief-goal-options-label-3 = Put a lid on
+lab-debrief-goal-options-label-4 = Use less substance
+lab-debrief-part-names-sample = into the substance itself (warming, melting)
+lab-debrief-part-names-vessel = into warming the vessel
+lab-debrief-part-names-lid = into warming the lid
+lab-debrief-part-names-pieces = into warming what was put into the liquid
+lab-debrief-part-names-heater = stayed in the hot heater
+lab-debrief-part-names-air = lost to the air (heat transfer)
+lab-debrief-part-names-flame = flame heat that went past the vessel
+lab-debrief-part-names-vapour = carried away by vapour (evaporation and boiling)
+lab-debrief-out = Debrief
+lab-debrief-head = Goal
+lab-debrief-head-2 = Prediction
+lab-debrief-text = the goal was not reached
+lab-debrief-verdict = on target (off by { $dev })
+lab-debrief-verdict-2 = it actually took { $dev } longer
+lab-debrief-verdict-3 = it was actually { $value } faster
+lab-debrief-text-2 = result
+lab-debrief-text-3 = "On paper" (all the heater's energy goes into the substance only): { $paper }.
+lab-debrief-text-4 = In reality, of the { $produced } the heater released:
+lab-debrief-text-5 = The prediction matches the paper calculation: the formula was applied correctly. The difference comes from the «invisible participants» — vessel, air, vapour.
+lab-debrief-text-6 = What to change to make it in time (each option on its own, checked by re-running):
+lab-debrief-text-7 = No single change (power, lid, less substance) makes it in this time.

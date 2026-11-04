@@ -9,6 +9,7 @@ import { formatQuantity, type ExplainContext } from '../../explain/format.js';
 import { entityLabel } from '../../explain/report.js';
 import { tr, type Locale } from '../../knowledge/i18n.js';
 import { atLeast } from '../../knowledge/levels.js';
+import { byLocale, t as tl } from '../../knowledge/messages.js';
 import { isHeater, isThermalBody } from './entities.js';
 
 /** How much one participant shifted the final temperature of the observed body. */
@@ -96,54 +97,29 @@ interface DebriefMessages {
   tryNext: string;
 }
 
-const MSG: Readonly<Record<Locale, DebriefMessages>> = {
-  uk: {
-    title: 'Розбір результату',
-    result: (n, t) => `«${n}» наприкінці досліду: ${t}.`,
-    prediction: 'Прогноз',
-    goal: 'Ціль',
-    hit: (d, tol) => `влучно: різниця ${d} (допуск ±${tol}).`,
-    missHigher: (d) => `результат вищий на ${d}.`,
-    missLower: (d) => `результат нижчий на ${d}.`,
-    naive: (t) => `Простий розрахунок за рівнянням теплового балансу (лише змішані порції речовини, без інших тіл) дає ${t}.`,
-    why: 'Чому результат інший — в досліді брали участь й інші тіла:',
-    noOthers: 'Інші тіла майже не вплинули: простий розрахунок тут працює.',
-    took: (n, d, e) => `«${n}»: −${d} (теплоту забрано${e ? `, ${e}` : ''})`,
-    gave: (n, d, e) => `«${n}»: +${d} (теплоту додано${e ? `, ${e}` : ''})`,
-    interventions: (d) => `ручне втручання змінило температуру на ${d}`,
+const MSG: Readonly<Record<Locale, DebriefMessages>> = byLocale((lang: Locale) => ({
+    title: tl(lang, 'thermal-debrief-msg-title'),
+    result: (n, t) => tl(lang, 'thermal-debrief-msg-result', { n, t }),
+    prediction: tl(lang, 'thermal-debrief-msg-prediction'),
+    goal: tl(lang, 'thermal-debrief-msg-goal'),
+    hit: (d, tol) => tl(lang, 'thermal-debrief-msg-hit', { d, tol }),
+    missHigher: (d) => tl(lang, 'thermal-debrief-msg-miss-higher', { d }),
+    missLower: (d) => tl(lang, 'thermal-debrief-msg-miss-lower', { d }),
+    naive: (t) => tl(lang, 'thermal-debrief-msg-naive', { t }),
+    why: tl(lang, 'thermal-debrief-msg-why'),
+    noOthers: tl(lang, 'thermal-debrief-msg-no-others'),
+    took: (n, d, e) => tl(lang, 'thermal-debrief-msg-took', { n, d, e: e ? `, ${e}` : '' }),
+    gave: (n, d, e) => tl(lang, 'thermal-debrief-msg-gave', { n, d, e: e ? `, ${e}` : '' }),
+    interventions: (d) => tl(lang, 'thermal-debrief-msg-interventions', { d }),
     predictionWasNaive: (o) =>
-      `Прогноз збігається з простим розрахунком: рівняння теплового балансу застосовано правильно. Бракує лише врахування інших учасників (${o}) — справжній дослід завжди має таких «невидимих учасників».`,
-    predictionNote: 'Корисно порівняти прогноз із простим розрахунком і з результатом: де саме з’явилася різниця?',
-    change: 'Що змінити, щоб влучити в ціль (кожен варіант окремо):',
-    knobFound: (l, from, to, a) => `${l}: ${to} замість ${from} → вийде ${a}`,
-    knobUnreachable: (l, c, a) => `${l}: лише цим не влучити — навіть за ${c} вийде ${a}`,
-    residual: (r) => `Сума внесків збігається з результатом до ${r} (похибка округлення).`,
-    tryNext: 'Можна змінити умови — матеріали, маси, час — і подивитися, як зміняться внески.',
-  },
-  en: {
-    title: 'Debrief',
-    result: (n, t) => `"${n}" at the end of the experiment: ${t}.`,
-    prediction: 'Prediction',
-    goal: 'Goal',
-    hit: (d, tol) => `hit: off by ${d} (tolerance ±${tol}).`,
-    missHigher: (d) => `the result is ${d} higher.`,
-    missLower: (d) => `the result is ${d} lower.`,
-    naive: (t) => `A simple heat-balance calculation (only the mixed portions, no other bodies) gives ${t}.`,
-    why: 'Why the result differs — other bodies took part in the experiment:',
-    noOthers: 'Other bodies barely mattered: the simple calculation works here.',
-    took: (n, d, e) => `"${n}": −${d} (heat taken${e ? `, ${e}` : ''})`,
-    gave: (n, d, e) => `"${n}": +${d} (heat added${e ? `, ${e}` : ''})`,
-    interventions: (d) => `manual intervention changed the temperature by ${d}`,
-    predictionWasNaive: (o) =>
-      `The prediction matches the simple calculation: the heat balance was applied correctly. What is missing are the other participants (${o}) — a real experiment always has such «invisible participants».`,
-    predictionNote: 'Compare the prediction with the simple calculation and with the result: where exactly did the difference appear?',
-    change: 'What to change to hit the goal (each option on its own):',
-    knobFound: (l, from, to, a) => `${l}: ${to} instead of ${from} → gives ${a}`,
-    knobUnreachable: (l, c, a) => `${l}: this alone cannot hit the goal — even at ${c} the result is ${a}`,
-    residual: (r) => `The contributions add up to the result within ${r} (rounding error).`,
-    tryNext: 'Change the conditions — materials, masses, time — and see how the contributions change.',
-  },
-};
+      tl(lang, 'thermal-debrief-msg-prediction-was-naive', { o }),
+    predictionNote: tl(lang, 'thermal-debrief-msg-prediction-note'),
+    change: tl(lang, 'thermal-debrief-msg-change'),
+    knobFound: (l, from, to, a) => tl(lang, 'thermal-debrief-msg-knob-found', { l, to, from, a }),
+    knobUnreachable: (l, c, a) => tl(lang, 'thermal-debrief-msg-knob-unreachable', { l, c, a }),
+    residual: (r) => tl(lang, 'thermal-debrief-msg-residual', { r }),
+    tryNext: tl(lang, 'thermal-debrief-msg-try-next'),
+  }));
 
 export interface DebriefInput<C extends Command> {
   readonly result: ExperimentResult<C>;

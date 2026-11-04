@@ -8,6 +8,7 @@ import { molesToMass } from '../domains/electrical/electrochem.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { SCALES, scaleReading } from '../equipment/scales.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
+import { msg } from '../knowledge/messages.js';
 import type { SourcedValue } from '../knowledge/types.js';
 import { LAB_SUPPLY_ID } from './thermal-lab.js';
 
@@ -30,7 +31,7 @@ export const cathodeCommand: CommandHandler<CathodeCommand> = {
   type: 'lab.cathode',
   apply(state) {
     const sup = state.entities[entityId(LAB_SUPPLY_ID)];
-    if (!sup || !isSupply(sup) || !sup.params.electrodes) return err({ uk: 'Електродів у посудині немає.', en: 'There are no electrodes in the vessel.' });
+    if (!sup || !isSupply(sup) || !sup.params.electrodes) return err(msg('electrode-bench-cathode-command-apply'));
     const e = sup.params.electrodes;
     const plate = e.width * PLATE_HEIGHT * PLATE_THICKNESS.value * (COMPONENTS[e.material as ComponentId]?.phases.solid?.density?.value ?? 0);
     // The metal settled on it: what the current made at the cathode that is a metal (copper — not hydrogen, not a sludge).
@@ -48,8 +49,8 @@ export const ELECTRODE_COMMANDS = [cathodeCommand] as const;
 
 export const ELECTRODE_TEXT: Record<CathodeCommand['type'], () => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.cathode': () => ({
-    say: { uk: 'Вийми катод (електрод «−»), обережно висуши й зваж на лабораторних терезах.', en: 'Take out the cathode (the “−” electrode), dry it carefully and weigh it on the laboratory balance.' },
-    button: { uk: '⚖ Зважити катод', en: '⚖ Weigh the cathode' },
-    plan: { uk: 'зважити катод', en: 'weigh the cathode' },
+    say: msg('electrode-bench-lab-cathode-say'),
+    button: msg('electrode-bench-lab-cathode-button'),
+    plan: msg('electrode-bench-lab-cathode-plan'),
   }),
 };

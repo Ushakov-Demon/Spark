@@ -18,3 +18,19 @@ count-days = { $n ->
     }
 count-days-calendar = { count-days }
 count-times = { $v } times
+count-records = { $n ->
+        [one] { $n } row
+       *[other] { $n } rows
+    }
+count-steps = { $n ->
+        [one] { $n } step
+       *[other] { $n } steps
+    }
+count-experiments = { $n ->
+        [one] { $n } experiment
+       *[other] { $n } experiments
+    }
+count-entries = { $n ->
+        [one] { $n } entry
+       *[other] { $n } entries
+    }

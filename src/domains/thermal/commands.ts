@@ -1,10 +1,11 @@
-import type { LocalizedText } from '../../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
 import type { CommandHandler } from '../../core/commands.js';
 import type { AnyEntity } from '../../core/entity.js';
 import { entityId } from '../../core/ids.js';
 import { err, ok } from '../../core/result.js';
 import { withEntities, type SystemState } from '../../core/state.js';
 import { kelvin, kilograms, type Kelvin, type Kilograms, type Watts } from '../../core/units.js';
+import { localized, msg, t } from '../../knowledge/messages.js';
 import { isBurner, isHeater, isThermalBody, type Burner, type Heater, type ThermalBody } from './entities.js';
 import { equilibriumTemperature } from './formulas.js';
 import { ENERGY_REFERENCE_TEMPERATURE } from './solver.js';
@@ -77,8 +78,8 @@ export const setHeater: CommandHandler<SetHeaterCommand> = {
   type: 'thermal.heater.set',
   apply(state, c) {
     const h = find(state, c.entity, isPowerSource);
-    if (!h) return err({ uk: `«${c.entity}» — не нагрівач`, en: `"${c.entity}" is not a heater` });
-    if (c.power !== undefined && !(c.power >= 0 && Number.isFinite(c.power))) return err({ uk: 'Потужність має бути ≥ 0', en: 'Power must be ≥ 0' });
+    if (!h) return err(msg('thermal-commands-set-heater-apply', { entity: c.entity }));
+    if (c.power !== undefined && !(c.power >= 0 && Number.isFinite(c.power))) return err(msg('thermal-commands-set-heater-apply-2'));
     const params = { ...h.params, ...(c.on === undefined ? {} : { on: c.on }), ...(c.power === undefined ? {} : { power: c.power }) };
     return ok({ state: withEntities(state, [{ ...h, params } as Heater | Burner]), kind: 'control', externalEnergy: 0, trace: [] });
   },
@@ -88,9 +89,9 @@ export const pour: CommandHandler<PourCommand> = {
   type: 'thermal.pour',
   apply(state, c) {
     const b = find(state, c.into, isThermalBody);
-    if (!b) return err({ uk: `У «${c.into}» не можна долити речовину`, en: `Cannot pour into "${c.into}"` });
-    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err({ uk: 'Маса має бути > 0', en: 'Mass must be > 0' });
-    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err({ uk: 'Температура має бути ≥ 0 K', en: 'Temperature must be ≥ 0 K' });
+    if (!b) return err(msg('thermal-commands-pour-apply', { into: c.into }));
+    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err(msg('thermal-commands-pour-apply-2'));
+    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err(msg('thermal-commands-pour-apply-3'));
 
     const { specificHeat } = b.params;
     const parts = [
@@ -117,8 +118,8 @@ export const setTemperature: CommandHandler<SetTemperatureCommand> = {
   type: 'thermal.temperature.set',
   apply(state, c) {
     const e = find(state, c.entity, isBodyOrHeater);
-    if (!e) return err({ uk: `«${c.entity}» не має власної температури`, en: `"${c.entity}" has no temperature of its own` });
-    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err({ uk: 'Температура має бути ≥ 0 K', en: 'Temperature must be ≥ 0 K' });
+    if (!e) return err(msg('thermal-commands-set-temperature-apply', { entity: c.entity }));
+    if (!(c.temperature >= 0 && Number.isFinite(c.temperature))) return err(msg('thermal-commands-pour-apply-3'));
     const dT = c.temperature - e.state.temperature;
     const q = e.params.mass * e.params.specificHeat * dT;
     const next = { ...e, state: { ...e.state, temperature: c.temperature } } as ThermalBody | Heater;
@@ -139,11 +140,11 @@ const mixesWithWater = (s: SubstanceItem): boolean =>
 
 /** "Розчин солі", "Розчин цукру", or "Розчин" for several things dissolved. */
 function solutionLabel(components: readonly string[]): LocalizedText {
-  if (components.length !== 1) return { uk: 'Розчин', en: 'Solution' };
-  if (components[0] === 'sodium-chloride') return { uk: 'Розчин солі', en: 'Salt solution' };
+  if (components.length !== 1) return msg('thermal-commands-solution-label');
+  if (components[0] === 'sodium-chloride') return msg('thermal-commands-solution-label-2');
   const c = COMPONENTS[components[0] as ComponentId];
   const g = c?.genitive ?? c?.name;
-  return g ? { uk: `Розчин ${g.uk}`, en: `${g.en.charAt(0).toUpperCase()}${g.en.slice(1)} solution` } : { uk: 'Розчин', en: 'Solution' };
+  return g ? msg('thermal-commands-solution-of', { of: (l: Locale) => g[l], Of: (l: Locale) => g[l].charAt(0).toUpperCase() + g[l].slice(1) }) : msg('thermal-commands-solution-label');
 }
 
 export const add: CommandHandler<AddCommand> = {
@@ -154,16 +155,13 @@ export const add: CommandHandler<AddCommand> = {
     const target = find(state, c.into, isThermalBody);
     const targetSub = target && 'substance' in target.params && target.params.substance ? SUBSTANCES[target.params.substance as SubstanceId] : undefined;
     const sub = SUBSTANCES[c.substance as SubstanceId];
-    if (!target || !targetSub) return err({ uk: `У «${c.into}» не можна нічого додати`, en: `Cannot add anything to "${c.into}"` });
-    if (!sub) return err({ uk: `Невідома речовина «${c.substance}»`, en: `Unknown substance "${c.substance}"` });
-    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err({ uk: 'Маса має бути > 0', en: 'Mass must be > 0' });
+    if (!target || !targetSub) return err(msg('thermal-commands-add-apply', { into: c.into }));
+    if (!sub) return err(msg('thermal-commands-add-apply-2', { substance: c.substance }));
+    if (!(c.mass > 0 && Number.isFinite(c.mass))) return err(msg('thermal-commands-pour-apply-2'));
     const th = substanceThermal(sub);
     const tm = th.phase?.meltingPoint;
     if (c.frozen && (tm === undefined || !(c.temperature < tm))) {
-      return err({
-        uk: tm === undefined ? `Для «${sub.name.uk}» немає даних про твердий стан` : `Тверда речовина має бути холоднішою за ${Math.round(tm - ENERGY_REFERENCE_TEMPERATURE)} °C`,
-        en: tm === undefined ? `No solid-state data for ${sub.name.en}` : `A frozen portion must be colder than ${Math.round(tm - ENERGY_REFERENCE_TEMPERATURE)} °C`,
-      });
+      return err(localized((l: Locale) => tm === undefined ? t(l, 'thermal-commands-apply-uk', { name: sub.name[l] }) : t(l, 'thermal-commands-solid-too-warm', { tm: String(Math.round(tm - ENERGY_REFERENCE_TEMPERATURE)) })));
     }
     // Dissolving (dissolve.ts): water, salt and salt solutions meeting each other — in any order and form — become
     // one water + salt body; the solute model decides what stays dissolved and what lies on the bottom as crystals.
@@ -245,17 +243,14 @@ export const add: CommandHandler<AddCommand> = {
 
     // Different liquids that would form a solution: properties of mixtures are not modelled.
     if (!c.frozen && mixesWithWater(sub) && mixesWithWater(targetSub)) {
-      return err({
-        uk: `«${sub.name.uk}» змішується з «${targetSub.name.uk}» в один розчин зі своїми властивостями — даних про такі суміші в нас поки немає.`,
-        en: `${sub.name.en} mixes with ${targetSub.name.en} into one solution with its own properties — we have no data on such mixtures yet.`,
-      });
+      return err(msg('thermal-commands-add-apply-3', { name: (l: Locale) => sub.name[l], name2: (l: Locale) => targetSub.name[l] }));
     }
 
     // Otherwise a separate body in the liquid: a frozen piece, or an immiscible layer (oil on water).
     const n = Object.keys(state.entities).filter((id) => id.startsWith(`${c.into}+`)).length + 1;
     const id = `${c.into}+${n}`;
     const density = c.frozen ? (sub.freezing?.solidDensity?.value ?? th.density) : th.density;
-    if (c.volume !== undefined && !(c.volume > 0)) return err({ uk: 'Об’єм тіла має бути додатним.', en: 'The volume of a body must be positive.' });
+    if (c.volume !== undefined && !(c.volume > 0)) return err(msg('thermal-commands-add-apply-4'));
     const volume = c.volume ?? c.mass / density;
     // A frozen piece or a solid (a metal block): a cube of that volume, all sides wetted. A liquid layer: it spreads over the surface.
     const solidPiece = c.frozen || sub.category.startsWith('solid.');
@@ -268,7 +263,7 @@ export const add: CommandHandler<AddCommand> = {
     const area = solidPiece || layerArea === undefined ? shapeFactor * Math.cbrt(volume) ** 2 : layerArea;
     const body = thermalBody({
       id,
-      label: c.label ?? (c.frozen && sub.solidName ? { uk: `${sub.solidName.uk} (додано)`, en: `${sub.solidName.en} (added)` } : { uk: `${sub.name.uk} (додано)`, en: `${sub.name.en} (added)` }),
+      label: c.label ?? (c.frozen && sub.solidName ? msg('thermal-commands-body-label', { solidName: (l: Locale) => sub.solidName![l] }) : msg('thermal-commands-body-label-2', { name: (l: Locale) => sub.name[l] })),
       mass: c.mass,
       specificHeat: specificHeat(th.specificHeat),
       substance: sub.id,

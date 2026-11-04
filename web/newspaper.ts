@@ -10,8 +10,10 @@
  * Spark's texts with sourced dates.
  */
 import { COMPONENTS } from '../src/components/index.js';
-import { lifeYears, tr, type Locale } from '../src/knowledge/i18n.js';
+import { NUMBER_LOCALE, tr, type Locale } from '../src/knowledge/i18n.js';
+import { lifeYears } from '../src/knowledge/life-years.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
+import { t as tl } from '../src/knowledge/messages.js';
 import { getSource } from '../src/knowledge/sources.js';
 import { lawWhen, type LawSpec } from '../src/knowledge/types.js';
 
@@ -24,9 +26,7 @@ export interface Article {
   readonly source: { readonly label: string; readonly url?: string };
 }
 
-const MONTHS_UK = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
-const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-export const dateLine = (d: Date, l: Locale) => (l === 'uk' ? `${d.getDate()} ${MONTHS_UK[d.getMonth()]}` : `${MONTHS_EN[d.getMonth()]} ${d.getDate()}`);
+export const dateLine = (d: Date, l: Locale) => new Intl.DateTimeFormat(NUMBER_LOCALE[l], { day: 'numeric', month: 'long' }).format(d);
 
 /** Who counts as a person of science in a short Wikipedia description. */
 const SCIENCE = /фізик|хімік|математик|астроном|винахідник|біолог|біохімік|геолог|інженер|природознав|науковець|physicist|chemist|mathematician|astronomer|inventor|biologist|biochemist|geologist|engineer|naturalist|scientist/i;
@@ -80,7 +80,7 @@ const fromSummary = (s: Summary, kicker: string, lang: Locale): Article => ({
   title: s.title,
   text: column(s.extract!),
   ...(s.thumbnail?.source ? { image: s.thumbnail.source } : {}),
-  source: { label: lang === 'uk' ? `Вікіпедія, стаття «${s.title}» (CC BY-SA 4.0)` : `Wikipedia, “${s.title}” (CC BY-SA 4.0)`, ...(s.content_urls?.desktop?.page ? { url: s.content_urls.desktop.page } : {}) },
+  source: { label: tl(lang, 'newspaper-wikipedia-source', { title: s.title }), ...(s.content_urls?.desktop?.page ? { url: s.content_urls.desktop.page } : {}) },
 });
 
 const pick = <T>(a: readonly T[]): T | undefined => a[Math.floor(Math.random() * a.length)];
@@ -98,7 +98,7 @@ async function bornToday(lang: Locale, now: Date): Promise<Article | null> {
   if (!b) return null;
   const s = await summary(lang, b.pages[0]!.titles.normalized);
   if (!s) return null;
-  const kicker = lang === 'uk' ? `${dateLine(now, lang)} ${b.year} року — день народження` : `Born on this day, ${dateLine(now, lang)} ${b.year}`;
+  const kicker = tl(lang, 'newspaper-born-kicker', { now: dateLine(now, lang), year: String(b.year) });
   return fromSummary(s, kicker, lang);
 }
 
@@ -110,7 +110,7 @@ async function labTopic(lang: Locale, ids: readonly string[]): Promise<Article |
   const title = w.entities?.[q]?.sitelinks?.[`${lang}wiki`]?.title;
   if (!title) return null;
   const s = await summary(lang, title);
-  return s ? fromSummary(s, lang === 'uk' ? 'Наукова довідка' : 'A science note', lang) : null;
+  return s ? fromSummary(s, tl(lang, 'newspaper-science-note'), lang) : null;
 }
 
 /** Without the internet: a story from the history of one of the lab's laws (Spark's own sourced text). */
@@ -119,10 +119,10 @@ export function offlineArticle(laws: readonly LawSpec[], lang: Locale, level: Le
   const people = law.history.people.map((p) => `${tr(p.name, lang)} (${lifeYears(p.born, p.died, lang)})`).join(', ');
   const sources = [...new Set(law.history.citations.map((c) => getSource(c.source)?.title).filter(Boolean))].join('; ');
   return {
-    kicker: lang === 'uk' ? `З історії науки · ${lawWhen(law, lang)}` : `From the history of science · ${lawWhen(law, lang)}`,
+    kicker: tl(lang, 'newspaper-history-kicker', { law: lawWhen(law, lang) }),
     title: tr(law.name, lang),
     text: `${tr(textFor(law.history.story, level), lang)}${people ? `\n\n${people}.` : ''}`,
-    source: { label: `Spark${sources ? ` · ${lang === 'uk' ? 'за джерелами' : 'sources'}: ${sources}` : ''}` },
+    source: { label: `Spark${sources ? ` · ${tl(lang, 'newspaper-by-sources')}: ${sources}` : ''}` },
   };
 }
 
@@ -153,12 +153,11 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 /** The page of the old newspaper. */
 export function paperHtml(a: Article, l: Locale, now = new Date()): string {
-  const uk = l === 'uk';
   const paras = a.text.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('');
   return `<article class="paper">
     <header class="paper-mast">
-      <div class="paper-meta"><span>${uk ? 'Лабораторія Spark' : 'Spark Laboratory'}</span><span>${esc(dateLine(now, l))}</span><span>${uk ? 'Ціна: безкоштовно' : 'Price: free'}</span></div>
-      <h2 class="paper-name">${uk ? 'Науковий вісник' : 'The Science Gazette'}</h2>
+      <div class="paper-meta"><span>${tl(l, 'newspaper-publisher')}</span><span>${esc(dateLine(now, l))}</span><span>${tl(l, 'newspaper-price')}</span></div>
+      <h2 class="paper-name">${tl(l, 'newspaper-name')}</h2>
     </header>
     <p class="paper-kicker">${esc(a.kicker)}</p>
     <h3 class="paper-title">${esc(a.title)}</h3>

@@ -1,9 +1,11 @@
+import type { Locale } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import { both, capital, K, T } from './helpers.js';
 import type { Operation } from './types.js';
 
 export const COOL_TO: Operation = {
   id: 'cool-to',
-  label: { uk: 'Охолодити до…', en: 'Cool to…' },
+  label: msg('op-cool-to-cool-to-label'),
   icon: 'cool-down',
   uses: 'cooler',
   direction: 'cooling',
@@ -13,16 +15,12 @@ export const COOL_TO: Operation = {
   reached: (b, p) => p.target !== undefined && b.state.temperature <= K(p.target) + 1e-6,
   impossible({ p, surroundingTemp, where }) {
     if (p.target === undefined || p.target > surroundingTemp) return undefined;
-    return both((l) =>
-      l === 'uk'
-        ? `${capital(where(l))} ${T(surroundingTemp, l)}: тіло не може охолонути нижче за температуру того, що його оточує.`
-        : `It is ${T(surroundingTemp, l)} ${where(l)}: a body cannot cool below the temperature of its surroundings.`,
-    );
+    return msg('op-cool-to-below-room', { where: (l: Locale) => where(l), Where: (l: Locale) => capital(where(l)), around: (l: Locale) => T(surroundingTemp, l) });
   },
   needs: ({ p, surroundingTemp }) => (p.target !== undefined && p.target <= surroundingTemp ? { colderThan: p.target, target: { min: Math.floor(surroundingTemp) + 1 } } : undefined),
   markers: ['freezing', 'target'],
   verbs: {
-    past: { uk: { f: 'охолола до', m: 'охолов до', n: 'охололо до' }, en: 'cooled down to' },
-    future: { uk: 'охолоне до', en: 'cool down to' },
+    past: 'op-cool-to-past',
+    future: msg('op-cool-to-cool-to-verbs-future'),
   },
 };

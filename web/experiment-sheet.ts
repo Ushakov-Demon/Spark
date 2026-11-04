@@ -8,6 +8,7 @@
 import { formatQuantity } from '../src/explain/index.js';
 import { tr, type Locale } from '../src/knowledge/i18n.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
+import { msg } from '../src/knowledge/messages.js';
 import { getSource } from '../src/knowledge/sources.js';
 import { SCALES } from '../src/equipment/scales.js';
 import { HEATERS } from '../src/equipment/heaters.js';
@@ -42,7 +43,7 @@ export function planStepLabel(s: ProtocolStep, locale: Locale): string {
     : s.kind === 'level' ? u.measure.level
     : s.kind === 'hang' ? (s.into === 'air' ? u.measure.hangAir : u.measure.hangLiquid)
     : s.kind === 'bench' ? tr(BENCH_TEXT[s.command.type](s.command).button, locale)
-    : s.kind === 'fresh' ? `🔄 ${tr(s.label ?? { uk: 'Почати знову', en: 'Start afresh' }, locale)}`
+    : s.kind === 'fresh' ? `🔄 ${tr(s.label ?? msg('sheet-start-afresh'), locale)}`
     : `${s.label ? tr(s.label, locale) : tr(OPERATIONS[s.action].label, locale).replace('…', '')}${s.target !== undefined && OPERATIONS[s.action].target ? ` ${s.target} °C` : ''}`;
 }
 

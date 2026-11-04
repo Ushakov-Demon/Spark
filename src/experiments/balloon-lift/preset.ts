@@ -37,9 +37,9 @@ export const preset_balloon_lift: Preset = varied(
     // Any balloon: its gas, its size, its shell — a party balloon or an aerostat.
     controls: [
       { id: 'gas', label: msg('balloon-lift-gas-label'), kind: 'choice', value: 'helium', options: [ch('helium', msg('balloon-lift-gas-options')), ch('hydrogen', msg('balloon-lift-gas-options-2')), ch('hot-air', msg('balloon-lift-gas-options-3'))] },
-      { id: 'diameter', label: msg('balloon-lift-diameter-label'), kind: 'number', unit: 'м', min: 0.01, max: 100, step: 0, value: 0.3, units: [{ id: 'cm', label: msg('balloon-lift-cm-label'), factor: 0.01 }, { id: 'm', label: msg('balloon-lift-m-label'), factor: 1 }] },
-      { id: 'shell', label: msg('balloon-lift-shell-label'), kind: 'number', unit: 'кг', min: 0.0001, max: 1e5, step: 0, value: 0.003, units: [{ id: 'g', label: msg('balloon-lift-g-label'), factor: 0.001 }, { id: 'kg', label: msg('balloon-lift-kg-label'), factor: 1 }] },
-      { id: 'hot', label: msg('balloon-lift-hot-label'), kind: 'number', unit: '°C', min: 21, max: 399, step: 0, value: 100 },
+      { id: 'diameter', label: msg('balloon-lift-diameter-label'), kind: 'number', unit: 'm', min: 0.01, max: 100, step: 0, value: 0.3, units: [{ id: 'cm', factor: 0.01 }, { id: 'm', factor: 1 }] },
+      { id: 'shell', label: msg('balloon-lift-shell-label'), kind: 'number', unit: 'kg', min: 0.0001, max: 1e5, step: 0, value: 0.003, units: [{ id: 'g', factor: 0.001 }, { id: 'kg', factor: 1 }] },
+      { id: 'hot', label: msg('balloon-lift-hot-label'), kind: 'number', unit: 'degC', min: 21, max: 399, step: 0, value: 100 },
     ],
     build: (v) => {
       const gas = String(v['gas']) as LiftGas;

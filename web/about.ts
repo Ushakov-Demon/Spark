@@ -3,7 +3,8 @@
  * privacy and the developer — and "Found a mistake?", a report the user sends themselves.
  * Ukrainian first, then English. Opened from the header and the footer, or by the link #about.
  */
-import type { Locale } from '../src/knowledge/i18n.js';
+import { NUMBER_LOCALE, type Locale } from '../src/knowledge/i18n.js';
+import { byLocale, msg, t } from '../src/knowledge/messages.js';
 
 export const DEVELOPER = { name: 'Baza Developers', url: 'https://bazadevelopers.com/', company: 'Baza Production', companyUrl: 'https://bazaproduction.com/', email: 'bazadevelopers@gmail.com' } as const;
 /** Where reports go: a new issue in the project's repository (the user needs a GitHub account). */
@@ -13,25 +14,22 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const link = (href: string, text: string) => `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`;
 
 /** The short safety line under the lab (also at the top of the "About" page). */
-export const SAFETY_LINE: Record<Locale, string> = {
-  uk: 'Повторення дослідів у реальних умовах може бути небезпечним для здоров’я і життя.',
-  en: 'Repeating the experiments in real life can be dangerous to health and life.',
-};
+export const SAFETY_LINE: Record<Locale, string> = msg('about-safety-line');
 
-export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: string; madeBy: string; contact: string }> = {
-  uk: { about: 'Про проєкт', bug: 'Знайшов помилку', close: 'Закрити', madeBy: 'Розроблено', contact: 'З будь-яких питань пишіть на' },
-  en: { about: 'About', bug: 'Found a mistake', close: 'Close', madeBy: 'Developed by', contact: 'For any questions, write to' },
-};
+export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: string; madeBy: string; contact: string }> = byLocale((l: Locale) => ({
+  about: t(l, 'about-about'),
+  bug: t(l, 'about-bug'),
+  close: t(l, 'about-close'),
+  madeBy: t(l, 'about-made-by'),
+  contact: t(l, 'about-contact'),
+}));
 
 /** When the page's text was last brought up to date (change it with the text). */
 export const ABOUT_UPDATED = '2026-10-30';
-const updated = (l: Locale) => new Intl.DateTimeFormat(l === 'uk' ? 'uk-UA' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(ABOUT_UPDATED));
+const updated = (l: Locale) => new Intl.DateTimeFormat(NUMBER_LOCALE[l], { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(ABOUT_UPDATED));
 
 /** The page's first paragraph (also its description for search engines and link previews). */
-export const ABOUT_INTRO: Record<Locale, string> = {
-  uk: 'Тут можна поставити дослід і побачити, що відбувається і чому, — зі справжніми числами й формулами. Нагрівати й заморожувати, зважувати й міряти, котити кульки й розтягувати пружини, пропускати струм і вмикати електромагніт — у готових дослідах за шкільною програмою або в пісочниці, де дослід складаєш сам. Це лише початок.',
-  en: 'An experiment you can do here — and see what happens and why, with real numbers and formulas. Heat and freeze, weigh and measure, roll balls and stretch springs, pass a current and switch on an electromagnet — in ready-made experiments that follow the school curriculum, or in the sandbox, where you build the experiment yourself. This is only the beginning.',
-};
+export const ABOUT_INTRO: Record<Locale, string> = msg('about-intro');
 
 export function aboutHtml(l: Locale): string {
   const dev = link(DEVELOPER.url, DEVELOPER.name);
@@ -127,30 +125,17 @@ export function aboutHtml(l: Locale): string {
 }
 
 /** "Found a mistake?": what to write, and what is added by itself (shown in full before sending). */
-export const BUG_TEXT: Record<Locale, { title: string; intro: string; placeholder: string; attach: string; send: string; copy: string; copied: string; note: string; empty: string }> = {
-  uk: {
-    title: 'Знайшов помилку?',
-    intro: 'Дякуємо! Опиши, що сталося: що ти робив, що побачив і що очікував побачити. Неправильне число, дивна поведінка, помилка в тексті — усе важливо.',
-    placeholder: 'Наприклад: налив 100 г води на сіль, а вона не розчинилася…',
-    attach: 'Додати опис досліду (налаштування й кроки — без жодних особистих даних)',
-    send: 'Надіслати через GitHub',
-    copy: 'Скопіювати текст',
-    copied: 'Скопійовано ✓',
-    note: 'Для GitHub потрібен акаунт. Якщо його немає — скопіюй текст і передай учителю або розробникам.',
-    empty: 'Спершу опиши, що сталося.',
-  },
-  en: {
-    title: 'Found a mistake?',
-    intro: 'Thank you! Describe what happened: what you did, what you saw and what you expected. A wrong number, odd behaviour, a typo — everything matters.',
-    placeholder: 'For example: I poured 100 g of water onto salt and it did not dissolve…',
-    attach: 'Attach the experiment (setup and steps — no personal data)',
-    send: 'Send via GitHub',
-    copy: 'Copy the text',
-    copied: 'Copied ✓',
-    note: 'GitHub needs an account. If you have none, copy the text and pass it to your teacher or to the developers.',
-    empty: 'First describe what happened.',
-  },
-};
+export const BUG_TEXT: Record<Locale, { title: string; intro: string; placeholder: string; attach: string; send: string; copy: string; copied: string; note: string; empty: string }> = byLocale((l: Locale) => ({
+  title: t(l, 'about-bug-title'),
+  intro: t(l, 'about-bug-intro'),
+  placeholder: t(l, 'about-bug-placeholder'),
+  attach: t(l, 'about-bug-attach'),
+  send: t(l, 'about-bug-send'),
+  copy: t(l, 'about-bug-copy'),
+  copied: t(l, 'about-bug-copied'),
+  note: t(l, 'about-bug-note'),
+  empty: t(l, 'about-bug-empty'),
+}));
 
 /** The report: the user's words, then (if allowed) the experiment as plain text. */
 export function bugReport(what: string, context: string | null): { title: string; body: string } {

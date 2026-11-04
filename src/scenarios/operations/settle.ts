@@ -1,5 +1,6 @@
 import { isThermalBody, type ThermalBody } from '../../domains/thermal/entities.js';
 import { formatQuantity } from '../../explain/format.js';
+import { msg, t } from '../../knowledge/messages.js';
 import { K } from './helpers.js';
 import type { Operation } from './types.js';
 
@@ -18,7 +19,7 @@ const CLOSE = 0.3;
  */
 export const SETTLE: Operation = {
   id: 'settle',
-  label: { uk: 'Дочекатися рівноваги', en: 'Wait for equilibrium' },
+  label: msg('op-settle-label'),
   icon: 'balance',
   uses: 'either',
   // Neither heating nor cooling as such: the contents may go either way; "cooling" keeps heater fixes away.
@@ -41,20 +42,12 @@ export const SETTLE: Operation = {
   },
   markers: [],
   verbs: {
-    past: { uk: { f: 'прийшла до теплової рівноваги', m: 'прийшов до теплової рівноваги', n: 'прийшло до теплової рівноваги' }, en: 'came to thermal equilibrium' },
-    future: { uk: 'прийде до теплової рівноваги', en: 'come to thermal equilibrium' },
+    past: 'op-settle-past',
+    future: msg('op-settle-verbs-future'),
   },
   reachedNotes: ({ sample, locale }) => [
-    locale === 'uk'
-      ? `Спільна температура — ${formatQuantity(sample.state.temperature, 'K', { locale, level: 'school' })}.`
-      : `The common temperature is ${formatQuantity(sample.state.temperature, 'K', { locale, level: 'school' })}.`,
+    t(locale, 'op-settle-reached-notes', { temperature: formatQuantity(sample.state.temperature, 'K', { locale, level: 'school' }) }),
   ],
-  needsAdded: {
-    uk: 'Щоб чекати рівноваги, спершу поклади щось у воду: гарячий металевий брусок або долий окропу (праворуч, «Додати під час досліду»).',
-    en: 'To wait for equilibrium, first put something into the water: a hot metal block, or pour in boiling water (on the right, “Add during the experiment”).',
-  },
-  says: {
-    uk: 'Теплота переходить від гарячішого тіла до холоднішого — аж поки температури не зрівняються.',
-    en: 'Heat flows from the hotter body to the colder one — until their temperatures are equal.',
-  },
+  needsAdded: msg('op-settle-needs-added'),
+  says: msg('op-settle-says'),
 };

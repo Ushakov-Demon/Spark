@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { t } from '../../src/knowledge/messages.js';
 import { OPERATION_IDS, OPERATIONS } from '../../src/scenarios/operations/index.js';
 import { SUBSTANCES } from '../../src/substances/index.js';
 
@@ -13,8 +14,8 @@ describe('operations', () => {
     for (const id of OPERATION_IDS) {
       const op = OPERATIONS[id];
       expect(op.label.uk && op.label.en, id).toBeTruthy();
-      expect(op.verbs.future.uk && op.verbs.future.en && op.verbs.past.en, id).toBeTruthy();
-      for (const g of ['f', 'm', 'n'] as const) expect(op.verbs.past.uk[g], `${id}.${g}`).toBeTruthy();
+      expect(op.verbs.future.uk && op.verbs.future.en && t('en', op.verbs.past), id).toBeTruthy();
+      for (const gender of ['f', 'm', 'n'] as const) expect(t('uk', op.verbs.past, { gender }), `${id}.${gender}`).toBeTruthy();
     }
   });
 

@@ -67,7 +67,7 @@ export const preset_liquid_density: Preset = varied(
   {
     controls: [
       { id: 'liquid', label: msg('lever-balance-liquid-label'), kind: 'choice', options: LIQUIDS_FOR_DENSITY, value: 'sunflower-oil' },
-      { id: 'volume', label: msg('lever-balance-volume-label'), kind: 'number', unit: 'мл', min: 30, max: 60, step: 5, value: 50 },
+      { id: 'volume', label: msg('lever-balance-volume-label'), kind: 'number', unit: 'mL', min: 30, max: 60, step: 5, value: 50 },
     ],
     build: (v) => {
       const liquid = SUBSTANCES[v['liquid'] as SubstanceId];

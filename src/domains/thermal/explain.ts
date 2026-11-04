@@ -2,10 +2,11 @@ import type { ExperimentLogEntry, ExperimentResult } from '../../core/experiment
 import type { SystemState } from '../../core/state.js';
 import { h, list, p, type Block } from '../../explain/blocks.js';
 import type { DataUsage, DomainKnowledge } from '../../explain/domain.js';
-import { formatQuantity, formatTime, pluralUk, sig, type ExplainContext } from '../../explain/format.js';
+import { formatQuantity, formatTime, sig, type ExplainContext } from '../../explain/format.js';
 import { entityLabel } from '../../explain/report.js';
 import { tr, type Locale } from '../../knowledge/i18n.js';
 import { atLeast, type Level } from '../../knowledge/levels.js';
+import { byLocale, localized, t as tl } from '../../knowledge/messages.js';
 import { THERMAL_FORMULAS } from './catalog.js';
 import type { ThermalCommand } from './commands.js';
 import { isBurner, isHeater, isReservoir, isThermalBody, type Heater, type ThermalBody } from './entities.js';
@@ -54,87 +55,45 @@ interface ThermalMessages {
   flameShare(name: string): string;
 }
 
-const MSG: Readonly<Record<Locale, ThermalMessages>> = {
-  uk: {
-    start: 'на початку',
-    end: 'наприкінці',
-    peak: 'найвища',
-    showProcess: (n) => `Показати весь процес (${n} ${pluralUk(n, 'запис', 'записи', 'записів')})`,
-    time: 'час',
-    power: 'живлення',
-    on: 'увімк',
-    off: 'вимк',
-    bodySummary: (n, s, pk, e) => `${n}: на початку ${s}${pk ? `, найвища — ${pk}` : ''}, наприкінці ${e}.`,
-    switched: (on) => (on ? 'увімкнули' : 'вимкнули'),
-    setPower: (pw) => `встановили потужність ${pw}`,
-    heaterCmd: (a, n) => `«${n}»: ${a}`,
-    and: ' і ',
-    pour: (mass, temp, into) => `«${into}»: долили ${mass} за ${temp}`,
-    added: (into, mass, what, temp) => `«${into}»: додали ${mass} — ${what}, ${temp}`,
-    setTemp: (n, temp) => `«${n}»: вручну задали температуру ${temp}`,
-    intervention: (e) => `; це втручання: енергія ${e} взялася «ззовні» і врахована в балансі`,
-    energyTitleNovice: 'Куди поділася енергія',
+const MSG: Readonly<Record<Locale, ThermalMessages>> = byLocale((l: Locale) => ({
+    start: tl(l, 'thermal-explain-msg-start'),
+    end: tl(l, 'thermal-explain-msg-end'),
+    peak: tl(l, 'thermal-explain-msg-peak'),
+    showProcess: (n) => tl(l, 'thermal-explain-msg-show-process', { value: tl(l, 'count-records', { n }) }),
+    time: tl(l, 'thermal-explain-msg-time'),
+    power: tl(l, 'thermal-explain-msg-power'),
+    on: tl(l, 'thermal-explain-msg-on'),
+    off: tl(l, 'thermal-explain-msg-off'),
+    bodySummary: (n, s, pk, e) => tl(l, 'thermal-explain-msg-body-summary-2', { n, s, e, pk: pk ? tl(l, 'thermal-explain-msg-body-summary', { pk }) : '' }),
+    switched: (on) => (on ? tl(l, 'thermal-explain-msg-switched') : tl(l, 'thermal-explain-msg-switched-2')),
+    setPower: (pw) => tl(l, 'thermal-explain-msg-set-power', { pw }),
+    heaterCmd: (a, n) => tl(l, 'thermal-explain-msg-heater-cmd', { n, a }),
+    and: tl(l, 'thermal-explain-msg-and'),
+    pour: (mass, temp, into) => tl(l, 'thermal-explain-msg-pour', { into, mass, temp }),
+    added: (into, mass, what, temp) => tl(l, 'thermal-explain-msg-added', { into, mass, what, temp }),
+    setTemp: (n, temp) => tl(l, 'thermal-explain-msg-set-temp', { n, temp }),
+    intervention: (e) => tl(l, 'thermal-explain-msg-intervention', { e }),
+    energyTitleNovice: tl(l, 'thermal-explain-msg-energy-title-novice'),
     energyNovice: (total, share) =>
-      `Нагрівач виділив ${total} теплоти. Приблизно ${share} % з неї пішло в кімнату, решта залишилася в чайнику. Жодна частинка енергії не зникла — її можна точно порахувати.`,
-    energyTitle: 'Баланс енергії (закон збереження енергії)',
-    energy: 'енергія',
-    fromHeaters: 'виділив нагрівач',
-    external: 'принесено доливанням і втручаннями',
-    toRoom: 'пішло в кімнату',
-    shouldRemain: '= мало залишитися в тілах',
-    actualChange: 'фактично змінилася внутрішня енергія',
-    reference: 'Внутрішню енергію відлічуємо від 0 °C: важливі лише зміни, а точка відліку — домовленість.',
-    residual: (j, rel) => `Нев’язка балансу: ${j} Дж (${rel} відносно ΔU) — похибка округлення чисел з рухомою комою.`,
-    specificHeatOf: (n) => `${n}: питома теплоємність`,
-    convectionOf: (n) => `Тепловіддача ${n}: коефіцієнт h`,
-    conductionOf: (n) => `Теплопровідність ${n}`,
-    linkOf: (n) => `Зв’язок ${n}: провідність G`,
-    deviceRating: (n) => `${n}: номінальна потужність`,
-    flameShare: (n) => `${n}: частка теплоти полум’я, що йде в посудину`,
-  },
-  en: {
-    start: 'start',
-    end: 'end',
-    peak: 'peak',
-    showProcess: (n) => `Show the whole process (${n} ${n === 1 ? 'row' : 'rows'})`,
-    time: 'time',
-    power: 'power',
-    on: 'on',
-    off: 'off',
-    bodySummary: (n, s, pk, e) => `${n}: started at ${s}${pk ? `, peak ${pk}` : ''}, ended at ${e}.`,
-    switched: (on) => (on ? 'switched on' : 'switched off'),
-    setPower: (pw) => `set power to ${pw}`,
-    heaterCmd: (a, n) => `${a} "${n}"`,
-    and: ' and ',
-    pour: (mass, temp, into) => `poured ${mass} at ${temp} into "${into}"`,
-    added: (into, mass, what, temp) => `"${into}": added ${mass} of ${what} at ${temp}`,
-    setTemp: (n, temp) => `manually set the temperature of "${n}" to ${temp}`,
-    intervention: (e) => `; this is an intervention: ${e} of energy came «from outside» and is included in the balance`,
-    energyTitleNovice: 'Where the energy went',
-    energyNovice: (total, share) =>
-      `The heater released ${total} of heat. About ${share} % of it went into the room, the rest stayed in the kettle. Not a bit of energy disappeared — it can all be accounted for.`,
-    energyTitle: 'Energy balance (conservation of energy)',
-    energy: 'energy',
-    fromHeaters: 'released by the heater',
-    external: 'brought in by pouring and interventions',
-    toRoom: 'lost to the room',
-    shouldRemain: '= should remain in the bodies',
-    actualChange: 'actual change of internal energy',
-    reference: 'Internal energy is counted from 0 °C: only changes matter, the reference point is a convention.',
-    residual: (j, rel) => `Balance residual: ${j} J (${rel} relative to ΔU) — floating-point rounding error.`,
-    specificHeatOf: (n) => `${n}: specific heat capacity`,
-    convectionOf: (n) => `Heat transfer ${n}: coefficient h`,
-    conductionOf: (n) => `Conduction ${n}`,
-    linkOf: (n) => `Link ${n}: conductance G`,
-    deviceRating: (n) => `${n}: rated power`,
-    flameShare: (n) => `${n}: share of the flame's heat reaching the vessel`,
-  },
-};
+      tl(l, 'thermal-explain-msg-energy-novice', { total, share: String(share) }),
+    energyTitle: tl(l, 'thermal-explain-msg-energy-title'),
+    energy: tl(l, 'thermal-explain-msg-energy'),
+    fromHeaters: tl(l, 'thermal-explain-msg-from-heaters'),
+    external: tl(l, 'thermal-explain-msg-external'),
+    toRoom: tl(l, 'thermal-explain-msg-to-room'),
+    shouldRemain: tl(l, 'thermal-explain-msg-should-remain'),
+    actualChange: tl(l, 'thermal-explain-msg-actual-change'),
+    reference: tl(l, 'thermal-explain-msg-reference'),
+    residual: (j, rel) => tl(l, 'thermal-explain-msg-residual', { j, rel }),
+    specificHeatOf: (n) => tl(l, 'thermal-explain-msg-specific-heat-of', { n }),
+    convectionOf: (n) => tl(l, 'thermal-explain-msg-convection-of', { n }),
+    conductionOf: (n) => tl(l, 'thermal-explain-msg-conduction-of', { n }),
+    linkOf: (n) => tl(l, 'thermal-explain-msg-link-of', { n }),
+    deviceRating: (n) => tl(l, 'thermal-explain-msg-device-rating', { n }),
+    flameShare: (n) => tl(l, 'thermal-explain-msg-flame-share', { n }),
+  }));
 
-const MATERIALS_MSG: Readonly<Record<Locale, { wall(link: string, material: string): string }>> = {
-  uk: { wall: (link, m) => `Стінка ${link}: теплопровідність матеріалу «${m}»` },
-  en: { wall: (link, m) => `Wall ${link}: conductivity of «${m}»` },
-};
+const MATERIALS_MSG: Readonly<Record<Locale, { wall(link: string, material: string): string }>> = byLocale((l: Locale) => ({ wall: (link, m) => tl(l, 'thermal-explain-materials-msg-wall', { link, m }) }));
 
 const bodiesOf = (s: SystemState) => Object.values(s.entities).filter((e): e is ThermalBody | Heater => isThermalBody(e) || isHeater(e));
 const ROW_EVERY: Readonly<Record<Level, number>> = { novice: 120, school: 60, advanced: 60, expert: 30 };
@@ -262,7 +221,7 @@ function energyBalance(result: ExperimentResult<ThermalCommand>, ctx: ExplainCon
 function dataUsed(s: SystemState): DataUsage[] {
   const out: DataUsage[] = [];
   const seen = new Set<string>();
-  const both = (f: (l: Locale) => string) => ({ uk: f('uk'), en: f('en') });
+  const both = (f: (l: Locale) => string) => localized((l: Locale) => f(l));
   for (const b of bodiesOf(s)) {
     const subId = 'substance' in b.params ? b.params.substance : undefined;
     const sub = subId && subId in SUBSTANCES ? SUBSTANCES[subId as SubstanceId] : undefined;
@@ -271,21 +230,21 @@ function dataUsed(s: SystemState): DataUsage[] {
       const n = (l: Locale) => tr(sub.name, l);
       const add = (label: (l: Locale) => string, v: SourcedValue) => out.push({ label: both(label), origin: 'catalog', sourced: v });
       add((l) => MSG[l].specificHeatOf(n(l)), sub.liquid.specificHeat);
-      if (sub.melt) add((l) => `${n(l)}: ${l === 'uk' ? 'теплоємність розплаву' : 'specific heat (melt)'}`, sub.melt.liquidSpecificHeat);
-      add((l) => `${n(l)}: ${l === 'uk' ? 'густина' : 'density'}`, sub.liquid.density);
+      if (sub.melt) add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used')}`, sub.melt.liquidSpecificHeat);
+      add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-2')}`, sub.liquid.density);
       if (sub.melt) {
-        add((l) => `${n(l)}: ${l === 'uk' ? 'температура плавлення' : 'melting point'}`, sub.melt.point);
-        add((l) => `${n(l)}: ${l === 'uk' ? 'питома теплота плавлення' : 'latent heat of fusion'}`, sub.melt.latentHeat);
+        add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-3')}`, sub.melt.point);
+        add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-4')}`, sub.melt.latentHeat);
       } else if (sub.freezing) {
-        add((l) => `${n(l)}: ${l === 'uk' ? 'температура замерзання' : 'freezing point'}`, sub.freezing.point);
-        add((l) => `${n(l)}: ${l === 'uk' ? 'питома теплота плавлення' : 'latent heat of fusion'}`, sub.freezing.latentHeat);
-        add((l) => `${n(l)}: ${l === 'uk' ? 'теплоємність у твердому стані' : 'specific heat (solid)'}`, sub.freezing.solidSpecificHeat);
+        add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-5')}`, sub.freezing.point);
+        add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-4')}`, sub.freezing.latentHeat);
+        add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-6')}`, sub.freezing.solidSpecificHeat);
       }
       if (sub.boiling) {
-        add((l) => `${n(l)}: ${l === 'uk' ? 'температура кипіння' : 'boiling point'}`, sub.boiling.point);
-        add((l) => `${n(l)}: ${l === 'uk' ? 'питома теплота пароутворення' : 'latent heat of vaporisation'}`, sub.boiling.latentHeat);
+        add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-7')}`, sub.boiling.point);
+        add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-8')}`, sub.boiling.latentHeat);
       }
-      if (sub.decomposes) add((l) => `${n(l)}: ${l === 'uk' ? 'температура димлення' : 'smoke point'}`, sub.decomposes);
+      if (sub.decomposes) add((l) => `${n(l)}: ${tl(l, 'thermal-explain-data-used-9')}`, sub.decomposes);
     }
     const mat = b.params.material ? MATERIALS[b.params.material as keyof typeof MATERIALS] : undefined;
     if (!mat || seen.has(mat.id)) continue;
@@ -294,7 +253,7 @@ function dataUsed(s: SystemState): DataUsage[] {
   }
   for (const e of Object.values(s.entities)) {
     const cooler = isReservoir(e) && e.params.device ? getCooler(e.params.device) : undefined;
-    if (cooler) out.push({ label: both((l) => `${tr(cooler.name, l)}: ${l === 'uk' ? 'температура' : 'temperature'}`), origin: 'catalog', sourced: cooler.spec.setpoint.data });
+    if (cooler) out.push({ label: both((l) => `${tr(cooler.name, l)}: ${tl(l, 'thermal-explain-data-used-label')}`), origin: 'catalog', sourced: cooler.spec.setpoint.data });
     const d = (isHeater(e) || isBurner(e)) && e.params.device ? getHeater(e.params.device) : undefined;
     if (!d) continue;
     out.push({ label: both((l) => MSG[l].deviceRating(tr(d.name, l))), origin: 'catalog', sourced: d.spec.ratingData });

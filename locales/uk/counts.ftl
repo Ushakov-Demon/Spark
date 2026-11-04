@@ -34,3 +34,23 @@ count-times = у { $v } { $k ->
         [many] разів
        *[other] раза
     }
+count-records = { $n ->
+        [one] { $n } запис
+        [few] { $n } записи
+       *[many] { $n } записів
+    }
+count-steps = { $n ->
+        [one] { $n } крок
+        [few] { $n } кроки
+       *[many] { $n } кроків
+    }
+count-experiments = { $n ->
+        [one] { $n } дослід
+        [few] { $n } досліди
+       *[many] { $n } дослідів
+    }
+count-entries = { $n ->
+        [one] { $n } запис
+        [few] { $n } записи
+       *[many] { $n } записів
+    }

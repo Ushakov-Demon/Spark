@@ -1,11 +1,12 @@
 import { solutionEutectic } from '../../domains/thermal/mixture.js';
-import { tr } from '../../knowledge/i18n.js';
+import { tr, type Locale } from '../../knowledge/i18n.js';
+import { msg, t } from '../../knowledge/messages.js';
 import { both, capital, lower, T } from './helpers.js';
 import type { Operation } from './types.js';
 
 export const FREEZE: Operation = {
   id: 'freeze',
-  label: { uk: 'Заморозити', en: 'Freeze' },
+  label: msg('op-freeze-label'),
   icon: 'freeze',
   uses: 'cooler',
   direction: 'cooling',
@@ -17,24 +18,16 @@ export const FREEZE: Operation = {
   reached: (b) => (b.state.solidFraction ?? 0) >= 1,
   impossible({ sub, surroundingTemp, where }) {
     if (!sub.freezing) {
-      return both((l) => (l === 'uk' ? `Для речовини «${tr(sub.name, l)}» ми не знайшли даних про застигання, тому модель не може показати замерзання.` : `We found no freezing data for ${lower(sub, l)}, so the model cannot show it freezing.`));
+      return msg('op-freeze-no-data', { name: (l: Locale) => tr(sub.name, l), lower: (l: Locale) => lower(sub, l) });
     }
     const tf = sub.freezing.point.value;
     // A solution freezes gradually: completely only below the eutectic.
     const te = sub.mixture ? solutionEutectic(sub.mixture.saltFraction) : -Infinity;
     if (sub.mixture && surroundingTemp >= te && surroundingTemp < tf) {
-      return both((l) =>
-        l === 'uk'
-          ? `${capital(where(l))} ${T(surroundingTemp, l)}: лід почне утворюватися, але замерзає лише прісна вода, а розсіл, що лишається, стає дедалі солонішим і замерзає дедалі холодніше. Повністю солона вода замерзає тільки нижче ${T(te, l)}.`
-          : `It is ${T(surroundingTemp, l)} ${where(l)}: ice will start to form, but only fresh water freezes, and the remaining brine gets ever saltier and freezes ever colder. Salt water freezes completely only below ${T(te, l)}.`,
-      );
+      return msg('op-freeze-brine', { where: (l: Locale) => where(l), Where: (l: Locale) => capital(where(l)), around: (l: Locale) => T(surroundingTemp, l), eutectic: (l: Locale) => T(te, l) });
     }
     if (surroundingTemp < tf) return undefined;
-    return both((l) =>
-      l === 'uk'
-        ? `${capital(where(l))} лише ${T(surroundingTemp, l)}, а ${lower(sub, l)} замерзає при ${T(tf, l)} — холоду не вистачить.`
-        : `It is only ${T(surroundingTemp, l)} ${where(l)}, but ${lower(sub, l)} freezes at ${T(tf, l)} — not cold enough.`,
-    );
+    return msg('op-freeze-not-cold', { where: (l: Locale) => where(l), Where: (l: Locale) => capital(where(l)), around: (l: Locale) => T(surroundingTemp, l), name: (l: Locale) => tr(sub.name, l), lower: (l: Locale) => lower(sub, l), tf: (l: Locale) => T(tf, l) });
   },
   needs({ sub, surroundingTemp }) {
     if (!sub.freezing) return undefined;
@@ -44,22 +37,23 @@ export const FREEZE: Operation = {
   },
   markers: ['freezing'],
   verbs: {
-    past: { uk: { f: 'повністю замерзла', m: 'повністю замерз', n: 'повністю замерзло' }, en: 'froze completely' },
-    future: { uk: 'повністю замерзне', en: 'freeze completely' },
-    negative: { uk: 'замерзне', en: 'freeze' },
+    past: 'op-freeze-past',
+    future: msg('op-freeze-verbs-future'),
+    negative: msg('op-freeze-verbs-negative'),
   },
   // A melt (tin, stearic acid) sets — it does not "freeze".
   verbsMolten: {
-    past: { uk: { f: 'повністю затверділа', m: 'повністю затвердів', n: 'повністю затверділо' }, en: 'set completely' },
-    future: { uk: 'повністю затвердіє', en: 'set completely' },
-    negative: { uk: 'затвердіє', en: 'set' },
+    past: 'op-freeze-past-molten',
+    future: msg('op-freeze-verbs-molten-future'),
+    negative: msg('op-freeze-verbs-molten-negative'),
   },
   // Brine above the eutectic: part of it freezes, a salty pocket stays liquid.
   impossibleHeadline(b, subject, locale) {
     const s = b.state.solidFraction ?? 0;
     if (!b.state.mixture || !(s > 0)) return undefined;
     const part = Math.round(s * 100);
-    return locale === 'uk' ? `${subject} замерзне лише частково: льодом стало ${part} % води.` : `${subject} will freeze only partly: ${part} % of the water turned to ice.`;
+    return t(locale, 'op-freeze-impossible-headline', { subject, part: String(part) });
   },
-  heatGivenNote: { uk: ', з них більшу частину — приховану теплоту замерзання', en: ', most of it the latent heat of freezing' },
+  heatGivenNote: msg('op-freeze-heat-given-note'),
+  heatGivenNoteMolten: msg('op-freeze-heat-given-note-molten'),
 };

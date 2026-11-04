@@ -3,6 +3,7 @@ import { celsius, kilograms, squareMeters, thermalConductance, watts } from '../
 import { heater, reservoir, thermalBody } from '../domains/thermal/entities.js';
 import { convectionLink, thermalLink } from '../domains/thermal/links.js';
 import { CONVECTION, MATERIALS } from '../domains/thermal/materials.js';
+import { msg } from '../knowledge/messages.js';
 
 export interface KettleOptions {
   readonly waterMass?: number; // kg
@@ -24,7 +25,7 @@ export function kettleScenario(o: KettleOptions = {}): SystemState {
     entities: [
       heater({
         id: 'heater',
-        label: { uk: 'ТЕН', en: 'Heating element' },
+        label: msg('kettle-heater-entities-label'),
         mass: kilograms(0.2),
         specificHeat: MATERIALS.steel.specificHeat.value,
         material: 'steel',
@@ -33,13 +34,13 @@ export function kettleScenario(o: KettleOptions = {}): SystemState {
       }),
       thermalBody({
         id: 'water',
-        label: { uk: 'Вода', en: 'Water' },
+        label: msg('kettle-water-entities-label'),
         mass: kilograms(o.waterMass ?? 1),
         specificHeat: MATERIALS.water.specificHeat.value,
         material: 'water',
         temperature: start,
       }),
-      reservoir({ id: 'room', label: { uk: 'Повітря в кімнаті', en: 'Room air' }, temperature: room }),
+      reservoir({ id: 'room', label: msg('kettle-room-entities-label'), temperature: room }),
     ],
     connections: [
       thermalLink({ id: 'heater-water', a: 'heater', b: 'water', conductance: thermalConductance(30) }),

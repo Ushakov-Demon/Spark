@@ -1,0 +1,21 @@
+## thermal-debrief
+thermal-debrief-msg-title = Розбір результату
+thermal-debrief-msg-result = «{ $n }» наприкінці досліду: { $t }.
+thermal-debrief-msg-prediction = Прогноз
+thermal-debrief-msg-goal = Ціль
+thermal-debrief-msg-hit = влучно: різниця { $d } (допуск ±{ $tol }).
+thermal-debrief-msg-miss-higher = результат вищий на { $d }.
+thermal-debrief-msg-miss-lower = результат нижчий на { $d }.
+thermal-debrief-msg-naive = Простий розрахунок за рівнянням теплового балансу (лише змішані порції речовини, без інших тіл) дає { $t }.
+thermal-debrief-msg-why = Чому результат інший — в досліді брали участь й інші тіла:
+thermal-debrief-msg-no-others = Інші тіла майже не вплинули: простий розрахунок тут працює.
+thermal-debrief-msg-took = «{ $n }»: −{ $d } (теплоту забрано{ $e })
+thermal-debrief-msg-gave = «{ $n }»: +{ $d } (теплоту додано{ $e })
+thermal-debrief-msg-interventions = ручне втручання змінило температуру на { $d }
+thermal-debrief-msg-prediction-was-naive = Прогноз збігається з простим розрахунком: рівняння теплового балансу застосовано правильно. Бракує лише врахування інших учасників ({ $o }) — справжній дослід завжди має таких «невидимих учасників».
+thermal-debrief-msg-prediction-note = Корисно порівняти прогноз із простим розрахунком і з результатом: де саме з’явилася різниця?
+thermal-debrief-msg-change = Що змінити, щоб влучити в ціль (кожен варіант окремо):
+thermal-debrief-msg-knob-found = { $l }: { $to } замість { $from } → вийде { $a }
+thermal-debrief-msg-knob-unreachable = { $l }: лише цим не влучити — навіть за { $c } вийде { $a }
+thermal-debrief-msg-residual = Сума внесків збігається з результатом до { $r } (похибка округлення).
+thermal-debrief-msg-try-next = Можна змінити умови — матеріали, маси, час — і подивитися, як зміняться внески.

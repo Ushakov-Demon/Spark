@@ -11,6 +11,7 @@ import { formatDuration, formatQuantity, sig, type ExplainContext } from '../exp
 import { HEATERS } from '../equipment/heaters.js';
 import { VESSELS } from '../equipment/vessels.js';
 import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
+import { byLocale, t as tl } from '../knowledge/messages.js';
 import { SOURCE_ID, WATER_ID, type HeatingParams } from './boil.js';
 
 const BOIL = celsius(100);
@@ -79,34 +80,19 @@ interface Words {
   off(subject: string, now: string): string;
 }
 
-const W: Readonly<Record<Locale, Words>> = {
-  uk: {
-    water: (l, w) => `Вода (${l}) ${w}`,
-    lid: ' з кришкою',
-    boiled: (s, t) => `${s} закипіла за ${t}.`,
-    energy: (e, p) => `Нагрівач виділив ${e} енергії; у воду пішло ${p} %, решта — на нагрівання посуду, самого нагрівача й повітря.`,
-    stopped: (t, s, f, to) => `Дослід зупинено через ${t}: ${s} нагрілася з ${f} до ${to}.`,
-    willBoil: (a) => `Якщо продовжити, вона закипить приблизно ще за ${a}.`,
-    never: (s, m) => `${s} не закипить: найвища температура, до якої вона може нагрітися, — приблизно ${m}.`,
-    neverWhy: 'Чому: що гарячіша вода, то більше теплоти вона віддає повітрю. При цій температурі втрати зрівнюються з теплотою, яку вода отримує від нагрівача, — і нагрівання зупиняється.',
-    tips: (lid) => `Що можна змінити: потужніший нагрівач, менше води${lid ? ' або кришка' : ''}.`,
-    noHeat: (s, r) => `${s} не нагрівається. ${r}`,
-    off: (s, n) => `Нагрівач вимкнено — ${s.charAt(0).toLowerCase()}${s.slice(1)} не нагрівається (зараз ${n}).`,
-  },
-  en: {
-    water: (l, w) => `Water (${l}) ${w}`,
-    lid: ' with a lid',
-    boiled: (s, t) => `${s} boiled in ${t}.`,
-    energy: (e, p) => `The heater released ${e}; ${p} % went into the water, the rest heated the vessel, the heater itself and the air.`,
-    stopped: (t, s, f, to) => `The experiment was stopped after ${t}: ${s} warmed from ${f} to ${to}.`,
-    willBoil: (a) => `If continued, it would boil in about ${a} more.`,
-    never: (s, m) => `${s} will not boil: the highest temperature it can reach is about ${m}.`,
-    neverWhy: 'Why: the hotter the water, the more heat it loses to the air. At this temperature the losses equal the heat the water receives from the heater — and the heating stops.',
-    tips: (lid) => `What could change it: a more powerful heater, less water${lid ? ', or a lid' : ''}.`,
-    noHeat: (s, r) => `${s} does not heat up. ${r}`,
-    off: (s, n) => `The heater is off — ${s.charAt(0).toLowerCase()}${s.slice(1)} is not heating (now ${n}).`,
-  },
-};
+const W: Readonly<Record<Locale, Words>> = byLocale((lang: Locale) => ({
+    water: (l, w) => tl(lang, 'heating-summary-w-water', { l, w }),
+    lid: tl(lang, 'heating-summary-w-lid'),
+    boiled: (s, t) => tl(lang, 'heating-summary-w-boiled', { s, t }),
+    energy: (e, p) => tl(lang, 'heating-summary-w-energy', { e, p: String(p) }),
+    stopped: (t, s, f, to) => tl(lang, 'heating-summary-w-stopped', { t, s, f, to }),
+    willBoil: (a) => tl(lang, 'heating-summary-w-will-boil', { a }),
+    never: (s, m) => tl(lang, 'heating-summary-w-never', { s, m }),
+    neverWhy: tl(lang, 'heating-summary-w-never-why'),
+    tips: (lid) => tl(lang, 'heating-summary-w-tips-2', { value: lid ? tl(lang, 'heating-summary-w-tips') : '' }),
+    noHeat: (s, r) => tl(lang, 'heating-summary-w-no-heat', { s, r }),
+    off: (s, n) => tl(lang, 'heating-summary-w-off', { s: s.charAt(0).toLowerCase(), s2: s.slice(1), n }),
+  }));
 
 /** The headline of a heating experiment, shown before any details. */
 export function heatingSummary<C extends Command>(
@@ -122,8 +108,8 @@ export function heatingSummary<C extends Command>(
   const where = `${tr(vessel.phraseIn[params.material] ?? vessel.name, locale)}${params.lid ? w.lid : ''} ${tr(heater.phrase, locale)}`;
   const liters =
     params.liters < 1
-      ? `${Math.round(params.liters * 1000)} ${locale === 'uk' ? 'мл' : 'mL'}`
-      : `${sig(params.liters, 3, locale)} ${locale === 'uk' ? 'л' : 'L'}`;
+      ? `${Math.round(params.liters * 1000)} ${tl(locale, 'unit-sym-mL')}`
+      : `${sig(params.liters, 3, locale)} ${tl(locale, 'unit-sym-L')}`;
   const subject = w.water(liters, where);
   const T = (k: number) => formatQuantity(k, 'K', { locale, level: 'school' });
   const t0 = waterTemp(result.initial);

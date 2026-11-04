@@ -11,6 +11,7 @@ import type { VesselId } from '../src/equipment/vessels.js';
 import { MASS_SCALE_IDS, SCALES, type ScaleId } from '../src/equipment/scales.js';
 import { sig } from '../src/explain/format.js';
 import { tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
+import { msg, t } from '../src/knowledge/messages.js';
 import { isDrySample, LAB_ACTIONS, OPERATIONS, PRESETS, substancesFor, vesselsFor, type LabAction, type LabParams, type Preset } from '../src/scenarios/index.js';
 import { SUBSTANCES, type SubstanceId, type SubstanceItem } from '../src/substances/index.js';
 import { COMPONENTS } from '../src/components/index.js';
@@ -65,7 +66,6 @@ interface Cmd {
   run(args: string[], api: ConsoleApi): string[];
 }
 
-const L = (uk: string, en: string): LocalizedText => ({ uk, en });
 const norm = (s: string) => s.toLowerCase().replace(/[’'ʼ`]/g, '').replace(/ё/g, 'е').trim();
 
 /** Best match of a (possibly shortened) name among items: exact id, then a word starting with it, then a substring. */
@@ -103,34 +103,33 @@ const names = (x: { name: LocalizedText; id: string }) => [x.id, x.name.uk, x.na
 export function createConsole(api: ConsoleApi): HTMLElement {
   const loc = () => api.locale();
   const T = (x: LocalizedText) => tr(x, loc());
-  const uk = () => loc() === 'uk';
-  const ambiguous = (items: readonly { name: LocalizedText }[]) => [`${uk() ? 'Уточни, яке саме' : 'Which one'}: ${items.map((x) => T(x.name)).join(', ')}`];
-  const notFound = (what: string) => [uk() ? `Не знаю «${what}». Спробуй команду без слів — побачиш список (наприклад, «substances»).` : `I don't know "${what}". Run the command without words to see the list.`];
+  const ambiguous = (items: readonly { name: LocalizedText }[]) => [`${t(loc(), 'console-which-one')}: ${items.map((x) => T(x.name)).join(', ')}`];
+  const notFound = (what: string) => [t(loc(), 'console-unknown-word', { what })];
   const list = (title: string, items: readonly string[]) => [title, ...items.map((x) => `  • ${x}`)];
 
   const COMMANDS: Cmd[] = [
     {
       names: ['help', '?', 'допомога'],
-      usage: L('help [command]', 'help [command]'),
-      about: L('список команд або опис однієї', 'the list of commands or one of them'),
+      usage: msg('console-help-usage'),
+      about: msg('console-help-about'),
       run(args) {
         if (args[0]) {
           const c = COMMANDS.find((x) => x.names.includes(norm(args[0]!)));
-          return c ? [`${T(c.usage)} — ${T(c.about)}`, ...(c.names.length > 1 ? [`${uk() ? 'Інші назви' : 'Also'}: ${c.names.slice(1).join(', ')}`] : [])] : notFound(args[0]!);
+          return c ? [`${T(c.usage)} — ${T(c.about)}`, ...(c.names.length > 1 ? [`${t(loc(), 'console-also-named')}: ${c.names.slice(1).join(', ')}`] : [])] : notFound(args[0]!);
         }
-        return [uk() ? 'Команди (Tab доповнює, ↑/↓ — історія):' : 'Commands (Tab completes, ↑/↓ — history):', ...COMMANDS.map((c) => `  ${T(c.usage).padEnd(36)} ${T(c.about)}`)];
+        return [t(loc(), 'console-help-title'), ...COMMANDS.map((c) => `  ${T(c.usage).padEnd(36)} ${T(c.about)}`)];
       },
     },
     {
       names: ['actions', 'дії'],
-      usage: L('actions', 'actions'),
-      about: L('що можна робити', 'what can be done'),
-      run: () => list(uk() ? 'Дії:' : 'Actions:', LAB_ACTIONS.map((a) => `${T(OPERATIONS[a].label)}${a === api.params().action ? ' ◀' : ''}`)),
+      usage: msg('console-actions-usage'),
+      about: msg('console-actions-about'),
+      run: () => list(t(loc(), 'console-actions'), LAB_ACTIONS.map((a) => `${T(OPERATIONS[a].label)}${a === api.params().action ? ' ◀' : ''}`)),
     },
     {
       names: ['action', 'do', 'дія'],
-      usage: L('action <name>', 'action <name>'),
-      about: L('вибрати дію: action freeze', 'choose an action: action freeze'),
+      usage: msg('console-action-usage'),
+      about: msg('console-action-about'),
       run(args) {
         const f = find(LAB_ACTIONS, (a) => [a, OPERATIONS[a].label.uk, OPERATIONS[a].label.en], words(args));
         if (!f) return notFound(words(args));
@@ -141,16 +140,16 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['substances', 'речовини'],
-      usage: L('substances', 'substances'),
-      about: L('речовини для вибраної дії', 'substances for the chosen action'),
-      run: () => list(uk() ? 'Речовини:' : 'Substances:', substancesFor(api.params().action).map((x) => `${T(x.name)}${x.id === api.params().substance ? ' ◀' : ''}`)),
+      usage: msg('console-substances-usage'),
+      about: msg('console-substances-about'),
+      run: () => list(t(loc(), 'console-substances'), substancesFor(api.params().action).map((x) => `${T(x.name)}${x.id === api.params().substance ? ' ◀' : ''}`)),
     },
     {
       names: ['substance', 'речовина'],
-      usage: L('substance <name> [amount L|mL|g]', 'substance <name> [amount L|mL|g]'),
-      about: L('налити речовину: substance sea 0.5 l', 'pour a substance: substance sea 0.5 L'),
+      usage: msg('console-substance-usage'),
+      about: msg('console-substance-about'),
       run(args) {
-        if (api.started()) return [uk() ? 'Під час досліду речовину не міняють — спершу «reset».' : 'The substance stays during an experiment — "reset" first.'];
+        if (api.started()) return [t(loc(), 'console-substance-stays')];
         const p = api.params();
         const f = find(substancesFor(p.action), names, words(args));
         if (!f) return notFound(words(args));
@@ -162,21 +161,21 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         const liters = grams !== undefined ? grams / f.liquid.density.value : q ? (q.unit === 'мл' || q.unit === 'ml' ? q.value / 1000 : q.value) : dry ? 50 / f.liquid.density.value : p.liters;
         const amount = Math.min(liters, p.size);
         api.choose({ ...p, substance: f.id as SubstanceId, liters: amount, startTemp: OPERATIONS[p.action].startTemp(f) }, 'experiment');
-        return [`✓ ${T(f.name)}, ${dry ? `${sig(amount * f.liquid.density.value, 3, loc())} ${uk() ? 'г' : 'g'}` : `${sig(amount, 3, loc())} ${uk() ? 'л' : 'L'}`}`];
+        return [`✓ ${T(f.name)}, ${dry ? `${sig(amount * f.liquid.density.value, 3, loc())} ${t(loc(), 'unit-sym-g')}` : `${sig(amount, 3, loc())} ${t(loc(), 'unit-sym-L')}`}`];
       },
     },
     {
       names: ['vessels', 'посуд'],
-      usage: L('vessels', 'vessels'),
-      about: L('посуд, що підходить до приладу', 'vessels that fit the device'),
-      run: () => list(uk() ? 'Посуд:' : 'Vessels:', vesselsFor(api.params()).map((f) => `${T(f.vessel.name)} (${f.sizes.join(', ')} ${uk() ? 'л' : 'L'})${f.vessel.id === api.params().vessel ? ' ◀' : ''}`)),
+      usage: msg('console-vessels-usage'),
+      about: msg('console-vessels-about'),
+      run: () => list(t(loc(), 'console-vessels'), vesselsFor(api.params()).map((f) => `${T(f.vessel.name)} (${f.sizes.join(', ')} ${t(loc(), 'unit-sym-L')})${f.vessel.id === api.params().vessel ? ' ◀' : ''}`)),
     },
     {
       names: ['vessel', 'посудина'],
-      usage: L('vessel <name> [size L] [material]', 'vessel <name> [size L] [material]'),
-      about: L('поставити посуд: vessel beaker 0.25', 'choose a vessel: vessel beaker 0.25'),
+      usage: msg('console-vessel-usage'),
+      about: msg('console-vessel-about'),
       run(args) {
-        if (api.started()) return [uk() ? 'Під час досліду посуд не міняють — спершу «reset».' : 'The vessel stays during an experiment — "reset" first.'];
+        if (api.started()) return [t(loc(), 'console-vessel-stays')];
         const p = api.params();
         const fits = vesselsFor(p);
         const text = words(args);
@@ -190,23 +189,23 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         const material = (mat && f.materials.find((m) => norm(m).startsWith(norm(mat)))) || (f.materials.includes(f.vessel.spec.defaultMaterial) ? f.vessel.spec.defaultMaterial : f.materials[0]!);
         api.choose({ ...p, vessel: f.vessel.id as VesselId, size, material, lid: false, liters: Math.min(p.liters, size) }, 'experiment');
         const mName = material in MATERIALS ? T(MATERIALS[material as keyof typeof MATERIALS].name).toLowerCase() : material;
-        return [`✓ ${T(f.vessel.name)}, ${sig(size, 3, loc())} ${uk() ? 'л' : 'L'}, ${mName}`];
+        return [`✓ ${T(f.vessel.name)}, ${sig(size, 3, loc())} ${t(loc(), 'unit-sym-L')}, ${mName}`];
       },
     },
     {
       names: ['devices', 'прилади'],
-      usage: L('devices', 'devices'),
-      about: L('прилади для вибраної дії', 'devices for the chosen action'),
+      usage: msg('console-devices-usage'),
+      about: msg('console-devices-about'),
       run() {
         const uses = OPERATIONS[api.params().action].uses;
         const items = uses === 'supply' ? Object.values(SUPPLIES) : uses === 'cooler' ? Object.values(COOLERS).filter((x) => !x.spec.hot) : [...Object.values(HEATERS), ...(uses === 'either' ? Object.values(COOLERS).filter((x) => x.spec.hot) : [])];
-        return list(uk() ? 'Прилади:' : 'Devices:', items.map((x) => T(x.name)));
+        return list(t(loc(), 'console-devices'), items.map((x) => T(x.name)));
       },
     },
     {
       names: ['device', 'прилад'],
-      usage: L('device <name> [W | °C | V]', 'device <name> [W | °C | V]'),
-      about: L('прилад і його налаштування: device freezer -22', 'a device and its setting: device freezer -22'),
+      usage: msg('console-device-usage'),
+      about: msg('console-device-about'),
       run(args) {
         const p = api.params();
         const uses = OPERATIONS[p.action].uses;
@@ -224,7 +223,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
           const v = f.spec.voltage;
           const knob = q && v.max > v.min ? Math.max(0, Math.min(1, (q.value - v.min) / (v.max - v.min))) : (p.supply?.knob ?? 0.4);
           api.choose({ ...strip(p), supply: { id: f.id as SupplyId, knob } }, 'step');
-          return [`✓ ${T(f.name)}, ${sig(supplyVoltage(f, knob), 3, loc())} ${uk() ? 'В' : 'V'}`];
+          return [`✓ ${T(f.name)}, ${sig(supplyVoltage(f, knob), 3, loc())} ${t(loc(), 'unit-sym-V')}`];
         }
         // A furnace (hot surroundings) for melting; for cooling — only cold ones.
         const furnace = uses === 'either' ? find(Object.values(COOLERS).filter((x) => x.spec.hot), names, words(args)) : undefined;
@@ -234,40 +233,40 @@ export function createConsole(api: ConsoleApi): HTMLElement {
           const s = f.spec.setpoint;
           const setpoint = q ? Math.max(s.min, Math.min(s.max, q.value)) : s.default;
           api.choose({ ...strip(p), cooler: { id: f.id as CoolerId, setpoint } }, 'step');
-          return [`✓ ${T(f.name)}, ${setpoint} °C${q && setpoint !== q.value ? (uk() ? ` (діапазон ${s.min}…${s.max} °C)` : ` (range ${s.min}…${s.max} °C)`) : ''}`];
+          return [`✓ ${T(f.name)}, ${setpoint} °C${q && setpoint !== q.value ? (t(loc(), 'console-setpoint-range', { min: String(s.min), max: String(s.max) })) : ''}`];
         }
         if (uses === 'either' && /^(кімнат|room|без|none)/.test(norm(words(args)))) {
           api.choose(strip(p), 'step');
-          return [uk() ? '✓ без нагрівача, у кімнаті' : '✓ no heater, in the room'];
+          return [t(loc(), 'console-no-heater')];
         }
         const f = find(Object.values(HEATERS), names, words(args));
         if (!f || Array.isArray(f)) return f ? ambiguous(f) : notFound(words(args));
         const rating = q ? f.spec.ratings.reduce((a, b) => (Math.abs(b - q.value) < Math.abs(a - q.value) ? b : a)) : f.spec.defaultRating;
         api.choose({ ...strip(p), heater: { id: f.id as HeaterId, rating, knob: f.spec.control === 'switch' ? 1 : (p.heater?.knob ?? 1) } }, 'step');
-        return [`✓ ${T(f.name)}, ${rating} ${uk() ? 'Вт' : 'W'}`];
+        return [`✓ ${T(f.name)}, ${rating} ${t(loc(), 'unit-sym-W')}`];
       },
     },
     {
       names: ['knob', 'ручка'],
-      usage: L('knob <0…100 %>', 'knob <0…100 %>'),
-      about: L('повернути ручку нагрівача чи блока живлення', 'turn the heater or power supply knob'),
+      usage: msg('console-knob-usage'),
+      about: msg('console-knob-about'),
       run(args) {
         const q = quantities(args)[0];
         if (!q) return [T(this.usage)];
         const knob = Math.max(0, Math.min(1, q.value > 1 ? q.value / 100 : q.value));
-        if (!api.setKnob(knob)) return [uk() ? 'Ручки тут немає.' : 'There is no knob here.'];
+        if (!api.setKnob(knob)) return [t(loc(), 'console-no-knob')];
         return [`✓ ${Math.round(knob * 100)} %`];
       },
     },
     {
       names: ['target', 'ціль'],
-      usage: L('target <°C>', 'target <°C>'),
-      about: L('до якої температури гріти чи охолоджувати', 'the temperature to heat or cool to'),
+      usage: msg('console-target-usage'),
+      about: msg('console-target-about'),
       run(args) {
         const p = api.params();
         const op = OPERATIONS[p.action];
         const q = quantities(args)[0];
-        if (!op.target) return [uk() ? 'Ця дія без цільової температури.' : 'This action has no target temperature.'];
+        if (!op.target) return [t(loc(), 'console-no-target')];
         if (!q) return [T(this.usage)];
         api.choose({ ...p, target: Math.max(op.target.min, Math.min(op.target.max, q.value)) }, 'step');
         return [`✓ ${q.value} °C`];
@@ -275,24 +274,24 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['duration', 'час'],
-      usage: L('duration <min>', 'duration <min>'),
-      about: L('скільки хвилин іде дія (струм)', 'how many minutes the action runs (current)'),
+      usage: msg('console-duration-usage'),
+      about: msg('console-duration-about'),
       run(args) {
         const p = api.params();
         const op = OPERATIONS[p.action];
         const q = quantities(args)[0];
-        if (!op.duration) return [uk() ? 'Ця дія триває до мети, а не за часом.' : 'This action runs to its goal, not by time.'];
+        if (!op.duration) return [t(loc(), 'console-no-duration')];
         if (!q) return [T(this.usage)];
         api.choose({ ...p, duration: Math.max(op.duration.min, Math.min(op.duration.max, q.value)) }, 'step');
-        return [`✓ ${q.value} ${uk() ? 'хв' : 'min'}`];
+        return [`✓ ${q.value} ${t(loc(), 'unit-sym-min')}`];
       },
     },
     {
       names: ['temp', 'температура'],
-      usage: L('temp <°C>', 'temp <°C>'),
-      about: L('початкова температура речовини', 'starting temperature of the substance'),
+      usage: msg('console-temp-usage'),
+      about: msg('console-temp-about'),
       run(args) {
-        if (api.started()) return [uk() ? 'Дослід уже йде — спершу «reset».' : 'The experiment is running — "reset" first.'];
+        if (api.started()) return [t(loc(), 'console-running-already')];
         const q = quantities(args)[0];
         if (!q) return [T(this.usage)];
         api.choose({ ...api.params(), startTemp: Math.max(-30, Math.min(300, q.value)) }, 'experiment');
@@ -301,8 +300,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['room', 'кімната'],
-      usage: L('room <°C>', 'room <°C>'),
-      about: L('температура в кімнаті', 'room temperature'),
+      usage: msg('console-room-usage'),
+      about: msg('console-room-about'),
       run(args) {
         const q = quantities(args)[0];
         if (!q) return [T(this.usage)];
@@ -312,18 +311,18 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['lid', 'кришка'],
-      usage: L('lid on|off', 'lid on|off'),
-      about: L('накрити посуд кришкою', 'put a lid on'),
+      usage: msg('console-lid-usage'),
+      about: msg('console-lid-about'),
       run(args) {
         const on = /^(так|yes|on|1|є)/.test(norm(args[0] ?? 'так'));
         api.choose({ ...api.params(), lid: on }, 'experiment');
-        return [on ? (uk() ? '✓ з кришкою' : '✓ with a lid') : uk() ? '✓ без кришки' : '✓ no lid'];
+        return [on ? (t(loc(), 'console-lid-on')) : t(loc(), 'console-lid-off')];
       },
     },
     {
       names: ['add', 'додати'],
-      usage: L('add <substance> <mass g> [°C] [frozen]', 'add <substance> <mass g> [°C] [frozen]'),
-      about: L('досипати чи долити: add salt 7 g', 'add something: add salt 7 g'),
+      usage: msg('console-add-usage'),
+      about: msg('console-add-about'),
       run(args) {
         const frozen = args.some((a) => /^(лід|льод|frozen|ice)/.test(norm(a)));
         const text = args.filter((a) => !/^(лід|льод|frozen|ice)/.test(norm(a)));
@@ -337,13 +336,13 @@ export function createConsole(api: ConsoleApi): HTMLElement {
         // A metal block comes out of boiling water unless told otherwise.
         const metal = SUBSTANCES[f.id as SubstanceId]?.category === 'solid.metal';
         const err = api.add(f.id as SubstanceId, grams, tq?.value ?? (metal ? 100 : frozen ? -18 : 20), frozen);
-        return err ? [`✗ ${err}`] : [`✓ ${T(f.name)}, ${grams} ${uk() ? 'г' : 'g'}`];
+        return err ? [`✗ ${err}`] : [`✓ ${T(f.name)}, ${grams} ${t(loc(), 'unit-sym-g')}`];
       },
     },
     {
       names: ['weigh', 'scales', 'зважити', 'ваги'],
-      usage: L('weigh [kitchen | lab]', 'weigh [kitchen | lab]'),
-      about: L('поставити посуд на ваги: weigh lab', 'put the vessel on the scales: weigh lab'),
+      usage: msg('console-weigh-usage'),
+      about: msg('console-weigh-about'),
       run(args) {
         if (!args.length) return [api.weigh()];
         const f = find(MASS_SCALE_IDS, (id) => [id, SCALES[id].name.uk, SCALES[id].name.en], words(args));
@@ -354,23 +353,23 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['voice', 'голос'],
-      usage: L('voice [toon | speech | none]', 'voice [toon | speech | none]'),
-      about: L('голос Професора: voice none', 'the Professor’s voice: voice none'),
+      usage: msg('console-voice-usage'),
+      about: msg('console-voice-about'),
       run(args) {
-        if (!args[0]) return list(uk() ? 'Голоси (voice <назва>):' : 'Voices (voice <name>):', api.voices());
+        if (!args[0]) return list(t(loc(), 'console-voices'), api.voices());
         return api.voice(norm(args[0])) ? ['✓'] : notFound(args[0]);
       },
     },
     {
       names: ['level', 'volume', 'об’єм', 'рівень'],
-      usage: L('level', 'level'),
-      about: L('подивитися на поділки: об’єм рідини (мірний циліндр)', 'read the marks: the volume of the liquid (measuring cylinder)'),
+      usage: msg('console-level-usage'),
+      about: msg('console-level-about'),
       run: () => [api.level()],
     },
     {
       names: ['hang', 'dynamometer', 'динамометр', 'підвісити'],
-      usage: L('hang <body> <mass g> [air | water]', 'hang <body> <mass g> [air | water]'),
-      about: L('підвісити тіло на динамометр: hang aluminium 100 g water', 'hang a body on the dynamometer: hang aluminium 100 g water'),
+      usage: msg('console-hang-usage'),
+      about: msg('console-hang-about'),
       run(args) {
         const liquid = args.some((a) => /^(water|liquid|вод|рідин|у)/.test(norm(a)));
         const text = args.filter((a) => !/^(water|liquid|air|вод|рідин|повітр|у|в)$/.test(norm(a)) && !/^(water|liquid|air|вод|рідин|повітр)/.test(norm(a)));
@@ -384,17 +383,17 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['start', 'go', 'continue', 'старт', 'продовжити'],
-      usage: L('start', 'start'),
-      about: L('запустити (або продовжити) дослід', 'start (or continue) the experiment'),
+      usage: msg('console-start-usage'),
+      about: msg('console-start-about'),
       run() {
         if (!api.isRunning()) api.toggleStart();
-        return [uk() ? '▶ пішло!' : '▶ running!'];
+        return [t(loc(), 'console-started')];
       },
     },
     {
       names: ['pause', 'stop', 'пауза'],
-      usage: L('pause', 'pause'),
-      about: L('зупинити час', 'stop the clock'),
+      usage: msg('console-pause-usage'),
+      about: msg('console-pause-about'),
       run() {
         if (api.isRunning()) api.toggleStart();
         return ['⏸'];
@@ -402,8 +401,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['reset', 'спочатку'],
-      usage: L('reset', 'reset'),
-      about: L('почати дослід заново', 'start the experiment over'),
+      usage: msg('console-reset-usage'),
+      about: msg('console-reset-about'),
       run() {
         api.reset();
         return ['↺'];
@@ -411,8 +410,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['speed', 'швидкість'],
-      usage: L('speed <1…3600>', 'speed <1…3600>'),
-      about: L('у скільки разів швидше за справжній час', 'how many times faster than real time'),
+      usage: msg('console-speed-usage'),
+      about: msg('console-speed-about'),
       run(args) {
         const q = quantities(args)[0];
         if (!q) return [T(this.usage)];
@@ -424,25 +423,25 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['status', 'стан'],
-      usage: L('status', 'status'),
-      about: L('що зараз показують прилади', 'what the readouts show now'),
+      usage: msg('console-status-usage'),
+      about: msg('console-status-about'),
       run: () => api.status(),
     },
     {
       names: ['predict', 'прогноз'],
-      usage: L('predict <min>', 'predict <min>'),
-      about: L('мій прогноз: за скільки хвилин', 'my prediction: in how many minutes'),
+      usage: msg('console-predict-usage'),
+      about: msg('console-predict-about'),
       run(args) {
         const q = quantities(args)[0];
         if (!q) return [T(this.usage)];
         api.predict(q.value);
-        return [`✓ ${q.value} ${uk() ? 'хв' : 'min'}`];
+        return [`✓ ${q.value} ${t(loc(), 'unit-sym-min')}`];
       },
     },
     {
       names: ['info', 'ref', 'довідка'],
-      usage: L('info <name>', 'info <name>'),
-      about: L('довідка про речовину чи прилад', 'reference card of a substance or device'),
+      usage: msg('console-info-usage'),
+      about: msg('console-info-about'),
       run(args) {
         const text = words(args);
         const sub = find(Object.values(SUBSTANCES), names, text);
@@ -457,14 +456,14 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['presets', 'досліди'],
-      usage: L('presets', 'presets'),
-      about: L('готові досліди з номерами', 'ready-made experiments with numbers'),
-      run: () => list(uk() ? 'Готові досліди (дослід <номер>):' : 'Ready-made experiments (preset <number>):', PRESETS.map((p, i) => `${i + 1}. ${T(p.title)}${p.grade ? ` — ${p.grade} ${uk() ? 'клас' : 'grade'}` : ''}`)),
+      usage: msg('console-presets-usage'),
+      about: msg('console-presets-about'),
+      run: () => list(t(loc(), 'console-presets'), PRESETS.map((p, i) => `${i + 1}. ${T(p.title)}${p.grade ? ` — ${p.grade} ${t(loc(), 'console-grade')}` : ''}`)),
     },
     {
       names: ['preset', 'дослід'],
-      usage: L('preset <number or name>', 'preset <number or name>'),
-      about: L('запустити готовий дослід', 'start a ready-made experiment'),
+      usage: msg('console-preset-usage'),
+      about: msg('console-preset-about'),
       run(args) {
         const n = quantities(args)[0];
         const p = n && Number.isInteger(n.value) ? PRESETS[n.value - 1] : (() => {
@@ -478,29 +477,29 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['explain', 'пояснити'],
-      usage: L('explain', 'explain'),
-      about: L('розбір: що відбулося і чому', 'what happened and why'),
+      usage: msg('console-explain-usage'),
+      about: msg('console-explain-about'),
       run() {
         api.explain();
-        return [uk() ? '✓ розбір нижче' : '✓ see the report below'];
+        return [t(loc(), 'console-report-below')];
       },
     },
     {
       names: ['save', 'record', 'зберегти'],
-      usage: L('save [name]', 'save [name]'),
-      about: L('зберегти дослід (усі кроки) як запис', 'save the experiment (all steps) as a recording'),
+      usage: msg('console-save-usage'),
+      about: msg('console-save-about'),
       run: (args) => [api.save(args.join(' '))],
     },
     {
       names: ['records', 'recordings', 'записи'],
-      usage: L('records', 'records'),
-      about: L('мої записи з номерами', 'my recordings with numbers'),
-      run: () => list(uk() ? 'Записи (replay <номер>):' : 'Recordings (replay <number>):', api.records().map((r, i) => `${i + 1}. ${r}`)),
+      usage: msg('console-records-usage'),
+      about: msg('console-records-about'),
+      run: () => list(t(loc(), 'console-records'), api.records().map((r, i) => `${i + 1}. ${r}`)),
     },
     {
       names: ['replay', 'повтор'],
-      usage: L('replay <number>', 'replay <number>'),
-      about: L('повторити запис крок за кроком', 'replay a recording step by step'),
+      usage: msg('console-replay-usage'),
+      about: msg('console-replay-about'),
       run(args) {
         const n = quantities(args)[0];
         if (!n) return [T(this.usage)];
@@ -509,20 +508,20 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['news', 'paper', 'btw', 'кстати', 'дореч', 'газета'],
-      usage: L('news', 'news'),
-      about: L('«До речі!..» — газета Професора: цікавий факт або історична довідка', '"By the way!.." — the Professor\'s newspaper: a curious fact or a page of history'),
+      usage: msg('console-news-usage'),
+      about: msg('console-news-about'),
       run() {
         api.news();
-        return [uk() ? '📰 Професор шукає газету…' : '📰 The Professor is looking for a newspaper…'];
+        return [t(loc(), 'console-newspaper')];
       },
     },
     {
       names: ['prof', 'professor', 'проф'],
-      usage: L('prof [scene]', 'prof [scene]'),
-      about: L('сценки Професора: prof coffee', 'the Professor\'s scenes: prof coffee'),
+      usage: msg('console-prof-usage'),
+      about: msg('console-prof-about'),
       run(args) {
         const scenes = api.scenes();
-        if (!args[0]) return list(uk() ? 'Сценки (prof <назва>):' : 'Scenes (prof <name>):', scenes);
+        if (!args[0]) return list(t(loc(), 'console-scenes'), scenes);
         const f = scenes.find((x) => x.startsWith(norm(args[0]!)));
         if (!f) return notFound(args[0]!);
         api.playScene(f);
@@ -531,8 +530,8 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     },
     {
       names: ['clear', 'cls', 'очистити'],
-      usage: L('clear', 'clear'),
-      about: L('очистити консоль', 'clear the console'),
+      usage: msg('console-clear-usage'),
+      about: msg('console-clear-about'),
       run: () => [],
     },
   ];
@@ -554,9 +553,9 @@ export function createConsole(api: ConsoleApi): HTMLElement {
     }
     out.scrollTop = out.scrollHeight;
   };
-  const greet = () => print([uk() ? 'Консоль лабораторії. Напиши «help», щоб побачити команди.' : 'Lab console. Type "help" to see the commands.'], 'muted');
+  const greet = () => print([t(loc(), 'console-greet')], 'muted');
   greet();
-  input.placeholder = uk() ? 'наприклад: action freeze' : 'e.g. action freeze';
+  input.placeholder = t(loc(), 'console-placeholder');
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -568,7 +567,7 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       print([`› ${line}`], 'cmd');
       const [head, ...args] = line.split(/\s+/);
       const c = COMMANDS.find((x) => x.names.includes(norm(head!)));
-      if (!c) return print(uk() ? [`Немає команди «${head}». Напиши «help».`] : [`No command "${head}". Type "help".`], 'err');
+      if (!c) return print([t(loc(), 'console-no-command', { head })], 'err');
       if (c.names[0] === 'clear') {
         out.innerHTML = '';
         return greet();

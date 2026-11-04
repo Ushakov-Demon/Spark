@@ -2,6 +2,7 @@ import type { CommandHandler } from '../../core/commands.js';
 import { entityId } from '../../core/ids.js';
 import { err, ok } from '../../core/result.js';
 import { withEntities } from '../../core/state.js';
+import { msg } from '../../knowledge/messages.js';
 import { isSupply } from './entities.js';
 
 /** Turn a power supply on/off or change its voltage (the knob of a lab supply). */
@@ -18,8 +19,8 @@ export const setSupply: CommandHandler<SetSupplyCommand> = {
   type: 'electrical.supply.set',
   apply(state, c) {
     const e = state.entities[entityId(c.entity)];
-    if (!e || !isSupply(e)) return err({ uk: `«${c.entity}» — не джерело струму`, en: `"${c.entity}" is not a power supply` });
-    if (c.voltage !== undefined && !(c.voltage >= 0 && Number.isFinite(c.voltage))) return err({ uk: 'Напруга має бути ≥ 0', en: 'Voltage must be ≥ 0' });
+    if (!e || !isSupply(e)) return err(msg('electrical-commands-set-supply-apply', { entity: c.entity }));
+    if (c.voltage !== undefined && !(c.voltage >= 0 && Number.isFinite(c.voltage))) return err(msg('electrical-commands-set-supply-apply-2'));
     const params = { ...e.params, ...(c.on === undefined ? {} : { on: c.on }), ...(c.voltage === undefined ? {} : { voltage: c.voltage }) };
     return ok({ state: withEntities(state, [{ ...e, params }]), kind: 'control', externalEnergy: 0, trace: [] });
   },

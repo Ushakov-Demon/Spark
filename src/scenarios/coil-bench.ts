@@ -5,6 +5,7 @@ import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { cite, sv } from '../components/sourced.js';
 import { COMPONENTS } from '../components/index.js';
 import type { LocalizedText } from '../knowledge/i18n.js';
+import { msg } from '../knowledge/messages.js';
 import type { SourcedValue } from '../knowledge/types.js';
 import { sampleOf } from './thermal-lab.js';
 
@@ -40,7 +41,7 @@ export const ohmCommand: CommandHandler<OhmCommand> = {
     try {
       t = sampleOf(state).state.temperature - ZERO_CELSIUS_IN_KELVIN;
     } catch {
-      return err({ uk: 'Котушка лежить у склянці з водою — а склянки немає.', en: 'The coil lies in a beaker of water — and there is no beaker.' });
+      return err(msg('coil-bench-ohm-command-apply'));
     }
     const R = coilResistance(t);
     const div = MULTIMETER.division.value;
@@ -54,8 +55,8 @@ export const COIL_COMMANDS = [ohmCommand] as const;
 
 export const COIL_TEXT: Record<OhmCommand['type'], () => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
   'lab.ohm': () => ({
-    say: { uk: 'Подивись на термометр і на мультиметр: яка температура води й який опір котушки?', en: 'Look at the thermometer and the multimeter: what is the water’s temperature and the coil’s resistance?' },
-    button: { uk: 'Ω Виміряти опір котушки', en: 'Ω Measure the coil’s resistance' },
-    plan: { uk: 'виміряти опір котушки', en: 'measure the coil’s resistance' },
+    say: msg('coil-bench-lab-ohm-say'),
+    button: msg('coil-bench-lab-ohm-button'),
+    plan: msg('coil-bench-lab-ohm-plan'),
   }),
 };

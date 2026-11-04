@@ -25,7 +25,7 @@ describe('the Professor’s newspaper', () => {
     const a = offlineArticle(LAB_KNOWLEDGE.laws, 'en', 'novice');
     const html = paperHtml({ ...a, title: '<b>x</b>' }, 'en', new Date(2026, 9, 20));
     expect(html).toContain('&lt;b&gt;x&lt;/b&gt;');
-    expect(html).toContain('October 20');
+    expect(html).toContain('20 October');
     expect(html).toContain('paper-source');
   });
 });

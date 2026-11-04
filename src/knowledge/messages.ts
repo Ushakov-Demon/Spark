@@ -108,3 +108,6 @@ export const NO_TEXT: LocalizedText = Object.fromEntries(LOCALES.map((l) => [l, 
 
 /** A text in every language from one function of the language (built of messages). */
 export const localized = (f: (l: Locale) => string): LocalizedText => Object.fromEntries(LOCALES.map((l) => [l, f(l)])) as Record<Locale, string>;
+
+/** A language's set of texts (labels, phrases), built for each language from messages. */
+export const byLocale = <T>(f: (l: Locale) => T): Readonly<Record<Locale, T>> => Object.fromEntries(LOCALES.map((l) => [l, f(l)])) as Record<Locale, T>;

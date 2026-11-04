@@ -1,10 +1,11 @@
 import { mixtureBoilingPoint } from '../../domains/thermal/mixture.js';
+import { msg } from '../../knowledge/messages.js';
 import { K } from './helpers.js';
 import type { Operation } from './types.js';
 
 export const BOIL: Operation = {
   id: 'boil',
-  label: { uk: 'Закип’ятити', en: 'Boil' },
+  label: msg('op-boil-label'),
   icon: 'boil',
   uses: 'heater',
   direction: 'heating',
@@ -31,7 +32,7 @@ export const BOIL: Operation = {
   },
   markers: ['freezing', 'boiling', 'smoke'],
   verbs: {
-    past: { uk: { f: 'закипіла', m: 'закипів', n: 'закипіло' }, en: 'boiled' },
-    future: { uk: 'закипить', en: 'boil' },
+    past: 'op-boil-past',
+    future: msg('op-boil-verbs-future'),
   },
 };

@@ -1,7 +1,7 @@
 import { COMPONENTS } from '../components/index.js';
 import { sig } from '../explain/format.js';
 import { LOCALES, type Locale, type LocalizedText } from '../knowledge/i18n.js';
-import { t } from '../knowledge/messages.js';
+import { msg, t } from '../knowledge/messages.js';
 import type { Choice, Preset, PresetValues, PresetVary } from './presets.js';
 
 /**
@@ -25,14 +25,14 @@ export const varied = (base: Omit<Preset, 'params' | 'question'> & Partial<Prese
 export const PLACE_KYIV = 'Київ|50.4500|30.5233|179|Europe/Kyiv';
 export const PLACE_NEW_YORK = 'New York|40.7143|-74.0060|10|America/New_York';
 
-export const INTRO: LocalizedText = { uk: 'Фізика як природнича наука. Пізнання природи', en: 'Physics as a natural science. Knowing nature' };
-export const MOTION: LocalizedText = { uk: 'Механічний рух', en: 'Mechanical motion' };
-export const INTERACTION: LocalizedText = { uk: 'Взаємодія тіл. Сила', en: 'Interaction of bodies. Force' };
-export const PRESSURE: LocalizedText = { uk: 'Тиск твердих тіл, рідин і газів', en: 'Pressure of solids, liquids and gases' };
-export const WORK: LocalizedText = { uk: 'Механічна робота. Механічна енергія', en: 'Mechanical work. Mechanical energy' };
-export const MEDIA: LocalizedText = { uk: 'Електричний струм у різних середовищах', en: 'Electric current in different media' };
-export const MAGNETIC: LocalizedText = { uk: 'Магнітні та електромагнітні явища', en: 'Magnetic and electromagnetic phenomena' };
-export const ELECTRIC: LocalizedText = { uk: 'Електричні явища', en: 'Electric phenomena' };
+export const INTRO: LocalizedText = msg('preset-kit-intro');
+export const MOTION: LocalizedText = msg('preset-kit-motion');
+export const INTERACTION: LocalizedText = msg('preset-kit-interaction');
+export const PRESSURE: LocalizedText = msg('preset-kit-pressure');
+export const WORK: LocalizedText = msg('preset-kit-work');
+export const MEDIA: LocalizedText = msg('preset-kit-media');
+export const MAGNETIC: LocalizedText = msg('preset-kit-magnetic');
+export const ELECTRIC: LocalizedText = msg('preset-kit-electric');
 /** "у 3 рази", "у 2,4 раза", "у 5 разів" — "3 times". */
 export const times = (x: number, l: Locale): string => t(l, 'count-times', { v: sig(x, 2, l), k: Number(sig(x, 2, 'en').replace(/,/g, '')) });
 /** Water's density, kg/m³ (the component model's). */

@@ -8,6 +8,7 @@ import { COOLERS } from '../equipment/coolers.js';
 import { HEATERS } from '../equipment/heaters.js';
 import { SUPPLIES, supplyVoltage } from '../equipment/supplies.js';
 import { tr } from '../knowledge/i18n.js';
+import { t } from '../knowledge/messages.js';
 import { LAB_KNOWLEDGE, type LabCommand } from './lab-knowledge.js';
 import { OPERATIONS } from './operations/index.js';
 import { sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
@@ -24,7 +25,7 @@ export function stepPlace(p: LabParams, l: 'uk' | 'en'): string {
   if (p.supply) return `${tr(SUPPLIES[p.supply.id].name, l)}, ${formatQuantity(supplyVoltage(SUPPLIES[p.supply.id], p.supply.knob), 'V', { locale: l, level: 'school' })}`;
   if (p.heater) return tr(HEATERS[p.heater.id].name, l);
   if (p.cooler) return `${tr(COOLERS[p.cooler.id].name, l)}, ${String(p.cooler.setpoint).replace('-', '−')} °C`;
-  return l === 'uk' ? 'просто в кімнаті' : 'just in the room';
+  return t(l, 'lab-course-step-place');
 }
 
 /** Temperature to a tenth of a degree, as a thermometer shows it ("−0,0" is just 0). */
@@ -42,24 +43,23 @@ const solidShare = (s: SystemState) => {
 const toAir = (s: SystemState) => (sampleOf(s).state.evaporated ?? 0) + (sampleOf(s).state.boiledOff ?? 0);
 
 function outcome(st: LabStatus, length: number, ctx: ExplainContext): string {
-  const uk = ctx.locale === 'uk';
   const D = (s: number) => formatDuration(s, ctx.locale);
   switch (st.kind) {
     case 'reached':
-      return uk ? `✓ мети досягнуто за ${D(st.at)}` : `✓ goal reached in ${D(st.at)}`;
+      return t(ctx.locale, 'lab-course-outcome', { at: D(st.at) });
     case 'will-reach':
-      return uk ? `зупинено через ${D(length)}, до мети ще не дійшло` : `stopped after ${D(length)}, before the goal`;
+      return t(ctx.locale, 'lab-course-outcome-2', { length: D(length) });
     case 'decomposes':
-      return uk ? `через ${D(st.at)} почало диміти й розкладатися` : `after ${D(st.at)} it started to smoke and break down`;
+      return t(ctx.locale, 'lab-course-outcome-3', { at: D(st.at) });
     case 'stalls':
-      return uk ? `далі ${C(st.limit, ctx.locale)} не пішло — мети так не досягти` : `got no further than ${C(st.limit, ctx.locale)} — the goal is out of reach this way`;
+      return t(ctx.locale, 'lab-course-outcome-4', { limit: C(st.limit, ctx.locale) });
     case 'impossible':
     case 'no-heat':
       return `✗ ${tr(st.reason, ctx.locale)}`;
     case 'off':
-      return uk ? 'прилад вимкнено' : 'the device is off';
+      return t(ctx.locale, 'lab-course-outcome-5');
     case 'vessel-fails':
-      return uk ? `✗ посуд не витримав: ${tr(st.what, ctx.locale)} (${C(st.limit + ZERO_CELSIUS_IN_KELVIN, ctx.locale)})` : `✗ the vessel failed: ${tr(st.what, ctx.locale)} (${C(st.limit + ZERO_CELSIUS_IN_KELVIN, ctx.locale)})`;
+      return t(ctx.locale, 'lab-course-outcome-6', { what: tr(st.what, ctx.locale), limit: C(st.limit + ZERO_CELSIUS_IN_KELVIN, ctx.locale) });
   }
 }
 
@@ -69,8 +69,7 @@ function outcome(st: LabStatus, length: number, ctx: ExplainContext): string {
  * it ended — temperature, ice, water gone into the air.
  */
 export function labCourse(steps: readonly CourseStep[], ctx: ExplainContext): Block[] {
-  const uk = ctx.locale === 'uk';
-  const out: Block[] = [h(2, uk ? 'Хід досліду' : 'The course of the experiment')];
+  const out: Block[] = [h(2, t(ctx.locale, 'lab-course-out'))];
   const describe = (e: ExperimentLogEntry<LabCommand>, s: SystemState) => {
     const text = LAB_KNOWLEDGE.describeCommand(e, ctx, s);
     return e.ok ? text : `${text} — ${tr(e.error, ctx.locale)}`;
@@ -85,7 +84,7 @@ export function labCourse(steps: readonly CourseStep[], ctx: ExplainContext): Bl
     const during = r.log.filter((e) => e.time > start + 1e-9 && e.time < r.final.time - 1e-9);
     const after = length > 0 ? r.log.filter((e) => e.time >= r.final.time - 1e-9 && e.time > start + 1e-9) : [];
     const items: string[] = [];
-    for (const e of before) items.push(`${uk ? 'на початку' : 'at the start'} — ${describe(e, r.final)}`);
+    for (const e of before) items.push(`${t(ctx.locale, 'lab-course-text')} — ${describe(e, r.final)}`);
     if (length > 0) {
       const T0 = sampleOf(r.initial).state.temperature;
       const T1 = sampleOf(end).state.temperature;
@@ -93,16 +92,16 @@ export function labCourse(steps: readonly CourseStep[], ctx: ExplainContext): Bl
       const ice1 = solidShare(end);
       const gone = toAir(end) - toAir(r.initial);
       const parts = [`${C(T0, ctx.locale)} → ${C(T1, ctx.locale)}`];
-      if (Math.abs(ice1 - ice0) > 0.005 || ice1 > 0.005) parts.push(uk ? `лід: ${Math.round(ice0 * 100)} % → ${Math.round(ice1 * 100)} %` : `ice: ${Math.round(ice0 * 100)} % → ${Math.round(ice1 * 100)} %`);
-      if (gone > 1e-6) parts.push(uk ? `пішло в повітря ${formatQuantity(gone, 'kg', ctx)}` : `${formatQuantity(gone, 'kg', ctx)} went into the air`);
-      parts.push(uk ? `маса вмісту ${formatQuantity(bodyMass(sampleOf(end)), 'kg', ctx)}` : `contents ${formatQuantity(bodyMass(sampleOf(end)), 'kg', ctx)}`);
-      items.push(`${uk ? 'дослід' : 'the run'}: ${parts.join('; ')}`);
-      for (const e of during) items.push(`${uk ? 'через' : 'after'} ${formatDuration(e.time - start, ctx.locale)} — ${describe(e, r.final)}`);
+      if (Math.abs(ice1 - ice0) > 0.005 || ice1 > 0.005) parts.push(t(ctx.locale, 'lab-course-text-2', { ice0: String(Math.round(ice0 * 100)), ice1: String(Math.round(ice1 * 100)) }));
+      if (gone > 1e-6) parts.push(t(ctx.locale, 'lab-course-text-3', { gone: formatQuantity(gone, 'kg', ctx) }));
+      parts.push(t(ctx.locale, 'lab-course-text-4', { end: formatQuantity(bodyMass(sampleOf(end)), 'kg', ctx) }));
+      items.push(`${t(ctx.locale, 'lab-course-text-5')}: ${parts.join('; ')}`);
+      for (const e of during) items.push(`${t(ctx.locale, 'lab-course-text-6')} ${formatDuration(e.time - start, ctx.locale)} — ${describe(e, r.final)}`);
       items.push(outcome(st.status, length, ctx));
-      for (const e of after) items.push(`${uk ? 'після кроку' : 'after the step'} — ${describe(e, r.final)}`);
-    } else if (!before.length) items.push(uk ? 'ще не починали' : 'not started yet');
+      for (const e of after) items.push(`${t(ctx.locale, 'lab-course-text-7')} — ${describe(e, r.final)}`);
+    } else if (!before.length) items.push(t(ctx.locale, 'lab-course-text-8'));
     const label = tr(OPERATIONS[st.params.action].label, ctx.locale).replace('…', '');
-    out.push(h(3, `${uk ? 'Крок' : 'Step'} ${i + 1}. ${label} — ${stepPlace(st.params, ctx.locale)}`));
+    out.push(h(3, `${t(ctx.locale, 'lab-course-text-9')} ${i + 1}. ${label} — ${stepPlace(st.params, ctx.locale)}`));
     out.push(list(items));
   });
   return out;

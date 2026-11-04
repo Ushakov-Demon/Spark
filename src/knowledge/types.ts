@@ -166,6 +166,8 @@ export interface Curriculum {
   readonly id: string;
   /** ISO 3166-1 alpha-2 country code. */
   readonly country: string;
+  /** The language its own wording is in (the quotes, the topics): shown as quoted only to those reading in it. */
+  readonly language: Locale;
   readonly name: LocalizedText;
   /** Source documenting this programme (for quotes and grade checks). */
   readonly source: SourceId;

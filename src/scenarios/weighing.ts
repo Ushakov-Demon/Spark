@@ -6,6 +6,8 @@ import type { SystemState } from '../core/state.js';
 import type { MeasurementRecord } from '../core/trace.js';
 import { bodyMass, isThermalBody } from '../domains/thermal/entities.js';
 import { SCALES, scaleReading, type ScaleId } from '../equipment/scales.js';
+import { NUMBER_LOCALE } from '../knowledge/i18n.js';
+import { msg, t } from '../knowledge/messages.js';
 import { LAB_VESSEL_ID } from './thermal-lab.js';
 
 /**
@@ -48,9 +50,9 @@ export function weigh(state: SystemState, scale: ScaleId): Weighing {
 export const weighCommand: CommandHandler<WeighCommand> = {
   type: 'lab.weigh',
   apply(state, c) {
-    if (!(c.scale in SCALES)) return err({ uk: `Невідомі ваги «${c.scale}»`, en: `Unknown scales "${c.scale}"` });
-    if (SCALES[c.scale].spec.quantity === 'force') return err({ uk: 'Динамометр не зважує посуд: на нього підвішують тіло.', en: 'A dynamometer does not weigh the vessel: a body is hung on it.' });
-    if (!state.entities[entityId(LAB_VESSEL_ID)]) return err({ uk: 'Немає посуду, щоб зважити', en: 'There is no vessel to weigh' });
+    if (!(c.scale in SCALES)) return err(msg('weighing-weigh-command-apply', { scale: c.scale }));
+    if (SCALES[c.scale].spec.quantity === 'force') return err(msg('weighing-weigh-command-apply-2'));
+    if (!state.entities[entityId(LAB_VESSEL_ID)]) return err(msg('weighing-weigh-command-apply-3'));
     const w = weigh(state, c.scale);
     const bodies = Object.values(state.entities).filter(isThermalBody).map((e) => e.id as EntityId);
     const record: MeasurementRecord = { kind: 'measurement', instrument: c.scale, quantity: 'mass', value: w.reading, exact: w.exact.total, entities: bodies };
@@ -73,8 +75,8 @@ export function weighingsOf<C extends { type: string }>(log: readonly Experiment
 
 /** A reading as the display shows it: grams with as many decimals as the division has ("1 234 г", "312,45 г"). */
 export function formatReading(scale: ScaleId, kg: number | null, locale: 'uk' | 'en'): string {
-  if (kg === null) return locale === 'uk' ? 'перевантаження' : 'overload';
+  if (kg === null) return t(locale, 'weighing-format-reading');
   const digits = Math.max(0, Math.round(-Math.log10(SCALES[scale].spec.resolution.value * 1000)));
-  const n = new Intl.NumberFormat(locale === 'uk' ? 'uk-UA' : 'en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(kg * 1000);
-  return `${n} ${locale === 'uk' ? 'г' : 'g'}`;
+  const n = new Intl.NumberFormat(NUMBER_LOCALE[locale], { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(kg * 1000);
+  return `${n} ${t(locale, 'unit-sym-g')}`;
 }

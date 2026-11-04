@@ -78,7 +78,8 @@ export interface Operation {
   readonly subjectIsSolid?: boolean;
   /** Verbs for the headline, agreeing with the subject's gender in Ukrainian. */
   readonly verbs: {
-    readonly past: { readonly uk: Readonly<Record<Gender, string>>; readonly en: string };
+    /** The message of the verb in the past: it agrees with the name by `$gender`. */
+    readonly past: string;
     readonly future: LocalizedText;
     /** In a negative sentence "completely" sounds wrong: "не замерзне", "will not freeze". */
     readonly negative?: LocalizedText;
@@ -93,6 +94,8 @@ export interface Operation {
   impossibleHeadline?(sample: ThermalBody, subject: string, locale: Locale): string | undefined;
   /** Added to "it gave N J to its surroundings" (", most of it latent heat"). */
   readonly heatGivenNote?: LocalizedText;
+  /** The same for a melt setting (a metal, a salt): its crystallisation, not freezing. */
+  readonly heatGivenNoteMolten?: LocalizedText;
   /** What the Professor says while it runs (otherwise a heating / cooling line by `direction`). */
   readonly says?: LocalizedText;
   /** It needs something put into the liquid first (a hot block for equilibrium): the hint until then. */

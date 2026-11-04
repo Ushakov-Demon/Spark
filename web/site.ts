@@ -9,8 +9,9 @@
  *   /experiments/              all experiments      /en/experiments/
  *   /experiments/<id>/         the lab with that experiment chosen, its description under it
  */
-import { tr, type Locale } from '../src/knowledge/i18n.js';
+import { LOCALES, tr, type Locale } from '../src/knowledge/i18n.js';
 import { getCurriculum } from '../src/knowledge/curricula.js';
+import { byLocale, msg, t } from '../src/knowledge/messages.js';
 import type { Subject } from '../src/knowledge/types.js';
 import { PRESETS, presetAsk, presetGradesIn, presetPrograms, presetSubjects, type Preset } from '../src/scenarios/index.js';
 import { esc, presetEquipment, presetLabNumber, presetTopic } from './experiment-sheet.js';
@@ -27,56 +28,30 @@ export const SITE: { name: string; url: string; image: string; readonly descript
   url: '',
   /** The picture of a shared link (og:image), from the site's root; none yet. */
   image: '',
-  description: {
-    uk: 'Безкоштовна віртуальна лабораторія з фізики та хімії для школи: став дослід і дивись, що відбувається і чому, — зі справжніми числами й формулами.',
-    en: 'A free virtual physics and chemistry lab for school: set up an experiment and see what happens and why — with real numbers and formulas.',
-  },
+  description: msg('site-description'),
 };
 
-const CATALOG_UI: Record<Locale, { title: string; intro: string; all: string; back: string; question: string; topic: string; takes: string; programs: string; share: string; copied: string; more: string; search: string; allSubjects: string; allGrades: string; allPrograms: string; program: string; nothing: string; shown: (n: number, of: number) => string; count: (n: number) => string }> = {
-  uk: {
-    title: 'Усі досліди',
-    intro: 'Готові досліди лабораторії Spark: лабораторні роботи й демонстрації з фізики та хімії за шкільними програмами України. Кожен відкривається в лабораторії одним клацанням, і ним можна поділитися посиланням.',
-    all: '📋 Усі досліди',
-    back: '← До лабораторії',
-    question: 'Питання',
-    topic: 'Тема',
-    takes: 'Обладнання',
-    programs: 'Програми',
-    share: 'Поділитися дослідом',
-    copied: 'Посилання скопійовано',
-    more: 'ⓘ Детальніше',
-    search: 'Пошук: назва, тема, прилад, речовина…',
-    allSubjects: 'Усі предмети',
-    allGrades: 'Усі класи',
-    allPrograms: 'Усі програми',
-    program: 'Програма',
-    nothing: 'Нічого не знайдено. Зміни пошук або фільтри.',
-    shown: (n, of) => `Показано ${n} з ${of}`,
-    count: (n) => `${n} дослідів`,
-  },
-  en: {
-    title: 'All experiments',
-    intro: 'The ready-made experiments of the Spark lab: lab works and demonstrations in physics and chemistry, following Ukraine’s school programmes. Each opens in the lab in one click and can be shared by a link.',
-    all: '📋 All experiments',
-    back: '← Back to the lab',
-    question: 'Question',
-    topic: 'Topic',
-    takes: 'Equipment',
-    programs: 'Programmes',
-    share: 'Share the experiment',
-    copied: 'Link copied',
-    more: 'ⓘ Details',
-    search: 'Search: name, topic, instrument, substance…',
-    allSubjects: 'All subjects',
-    allGrades: 'All grades',
-    allPrograms: 'All programmes',
-    program: 'Programme',
-    nothing: 'Nothing found. Change the search or the filters.',
-    shown: (n, of) => `Showing ${n} of ${of}`,
-    count: (n) => `${n} experiments`,
-  },
-};
+const CATALOG_UI: Record<Locale, { title: string; intro: string; all: string; back: string; question: string; topic: string; takes: string; programs: string; share: string; copied: string; more: string; search: string; allSubjects: string; allGrades: string; allPrograms: string; program: string; nothing: string; shown: (n: number, of: number) => string; count: (n: number) => string }> = byLocale((l: Locale) => ({
+  title: t(l, 'site-catalog-ui-title'),
+  intro: t(l, 'site-catalog-ui-intro'),
+  all: t(l, 'site-catalog-ui-all'),
+  back: t(l, 'site-catalog-ui-back'),
+  question: t(l, 'site-catalog-ui-question'),
+  topic: t(l, 'site-catalog-ui-topic'),
+  takes: t(l, 'site-catalog-ui-takes'),
+  programs: t(l, 'site-catalog-ui-programs'),
+  share: t(l, 'site-catalog-ui-share'),
+  copied: t(l, 'site-catalog-ui-copied'),
+  more: t(l, 'site-catalog-ui-more'),
+  search: t(l, 'site-catalog-ui-search'),
+  allSubjects: t(l, 'site-catalog-ui-all-subjects'),
+  allGrades: t(l, 'site-catalog-ui-all-grades'),
+  allPrograms: t(l, 'site-catalog-ui-all-programs'),
+  program: t(l, 'site-catalog-ui-program'),
+  nothing: t(l, 'site-catalog-ui-nothing'),
+  shown: (n, of) => t(l, 'site-catalog-ui-shown', { n, of }),
+  count: (n) => t(l, 'count-experiments', { n }),
+}));
 export const catalogUi = (l: Locale) => CATALOG_UI[l];
 
 // ---------- addresses ----------
@@ -86,7 +61,8 @@ export type LibraryTab = (typeof LIBRARY_TABS)[number];
 export type Route = { readonly page: 'lab' } | { readonly page: 'catalog' } | { readonly page: 'experiment'; readonly id: string } | { readonly page: 'library'; readonly tab: LibraryTab } | { readonly page: 'about' };
 /** A page's path from the site's root, in a language: '', 'experiments/', 'en/experiments/melt-ice/', 'glossary/', 'en/about/'. */
 export function pagePath(r: Route, l: Locale): string {
-  const lang = l === 'uk' ? '' : `${l}/`;
+  // The primary language lives at the root; the others — each in its folder.
+  const lang = l === LOCALES[0] ? '' : `${l}/`;
   return r.page === 'lab' ? lang : r.page === 'catalog' ? `${lang}experiments/` : r.page === 'experiment' ? `${lang}experiments/${r.id}/` : r.page === 'library' ? `${lang}${r.tab}/` : `${lang}about/`;
 }
 /**
@@ -190,7 +166,7 @@ export function pageMeta(route: Route, l: Locale): PageMeta {
     return { title: `${name} · ${SITE.name}`, description: clip(ABOUT_INTRO[l]), locale: l, route, type: 'website', jsonLd: { '@context': 'https://schema.org', '@type': 'AboutPage', name, description: clip(ABOUT_INTRO[l]), inLanguage: l, url: absolute(pagePath(route, l)) || undefined, isPartOf: site } };
   }
   return {
-    title: `${SITE.name} — ${l === 'uk' ? 'віртуальна лабораторія фізики та хімії' : 'a virtual physics and chemistry lab'}`,
+    title: `${SITE.name} — ${t(l, 'site-title-tail')}`,
     description: SITE.description[l],
     locale: l,
     route,
@@ -206,20 +182,19 @@ export function headHtml(m: PageMeta): string {
   const here = absolute(pagePath(m.route, m.locale));
   const alt = (l: Locale) => absolute(pagePath(m.route, l));
   const image = SITE.image ? absolute(SITE.image) : '';
-  const ogLocale = { uk: 'uk_UA', en: 'en_US' } as const;
   return [
     `<title>${esc(m.title)}</title>`,
     n('description', m.description),
     here ? `<link rel="canonical" href="${esc(here)}" />` : '',
-    ...(here ? (['uk', 'en'] as const).map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(alt(l))}" />`) : []),
+    ...(here ? LOCALES.map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(alt(l))}" />`) : []),
     here ? `<link rel="alternate" hreflang="x-default" href="${esc(alt('uk'))}" />` : '',
     a('og:site_name', SITE.name),
     a('og:type', m.type),
     a('og:title', m.title),
     a('og:description', m.description),
     a('og:url', here),
-    a('og:locale', ogLocale[m.locale]),
-    a('og:locale:alternate', ogLocale[m.locale === 'uk' ? 'en' : 'uk']),
+    a('og:locale', t(m.locale, 'language-og-locale')),
+    ...LOCALES.filter((l) => l !== m.locale).map((l) => a('og:locale:alternate', t(l, 'language-og-locale'))),
     a('og:image', image),
     n('twitter:card', image ? 'summary_large_image' : 'summary'),
     n('twitter:title', m.title),

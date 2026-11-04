@@ -10,6 +10,7 @@ import { MATERIALS } from '../src/domains/thermal/materials.js';
 import { formatQuantity, sig } from '../src/explain/format.js';
 import { tr, type Locale, type LocalizedText } from '../src/knowledge/i18n.js';
 import { textFor, type Level } from '../src/knowledge/levels.js';
+import { msg, t as tl } from '../src/knowledge/messages.js';
 import { getSource } from '../src/knowledge/sources.js';
 import type { SourcedValue } from '../src/knowledge/types.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
@@ -22,45 +23,44 @@ interface Ctx {
   readonly level: Level;
 }
 
-const L = (uk: string, en: string): LocalizedText => ({ uk, en });
 const T = {
-  passport: L('Паспорт', 'Identity'),
-  formula: L('Формула', 'Formula'),
-  molar: L('Молярна маса (з формули)', 'Molar mass (from the formula)'),
-  madeOf: L('Склад', 'Made of'),
-  kind: L('Тип', 'Kind'),
-  kinds: { element: L('проста речовина', 'element'), compound: L('сполука', 'compound'), material: L('матеріал змінного складу', 'material of variable composition') },
-  atRoom: L('За кімнатної температури', 'At room temperature'),
-  states: { solid: L('тверда', 'solid'), liquid: L('рідка', 'liquid'), gas: L('газ', 'gas') },
-  phases: L('Стани речовини', 'States of matter'),
-  density: L('Густина', 'Density'),
-  heat: L('Питома теплоємність', 'Specific heat'),
-  cond: L('Теплопровідність', 'Thermal conductivity'),
-  transitions: L('Перетворення', 'Transitions'),
-  melting: L('Плавлення', 'Melting'),
-  boiling: L('Кипіння', 'Boiling'),
-  sublimation: L('Сублімація (лід → газ)', 'Sublimation (solid → gas)'),
-  decomposes: L('Розкладається', 'Decomposes'),
-  latent: L('теплота переходу', 'latent heat'),
-  water: L('У воді', 'In water'),
-  solubility: L('Розчинність', 'Solubility'),
-  miscible: L('змішується з водою в будь-якій пропорції', 'mixes with water in any proportion'),
-  immiscible: L('не змішується з водою', 'does not mix with water'),
-  ions: L('Розпадається на йони', 'Splits into ions'),
-  electric: L('Електрика й магнетизм', 'Electricity and magnetism'),
-  conducts: { metal: L('провідник (метал)', 'conductor (metal)'), 'ions-in-solution': L('проводить у розчині чи розплаві', 'conducts when dissolved or melted'), insulator: L('ізолятор', 'insulator') },
-  resistivity: L('Питомий опір', 'Resistivity'),
-  conductivity: L('Електропровідність', 'Electrical conductivity'),
-  magnetic: { ferromagnetic: L('феромагнетик — притягується магнітом', 'ferromagnetic — attracted by a magnet'), paramagnetic: L('парамагнетик', 'paramagnetic'), diamagnetic: L('діамагнетик', 'diamagnetic') },
-  hazards: L('Безпека', 'Safety'),
-  flags: { flammable: L('горюча', 'flammable'), corrosive: L('їдка', 'corrosive'), irritant: L('подразнює', 'irritant'), oxidizer: L('підтримує горіння', 'oxidizer'), asphyxiant: L('витісняє кисень', 'asphyxiant') },
-  flash: L('Температура спалаху', 'Flash point'),
-  notes: L('Що спрощує модель', 'What the model simplifies'),
-  sources: L('Джерела', 'Sources'),
-  recipe: L('Рецепт', 'Recipe'),
-  recipeNote: L('Це не окрема речовина, а суміш компонентів: усі властивості рушій рахує зі складу.', 'Not a substance of its own but a mix of components: the engine computes everything from the composition.'),
-  spec: L('Характеристики', 'Specifications'),
-  verification: { 'cross-checked': L('перевірено двома джерелами', 'checked by two sources'), 'single-source': L('одне джерело', 'one source'), estimate: L('оцінка', 'estimate') },
+  passport: msg('reference-t-passport'),
+  formula: msg('reference-t-formula'),
+  molar: msg('reference-t-molar'),
+  madeOf: msg('reference-t-made-of'),
+  kind: msg('reference-t-kind'),
+  kinds: { element: msg('reference-kinds-element'), compound: msg('reference-kinds-compound'), material: msg('reference-kinds-material') },
+  atRoom: msg('reference-t-at-room'),
+  states: { solid: msg('reference-states-solid'), liquid: msg('reference-states-liquid'), gas: msg('reference-states-gas') },
+  phases: msg('reference-t-phases'),
+  density: msg('reference-t-density'),
+  heat: msg('reference-t-heat'),
+  cond: msg('reference-t-cond'),
+  transitions: msg('reference-t-transitions'),
+  melting: msg('reference-t-melting'),
+  boiling: msg('reference-t-boiling'),
+  sublimation: msg('reference-t-sublimation'),
+  decomposes: msg('reference-t-decomposes'),
+  latent: msg('reference-t-latent'),
+  water: msg('reference-t-water'),
+  solubility: msg('reference-t-solubility'),
+  miscible: msg('reference-t-miscible'),
+  immiscible: msg('reference-t-immiscible'),
+  ions: msg('reference-t-ions'),
+  electric: msg('reference-t-electric'),
+  conducts: { metal: msg('reference-conducts-metal'), 'ions-in-solution': msg('reference-conducts-ions-in-solution'), insulator: msg('reference-conducts-insulator') },
+  resistivity: msg('reference-t-resistivity'),
+  conductivity: msg('reference-t-conductivity'),
+  magnetic: { ferromagnetic: msg('reference-magnetic-ferromagnetic'), paramagnetic: msg('reference-magnetic-paramagnetic'), diamagnetic: msg('reference-magnetic-diamagnetic') },
+  hazards: msg('reference-t-hazards'),
+  flags: { flammable: msg('reference-flags-flammable'), corrosive: msg('reference-flags-corrosive'), irritant: msg('reference-flags-irritant'), oxidizer: msg('reference-flags-oxidizer'), asphyxiant: msg('reference-flags-asphyxiant') },
+  flash: msg('reference-t-flash'),
+  notes: msg('reference-t-notes'),
+  sources: msg('reference-t-sources'),
+  recipe: msg('reference-t-recipe'),
+  recipeNote: msg('reference-t-recipe-note'),
+  spec: msg('reference-t-spec'),
+  verification: { 'cross-checked': msg('reference-verification-cross-checked'), 'single-source': msg('reference-verification-single-source'), estimate: msg('reference-verification-estimate') },
 };
 
 const t = (x: LocalizedText, c: Ctx) => tr(x, c.locale);
@@ -81,7 +81,7 @@ class Cites {
 /** A value in the reader's units; measurement conditions and data notes (kept in English in the data) only for advanced readers. */
 function value(v: SourcedValue, c: Ctx, cites: Cites, unit = v.unit): string {
   const badge = v.verification === 'cross-checked' ? 'ok' : v.verification === 'estimate' ? 'est' : 'one';
-  const shown = unit === '' ? sig(v.value, 4, c.locale) : unit === 'm' && v.value < 0.1 ? `${sig(v.value * 1000, 3, c.locale)} ${c.locale === 'uk' ? 'мм' : 'mm'}` : unit === '°C' ? `${sig(v.value, 4, c.locale)} °C` : formatQuantity(v.value, unit, { locale: c.locale, level: 'school' });
+  const shown = unit === '' ? sig(v.value, 4, c.locale) : unit === 'm' && v.value < 0.1 ? `${sig(v.value * 1000, 3, c.locale)} ${tl(c.locale, 'unit-sym-mm')}` : unit === '°C' ? `${sig(v.value, 4, c.locale)} °C` : formatQuantity(v.value, unit, { locale: c.locale, level: 'school' });
   const deep = c.level === 'advanced' || c.level === 'expert';
   return `<span class="v">${esc(shown)}</span>${cites.mark(v)} <span class="ver ${badge}">${esc(t(T.verification[v.verification], c))}</span>${deep && v.conditions ? `<small> · ${esc(v.conditions)}</small>` : ''}${deep && v.note ? `<div class="vnote">${esc(v.note)}</div>` : ''}`;
 }
@@ -105,7 +105,7 @@ function componentHtml(comp: Component, c: Ctx, cites: Cites): string {
     section(t(T.passport, c), [
       ...(comp.formula ? [row(t(T.formula, c), `<b>${esc(comp.formula)}</b>`)] : []),
       row(t(T.kind, c), esc(t(T.kinds[comp.kind], c))),
-      ...(m ? [row(t(T.molar, c), `${sig(m * 1000, 5, c.locale)} ${c.locale === 'uk' ? 'г/моль' : 'g/mol'}`)] : []),
+      ...(m ? [row(t(T.molar, c), `${sig(m * 1000, 5, c.locale)} ${tl(c.locale, 'reference-molar-unit')}`)] : []),
       ...(comp.madeOf ? [row(t(T.madeOf, c), esc(comp.madeOf.map((x) => `${t(x.part, c)}${x.fraction ? ` ≈ ${Math.round(x.fraction * 100)} %` : ''}`).join(', ')))] : []),
       row(t(T.atRoom, c), esc(t(T.states[comp.stateAtRoom], c))),
     ]),
@@ -132,12 +132,12 @@ function componentHtml(comp: Component, c: Ctx, cites: Cites): string {
     el.push(row(t(T.conductivity, c), esc(t(T.conducts[e.conducts], c)) + (e.conductivity ? `<div>${value(e.conductivity, c, cites)}</div>` : '')));
     if (e.resistivity) el.push(row(t(T.resistivity, c), value(e.resistivity, c, cites)));
   }
-  if (comp.magnetic) el.push(row(c.locale === 'uk' ? 'Магнетизм' : 'Magnetism', esc(t(T.magnetic[comp.magnetic], c))));
+  if (comp.magnetic) el.push(row(tl(c.locale, 'reference-magnetism'), esc(t(T.magnetic[comp.magnetic], c))));
   parts.push(section(t(T.electric, c), el));
   const h = comp.hazards;
   const flags = h ? (Object.keys(T.flags) as (keyof typeof T.flags)[]).filter((k) => h[k]).map((k) => t(T.flags[k], c)) : [];
   const hz: string[] = [];
-  if (flags.length) hz.push(row(c.locale === 'uk' ? 'Позначки' : 'Flags', esc(flags.join(', '))));
+  if (flags.length) hz.push(row(tl(c.locale, 'reference-flags'), esc(flags.join(', '))));
   if (h?.flashPoint) hz.push(row(t(T.flash, c), value(h.flashPoint, c, cites)));
   if (comp.safety) hz.push(row('⚠', esc(t(textFor(comp.safety, c.level), c))));
   parts.push(section(t(T.hazards, c), hz));
@@ -146,42 +146,41 @@ function componentHtml(comp: Component, c: Ctx, cites: Cites): string {
 }
 
 function equipmentHtml(item: EquipmentItem, c: Ctx, cites: Cites): string {
-  const uk = c.locale === 'uk';
   const rows: string[] = [];
   const add = (label: string, html: string) => rows.push(row(label, html));
   switch (item.kind) {
     case 'heater': {
       const s = item.spec;
-      add(uk ? 'Потужність моделей' : 'Ratings', `${s.ratings.map((r) => `${sig(r, 4, c.locale)} ${uk ? 'Вт' : 'W'}`).join(' / ')}${cites.mark(s.ratingData)}`);
-      if (s.vesselShare) add(uk ? 'Частка теплоти, що йде в посуд' : 'Share of heat into the vessel', value(s.vesselShare, c, cites));
-      if (s.contactConductance) add(uk ? 'Тепловий контакт з дном' : 'Thermal contact with the base', value(s.contactConductance, c, cites));
+      add(tl(c.locale, 'reference-ratings'), `${s.ratings.map((r) => `${sig(r, 4, c.locale)} ${tl(c.locale, 'unit-sym-W')}`).join(' / ')}${cites.mark(s.ratingData)}`);
+      if (s.vesselShare) add(tl(c.locale, 'reference-vessel-share'), value(s.vesselShare, c, cites));
+      if (s.contactConductance) add(tl(c.locale, 'reference-base-contact'), value(s.contactConductance, c, cites));
       break;
     }
     case 'vessel': {
       const s = item.spec;
-      add(uk ? 'Матеріали' : 'Materials', esc(s.materials.map((m) => (m in MATERIALS ? t(MATERIALS[m as keyof typeof MATERIALS].name, c).toLowerCase() : m)).join(', ')));
-      add(uk ? 'Об’єм' : 'Capacity', esc(s.sizes.map((z) => (z < 1 ? `${Math.round(z * 1000)} ${uk ? 'мл' : 'mL'}` : `${z} ${uk ? 'л' : 'L'}`)).join(', ')));
-      add(uk ? 'Товщина стінки' : 'Wall thickness', value(s.wallThickness, c, cites));
-      add(uk ? 'Кришка' : 'Lid', s.lid === 'optional' ? (uk ? 'можна накрити' : 'can be covered') : uk ? 'немає' : 'none');
+      add(tl(c.locale, 'reference-materials'), esc(s.materials.map((m) => (m in MATERIALS ? t(MATERIALS[m as keyof typeof MATERIALS].name, c).toLowerCase() : m)).join(', ')));
+      add(tl(c.locale, 'reference-volume'), esc(s.sizes.map((z) => (z < 1 ? `${Math.round(z * 1000)} ${tl(c.locale, 'unit-sym-mL')}` : `${z} ${tl(c.locale, 'unit-sym-L')}`)).join(', ')));
+      add(tl(c.locale, 'reference-wall'), value(s.wallThickness, c, cites));
+      add(tl(c.locale, 'reference-lid'), s.lid === 'optional' ? (tl(c.locale, 'reference-lid-optional')) : tl(c.locale, 'reference-lid-none'));
       break;
     }
     case 'cooler': {
       const s = item.spec;
-      add(uk ? 'Температура' : 'Temperature', `${s.setpoint.min === s.setpoint.max ? `${s.setpoint.default} °C` : `${s.setpoint.min}…${s.setpoint.max} °C`}${cites.mark(s.setpoint.data)}`);
+      add(tl(c.locale, 'reference-temperature'), `${s.setpoint.min === s.setpoint.max ? `${s.setpoint.default} °C` : `${s.setpoint.min}…${s.setpoint.max} °C`}${cites.mark(s.setpoint.data)}`);
       break;
     }
     case 'scale': {
       const s = item.spec;
-      add(uk ? 'Найбільше навантаження' : 'Capacity', value(s.capacity, c, cites));
-      add(uk ? 'Ціна поділки' : 'Division', value(s.resolution, c, cites));
+      add(tl(c.locale, 'reference-capacity'), value(s.capacity, c, cites));
+      add(tl(c.locale, 'reference-division'), value(s.resolution, c, cites));
       break;
     }
     case 'supply': {
       const s = item.spec;
-      add(uk ? 'Напруга' : 'Voltage', `${s.voltage.min === s.voltage.max ? `${s.voltage.max} ${uk ? 'В' : 'V'}` : `${s.voltage.min}–${s.voltage.max} ${uk ? 'В' : 'V'}`}${cites.mark(s.voltage.data)}`);
-      add(uk ? 'Найбільший струм' : 'Current limit', value(s.currentLimit, c, cites));
-      if (s.internalResistance) add(uk ? 'Внутрішній опір' : 'Internal resistance', value(s.internalResistance, c, cites));
-      if (s.capacity) add(uk ? 'Ємність' : 'Capacity', value(s.capacity, c, cites));
+      add(tl(c.locale, 'reference-voltage'), `${s.voltage.min === s.voltage.max ? `${s.voltage.max} ${tl(c.locale, 'unit-sym-V')}` : `${s.voltage.min}–${s.voltage.max} ${tl(c.locale, 'unit-sym-V')}`}${cites.mark(s.voltage.data)}`);
+      add(tl(c.locale, 'reference-current-limit'), value(s.currentLimit, c, cites));
+      if (s.internalResistance) add(tl(c.locale, 'reference-internal-resistance'), value(s.internalResistance, c, cites));
+      if (s.capacity) add(tl(c.locale, 'reference-battery-capacity'), value(s.capacity, c, cites));
       break;
     }
   }
@@ -206,17 +205,16 @@ export function referenceHtml(target: RefTarget, c: Ctx): string {
       title = t(recipe.name, c);
       lead = t(textFor(recipe.description, c.level), c);
       const parts = recipe.parts.map((p) => `<li><button type="button" class="link" data-ref="${p.component}">${esc(t(COMPONENTS[p.component].name, c))}</button> — ${sig(p.fraction * 100, 3, c.locale)} %</li>`).join('');
-      const uk = c.locale === 'uk';
       // The proportion's own source (sea water salinity), then what the model computes for the mix.
       const basis = recipe.basis
-        ? `<p>${uk ? 'Солоність' : 'Salinity'}: <b>${sig(recipe.basis.value * 100, 3, c.locale)} %</b>${cites.mark(recipe.basis)}</p>`
+        ? `<p>${tl(c.locale, 'reference-salinity')}: <b>${sig(recipe.basis.value * 100, 3, c.locale)} %</b>${cites.mark(recipe.basis)}</p>`
         : '';
       const mix = sub
-        ? section(uk ? 'Властивості суміші (розраховано зі складу)' : 'Properties of the mix (computed from the composition)', [
+        ? section(tl(c.locale, 'reference-mix'), [
             row(t(T.density, c), value(sub.liquid.density, c, cites)),
             row(t(T.heat, c), value(sub.liquid.specificHeat, c, cites)),
-            ...(sub.freezing ? [row(uk ? 'Починає замерзати' : 'Starts to freeze', value(sub.freezing.point, c, cites))] : []),
-            ...(sub.boiling ? [row(uk ? 'Починає кипіти' : 'Starts to boil', value(sub.boiling.point, c, cites))] : []),
+            ...(sub.freezing ? [row(tl(c.locale, 'reference-mix-freezes'), value(sub.freezing.point, c, cites))] : []),
+            ...(sub.boiling ? [row(tl(c.locale, 'reference-mix-boils'), value(sub.boiling.point, c, cites))] : []),
           ])
         : '';
       body = `<h3>${esc(t(T.recipe, c))}</h3><ul>${parts}</ul><p class="muted small">${esc(t(T.recipeNote, c))}</p>${basis}${mix}${(recipe.notes ?? []).map((n) => `<p class="muted small">ℹ ${esc(t(n, c))}</p>`).join('')}`;

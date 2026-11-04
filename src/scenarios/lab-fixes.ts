@@ -3,10 +3,11 @@ import { canHeat } from '../equipment/compatibility.js';
 import { COOLERS, type CoolerId } from '../equipment/coolers.js';
 import { HEATERS, type HeaterId } from '../equipment/heaters.js';
 import { VESSELS } from '../equipment/vessels.js';
+import { msg } from '../knowledge/messages.js';
 import { SUBSTANCES } from '../substances/catalog.js';
 import { isDrySample } from './choices.js';
 import { sig } from '../explain/format.js';
-import type { LocalizedText } from '../knowledge/i18n.js';
+import type { Locale, LocalizedText } from '../knowledge/i18n.js';
 import { OPERATIONS } from './operations/index.js';
 import { forecastLab, labImpossibility, labSetup, operationContext, type LabParams } from './thermal-lab.js';
 
@@ -16,7 +17,7 @@ export interface LabFix {
   readonly params: LabParams;
 }
 
-const T = (c: number): LocalizedText => ({ uk: `${sig(c, 3, 'uk')} °C`, en: `${sig(c, 3, 'en')} °C` });
+const T = (c: number): LocalizedText => msg('lab-fixes-t', { c: (l: Locale) => sig(c, 3, l) });
 const withoutHeater = (p: LabParams): LabParams => {
   const { heater: _h, ...rest } = p;
   void _h;
@@ -46,14 +47,14 @@ export function labFixes(p: LabParams): LabFix[] {
       if (!(sp < limit) || (p.cooler?.id === id && p.cooler.setpoint === sp)) continue;
       const q: LabParams = { ...withoutHeater(p), cooler: { id, setpoint: sp } };
       const name = COOLERS[id].name;
-      if (!labImpossibility(q)) out.push({ label: { uk: `${name.uk}, ${T(sp).uk}`, en: `${name.en}, ${T(sp).en}` }, params: q });
+      if (!labImpossibility(q)) out.push({ label: msg('lab-fixes-label', { name: (l: Locale) => name[l], sp: (l: Locale) => T(sp)[l] }), params: q });
     }
   }
   if (needs.target) {
     const t = needs.target.min ?? needs.target.max;
     if (t !== undefined) {
       const q: LabParams = { ...p, target: t };
-      if (!labImpossibility(q)) out.push({ label: { uk: `Цільова температура ${T(t).uk}`, en: `Target ${T(t).en}` }, params: q });
+      if (!labImpossibility(q)) out.push({ label: msg('lab-fixes-label-2', { t: (l: Locale) => T(t)[l] }), params: q });
     }
   }
   if (needs.heatAbove !== undefined) {
@@ -62,7 +63,7 @@ export function labFixes(p: LabParams): LabFix[] {
       const h = HEATERS[id];
       if (!canHeat(h, vessel, p.material, p.size).ok) continue;
       const q: LabParams = { ...withoutCooler(p), heater: { id, rating: h.spec.defaultRating, knob: 1 } };
-      if (!labImpossibility(q)) out.push({ label: { uk: `Нагріти: ${h.name.uk.toLowerCase()}`, en: `Heat with: ${h.name.en.toLowerCase()}` }, params: q });
+      if (!labImpossibility(q)) out.push({ label: msg('lab-fixes-label-3', { name: (l: Locale) => h.name[l].toLowerCase() }), params: q });
       if (out.length >= 3) break;
     }
   }
@@ -77,20 +78,20 @@ export function stallFixes(p: LabParams, simulation: Simulation): LabFix[] {
   const h = p.heater ? HEATERS[p.heater.id] : undefined;
   const candidates: LabFix[] = [];
   if (h && p.heater) {
-    if (h.spec.control === 'knob' && p.heater.knob < 1) candidates.push({ label: { uk: 'Ручку на максимум', en: 'Knob to maximum' }, params: { ...p, heater: { ...p.heater, knob: 1 } } });
-    if (VESSELS[p.vessel].spec.lid === 'optional' && !p.lid) candidates.push({ label: { uk: 'Накрити кришкою', en: 'Put a lid on' }, params: { ...p, lid: true } });
+    if (h.spec.control === 'knob' && p.heater.knob < 1) candidates.push({ label: msg('lab-fixes-stall-label'), params: { ...p, heater: { ...p.heater, knob: 1 } } });
+    if (VESSELS[p.vessel].spec.lid === 'optional' && !p.lid) candidates.push({ label: msg('lab-fixes-stall-label-2'), params: { ...p, lid: true } });
     const strongest = Math.max(...h.spec.ratings);
     if (strongest > p.heater.rating) {
-      candidates.push({ label: { uk: `Потужніша модель, ${sig(strongest, 4, 'uk')} Вт, на максимум`, en: `A stronger model, ${sig(strongest, 4, 'en')} W, at full` }, params: { ...p, heater: { ...p.heater, rating: strongest, knob: 1 } } });
+      candidates.push({ label: msg('lab-fixes-stall-label-3', { strongest: (l: Locale) => sig(strongest, 4, l) }), params: { ...p, heater: { ...p.heater, rating: strongest, knob: 1 } } });
     }
   }
-  if (p.liters > 0.2) candidates.push({ label: { uk: 'Удвічі менше речовини', en: 'Half the amount' }, params: { ...p, liters: Math.round(p.liters * 50) / 100 } });
+  if (p.liters > 0.2) candidates.push({ label: msg('lab-fixes-stall-label-4'), params: { ...p, liters: Math.round(p.liters * 50) / 100 } });
   // Strong heating of a dry solid: a porcelain crucible in the flame of a lab burner.
   if (isDrySample(SUBSTANCES[p.substance]) && p.vessel !== 'crucible') {
     const crucible = VESSELS.crucible;
     const size = crucible.spec.sizes.find((z) => z >= p.liters) ?? crucible.spec.sizes[crucible.spec.sizes.length - 1]!;
     candidates.push({
-      label: { uk: 'Порцеляновий тигель над газовим пальником', en: 'A porcelain crucible over a Bunsen burner' },
+      label: msg('lab-fixes-stall-label-5'),
       params: { ...p, vessel: 'crucible', material: 'porcelain', size, lid: false, liters: Math.min(p.liters, size), heater: { id: 'bunsen-burner', rating: HEATERS['bunsen-burner'].spec.defaultRating, knob: 1 } },
     });
   }
@@ -107,7 +108,7 @@ export function stallFixes(p: LabParams, simulation: Simulation): LabFix[] {
     const other = HEATERS[id];
     if (!canHeat(other, vessel, p.material, p.size).ok) continue;
     const fix: LabFix = {
-      label: { uk: `Інший нагрівач: ${other.name.uk.toLowerCase()}`, en: `Another heater: ${other.name.en.toLowerCase()}` },
+      label: msg('lab-fixes-fix-label', { name: (l: Locale) => other.name[l].toLowerCase() }),
       params: { ...p, heater: { id, rating: Math.max(...other.spec.ratings), knob: 1 } },
     };
     if (works(fix)) found.push(fix);
@@ -123,8 +124,8 @@ export function stallFixes(p: LabParams, simulation: Simulation): LabFix[] {
       const crucible = VESSELS.crucible;
       const size = crucible.spec.sizes.find((z) => z >= p.liters) ?? crucible.spec.sizes[crucible.spec.sizes.length - 1]!;
       for (const fix of [
-        { label: { uk: `${f.name.uk}, ${T(setpoint).uk}`, en: `${f.name.en}, ${T(setpoint).en}` }, params: inFurnace },
-        { label: { uk: `Порцеляновий тигель у печі, ${T(setpoint).uk}`, en: `A porcelain crucible in the furnace, ${T(setpoint).en}` }, params: { ...inFurnace, vessel: 'crucible' as const, material: 'porcelain', size, lid: false, liters: Math.min(p.liters, size) } },
+        { label: msg('lab-fixes-stall-label-6', { name: (l: Locale) => f.name[l], setpoint: (l: Locale) => T(setpoint)[l] }), params: inFurnace },
+        { label: msg('lab-fixes-stall-label-7', { setpoint: (l: Locale) => T(setpoint)[l] }), params: { ...inFurnace, vessel: 'crucible' as const, material: 'porcelain', size, lid: false, liters: Math.min(p.liters, size) } },
       ]) {
         if (works(fix)) {
           found.push(fix);

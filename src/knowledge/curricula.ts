@@ -1,3 +1,4 @@
+import { msg } from './messages.js';
 import type { Curriculum } from './types.js';
 
 /**
@@ -8,47 +9,52 @@ export const CURRICULA = {
   'ua-nus-2023-holovko': {
     id: 'ua-nus-2023-holovko',
     country: 'UA',
-    name: { uk: 'НУШ: модельна програма «Фізика. 7–9 класи» (Головко та ін., 2023)', en: 'Ukraine, New Ukrainian School: model programme Physics 7–9 (Holovko et al., 2023)' },
+    language: 'uk',
+    name: msg('curriculum-ua-nus-2023-holovko'),
     source: 'ua-mnp-2023-holovko',
     firstGradeAge: 6,
-    short: { uk: 'НУШ · Фізика (Головко)', en: 'NUS (Ukraine) · Physics (Holovko)' },
+    short: msg('curriculum-ua-nus-2023-holovko-short'),
     subject: 'physics',
   },
   'ua-nus-2023-kreminskyi': {
     id: 'ua-nus-2023-kreminskyi',
     country: 'UA',
-    name: { uk: 'НУШ: модельна програма «Фізика. 7–9 класи» (Кремінський та ін., 2023)', en: 'Ukraine, New Ukrainian School: model programme Physics 7–9 (Kreminskyi et al., 2023)' },
+    language: 'uk',
+    name: msg('curriculum-ua-nus-2023-kreminskyi'),
     source: 'ua-mnp-2023-kreminskyi',
     firstGradeAge: 6,
-    short: { uk: 'НУШ · Фізика (Кремінський)', en: 'NUS (Ukraine) · Physics (Kreminskyi)' },
+    short: msg('curriculum-ua-nus-2023-kreminskyi-short'),
     subject: 'physics',
   },
   'ua-nus-2023-hryhorovych-chemistry': {
     id: 'ua-nus-2023-hryhorovych-chemistry',
     country: 'UA',
-    name: { uk: 'НУШ: модельна програма «Хімія. 7–9 класи» (Григорович, 2023)', en: 'Ukraine, New Ukrainian School: model programme Chemistry 7–9 (Hryhorovych, 2023)' },
+    language: 'uk',
+    name: msg('curriculum-ua-nus-2023-hryhorovych-chemistry'),
     source: 'ua-mnp-2023-hryhorovych-chemistry',
     firstGradeAge: 6,
-    short: { uk: 'НУШ · Хімія', en: 'NUS (Ukraine) · Chemistry' },
+    short: msg('curriculum-ua-nus-2023-hryhorovych-chemistry-short'),
     subject: 'chemistry',
   },
   'ua-2017': {
     id: 'ua-2017',
     country: 'UA',
-    name: { uk: 'Програма «Фізика. 7–9 класи» МОН (2017)', en: 'Ukraine: Physics 7–9 programme, Ministry of Education (2017)' },
+    language: 'uk',
+    name: msg('curriculum-ua-2017'),
     source: 'ua-mon-2017-physics-7-9',
     firstGradeAge: 6,
-    short: { uk: 'МОН 2017 · Фізика', en: 'Ukraine 2017 · Physics' },
+    short: msg('curriculum-ua-2017-short'),
     subject: 'physics',
   },
   'oxfordaqa-igcse-sciences': {
     id: 'oxfordaqa-igcse-sciences',
     country: 'GB',
-    name: { uk: 'Oxford AQA International GCSE: Physics (9203), Chemistry (9202) — обов’язкові практичні роботи', en: 'Oxford AQA International GCSE: Physics (9203), Chemistry (9202) — required practicals' },
+    language: 'en',
+    name: msg('curriculum-oxfordaqa-igcse-sciences'),
     source: 'oxfordaqa-igcse-practical-handbook',
     // International GCSE: ages 14–16 (years 10–11); "grade" in a ref is not used for it.
     firstGradeAge: 5,
-    short: { uk: 'Oxford AQA IGCSE', en: 'Oxford AQA IGCSE' },
+    short: msg('curriculum-oxfordaqa-igcse-sciences-short'),
   },
 } as const satisfies Record<string, Curriculum>;
 

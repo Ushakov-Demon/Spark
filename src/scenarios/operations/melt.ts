@@ -1,10 +1,11 @@
-import { tr } from '../../knowledge/i18n.js';
+import { tr, type Locale } from '../../knowledge/i18n.js';
+import { msg } from '../../knowledge/messages.js';
 import { both, capital, K, lower, T } from './helpers.js';
 import type { Operation } from './types.js';
 
 export const MELT: Operation = {
   id: 'melt',
-  label: { uk: 'Розплавити', en: 'Melt' },
+  label: msg('op-melt-label'),
   icon: 'melt',
   uses: 'either',
   direction: 'heating',
@@ -16,28 +17,24 @@ export const MELT: Operation = {
   reached: (b, _p, sub) => (b.state.solidFraction ?? 0) <= 0 && sub.freezing !== undefined && b.state.temperature >= K(sub.freezing.point.value) - 1e-6,
   impossible({ p, sub, surroundingTemp, where }) {
     if (!sub.freezing) {
-      return both((l) => (l === 'uk' ? `Для речовини «${tr(sub.name, l)}» немає даних про застигання, тому твердого стану в моделі немає й розтоплювати нічого.` : `No freezing data for ${lower(sub, l)}: the model has no solid state to melt.`));
+      return msg('op-melt-no-data', { name: (l: Locale) => tr(sub.name, l), lower: (l: Locale) => lower(sub, l) });
     }
     const tm = sub.freezing.point.value;
     if (p.heater || surroundingTemp > tm) return undefined;
-    return both((l) =>
-      l === 'uk'
-        ? `${capital(where(l))} лише ${T(surroundingTemp, l)} — не тепліше за температуру плавлення (${T(tm, l)}), тож без нагрівача нічого не розтане.`
-        : `It is only ${T(surroundingTemp, l)} ${where(l)} — not warmer than the melting point (${T(tm, l)}), so nothing melts without a heater.`,
-    );
+    return msg('op-melt-not-warm', { where: (l: Locale) => where(l), Where: (l: Locale) => capital(where(l)), around: (l: Locale) => T(surroundingTemp, l), tm: (l: Locale) => T(tm, l) });
   },
   needs: ({ p, sub, surroundingTemp }) => (sub.freezing && !p.heater && surroundingTemp <= sub.freezing.point.value ? { heatAbove: sub.freezing.point.value } : undefined),
   paper: (_p, sub) => (sub.freezing ? { end: sub.freezing.point.value } : undefined),
   markers: ['freezing'],
   subjectIsSolid: true,
   verbs: {
-    past: { uk: { f: 'повністю розтанула', m: 'повністю розтанув', n: 'повністю розтануло' }, en: 'melted completely' },
-    future: { uk: 'повністю розтане', en: 'melt completely' },
-    negative: { uk: 'розтане', en: 'melt' },
+    past: 'op-melt-past',
+    future: msg('op-melt-verbs-future'),
+    negative: msg('op-melt-verbs-negative'),
   },
   verbsMolten: {
-    past: { uk: { f: 'повністю розплавилася', m: 'повністю розплавився', n: 'повністю розплавилося' }, en: 'melted completely' },
-    future: { uk: 'повністю розплавиться', en: 'melt completely' },
-    negative: { uk: 'розплавиться', en: 'melt' },
+    past: 'op-melt-past-molten',
+    future: msg('op-melt-verbs-molten-future'),
+    negative: msg('op-melt-verbs-molten-negative'),
   },
 };

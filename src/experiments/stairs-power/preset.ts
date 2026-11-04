@@ -33,11 +33,11 @@ export const preset_stairs_power: Preset = varied(
   {
     // The pupil's own measurements (an example by default): their mass, the stairs, the two times.
     controls: [
-      { id: 'mass', label: msg('stairs-power-mass-label'), kind: 'number', unit: 'кг', min: 20, max: 150, step: 0, value: 50 },
+      { id: 'mass', label: msg('stairs-power-mass-label'), kind: 'number', unit: 'kg', min: 20, max: 150, step: 0, value: 50 },
       { id: 'steps', label: msg('stairs-power-steps-label'), kind: 'number', unit: '', min: 3, max: 100, step: 1, value: 18 },
-      { id: 'rise', label: msg('stairs-power-rise-label'), kind: 'number', unit: 'см', min: 10, max: 22, step: 0, value: 16 },
-      { id: 'walk', label: msg('stairs-power-walk-label'), kind: 'number', unit: 'с', min: 1, max: 600, step: 0, value: 12 },
-      { id: 'run', label: msg('stairs-power-run-label'), kind: 'number', unit: 'с', min: 1, max: 600, step: 0, value: 4 },
+      { id: 'rise', label: msg('stairs-power-rise-label'), kind: 'number', unit: 'cm', min: 10, max: 22, step: 0, value: 16 },
+      { id: 'walk', label: msg('stairs-power-walk-label'), kind: 'number', unit: 's', min: 1, max: 600, step: 0, value: 12 },
+      { id: 'run', label: msg('stairs-power-run-label'), kind: 'number', unit: 's', min: 1, max: 600, step: 0, value: 4 },
     ],
     build: (v) => {
       const mass = Number(v['mass']);

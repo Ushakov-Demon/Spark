@@ -2,6 +2,7 @@ import type { Command } from '../core/commands.js';
 import type { ExperimentResult } from '../core/experiment.js';
 import { createSimulation, type Simulation } from '../core/simulation.js';
 import { seconds } from '../core/units.js';
+import { localized, msg, t as tl } from '../knowledge/messages.js';
 import { liquidHeat } from '../substances/types.js';
 import { createCommandRegistry } from '../core/commands.js';
 import { runExperiment } from '../core/experiment.js';
@@ -126,16 +127,16 @@ export function goalOptions(p: LabParams, simulation: Simulation, targetSeconds:
       if (r === p.heater.rating) continue;
       const t = timeToGoal({ ...p, heater: { ...p.heater, rating: r, knob: 1 } }, simulation);
       const W = (x: number) => formatQuantity(x, 'W', { locale, level: 'school' });
-      if (within(t)) out.push({ label: { uk: 'Інша модель нагрівача, на повну', en: 'Another heater model, at full' }, from: W(p.heater.rating), to: W(r), time: t });
+      if (within(t)) out.push({ label: msg('lab-debrief-goal-options-label'), from: W(p.heater.rating), to: W(r), time: t });
     }
     if (p.heater.knob < 1 && heater.spec.control === 'knob') {
       const t = timeToGoal({ ...p, heater: { ...p.heater, knob: 1 } }, simulation);
-      if (within(t)) out.push({ label: { uk: 'Повернути ручку на максимум', en: 'Turn the knob to maximum' }, from: `${Math.round(p.heater.knob * 100)} %`, to: '100 %', time: t });
+      if (within(t)) out.push({ label: msg('lab-debrief-goal-options-label-2'), from: `${Math.round(p.heater.knob * 100)} %`, to: '100 %', time: t });
     }
   }
   if (VESSELS[p.vessel].spec.lid === 'optional' && !p.lid) {
     const t = timeToGoal({ ...p, lid: true }, simulation);
-    if (within(t)) out.push({ label: { uk: 'Накрити кришкою', en: 'Put a lid on' }, from: '—', to: '✓', time: t });
+    if (within(t)) out.push({ label: msg('lab-debrief-goal-options-label-3'), from: '—', to: '✓', time: t });
   }
   // Continuous: less substance (bisection on amount).
   const tooSlow = (liters: number) => timeToGoal({ ...p, liters }, simulation) > targetSeconds;
@@ -148,8 +149,8 @@ export function goalOptions(p: LabParams, simulation: Simulation, targetSeconds:
       else lo = mid;
     }
     const t = timeToGoal({ ...p, liters: lo }, simulation);
-    const L = (x: number) => (x < 1 ? `${Math.round(x * 1000)} ${locale === 'uk' ? 'мл' : 'mL'}` : `${sig(x, 3, locale)} ${locale === 'uk' ? 'л' : 'L'}`);
-    out.push({ label: { uk: 'Взяти менше речовини', en: 'Use less substance' }, from: L(p.liters), to: L(lo), time: t });
+    const L = (x: number) => (x < 1 ? `${Math.round(x * 1000)} ${tl(locale, 'unit-sym-mL')}` : `${sig(x, 3, locale)} ${tl(locale, 'unit-sym-L')}`);
+    out.push({ label: msg('lab-debrief-goal-options-label-4'), from: L(p.liters), to: L(lo), time: t });
   }
   return out;
 }
@@ -164,37 +165,36 @@ export interface DebriefInput<C extends Command> {
 }
 
 const PART_NAMES: Readonly<Record<string, LocalizedText>> = {
-  sample: { uk: 'на саму речовину (нагрівання, плавлення)', en: 'into the substance itself (warming, melting)' },
-  vessel: { uk: 'на нагрівання посуду', en: 'into warming the vessel' },
-  lid: { uk: 'на нагрівання кришки', en: 'into warming the lid' },
-  pieces: { uk: 'на нагрівання того, що поклали в рідину', en: 'into warming what was put into the liquid' },
-  heater: { uk: 'залишилось у розжареному нагрівачі', en: 'stayed in the hot heater' },
-  air: { uk: 'пішло в повітря (тепловіддача)', en: 'lost to the air (heat transfer)' },
-  flame: { uk: 'полум’я пройшло повз посуд', en: 'flame heat that went past the vessel' },
-  vapour: { uk: 'забрала пара (випаровування й кипіння)', en: 'carried away by vapour (evaporation and boiling)' },
+  sample: msg('lab-debrief-part-names-sample'),
+  vessel: msg('lab-debrief-part-names-vessel'),
+  lid: msg('lab-debrief-part-names-lid'),
+  pieces: msg('lab-debrief-part-names-pieces'),
+  heater: msg('lab-debrief-part-names-heater'),
+  air: msg('lab-debrief-part-names-air'),
+  flame: msg('lab-debrief-part-names-flame'),
+  vapour: msg('lab-debrief-part-names-vapour'),
 };
 
 /** The "your expectation vs reality" block, shown after the headline. */
 export function labDebrief<C extends Command>({ params: p, result, reachedAt, expectation: x, options, ctx }: DebriefInput<C>): Block[] {
   const { locale } = ctx;
-  const uk = locale === 'uk';
   const D = (s: number) => formatDuration(s, locale);
   const J = (j: number) => formatQuantity(j, 'J', { locale, level: 'school' });
-  const out: Block[] = [h(3, uk ? 'Розбір' : 'Debrief')];
+  const out: Block[] = [h(3, tl(locale, 'lab-debrief-out'))];
 
   if (x) {
     const tol = x.tolerance ?? Math.max(30, 0.1 * x.seconds);
-    const head = x.kind === 'goal' ? (uk ? 'Ціль' : 'Goal') : uk ? 'Прогноз' : 'Prediction';
-    if (reachedAt === undefined) out.push(para(`${head}: ${D(x.seconds)} → ${uk ? 'мети не досягнуто' : 'the goal was not reached'}.`));
+    const head = x.kind === 'goal' ? (tl(locale, 'lab-debrief-head')) : tl(locale, 'lab-debrief-head-2');
+    if (reachedAt === undefined) out.push(para(`${head}: ${D(x.seconds)} → ${tl(locale, 'lab-debrief-text')}.`));
     else {
       const dev = reachedAt - x.seconds;
       const verdict =
         Math.abs(dev) <= tol
-          ? uk ? `влучно (різниця ${D(Math.abs(dev))})` : `on target (off by ${D(Math.abs(dev))})`
+          ? tl(locale, 'lab-debrief-verdict', { dev: D(Math.abs(dev)) })
           : dev > 0
-            ? uk ? `насправді довше на ${D(dev)}` : `it actually took ${D(dev)} longer`
-            : uk ? `насправді швидше на ${D(-dev)}` : `it was actually ${D(-dev)} faster`;
-      out.push(para(`${head}: ${D(x.seconds)} → ${uk ? 'результат' : 'result'}: ${D(reachedAt)}, ${verdict}.`));
+            ? tl(locale, 'lab-debrief-verdict-2', { dev: D(dev) })
+            : tl(locale, 'lab-debrief-verdict-3', { value: D(-dev) });
+      out.push(para(`${head}: ${D(x.seconds)} → ${tl(locale, 'lab-debrief-text-2')}: ${D(reachedAt)}, ${verdict}.`));
     }
   }
 
@@ -202,21 +202,17 @@ export function labDebrief<C extends Command>({ params: p, result, reachedAt, ex
   if (paper !== undefined) {
     out.push(
       para(
-        uk
-          ? `Розрахунок «на папері» (вся енергія нагрівача йде лише в речовину): ${D(paper)}.`
-          : `"On paper" (all the heater's energy goes into the substance only): ${D(paper)}.`,
+        tl(locale, 'lab-debrief-text-3', { paper: D(paper) }),
       ),
     );
     const b = lossBreakdown(result);
     if (b.produced > 0) {
-      out.push(para(uk ? `Насправді з ${J(b.produced)}, які виділив нагрівач:` : `In reality, of the ${J(b.produced)} the heater released:`));
-      out.push(list(b.parts.sort((a, c) => c.energy - a.energy).map((part) => `${Math.round((100 * part.energy) / b.produced)} % — ${tr(PART_NAMES[part.key] ?? { uk: part.key, en: part.key }, locale)} (${J(part.energy)})`)));
+      out.push(para(tl(locale, 'lab-debrief-text-4', { produced: J(b.produced) })));
+      out.push(list(b.parts.sort((a, c) => c.energy - a.energy).map((part) => `${Math.round((100 * part.energy) / b.produced)} % — ${tr(PART_NAMES[part.key] ?? localized((l: Locale) => part.key), locale)} (${J(part.energy)})`)));
       if (x?.kind === 'prediction' && reachedAt !== undefined && Math.abs(x.seconds - paper) < Math.max(30, 0.1 * paper)) {
         out.push(
           para(
-            uk
-              ? 'Прогноз збігається з розрахунком «на папері»: формулу застосовано правильно. Різницю дали «невидимі учасники» — посуд, повітря, пара.'
-              : 'The prediction matches the paper calculation: the formula was applied correctly. The difference comes from the «invisible participants» — vessel, air, vapour.',
+            tl(locale, 'lab-debrief-text-5'),
           ),
         );
       }
@@ -225,10 +221,10 @@ export function labDebrief<C extends Command>({ params: p, result, reachedAt, ex
 
   if (x?.kind === 'goal' && (reachedAt === undefined || reachedAt > x.seconds + (x.tolerance ?? Math.max(30, 0.1 * x.seconds)))) {
     if (options?.length) {
-      out.push(para(uk ? 'Що змінити, щоб устигнути (кожен варіант окремо, перевірено повторним дослідом):' : 'What to change to make it in time (each option on its own, checked by re-running):'));
+      out.push(para(tl(locale, 'lab-debrief-text-6')));
       out.push(list(options.map((o) => `${tr(o.label, locale)}: ${o.from} → ${o.to} — ${D(o.time)}`)));
     } else {
-      out.push(para(uk ? 'Жодна окрема зміна (потужність, кришка, менше речовини) не дає вкластися в цей час.' : 'No single change (power, lid, less substance) makes it in this time.'));
+      out.push(para(tl(locale, 'lab-debrief-text-7')));
     }
   }
   return out;
