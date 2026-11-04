@@ -133,3 +133,8 @@ law-area = Area
 law-area-statement-novice = An area shows how much room a surface takes: how many squares of 1 cm × 1 cm (or 1 m × 1 m) fit on it.
 law-area-statement-school = An area S is how many unit squares a figure holds; its SI unit is 1 m². A rectangle’s S = a·b; a figure of irregular shape is measured with a palette: S ≈ (N + n/2)·s₀.
 law-area-story-school = This is a way of measuring.
+
+law-scale-division = The value of a division
+law-scale-division-statement-novice = The value of a division is how much of a quantity one division of an instrument’s scale stands for.
+law-scale-division-statement-school = The value of a division c = (a − b)/n, where a and b are neighbouring numbers on the scale and n the divisions between them. It sets how finely the reading can be taken.
+law-scale-division-story-school = This is a way of measuring.

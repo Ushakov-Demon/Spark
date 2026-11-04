@@ -277,3 +277,11 @@ formula-mechanics-palette-area-cut-name = квадратики, які пере�
 formula-mechanics-palette-area-square-name = площа одного квадратика
 formula-mechanics-palette-area-explanation-novice = Палетка — прозора плівка з квадратиками. Кладемо її на фігуру, рахуємо квадратики, що повністю всередині, і ті, які перетинає край; перетнуті — в середньому наполовину всередині, тож беремо їх половину.
 formula-mechanics-palette-area-explanation-school = S ≈ (N + n/2)·s₀: N цілих квадратиків, n перетнутих краєм, s₀ — площа квадратика. Помиляємося тільки на перетнутих, а їх стає менше відносно цілих, коли квадратики дрібніші, — тож що дрібніша палетка, то точніше (і то довше рахувати).
+
+formula-mechanics-scale-division = Ціна поділки шкали
+formula-mechanics-scale-division-c-name = ціна поділки
+formula-mechanics-scale-division-a-name = більше з двох сусідніх чисел на шкалі
+formula-mechanics-scale-division-b-name = менше з них
+formula-mechanics-scale-division-n-name = кількість поділок між ними
+formula-mechanics-scale-division-explanation-novice = Візьми дві сусідні позначки з числами, від більшого числа відніми менше й поділи на кількість поділок між ними.
+formula-mechanics-scale-division-explanation-school = Так знаходять, скільки одиниць величини припадає на одну поділку будь-якого приладу — лінійки, мензурки, термометра. Точніше ніж до половини поділки за шкалою не прочитаєш.

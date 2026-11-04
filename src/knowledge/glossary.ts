@@ -82,6 +82,7 @@ export const GLOSSARY: readonly Term[] = [
   { ...term('kibble-balance'), source: 'wikipedia-kibble-balance' },
   { ...term('pale-blue-dot'), source: 'wikipedia-pale-blue-dot', photo: 'nasa-pale-blue-dot-photo', reference: true },
   { ...term('rhind-papyrus'), source: 'wikipedia-rhind-papyrus', reference: true },
+  { ...term('anders-celsius'), source: 'wikipedia-anders-celsius', reference: true },
   { ...term('hindenburg'), source: 'wikipedia-hindenburg-disaster', photo: 'commons-hindenburg-photo', reference: true },
   { ...term('beauplan'), source: 'wikipedia-beauplan', reference: true },
   { ...term('beauplan-map'), source: 'wikipedia-beauplan', reference: true },

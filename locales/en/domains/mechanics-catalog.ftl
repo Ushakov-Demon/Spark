@@ -277,3 +277,11 @@ formula-mechanics-palette-area-cut-name = squares the edge cuts
 formula-mechanics-palette-area-square-name = one square’s area
 formula-mechanics-palette-area-explanation-novice = A palette is a transparent sheet ruled in squares. Lay it on the figure, count the squares wholly inside and those the edge cuts; a cut one is on average half inside, so take half of them.
 formula-mechanics-palette-area-explanation-school = S ≈ (N + n/2)·s₀: N whole squares, n cut by the edge, s₀ one square’s area. The error is only in the cut ones, and there are fewer of them against the whole ones when the squares are smaller — so the finer the palette, the more accurate (and the longer to count).
+
+formula-mechanics-scale-division = The value of a scale’s division
+formula-mechanics-scale-division-c-name = the value of a division
+formula-mechanics-scale-division-a-name = the larger of two neighbouring numbers on the scale
+formula-mechanics-scale-division-b-name = the smaller of them
+formula-mechanics-scale-division-n-name = the number of divisions between them
+formula-mechanics-scale-division-explanation-novice = Take two neighbouring numbered marks, subtract the smaller number from the larger and divide by the number of divisions between them.
+formula-mechanics-scale-division-explanation-school = This is how one finds how much of a quantity one division of any instrument stands for — a ruler’s, a measuring cylinder’s, a thermometer’s. A scale is not read finer than half a division.

@@ -3,6 +3,7 @@ import type { CommandHandler } from '../core/commands.js';
 import type { ExperimentLogEntry } from '../core/experiment.js';
 import { entityId } from '../core/ids.js';
 import { err, ok } from '../core/result.js';
+import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import type { SystemState } from '../core/state.js';
 import type { MeasurementRecord } from '../core/trace.js';
 import { COMPONENTS, NACL_SOLUTE } from '../components/index.js';
@@ -197,12 +198,18 @@ export function readingText(r: MeasurementRecord, locale: 'uk' | 'en'): string {
   if (r.quantity === 'time') return formatMeasured('time', r.value, 0.01, locale);
   if (r.quantity === 'volume') return formatMeasured('volume', r.value, r.inputs?.['division'] ?? 1e-6, locale);
   if (r.quantity === 'area') return formatMeasured('area', r.value, r.inputs?.['division'] ?? 1e-6, locale);
+  if (r.quantity === 'temperature') return formatMeasured('temperature', r.value, r.inputs?.['division'] ?? 1, locale);
   return formatMeasured('force', r.value, 0.1, locale);
 }
 
 /** A reading as an instrument shows it: "1 657 г", "62 мл", "0,6 Н"; null — out of range. */
 export function formatMeasured(quantity: MeasurementRecord['quantity'], value: number | null, division: number, locale: 'uk' | 'en'): string {
   if (value === null) return quantity === 'volume' ? (t(locale, 'measuring-format-measured')) : t(locale, 'measuring-format-measured-2');
+  // (A temperature is kept in kelvin and shown in degrees Celsius, to the division.)
+  if (quantity === 'temperature') {
+    const d = Math.max(0, Math.round(-Math.log10(division)));
+    return `${new Intl.NumberFormat(NUMBER_LOCALE[locale], { minimumFractionDigits: d, maximumFractionDigits: d }).format(value - ZERO_CELSIUS_IN_KELVIN)} ${t(locale, 'unit-sym-degC')}`;
+  }
   const [k, unit] = quantity === 'mass' ? [1000, t(locale, 'unit-sym-g')] : quantity === 'volume' ? [1e6, t(locale, 'unit-sym-mL')] : quantity === 'length' ? [100, t(locale, 'unit-sym-cm')] : quantity === 'area' ? [1e4, t(locale, 'unit-sym-cm2')] : quantity === 'time' ? [1, t(locale, 'unit-sym-s')] : quantity === 'current' ? [1, t(locale, 'unit-sym-A')] : quantity === 'voltage' ? [1, t(locale, 'unit-sym-V')] : quantity === 'resistance' ? [1, t(locale, 'unit-sym-ohm')] : quantity === 'pressure' ? [0.01, t(locale, 'measuring-format-measured-kunit')] : quantity === 'angle' ? [1, '°'] : quantity === 'turns' ? [1, t(locale, 'measuring-format-measured-kunit-2')] : quantity === 'ratio' ? [1, ''] : quantity === 'days' ? [1, t(locale, 'measuring-format-measured-kunit-3')] : [1, t(locale, 'unit-sym-N')];
   const digits = Math.max(0, Math.round(-Math.log10(division * k)));
   // (Turns are counted to a quarter: 4,75, but 12 — not 12,00.)

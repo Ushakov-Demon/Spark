@@ -123,6 +123,9 @@ export const paletteArea = (whole: number, cut: number, square: number): number 
 /** The method of rows: a small body's size from a row of N of them, d = L / N. */
 export const rowSize = (length: number, count: number): number => length / count;
 
+/** The value of a scale's division: two neighbouring numbered marks a > b and the n divisions between them, c = (a − b) / n. */
+export const scaleDivision = (a: number, b: number, n: number): number => (a - b) / n;
+
 /** A thread wound on (off) a spool: each turn moves it by the circumference, l = π·d·n. */
 export const woundLength = (diameter: number, turns: number): number => Math.PI * diameter * turns;
 /** Kepler's T²/a³: the period and the distance in the Earth's years and distances. */

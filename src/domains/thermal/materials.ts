@@ -100,6 +100,17 @@ export const CONVECTION = {
     citations: [{ source: 'spark', locator: 'estimate', conditions: 'no source found', range: [30, 500] }],
     note: 'A heap of grains or a lump touches the wall only at points; the gaps are air. A packed bed of grains is at the low end, a flat metal piece on a flat bottom higher. Not measured.',
   },
+  stirredWater: {
+    value: heatTransferCoeff(2000),
+    unit: 'W/(m²·K)',
+    conditions: 'forced convection, water (stirred by hand)',
+    verification: 'estimate',
+    tolerance: 0.6,
+    citations: [
+      { source: 'wikipedia-heat-transfer-coefficient', locator: 'Overall coefficient, Water', conditions: 'not stated', range: [500, 10_000] },
+    ],
+    note: 'Estimate inside the water range: stirring by hand moves the water past a small body a few times faster than it rises by itself.',
+  },
   stillWater: {
     value: heatTransferCoeff(500),
     unit: 'W/(m²·K)',
