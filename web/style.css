@@ -1144,6 +1144,11 @@ html.phone, html.phone body { overflow-x: clip; }
 /* Scrolled to by the finger: its beginning a little below the screen's top. */
 html.phone #quiz, html.phone #explain { scroll-margin-top: 16px; }
 html.phone .app { display: block; padding: 4px 6px 16px; }
+/* The site's other pages (the experiments, the library, about) are pages of their own on a phone too: no lab under them (only the drawer, fixed, stays for ☰), the header in its place. */
+html.phone body:is(.in-library, .in-about, .in-catalog) .app { display: block; padding: 0; }
+html.phone body:is(.in-library, .in-about, .in-catalog) .main { display: none; }
+html.phone.playing body:is(.in-library, .in-about, .in-catalog) header.top { position: static; transform: none; box-shadow: none; }
+html.phone body:is(.in-library, .in-about, .in-catalog) :is(.top-exp, .top-exp-tools) { display: none; }
 html.phone .console-fab, html.phone .console-dock { display: none; }
 /* The experiment's panel (main.ts moves all but the scene into it): in the flow when held upright (the lab asks to turn the phone then). */
 html.phone .exp-grip, html.phone #side-open, html.phone #side-toggle { display: none; }
@@ -1160,19 +1165,30 @@ html.phone .main > :empty, html.phone .main > .look-back:empty { display: none; 
 /* The kitchen: the scene to the screen's height; the panel over the wall on its right, as wide as the room left (or as dragged). */
 @media (orientation: landscape) {
   html.phone .main { display: block; }
-  /* The scene as tall as the screen; the panel as wide as the room left, but 200 px at least (the scene a little smaller for it). Dragged wider, the panel lies over the scene. */
-  html.phone .kitchen { --scene-full: min(calc((100dvh - 10px) * 640 / 408), calc(100vw - 12px)); --panel-base: max(200px, calc(100vw - 20px - var(--scene-full))); --panel-w: var(--panel-drag, var(--panel-base)); --scene-w: min(var(--scene-full), calc(100vw - 20px - var(--panel-base))); position: relative; height: calc(100dvh - 8px); padding: 0; overflow: hidden; }
-  html.phone .kitchen.panel-folded, html.phone .kitchen.panel-gone, html.phone body.table-bare .kitchen { --scene-w: min(var(--scene-full), calc(100vw - 48px)); }
-  html.phone .kitchen > #scene { width: var(--scene-w); margin-left: max(0px, calc((100% - var(--panel-w) - var(--scene-w)) / 2)); transition: margin-left 0.25s ease; }
-  html.phone .kitchen.panel-folded > #scene { margin-left: max(0px, calc((100% - 28px - var(--scene-w)) / 2)); }
-  html.phone body.table-bare .kitchen > #scene, html.phone .kitchen.panel-gone > #scene { margin-left: max(0px, calc((100% - var(--scene-w)) / 2)); }
+  /* The scene: the whole screen, in a phone's own proportions (not the desktop's 640 : 408) — the drawing shows more wall and table at its sides. Opened, the panel lies over it; folded, it is a tab on the wall at the right edge. */
+  html.phone .kitchen { --panel-w: var(--panel-drag, 280px); position: relative; height: calc(100dvh - 8px); padding: 0; overflow: hidden; }
+  html.phone .kitchen > #scene { width: 100%; height: 100%; }
+  html.phone .kitchen #scene .scene, html.phone .kitchen #scene .scene-stage { height: 100%; }
+  html.phone .kitchen #scene .scene-svg { aspect-ratio: auto; height: 100%; }
+  /* The Professor a narrow column on the left; the board from him to 📰 and 👀, which stand one over the other right of it; the step on the table's front. */
+  html.phone .scene-prof { left: 0.5%; width: min(110px, 11%); min-width: 0; max-width: none; }
+  html.phone .scene .board { left: calc(min(110px, 11%) + 1%); right: 60px; }
+  /* (Under ☰, which stands over the scene's top right corner.) */
+  html.phone .table-buttons { top: 64px; bottom: auto; right: 6px; flex-direction: column; gap: 10px; }
+  html.phone .scene-go:not([hidden]) { position: absolute; right: 72px; bottom: 2.5%; z-index: 4; }
+  /* On its side even a narrow phone has the room: the bubble over the Professor, as on a computer (not the narrow screens' top corner). */
+  html.phone .scene-prof { position: absolute; }
+  html.phone .scene-prof .prof, html.phone .scene .prof-side { position: static; width: auto; min-width: 0; }
+  html.phone .scene .bubble { top: auto; right: auto; left: 0; bottom: 100%; margin: 0 0 14px; line-height: 1.55; padding: 12px 40px 12px 18px; border-radius: 22px; }
+  html.phone:not(.no-speaker) .scene .bubble::before, html.phone:not(.no-speaker) .scene .bubble::after { display: block; }
+  html.phone .scene .bubble-text { max-height: none; overflow: visible; }
   html.phone .kitchen.panel-gone .exp-panel { display: none; }
   html.phone .kitchen #scene .scene { margin: 0; }
   html.phone .kitchen #scene .scene-svg { max-height: none; }
   html.phone .exp-panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; width: min(var(--panel-w), calc(100% - 60px)); background: var(--card); border-left: 1px solid var(--line); box-shadow: -6px 0 16px -10px rgba(0, 0, 0, 0.45); transition: width 0.25s ease; }
   /* Folded: no column — only a tab on the right edge, to tap or drag it open again. */
   html.phone .kitchen.panel-folded .exp-panel { width: 28px; background: transparent; border: 0; box-shadow: none; pointer-events: none; }
-  html.phone .kitchen.panel-folded .exp-grip { pointer-events: auto; align-self: center; height: 96px; background: var(--card); border-radius: 12px 0 0 12px; box-shadow: -3px 0 10px rgba(0, 0, 0, 0.25); }
+  html.phone .kitchen.panel-folded .exp-grip { pointer-events: auto; align-self: flex-end; margin-bottom: 14vh; height: 96px; background: var(--card); border-radius: 12px 0 0 12px; box-shadow: -3px 0 10px rgba(0, 0, 0, 0.25); }
   html.phone .kitchen.panel-folded .exp-panel-body, html.phone body.table-bare .exp-panel { display: none; }
   html.phone .kitchen.panel-dragged .exp-panel, html.phone .kitchen.panel-dragged > #scene { transition: none; }
   html.phone .exp-grip { display: grid; place-items: center; flex: 0 0 28px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; touch-action: none; cursor: ew-resize; }
@@ -1200,7 +1216,6 @@ html.phone button, html.phone select, html.phone input:not([type='checkbox']):no
 html.phone .preset-more-btn, html.phone .fold-btn, html.phone .ref-close, html.phone .info-close, html.phone .lab-sheet-close { min-width: 44px; min-height: 44px; }
 html.phone .scene .bubble-turn { min-height: 40px; padding: 4px 16px; }
 html.phone .footer-row button.link, html.phone footer a { display: inline-block; padding: 10px 4px; }
-@media (max-width: 700px) { html.phone .scene .bubble-chip:not([hidden]) { top: 6px; right: 6px; left: auto; bottom: auto; } }
 
 /* ---------- the walking Professor while the page loads (web/preloader.ts) ---------- */
 .preloader { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; background: var(--bg); transition: opacity 0.4s ease; }

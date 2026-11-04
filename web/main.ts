@@ -1281,7 +1281,7 @@ function nextMove(): HTMLButtonElement | null {
   return !b.disabled && !b.closest('[hidden]') ? b : null;
 }
 const goButton = el('button', { type: 'button', className: 'scene-go primary' });
-scene.element.querySelector('.table-buttons')!.append(goButton);
+scene.element.querySelector('.scene-stage')!.append(goButton);
 goButton.onclick = () => nextMove()?.click();
 // The things on the table are buttons too: a tap on the ball rolls it, on the pot starts the heating.
 scene.element.addEventListener('click', (e) => {
@@ -4356,6 +4356,10 @@ $('#drawer-shade').onclick = () => openDrawer(false);
     x0 = null;
   });
 }
+// A link in the drawer (all the experiments, the library, about, a bug): the drawer closes as the page goes there.
+$('#drawer-prefs').addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest('a, button:not(#sound):not(#music)')) openDrawer(false);
+});
 $('#drawer-settings').onclick = () => {
   drawerSettings = !drawerSettings;
   renderDrawer();
