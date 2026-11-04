@@ -16,11 +16,13 @@ const link = (href: string, text: string) => `<a href="${esc(href)}" target="_bl
 /** The short safety line under the lab (also at the top of the "About" page). */
 export const SAFETY_LINE: Record<Locale, string> = msg('about-safety-line');
 
-export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: string; madeBy: string; contact: string }> = byLocale((l: Locale) => ({
+export const ABOUT_UI: Record<Locale, { about: string; bug: string; close: string; madeBy: string; contact: string; footerLab: string; footerProject: string }> = byLocale((l: Locale) => ({
   about: t(l, 'about-about'),
   bug: t(l, 'about-bug'),
   close: t(l, 'about-close'),
   madeBy: t(l, 'about-made-by'),
+  footerLab: t(l, 'about-footer-lab'),
+  footerProject: t(l, 'about-footer-project'),
   contact: t(l, 'about-contact'),
 }));
 

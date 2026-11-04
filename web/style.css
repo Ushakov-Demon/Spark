@@ -222,7 +222,6 @@ button.wide { width: 100%; }
 .table-wrap { overflow-x: auto; }
 .report table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .report th, .report td { border-bottom: 1px solid var(--line); padding: 4px 10px; text-align: left; white-space: nowrap; }
-footer { max-width: 1800px; margin: 0 auto; padding: 0 16px 24px; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.85rem; color: var(--muted); }
 .legend .key::before { content: ''; display: inline-block; width: 22px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 6px; }
 .legend .water::before { border-color: var(--water); }
@@ -880,11 +879,23 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .bug-context:empty { display: none; }
 .bug-error { color: #dc2626; min-height: 1em; margin: 6px 0; }
 .bug-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
-footer .safety-line { font-weight: 600; color: #b45309; margin: 0 0 4px; }
-footer .footer-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 0 0 4px; font-size: 0.9rem; }
-footer .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
-/* Room under the footer for the console button in the corner. */
-footer { padding-bottom: 72px; }
+/* The footer: a band of its own — the safety note, then the project, the lab's pages and the project's links in columns. */
+footer { margin-top: 28px; padding: 22px max(16px, calc((100% - 1800px) / 2 + 16px)) 72px; border-top: 1px solid var(--line); background: var(--card); font-size: 0.9rem; }
+footer .safety-line { display: inline-block; margin: 0 0 22px; padding: 8px 14px; border-radius: 10px; background: var(--warn-bg); color: #b45309; font-weight: 600; }
+footer .footer-grid { display: grid; grid-template-columns: minmax(220px, 1.6fr) repeat(2, minmax(160px, 1fr)); gap: 22px 48px; align-items: start; max-width: 960px; }
+footer p { margin: 0; }
+footer .footer-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+footer .footer-note { color: var(--muted); line-height: 1.5; max-width: 46ch; }
+footer .footer-note + .footer-note { margin-top: 6px; }
+footer .footer-head { margin: 0 0 10px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+footer .footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+footer .footer-contact { margin-top: 14px; color: var(--muted); }
+footer .footer-contact span { display: block; }
+footer a, footer .link { color: var(--text); font: inherit; text-decoration: none; }
+footer a:hover, footer .link:hover, footer a:focus-visible, footer .link:focus-visible { color: var(--accent); text-decoration: underline; }
+footer .footer-note a, footer .footer-contact a { color: var(--accent); }
+@media (prefers-color-scheme: dark) { footer .safety-line { color: #f2b45c; } }
+@media (max-width: 700px) { footer .footer-grid { grid-template-columns: 1fr 1fr; } footer .footer-brand { grid-column: 1 / -1; } }
 
 /* Programmes an experiment belongs to (chips; the exact wording on hover). */
 .preset p.programs { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 4px 0 0; }
@@ -970,7 +981,6 @@ body.in-about .about-btn { border-color: var(--accent); background: var(--accent
 .lib-formula { font-weight: 400; color: var(--muted); font-size: 0.88rem; }
 .lib-flash { animation: lib-flash 1.6s ease-out; }
 @keyframes lib-flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 3px transparent; } }
-footer .library-links a { color: var(--accent); }
 .lib-badge { display: inline-block; vertical-align: 2px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .program-topic { margin: 0 8px 0 4px; font-size: 0.72rem; }
 
@@ -1215,7 +1225,8 @@ html.phone .main > :empty, html.phone .main > .look-back:empty { display: none; 
 html.phone button, html.phone select, html.phone input:not([type='checkbox']):not([type='radio']), html.phone .chips > *, html.phone a.library-open { min-height: 44px; }
 html.phone .preset-more-btn, html.phone .fold-btn, html.phone .ref-close, html.phone .info-close, html.phone .lab-sheet-close { min-width: 44px; min-height: 44px; }
 html.phone .scene .bubble-turn { min-height: 40px; padding: 4px 16px; }
-html.phone .footer-row button.link, html.phone footer a { display: inline-block; padding: 10px 4px; }
+html.phone footer .footer-links { gap: 0; }
+html.phone footer .link, html.phone footer .footer-links a { display: inline-block; min-height: 0; padding: 8px 0; line-height: 1.3; text-align: left; }
 
 /* ---------- the walking Professor while the page loads (web/preloader.ts) ---------- */
 .preloader { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; background: var(--bg); transition: opacity 0.4s ease; }

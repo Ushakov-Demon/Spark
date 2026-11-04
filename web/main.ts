@@ -3389,7 +3389,9 @@ function buildInfo() {
   $('#library-links').innerHTML = [`<a href="${siteHref(pagePath({ page: 'catalog' }, locale))}">${catalogUi(locale).title}</a>`, ...LIBRARY_PAGES.map((p) => `<a href="${siteHref(pagePath({ page: 'library', tab: p }, locale))}">${lib.tabs[p]}</a>`)].join('');
   $('#safety').textContent = `⚠ ${SAFETY_LINE[locale]}`;
   $('#made-by').innerHTML = `${a.madeBy} <a href="${DEVELOPER.url}" target="_blank" rel="noopener">${DEVELOPER.name}</a>`;
-  $('#contact').innerHTML = `${a.contact} <a href="mailto:${DEVELOPER.email}">${DEVELOPER.email}</a>`;
+  $('#contact').innerHTML = `<span>${a.contact}</span> <a href="mailto:${DEVELOPER.email}">${DEVELOPER.email}</a>`;
+  $('#footer-lab').textContent = a.footerLab;
+  $('#footer-project').textContent = a.footerProject;
   $('#about-back').textContent = lib.back;
   $<HTMLAnchorElement>('#about-back').href = siteHref(pagePath({ page: 'lab' }, locale));
   $('#bug-close').setAttribute('aria-label', a.close);

@@ -339,7 +339,7 @@ ui-kg = kg
 ui-watt = W
 ui-minutes = min
 ui-chart-time = time, min
-ui-footer = Spark is an open non-commercial project. Code: MIT, texts: CC BY-SA 4.0. Data are sourced; estimates are marked.
+ui-footer = An open non-commercial project. Code: MIT, texts: CC BY-SA 4.0. Data are sourced; estimates are marked.
 ui-more-steps = … and { $n ->
         [one] { $n } more step
        *[other] { $n } more steps
