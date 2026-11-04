@@ -11,14 +11,21 @@
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
+    <!-- While the page loads: the Professor walking (web/preloader.ts); the lab starts once it is all here. -->
+    <div id="preloader" class="preloader" aria-hidden="true"></div>
+    <script type="module" src="/preloader.ts"></script>
     <header class="top">
       <div class="brand">
         <h1 id="title">Spark</h1>
+        <!-- On a phone: the experiment's name, the header showing on a scroll up over the scene. -->
+        <p id="top-exp" class="top-exp"></p>
       </div>
+      <span class="top-exp-tools"><button id="top-sheet" class="preset-more-btn" type="button" aria-haspopup="dialog" hidden>ⓘ</button><button id="top-share" class="preset-more-btn exp-share" type="button" hidden>🔗</button></span>
       <button id="shelf-jump" class="shelf-jump" type="button"></button>
       <div class="prefs">
         <label><span id="lbl-language"></span><select id="language"></select></label>
         <button id="sound" class="sound-toggle" type="button"></button>
+        <button id="music" class="sound-toggle" type="button"></button>
         <label class="voice-pick"><span id="lbl-voice"></span><select id="voice"></select></label>
         <a id="catalog-open" class="library-open" href="/experiments/"></a>
         <a id="library-open" class="library-open" href="/glossary/"></a>
@@ -37,7 +44,11 @@
           <div id="presets-tabs" class="chips"></div>
           <div id="presets-list" class="presets-list"></div>
         </div>
+        <!-- On a phone this panel is a drawer on the right: the settings (moved here from the header) under a button at its foot. -->
+        <div id="drawer-prefs" class="drawer-prefs"></div>
+        <button id="drawer-settings" class="drawer-settings" type="button"></button>
       </aside>
+      <div id="drawer-shade" class="drawer-shade" hidden></div>
 
       <main class="main">
         <section class="card kitchen">
@@ -149,6 +160,17 @@
       <div id="console-grip" class="console-grip" role="separator" aria-orientation="horizontal" tabindex="0"><span></span></div>
     </div>
     <button id="console-toggle" class="console-fab" type="button" aria-controls="console-wrap" aria-expanded="false">&gt;_</button>
+    <button id="drawer-toggle" class="drawer-toggle" type="button" aria-controls="shelf" aria-expanded="false">☰</button>
+    <!-- The lab scrolled away from the experiment: back up to it. -->
+    <button id="to-kitchen" class="to-kitchen" type="button" hidden>⬆</button>
+
+    <!-- A phone held upright on the lab: the experiment wants the phone on its side. -->
+    <div id="rotate" class="rotate" role="alertdialog" aria-labelledby="rotate-title">
+      <div class="rotate-phone" aria-hidden="true">📱</div>
+      <h2 id="rotate-title"></h2>
+      <p id="rotate-text"></p>
+      <button id="rotate-go" class="primary" type="button"></button>
+    </div>
 
     <footer>
       <p id="safety" class="safety-line"></p>

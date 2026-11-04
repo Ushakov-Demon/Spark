@@ -558,6 +558,12 @@ export function createConsole(api: ConsoleApi): HTMLElement {
       run: (args) => toggle('speaker', args[0]),
     },
     {
+      names: ['music', 'музика'],
+      usage: msg('console-music-usage'),
+      about: msg('console-music-about'),
+      run: (args) => toggle('music', args[0]),
+    },
+    {
       names: ['anim', 'animations', 'motion', 'анімації', 'анімація'],
       usage: msg('console-anim-usage'),
       about: msg('console-anim-about'),

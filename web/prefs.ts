@@ -30,8 +30,8 @@ export function resetSettings(): void {
   }
 }
 
-/** A setting that is on unless turned off: the newspaper coming by itself, the speaker on the scene, the motion. */
-export type Switch = 'news' | 'speaker' | 'motion';
+/** A setting that is on unless turned off: the newspaper coming by itself, the speaker on the scene, the motion, the music. */
+export type Switch = 'news' | 'speaker' | 'motion' | 'music';
 export const isOn = (k: Switch): boolean => store.get(k) !== 'off';
 export function setOn(k: Switch, on: boolean): void {
   store.set(k, on ? 'on' : 'off');

@@ -74,7 +74,7 @@ console-start-about = start (or continue) the experiment
 console-pause-usage = pause
 console-pause-about = stop the clock
 console-reset-usage = reset [settings [yes]]
-console-reset-about = start the experiment over; reset settings — every setting as at first (language, voice, sound, panels, news, speaker, anim), recordings stay
+console-reset-about = start the experiment over; reset settings — every setting as at first (language, voice, sound, panels, news, speaker, music, anim), recordings stay
 console-speed-usage = speed <1…3600>
 console-speed-about = how many times faster than real time
 console-status-usage = status
@@ -103,6 +103,8 @@ console-clear-usage = clear
 console-clear-about = clear the console
 console-speaker-usage = speaker [on|off]
 console-speaker-about = the speaker on the scene: speaker off — without him (his words stay in their box, no voice, no scenes)
+console-music-usage = music [on|off]
+console-music-about = music in the background (heard with the sound on)
 console-anim-usage = anim [on|off]
 console-anim-about = anim off — no animations and no prediction: the experiment runs by itself, its result at once; the steps stay in the protocol
 console-on-off = Type on or off.
@@ -113,6 +115,10 @@ console-news-state = { $on ->
 console-speaker-state = { $on ->
         [true] ✓ the speaker is on the scene
        *[other] ✓ no speaker: just his words in their box
+    }
+console-music-state = { $on ->
+        [true] ✓ music in the background (with the sound on)
+       *[other] ✓ no music
     }
 console-motion-state = { $on ->
         [true] ✓ with animations: every step seen, a prediction before the answer

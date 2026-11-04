@@ -396,3 +396,82 @@ export function giggle(v: VoiceId = voice): number {
   speaking = out;
   return flowing(a, out, GIGGLE, 4 + Math.round(Math.random()), false, true, a.currentTime + 0.03);
 }
+
+/**
+ * Music in the background, made here and now (no recording): a slow round of four chords — A minor, F, C, G, two
+ * bars each at 66 beats a minute — held softly over a low note, and now and then a note of the A minor pentatonic
+ * scale above them (the same tune each round). Very quiet; it comes in slowly after the first click and goes away with
+ * the sound (🔇), with the music turned off, or while the tab is hidden.
+ */
+const MUSIC_BPM = 66;
+const MUSIC_LEVEL = 0.05;
+/** The chords as MIDI note numbers (60 is middle C); the tune's notes: A C D E G A. */
+const CHORDS: readonly (readonly number[])[] = [[57, 60, 64], [53, 57, 60], [48, 55, 60], [55, 59, 62]];
+const TUNE = [69, 72, 74, 76, 79, 81];
+const music = { want: false, out: null as GainNode | null, timer: 0, next: 0, beat: 0 };
+const hz = (m: number) => 440 * 2 ** ((m - 69) / 12);
+
+/** One soft note: it swells in over `attack`, holds, fades out after `len`. */
+function softNote(a: AudioContext, out: AudioNode, f: number, at: number, len: number, vol: number, type: OscillatorType, attack: number) {
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = type;
+  o.frequency.value = f;
+  g.gain.setValueAtTime(0, at);
+  g.gain.linearRampToValueAtTime(vol, at + attack);
+  g.gain.setValueAtTime(vol, at + len);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + len + 1.2);
+  o.connect(g).connect(out);
+  o.start(at);
+  o.stop(at + len + 1.3);
+}
+
+function musicTick() {
+  const a = music.want && !document.hidden ? audio() : null;
+  if (!a) {
+    // Out: a second's fade, then nothing more is played.
+    const out = music.out;
+    if (out && ctx) {
+      out.gain.cancelScheduledValues(ctx.currentTime);
+      out.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
+      window.setTimeout(() => out.disconnect(), 1500);
+    }
+    music.out = null;
+    return;
+  }
+  if (!music.out) {
+    const out = a.createGain();
+    const soft = a.createBiquadFilter();
+    soft.type = 'lowpass';
+    soft.frequency.value = 1800;
+    out.gain.setValueAtTime(0, a.currentTime);
+    out.gain.linearRampToValueAtTime(MUSIC_LEVEL, a.currentTime + 4);
+    out.connect(soft).connect(a.destination);
+    music.out = out;
+    music.next = a.currentTime + 0.1;
+  }
+  // A second and a half scheduled ahead, a beat at a time.
+  const beat = 60 / MUSIC_BPM;
+  while (music.next < a.currentTime + 1.5) {
+    const b = music.beat;
+    const chord = CHORDS[Math.floor(b / 8) % CHORDS.length]!;
+    if (b % 8 === 0) {
+      for (const m of chord) softNote(a, music.out, hz(m), music.next, 8 * beat, 0.2, 'triangle', 1.5);
+      softNote(a, music.out, hz(chord[0]! - 12), music.next, 4 * beat, 0.3, 'sine', 0.3);
+    }
+    // The tune: on some beats (the same ones each round), now on the beat, now half a beat after.
+    if ((b * 7919) % 13 < 6) softNote(a, music.out, hz(TUNE[(b * 5) % TUNE.length]!), music.next + (b % 3 === 1 ? beat / 2 : 0), beat * 1.5, 0.14, 'sine', 0.05);
+    music.next += beat;
+    music.beat++;
+  }
+}
+
+/** The background music on or off (it waits for the first click, and for the sound to be on). */
+export function setMusic(v: boolean): void {
+  music.want = v;
+  if (!music.timer && typeof window !== 'undefined') {
+    music.timer = window.setInterval(musicTick, 250);
+    document.addEventListener('visibilitychange', musicTick);
+  }
+  musicTick();
+}

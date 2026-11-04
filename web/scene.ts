@@ -90,8 +90,8 @@ export interface SceneView {
   readonly scale?: { readonly look: 'kitchen-scale' | 'lab-balance'; readonly display: string; /** What is on it: the vessel (by default), or the cathode taken out of the cell. */ readonly load?: 'cathode' };
   /** `act` — an idle scene the Professor plays when nobody does anything ("pace", "glasses"…). */
   readonly professor: { readonly mood: Mood; readonly says: string; readonly act?: string };
-  /** The bubble's buttons for a long line: to the next page; from the last page back to the first. */
-  readonly bubble?: { readonly next: string; readonly back: string };
+  /** The bubble's buttons for a long line: to the next page; from the last page back to the first; folding it away and back. */
+  readonly bubble?: { readonly next: string; readonly back: string; readonly fold: string; readonly unfold: string };
 }
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -111,17 +111,34 @@ export interface Scene {
   /** Someone turned the bubble's page (Далі / Назад): `say` gets the page now shown, to read it out. */
   onTurn(say: (page: string) => void): void;
   render(view: SceneView): void;
+  /** Fold the bubble away to a small button (the motion is seen whole), or open it again; the button opens it too. */
+  fold(on: boolean): void;
   /** Where the device or the vessel stands on the screen (none drawn — null). */
   rectOf(what: 'device' | 'vessel'): DOMRect | null;
 }
 
+
+/**
+ * A table button's label: its sign apart from its words («📰» and « Газета»), so a phone shows the sign alone (the
+ * words stay its title). Its text is the same either way.
+ */
+export function signedLabel(button: HTMLElement, text: string): void {
+  if (button.textContent === text) return;
+  const m = /^(\S+)(\s.*)$/su.exec(text);
+  const sign = m && !/\p{L}/u.test(m[1]!) ? m : null;
+  if (!sign) button.textContent = text;
+  else {
+    button.replaceChildren(Object.assign(document.createElement('span'), { textContent: sign[1]! }), Object.assign(document.createElement('span'), { className: 'words', textContent: sign[2]! }));
+  }
+  button.title = text.replace(/^\S+\s/u, '');
+}
 
 export function createScene(): Scene {
   const root = document.createElement('div');
   root.className = 'scene';
   // The blackboard hangs on the wall behind everything on the table (the drawing's wall is see-through);
   // a button pulls it to the front to read it all, and back.
-  root.innerHTML = `<div class="scene-stage"><div class="table-buttons"><button type="button" class="board-toggle"></button></div><div class="board" id="sc-board" aria-live="polite"><div class="board-sponge" aria-hidden="true"></div><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 ${VIEW_TOP} ${W} ${H - VIEW_TOP}" role="img"></svg><div class="scene-prof"><div class="bubble" id="sc-says"><p class="bubble-text"></p><div class="bubble-foot" hidden><span class="bubble-page"></span><button type="button" class="bubble-turn"></button></div></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
+  root.innerHTML = `<div class="scene-stage"><div class="table-buttons"><button type="button" class="board-toggle"></button></div><div class="board" id="sc-board" aria-live="polite"><div class="board-sponge" aria-hidden="true"></div><div class="board-lines"></div><div class="board-empty"></div></div><svg class="scene-svg" viewBox="0 ${VIEW_TOP} ${W} ${H - VIEW_TOP}" role="img"></svg><div class="scene-prof"><button type="button" class="bubble-chip" hidden>💬</button><div class="bubble" id="sc-says"><button type="button" class="bubble-fold"></button><p class="bubble-text"></p><div class="bubble-foot" hidden><span class="bubble-page"></span><button type="button" class="bubble-turn"></button></div></div><div class="prof" id="sc-prof"></div><div class="prof-side" id="sc-prof-side"></div></div></div>`;
   const svg = root.querySelector('svg')!;
   const says = root.querySelector<HTMLElement>('#sc-says')!;
   const saysText = says.querySelector<HTMLElement>('.bubble-text')!;
@@ -135,7 +152,18 @@ export function createScene(): Scene {
   let saysMax = 0;
   let saysPages: string[] = [];
   let saysAt = 0;
-  let turnLabels = { next: '', back: '' };
+  let turnLabels = { next: '', back: '', fold: '', unfold: '' };
+  // Folded away (by its eye, or on a phone while a step moves): a small button instead, which opens it again.
+  const chip = root.querySelector<HTMLButtonElement>('.bubble-chip')!;
+  const foldButton = says.querySelector<HTMLButtonElement>('.bubble-fold')!;
+  let folded = false;
+  const setFolded = (on: boolean) => {
+    folded = on;
+    says.classList.toggle('folded', on);
+    chip.hidden = !on || !saysLine;
+  };
+  chip.onclick = () => setFolded(false);
+  foldButton.onclick = () => setFolded(true);
   const showPage = () => {
     // Only what changed: the footnotes underline terms in the text, a rewrite every frame would wipe them.
     const set = (el: HTMLElement, text: string) => {
@@ -179,7 +207,7 @@ export function createScene(): Scene {
   let boardLabels = { front: '', back: '' };
   const setToggle = () => {
     const reading = root.classList.contains('reading');
-    boardToggle.textContent = reading ? boardLabels.back : boardLabels.front;
+    signedLabel(boardToggle, reading ? boardLabels.back : boardLabels.front);
     boardToggle.setAttribute('aria-pressed', String(reading));
   };
   // Reading the board: the things on the table shrink and move to its right end, the Professor
@@ -193,6 +221,69 @@ export function createScene(): Scene {
   // The bench's instruments come to their readings by the general rules of motion.ts; the scene says when they are at rest.
   let stopMotion = () => undefined as void;
   let benchShown: BenchView | null = null;
+  /**
+   * The apparatus in the middle of the board's room right of the Professor (of the whole board without him) — whatever
+   * it covers on the board («Подивитися на дошку» shows it) — and two thirds of that room wide at the least: a smaller
+   * one is drawn bigger, standing on the table (no higher than the board's top). Found from its first look and kept while
+   * the experiment is the same, so nothing jumps from step to step — unless what a step adds (a long label) would go
+   * off the board: then it is drawn smaller again, never below its own size. Wider than the room, it stays as it is.
+   */
+  let benchFit: { mid: number; cx: number; k: number; lo: number; hi: number; top: number } | null = null;
+  let benchAt = '';
+  /** The least share of the room the apparatus takes; the board's top it does not pass (a margin under it). */
+  const BENCH_SHARE = 2 / 3;
+  const TOP_MARGIN = 8;
+  const benchBox = (bench: SVGGElement) => {
+    const inner = bench.firstElementChild as SVGGElement | null;
+    try {
+      const b = inner?.getBBox();
+      return inner && b && b.width ? { inner, b } : null;
+    } catch {
+      return null;
+    }
+  };
+  const setBenchAt = (inner: SVGGElement, f: NonNullable<typeof benchFit>) => {
+    benchAt = `translate(${f.mid.toFixed(1)} ${TABLE}) scale(${f.k.toFixed(3)}) translate(${(-f.cx).toFixed(1)} ${-TABLE})`;
+    inner.setAttribute('transform', benchAt);
+  };
+  const centreBench = (bench: SVGGElement) => {
+    const box = benchBox(bench);
+    const m = root.querySelector<SVGSVGElement>('.scene-svg')?.getScreenCTM();
+    if (!box || !m) return;
+    const { inner, b } = box;
+    const stage = root.querySelector<HTMLElement>('.scene-stage')!.getBoundingClientRect();
+    const board = root.querySelector<HTMLElement>('#sc-board')!;
+    const toX = (px: number) => (px - m.e) / m.a;
+    const toY = (py: number) => (py - m.f) / m.d;
+    const boardLeft = stage.left + board.offsetLeft + board.clientLeft;
+    const speaker = !document.documentElement.classList.contains('no-speaker');
+    const lo = toX(boardLeft);
+    const left = speaker ? toX(stage.left + profBox.offsetLeft + profBox.offsetWidth) : lo;
+    const right = toX(boardLeft + board.clientWidth);
+    const room = right - left;
+    if (b.width > room) return;
+    const high = TABLE - b.y;
+    const top = toY(stage.top + board.offsetTop + board.clientTop) + TOP_MARGIN;
+    const k = Math.max(1, Math.min((room * BENCH_SHARE) / b.width, high > 0 ? (TABLE - top) / high : 1));
+    benchFit = { mid: (left + right) / 2, cx: b.x + b.width / 2, k, lo, hi: right, top };
+    setBenchAt(inner, benchFit);
+  };
+  /** After a step: what it drew kept on the board (smaller, if need be — down to the apparatus's own size). */
+  const keepOnBoard = (bench: SVGGElement) => {
+    const box = benchBox(bench);
+    const f = benchFit;
+    if (!box || !f || f.k <= 1) return;
+    const { inner, b } = box;
+    const limits = [f.k];
+    if (b.x + b.width > f.cx) limits.push((f.hi - f.mid) / (b.x + b.width - f.cx));
+    if (b.x < f.cx) limits.push((f.mid - f.lo) / (f.cx - b.x));
+    if (b.y < TABLE) limits.push((TABLE - f.top) / (TABLE - b.y));
+    const k = Math.max(1, Math.min(...limits));
+    if (k >= f.k - 1e-3) return;
+    f.k = k;
+    setBenchAt(inner, f);
+  };
+  const benchSvgAt = (x: BenchView) => `<g class="bench-at"${benchAt ? ` transform="${benchAt}"` : ''}>${benchSvg(x)}</g>`;
   // (After this frame: the page reacts by drawing again.)
   const settled = () => queueMicrotask(() => root.dispatchEvent(new CustomEvent('instrument-settled')));
 
@@ -294,6 +385,9 @@ export function createScene(): Scene {
         done();
       }, 950);
     },
+    fold(on) {
+      setFolded(on);
+    },
     render(v) {
       lastView = v;
       // The level moves smoothly when it changes between frames of a paused experiment (a body
@@ -393,13 +487,24 @@ export function createScene(): Scene {
       if (bench && bench.dataset['k'] !== bk) {
         bench.dataset['k'] = bk;
         stopMotion();
-        const draw = (x: BenchView) => (bench.innerHTML = benchSvg(x));
-        const motion = v.bench && moving() ? benchMotion(benchShown, v.bench, draw) : null;
-        if (motion) stopMotion = play(motion, settled);
-        else {
-          bench.innerHTML = v.bench ? benchSvg(v.bench) : '';
-          settled();
+        // Another apparatus (or the first): drawn where it stands, then moved to the middle.
+        const fresh = !!v.bench && (!benchShown || benchShown.kind !== v.bench.kind);
+        if (fresh) {
+          benchAt = '';
+          benchFit = null;
         }
+        const draw = (x: BenchView) => (bench.innerHTML = benchSvgAt(x));
+        const motion = v.bench && moving() ? benchMotion(benchShown, v.bench, draw) : null;
+        const done = () => {
+          keepOnBoard(bench);
+          settled();
+        };
+        if (motion) stopMotion = play(motion, done);
+        else {
+          bench.innerHTML = v.bench ? benchSvgAt(v.bench) : '';
+          done();
+        }
+        if (fresh) centreBench(bench);
         benchShown = v.bench ?? null;
       }
       root.classList.toggle('bench-on', !!v.bench);
@@ -587,7 +692,11 @@ export function createScene(): Scene {
           profBox.classList.add(`act-${act}`);
         }
       }
-      if (v.bubble) turnLabels = v.bubble;
+      if (v.bubble) {
+        turnLabels = v.bubble;
+        chip.title = chip.ariaLabel = v.bubble.unfold;
+        foldButton.title = foldButton.ariaLabel = v.bubble.fold;
+      }
       const max = phone.matches ? BUBBLE_PAGE_PHONE : BUBBLE_PAGE;
       if (saysLine !== v.professor.says || saysMax !== max) {
         saysLine = v.professor.says;
@@ -597,6 +706,7 @@ export function createScene(): Scene {
       }
       showPage();
       says.hidden = !v.professor.says;
+      chip.hidden = !folded || !v.professor.says;
   }
 }
 

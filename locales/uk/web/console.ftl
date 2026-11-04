@@ -74,7 +74,7 @@ console-start-about = запустити (або продовжити) досл�
 console-pause-usage = pause
 console-pause-about = зупинити час
 console-reset-usage = reset [settings [yes]]
-console-reset-about = почати дослід заново; reset settings — усі налаштування як спочатку (мова, голос, звук, панелі, news, speaker, anim), записи дослідів лишаються
+console-reset-about = почати дослід заново; reset settings — усі налаштування як спочатку (мова, голос, звук, панелі, news, speaker, music, anim), записи дослідів лишаються
 console-speed-usage = speed <1…3600>
 console-speed-about = у скільки разів швидше за справжній час
 console-status-usage = status
@@ -103,6 +103,8 @@ console-clear-usage = clear
 console-clear-about = очистити консоль
 console-speaker-usage = speaker [on|off]
 console-speaker-about = ведучий на сцені: speaker off — без нього (його слова лишаються в рамці, без голосу й сценок)
+console-music-usage = music [on|off]
+console-music-about = музика у фоні (чути, коли звук увімкнено)
 console-anim-usage = anim [on|off]
 console-anim-about = anim off — без анімацій і без прогнозу: дослід іде сам, одразу готовий результат; кроки лишаються в протоколі
 console-on-off = Напиши on або off.
@@ -113,6 +115,10 @@ console-news-state = { $on ->
 console-speaker-state = { $on ->
         [true] ✓ ведучий на сцені
        *[other] ✓ без ведучого: лише його слова в рамці
+    }
+console-music-state = { $on ->
+        [true] ✓ музика у фоні грає (коли звук увімкнено)
+       *[other] ✓ без музики
     }
 console-motion-state = { $on ->
         [true] ✓ з анімаціями: кожен крок видно, прогноз — перед відповіддю

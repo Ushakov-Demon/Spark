@@ -95,7 +95,7 @@ export interface UiText {
   };
   instruments: string;
   renew: string;
-  sound: { on: string; off: string };
+  sound: { on: string; off: string; musicOn: string; musicOff: string };
   voice: { label: string; names: Readonly<Record<string, string>>; sample: string; noSpeech: string };
   dissolves: string;
   boardEmpty: string;
@@ -414,6 +414,8 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   sound: {
   on: tl(lang, 'ui-sound-on'),
   off: tl(lang, 'ui-sound-off'),
+  musicOn: tl(lang, 'ui-music-on'),
+  musicOff: tl(lang, 'ui-music-off'),
 },
   voice: {
   label: tl(lang, 'ui-voice-label'),

@@ -823,6 +823,8 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 @keyframes salt-cloud { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
 @media (prefers-reduced-motion: reduce) { .scene .dissolving-salt * { animation: none; opacity: 0; } }
 .sound-toggle { min-height: 34px; padding: 4px 10px; font-size: 1.05rem; line-height: 1; }
+/* The music turned off: its note crossed out. */
+#music.off { opacity: 0.5; text-decoration: line-through; }
 
 /* ---------- "New experiment": a sponge wipes the board ---------- */
 .renew-bar { margin-top: 10px; display: flex; justify-content: center; }
@@ -838,7 +840,7 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 .scene-prof.talking .p-mouth { transform-box: fill-box; transform-origin: center top; animation: talk 0.17s ease-in-out infinite alternate; }
 @keyframes talk { from { transform: scaleY(1); } to { transform: scaleY(1.9) translateY(1px); } }
 @media (prefers-reduced-motion: reduce) { .scene-prof.talking .p-mouth { animation: none; } }
-.voice-pick select { max-width: 11rem; }
+.voice-pick select { max-width: 9rem; }
 
 /* ---------- steam and smoke: puffs that rise, swell and melt away ---------- */
 .scene .steam { transition: opacity 0.6s; }
@@ -1050,15 +1052,16 @@ footer .library-links a { color: var(--accent); }
 .lib-source a { color: var(--muted); }
 
 /* ---------- the pointing finger (web/finger.ts) ---------- */
-.guide-finger { position: fixed; left: 0; top: 0; z-index: 60; width: 48px; height: 48px; display: grid; place-items: center; font-size: 42px; line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
+.guide-finger { position: fixed; left: 0; top: 0; z-index: 60; width: 48px; height: 48px; display: grid; place-items: center; font-size: 42px; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
 .guide-finger[hidden] { display: none; }
 .guide-finger span { display: block; animation: finger-poke 1.1s ease-in-out infinite; }
 .guide-finger[data-dir='left'] span { --poke: translateX(-9px); }
 .guide-finger[data-dir='right'] span { --poke: translateX(9px); }
 .guide-finger[data-dir='up'] span { --poke: translateY(-9px); }
 .guide-finger[data-dir='down'] span { --poke: translateY(9px); }
-@keyframes finger-poke { 0%, 100% { transform: none; } 50% { transform: var(--poke); } }
-@media (prefers-reduced-motion: reduce) { .guide-finger span { animation: none; } }
+/* Turned to the target's middle (--tilt, set by finger.ts), poking that way. */
+@keyframes finger-poke { 0%, 100% { transform: rotate(var(--tilt, 0deg)); } 50% { transform: rotate(var(--tilt, 0deg)) var(--poke); } }
+@media (prefers-reduced-motion: reduce) { .guide-finger span { animation: none; transform: rotate(var(--tilt, 0deg)); } }
 #exp-title.to-list { cursor: pointer; }
 #exp-title.to-list:hover { text-decoration: underline dotted; text-underline-offset: 4px; }
 .preset { scroll-margin-top: 12px; }
@@ -1084,3 +1087,137 @@ html.no-speaker .scene .bubble::before, html.no-speaker .scene .bubble::after { 
 @keyframes console-caret { 50% { opacity: 0; } }
 .console-out .dim { opacity: 0.28; text-shadow: none; }
 .console-hint { flex: none; position: relative; z-index: 1; padding: 4px 16px; border-top: 1px dashed #0a3d16; color: #1fae4a; background: rgba(0, 0, 0, 0.8); white-space: pre-wrap; font-size: 0.8rem; max-height: 9.5em; overflow: hidden; }
+
+/* ---------- a phone (html.phone, set by main.ts): the scene takes the screen ---------- */
+/* The bubble folds (an eye in its corner) into 💬 and opens from it — anywhere; on a phone it folds by itself while a step moves. */
+.drawer-toggle, .drawer-shade, .drawer-prefs, .drawer-settings, .rotate, .scene .bubble-chip, .scene-go { display: none; }
+.scene .bubble-fold { display: grid; place-items: center; position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; min-height: 0; padding: 0; border-radius: 50%; color: var(--muted); background: transparent; border: 0; }
+.scene .bubble-fold:hover { color: var(--text); background: rgba(127, 127, 127, 0.15); }
+.scene .bubble { padding-right: 34px; }
+/* (The eye is drawn, not written: the bubble's text stays its line alone.) */
+.scene .bubble-fold::before { content: ''; width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--eye) center / contain no-repeat; mask: var(--eye) center / contain no-repeat; }
+.scene { --eye: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E"); }
+.scene .bubble.folded { display: none; }
+.scene .bubble-chip:not([hidden]) { display: grid; place-items: center; position: absolute; left: 4px; bottom: calc(100% + 6px); width: 40px; height: 40px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1.2rem; background: var(--card); border: 1.5px solid var(--line); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18); z-index: 3; }
+html.phone .scene .bubble-fold { top: 2px; right: 2px; width: 40px; height: 40px; }
+html.phone .scene .bubble { padding-right: 40px; }
+/* The things on the table take a tap when there is a next move (main.ts, nextMove). */
+.scene.can-go .scene-svg #sc-bench, .scene.can-go .scene-svg .items { pointer-events: visiblePainted; cursor: pointer; }
+/* On a phone the next move is also a button on the table's front, by the others: the panel may be folded away. */
+html.phone .scene-go:not([hidden]) { display: block; min-height: 40px; padding: 4px 16px; border-radius: 999px; font-size: 0.95rem; white-space: nowrap; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); }
+/* The table's own buttons by their signs alone (their words are their titles): room for the next move. */
+html.phone .table-buttons .words { display: none; }
+html.phone .table-buttons .board-toggle, html.phone .table-buttons .news-button { min-width: 44px; font-size: 1.1rem; }
+/* Folded, the panel's grip stands out: it is all there is of it. */
+html.phone .kitchen.panel-folded .exp-grip span { height: 72px; width: 6px; background: var(--accent); opacity: 1; }
+html.phone .scene .bubble-chip:not([hidden]) { width: 48px; height: 48px; font-size: 1.4rem; }
+/* The drawer on the right: the experiments (and the sandbox), the settings under a button at its foot. */
+html.phone .drawer-toggle { display: grid; place-items: center; position: fixed; top: 6px; right: 6px; z-index: 72; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 12px; font-size: 1.4rem; background: var(--card); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); }
+html.phone .drawer-shade:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.35); }
+html.phone .shelf { position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; width: min(400px, 90vw); max-height: none; margin: 0; border-radius: 14px 0 0 14px; padding: 60px 12px 0; display: flex; flex-direction: column; gap: 6px; overflow: auto; transform: translateX(105%); visibility: hidden; transition: transform 0.25s ease, visibility 0s 0.25s; }
+html.phone .shelf.drawer-open { transform: none; visibility: visible; transition: transform 0.25s ease, visibility 0s; }
+html.phone .shelf > .panel-head .fold-btn, html.phone .shelf > .fold-strip { display: none; }
+html.phone .shelf .drawer-settings { display: block; position: sticky; bottom: 0; margin: auto -12px 0; padding: 12px; border-radius: 0; border-width: 1px 0 0; background: var(--card); font-weight: 600; min-height: 52px; }
+html.phone .shelf.settings > :not(.drawer-prefs):not(.drawer-settings) { display: none !important; }
+html.phone .shelf.settings .drawer-prefs { display: block; }
+/* The settings in the drawer: the language (its select says what it is), the sound and the music beside the voice, the links under them — their words centred. */
+html.phone .drawer-prefs .prefs { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: stretch; gap: 10px; }
+html.phone .drawer-prefs .prefs > * { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; text-align: center; margin: 0; }
+html.phone .drawer-prefs #lbl-language { display: none; }
+html.phone .drawer-prefs .prefs > #sound { grid-column: 1; min-width: 52px; }
+html.phone .drawer-prefs .prefs > #music { grid-column: 2; min-width: 52px; }
+html.phone .drawer-prefs .prefs > .voice-pick { grid-column: 3; }
+html.phone .drawer-prefs .prefs label > select { flex: 1; min-width: 0; max-width: none; }
+/* The header: the name only (room for ☰); folded away while an experiment is played. */
+html.phone header.top { padding: 6px 62px 6px 12px; min-height: 48px; }
+html.phone .shelf-jump { display: none !important; }
+/* Folded over the scene (a start or a step), the header waits above the screen: a scroll up brings it down, with the experiment's name. */
+.top-exp, .top-exp-tools { display: none; }
+html.phone .top-exp-tools { display: flex; gap: 6px; flex: none; }
+html.phone header.top { flex-wrap: nowrap; justify-content: flex-start; }
+html.phone .top-exp:not(:empty) { display: block; margin: 0; font-weight: 600; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.phone .brand { min-width: 0; }
+html.phone.playing header.top { position: fixed; top: 0; left: 0; right: 0; z-index: 65; background: var(--card); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); transform: translateY(-110%); transition: transform 0.25s ease; }
+html.phone.playing.head-shown header.top { transform: none; }
+html.phone .app { display: block; padding: 4px 6px 16px; }
+html.phone .console-fab, html.phone .console-dock { display: none; }
+/* The experiment's panel (main.ts moves all but the scene into it): in the flow when held upright (the lab asks to turn the phone then). */
+html.phone .exp-grip, html.phone #side-open, html.phone #side-toggle { display: none; }
+/* Under the scene, as on a computer: the protocol, the prediction and «Пояснити» — never folded on a phone. */
+html.phone .main.side-folded .side-body { display: grid; }
+html.phone .main > .side, html.phone .main > .report-card { margin-top: 12px; }
+/* The protocol's rows on a phone: one line each — the number, the step, what it showed. */
+html.phone .protocol li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 4px 8px; }
+html.phone .protocol li::before { flex: none; }
+/* The experiment done (main.ts, placeDone): no panel, the scene in the middle; its title, buttons and conclusion under it, as a card. */
+html.phone .main > .kitchen-head, html.phone .main > #quiz, html.phone .main > #vary, html.phone .main > #messages, html.phone .main > #offer { margin: 12px 0 0; padding: 12px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+html.phone .main > .kitchen-head { position: static; flex-direction: row; align-items: center; }
+html.phone .main > :empty, html.phone .main > .look-back:empty { display: none; }
+/* The kitchen: the scene to the screen's height; the panel over the wall on its right, as wide as the room left (or as dragged). */
+@media (orientation: landscape) {
+  html.phone .main { display: block; }
+  /* The scene as tall as the screen; the panel as wide as the room left, but 200 px at least (the scene a little smaller for it). Dragged wider, the panel lies over the scene. */
+  html.phone .kitchen { --scene-full: min(calc((100dvh - 10px) * 640 / 408), calc(100vw - 12px)); --panel-base: max(200px, calc(100vw - 20px - var(--scene-full))); --panel-w: var(--panel-drag, var(--panel-base)); --scene-w: min(var(--scene-full), calc(100vw - 20px - var(--panel-base))); position: relative; height: calc(100dvh - 8px); padding: 0; overflow: hidden; }
+  html.phone .kitchen.panel-folded, html.phone .kitchen.panel-gone, html.phone body.table-bare .kitchen { --scene-w: min(var(--scene-full), calc(100vw - 48px)); }
+  html.phone .kitchen > #scene { width: var(--scene-w); margin-left: max(0px, calc((100% - var(--panel-w) - var(--scene-w)) / 2)); transition: margin-left 0.25s ease; }
+  html.phone .kitchen.panel-folded > #scene { margin-left: max(0px, calc((100% - 28px - var(--scene-w)) / 2)); }
+  html.phone body.table-bare .kitchen > #scene, html.phone .kitchen.panel-gone > #scene { margin-left: max(0px, calc((100% - var(--scene-w)) / 2)); }
+  html.phone .kitchen.panel-gone .exp-panel { display: none; }
+  html.phone .kitchen #scene .scene { margin: 0; }
+  html.phone .kitchen #scene .scene-svg { max-height: none; }
+  html.phone .exp-panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 5; display: flex; width: min(var(--panel-w), calc(100% - 60px)); background: var(--card); border-left: 1px solid var(--line); box-shadow: -6px 0 16px -10px rgba(0, 0, 0, 0.45); transition: width 0.25s ease; }
+  /* Folded: no column — only a tab on the right edge, to tap or drag it open again. */
+  html.phone .kitchen.panel-folded .exp-panel { width: 28px; background: transparent; border: 0; box-shadow: none; pointer-events: none; }
+  html.phone .kitchen.panel-folded .exp-grip { pointer-events: auto; align-self: center; height: 96px; background: var(--card); border-radius: 12px 0 0 12px; box-shadow: -3px 0 10px rgba(0, 0, 0, 0.25); }
+  html.phone .kitchen.panel-folded .exp-panel-body, html.phone body.table-bare .exp-panel { display: none; }
+  html.phone .kitchen.panel-dragged .exp-panel, html.phone .kitchen.panel-dragged > #scene { transition: none; }
+  html.phone .exp-grip { display: grid; place-items: center; flex: 0 0 28px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; touch-action: none; cursor: ew-resize; }
+  html.phone .exp-grip span { width: 5px; height: 48px; border-radius: 3px; background: var(--muted); opacity: 0.6; }
+  html.phone .exp-panel-body { flex: 1; min-width: 0; overflow: auto; overscroll-behavior: contain; padding: 0 8px 16px 0; }
+  html.phone .kitchen-head { position: static; margin: 0 0 6px; padding: 6px 52px 6px 0; border-radius: 0; box-shadow: none; flex-direction: column; align-items: stretch; }
+  html.phone .kitchen-head h2 { font-size: 1rem; flex: 1 1 9em; min-width: 0; }
+  html.phone .kitchen-head .exp-title-row { flex-wrap: wrap; }
+  html.phone .kitchen-head .setup-line { font-size: 0.85rem; }
+  html.phone .kitchen-head .buttons { flex-wrap: wrap; }
+  html.phone .kitchen-head .buttons button { white-space: nowrap; }
+  html.phone .guide { margin-top: 4px; }
+  /* A larger bubble: the scene is the whole screen now. */
+  html.phone .scene .bubble { width: 300px; font-size: 1.05rem; }
+}
+/* Held upright on the lab: turn the phone. */
+@media (orientation: portrait) {
+  html.phone body:not(.in-library):not(.in-about):not(.in-catalog) .rotate { display: flex; position: fixed; inset: 0; z-index: 90; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; background: var(--bg); }
+  html.phone .rotate-phone { font-size: 4rem; animation: rotate-phone 2.4s ease-in-out infinite; }
+  html.phone .rotate p { max-width: 30em; color: var(--muted); }
+}
+@keyframes rotate-phone { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+/* A finger's size for all that is tapped. */
+html.phone button, html.phone select, html.phone input:not([type='checkbox']):not([type='radio']), html.phone .chips > *, html.phone a.library-open { min-height: 44px; }
+html.phone .preset-more-btn, html.phone .fold-btn, html.phone .ref-close, html.phone .info-close, html.phone .lab-sheet-close { min-width: 44px; min-height: 44px; }
+html.phone .scene .bubble-turn { min-height: 40px; padding: 4px 16px; }
+html.phone .footer-row button.link, html.phone footer a { display: inline-block; padding: 10px 4px; }
+@media (max-width: 700px) { html.phone .scene .bubble-chip:not([hidden]) { top: 6px; right: 6px; left: auto; bottom: auto; } }
+
+/* ---------- the walking Professor while the page loads (web/preloader.ts) ---------- */
+.preloader { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; background: var(--bg); transition: opacity 0.4s ease; }
+.preloader.gone { opacity: 0; pointer-events: none; }
+.preloader svg { display: block; }
+/* A step each 0.6 s: the legs swing from the hips by turns, the body rises on each, the floor goes by under him. */
+.preloader-walk { animation: walk-bob 0.6s ease-in-out infinite; }
+.preloader .p-leg-l, .preloader .p-leg-r { transform-box: view-box; animation: walk-leg 1.2s ease-in-out infinite; }
+.preloader .p-leg-l { transform-origin: 94px 266px; }
+.preloader .p-leg-r { transform-origin: 110px 266px; animation-delay: -0.6s; }
+.preloader .p-read { transform-box: view-box; transform-origin: 110px 152px; animation: walk-nod 0.6s ease-in-out infinite; }
+.preloader-floor { width: 180px; height: 4px; margin-top: -4px; border-radius: 2px; background: repeating-linear-gradient(90deg, var(--line) 0 18px, transparent 18px 30px); animation: walk-floor 0.6s linear infinite; }
+@keyframes walk-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes walk-leg { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(20deg); } }
+/* (His head bowed: he looks thoughtfully at his feet — the drawing reads the board, its head tipped up 10°.) */
+.preloader .p-eyes { transform: translate(1px, 5px); }
+@keyframes walk-nod { 0%, 100% { transform: translateX(14px) rotate(24deg); } 50% { transform: translateX(14px) rotate(27deg); } }
+@keyframes walk-floor { from { background-position: 0 0; } to { background-position: -30px 0; } }
+@media (prefers-reduced-motion: reduce) { .preloader-walk, .preloader .p-leg-l, .preloader .p-leg-r, .preloader .p-read, .preloader-floor { animation: none; } }
+html.no-motion .preloader-walk, html.no-motion .preloader .p-leg-l, html.no-motion .preloader .p-leg-r, html.no-motion .preloader .p-read, html.no-motion .preloader-floor { animation: none; }
+
+/* Back up to the experiment (main.ts): shown while the lab is scrolled away from it. */
+.to-kitchen { position: fixed; right: 16px; bottom: 16px; z-index: 64; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1.3rem; background: var(--card); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+.to-kitchen[hidden] { display: none; }

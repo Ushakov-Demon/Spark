@@ -140,19 +140,27 @@ import { createChooser, fly, type ChoiceCard, type ChooserStage } from './choose
 import { deviceSvg } from './graphics/scene/devices.js';
 import { baseFor, vesselGeom } from './graphics/scene/vessels.js';
 import { H, W } from './graphics/scene/constants.js';
-import { createScene, incandescent, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
+import { createScene, incandescent, signedLabel, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
-import { babble, canSpeak, currentVoice, fizz, giggle, hum, hush, plop, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
+import { babble, canSpeak, currentVoice, fizz, giggle, hum, hush, plop, setMusic, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
 import { createFinger } from './finger.js';
 import { answerLines } from '../src/scenarios/preset-kit.js';
-import { instant, isOn, moving, setOn, store } from './prefs.js';
+import { instant, isOn, moving, setOn, store, type Switch } from './prefs.js';
 
+/** A phone (a touch screen, small): the lab lays itself out for it (see «a phone: the scene takes the screen»). */
+const PHONE = matchMedia('(pointer: coarse) and (max-width: 950px), (pointer: coarse) and (max-height: 500px)');
+const phone = () => PHONE.matches;
+/** The phone's drawer shows the settings (not the experiments); the bubble was folded for a step's motion. */
+let drawerSettings = false;
+/** The page scrolls itself to the scene (a start or a step on a phone): the header stays away meanwhile. */
+let steering = false;
+let foldedForStep = false;
 const browserLocale = (): Locale => (navigator.language.toLowerCase().startsWith('en') ? 'en' : 'uk');
 /** The page the address names (the site: /, /experiments/, /experiments/<id>/, the same under /en/). */
 const where = parsePath(location.pathname);
@@ -733,6 +741,18 @@ $('#sound').onclick = () => {
   store.set('sound', soundOn() ? 'on' : 'off');
   renderSound();
 };
+// The music in the background: on unless turned off (remembered); it is heard with the sound on, after a first click.
+setMusic(isOn('music'));
+const renderMusic = () => {
+  const b = $<HTMLButtonElement>('#music');
+  const on = isOn('music');
+  b.textContent = '🎵';
+  b.classList.toggle('off', !on);
+  b.title = t().sound[on ? 'musicOn' : 'musicOff'];
+  b.setAttribute('aria-label', b.title);
+  b.setAttribute('aria-pressed', String(on));
+};
+$('#music').onclick = () => labSetting('music', !isOn('music'));
 // The newspaper on the table: read it any time (he also brings it himself when bored).
 const newsButton = el('button', { type: 'button', className: 'news-button' });
 const addOverButton = el('button', { type: 'button', className: 'news-button add-over' });
@@ -1248,6 +1268,52 @@ function phaseNote(): { text: string; pct: number } | null {
 const chart = createChart();
 const scene = createScene();
 scene.element.querySelector('.table-buttons')!.prepend(addOverButton, newsButton);
+/**
+ * The experiment's next move: the guide's step, the step offered, or Start (not while it runs) — what a tap on the
+ * apparatus does, and the scene's own button on a phone (there the panel with the buttons may be folded away).
+ */
+function nextMove(): HTMLButtonElement | null {
+  if (running) return null;
+  const b = document.querySelector<HTMLButtonElement>('#quiz .guide button[data-plan], #offer button[data-plan]') ?? $<HTMLButtonElement>('#start');
+  return !b.disabled && !b.closest('[hidden]') ? b : null;
+}
+const goButton = el('button', { type: 'button', className: 'scene-go primary' });
+scene.element.querySelector('.table-buttons')!.append(goButton);
+goButton.onclick = () => nextMove()?.click();
+// The things on the table are buttons too: a tap on the ball rolls it, on the pot starts the heating.
+scene.element.addEventListener('click', (e) => {
+  if ((e.target as Element).closest('.scene-svg #sc-bench, .scene-svg .items')) nextMove()?.click();
+});
+/**
+ * On a phone, once the steps are done, the panel goes: what was in it (the title, «Спочатку», the conclusion…) comes
+ * under the scene, before the protocol and «Пояснити», as on a computer, and the scene stands in the middle; started
+ * afresh, it is the panel again.
+ */
+function placeDone() {
+  if (!phone()) return;
+  const kitchen = $('.kitchen');
+  const done = !!preset && planTotal > 0 && !plan.length;
+  if (done === kitchen.classList.contains('panel-gone')) return;
+  kitchen.classList.toggle('panel-gone', done);
+  const parts = KITCHEN_ORDER.filter((e) => e.id !== 'scene');
+  if (done) for (const e of parts) $('main.main').insertBefore(e, $('#side'));
+  else expPanel.querySelector('.exp-panel-body')!.append(...parts);
+}
+function renderGo() {
+  placeDone();
+  // The header's copies (shown on a phone, by the experiment's name): its lab sheet and its share, as the panel's own.
+  for (const [copy, own] of [['#top-sheet', '#exp-sheet'], ['#top-share', '#exp-share']] as const) {
+    const c = $<HTMLButtonElement>(copy);
+    const o = $<HTMLButtonElement>(own);
+    c.hidden = o.hidden;
+    if (c.textContent !== '✓') c.title = o.title;
+    c.setAttribute('aria-label', o.getAttribute('aria-label') ?? o.title);
+  }
+  const next = nextMove();
+  scene.element.classList.toggle('can-go', !!next);
+  goButton.hidden = !next;
+  if (next) goButton.textContent = next.textContent;
+}
 // Turning the bubble's page: the Professor reads the page now shown (cutting the one before).
 scene.onTurn((page) => {
   hush();
@@ -1438,7 +1504,7 @@ function sceneView(): SceneView {
     ...(measured?.command.type === 'lab.read-level' ? { levelMark: formatMeasured('volume', measured.record.value, measured.record.inputs?.['division'] ?? 1e-6, locale) } : {}),
     dissolve: dissolveKey,
     board: { empty: u.boardEmpty, front: u.boardFront, back: u.boardBack, lines: boardNow() },
-    bubble: { next: u.bubbleNext, back: u.bubbleBack },
+    bubble: { next: u.bubbleNext, back: u.bubbleBack, fold: tl(locale, 'main-bubble-fold'), unfold: tl(locale, 'main-bubble-unfold') },
     ...(benchView() ? { bench: benchView()! } : {}),
     // The cathode taken out and weighed: on the laboratory balance beside the beaker (the cell stays where it is).
     ...(measured?.command.type === 'lab.cathode' ? { scale: { look: 'lab-balance', display: measured.record.value === null ? 'O-Ld' : formatReading('lab-balance', measured.record.value, locale), load: 'cathode' } } : {}),
@@ -1952,18 +2018,31 @@ function showOnlyWhatMatters() {
 
 const finger = createFinger();
 /**
- * Where to look next: the table empty — at the experiments (their list, or the shelf's strip when folded; not in the
- * sandbox); an experiment chosen
- * and not begun — at its first step's button. Only in the lab, not on the site's other pages.
+ * Where to look next: the table empty — at the experiments (their list, or the shelf's strip when folded, or ☰ on a
+ * phone; not in the sandbox); an experiment chosen and not begun — at its first step's button; done — at its
+ * conclusion, then at «Пояснити».
+ * Only in the lab, not on the site's other pages.
  */
+/** The conclusion of a done experiment has been on the screen: the finger goes on from it to «Пояснити». */
+let conclusionSeen = false;
 function pointTheWay() {
   const lab = !onCatalog && !libraryTab && !onAbout;
   // (In the sandbox the table is built by hand: no finger.)
   if (lab && !preset && !tableSet && shelfTab === 'experiments') {
     const folded = store.get('shelf') === 'folded';
-    return finger.point(() => document.querySelector(folded ? '#shelf-open' : '#presets-list'), 'right');
+    // (On a phone the list is in the drawer: at ☰ while it is closed.)
+    return finger.point(() => document.querySelector(phone() ? ($('#shelf').classList.contains('drawer-open') ? '#presets-list' : '#drawer-toggle') : folded ? '#shelf-open' : '#presets-list'));
   }
-  if (lab && preset && !running && plan.length === planTotal && planTotal > 0) return finger.point(() => document.querySelector('#quiz .guide button[data-plan]'), 'left');
+  if (lab && preset && !running && plan.length === planTotal && planTotal > 0) return finger.point(() => document.querySelector(phone() ? '.scene-go:not([hidden])' : '#quiz .guide button[data-plan]'));
+  // The experiment done: first to its conclusion, and once that is in sight, on to «Пояснити» (till it is asked).
+  const done = lab && !!preset && !running && !instrumentBusy && planTotal > 0 && !plan.length;
+  if (!done) conclusionSeen = false;
+  if (done && !$('#report').innerHTML)
+    return finger.point(() => {
+      const q = $('#quiz').getBoundingClientRect();
+      if (!conclusionSeen && q.height && q.top < window.innerHeight * 0.8 && q.bottom > 0) conclusionSeen = true;
+      return document.querySelector(conclusionSeen ? '#explain' : '#quiz');
+    });
   finger.point(null);
 }
 
@@ -1972,14 +2051,27 @@ function render() {
   // Nothing on the table yet: no step, no instruments, no readings — only the choice.
   document.body.classList.toggle('table-bare', !preset && !tableSet);
   pointTheWay();
+  // (When the buttons below are drawn.)
+  queueMicrotask(renderGo);
   $('#exp-title').classList.toggle('to-list', !!presetGiven);
   renderVary();
   document.documentElement.lang = locale;
   document.title = pageTitle();
+  // The step is done (no run, no instrument moving): the bubble folded for it opens again, with what came out.
+  if (foldedForStep && !running && !instrumentBusy) {
+    foldedForStep = false;
+    scene.fold(false);
+  }
+  $('#rotate-title').textContent = tl(locale, 'main-rotate-title');
+  $('#rotate-text').textContent = tl(locale, 'main-rotate-text');
+  $('#rotate-go').textContent = tl(locale, 'main-rotate-go');
   $('#title').textContent = u.title;
   $('#lbl-language').textContent = u.language;
   // A ready-made experiment is named: «2. Дослід: Як розтягується пружина?»
   $('#exp-title').textContent = preset ? `${u.experiment}: ${tr(preset.title, locale)}` : u.experiment;
+  $('#top-exp').textContent = preset ? tr(preset.title, locale) : '';
+  $('#to-kitchen').title = tl(locale, 'main-to-kitchen');
+  $('#to-kitchen').setAttribute('aria-label', tl(locale, 'main-to-kitchen'));
   // The running experiment's page of the lab notebook, from its title.
   const sheetBtn = $<HTMLButtonElement>('#exp-sheet');
   sheetBtn.hidden = !preset;
@@ -2054,9 +2146,10 @@ function render() {
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
   $<HTMLButtonElement>('#read-level').textContent = u.measure.level;
   renderSound();
+  renderMusic();
   renderVoice();
-  newsButton.textContent = u.byTheWay.button;
-  addOverButton.textContent = `➕ ${u.choose.add}`;
+  signedLabel(newsButton, u.byTheWay.button);
+  signedLabel(addOverButton, `➕ ${u.choose.add}`);
   editButton.textContent = !preset && !tableSet ? `🛠 ${u.choose.build}` : `✎ ${u.choose.change}`;
   addOverButton.title = u.choose.open;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
@@ -2342,8 +2435,9 @@ $('#protocol').addEventListener('click', (e) => {
   // The same row again: back to the experiment as it is now.
   const key = row.dataset['look']!;
   lookingAt = lookingAt === key ? null : key;
-  // The table back in front: it is the instruments one comes to look at.
+  // The table back in front: it is the instruments one comes to look at (on a phone, scrolled to: the scene fills the screen).
   if (lookingAt) scene.read(false);
+  if (lookingAt && phone()) return toGame(() => {}, false);
   render();
 });
 $('#look-back').addEventListener('click', (e) => {
@@ -3440,6 +3534,8 @@ async function shareExperiment(p: Preset, button: HTMLButtonElement) {
   }
 }
 $('#exp-share').onclick = () => presetGiven && void shareExperiment(presetGiven, $<HTMLButtonElement>('#exp-share'));
+$('#top-share').onclick = () => presetGiven && void shareExperiment(presetGiven, $<HTMLButtonElement>('#top-share'));
+$('#top-sheet').onclick = () => $<HTMLButtonElement>('#exp-sheet').click();
 
 function buildHeader() {
   const lang = $<HTMLSelectElement>('#language');
@@ -3448,6 +3544,8 @@ function buildHeader() {
   lang.onchange = () => {
     locale = lang.value as Locale;
     store.set('locale', locale);
+    renderDrawer();
+    renderGrip();
     buildHeader();
     buildInfo();
     buildShelf();
@@ -3870,7 +3968,8 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
     goOnByItself();
   }
   // On a phone the panel stands above the scene: go down to it.
-  if (matchMedia('(max-width: 900px)').matches) $('.kitchen').scrollIntoView({ behavior: 'smooth' });
+  if (phone()) toGame(() => {}, false);
+  else if (matchMedia('(max-width: 900px)').matches) $('.kitchen').scrollIntoView({ behavior: 'smooth' });
 }
 /** What a ready-made experiment puts into the vessel before the start (hot water, a block from boiling water). */
 function presetSetup() {
@@ -4102,7 +4201,7 @@ function renderSide() {
   b.setAttribute('aria-label', u.sideFold);
   b.setAttribute('aria-expanded', String(!folded));
   $('#side-open').textContent = u.sideUnfold;
-  const shelfFolded = store.get('shelf') === 'folded';
+  const shelfFolded = store.get('shelf') === 'folded' && !document.documentElement.classList.contains('phone');
   $('.app').classList.toggle('shelf-folded', shelfFolded);
   $('#shelf').classList.toggle('folded', shelfFolded);
   const f = $<HTMLButtonElement>('#shelf-fold');
@@ -4121,6 +4220,228 @@ $('#side-open').onclick = flip('side');
 $('#shelf-fold').onclick = flip('shelf');
 $('#shelf-open').onclick = flip('shelf');
 
+// ---------- a phone: the scene takes the screen ----------
+/**
+ * A phone (a touch screen, small): the experiments and the settings are a drawer on the right, closed till ☰; the
+ * scene fills the screen's height with the steps beside it; a start or a step first folds the header and scrolls to
+ * the scene, and only then moves anything; the bubble folds away while a step moves. Held upright, the lab asks for
+ * the phone on its side.
+ */
+/**
+ * The experiment's panel on a phone: all of the kitchen but the scene, laid over the wall right of the scene (the
+ * protocol, the prediction and «Пояснити» stay under it, as on a computer, and open). Dragged by its grip it grows over the scene or shrinks to the grip alone; a tap on the
+ * grip folds it or opens it. Its width is kept.
+ */
+const expPanel = document.createElement('div');
+expPanel.id = 'exp-panel';
+expPanel.className = 'exp-panel';
+expPanel.innerHTML = `<button type="button" class="exp-grip"><span></span></button><div class="exp-panel-body"></div>`;
+const KITCHEN_ORDER = [...$('.kitchen').children];
+/** Narrower than this, a dragged panel folds to its grip. */
+const PANEL_FOLD = 120;
+function placePanel() {
+  const kitchen = $('.kitchen');
+  if (phone()) {
+    expPanel.querySelector('.exp-panel-body')!.append(...KITCHEN_ORDER.filter((e) => e.id !== 'scene'));
+    kitchen.append(expPanel);
+  } else if (expPanel.parentElement) {
+    expPanel.remove();
+    kitchen.classList.remove('panel-gone');
+    kitchen.append(...KITCHEN_ORDER);
+  }
+  const kept = store.get('panel-w');
+  kitchen.classList.toggle('panel-folded', store.get('panel') === 'folded');
+  kitchen.style.setProperty('--panel-drag', kept ? `${kept}px` : '');
+  renderGrip();
+}
+function renderGrip() {
+  const folded = $('.kitchen').classList.contains('panel-folded');
+  const grip = expPanel.querySelector<HTMLButtonElement>('.exp-grip')!;
+  grip.title = tl(locale, folded ? 'main-panel-open' : 'main-panel-fold');
+  grip.setAttribute('aria-expanded', String(!folded));
+}
+{
+  const grip = expPanel.querySelector<HTMLButtonElement>('.exp-grip')!;
+  let from: { x: number; w: number } | null = null;
+  let moved = false;
+  grip.onpointerdown = (e) => {
+    grip.setPointerCapture(e.pointerId);
+    const kitchen = $('.kitchen');
+    from = { x: e.clientX, w: kitchen.classList.contains('panel-folded') ? 0 : expPanel.getBoundingClientRect().width };
+    moved = false;
+  };
+  grip.onpointermove = (e) => {
+    if (!from) return;
+    const kitchen = $('.kitchen');
+    if (!moved && Math.abs(e.clientX - from.x) < 6) return;
+    moved = true;
+    const w = Math.max(0, Math.min(kitchen.clientWidth - 60, from.w + from.x - e.clientX));
+    kitchen.classList.add('panel-dragged');
+    kitchen.classList.toggle('panel-folded', w < PANEL_FOLD);
+    if (w >= PANEL_FOLD) kitchen.style.setProperty('--panel-drag', `${w}px`);
+  };
+  const drop = () => {
+    if (!from) return;
+    const kitchen = $('.kitchen');
+    kitchen.classList.remove('panel-dragged');
+    if (!moved) kitchen.classList.toggle('panel-folded');
+    // Folded by a drag, it keeps the width it had before: a tap opens it as it was.
+    else if (kitchen.classList.contains('panel-folded') && from.w >= PANEL_FOLD) kitchen.style.setProperty('--panel-drag', `${from.w}px`);
+    const w = kitchen.style.getPropertyValue('--panel-drag');
+    store.set('panel', kitchen.classList.contains('panel-folded') ? 'folded' : 'open');
+    if (w) store.set('panel-w', String(parseInt(w, 10)));
+    from = null;
+    renderGrip();
+  };
+  grip.onpointerup = drop;
+  grip.onpointercancel = drop;
+}
+function placePhone() {
+  document.documentElement.classList.toggle('phone', phone());
+  // The settings: in the drawer on a phone, in the header elsewhere.
+  const prefs = $('.prefs');
+  const home = phone() ? $('#drawer-prefs') : $('header.top');
+  if (prefs.parentElement !== home) home.append(prefs);
+  placePanel();
+  if (!phone()) {
+    openDrawer(false);
+    document.documentElement.classList.remove('playing');
+  }
+  renderSide();
+}
+function renderDrawer() {
+  const open = $('#shelf').classList.contains('drawer-open');
+  $('#drawer-toggle').setAttribute('aria-expanded', String(open));
+  $('#drawer-toggle').title = tl(locale, open ? 'main-drawer-close' : 'main-drawer-open');
+  $('#drawer-toggle').textContent = open ? '✕' : '☰';
+  $('#shelf').classList.toggle('settings', drawerSettings);
+  $('#drawer-settings').textContent = tl(locale, drawerSettings ? 'main-drawer-experiments' : 'main-drawer-settings');
+}
+/** The drawer opened (on the experiments, always) or closed. */
+function openDrawer(open: boolean) {
+  $('#shelf').classList.toggle('drawer-open', open);
+  $('#drawer-shade').hidden = !open;
+  if (open) {
+    drawerSettings = false;
+    if (shelfTab !== 'experiments') {
+      shelfTab = 'experiments';
+      store.set('shelfTab', shelfTab);
+      buildShelfTabs();
+    }
+  }
+  renderDrawer();
+}
+$('#drawer-toggle').onclick = () => openDrawer(!$('#shelf').classList.contains('drawer-open'));
+$('#drawer-shade').onclick = () => openDrawer(false);
+// The drawer swiped to the right closes, as it came.
+{
+  let x0: number | null = null;
+  const shelf = $('#shelf');
+  shelf.addEventListener('touchstart', (e) => (x0 = e.touches[0]?.clientX ?? null), { passive: true });
+  shelf.addEventListener('touchmove', (e) => {
+    const dx = (e.touches[0]?.clientX ?? 0) - (x0 ?? 0);
+    if (x0 !== null && phone() && dx > 0) shelf.style.transform = `translateX(${dx}px)`;
+  }, { passive: true });
+  shelf.addEventListener('touchend', (e) => {
+    const dx = (e.changedTouches[0]?.clientX ?? 0) - (x0 ?? 0);
+    shelf.style.transform = '';
+    if (x0 !== null && phone() && dx > 80) openDrawer(false);
+    x0 = null;
+  });
+}
+$('#drawer-settings').onclick = () => {
+  drawerSettings = !drawerSettings;
+  renderDrawer();
+};
+/**
+ * A start or a step on a phone: the drawer closes, the header folds, the page scrolls smoothly to the scene — and
+ * only when it is there does the step begin (its motion is seen from its start), the bubble folded meanwhile.
+ */
+function toGame(action: () => void, step = true) {
+  if (!phone()) return action();
+  openDrawer(false);
+  document.documentElement.classList.add('playing');
+  document.documentElement.classList.remove('head-shown');
+  steering = true;
+  const run = () => {
+    steering = false;
+    document.documentElement.classList.remove('head-shown');
+    if (step) {
+      scene.fold(true);
+      foldedForStep = true;
+    }
+    action();
+    render();
+  };
+  const top = Math.max(0, $('.kitchen').getBoundingClientRect().top + window.scrollY - 2);
+  if (Math.abs(window.scrollY - top) < 4) return run();
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener('scrollend', go);
+    run();
+  };
+  window.addEventListener('scrollend', go, { once: true });
+  // (A browser without «scrollend»: the scroll is over by then.)
+  window.setTimeout(go, 900);
+  window.scrollTo({ top, behavior: moving() ? 'smooth' : 'auto' });
+}
+// Held upright: the lab asks for the phone on its side (where the browser can, it turns the screen itself).
+const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+$('#rotate-go').hidden = !orientation?.lock || !document.documentElement.requestFullscreen;
+$('#rotate-go').onclick = () => {
+  void document.documentElement
+    .requestFullscreen()
+    .then(() => orientation.lock?.('landscape'))
+    .catch(() => {});
+};
+// The header folded over the scene comes back on a scroll up (with the experiment's name), and goes on a scroll down.
+{
+  let lastY = window.scrollY;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    // (The page's own scroll to the scene shows nothing.)
+    if (steering) lastY = y;
+    if (steering || Math.abs(y - lastY) < 6) return;
+    if (phone()) document.documentElement.classList.toggle('head-shown', y < lastY);
+    lastY = y;
+  }, { passive: true });
+}
+// Scrolled away from the experiment (most of it off the screen): a button back up to it — on a phone, as a start
+// does (the header folded, the scene filling the screen).
+{
+  const up = $<HTMLButtonElement>('#to-kitchen');
+  new IntersectionObserver(([e]) => (up.hidden = !e || e.intersectionRatio >= 0.3 || e.boundingClientRect.top > 0 || !e.boundingClientRect.height), { threshold: [0, 0.3] }).observe($('.kitchen'));
+  up.onclick = () => {
+    if (phone()) return toGame(() => {}, false);
+    $('.kitchen').scrollIntoView({ behavior: moving() ? 'smooth' : 'auto', block: 'start' });
+  };
+}
+PHONE.addEventListener('change', placePhone);
+placePhone();
+
+/** A setting turned (by its button or in the console): kept, and what it changes changed now. */
+function labSetting(k: Switch, on: boolean) {
+  setOn(k, on);
+  // The speaker gone: a scene that plays ends, and he stops talking.
+  if (k === 'speaker' && !on) {
+    idleAct = null;
+    idleLine = -1;
+    hush();
+    window.clearTimeout(sayTimer);
+  }
+  // No motion from now on: a ready-made experiment goes on to its result by itself.
+  if (k === 'motion' && !on && preset) {
+    answerShown = preset.id;
+    goOnByItself();
+  }
+  if (k === 'music') {
+    setMusic(on);
+    renderMusic();
+  }
+  render();
+}
 // ---------- console ----------
 const labConsole = createConsole({
   locale: () => locale,
@@ -4192,22 +4513,7 @@ const labConsole = createConsole({
   startPreset: (p) => startPreset(p),
   scenes: () => ACTS.map((a) => a.name),
   news: () => byTheWay(),
-  setting(k, on) {
-    setOn(k, on);
-    // The speaker gone: a scene that plays ends, and he stops talking.
-    if (k === 'speaker' && !on) {
-      idleAct = null;
-      idleLine = -1;
-      hush();
-      window.clearTimeout(sayTimer);
-    }
-    // No motion from now on: a ready-made experiment goes on to its result by itself.
-    if (k === 'motion' && !on && preset) {
-      answerShown = preset.id;
-      goOnByItself();
-    }
-    render();
-  },
+  setting: (k, on) => labSetting(k, on),
   weigh: (sc) => weighNow(sc ?? scale),
   voices: () => VOICE_IDS.map((v) => `${v}${v === currentVoice() ? ' ◀' : ''} — ${t().voice.names[v]}`),
   voice(v) {
@@ -4304,7 +4610,7 @@ $('#quiz').addEventListener('click', (e) => {
     return render();
   }
   const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
-  if (step) return nextPlanStep();
+  if (step) return toGame(nextPlanStep);
   // An optional part skipped: on to the next one (or the conclusion); a part that follows it up goes with it.
   if ((e.target as HTMLElement).closest('button[data-skip]') && plan.length) {
     const starts = (s: ProtocolStep | undefined) => s?.kind === 'bench' && !!s.optional;
@@ -4348,7 +4654,7 @@ $('#offer').addEventListener('click', (e) => {
   const target = (e.target as HTMLElement).closest<HTMLElement>('[data-fix], [data-stop], [data-plan]');
   if (!target) return;
   if (target.dataset['stop']) return stop();
-  if (target.dataset['plan']) return nextPlanStep();
+  if (target.dataset['plan']) return toGame(nextPlanStep);
   const f = Array.isArray(fixes) ? fixes[Number(target.dataset['fix'])] : undefined;
   if (f) applyFix(f);
 });
@@ -4370,7 +4676,7 @@ scene.element.addEventListener('instrument-settled', () => {
 $('#knob-wrap').append(knob.element);
 $('#chart').append(chart.element);
 $('#scene').append(scene.element);
-$('#start').onclick = () => ((lookingAt = null), toggleStart());
+$('#start').onclick = () => toGame(() => ((lookingAt = null), toggleStart()));
 function toggleStart() {
   tableSet = true;
   goOnFreely();
@@ -4536,10 +4842,13 @@ buildHeader();
 buildInfo();
 renderLibrary();
 renderAbout();
-// The address names a ready-made experiment: it is chosen at once (a shared link opens on it).
-if (where.route.page === 'experiment') {
-  const id = where.route.id;
-  queueMicrotask(() => startPreset(PRESETS.find((p) => p.id === id)!));
+/**
+ * The lab starts when the page has loaded whole (its pictures and fonts too): the walking Professor fades away, the
+ * experiment the address names is chosen (a shared link opens on it), the scene begins to move.
+ */
+function whenLoaded(start: () => void) {
+  const loaded = document.readyState === 'complete' ? Promise.resolve() : new Promise<void>((done) => window.addEventListener('load', () => done(), { once: true }));
+  void Promise.all([loaded, document.fonts?.ready]).then(start);
 }
 buildShelfTabs();
 buildShelf();
@@ -4548,4 +4857,17 @@ newSession();
 setChart(false);
 renderRecords();
 buildAdd();
-requestAnimationFrame(frame);
+whenLoaded(() => {
+  const pre = document.getElementById('preloader');
+  if (pre) {
+    pre.classList.add('gone');
+    window.setTimeout(() => pre.remove(), moving() ? 400 : 0);
+  }
+  if (where.route.page === 'experiment') {
+    const id = where.route.id;
+    startPreset(PRESETS.find((p) => p.id === id)!);
+  }
+  requestAnimationFrame(frame);
+});
+// A phone on the bare table: the experiments are what there is to do, so the drawer opens on them.
+if (phone() && where.route.page === 'lab') openDrawer(true);
