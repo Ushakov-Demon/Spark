@@ -5,6 +5,8 @@ import { G } from '../../domains/mechanics/constants.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { formatMeasured } from '../../scenarios/measuring.js';
 import { sig } from '../../explain/format.js';
+import { massText } from '../pulley/shared.js';
+import { BODY_MASS, pendulumLength } from './shared.js';
 
 export const answer_average_speed = (run: PresetRun): PresetAnswer => {
   const R = run.readings ?? [];
@@ -29,7 +31,7 @@ export const answer_average_speed = (run: PresetRun): PresetAnswer => {
 };
 
 export const answer_rotation_period = (run: PresetRun): PresetAnswer => {
-  const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.whirl' && x.record.value !== null).map((x) => ({ L: Number(x.command['thread']), N: Number(x.command['turns']), t: x.record.value!, R: x.record.inputs?.['radius'] ?? 0.15 }));
+  const rows = (run.readings ?? []).filter((x) => x.command.type === 'lab.whirl' && x.record.value !== null).map((x) => ({ L: Number(x.command['thread']), m: Number(x.command['mass'] ?? BODY_MASS), N: Number(x.command['turns']), t: x.record.value!, R: x.record.inputs?.['radius'] ?? 0.15 }));
   const [a, b] = rows;
   const Ta = a ? a.t / a.N : 0;
   const Tb = b ? b.t / b.N : 0;
@@ -41,7 +43,7 @@ export const answer_rotation_period = (run: PresetRun): PresetAnswer => {
     why: msg('motion-lab-works-answer-rotation-period-why'),
     say: msg('motion-lab-works-answer-rotation-period-say'),
     text: both((l) =>
-      tl(l, 'motion-lab-works-answer-rotation-period-text-3', { L: a ? tl(l, 'motion-lab-works-answer-rotation-period-text', { L: cm(a.L, l), N: String(a.N), t: s(a.t, l), value: formatMeasured('time', Ta, 0.01, l), value2: sig(1 / Ta, 2, l), value3: sig((2 * Math.PI * a.R) / Ta, 2, l) }) : '', L2: b ? tl(l, 'motion-lab-works-answer-rotation-period-text-2', { L: cm(b.L, l), t: s(b.t, l), value: formatMeasured('time', Tb, 0.01, l) }) : '' }),
+      tl(l, 'motion-lab-works-answer-rotation-period-text-3', { L: a ? tl(l, 'motion-lab-works-answer-rotation-period-text', { L: cm(a.L, l), N: String(a.N), t: s(a.t, l), value: formatMeasured('time', Ta, 0.01, l), value2: sig(1 / Ta, 2, l), value3: sig((2 * Math.PI * a.R) / Ta, 2, l) }) : '', L2: b ? tl(l, 'motion-lab-works-answer-rotation-period-text-2', { L: cm(b.L, l), t: s(b.t, l), value: formatMeasured('time', Tb, 0.01, l) }) : '', mass: a ? massText(a.m, l) : '' }),
     ),
   };
 };
@@ -59,7 +61,7 @@ export const answer_pendulum = (run: PresetRun): PresetAnswer => {
     say: msg('motion-lab-works-answer-pendulum-say'),
     text: both((l) =>
       ok
-          ? tl(l, 'motion-lab-works-answer-pendulum-text', { T: sT(base!.T, l), T2: sT(wide!.T, l), T3: sT(heavy!.T, l), T4: sT(short!.T, l), value: sT(2 * Math.PI * Math.sqrt(1 / G), l) })
+          ? tl(l, 'motion-lab-works-answer-pendulum-text', { T: sT(base!.T, l), T2: sT(wide!.T, l), T3: sT(heavy!.T, l), T4: sT(short!.T, l), value: sT(2 * Math.PI * Math.sqrt(base!.L / G), l), L: pendulumLength(base!.L, l), a1: pendulumLength(base!.A, l), a2: pendulumLength(wide!.A, l), m2: massText(heavy!.m, l), short: pendulumLength(short!.L, l) })
           : tl(l, 'motion-lab-works-answer-pendulum-text-2'),
     ),
   };

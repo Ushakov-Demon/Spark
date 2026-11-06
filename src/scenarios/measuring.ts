@@ -211,6 +211,11 @@ export function formatMeasured(quantity: MeasurementRecord['quantity'], value: n
     const d = Math.max(0, Math.round(-Math.log10(division)));
     return `${new Intl.NumberFormat(NUMBER_LOCALE[locale], { minimumFractionDigits: d, maximumFractionDigits: d }).format(value - ZERO_CELSIUS_IN_KELVIN)} ${t(locale, 'unit-sym-degC')}`;
   }
+  // (From 2 m a length reads in metres: not «6 700,0 см».)
+  if (quantity === 'length' && value >= 2) {
+    const d = Math.min(2, Math.max(0, Math.round(-Math.log10(division))));
+    return `${new Intl.NumberFormat(NUMBER_LOCALE[locale], { minimumFractionDigits: d, maximumFractionDigits: d }).format(value)} ${t(locale, 'unit-sym-m')}`;
+  }
   const [k, unit] = quantity === 'mass' ? [1000, t(locale, 'unit-sym-g')] : quantity === 'volume' ? [1e6, t(locale, 'unit-sym-mL')] : quantity === 'length' ? [100, t(locale, 'unit-sym-cm')] : quantity === 'area' ? [1e4, t(locale, 'unit-sym-cm2')] : quantity === 'time' ? [1, t(locale, 'unit-sym-s')] : quantity === 'current' ? [1, t(locale, 'unit-sym-A')] : quantity === 'voltage' ? [1, t(locale, 'unit-sym-V')] : quantity === 'resistance' ? [1, t(locale, 'unit-sym-ohm')] : quantity === 'pressure' ? [0.01, t(locale, 'measuring-format-measured-kunit')] : quantity === 'angle' ? [1, '°'] : quantity === 'turns' ? [1, t(locale, 'measuring-format-measured-kunit-2')] : quantity === 'ratio' ? [1, ''] : quantity === 'days' ? [1, t(locale, 'measuring-format-measured-kunit-3')] : quantity === 'illuminance' ? [1, t(locale, 'unit-sym-lx')] : [1, t(locale, 'unit-sym-N')];
   const digits = Math.max(0, Math.round(-Math.log10(division * k)));
   // (Turns are counted to a quarter: 4,75, but 12 — not 12,00.)

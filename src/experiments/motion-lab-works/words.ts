@@ -6,6 +6,8 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { MOTION_SETUP, MOTION_TEXT, type MotionCommand } from './bench.js';
+import { massText } from '../pulley/shared.js';
+import { pendulumLength } from './shared.js';
 
 
 export const text = (c: MotionCommand): StepText => MOTION_TEXT[c.type](c);
@@ -25,7 +27,7 @@ export function say(c: MotionCommand, recs: readonly MeasurementRecord[], locale
   const v = recs[0]?.value ?? null;
   const cm = (x: number) => formatMeasured('length', x, 0.001, locale);
   const sec = (x: number | null) => formatMeasured('time', x ?? 0, 0.01, locale);
-  if (c.type === 'lab.tape') return t(locale, 'motion-lab-works-say-3', { v: cm(v ?? 0), value: c.what === 'path' ? t(locale, 'motion-lab-works-say') : t(locale, 'motion-lab-works-say-2') });
+  if (c.type === 'lab.tape') return t(locale, 'motion-lab-works-say-3', { v: cm(v ?? 0), value: t(locale, 'motion-lab-works-say') });
   if (c.type === 'lab.roll') return t(locale, 'motion-lab-works-say-4', { v: sec(v) });
   if (c.type === 'lab.whirl') return t(locale, 'motion-lab-works-say-5', { turns: String(c.turns), v: sec(v), v2: sig((v ?? 0) / c.turns, 3, locale) });
   return t(locale, 'motion-lab-works-say-6', { count: String(c.count), v: sec(v), v2: sig((v ?? 0) / c.count, 3, locale) });
@@ -42,7 +44,7 @@ export function board(c: MotionCommand, trace: readonly MeasurementRecord[], { i
   // (The path the tape measured last, before this step.)
   const tapePath = before.flatMap((x) => (x.ok && x.command.type === 'lab.tape' ? x.trace : [])).filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null).pop()?.value ?? null;
   if (c.type === 'lab.tape') {
-    out.push({ id: `tape:${i}`, title: c.what === 'path' ? t(locale, 'motion-lab-works-board-title') : t(locale, 'motion-lab-works-board-title-2'), formula: `l = ${cm(r.value!)}` });
+    out.push({ id: `tape:${i}`, title: t(locale, 'motion-lab-works-board-title'), formula: `l = ${cm(r.value!)}` });
     return out;
   }
   if (c.type === 'lab.roll') {
@@ -57,14 +59,14 @@ export function board(c: MotionCommand, trace: readonly MeasurementRecord[], { i
     const N = c.turns;
     const T = r.value! / N;
     const R = r.inputs?.['radius'] ?? 0.15;
-    out.push({ id: `T:${i}`, title: t(locale, 'motion-lab-works-board-title-5', { thread: cm(c.thread) }), formula: 'T = t / N', numbers: `${sec(r.value!)} / ${N} ≈ ${sec(T)}` });
+    out.push({ id: `T:${i}`, title: t(locale, 'motion-lab-works-board-title-5', { thread: pendulumLength(c.thread, locale) }), formula: 'T = t / N', numbers: `${sec(r.value!)} / ${N} ≈ ${sec(T)}` });
     out.push({ id: `n:${i}`, title: t(locale, 'motion-lab-works-board-title-6'), formula: 'n = N / t', numbers: `${N} / ${sec(r.value!)} ≈ ${n(N / r.value!, 2)} ${t(locale, 'motion-lab-works-board-numbers')}` });
     out.push({ id: `vc:${i}`, title: t(locale, 'motion-lab-works-board-title-7'), formula: 'v = 2πR / T', numbers: `2π · ${n(R)} ${t(locale, 'unit-sym-m')} / ${sec(T)} ≈ ${n((2 * Math.PI * R) / T, 2)} ${t(locale, 'unit-sym-m-per-s')}` });
     return out;
   }
   if (c.type === 'lab.swing') {
     const N = c.count;
-    out.push({ id: `Tp:${i}`, title: t(locale, 'motion-lab-works-board-title-8', { length: cm(c.length), amplitude: cm(c.amplitude), mass: String(Math.round(c.mass * 1000)) }), formula: 'T = t / N', numbers: `${sec(r.value!)} / ${N} ≈ ${sec(r.value! / N)}` });
+    out.push({ id: `Tp:${i}`, title: t(locale, 'motion-lab-works-board-title-8', { length: pendulumLength(c.length, locale), amplitude: pendulumLength(c.amplitude, locale), mass: massText(c.mass, locale) }), formula: 'T = t / N', numbers: `${sec(r.value!)} / ${N} ≈ ${sec(r.value! / N)}` });
     return out;
   }
   return out;

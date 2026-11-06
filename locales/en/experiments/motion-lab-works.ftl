@@ -1,8 +1,8 @@
 ## motion-lab-works
 
 motion-lab-works-setup-incline = A groove on a stand, a steel ball, a metal cylinder, a measuring tape, a stopwatch
-motion-lab-works-setup-circle = A body on a thread with a loop, a sheet with a 15 cm circle, a stopwatch
-motion-lab-works-setup-pendulum = A stand with a ring, two balls on threads, a measuring tape, a stopwatch
+motion-lab-works-setup-circle = A body on a thread with a loop, a sheet with a circle, a stopwatch
+motion-lab-works-setup-pendulum = A stand with a ring, two balls on threads, a stopwatch
 motion-lab-works-average-speed-ask = Where is the ball’s average speed greater: on the whole path or on its first half?
 motion-lab-works-average-speed-title = The average speed of a ball in a groove
 motion-lab-works-average-speed-choices = On the whole path
@@ -21,7 +21,7 @@ motion-lab-works-rotation-period-choices-3 = It stays — the circle is the same
 motion-lab-works-turns-label = Turns to count
 motion-lab-works-turns-options = 10
 motion-lab-works-turns-options-2 = 20
-motion-lab-works-build-question-2 = Holding the thread by its loop over the centre of a 15 cm circle, we swing the body round it and time { $turns } turns. From that we find the period, the frequency and the body’s speed. Then we shorten the thread and keep the circle. How does the period change?
+motion-lab-works-build-question-2 = Holding the { $L } thread by its loop over the centre of a circle of radius { $R }, we swing the { $m } body round it and time { $turns } turns. From that we find the period, the frequency and the body’s speed. Then we shorten the thread and keep the circle. How does the period change?
 motion-lab-works-pendulum-ask = What does a pendulum’s period depend on: the amplitude, the ball’s mass or the length?
 motion-lab-works-pendulum-title = The swings of a thread pendulum
 motion-lab-works-pendulum-choices = Only on the length
@@ -29,4 +29,12 @@ motion-lab-works-pendulum-choices-2 = On the amplitude: the wider, the longer
 motion-lab-works-pendulum-choices-3 = On the mass: a heavier ball swings slower
 motion-lab-works-count-label = Swings to count
 motion-lab-works-count-options = 30
-motion-lab-works-build-question-3 = We hang a ball on a 1 m thread from the stand’s ring. We time { $count } swings with the ball pulled 2.5 cm aside, then 5.5 cm. Then we put on a heavier ball, and at last shorten the thread to 25 cm. What does the pendulum’s period depend on?
+motion-lab-works-build-question-3 = We hang a { $m1 } ball on a { $L } thread from the stand’s ring. We time { $count } swings with the ball pulled { $a1 } aside, then { $a2 }. Then we put on another ball, { $m2 }, and at last shorten the thread to { $short }. What does the pendulum’s period depend on?
+motion-lab-works-length-label = Thread length
+motion-lab-works-mass-label = Ball’s mass
+motion-lab-works-mass2-label = Second ball’s mass
+motion-lab-works-body-label = Body’s mass
+motion-lab-works-pendulum-given = the pendulum’s length
+motion-lab-works-swing-label = First pull aside
+motion-lab-works-swing2-label = Second pull aside
+motion-lab-works-radius-label = Circle’s radius

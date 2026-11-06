@@ -1,8 +1,13 @@
-import { msg } from '../../knowledge/messages.js';
+import type { Locale } from '../../knowledge/i18n.js';
+import { localized, msg } from '../../knowledge/messages.js';
 import { beaker, ch, MOTION, room, varied } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
-import { MOTION_SETUP, PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from './shared.js';
+import { massText } from '../pulley/shared.js';
+import { BODY_MASS, CIRCLE_RADIUS, MOTION_SETUP, PENDULUM_BALLS, PENDULUM_LONGEST, PENDULUM_SHORTEST, pendulumLength, ROLL_PATH, SHORT_PENDULUM, SHORT_THREAD, SWING, THREAD_LENGTH, WIDEST_CIRCLE } from './shared.js';
 import { defineCard } from '../types.js';
+
+const LENGTH_UNITS = [{ id: 'cm', factor: 0.01 }, { id: 'm', factor: 1 }];
+const BALL_UNITS = [{ id: 'g', factor: 0.001 }, { id: 'kg', factor: 1 }];
 
 export const preset_average_speed: Preset = varied(
   {
@@ -61,14 +66,23 @@ export const preset_rotation_period: Preset = varied(
   },
   {
     // More turns timed — the same slip of the stopwatch shared among more of them: a truer period.
-    controls: [{ id: 'turns', label: msg('motion-lab-works-turns-label'), kind: 'choice', options: [ch('10', msg('motion-lab-works-turns-options')), ch('20', msg('motion-lab-works-turns-options-2'))], value: '10' }],
+    controls: [
+      { id: 'thread', label: msg('motion-lab-works-length-label'), kind: 'number', unit: 'm', min: 0.1, max: PENDULUM_LONGEST, step: 0, value: THREAD_LENGTH.value, units: LENGTH_UNITS },
+      { id: 'radius', label: msg('motion-lab-works-radius-label'), kind: 'number', unit: 'm', min: 0.01, max: PENDULUM_LONGEST * SHORT_THREAD * WIDEST_CIRCLE, step: 0, value: CIRCLE_RADIUS.value, units: LENGTH_UNITS },
+      { id: 'mass', label: msg('motion-lab-works-body-label'), kind: 'number', unit: 'kg', min: 0.001, max: 1000, step: 0, value: BODY_MASS, units: BALL_UNITS },
+      { id: 'turns', label: msg('motion-lab-works-turns-label'), kind: 'choice', options: [ch('10', msg('motion-lab-works-turns-options')), ch('20', msg('motion-lab-works-turns-options-2'))], value: '10' },
+    ],
     build: (v) => {
       const turns = Number(v['turns']);
+      const thread = Number(v['thread']);
+      const mass = Number(v['mass']);
+      // (The same circle for both threads: it stops short of what the shorter one can reach.)
+      const radius = Math.min(Number(v['radius']), thread * SHORT_THREAD * WIDEST_CIRCLE);
       return {
-        question: msg('motion-lab-works-build-question-2', { turns: String(turns) }),
+        question: msg('motion-lab-works-build-question-2', { turns: String(turns), L: (l: Locale) => pendulumLength(thread, l), m: (l: Locale) => massText(mass, l), R: (l: Locale) => pendulumLength(radius, l) }),
         plan: [
-          { kind: 'bench', command: { type: 'lab.whirl', thread: THREAD_LENGTH.value, turns } },
-          { kind: 'bench', command: { type: 'lab.whirl', thread: 0.3, turns } },
+          { kind: 'bench', command: { type: 'lab.whirl', thread, radius, mass, turns } },
+          { kind: 'bench', command: { type: 'lab.whirl', thread: thread * SHORT_THREAD, radius, mass, turns } },
         ],
       };
     },
@@ -99,17 +113,32 @@ export const preset_pendulum: Preset = varied(
   },
   {
     // More swings timed — the same slip of the stopwatch shared among more of them: a truer period.
-    controls: [{ id: 'count', label: msg('motion-lab-works-count-label'), kind: 'choice', options: [ch('10', msg('motion-lab-works-turns-options')), ch('20', msg('motion-lab-works-turns-options-2')), ch('30', msg('motion-lab-works-count-options'))], value: '20' }],
+    controls: [
+      { id: 'length', label: msg('motion-lab-works-length-label'), kind: 'number', unit: 'm', min: PENDULUM_SHORTEST / SHORT_PENDULUM, max: PENDULUM_LONGEST, step: 0, value: 1, units: LENGTH_UNITS },
+      { id: 'swing', label: msg('motion-lab-works-swing-label'), kind: 'number', unit: 'm', min: 0.001, max: PENDULUM_LONGEST * SWING.widest, step: 0, value: SWING.narrow, units: LENGTH_UNITS },
+      { id: 'swing2', label: msg('motion-lab-works-swing2-label'), kind: 'number', unit: 'm', min: 0.001, max: PENDULUM_LONGEST * SWING.widest, step: 0, value: SWING.wide, units: LENGTH_UNITS },
+      { id: 'mass', label: msg('motion-lab-works-mass-label'), kind: 'number', unit: 'kg', min: 0.001, max: 1000, step: 0, value: PENDULUM_BALLS.light, units: BALL_UNITS },
+      { id: 'mass2', label: msg('motion-lab-works-mass2-label'), kind: 'number', unit: 'kg', min: 0.001, max: 1000, step: 0, value: PENDULUM_BALLS.heavy, units: BALL_UNITS },
+      { id: 'count', label: msg('motion-lab-works-count-label'), kind: 'choice', options: [ch('10', msg('motion-lab-works-turns-options')), ch('20', msg('motion-lab-works-turns-options-2')), ch('30', msg('motion-lab-works-count-options'))], value: '20' },
+    ],
     build: (v) => {
       const count = Number(v['count']);
+      const length = Number(v['length']);
+      const [mass, mass2] = [Number(v['mass']), Number(v['mass2'])];
+      // (Small swings only: a pull past that share of the thread stops there.)
+      const narrow = Math.min(Number(v['swing']), length * SWING.widest);
+      const wide = Math.min(Number(v['swing2']), length * SWING.widest);
+      const short = length * SHORT_PENDULUM;
+      const lengthOf = (m: number) => (l: Locale) => pendulumLength(m, l);
+      const massOf = (kg: number) => (l: Locale) => massText(kg, l);
       return {
-        question: msg('motion-lab-works-build-question-3', { count: String(count) }),
+        given: [{ id: 'given:l', title: msg('motion-lab-works-pendulum-given'), formula: localized((l) => `l = ${pendulumLength(length, l)}`) }],
+        question: msg('motion-lab-works-build-question-3', { count: String(count), L: lengthOf(length), m1: massOf(mass), m2: massOf(mass2), a1: lengthOf(narrow), a2: lengthOf(wide), short: lengthOf(short) }),
         plan: [
-          { kind: 'bench', command: { type: 'lab.tape', what: 'length', length: 1 } },
-          { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.light, count } },
-          { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.055, mass: PENDULUM_BALLS.light, count } },
-          { kind: 'bench', command: { type: 'lab.swing', length: 1, amplitude: 0.025, mass: PENDULUM_BALLS.heavy, count } },
-          { kind: 'bench', command: { type: 'lab.swing', length: 0.25, amplitude: 0.025, mass: PENDULUM_BALLS.light, count } },
+          { kind: 'bench', command: { type: 'lab.swing', length, amplitude: narrow, mass, count } },
+          { kind: 'bench', command: { type: 'lab.swing', length, amplitude: wide, mass, count } },
+          { kind: 'bench', command: { type: 'lab.swing', length, amplitude: narrow, mass: mass2, count } },
+          { kind: 'bench', command: { type: 'lab.swing', length: short, amplitude: narrow * SHORT_PENDULUM, mass, count } },
         ],
       };
     },

@@ -231,6 +231,8 @@ export function createScene(): Scene {
   /** Lines on the board by id: a new one is written in chalk once, then only its numbers change. */
   const written = new Map<string, HTMLElement>();
   const BOARD_ROWS = 12;
+  /** How long a value takes to be rubbed off the board, ms (the .chalk-out animation). */
+  const CHALK_OUT = 300;
   const boardToggle = root.querySelector<HTMLButtonElement>('.board-toggle')!;
   let boardLabels = { front: '', back: '' };
   const setToggle = () => {
@@ -659,8 +661,29 @@ export function createScene(): Scene {
         if (ti!.textContent !== l.title) ti!.textContent = l.title;
         // F_A, A_к, ρ_рідини: the part after «_» is written as a subscript.
         if (fo!.dataset['f'] !== l.formula) {
+          const was = fo!.dataset['f'];
           fo!.dataset['f'] = l.formula;
-          fo!.innerHTML = l.formula.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>');
+          // What is given: the name stands, only the value after «=» is rubbed out and written anew.
+          const [name, value] = l.formula.split(' = ');
+          const old = fo!.querySelector<HTMLElement>('.bl-value');
+          if (l.id.startsWith('given:') && value !== undefined) {
+            if (old && was?.startsWith(`${name} = `)) {
+              old.classList.remove('chalk-in');
+              old.classList.add('chalk-out');
+              window.setTimeout(() => {
+                old.textContent = fo!.dataset['f']!.split(' = ')[1] ?? '';
+                old.classList.remove('chalk-out');
+                void old.offsetWidth;
+                old.classList.add('chalk-in');
+              }, CHALK_OUT);
+            } else {
+              fo!.textContent = `${name} = `;
+              const v = document.createElement('span');
+              v.className = 'bl-value';
+              v.textContent = value;
+              fo!.append(v);
+            }
+          } else fo!.innerHTML = l.formula.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!).replace(/_([^\s/·=()+−<>;,—&]+)/g, '<sub>$1</sub>');
         }
         // The numbers come when the formula has done its work — written in chalk too.
         const num = l.numbers ? `= ${l.numbers}` : '';

@@ -58,6 +58,12 @@ export function stopwatchSvg(sw: { readonly display: string; readonly fast?: num
   return `<g class="stopwatch"><rect x="${x - 3}" y="${y - 30}" width="6" height="8" rx="1" style="fill:${DARK}"/><circle cx="${x}" cy="${y}" r="24" style="fill:#f4f1e8;stroke:${DARK};stroke-width:3"/><rect x="${x - 19}" y="${y - 8}" width="38" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-text" x="${x}" y="${y + 4.5}" text-anchor="middle">${sw.display}</text>${sw.fast && sw.fast > 1.05 ? `<text class="bench-reading" x="${x}" y="${y - 38}" text-anchor="middle">⏩ ×${Math.round(sw.fast)}</text>` : ''}</g>`;
 }
 
+/** A counter of turns or swings beside the stopwatch at `x`: N, as in T = t / N. */
+export function counterSvg(n: number, x: number): string {
+  const y = TABLE - 30;
+  return `<g class="stopwatch"><rect x="${x}" y="${y - 12}" width="58" height="24" rx="4" style="fill:#f4f1e6;stroke:${DARK};stroke-width:2"/><rect x="${x + 4}" y="${y - 8}" width="50" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-count" x="${x + 29}" y="${y + 4.5}" text-anchor="middle">N = ${n}</text></g>`;
+}
+
 /**
  * Whether a stopwatch's display, from one frame of a motion to the next, shows it started: it was at nought (or not
  * there) and now runs, or it fell back to well under what it showed. (A final reading a little below the last frame's

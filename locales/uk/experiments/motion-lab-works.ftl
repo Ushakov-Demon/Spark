@@ -1,8 +1,8 @@
 ## motion-lab-works
 
 motion-lab-works-setup-incline = Жолоб на штативі, сталева кулька, металевий циліндр, вимірювальна стрічка, секундомір
-motion-lab-works-setup-circle = Тіло на нитці з петлею, аркуш із колом радіусом 15 см, секундомір
-motion-lab-works-setup-pendulum = Штатив із кільцем, дві кульки на нитках, мірна стрічка, секундомір
+motion-lab-works-setup-circle = Тіло на нитці з петлею, аркуш із колом, секундомір
+motion-lab-works-setup-pendulum = Штатив із кільцем, дві кульки на нитках, секундомір
 motion-lab-works-average-speed-ask = Де середня швидкість кульки більша: на всьому шляху чи на першій половині?
 motion-lab-works-average-speed-title = Середня швидкість кульки на жолобі
 motion-lab-works-average-speed-choices = На всьому шляху
@@ -21,7 +21,7 @@ motion-lab-works-rotation-period-choices-3 = Не зміниться — кол�
 motion-lab-works-turns-label = Скільки обертів рахувати
 motion-lab-works-turns-options = 10
 motion-lab-works-turns-options-2 = 20
-motion-lab-works-build-question-2 = Тримаючи нитку за петлю над центром кола радіусом 15 см, розкрутимо тіло так, щоб воно йшло по колу, і виміряємо час { $turns } обертів. З нього знайдемо період, обертову частоту й швидкість тіла. А потім вкоротимо нитку, а коло лишимо те саме. Як зміниться період обертання?
+motion-lab-works-build-question-2 = Тримаючи нитку завдовжки { $L } за петлю над центром кола радіусом { $R }, розкрутимо тіло { $m } так, щоб воно йшло по колу, і виміряємо час { $turns } обертів. З нього знайдемо період, обертову частоту й швидкість тіла. А потім вкоротимо нитку, а коло лишимо те саме. Як зміниться період обертання?
 motion-lab-works-pendulum-ask = Від чого залежить період коливань маятника: від амплітуди, маси кульки чи довжини нитки?
 motion-lab-works-pendulum-title = Коливання нитяного маятника
 motion-lab-works-pendulum-choices = Лише від довжини нитки
@@ -29,4 +29,12 @@ motion-lab-works-pendulum-choices-2 = Від амплітуди: що ширше
 motion-lab-works-pendulum-choices-3 = Від маси: важча кулька гойдається повільніше
 motion-lab-works-count-label = Скільки коливань рахувати
 motion-lab-works-count-options = 30
-motion-lab-works-build-question-3 = Підвісимо до кільця штатива кульку на нитці завдовжки 1 м. Виміряємо час { $count } коливань, відхиливши кульку на 2,5 см, потім — на 5,5 см. Тоді замінимо кульку важчою, а наостанок вкоротимо нитку до 25 см. Від чого залежить період коливань маятника?
+motion-lab-works-build-question-3 = Підвісимо до кільця штатива кульку { $m1 } на нитці завдовжки { $L }. Виміряємо час { $count } коливань, відхиливши кульку на { $a1 }, потім — на { $a2 }. Тоді замінимо кульку іншою, { $m2 }, а наостанок вкоротимо нитку до { $short }. Від чого залежить період коливань маятника?
+motion-lab-works-length-label = Довжина нитки
+motion-lab-works-mass-label = Маса кульки
+motion-lab-works-mass2-label = Маса другої кульки
+motion-lab-works-body-label = Маса тіла
+motion-lab-works-pendulum-given = довжина маятника
+motion-lab-works-swing-label = Перше відхилення
+motion-lab-works-swing2-label = Друге відхилення
+motion-lab-works-radius-label = Радіус кола

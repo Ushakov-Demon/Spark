@@ -56,6 +56,8 @@ export interface Preset {
    * at random, closes «Чому так?» each time the experiment is done.
    */
   readonly asides?: readonly LocalizedText[];
+  /** What is known from the start, on the board before any step (id `given:…`, formula `l = 100 см`): a change of conditions rewrites only the value. */
+  readonly given?: readonly { readonly id: string; readonly title: LocalizedText; readonly formula: LocalizedText }[];
   /** When the choices are offered: before the start (a prediction, default) or at the end (the conclusion). */
   readonly choicesAt?: 'start' | 'end';
   /**
@@ -108,7 +110,7 @@ import { parsePlace } from './place.js';
 import { defaultValues, ELECTRIC, MEDIA, varied } from './preset-kit.js';
 export { defaultValues };
 export type PresetValues = Readonly<Record<string, number | string>>;
-export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices'>>;
+export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices' | 'given'>>;
 export interface PresetVary {
   readonly controls: readonly PresetControl[];
   readonly build: (v: PresetValues) => PresetVariant;

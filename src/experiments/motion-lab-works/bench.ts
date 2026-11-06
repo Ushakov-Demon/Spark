@@ -8,7 +8,9 @@ import { NUMBER_LOCALE, type Locale, type LocalizedText } from '../../knowledge/
 import { msg, t as tl } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import { ROLL_PATH } from './shared.js';
-export { ROLL_PATH, THREAD_LENGTH, PENDULUM_BALLS, MOTION_SETUP } from './shared.js';
+export { BODY_MASS, CIRCLE_RADIUS, ROLL_PATH, THREAD_LENGTH, PENDULUM_BALLS, MOTION_SETUP } from './shared.js';
+import { CIRCLE_RADIUS, PENDULUM_LONGEST, PENDULUM_SHORTEST, pendulumLength } from './shared.js';
+import { massText } from '../pulley/shared.js';
 
 /**
  * The bench of grade 7 for motion (lab works 1–3): a ball rolling down a sloping groove, a body going round a
@@ -21,8 +23,6 @@ export { ROLL_PATH, THREAD_LENGTH, PENDULUM_BALLS, MOTION_SETUP } from './shared
 /** The groove, m: as long as the textbook asks (1–1.5 m); its upper end raised on the stand so much. */
 export const GROOVE_LENGTH: SourcedValue = sv(1.2, 'm', 'the groove', 'single-source', 0.2, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 1, обладнання: жолоб завдовжки 1–1,5 м', '—', 1.2)]);
 export const GROOVE_RAISE: SourcedValue = sv(0.1, 'm', 'how high the upper end is', 'estimate', 0.5, [cite('spark', 'estimate', '«під невеликим кутом до горизонту»', 0.1)], 'Estimate: the textbook says only «at a small angle».');
-/** The circle on the sheet, m (radius), and the thread from the hand to the body. */
-export const CIRCLE_RADIUS: SourcedValue = sv(0.15, 'm', 'the circle on the sheet', 'single-source', 0.01, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 2: аркуш із зображенням кола радіусом 15 см', '—', 0.15)]);
 /** A stopwatch that shows hundredths of a second (a phone's). */
 export const STOPWATCH_DIVISION: SourcedValue = sv(0.01, 's', 'electronic stopwatch', 'estimate', 0, [cite('spark', 'estimate', 'phone and electronic stopwatches show hundredths', 0.01)]);
 /** The measuring tape: millimetre marks. */
@@ -35,7 +35,7 @@ const tape = (x: number) => Math.round(x / TAPE_DIVISION) * TAPE_DIVISION;
 /** Measure a distance on the bench with the tape: the groove's path, the pendulum's length. */
 export interface TapeCommand {
   readonly type: 'lab.tape';
-  readonly what: 'path' | 'length';
+  readonly what: 'path';
   readonly length: number;
 }
 /** Let the ball go from the mark (or from half-way) and time it down to the cylinder. */
@@ -49,6 +49,10 @@ export interface RollCommand {
 export interface WhirlCommand {
   readonly type: 'lab.whirl';
   readonly thread: number;
+  /** The circle's radius, m (CIRCLE_RADIUS if not said). */
+  readonly radius?: number;
+  /** The body's mass, kg (BODY_MASS if not said): it does not enter the period. */
+  readonly mass?: number;
   readonly turns: number;
 }
 /** Pull the ball aside so far and let go; time so many swings. */
@@ -88,8 +92,8 @@ export const rollCommand: CommandHandler<RollCommand> = {
 export const whirlCommand: CommandHandler<WhirlCommand> = {
   type: 'lab.whirl',
   apply(state, c) {
-    const r = CIRCLE_RADIUS.value;
-    if (!(c.thread > r && c.thread <= 1)) return err(msg('motion-lab-works-whirl-command-apply'));
+    const r = c.radius ?? CIRCLE_RADIUS.value;
+    if (!(r > 0 && c.thread > r && c.thread <= PENDULUM_LONGEST)) return err(msg('motion-lab-works-whirl-command-apply'));
     if (!(Number.isInteger(c.turns) && c.turns > 0)) return err(msg('motion-lab-works-whirl-command-apply-2'));
     const T = conicalPeriod(c.thread, r, G);
     const t = T * c.turns;
@@ -100,7 +104,7 @@ export const whirlCommand: CommandHandler<WhirlCommand> = {
 export const swingCommand: CommandHandler<SwingCommand> = {
   type: 'lab.swing',
   apply(state, c) {
-    if (!(c.length > 0.05 && c.length <= 1.2)) return err(msg('motion-lab-works-swing-command-apply'));
+    if (!(c.length >= PENDULUM_SHORTEST && c.length <= PENDULUM_LONGEST)) return err(msg('motion-lab-works-swing-command-apply'));
     if (!(c.amplitude > 0 && c.amplitude < c.length / 2)) return err(msg('motion-lab-works-swing-command-apply-2'));
     if (!(Number.isInteger(c.count) && c.count > 0)) return err(msg('motion-lab-works-swing-command-apply-3'));
     // The mass does not enter: the period follows from the length (and, a little, from the angle of the swing).
@@ -120,12 +124,7 @@ const g = (kg: number, l: Locale) => `${Math.round(kg * 1000)} ${tl(l, 'unit-sym
 
 /** What a step of the motion bench asks to do and what its button says. */
 export const MOTION_TEXT: Record<MotionCommand['type'], (c: MotionCommand) => { say: LocalizedText; button: LocalizedText; plan: LocalizedText }> = {
-  'lab.tape': (c) => {
-    const t = c as TapeCommand;
-    return t.what === 'path'
-      ? { say: msg('motion-lab-works-labtape-say'), button: msg('motion-lab-works-labtape-button'), plan: msg('motion-lab-works-labtape-plan') }
-      : { say: msg('motion-lab-works-labtape-say-2', { length: (l: Locale) => cm(t.length, l) }), button: msg('motion-lab-works-labtape-button-2'), plan: msg('motion-lab-works-labtape-plan-2') };
-  },
+  'lab.tape': () => ({ say: msg('motion-lab-works-labtape-say'), button: msg('motion-lab-works-labtape-button'), plan: msg('motion-lab-works-labtape-plan') }),
   'lab.roll': (c) => {
     const half = (c as RollCommand).path < ROLL_PATH - 1e-9;
     return half
@@ -135,17 +134,17 @@ export const MOTION_TEXT: Record<MotionCommand['type'], (c: MotionCommand) => { 
   'lab.whirl': (c) => {
     const w = c as WhirlCommand;
     return {
-      say: msg('motion-lab-works-labwhirl-say', { thread: (l: Locale) => cm(w.thread, l), turns: String(w.turns) }),
-      button: msg('motion-lab-works-labwhirl-button', { turns: String(w.turns), thread: (l: Locale) => cm(w.thread, l) }),
-      plan: msg('motion-lab-works-labwhirl-plan', { turns: String(w.turns), thread: (l: Locale) => cm(w.thread, l) }),
+      say: msg('motion-lab-works-labwhirl-say', { thread: (l: Locale) => pendulumLength(w.thread, l), turns: String(w.turns) }),
+      button: msg('motion-lab-works-labwhirl-button', { turns: String(w.turns), thread: (l: Locale) => pendulumLength(w.thread, l) }),
+      plan: msg('motion-lab-works-labwhirl-plan', { turns: String(w.turns), thread: (l: Locale) => pendulumLength(w.thread, l) }),
     };
   },
   'lab.swing': (c) => {
     const s = c as SwingCommand;
     return {
-      say: msg('motion-lab-works-labswing-say', { length: (l: Locale) => cm(s.length, l), mass: (l: Locale) => g(s.mass, l), amplitude: (l: Locale) => cm(s.amplitude, l), count: String(s.count) }),
-      button: msg('motion-lab-works-labswing-button', { count: String(s.count), length: (l: Locale) => cm(s.length, l), amplitude: (l: Locale) => cm(s.amplitude, l), mass: (l: Locale) => g(s.mass, l) }),
-      plan: msg('motion-lab-works-labswing-plan', { length: (l: Locale) => cm(s.length, l), amplitude: (l: Locale) => cm(s.amplitude, l), mass: (l: Locale) => g(s.mass, l) }),
+      say: msg('motion-lab-works-labswing-say', { length: (l: Locale) => pendulumLength(s.length, l), mass: (l: Locale) => massText(s.mass, l), amplitude: (l: Locale) => pendulumLength(s.amplitude, l), count: String(s.count) }),
+      button: msg('motion-lab-works-labswing-button', { count: String(s.count), length: (l: Locale) => pendulumLength(s.length, l), amplitude: (l: Locale) => pendulumLength(s.amplitude, l), mass: (l: Locale) => massText(s.mass, l) }),
+      plan: msg('motion-lab-works-labswing-plan', { length: (l: Locale) => pendulumLength(s.length, l), amplitude: (l: Locale) => pendulumLength(s.amplitude, l), mass: (l: Locale) => massText(s.mass, l) }),
     };
   },
 };

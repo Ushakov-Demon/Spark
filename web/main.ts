@@ -1791,6 +1791,8 @@ function renderVary() {
   const fresh = !running && stepElapsed() === 0 && !history.length && !doneRecord && plan.length === planTotal && !session.result().log.some((e) => e.ok && e.command.type !== 'thermal.add');
   if (!preset || !chosen?.vary || chosen.id !== preset.id || !fresh) {
     if (box.innerHTML) box.innerHTML = '';
+    // (Emptied: what comes back must be drawn anew, the same key or not.)
+    delete box.dataset['k'];
     box.hidden = true;
     return;
   }
@@ -2047,11 +2049,12 @@ function stepLine(l: ReturnType<typeof boardLines>[number], p: LabParams, i: num
 function boardNow(): ReturnType<typeof boardLines> {
   // The answer to the question asked at the end is not written before it is picked: those lines show the formula only.
   const hidden = preset?.answerOnBoard && !concluded() ? preset.answerOnBoard : null;
-  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}|${instrumentBusy}`;
+  const key = `${locale}|${boardEpoch}|${session.state.time}|${finished}|${hidden ? 'hidden' : ''}|${instrumentBusy}|${JSON.stringify(presetVals)}`;
   const now = performance.now();
   if (boardCache && (boardCache.key === key || (running && now - boardCache.at < 250))) return boardCache.lines;
   const r = session.result();
-  const lines = [...pastBoard(), ...stepBoard(stepP, [...r.samples, r.final], r.log, finished).map((l) => stepLine(l, stepP, history.length))].map((l) => {
+  const given: ReturnType<typeof boardLines> = (preset?.given ?? []).map((g) => ({ id: g.id, title: tr(g.title, locale), formula: tr(g.formula, locale) }));
+  const lines = [...given, ...pastBoard(), ...stepBoard(stepP, [...r.samples, r.final], r.log, finished).map((l) => stepLine(l, stepP, history.length))].map((l) => {
     if (!hidden || !l.numbers || !hidden.some((h) => l.id.split(':').slice(1).join(':').startsWith(h))) return l;
     const { numbers: _, ...rest } = l;
     return rest;
