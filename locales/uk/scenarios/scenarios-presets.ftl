@@ -20,6 +20,7 @@ preset-plan-label = Чекати, поки лід розтане
 preset-mystery-metal-list-ask = З якого металу зроблено брусок?
 preset-mystery-metal-list-title = Що це за метал?
 preset-mystery-metal-list-question = Перед нами брусок із невідомого металу. Визначимо його густину ρ = m/V і знайдемо метал у таблиці густин. Масу дізнаємося терезами, а об’єм — мензуркою: на скільки підніметься вода. Почнемо: зважимо мензурку з водою.
+preset-mystery-metal-metal = Метал
 preset-mystery-metal-plan-label = Невідомий метал
 preset-floating-conditions-list-ask = За якої умови тіло тоне, плаває всередині рідини, спливає?
 preset-floating-conditions-list-title = Коли тіло тоне, а коли плаває?

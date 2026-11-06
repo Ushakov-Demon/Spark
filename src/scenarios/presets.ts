@@ -96,7 +96,12 @@ export interface ControlUnit {
   readonly id: string;
   readonly factor: number;
 }
-export type PresetControl = { readonly id: string; readonly label: LocalizedText } & (
+export type PresetControl = {
+  readonly id: string;
+  readonly label: LocalizedText;
+  /** Not offered to the pupil: a choice drawn anew each run (what is to be found out); its `value` — the default for tests and pages. */
+  readonly hidden?: boolean;
+} & (
   // A number within its frame; `step` 0 — any value at all (the pupil's own measurement), otherwise kept on its step.
   // `unit` — its symbol's id (`unit-sym-<id>` in units.ftl; '' — a bare number). `units` — the units it may be put in
   // (a number and a unit to choose): the value is kept in the one of factor 1.
@@ -132,6 +137,10 @@ export function withValues(p: Preset, v: PresetValues): Preset {
   return { ...p, ...p.vary.build(clean) };
 }
 
+/** A run's hidden conditions: each drawn at random from its options. */
+export const drawnValues = (p: Preset, random: () => number = Math.random): PresetValues =>
+  Object.fromEntries((p.vary?.controls ?? []).flatMap((c) => (c.hidden && c.kind === 'choice' ? [[c.id, c.options[Math.floor(random() * c.options.length)]!.id] as const] : [])));
+
 export interface PresetProgram {
   /** Id in CURRICULA. */
   readonly program: string;
@@ -158,6 +167,11 @@ export const DENSITY_TABLE: readonly Choice[] = Object.values(SUBSTANCES)
   .filter((s) => s.category === 'solid.metal' || s.category === 'solid.material')
   .sort((a, b) => a.liquid.density.value - b.liquid.density.value)
   .map((s) => ({ id: s.id, label: s.name }));
+
+/** The metals of that table: the blocks «what metal is it?» may be made of. */
+const TABLE_METALS: readonly Choice[] = DENSITY_TABLE.filter((c) => SUBSTANCES[c.id as SubstanceId].category === 'solid.metal');
+/** The unknown block: all the same size, so that only its mass tells them apart. */
+const MYSTERY_BLOCK_VOLUME = 20.03e-6;
 
 /** The question over the choices: the preset's own `ask`, or the last sentence of its text that asks something. */
 export function presetAsk(p: Preset): LocalizedText {
@@ -237,7 +251,8 @@ const LIST: readonly Preset[] = [
       }),
     },
   ),
-  {
+  varied(
+    {
     ask: msg('preset-mystery-metal-list-ask'),
     id: 'mystery-metal',
     grade: 7,
@@ -246,15 +261,6 @@ const LIST: readonly Preset[] = [
     question: msg('preset-mystery-metal-list-question'),
     params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: 0.05, action: 'settle', substance: 'water', startTemp: 20 },
     guided: true,
-    plan: [
-      { kind: 'weigh', scale: 'lab-balance' },
-      { kind: 'level' },
-      // Copper: its nearest neighbour in the table (brass) is 4.5 % off, more than the cylinder's half-division error
-      // on 20 mL; iron and steel (7874 / 7850) could not be told apart this way.
-      { kind: 'add', substance: 'copper', mass: 0.179, temperature: 20, label: msg('preset-mystery-metal-plan-label') },
-      { kind: 'weigh', scale: 'lab-balance' },
-      { kind: 'level' },
-    ],
     choices: DENSITY_TABLE,
     choicesAt: 'end',
     choiceTable: 'density',
@@ -263,7 +269,22 @@ const LIST: readonly Preset[] = [
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Маса тіла. Густина речовини.' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 5', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 5. Визначення густини речовини (твердих тіл, рідин).', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 17, лабораторна робота № 5, с. 122' } }, { program: 'ua-nus-2023-hryhorovych-chemistry', grade: 7, item: 'Тема 1. Хімія. Перші кроки', match: 'related', quote: 'Актуалізація умінь, набутих в адаптаційному циклі на прикладі визначення густини тіла (цвяха, ключа тощо).' }],
     quoteHas: 'густини',
     expect: 'reached',
-  },
+    },
+    {
+      // A block of any metal in the table, drawn anew each run. Iron and steel differ by less than the cylinder can
+      // show: the answer takes either (see its `alsoCorrect`).
+      controls: [{ id: 'metal', label: msg('preset-mystery-metal-metal'), kind: 'choice', hidden: true, value: 'copper', options: TABLE_METALS }],
+      build: (v) => ({
+        plan: [
+          { kind: 'weigh', scale: 'lab-balance' },
+          { kind: 'level' },
+          { kind: 'add', substance: String(v['metal']) as SubstanceId, mass: Math.round(SUBSTANCES[String(v['metal']) as SubstanceId].liquid.density.value * MYSTERY_BLOCK_VOLUME * 1000) / 1000, temperature: 20, label: msg('preset-mystery-metal-plan-label') },
+          { kind: 'weigh', scale: 'lab-balance' },
+          { kind: 'level' },
+        ],
+      }),
+    },
+  ),
   {
     id: 'floating-conditions',
     ask: msg('preset-floating-conditions-list-ask'),

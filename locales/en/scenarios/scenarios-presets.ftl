@@ -20,6 +20,7 @@ preset-plan-label = Wait for the ice to melt
 preset-mystery-metal-list-ask = What metal is the block made of?
 preset-mystery-metal-list-title = Which metal is it?
 preset-mystery-metal-list-question = Here is a block of an unknown metal. We find its density ρ = m/V and look the metal up in a table of densities. The scales give the mass; the measuring cylinder the volume — by how far the water rises. Let us start: weigh the cylinder with water.
+preset-mystery-metal-metal = Metal
 preset-mystery-metal-plan-label = Unknown metal
 preset-floating-conditions-list-ask = When does a body sink, float inside a liquid, come up?
 preset-floating-conditions-list-title = When does a body sink, and when does it float?

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCommandRegistry, createSimulation, seconds } from '../../src/core/index.js';
 import { createElectricalSolver, ELECTRICAL_COMMANDS } from '../../src/domains/electrical/index.js';
 import { createThermalSolver, THERMAL_COMMANDS } from '../../src/domains/thermal/index.js';
-import { readingsOf, LAB_COMMANDS, LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESET_ORDER, PRESETS, runProtocol, type LabCommand, type ProtocolStep, type PresetControl } from '../../src/scenarios/index.js';
+import { readingsOf, LAB_COMMANDS, LAB_KNOWLEDGE, labSetup, PRESET_ANSWERS, PRESET_ORDER, PRESETS, runProtocol, type LabCommand, type ProtocolStep, type PresetControl, drawnValues, withValues } from '../../src/scenarios/index.js';
 
 const simulation = createSimulation({ solvers: [createElectricalSolver(), createThermalSolver()], fixedDt: seconds(2) });
 const commands = createCommandRegistry<LabCommand>(LAB_COMMANDS as never);
@@ -178,6 +178,39 @@ describe('programmes of the ready-made experiments', () => {
   });
 });
 
+describe('what metal is it: a block of any metal in the table', () => {
+  const p = PRESETS.find((x) => x.id === 'mystery-metal')!;
+  const metals = p.vary!.controls[0]!;
+  const answerFor = (metal: string) => {
+    const q = withValues(p, { metal });
+    const first: ProtocolStep = { kind: 'operation', action: q.params.action };
+    const out = runProtocol({ base: q.params, steps: [first, ...(q.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
+    return PRESET_ANSWERS['mystery-metal']!({ steps, simulation, readings: readingsAll(out) as never });
+  };
+
+  it('the metals are the table’s, hidden from the conditions, and drawn at random', () => {
+    expect(metals.hidden).toBe(true);
+    const ids = metals.kind === 'choice' ? metals.options.map((o) => o.id) : [];
+    expect(ids).toEqual(['aluminium', 'tin', 'steel', 'iron', 'brass', 'copper']);
+    expect(drawnValues(p, () => 0)).toEqual({ metal: 'aluminium' });
+    expect(drawnValues(p, () => 0.999)).toEqual({ metal: 'copper' });
+  });
+
+  it.each(['aluminium', 'tin', 'brass', 'copper'])('%s is found, nothing else fits', (metal) => {
+    const a = answerFor(metal);
+    expect(a.correct).toBe(metal);
+    expect(a.alsoCorrect).toBeUndefined();
+  }, 60_000);
+
+  it.each([['iron', 'steel'], ['steel', 'iron']])('%s: the cylinder cannot tell it from %s, either pick is right', (metal, twin) => {
+    const a = answerFor(metal!);
+    expect(a.correct).toBe(metal);
+    expect(a.alsoCorrect).toEqual([twin]);
+    expect(a.text.uk).toContain('мензурка їх не розрізнить');
+  }, 60_000);
+});
+
 describe('growing crystals: the answer', () => {
   it('counts what lay on the bottom before heating, whatever state the first step starts from', () => {
     const p = PRESETS.find((x) => x.id === 'grow-crystals')!;
@@ -276,7 +309,6 @@ describe('ready-made experiments with values to change', () => {
     return sets.map((v) => [`${p.id} ${Object.entries(v).map(([k, x]) => `${k}=${x}`).join(' ')}`, p, v] as const);
   });
   it.each(cases)('%s: still the same experiment, answered from its run', async (_n, p, v) => {
-    const { withValues } = await import('../../src/scenarios/index.js');
     const q = withValues(p, v);
     expect(labSetup(q.params).warnings, _n).toEqual([]);
     const { out, answer } = run(q);

@@ -56,6 +56,7 @@ import {
   defaultValues,
   parsePlace,
   withValues,
+  drawnValues,
   type PresetValues,
   BENCH_BLOCK,
   BENCH_SPRING_L0,
@@ -1789,7 +1790,7 @@ function renderVary() {
   const box = $('#vary');
   const chosen = presetGiven;
   const fresh = !running && stepElapsed() === 0 && !history.length && !doneRecord && plan.length === planTotal && !session.result().log.some((e) => e.ok && e.command.type !== 'thermal.add');
-  if (!preset || !chosen?.vary || chosen.id !== preset.id || !fresh) {
+  if (!preset || !chosen?.vary || chosen.vary.controls.every((c) => c.hidden) || chosen.id !== preset.id || !fresh) {
     if (box.innerHTML) box.innerHTML = '';
     // (Emptied: what comes back must be drawn anew, the same key or not.)
     delete box.dataset['k'];
@@ -1804,6 +1805,7 @@ function renderVary() {
   const vals = { ...defaultValues(chosen, locale), ...presetVals };
   const changed = JSON.stringify(vals) !== JSON.stringify(defaultValues(chosen, locale));
   const controls = chosen.vary.controls
+    .filter((c) => !c.hidden)
     .map((c) => {
       const label = `<span>${tr(c.label, locale)}</span>`;
       const unit = c.kind === 'number' && c.unit ? tl(locale, `unit-sym-${c.unit}`) : '';
@@ -1951,7 +1953,7 @@ function renderGuide(): boolean {
     const chosen = prediction?.preset === preset.id ? prediction.choice : null;
     // Asked for without a pick: the right row is marked, the answer shown.
     const revealed = !!chosen || answerShown === preset.id;
-    const right = presetAnswer && presetAnswer !== 'computing' ? presetAnswer.correct : undefined;
+    const right = presetAnswer && presetAnswer !== 'computing' ? rightFor(presetAnswer, chosen) : undefined;
     // The rows nearest to what was measured; once one is picked, only it and the right one stay (the answer asked for — the right one).
     const near = nearestRows(preset.choices, rho, (id) => SUBSTANCES[id as SubstanceId].liquid.density.value);
     const rows = preset.choices
@@ -2010,6 +2012,8 @@ function tricked(): boolean {
   return !prediction || prediction.preset !== preset.id || prediction.choice !== presetAnswer.correct;
 }
 /** The verdict on a prediction, once the run has answered the question. */
+/** The right choice for this pick: the pick itself when the run could not tell it from the right one. */
+const rightFor = (a: PresetAnswer, picked: string | null | undefined): string | undefined => (picked && a.alsoCorrect?.includes(picked) ? picked : a.correct);
 function predictionVerdict(): string {
   const q = t().quiz;
   const label = (id: string) => tr(preset!.choices?.find((c) => c.id === id)?.label ?? localized(() => id), locale);
@@ -2019,7 +2023,7 @@ function predictionVerdict(): string {
   }
   if (!prediction || !preset || prediction.preset !== preset.id || !presetAnswer || presetAnswer === 'computing' || !presetAnswer.correct) return '';
   // Chosen at the end it is the conclusion of the experiment, not a prediction.
-  if (preset.choicesAt === 'end') return prediction.choice === presetAnswer.correct ? q.concludedRight(label(prediction.choice)) : (preset.choiceTable === 'density' ? q.concludedWrong : q.concludedOther)(label(prediction.choice), label(presetAnswer.correct));
+  if (preset.choicesAt === 'end') return prediction.choice === rightFor(presetAnswer, prediction.choice) ? q.concludedRight(label(prediction.choice)) : (preset.choiceTable === 'density' ? q.concludedWrong : q.concludedOther)(label(prediction.choice), label(presetAnswer.correct));
   return prediction.choice === presetAnswer.correct ? q.right(label(prediction.choice)) : q.wrong(label(prediction.choice), label(presetAnswer.correct));
 }
 
@@ -4064,7 +4068,7 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
   presetGiven = chosen;
   presetVals = chosenValues;
   // Built with the values chosen under the scene (its amounts, materials), within its own frame.
-  const given = withValues(chosen, values);
+  const given = withValues(chosen, { ...values, ...drawnValues(chosen) });
   // Led step by step: what goes in first, the operation, the rest — no "Start" (see guidedPlan).
   const p: Preset = { ...given, guided: true, plan: guidedPlan(given) };
   delete (p as { setup?: unknown }).setup;

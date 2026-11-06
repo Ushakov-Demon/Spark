@@ -8,7 +8,7 @@ import { ZERO_CELSIUS_IN_KELVIN } from '../core/units.js';
 import { isSupply } from '../domains/electrical/entities.js';
 import { FARADAY, GAS_CONSTANT } from '../domains/electrical/gases.js';
 import { formatDuration, formatQuantity, sig } from '../explain/format.js';
-import { type Locale, type LocalizedText } from '../knowledge/i18n.js';
+import { tr, type Locale, type LocalizedText } from '../knowledge/i18n.js';
 import { localized, msg, t as tl } from '../knowledge/messages.js';
 import { paperTime, timeToGoal } from './lab-debrief.js';
 import { LAB_VESSEL_ID, sampleOf, type LabParams, type LabStatus } from './thermal-lab.js';
@@ -38,6 +38,9 @@ export interface PresetRun {
   /** Everything measured during the experiment, in order (scales, marks, dynamometer). */
   readonly readings?: readonly { readonly command: { readonly type: string } & Record<string, unknown>; readonly record: MeasurementRecord }[];
 }
+/** Half a division of the 1 mL cylinder, m³: how far off the volume it gives may be. */
+const CYLINDER_HALF_DIVISION = 0.5e-6;
+
 export interface PresetAnswer {
   /** The Professor's short line. */
   readonly say: LocalizedText;
@@ -45,6 +48,8 @@ export interface PresetAnswer {
   readonly text: LocalizedText;
   /** Which of the preset's choices this run proved right (absent — the run cannot tell). */
   readonly correct?: string;
+  /** Other choices the run cannot tell from `correct`: picking one is right too. */
+  readonly alsoCorrect?: readonly string[];
   /** Why it comes out so: the reasoning behind the result, at a pupil's level (not only the formula). */
   readonly why?: LocalizedText;
 }
@@ -231,18 +236,23 @@ const LOCAL_ANSWERS: Readonly<Record<string, (run: PresetRun) => PresetAnswer>> 
     // The nearest density among the solids on the shelf — what a look into the table gives.
     const solids = Object.values(SUBSTANCES).filter((x) => x.category === 'solid.metal' || x.category === 'solid.material');
     const nearest = solids.reduce((best, x) => (Math.abs(x.liquid.density.value - rho) < Math.abs(best.liquid.density.value - rho) ? x : best), solids[0]!);
-    const guess = nearest.id;
     const real = Object.values(run.steps[run.steps.length - 1]!.result.final.entities).find((e) => isThermalBody(e) && e.id.startsWith('sample+'));
     const realId = real && isThermalBody(real) ? String(real.params.substance) : '';
-    const name = (id: string, l: Locale) => (id in SUBSTANCES ? SUBSTANCES[id as keyof typeof SUBSTANCES].name[l] : id);
-    const rhoOf = (id: string) => (id in SUBSTANCES ? SUBSTANCES[id as keyof typeof SUBSTANCES].liquid.density.value : 0);
+    // Half a division of the cylinder on the volume: what lies within it cannot be told apart from what was measured.
+    const within = dv > 0 ? solids.filter((x) => Math.abs(x.liquid.density.value - rho) <= (rho * CYLINDER_HALF_DIVISION) / dv).map((x) => x.id as string) : [];
+    const guess = within.includes(realId) ? realId : nearest.id;
+    const twins = within.filter((id) => id !== guess);
+    const sub = (id: string) => (id in SUBSTANCES ? SUBSTANCES[id as keyof typeof SUBSTANCES] : undefined);
+    const name = (id: string, l: Locale) => sub(id)?.name[l] ?? id;
+    const rhoOf = (id: string) => sub(id)?.liquid.density.value ?? 0;
     return {
-      why: msg('answer-mystery-metal-why'),
+      why: both((l) => tl(l, 'answer-mystery-metal-why', { of: tr(sub(realId)?.genitive ?? sub(realId)?.name ?? nearest.name, l).toLowerCase(), rho: sig(rhoOf(realId) / 1000, 2, l) })),
       say: both((l) => tl(l, 'answer-mystery-metal-say', { realId: name(realId, l).toLowerCase() })),
-      text: both((l) =>
-        tl(l, 'answer-mystery-metal-text', { dm: g(dm, l), dv: mL(dv, l), dv2: sig(dv * 1e6, 3, l), rho: sig(rho / 1000, 3, l), rho2: sig(rho, 3, l), guess: name(guess, l).toLowerCase(), guess2: sig(rhoOf(guess), 4, l), realId: name(realId, l).toLowerCase() }),
-      ),
-      ...(dv > 0 && dm > 0 ? { correct: guess } : {}),
+      text: both((l) => {
+        const main = tl(l, 'answer-mystery-metal-text', { dm: g(dm, l), dv: mL(dv, l), dv2: sig(dv * 1e6, 3, l), rho: sig(rho / 1000, 3, l), rho2: sig(rho, 3, l), guess: name(guess, l).toLowerCase(), guess2: sig(rhoOf(guess), 4, l), realId: name(realId, l).toLowerCase() });
+        return twins.length ? `${main} ${tl(l, 'answer-mystery-metal-twin', { twin: name(twins[0]!, l).toLowerCase(), rho: sig(rhoOf(twins[0]!), 4, l) })}` : main;
+      }),
+      ...(dv > 0 && dm > 0 ? { correct: guess, ...(twins.length ? { alsoCorrect: twins } : {}) } : {}),
     };
   },
   supersaturated: ({ steps }) => {
