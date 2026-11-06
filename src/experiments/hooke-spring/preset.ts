@@ -13,6 +13,7 @@ export const preset_hooke_spring: Preset = varied(
     guided: true,
     bench: 'spring',
     choices: [ch('proportional', msg('hooke-spring-choices')), ch('faster', msg('hooke-spring-choices-2')), ch('slower', msg('hooke-spring-choices-3'))],
+    asides: [msg('hooke-spring-aside-balance-spring')],
     formulas: ['mechanics.hooke', 'mechanics.weight'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Дослідження • інерції; пружних властивостей тіл' }, { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 6', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 6. Дослідження пружних властивостей тіл.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 24, лабораторна робота № 6, с. 172' } }, { program: 'oxfordaqa-igcse-sciences', item: 'Physics RP 1', match: 'same', quote: 'Investigate the relationship between force and extension for a spring.' }],
     expect: 'reached',

@@ -1,3 +1,5 @@
+import { HELD_SVG, type Held } from './held.js';
+
 /**
  * The Professor — the experimenter's avatar, narrator and guide.
  * A slightly absent-minded scientist: wild hair, chalk on his glasses,
@@ -7,7 +9,7 @@
 export type Mood = 'neutral' | 'thinking' | 'happy' | 'surprised' | 'sooty';
 export const MOODS: readonly Mood[] = ['neutral', 'thinking', 'happy', 'surprised', 'sooty'];
 
-export function professorSvg(mood: Mood = 'neutral', size = 220): string {
+export function professorSvg(mood: Mood = 'neutral', size = 220, held: Held = 'finger'): string {
   const sooty = mood === 'sooty';
   const skin = sooty ? '#8a7a6e' : '#f2c9a5';
   const hair = sooty ? '#5b5b5b' : '#d9dcdf';
@@ -69,12 +71,12 @@ export function professorSvg(mood: Mood = 'neutral', size = 220): string {
     ? '<g fill="none" stroke="#9a9a9a" stroke-width="3" stroke-linecap="round" opacity="0.8"><path d="M80,40 q-6,-10 0,-18 q6,-8 0,-16"/><path d="M118,36 q6,-10 0,-18 q-6,-8 0,-16"/></g>'
     : '';
 
-  // In the happy mood he raises a flask; otherwise a piece of chalk in his hand.
+  // In the happy mood he raises the experiment's instrument (the hand over it), or a finger; otherwise a piece of chalk in his hand.
+  const raised = held === 'finger' ? `<path d="M172,142 V116" stroke="#c9906a" stroke-width="9" stroke-linecap="round"/><path d="M172,142 V116" stroke="${skin}" stroke-width="6" stroke-linecap="round"/>` : HELD_SVG[held];
   const hand = mood === 'happy'
     ? `<path d="M138,184 q30,-4 34,-34" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M138,184 q30,-4 34,-34" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
-       <circle cx="172" cy="146" r="8" fill="${skin}"/>
-       <path d="M166,140 l-4,-22 h20 l-4,22 l10,22 h-32 z" fill="rgba(120,200,255,0.75)" stroke="#333" stroke-width="2"/>
-       <path d="M164,152 h28" stroke="#4aa8ff" stroke-width="6"/>`
+       ${raised}
+       <circle cx="172" cy="146" r="8" fill="${skin}"/>`
     : `<path d="M138,184 q22,34 18,76" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M138,184 q22,34 18,76" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/>
        <circle cx="156" cy="262" r="8" fill="${skin}"/>
        <rect class="p-chalk" x="160" y="256" width="12" height="4" rx="1.5" fill="#fff" stroke="#bbb" transform="rotate(-20 160 256)"/>`;

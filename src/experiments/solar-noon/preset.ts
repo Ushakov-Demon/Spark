@@ -16,6 +16,7 @@ export const preset_solar_noon: Preset = varied(
     bench: 'gnomon',
     choices: [ch('noon', msg('solar-noon-choices')), ch('later', msg('solar-noon-choices-2')), ch('earlier', msg('solar-noon-choices-3'))],
     answerOnBoard: ['gn:'],
+    asides: [msg('solar-noon-aside-bristol')],
     formulas: ['mechanics.noon-latitude'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'закономірностей руху небесних тіл і обліком часу' }],
     expect: 'reached',

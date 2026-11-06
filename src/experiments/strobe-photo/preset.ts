@@ -16,6 +16,7 @@ export const preset_strobe_photo: Preset = {
   plan: (['table', 'groove'] as const).map((photo) => ({ kind: 'bench', command: { type: 'lab.strobe', photo } }) as const),
   choices: [ch('gaps', msg('strobe-photo-choices')), ch('size', msg('strobe-photo-choices-2')), ch('cant', msg('strobe-photo-choices-3'))],
   answerOnBoard: ['sv:'],
+  asides: [msg('strobe-photo-aside-muybridge')],
   formulas: ['mechanics.speed'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'вимірювання: … відстаней на планах і картах та стробоскопічних фотографіях' }],
   expect: 'reached',

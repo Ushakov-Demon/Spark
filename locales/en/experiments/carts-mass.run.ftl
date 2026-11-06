@@ -35,3 +35,4 @@ carts-mass-weights = { $n ->
     }
 carts-mass-second-say = And now the second cart with { carts-mass-weights }. How many times greater is the force of gravity?
 carts-mass-times = { $x } times
+carts-mass-aside-slammd = In orbit ordinary scales show nothing, yet astronauts’ mass has to be known: it is a check on their health. On the International Space Station this is done by a device called SLAMMD. Two springs push a person with a known force, sensors measure how fast they speed up, and a computer works out the mass to about 0.2 kg. It is mass as a measure of inertia, with no gravity involved.

@@ -224,3 +224,6 @@ term-palette = Palette
     .stems = palette
 term-palette-text = A transparent sheet (or paper) ruled in equal squares — to find the area of a figure of irregular shape.
 term-palette-more = The palette is laid on the figure and the squares are counted: N whole ones inside and n cut by the edge; the cut ones are taken by half, so the area S ≈ (N + n/2)·s₀, where s₀ is one square’s area. The smaller the squares, the more accurate, but the longer to count.
+term-micrometer = Micrometer
+    .stems = micrometer
+term-micrometer-text = An instrument that measures length with a screw. The handheld micrometer still in use was patented in 1848 in Paris by Jean Laurent Palmer. One turn moves the screw by 0.5 mm and the turning scale has 50 divisions, so one division is 0.01 mm.

@@ -44,3 +44,5 @@ sliding-friction-say-weights = The block{ $n ->
         [0] {""}
        *[other] {" "}with { count-weights }
     } slides steadily — the dynamometer shows { $F }. That is the force of sliding friction.
+sliding-friction-aside-egypt-sand = A painting in the tomb of the Egyptian noble Djehutihotep shows a huge statue dragged on a sledge while a man in front pours water on the sand. In 2014 physicists in Daniel Bonn’s group in Amsterdam tested this in the lab: with just the right dampness the force needed is halved, because the sand stiffens and does not pile up in front of the runners. With too much water the friction rises again.
+sliding-friction-aside-leonardo-scribbles = Where exactly Leonardo da Vinci first wrote down the laws of friction was worked out only in 2016. The Cambridge professor Ian Hutchings found it on a page of a tiny notebook (Codex Forster III) that had been dismissed as “irrelevant scribbles”.

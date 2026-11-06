@@ -1049,8 +1049,12 @@ body.in-about .about-btn { border-color: var(--accent); background: var(--accent
 .scene .bench-label { font: italic 600 12px system-ui, sans-serif; fill: #2563eb; }
 
 /* The conditions of a ready-made experiment: one row right under the scene. */
-.vary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 2px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 0.85rem; }
-.vary-title { font-weight: 600; color: var(--muted); }
+.vary { margin: 6px 0 2px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 0.85rem; }
+.vary-title { display: flex; font-weight: 600; color: var(--muted); cursor: var(--cursor-point); list-style: none; }
+.vary-title::-webkit-details-marker { display: none; }
+.vary-title::after { content: '▸'; margin-left: auto; padding-left: 8px; }
+.vary-fold[open] > .vary-title::after { content: '▾'; }
+.vary-body { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 5px; }
 .vary-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .vary-item input { width: 4.2em; min-height: 30px; padding: 3px 6px; }
 /* A number put in freely may be long (a map's 1 : 10 000 000): its field fits it. */

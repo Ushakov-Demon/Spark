@@ -350,6 +350,10 @@ describe('ready-made experiments with values to change', () => {
     expect(answer.text.uk).toContain('На клиностаті за ті самі дві години — 0°');
   });
 
+  it('every grade 7 experiment has its LZ', () => {
+    expect(PRESETS.filter((p) => p.grade === 7 && !p.asides?.length).map((p) => p.id)).toEqual([]);
+  });
+
   it('every story told after «Чому так?» is written in both languages', () => {
     for (const p of PRESETS) for (const a of p.asides ?? []) {
       expect(a.uk.length, p.id).toBeGreaterThan(40);

@@ -36,3 +36,4 @@ ball-bounce-again-button = { $icon } The { ball-bounce-ordinal } bounce
 ball-bounce-again-plan = { $name }: the { ball-bounce-ordinal } bounce
 ball-bounce-first-say = { $name }: let go from 1 m above the plate. How high will it bounce?
 ball-bounce-first-button = { $icon } { $name } from 1 m
+ball-bounce-aside-super-ball = A ball never bounces back to the same height, but it can get close. In 1964 the Californian chemist Norman Stingley made a small ball of synthetic rubber, which the maker named the Super Ball and advertised this way: each bounce is 92 % as high as the last. We found no independent test of that figure.

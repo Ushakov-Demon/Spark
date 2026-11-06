@@ -33,3 +33,4 @@ dyno-diy-board-title-2 = the scale: millimetres to the newton
 dyno-diy-board-title-3 = the apple, 100 g
 dyno-diy-board-title-4 = the egg, 58 g
 dyno-diy-shown-scale = 1 N — { $newton }, a 0.1 N division — { $division } mm
+dyno-diy-aside-regnier = A dynamometer for measuring muscular strength was made by the French gunsmith Edmé Régnier. He began work on it in the early 1780s and described it in print in 1798. It compared the strength of horses, people and machines. Its first documented use was by François Péron, who measured the strength of people on different islands.

@@ -30,3 +30,4 @@ contact-forces-busy = Watching…
 contact-forces-shown = acts without touching
 contact-forces-shown-2 = no force without touching
 contact-forces-board-formula = does not act without touching
+contact-forces-aside-gilbert = In 1600 the English physician William Gilbert published his book On the Magnet. He made a model of the Earth, which he called a terrella, a “little Earth”, and saw that a compass needle behaves near it as it does on the Earth. His conclusion: the Earth itself is a great magnet, which is why the needle turns north without anything touching it. Gilbert also told electric effects from magnetic ones and named them after the Greek word for amber.

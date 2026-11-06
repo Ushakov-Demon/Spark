@@ -1,6 +1,7 @@
 /**
  * Sounds of the lab, synthesized in the browser (Web Audio) — no sound files.
- * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down.
+ * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down,
+ * a stopwatch's «пік», a ball rolling.
  * Off by the 🔇 button (remembered); browsers allow sound only after a click
  * or a key, which is always how these happen.
  */
@@ -143,6 +144,98 @@ export function boom(): void {
   o.start(t);
   o.stop(t + 0.65);
   noise(a, out, t, 0.7, 380, 1.4);
+}
+
+/** A stopwatch started: a short, high «пік». */
+export function beep(): void {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime;
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(2400, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(EVENT_LEVEL, t + 0.005);
+  g.gain.setValueAtTime(EVENT_LEVEL, t + 0.07);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+  o.connect(g).connect(a.destination);
+  o.start(t);
+  o.stop(t + 0.12);
+}
+
+/** A ball rolling: the sound now, and what ends it. */
+let roll: { readonly source: AudioBufferSourceNode; readonly tone: BiquadFilterNode; readonly level: GainNode; readonly shake: OscillatorNode; quiet: number } | null = null;
+/** No frame for this long, ms: the ball has stopped (or the motion was cut short), and the sound dies away by itself. */
+const ROLL_GAP = 120;
+
+function rollEnd(): void {
+  const r = roll;
+  roll = null;
+  if (!r) return;
+  const t = r.level.context.currentTime;
+  r.level.gain.setTargetAtTime(0, t, 0.03);
+  r.source.stop(t + 0.2);
+  r.shake.stop(t + 0.2);
+}
+
+/**
+ * A ball rolling down a groove: dull noise with a fast flutter, higher and louder the faster it goes. Called on every
+ * frame of its motion, `speed` from 0 to 1.
+ */
+export function rolling(speed: number): void {
+  const a = audio();
+  if (!a) return;
+  if (!roll) {
+    const buf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const source = a.createBufferSource();
+    source.buffer = buf;
+    source.loop = true;
+    const tone = a.createBiquadFilter();
+    tone.type = 'lowpass';
+    const flutter = a.createGain();
+    flutter.gain.value = 0.7;
+    const depth = a.createGain();
+    depth.gain.value = 0.3;
+    const shake = a.createOscillator();
+    shake.connect(depth).connect(flutter.gain);
+    const level = a.createGain();
+    level.gain.value = 0;
+    source.connect(tone).connect(flutter).connect(level).connect(a.destination);
+    source.start();
+    shake.start();
+    roll = { source, tone, level, shake, quiet: 0 };
+  }
+  const t = a.currentTime;
+  roll.tone.frequency.setTargetAtTime(300 + 900 * speed, t, 0.05);
+  roll.shake.frequency.setTargetAtTime(10 + 30 * speed, t, 0.05);
+  roll.level.gain.setTargetAtTime(EVENT_LEVEL * (0.5 + 0.7 * speed), t, 0.05);
+  window.clearTimeout(roll.quiet);
+  roll.quiet = window.setTimeout(rollEnd, ROLL_GAP);
+}
+
+/** A steel ball hitting a stop: a short, hard «цок», two ringing tones and a click of noise. */
+export function clack(): void {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime;
+  const out = a.createGain();
+  out.gain.value = EVENT_LEVEL;
+  out.connect(a.destination);
+  for (const [hz, vol] of [[1400, 0.8], [2300, 0.4]] as const) {
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + 0.1);
+  }
+  noise(a, out, t, 0.03, 3000, 0.8);
 }
 
 /** A ball falling into the sea: a big, low «бульк». */

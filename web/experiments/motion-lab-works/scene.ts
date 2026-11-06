@@ -2,6 +2,7 @@ import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js'
 import { TABLE } from '../../graphics/scene/constants.js';
 import { PLAY_SECONDS } from '../../graphics/scene/bench-motion.js';
 import { Channel, type Motion } from '../../motion.js';
+import { clack, rolling } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 import { ballSvg, DARK, standSvg, STEEL, stopwatchSvg, THREAD } from '../../graphics/scene/kit.js';
 import { PENDULUM_BALLS, ROLL_PATH, THREAD_LENGTH } from '../../../src/experiments/motion-lab-works/bench.js';
@@ -129,7 +130,11 @@ function timed(next: MotionView, run: NonNullable<MotionView['run']>, draw: (v: 
     frame: (done) => {
       const t = clock.value;
       const stopwatch = { display: done ? (next.stopwatch?.display ?? sw(t, comma)) : sw(t, comma), fast };
-      if (next.apparatus === 'incline') return draw({ ...next, stopwatch, incline: { stop: next.incline?.stop ?? 1, ball: (t / run.seconds) ** 2 } });
+      if (next.apparatus === 'incline') {
+        if (done) clack();
+        else rolling(t / run.seconds);
+        return draw({ ...next, stopwatch, incline: { stop: next.incline?.stop ?? 1, ball: (t / run.seconds) ** 2 } });
+      }
       const phase = run.period ? (2 * Math.PI * t) / run.period : 0;
       if (next.apparatus === 'circle') return draw({ ...next, stopwatch, circle: { thread: next.circle?.thread ?? 0.5, angle: phase } });
       return draw({ ...next, stopwatch, pendulum: { length: next.pendulum?.length ?? 1, mass: next.pendulum?.mass ?? 0.03, angle: done ? 0 : (run.amplitude ?? 0) * Math.cos(phase) } });

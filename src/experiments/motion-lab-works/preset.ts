@@ -18,6 +18,7 @@ export const preset_average_speed: Preset = varied(
     choices: [ch('whole', msg('motion-lab-works-average-speed-choices')), ch('half', msg('motion-lab-works-average-speed-choices-2')), ch('same', msg('motion-lab-works-average-speed-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['roll:'],
+    asides: [msg('motion-lab-works-aside-arnold')],
     formulas: ['mechanics.average-speed'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 1', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 1. Визначення середньої швидкості руху тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 1, с. 75' } }],
     expect: 'reached',
@@ -53,6 +54,7 @@ export const preset_rotation_period: Preset = varied(
   benchSetup: MOTION_SETUP.circle,
     choices: [ch('shorter', msg('motion-lab-works-rotation-period-choices')), ch('longer', msg('motion-lab-works-rotation-period-choices-2')), ch('same', msg('motion-lab-works-rotation-period-choices-3'))],
     choicesAt: 'end',
+    asides: [msg('motion-lab-works-aside-hooke-conical')],
     formulas: ['mechanics.period'],
     programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 2', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 2. Визначення періоду обертання тіла.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 2, с. 87' } }],
     expect: 'reached',
@@ -87,6 +89,7 @@ export const preset_pendulum: Preset = varied(
     choices: [ch('length', msg('motion-lab-works-pendulum-choices')), ch('amplitude', msg('motion-lab-works-pendulum-choices-2')), ch('mass', msg('motion-lab-works-pendulum-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['Tp:'],
+    asides: [msg('motion-lab-works-aside-foucault')],
     formulas: ['mechanics.pendulum', 'mechanics.period'],
     programs: [
       { program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 3', topic: 'Тема 2. Механічний рух', match: 'same', quote: '№ 3. Дослідження коливань нитяного маятника.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: 'лабораторна робота № 3, с. 99' } },

@@ -22,3 +22,4 @@ block-pressure-board-faces = the largest face
 block-pressure-board-faces-2 = the side face
 block-pressure-board-faces-3 = the smallest face
 block-pressure-board-title-4 = the block’s pressure: { $name }
+block-pressure-aside-holt = Heavy steam traction engines sank in the soft peat fields of California: their wheels pressed on a small area. Benjamin Holt replaced them with tracks, which spread the weight over a larger area, and on 24 November 1904 in Stockton he tested his track-type tractor. Caterpillar traces its history to his company.

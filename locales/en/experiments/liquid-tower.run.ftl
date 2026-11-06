@@ -48,3 +48,4 @@ liquid-tower-place-bottom = { $N } went to the bottom.
 liquid-tower-place-boundary = { $N } stopped at the { $below } — { $above } boundary, by the { $mark } mark.
 liquid-tower-board-order = ρ_g > ρ_w > ρ_o > ρ_e
 liquid-tower-drop-say = Gently let { $body } into the cylinder. Where will it stop?
+liquid-tower-aside-marsigli = Around 1680 the Italian Luigi Ferdinando Marsigli studied the Bosphorus: at the top the water runs from the Black Sea, and deeper down it runs the other way. To explain this he divided a vessel with a partition with two holes and filled the sides with water of different density. Through the lower hole the water went one way, through the upper one the other. It is the first described laboratory experiment on how a difference in density makes a two-layer flow.

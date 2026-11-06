@@ -16,6 +16,7 @@ export const preset_air_column: Preset = varied(
     bench: 'air',
     choices: [ch('nothing', msg('air-column-choices')), ch('car', msg('air-column-choices-2')), ch('tonnes', msg('air-column-choices-3'))],
     answerOnBoard: ['am:'],
+    asides: [msg('air-column-aside-everest')],
     formulas: ['mechanics.pressure', 'mechanics.hydrostatic-pressure'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'впливу земного тяжіння на організми, газову оболонку Землі' }],
     expect: 'reached',

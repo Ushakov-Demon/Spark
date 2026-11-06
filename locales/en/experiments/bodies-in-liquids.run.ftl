@@ -38,3 +38,5 @@ bodies-in-liquids-name-washing-up = washing-up liquid
 bodies-in-liquids-name-glycerol = glycerol
 bodies-in-liquids-name-sunflower-oil = sunflower oil
 bodies-in-liquids-name-water = water
+bodies-in-liquids-aside-thevenot = A bubble in a liquid was put to work as early as the 17th century. Some time before February 1661 the Frenchman Melchisédech Thévenot invented the spirit level: a vial of alcohol on a stone ruler, with a lens for watching the bubble. We know the date from his letters to Christiaan Huygens.
+bodies-in-liquids-aside-pitch-drop = In 1927 Thomas Parnell of the University of Queensland poured pitch into a funnel to show students that what seems solid can be a very viscous liquid. The first drop fell in 1938, and they have fallen about once a decade since. Guinness World Records lists it as the longest-running laboratory experiment. The drop of November 2000 was missed even by the webcam, which had just failed.

@@ -34,3 +34,4 @@ small-bodies-board-formula = 0.5
 small-bodies-board-title-2 = the winding’s width
 small-bodies-board-title-3 = the row’s length
 small-bodies-board-title-4 = { $N } { $what }: { $value } { $L }
+small-bodies-aside-gascoigne = Astronomers wanted to measure finer than a division too. Around 1638 William Gascoigne of Yorkshire set two edges, their gap set by a screw, in front of a telescope’s eyepiece: that was the micrometer. Gascoigne was killed in 1644 at the Battle of Marston Moor, and his instrument reached print only in 1667, a year after the Frenchman Adrien Auzout announced a similar one.

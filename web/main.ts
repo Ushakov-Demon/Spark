@@ -1782,6 +1782,9 @@ function varyUnitOf(c: Extract<PresetControl, { kind: 'number' }>, value: number
   return fit ?? [...c.units].sort((a, b) => a.factor - b.factor)[0];
 }
 
+/** The experiment whose conditions the reader unfolded: they stay open while its values change (each change redraws them). */
+let varyOpenFor: string | null = null;
+
 function renderVary() {
   const box = $('#vary');
   const chosen = presetGiven;
@@ -1819,8 +1822,19 @@ function renderVary() {
         : `<label class="vary-item">${label}<select data-vary="${c.id}">${c.options.map((o) => `<option value="${o.id}"${o.id === vals[c.id] ? ' selected' : ''}>${tr(o.label, locale)}</option>`).join('')}</select></label>`;
     })
     .join('');
-  box.innerHTML = `<span class="vary-title">${u.varyTitle}</span>${controls}${changed ? `<button type="button" class="vary-reset" data-vary-reset="1" title="${u.varyReset}" aria-label="${u.varyReset}">↺</button>` : ''}`;
+  // Folded at first; conditions already changed are shown, not hidden.
+  const open = changed || varyOpenFor === chosen.id;
+  box.innerHTML = `<details class="vary-fold"${open ? ' open' : ''}><summary class="vary-title">${u.varyTitle}</summary><div class="vary-body">${controls}${changed ? `<button type="button" class="vary-reset" data-vary-reset="1" title="${u.varyReset}" aria-label="${u.varyReset}">↺</button>` : ''}</div></details>`;
 }
+// (A details' toggle does not bubble: it is caught on the way down.)
+$('#vary').addEventListener(
+  'toggle',
+  (e) => {
+    const fold = e.target as HTMLDetailsElement;
+    if (fold.classList.contains('vary-fold')) varyOpenFor = fold.open ? (presetGiven?.id ?? null) : null;
+  },
+  true,
+);
 $('#vary').addEventListener('change', (e) => {
   const place = (e.target as HTMLElement).closest<HTMLInputElement>('[data-vary-place]');
   if (place) {
@@ -3677,14 +3691,12 @@ function explain() {
   if (!last) {
     if (!allReadings().length) return;
     const formulas = (preset?.formulas ?? []).map((id) => LAB_KNOWLEDGE.formulas.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f);
-    const answer = presetAnswer && presetAnswer !== 'computing' ? [{ kind: 'paragraph', text: answerLines(tr(presetAnswer.text, locale)).join('\n') } as Block, ...(presetAnswer.why ? tr(presetAnswer.why, locale).split('\n\n').map((text, k) => ({ kind: 'paragraph', text: k ? text : `${t().whyTitle} ${text}` }) as Block) : [])] : [];
     $('#report').innerHTML = renderHtml(
       buildMeasuredReport({
         title: tl(locale, 'main-explain-measured'),
         level,
         locale,
         country: 'UA',
-        summary: answer,
         measured: boardNow().map((l) => `${l.title}: ${l.formula}${l.numbers ? ` ${l.numbers}` : ''}`),
         formulas,
         laws: LAB_KNOWLEDGE.laws,

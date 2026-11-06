@@ -5,7 +5,7 @@
  * bubbles, steam, flame, glowing hotplate, thermometer, gas at the electrodes —
  * so CSS animations run smoothly. It shows the state, it computes nothing.
  */
-import { professorSideSvg, professorSvg, type Mood } from './graphics/professor/index.js';
+import { heldOn, professorSideSvg, professorSvg, type Held, type Mood } from './graphics/professor/index.js';
 import { blocksSvg, type TubePiece } from './graphics/scene/bodies.js';
 import { isGlass, LIQUID, METAL } from './graphics/scene/colors.js';
 import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
@@ -13,7 +13,9 @@ import { deviceSvg } from './graphics/scene/devices.js';
 import { dynamometerSvg, plateSvg, scalesSvg } from './graphics/scene/instruments.js';
 import { benchSvg, type BenchView } from './graphics/scene/bench.js';
 import { benchMotion } from './graphics/scene/bench-motion.js';
+import { stopwatchEar } from './graphics/scene/kit.js';
 import { play } from './motion.js';
+import { beep } from './sounds/index.js';
 import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 import { BUBBLE_PAGE, BUBBLE_PAGE_PHONE, bubblePages } from './bubble.js';
@@ -211,6 +213,7 @@ export function createScene(): Scene {
   const profSide = root.querySelector<HTMLElement>('#sc-prof-side')!;
   let key = '';
   let mood: Mood | null = null;
+  let held: Held | null = null;
   let act = '';
   const profBox = root.querySelector<HTMLElement>('.scene-prof')!;
   let geom: VesselGeom | null = null;
@@ -521,9 +524,16 @@ export function createScene(): Scene {
           benchAt = '';
           benchFit = null;
         }
-        const draw = (x: BenchView) => (bench.innerHTML = benchSvgAt(x));
+        // (Only a motion starts and stops a stopwatch: a picture drawn as it stands is silent.)
+        const shownWatch = () => bench.querySelector('.sw-text')?.textContent ?? undefined;
+        const ear = stopwatchEar(shownWatch(), beep);
+        const draw = (x: BenchView) => {
+          bench.innerHTML = benchSvgAt(x);
+          ear.hear(shownWatch(), performance.now());
+        };
         const motion = v.bench && moving() ? benchMotion(benchShown, v.bench, draw) : null;
         const done = () => {
+          ear.end();
           keepOnBoard(bench);
           settled();
         };
@@ -705,9 +715,11 @@ export function createScene(): Scene {
       const tt = $('sc-temp');
       if (tt) tt.textContent = `${v.temperature.toFixed(1).replace('.', v.decimal)}°`;
       // The Professor.
-      if (v.professor.mood !== mood) {
+      const inHand = heldOn(v.bench?.kind, !v.noThermometer);
+      if (v.professor.mood !== mood || inHand !== held) {
         mood = v.professor.mood;
-        prof.innerHTML = professorSvg(mood, 110);
+        held = inHand;
+        prof.innerHTML = professorSvg(mood, 110, held);
         profSide.innerHTML = professorSideSvg(mood, 110);
       }
       // An idle scene: one CSS class on the figure; a new scene restarts its animation.

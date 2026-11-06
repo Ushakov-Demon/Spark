@@ -14,15 +14,15 @@ read-thermometer-scale-shown = in the room { $T }
 read-thermometer-scale-said = Between the numbered marks there are { $n } divisions: one division is { $c }. In the room the thermometer shows { $T }.
 read-thermometer-dip-say = { $stir ->
         [yes] Another such thermometer — into the same water, and we stir it. What will it show after { $t }?
-       *[no] The thermometer is in water at { $water }. What will it show { $t } after it went in?
+       *[no] We put the room-temperature thermometer into water at { $water } for { $t }. What will it show?
     }
 read-thermometer-dip-button = { $stir ->
         [yes] 🥄 Stirring: after { $t }
-       *[no] 🌡 After { $t }
+       *[no] 🌡 For { $t }
     }
 read-thermometer-dip-plan = { $stir ->
         [yes] stirring, look after { $t }
-       *[no] look after { $t }
+       *[no] put it in the water for { $t }
     }
 read-thermometer-dip-busy = The column is moving…
 read-thermometer-dip-shown = after { $t }: { $T }

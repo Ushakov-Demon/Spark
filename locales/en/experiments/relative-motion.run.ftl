@@ -21,3 +21,4 @@ relative-motion-say-2 = In { $T } the bottle went { $value }, and on the paper â
 relative-motion-board-how = u = { $u } cm/s, moved { $value }
 relative-motion-board-title = { $how }: relative to the bottle
 relative-motion-board-title-2 = relative to the table
+relative-motion-aside-galileo-ship = In his Dialogue Concerning the Two Chief World Systems (1632) Galileo Galilei proposed shutting yourself in a cabin below deck, with no view outside. Everything in the cabin goes the same whether the ship stands still or sails steadily, so from inside its motion cannot be detected. Galileo did not claim to have carried this out: the ship was a thought experiment.

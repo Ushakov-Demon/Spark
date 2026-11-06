@@ -15,6 +15,7 @@ export const preset_snail_speed: Preset = {
   bench: 'snail',
   plan: (['flat', 'wall', 'wet', 'sandpaper'] as const).map((surface) => ({ kind: 'bench', command: { type: 'lab.snail', surface } }) as const),
   choices: [ch('sandpaper', msg('snail-speed-choices')), ch('wall', msg('snail-speed-choices-2')), ch('wet', msg('snail-speed-choices-3'))],
+  asides: [msg('snail-speed-aside-archie')],
   formulas: ['mechanics.speed'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'related', quote: 'моделювання: відносності руху; реальних природних рухів; рухів тварин і рослин' }],
   expect: 'reached',

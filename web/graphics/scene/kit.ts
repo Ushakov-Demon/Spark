@@ -58,6 +58,47 @@ export function stopwatchSvg(sw: { readonly display: string; readonly fast?: num
   return `<g class="stopwatch"><rect x="${x - 3}" y="${y - 30}" width="6" height="8" rx="1" style="fill:${DARK}"/><circle cx="${x}" cy="${y}" r="24" style="fill:#f4f1e8;stroke:${DARK};stroke-width:3"/><rect x="${x - 19}" y="${y - 8}" width="38" height="16" rx="3" style="fill:#c9d8b6;stroke:#6f7f5c"/><text class="sw-text" x="${x}" y="${y + 4.5}" text-anchor="middle">${sw.display}</text>${sw.fast && sw.fast > 1.05 ? `<text class="bench-reading" x="${x}" y="${y - 38}" text-anchor="middle">⏩ ×${Math.round(sw.fast)}</text>` : ''}</g>`;
 }
 
+/**
+ * Whether a stopwatch's display, from one frame of a motion to the next, shows it started: it was at nought (or not
+ * there) and now runs, or it fell back to well under what it showed. (A final reading a little below the last frame's
+ * is the instrument's rounding, not a new start.)
+ */
+export function stopwatchStarted(before: string | undefined, now: string | undefined): boolean {
+  // (Some displays carry their unit: «1,20 с».)
+  const seconds = (s: string) => parseFloat(s.replace(',', '.'));
+  if (now === undefined || !(seconds(now) > 0)) return false;
+  return before === undefined || !(seconds(before) > 0) || seconds(now) < seconds(before) / 2;
+}
+
+/** A running display standing this long, ms, has stopped: longer than any wait for its last digit to change. */
+const STOPWATCH_STILL = 250;
+
+/**
+ * Follows a stopwatch through the frames of a motion and calls `signal` when it starts and when it stops. It stops
+ * when its display stands still (the scene may go on moving after that) or, at the latest, when the motion ends.
+ */
+export function stopwatchEar(shownFirst: string | undefined, signal: () => void) {
+  let shown = shownFirst;
+  let running = false;
+  let changedAt = 0;
+  const stop = () => {
+    if (running) signal();
+    running = false;
+  };
+  return {
+    hear(now: string | undefined, at: number): void {
+      if (stopwatchStarted(shown, now)) {
+        running = true;
+        changedAt = at;
+        signal();
+      } else if (now !== shown) changedAt = at;
+      else if (at - changedAt > STOPWATCH_STILL) stop();
+      shown = now;
+    },
+    end: stop,
+  };
+}
+
 /** A steel ball with a highlight. */
 export function ballSvg(x: number, y: number, r: number, color = '#9aa3ad'): string {
   return `<circle cx="${x}" cy="${y}" r="${r}" style="fill:${color};stroke:${DARK}"/><circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.3}" style="fill:rgba(255,255,255,0.75)"/>`;

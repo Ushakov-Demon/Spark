@@ -33,3 +33,4 @@ weight-in-lift-say = Falling, the dynamometer shows { $P } — the weights pull 
 weight-in-lift-say-2 = The dynamometer shows { $P }.
 weight-in-lift-board-acc = free fall
 weight-in-lift-board-acc-2 = no acceleration
+weight-in-lift-aside-otis = In May 1854, at the Crystal Palace exhibition in New York, the mechanic Elisha Otis rode a hoist platform high above the crowd and ordered the rope cut. The platform dropped only a little and stopped, held by a safety brake. “All safe, gentlemen, all safe,” said Otis. He installed the first passenger lift with such a brake in 1857, in a New York store.

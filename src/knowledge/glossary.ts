@@ -116,6 +116,7 @@ export const GLOSSARY: readonly Term[] = [
   equipment('luxmeter'),
   equipment('test-tube'),
   equipment('palette'),
+  { ...term('micrometer'), source: 'wikipedia-micrometer-device' },
 ];
 
 /** A term by its id (`terms` — the lab's whole glossary, laws included). */

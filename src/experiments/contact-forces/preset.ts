@@ -15,6 +15,7 @@ export const preset_contact_forces: Preset = {
   bench: 'touch',
   plan: (['magnet', 'card', 'comb', 'lifted', 'fall'] as const).map((c) => ({ kind: 'bench', command: { type: 'lab.touch', case: c } }) as const),
   choices: [ch('field', msg('contact-forces-choices')), ch('none', msg('contact-forces-choices-2')), ch('magnet', msg('contact-forces-choices-3'))],
+  asides: [msg('contact-forces-aside-gilbert')],
   formulas: ['mechanics.weight'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'контактних і безконтактних сил' },

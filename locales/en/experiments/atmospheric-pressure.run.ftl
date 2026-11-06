@@ -30,3 +30,4 @@ atmospheric-pressure-at-s-title = the plunger’s area from the scale (1 mL)
 atmospheric-pressure-at-b-title = the barometer
 atmospheric-pressure-at-o-title = the nozzle open
 atmospheric-pressure-board-title = the nozzle shut, the plunger to { $v } mL
+atmospheric-pressure-aside-guericke = In 1654 at Regensburg Otto von Guericke, the burgomaster of Magdeburg, showed Emperor Ferdinand III two copper hemispheres put together with the air pumped out. Two teams of horses could not pull them apart. Once air was let back in, the hemispheres fell apart by themselves: it was the atmosphere’s pressure that had held them.

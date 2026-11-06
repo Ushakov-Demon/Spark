@@ -29,3 +29,4 @@ scales-diy-board-formula = m = V·1 g/mL
 scales-diy-board-title-2 = the egg: sheets of 5 g and water
 scales-diy-view-units = g
 scales-diy-view-units-2 = mL
+scales-diy-aside-santorio = The Paduan physician Santorio Santorio made scales you could sit on: a chair hung from a steelyard. For many years he weighed himself and all he ate and drank, and found that a person loses weight unnoticed, through the skin. In 1614 he published the book De statica medicina about it.

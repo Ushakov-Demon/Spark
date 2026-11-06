@@ -21,6 +21,7 @@ export const preset_block_pressure: Preset = {
   choices: [ch('largest', msg('block-pressure-choices')), ch('smallest', msg('block-pressure-choices-2')), ch('same', msg('block-pressure-choices-3'))],
   choicesAt: 'end',
   answerOnBoard: ['pressure:'],
+  asides: [msg('block-pressure-aside-holt')],
   formulas: ['mechanics.pressure', 'mechanics.weight'],
   programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 8', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 8. Вимірювання тиску тіла на опору.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 28, лабораторна робота № 8, с. 203' } }],
   expect: 'reached',

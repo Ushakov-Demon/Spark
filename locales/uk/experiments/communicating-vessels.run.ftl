@@ -22,3 +22,4 @@ communicating-vessels-board-formula = олії
 communicating-vessels-board-formula-2 = води
 communicating-vessels-board-title-2 = густина олії ({ $ml } мл)
 communicating-vessels-board-formula-3 = ρ_олії = ρ_води·h_води / h_олії
+communicating-vessels-aside-pergamon = Вода сама піднімається до свого рівня, і цим скористалися ще давні греки. У Пергамі (нині Туреччина) у II столітті до нашої ери воду подавали на акрополь через долину: вона спускалася трубою й піднімалася на другий бік. Тиск у такому дюкері відповідав стовпу води близько 190 м.

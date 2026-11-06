@@ -18,6 +18,7 @@ export const preset: Preset = {
   choices: [ch('same', msg('calendars-choices')), ch('hours', msg('calendars-choices-2')), ch('days', msg('calendars-choices-3'))],
   trick: msg('calendars-trick'),
   answerOnBoard: ['cb:'],
+  asides: [msg('calendars-aside-ukraine-1918')],
   formulas: ['mechanics.calendar-drift'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет; календарів' }],
   expect: 'reached',

@@ -22,3 +22,4 @@ hooke-spring-say-4 = : the extension x = l − l₀ = { $x }
 hooke-spring-say-5 = With { $value } the spring is l = { $v } long{ $x }.
 hooke-spring-board-title = the spring with no load
 hooke-spring-board-title-2 = { $w } × 100 g: the elastic force equals the weights’ weight
+hooke-spring-aside-balance-spring = The spring soon found its way into clocks. On 23 January 1675 Christiaan Huygens noted the balance spring for pocket watches in his diary, and Robert Hooke at once declared he had thought of it back in 1658. A dispute flared up, nobody got the patent, and clockmakers everywhere began building watches with such a spring.

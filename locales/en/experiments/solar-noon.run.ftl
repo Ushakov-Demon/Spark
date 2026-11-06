@@ -33,3 +33,4 @@ solar-noon-board-numbers = ; the mean of { $pairs } pairs — { $noon }
 solar-noon-board-title-3 = the Sun’s height at noon — from the shortest shadow (pointing { $value })
 solar-noon-board-title-4 = ; south latitude — negative
 solar-noon-board-title-5 = the latitude (the Sun’s declination δ ≈ { $d }° — by NOAA’s formula{ $value })
+solar-noon-aside-bristol = Each town once lived by its own noon. Bristol in the west of England runs about 10 minutes behind Greenwich, and when trains on London time began reaching it in 1841, a second minute hand was added to the clock on the city’s Exchange. The city officially moved to London time only in 1852, and both hands are still on that clock.

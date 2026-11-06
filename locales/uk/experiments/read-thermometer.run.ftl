@@ -14,15 +14,15 @@ read-thermometer-scale-shown = у кімнаті { $T }
 read-thermometer-scale-said = Між позначками з числами — { $n } поділок: ціна поділки { $c }. У кімнаті термометр показує { $T }.
 read-thermometer-dip-say = { $stir ->
         [yes] Другий такий самий термометр — у ту саму воду, і її помішуємо. Що він покаже через { $t }?
-       *[no] Термометр — у воді { $water }. Що він покаже через { $t } відтоді, як його опустили?
+       *[no] Опускаємо кімнатний термометр у воду { $water } на { $t }. Що він покаже?
     }
 read-thermometer-dip-button = { $stir ->
         [yes] 🥄 Помішуючи: через { $t }
-       *[no] 🌡 Через { $t }
+       *[no] 🌡 На { $t }
     }
 read-thermometer-dip-plan = { $stir ->
         [yes] помішуючи, подивитися через { $t }
-       *[no] подивитися через { $t }
+       *[no] опустити у воду на { $t }
     }
 read-thermometer-dip-busy = Стовпчик рухається…
 read-thermometer-dip-shown = через { $t }: { $T }

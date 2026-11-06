@@ -34,3 +34,4 @@ drag-form-say-passed = { $name } { $medium ->
         [air] in the air
        *[water] in water
     } went between the marks in { $frames } — { $time }.
+drag-form-aside-eiffel = After building his tower, Gustave Eiffel took up air resistance. In 1903 he sent bodies down a stretched cable from the tower’s second level while a device recorded the drag as they fell; he tested about 40 shapes this way. In 1909 he built a wind tunnel beside the tower and confirmed that a body at rest in moving air feels the same drag as a body moving through still air.

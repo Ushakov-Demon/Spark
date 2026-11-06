@@ -18,6 +18,7 @@ export const preset_rubber_motor: Preset = {
   choices: [ch('twice', msg('rubber-motor-choices')), ch('four', msg('rubber-motor-choices-2')), ch('same', msg('rubber-motor-choices-3'))],
   trick: msg('rubber-motor-trick'),
   answerOnBoard: ['rr:'],
+  asides: [msg('rubber-motor-aside-penaud')],
   formulas: ['mechanics.hooke'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра; механізму на «гумовому двигуні»' }],
   expect: 'reached',

@@ -18,3 +18,4 @@ depth-pressure-say-2 = The film { $d } deep: the water levels in the manometer d
 depth-pressure-board-where = , film sideways
 depth-pressure-board-title = the pressure at { $h }{ $where }
 depth-pressure-board-title-2 = the liquid’s density (from { $h })
+depth-pressure-aside-trieste = People first reached the deepest place in the oceans, the Challenger Deep, on 23 January 1960: Jacques Piccard and Don Walsh went down in the bathyscaphe Trieste. Near the 9,000 m mark the vessel shook: an outer Plexiglas window in the entrance tube had cracked. They carried on and spent about 20 minutes on the bottom.

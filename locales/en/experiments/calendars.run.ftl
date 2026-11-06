@@ -71,3 +71,4 @@ calendars-view-year = { calendars-view-sub } { NUMBER($y, maximumFractionDigits:
         [one] day
        *[other] days
     }
+calendars-aside-ukraine-1918 = In Ukraine the Gregorian calendar was brought in by the Central Rada. Under its law, 16 February 1918 (old style) became 1 March, so the last days of that February simply dropped out. The church kept to the Julian calendar for a long time afterwards.

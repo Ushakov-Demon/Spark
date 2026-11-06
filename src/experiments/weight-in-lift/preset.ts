@@ -15,6 +15,7 @@ export const preset_weight_in_lift: Preset = {
   bench: 'lift',
   plan: (['rest', 'up-start', 'up', 'up-stop', 'down-start', 'down', 'down-stop', 'fall'] as const).map((phase) => ({ kind: 'bench', command: { type: 'lab.lift', phase } }) as const),
   choices: [ch('accel', msg('weight-in-lift-choices')), ch('up', msg('weight-in-lift-choices-2')), ch('same', msg('weight-in-lift-choices-3'))],
+  asides: [msg('weight-in-lift-aside-otis')],
   formulas: ['mechanics.weight'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … ваги в ліфтах' },

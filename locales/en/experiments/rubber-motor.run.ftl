@@ -26,3 +26,4 @@ rubber-motor-board-title = the band on the dynamometer
 rubber-motor-board-title-2 = { $N } turns
 rubber-motor-board-title-3 = twice the turns
 rubber-motor-times = { $v } times
+rubber-motor-aside-penaud = Twisted rubber as a motor was thought up by the Frenchman Alphonse Pénaud. On 18 August 1871, in the Tuileries Gardens in Paris, his model, the Planophore, weighing about 16 g (5 g of it rubber), flew 40 m in 11 s. It was the first aerodynamically stable flying model. Pénaud was 21 at the time.

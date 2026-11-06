@@ -2,6 +2,7 @@ import { t } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
+import { rolling } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /**
@@ -59,6 +60,7 @@ function motion(next: EnergyView, draw: (v: EnergyView) => void): Motion | null 
       // Speeding up down the groove (from rest), steady on the table.
       const u = clock.value;
       const at = u < 0.5 ? 0.4 * (u / 0.5) ** 2 : 0.4 + 0.6 * ((u - 0.5) / 0.5);
+      rolling(Math.min(1, u / 0.5));
       const { frames: _f, ...rest } = next;
       void _f;
       draw({ ...rest, at });

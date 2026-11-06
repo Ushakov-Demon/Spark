@@ -23,6 +23,7 @@ export const preset_friction_factors: Preset = {
   ],
   choices: [ch('same', msg('sliding-friction-factors-choices')), ch('less', msg('sliding-friction-factors-choices-2')), ch('more', msg('sliding-friction-factors-choices-3'))],
   trick: msg('sliding-friction-factors-trick'),
+  asides: [msg('sliding-friction-aside-egypt-sand')],
   formulas: ['mechanics.friction', 'mechanics.weight'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'між площею і якістю поверхонь рухомих тіл, масою рухомого тіла і силою тертя ковзання' },
@@ -46,6 +47,7 @@ export const preset_friction_coefficient: Preset = {
     ...[0, 1, 2, 3].map((weights) => ({ kind: 'bench', command: { type: 'lab.pull', weights } }) as const),
   ],
   choices: [ch('same', msg('sliding-friction-coefficient-choices')), ch('grows', msg('sliding-friction-coefficient-choices-2')), ch('falls', msg('sliding-friction-coefficient-choices-3'))],
+  asides: [msg('sliding-friction-aside-leonardo-scribbles')],
   formulas: ['mechanics.friction', 'mechanics.weight'],
   programs: [{ program: 'ua-nus-2023-kreminskyi', grade: 7, item: 'ЛР № 7', topic: 'Тема 3. Взаємодія тіл. Сили в природі', match: 'same', quote: '№ 7. Визначення коефіцієнта тертя ковзання.', textbook: { source: 'ua-textbook-2024-bariakhtar-physics-7', at: '§ 27, лабораторна робота № 7, с. 191' } }],
   expect: 'reached',

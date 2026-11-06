@@ -18,3 +18,4 @@ strobe-photo-board-title = mm on the photo
 strobe-photo-board-formula = photo
 strobe-photo-board-title-2 = in 0.25 s between the flashes
 strobe-photo-board-numbers = {" "}m/s
+strobe-photo-aside-muybridge = On 19 June 1878 the photographer Eadweard Muybridge set 12 cameras along a track, and the mare Sallie Gardner fired the shutters herself as she ran, tripping stretched wires. The frames showed that at a gallop all four hooves do leave the ground, but with the legs gathered under the body, not flung out as painters drew them.

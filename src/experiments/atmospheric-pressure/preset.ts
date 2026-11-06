@@ -16,6 +16,7 @@ export const preset_atmospheric_pressure: Preset = varied(
     choices: [ch('less', msg('atmospheric-pressure-choices')), ch('same', msg('atmospheric-pressure-choices-2')), ch('more', msg('atmospheric-pressure-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['pa:'],
+    asides: [msg('atmospheric-pressure-aside-guericke')],
     formulas: ['mechanics.atmosphere-syringe', 'mechanics.pressure'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'вимірювання й визначення: атмосферного й гідростатичного тиску' }],
     expect: 'reached',

@@ -16,6 +16,7 @@ export const preset_hydrostatic_paradox: Preset = varied(
     choices: [ch('same', msg('hydrostatic-paradox-choices')), ch('wide', msg('hydrostatic-paradox-choices-2')), ch('narrow', msg('hydrostatic-paradox-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['vF:'],
+    asides: [msg('hydrostatic-paradox-aside-pascal-barrel')],
     formulas: ['mechanics.bottom-force', 'mechanics.hydrostatic-pressure'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Тиск рідин і газів. Закон Паскаля. Гідростатичний тиск.' }],
     expect: 'reached',

@@ -3,7 +3,7 @@
 
 read-thermometer-title = Measuring the water’s temperature with a thermometer
 read-thermometer-ask = When is a thermometer put into water to be read?
-read-thermometer-question = The glass holds water at { $water }. We put into it a lab thermometer that was in the room and look at its column a few times: after { $t1 } and later, up to { $t3 }. { read-thermometer-ask }
+read-thermometer-question = The glass holds water at { $water }. We put a lab thermometer into it for different times, from { $t1 } to { $t3 }: each time we take it out and wait until it is at room temperature again. { read-thermometer-ask }
 read-thermometer-setup = A glass of water, a lab thermometer on a stand, a stopwatch
 
 read-thermometer-choice-wait = When the column stops moving

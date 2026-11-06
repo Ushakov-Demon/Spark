@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { THERMAL_KNOWLEDGE } from '../../src/domains/thermal/index.js';
-import { buildReport, renderText } from '../../src/explain/index.js';
+import { buildMeasuredReport, buildReport, renderText } from '../../src/explain/index.js';
+import { LAB_KNOWLEDGE } from '../../src/scenarios/index.js';
 import { LEVELS, type Level } from '../../src/knowledge/levels.js';
 import type { Locale } from '../../src/knowledge/i18n.js';
 import { kettleRun } from '../helpers.js';
@@ -68,5 +69,12 @@ describe('experiment report', () => {
   it('heat balance is credited as "associated", not "discovered"', () => {
     const t = report('advanced');
     expect(t).toMatch(/Рівняння теплового балансу[\s\S]*?Пов’язано з іменами: Джозеф Блек/);
+  });
+
+  it('a formula names the numbers it shows, even those without a unit: N and n of the palette', () => {
+    const formulas = LAB_KNOWLEDGE.formulas.filter((f) => f.id === 'mechanics.palette-area');
+    const t = renderText(buildMeasuredReport({ title: 'T', level: 'school', locale: 'uk', measured: [], formulas, laws: LAB_KNOWLEDGE.laws }));
+    expect(t).toContain('N — кількість цілих квадратиків усередині');
+    expect(t).toContain('n — кількість квадратиків, які перетинає край');
   });
 });

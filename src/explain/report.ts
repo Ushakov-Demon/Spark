@@ -191,7 +191,8 @@ function explainLaw<C extends Command>(
     }
     out.push({ kind: 'formula', plain: f.plain, latex: f.latex });
     const vars = Object.entries(f.variables)
-      .filter(([, v]) => v.unit !== '' || atLeast(level, 'advanced'))
+      // (A number without a unit is named too, when the formula shows it: N, n, μ, η.)
+      .filter(([sym, v]) => v.unit !== '' || f.plain.includes(sym) || atLeast(level, 'advanced'))
       .map(([sym, v]) => {
         const meaning = v.meaning ? ` — ${t(textFor(v.meaning, level))}` : '';
         const unit = v.unit ? `, ${unitLabel(v.unit, ctx)}` : '';

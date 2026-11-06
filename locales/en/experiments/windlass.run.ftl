@@ -32,3 +32,4 @@ windlass-say-turns = { $spool ->
        *[reel] The reel
     } made { $count } turns.
 windlass-say-rose = The load rose { $cm } cm.
+windlass-aside-herodotus = The windlass is an old machine. Herodotus writes that when the Persian king Xerxes bridged the Hellespont, the cables were pulled taut from the shore with wooden devices, which translators call windlasses or capstans. How exactly it was done is still argued over.

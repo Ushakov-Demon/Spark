@@ -15,6 +15,7 @@ export const preset_coin_inertia: Preset = {
   bench: 'coin',
   plan: (['slow', 'push', 'flick', 'snap'] as const).map((pull) => ({ kind: 'bench', command: { type: 'lab.coin', pull } }) as const),
   choices: [ch('inertia', msg('coin-inertia-choices')), ch('heavy', msg('coin-inertia-choices-2')), ch('air', msg('coin-inertia-choices-3'))],
+  asides: [msg('coin-inertia-aside-descartes')],
   formulas: ['mechanics.speed'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'Дослідження • інерції' },

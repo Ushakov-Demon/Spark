@@ -26,7 +26,7 @@ export const answer_bubble_speed = (run: PresetRun): PresetAnswer => {
     why: msg('bodies-in-liquids-answer-bubble-speed-why'),
     say: both((l) => (correct === 'bigger' ? (tl(l, 'bodies-in-liquids-answer-bubble-speed-say', { ratio: sig(ratio, 2, l) })) : tl(l, 'bodies-in-liquids-answer-bubble-speed-say-2'))),
     text: both((l) =>
-      tl(l, 'bodies-in-liquids-answer-bubble-speed-text-3', { value: sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l), v: small ? cmS(small.v, l) : '', v2: big ? cmS(big.v, l) : '', ratio: sig(ratio, 2, l), value2: per.map((p) => tl(l, 'bodies-in-liquids-answer-bubble-speed-text', { d: sig(p.d * 1000, 2, l), p: lapList(p, l) })).join('. '), value3: liquid === 'washing-up' ? tl(l, 'bodies-in-liquids-answer-bubble-speed-text-2') : '' }),
+      tl(l, 'bodies-in-liquids-answer-bubble-speed-text-3', { value: sig(Math.max(...per.map((p) => p.spread)) * 100, 2, l), v: small ? cmS(small.v, l) : '', v2: big ? cmS(big.v, l) : '', ratio: sig(ratio, 2, l), value2: per.map((p) => stepLine(tl(l, 'bodies-in-liquids-answer-bubble-speed-text', { d: sig(p.d * 1000, 2, l), p: lapList(p, l) }))).join(';') + STEPS_END, value3: liquid === 'washing-up' ? tl(l, 'bodies-in-liquids-answer-bubble-speed-text-2') : '' }),
     ),
   };
 };

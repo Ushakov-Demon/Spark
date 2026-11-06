@@ -28,3 +28,5 @@ lever-balance-board-title-2 = the mass of the liquid — the difference of two w
 
 ## $name — the liquid's name; $gen — in the genitive.
 lever-balance-cylinder-label = Cylinder with { $gen }
+lever-balance-aside-grand-k = For 130 years the kilogram was the mass of one object: a cylinder of 90 % platinum and 10 % iridium, the size of a golf ball, kept in a vault at Sèvres near Paris. Its copies drifted from it by tiny amounts over time, and there was nothing to check the original against. Since 20 May 2019 the kilogram has been defined through the Planck constant, not an object.
+lever-balance-aside-hypatia = The oldest description of an instrument for the density of liquids is in a letter of 402. Synesius of Cyrene asks Hypatia of Alexandria to have a “hydroscope” made for him: a cylindrical tube the size of a flute, with notches. It was put into the liquid and the notches were counted. Today such an instrument is called a hydrometer.

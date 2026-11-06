@@ -9,8 +9,9 @@ import { defineScene, type SceneContext } from '../types.js';
 
 /**
  * A thermometer on a stand over a glass of water: in the air it shows the room, lowered into the glass its column
- * climbs (or falls) to the water's temperature (hot water steams a little). Beside it the scale near the column's top, magnified, as one reads
- * it — and the stopwatch since the bulb went in. Stirred, a rod goes round in the water.
+ * climbs (or falls) to the water's temperature (hot water steams a little), and when its time is up it is taken out,
+ * the reading kept, and has cooled back to the room before the next dip. Beside it the scale near the column's top,
+ * magnified, as one reads it — and the stopwatch since the bulb went in. Stirred, a rod goes round in the water.
  */
 export type ThermoView = {
   readonly room: number;
@@ -18,6 +19,8 @@ export type ThermoView = {
   /** In the water (0…1: going down), and for how long, s. */
   readonly dipped: number;
   readonly t: number;
+  /** Taken out with its reading: what the column stands at, °C. */
+  readonly held?: number;
   readonly stir: boolean;
   /** The scale step: the divisions between two numbered marks counted (0…1). */
   readonly counting?: number;
@@ -39,7 +42,8 @@ function view({ last, command, plan, locale }: SceneContext): ThermoView {
   const base = { room: c?.room ?? 22, water, stir: false, decimal, ...(r ? { read: reading(r, locale) } : {}) };
   // Before its step a dip is shown still in the air: the bulb goes in with the step.
   if (!c || c.step === 'scale' || !mine) return { ...base, dipped: 0, t: 0, scaleStep: c?.step === 'scale' };
-  return { ...base, dipped: 1, t: c.t, stir: !!c.stir, scaleStep: false };
+  const stir = !!c.stir;
+  return { ...base, dipped: 0, held: bulbAt(c.room, c.water, c.t, stir), t: c.t, stir, scaleStep: false };
 }
 
 /** The thermometer: its rod's x, the bulb's centre in the air and how far it goes down; the scale, px per °C. */
@@ -57,7 +61,7 @@ const WATER = 'rgba(110, 175, 235, 0.85)';
 const STEAMS_FROM = 40;
 
 function svg(v: ThermoView): string {
-  const T = v.dipped > 0 ? bulbAt(v.room, v.water, v.t, v.stir) : v.room;
+  const T = v.held ?? (v.dipped > 0 ? bulbAt(v.room, v.water, v.t, v.stir) : v.room);
   const cy = BULB_AIR + DIP * v.dipped;
   const zero = cy - 18;
   const yOf = (deg: number) => zero - (deg - SCALE_LOW) * PER_DEG;
@@ -95,32 +99,39 @@ function svg(v: ThermoView): string {
   const count = Array.from({ length: counted }, (_, i) => `<rect x="${lx + 6}" y="${lensY(a + i + 1)}" width="26" height="${LENS.perDeg}" style="fill:rgba(255,209,102,${i % 2 ? 0.45 : 0.7})"/>`).join('');
   const columnTop = Math.max(LENS.y0 + 1, Math.min(LENS.y1 - 1, lensY(T)));
   const lens = `<rect x="${LENS.x0}" y="${LENS.y0}" width="${LENS.x1 - LENS.x0}" height="${LENS.y1 - LENS.y0}" rx="10" style="fill:#f7f5ee;stroke:#8d949c;stroke-width:3"/>${count}<rect x="${lx - 3}" y="${columnTop}" width="7" height="${LENS.y1 - 1 - columnTop}" style="fill:${ALCOHOL}"/>${lensTicks}<path d="M${X + 24},${yOf(T)} L${LENS.x0},${lensMid}" style="stroke:#ffd166;stroke-width:1;stroke-dasharray:3 3"/>`;
-  const watch = stopwatchSvg({ display: v.dipped > 0 ? (v.t < 100 ? v.t.toFixed(1) : v.t.toFixed(0)).replace('.', v.decimal) : '0' + v.decimal + '0' }, 530);
+  const watch = stopwatchSvg({ display: v.dipped > 0 || v.held !== undefined ? (v.t < 100 ? v.t.toFixed(1) : v.t.toFixed(0)).replace('.', v.decimal) : '0' + v.decimal + '0' }, 530);
   const read = v.read ? `<text class="bench-reading" x="${(LENS.x0 + LENS.x1) / 2}" y="${LENS.y0 - 6}" text-anchor="middle">${v.read}</text>` : '';
   return `${beaker}${stand}${thermo}${stir}${lens}${watch}${read}`;
 }
 
-/** The scale step: the ten divisions counted one by one (about two seconds). A dip: the thermometer goes down into the glass, then the column moves while the stopwatch runs from the last look to this one (about two seconds and a half). */
+/**
+ * The scale step: the ten divisions counted one by one (about two seconds). A dip (about three seconds and a half): the
+ * column back to the room's, if the last dip left it up; the thermometer down into the glass; the column moves while the
+ * stopwatch runs; the reading, and the thermometer out.
+ */
 function motion(next: ThermoView, draw: (v: ThermoView) => void, prev: ThermoView | null): Motion | null {
   if (!next.read) return null;
-  const { read: _r, ...rest } = next;
+  const { read: _r, held: _h, ...rest } = next;
   void _r;
+  void _h;
   if (next.scaleStep) {
     const clock = new Channel(0, 1, { kind: 'steady', speed: 0.5 }, 1e-6);
     return { channels: [clock], frame: (done) => (done ? draw(next) : draw({ ...rest, counting: clock.value })) };
   }
-  // Going on from the last look, if the thermometer was already in this water (not a fresh one, not stirred anew).
-  const from = prev && prev.dipped >= 1 && prev.stir === next.stir && prev.t <= next.t ? prev.t : 0;
-  const lower = from === 0;
-  const clock = new Channel(0, 1, { kind: 'steady', speed: 0.4 }, 1e-6);
+  const before = prev?.held;
+  const cooled = before === undefined ? 0 : 0.12;
+  const lowered = cooled + 0.2;
+  const raised = 0.82;
+  const clock = new Channel(0, 1, { kind: 'steady', speed: 0.28 }, 1e-6);
   return {
     channels: [clock],
     frame: (done) => {
       if (done) return draw(next);
       const x = clock.value;
-      const down = lower ? Math.min(1, x / 0.25) : 1;
-      const run = lower ? Math.max(0, (x - 0.25) / 0.75) : x;
-      draw({ ...rest, dipped: down, t: from + (next.t - from) * run });
+      if (x < cooled) return draw({ ...rest, dipped: 0, t: 0, held: before! + (next.room - before!) * (x / cooled) });
+      if (x < lowered) return draw({ ...rest, dipped: (x - cooled) / (lowered - cooled), t: 0 });
+      if (x < raised) return draw({ ...rest, dipped: 1, t: next.t * ((x - lowered) / (raised - lowered)) });
+      draw({ ...next, dipped: 1 - (x - raised) / (1 - raised) });
     },
   };
 }

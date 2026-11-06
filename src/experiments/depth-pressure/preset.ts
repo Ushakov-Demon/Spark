@@ -16,6 +16,7 @@ export const preset_depth_pressure: Preset = varied(
     choices: [ch('proportional', msg('depth-pressure-choices')), ch('same', msg('depth-pressure-choices-2')), ch('slower', msg('depth-pressure-choices-3'))],
     choicesAt: 'end',
     answerOnBoard: ['rhoD:'],
+    asides: [msg('depth-pressure-aside-trieste')],
     formulas: ['mechanics.hydrostatic-pressure'],
     programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Дослідження: … зміни тиску в рідині з глибиною; … вимірювання й визначення: атмосферного й гідростатичного тиску' }],
     expect: 'reached',

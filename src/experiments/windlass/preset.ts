@@ -21,6 +21,7 @@ export const preset_windlass: Preset = {
   ],
   choices: [ch('circle', msg('windlass-choices')), ch('diameter', msg('windlass-choices-2')), ch('same', msg('windlass-choices-3'))],
   answerOnBoard: ['wc:'],
+  asides: [msg('windlass-aside-herodotus')],
   formulas: ['mechanics.wound-length'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'конструювання механізмів, що перетворюють прямолінійний рух на обертальний і навпаки' }],
   expect: 'reached',

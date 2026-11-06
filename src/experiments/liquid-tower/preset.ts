@@ -19,6 +19,7 @@ export const preset_liquid_tower: Preset = {
   ],
   choices: [ch('bottom', msg('liquid-tower-choices')), ch('glycerol', msg('liquid-tower-choices-2')), ch('oil', msg('liquid-tower-choices-3'))],
   trick: msg('liquid-tower-trick'),
+  asides: [msg('liquid-tower-aside-marsigli')],
   formulas: ['mechanics.density', 'mechanics.submerged-share'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'взаємного розташуванням тіл і рідин різної густини у циліндричному посуді' },

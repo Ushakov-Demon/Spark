@@ -51,3 +51,4 @@ solar-system-model-view-caption = from above, distances to scale
 solar-system-model-probe-name = Voyager 1
 solar-system-model-view-note-2 = the Earth — less than a pixel
 solar-system-model-view-caption-2 = the field: { $value } m
+solar-system-model-aside-sweden = The world’s largest permanent scale model of the Solar System is in Sweden, at a scale of 1 : 20,000,000. Its Sun is the Avicii Arena in Stockholm, 110 m across. The inner planets stand in Stockholm, the outer ones in towns to the north along the Baltic: Uranus in Lövstabruk, Neptune in Söderhamn.

@@ -30,3 +30,4 @@ adding-forces-board-title-2 = two dynamometers, the weights at { $at } cm
 adding-forces-board-title-3 = the resultant: both forces up
 adding-forces-board-title-4 = one pulls up, the other down
 adding-forces-board-title-5 = the resultant: opposite forces
+adding-forces-aside-stevin = In 1586 the Dutchman Simon Stevin worked out how gravity divides on an inclined plane from a single drawing: a wreath of 14 spheres laid over two slopes. If one side outweighed the other, the wreath would turn for ever, which is impossible. So the forces must balance. He liked the drawing so much that he used it as a seal on his letters, a mark on his instruments and a vignette on his title pages.

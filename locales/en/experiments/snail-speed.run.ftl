@@ -16,3 +16,4 @@ snail-speed-text-s = mm in 30 s
 snail-speed-answer-text = {" "}The means from Pembury Smith and Ruxton’s study (2021).
 snail-speed-busy = The snail crawls — filming for 30 seconds…
 snail-speed-say = In 30 s the snail went { $mm } mm.
+snail-speed-aside-archie = Every summer the village of Congham in England holds the World Snail Racing Championships. The record, according to Guinness World Records, belongs to a snail called Archie: in 1995 he covered the 33 cm course in 2 minutes. That is about 2.75 mm a second: compare it with your snail.

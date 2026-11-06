@@ -33,3 +33,4 @@ coin-inertia-answer-where-3 = the coin went with the card
 coin-inertia-say = The coin moved just { $mm } mm — and dropped into the glass!
 coin-inertia-say-2 = The coin moved { $mm } mm, hit the rim and fell beside.
 coin-inertia-say-3 = The coin went with the card.
+coin-inertia-aside-descartes = The idea that motion needs no constant push took a long time to arrive. Galileo Galilei reached it for horizontal motion by watching balls on inclined planes. René Descartes stated it clearly for straight-line motion in his Principles of Philosophy (1644), and Isaac Newton made it the first law of his Principia in 1687. How much he took from each of them is still argued over by historians.

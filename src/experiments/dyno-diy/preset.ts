@@ -17,6 +17,7 @@ export const preset_dyno_diy: Preset = {
   choices: [ch('one', msg('dyno-diy-choices')), ch('hundred', msg('dyno-diy-choices-2')), ch('tenth', msg('dyno-diy-choices-3'))],
   trick: msg('dyno-diy-trick'),
   answerOnBoard: ['da:'],
+  asides: [msg('dyno-diy-aside-regnier')],
   formulas: ['mechanics.weight', 'mechanics.hooke'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез; динамометра' }],
   expect: 'reached',

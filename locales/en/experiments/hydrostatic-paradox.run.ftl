@@ -28,3 +28,4 @@ hydrostatic-paradox-what-narrow = the narrowing vessel
 hydrostatic-paradox-board-title = { $what }: the water’s weight
 hydrostatic-paradox-board-title-2 = { $what }: the force on the bottom
 hydrostatic-paradox-fill-plan = fill the { $short } vessel to { $cm } cm
+hydrostatic-paradox-aside-pascal-barrel = Many textbooks tell the story of Pascal’s barrel: a long thin tube was fitted to a full barrel, only a few cups of water were poured in, and the barrel burst. This experiment appears nowhere in Pascal’s surviving works. The French call it the “barrel-buster”, but it seems it was attributed to him only by 19th-century authors.

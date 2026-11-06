@@ -20,6 +20,7 @@ export const preset_carts_mass: Preset = {
   ],
   choices: [ch('speeds', msg('carts-mass-choices')), ch('same', msg('carts-mass-choices-2')), ch('faster', msg('carts-mass-choices-3'))],
   answerOnBoard: ['cr:'],
+  asides: [msg('carts-mass-aside-slammd')],
   formulas: ['mechanics.speed', 'mechanics.weight'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'залежності між масою тіла та його інертними та гравітаційними властивостями; … між масою і силою тяжіння' },

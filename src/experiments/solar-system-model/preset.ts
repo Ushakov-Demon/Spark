@@ -16,6 +16,7 @@ export const preset_solar_system_model: Preset = {
   plan: (['ball', 'inner', 'outer', 'kepler', 'voyager'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.planets', step } }) as const),
   choices: [ch('ball', msg('solar-system-model-choices')), ch('grain', msg('solar-system-model-choices-2')), ch('near', msg('solar-system-model-choices-3'))],
   answerOnBoard: ['pe:'],
+  asides: [msg('solar-system-model-aside-sweden')],
   formulas: ['mechanics.kepler-third'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'моделювання: руху планет' }],
   expect: 'reached',

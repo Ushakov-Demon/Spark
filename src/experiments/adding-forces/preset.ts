@@ -21,6 +21,7 @@ export const preset_adding_forces: Preset = {
   ],
   choices: [ch('same', msg('adding-forces-choices')), ch('more', msg('adding-forces-choices-2')), ch('less', msg('adding-forces-choices-3'))],
   answerOnBoard: ['rs:'],
+  asides: [msg('adding-forces-aside-stevin')],
   formulas: ['mechanics.resultant', 'mechanics.resultant-opposite', 'mechanics.weight'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'вимірювання: … рівнодійної сил' },

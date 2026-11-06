@@ -37,3 +37,4 @@ air-column-board-title-3 = { $dh } m higher — the pressure { $dp } hPa less: t
 air-column-board-title-4 = how much of the air above the town is below the airship
 air-column-view-label = m above the sea
 air-column-view = air
+air-column-aside-everest = Higher up there is less air, and breathing gets hard. Doctors held that on the summit of Everest (8848 m) nobody could manage without bottled oxygen: the air was too thin. On 8 May 1978 Reinhold Messner and Peter Habeler were the first to go up there without it.

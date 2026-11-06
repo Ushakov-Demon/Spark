@@ -17,6 +17,7 @@ export const preset_communicating_vessels: Preset = {
   choices: [ch('oil', msg('communicating-vessels-choices')), ch('water', msg('communicating-vessels-choices-2')), ch('same', msg('communicating-vessels-choices-3'))],
   choicesAt: 'end',
   answerOnBoard: ['rhoU:'],
+  asides: [msg('communicating-vessels-aside-pergamon')],
   formulas: ['mechanics.communicating-vessels', 'mechanics.hydrostatic-pressure'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 3. Тиск твердих тіл, рідин і газів', match: 'same', quote: 'Сполучені посудини. … моделювання: сполучених посудин' }],
   expect: 'reached',

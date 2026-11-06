@@ -272,8 +272,8 @@ formula-mechanics-rectangle-area-explanation-novice = Прямокутник 6 �
 formula-mechanics-rectangle-area-explanation-school = Площа — скільки одиничних квадратів уміщує фігура. У прямокутнику їх a·b; одиниця площі — квадрат зі стороною одиниці довжини: 1 м², 1 см² = 0,0001 м². Похибка лінійки (пів міліметра) входить у кожен множник, тож мала сторона дає більшу відносну похибку.
 formula-mechanics-palette-area = Площа фігури за палеткою
 formula-mechanics-palette-area-s-name = площа фігури
-formula-mechanics-palette-area-whole-name = цілі квадратики всередині
-formula-mechanics-palette-area-cut-name = квадратики, які перетинає край
+formula-mechanics-palette-area-whole-name = кількість цілих квадратиків усередині
+formula-mechanics-palette-area-cut-name = кількість квадратиків, які перетинає край
 formula-mechanics-palette-area-square-name = площа одного квадратика
 formula-mechanics-palette-area-explanation-novice = Палетка — прозора плівка з квадратиками. Кладемо її на фігуру, рахуємо квадратики, що повністю всередині, і ті, які перетинає край; перетнуті — в середньому наполовину всередині, тож беремо їх половину.
 formula-mechanics-palette-area-explanation-school = S ≈ (N + n/2)·s₀: N цілих квадратиків, n перетнутих краєм, s₀ — площа квадратика. Помиляємося тільки на перетнутих, а їх стає менше відносно цілих, коли квадратики дрібніші, — тож що дрібніша палетка, то точніше (і то довше рахувати).

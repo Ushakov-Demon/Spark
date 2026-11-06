@@ -15,6 +15,7 @@ export const preset_ball_bounce: Preset = {
   bench: 'bounce',
   plan: ([['pingpong', 1], ['pingpong', 2], ['pingpong', 3], ['tennis', 1], ['clay', 1]] as const).map(([ball, bounce]) => ({ kind: 'bench', command: { type: 'lab.bounce', ball, bounce } }) as const),
   choices: [ch('heat', msg('ball-bounce-choices')), ch('gone', msg('ball-bounce-choices-2')), ch('gravity', msg('ball-bounce-choices-3'))],
+  asides: [msg('ball-bounce-aside-super-ball')],
   formulas: ['mechanics.potential-energy'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 4. Механічна робота, потужність, енергія', match: 'same', quote: 'виявлення зміни і перетворення механічної енергії' },

@@ -15,6 +15,7 @@ export const preset_relative_motion: Preset = {
   bench: 'carry',
   plan: [0, 0.005, 0.01].map((speed) => ({ kind: 'bench', command: { type: 'lab.carry', speed } }) as const),
   choices: [ch('depends', msg('relative-motion-choices')), ch('same', msg('relative-motion-choices-2')), ch('slower', msg('relative-motion-choices-3'))],
+  asides: [msg('relative-motion-aside-galileo-ship')],
   formulas: ['mechanics.speed'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'моделювання: відносності руху' },

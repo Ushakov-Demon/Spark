@@ -16,6 +16,7 @@ export const preset_scales_diy: Preset = {
   plan: (['zero', 'check', 'egg'] as const).map((step) => ({ kind: 'bench', command: { type: 'lab.scales', step } }) as const),
   choices: [ch('known', msg('scales-diy-choices')), ch('cant', msg('scales-diy-choices-2')), ch('size', msg('scales-diy-choices-3'))],
   answerOnBoard: ['sg:'],
+  asides: [msg('scales-diy-aside-santorio')],
   formulas: ['mechanics.density', 'mechanics.weight'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'конструювання: терез' }],
   expect: 'reached',

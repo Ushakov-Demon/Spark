@@ -15,6 +15,7 @@ export const preset_wind_speed: Preset = {
   bench: 'wind',
   plan: ([1, 2, 3] as const).map((day) => ({ kind: 'bench', command: { type: 'lab.wind', day } }) as const),
   choices: [ch('walk', msg('wind-speed-choices')), ch('slow', msg('wind-speed-choices-2')), ch('fast', msg('wind-speed-choices-3'))],
+  asides: [msg('wind-speed-aside-beaufort')],
   formulas: ['mechanics.speed'],
   programs: [{ program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 1. Механічний рух', match: 'same', quote: 'вимірювання: середньої швидкості тіл, що здійснюють рівномірний і нерівномірний рухи; швидкості руху повітря' }],
   expect: 'reached',

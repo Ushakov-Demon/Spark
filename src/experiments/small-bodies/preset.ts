@@ -20,6 +20,7 @@ export const preset_small_bodies: Preset = {
     { kind: 'bench', command: { type: 'lab.rows', body: 'thread', count: 30 } },
   ],
   choices: [ch('row', msg('small-bodies-choices')), ch('one', msg('small-bodies-choices-2')), ch('cant', msg('small-bodies-choices-3'))],
+  asides: [msg('small-bodies-aside-gascoigne')],
   formulas: ['mechanics.row-size'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Вступ', match: 'same', quote: 'вимірювання фізичних величин (маси, розмірів малих тіл, площ, відстаней, об’ємів, температури, освітленості)' },

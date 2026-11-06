@@ -18,6 +18,7 @@ export const preset_drag_form: Preset = {
     { kind: 'bench', command: { type: 'lab.drag', shape: 'ball', medium: 'air' } },
   ],
   choices: [ch('plate', msg('drag-form-choices')), ch('ball', msg('drag-form-choices-2')), ch('same', msg('drag-form-choices-3'))],
+  asides: [msg('drag-form-aside-eiffel')],
   formulas: ['mechanics.speed'],
   programs: [
     { program: 'ua-nus-2023-holovko', grade: 7, topic: 'Тема 2. Взаємодія тіл. Сила', match: 'same', quote: 'між формою тіла, густиною середовища і силою опору середовища' },

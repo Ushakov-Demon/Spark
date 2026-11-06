@@ -21,3 +21,4 @@ wind-speed-say = The bubble flew 6 m in { $t }.
 wind-speed-view-read = {"."}
 wind-speed-board-force = {" "}— force { $f }, { $name }
 wind-speed-answer-day = { $signs }: 6 m in { $time }, v ≈ { $v } — force { $f }, a { $name }
+wind-speed-aside-beaufort = In 1805 the naval officer Francis Beaufort, serving on HMS Woolwich, drew up a wind scale of 13 levels. It had no speeds: the level was judged by what the wind did to a frigate’s sails. Robert FitzRoy used the scale on the Beagle during Charles Darwin’s voyage, and in the late 1830s the Royal Navy adopted it for its logs.
