@@ -8,16 +8,23 @@ adding-forces-labforces-plan = тримати вантаж одним динам
 adding-forces-labforces-say-2 = Тепер тримаймо лінійку двома динамометрами за кінці, тягарці — посередині. Що показують обидва?
 adding-forces-labforces-button-2 = ⬆⬆ Два динамометри, тягарці посередині
 adding-forces-labforces-plan-2 = два динамометри, тягарці посередині
-adding-forces-labforces-say-3 = Пересунь тягарці на { $at } см від лівого кінця. Як змінилися покази?
-adding-forces-labforces-button-3 = ⬆⬆ Тягарці на { $at } см
-adding-forces-labforces-plan-3 = два динамометри, тягарці на { $at } см
+adding-forces-labforces-say-3 = Зсунь тягарці ближче до лівого кінця. Як змінилися покази?
+adding-forces-labforces-button-3 = ⬆⬆ Зсунути
+adding-forces-labforces-plan-3 = два динамометри, тягарці зсунуто
 adding-forces-labforces-say-4 = Знову один динамометр тримає лінійку за середину, а другим тягни тягарці вниз, доки він не покаже { $d }. Що показує верхній?
 adding-forces-labforces-button-4 = ⬆⬇ Вгору й униз ({ $d })
 adding-forces-labforces-plan-4 = один угору, другий униз з силою { $d }
+adding-forces-again-say = Тягарці на новому місці. Запишемо, що показують обидва динамометри?
+adding-forces-again-button = ⬆⬇ Записати покази
+adding-forces-again-plan = тягарці на іншому місці
+adding-forces-bad-mass = Маса має бути більшою за нуль.
+adding-forces-live-at = Відстань тягарців від центру лінійки
+adding-forces-at-middle = посередині
+adding-forces-at-off = на { $cm } см від центру
 adding-forces-answer-why = Вантаж висить нерухомо — отже, сили, що на нього діють, зрівноважені: униз його тягне вага тягарців разом із лінійкою, угору — динамометри. Тож рівнодійна сил динамометрів щоразу дорівнює вазі вантажу — тій самій силі, яку показував один динамометр. Тримати можна одним динамометром чи двома, ділити вагу між кінцями лінійки порівну чи ні (кінець, ближчий до тягарців, тримає більше — чому, з’ясуємо в темі про важіль), — разом угору щоразу та сама сила. А коли другий динамометр тягне тягарці вниз, верхньому доводиться тримати і вантаж, і цю силу — він показує більше. Рівнодійна двох протилежних сил — їхня різниця — знову дорівнює вазі вантажу.
 adding-forces-answer-say = Щоразу R = { $sums } — стільки ж, скільки показував один динамометр.
 adding-forces-text-parts = Один динамометр тримав вантаж із силою { $one }
-adding-forces-text-parts-2 = два, тягарці на { $at } см: { $f } + { $f2 } = { $f3 }
+adding-forces-text-parts-2 = два, тягарці { $where }: { $f } + { $f2 } = { $f3 }
 adding-forces-text-parts-3 = вгору { $down }, униз { $down2 }: { $down } − { $down2 } = { $down3 }
 adding-forces-text-tail = {" "}Покази динамометрів змінювалися, а рівнодійна — ні: щоразу вона дорівнює вазі вантажу.
 adding-forces-text-tail-2 = {" "}Різниця в одну поділку (0,1 Н) — від округлення показів до поділки.
@@ -26,7 +33,7 @@ adding-forces-say = Один динамометр показує { $fs }.
 adding-forces-say-2 = Лівий показує { $fs }, правий — { $fs2 }.
 adding-forces-say-3 = Верхній показує { $fs }, нижній тягне вниз із силою { $fs2 }.
 adding-forces-board-title = вантаж на одному динамометрі
-adding-forces-board-title-2 = два динамометри, тягарці на { $at } см
+adding-forces-board-title-2 = два динамометри, тягарці { $where }
 adding-forces-board-title-3 = рівнодійна: обидві сили вгору
 adding-forces-board-title-4 = один тягне вгору, другий униз
 adding-forces-board-title-5 = рівнодійна: сили протилежні

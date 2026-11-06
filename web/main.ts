@@ -1305,7 +1305,7 @@ function takeLive(c: LabCommand): LabCommand {
 scene.element.addEventListener('change', (e) => {
   const f = (e.target as Element).closest<HTMLInputElement>('input[data-live-field]');
   const x = f ? Number(f.value) * Number(f.dataset['factor'] ?? 1) : NaN;
-  if (f && Number.isFinite(x) && x > 0) setLive(f.dataset['liveField']!, x);
+  if (f && Number.isFinite(x)) setLive(f.dataset['liveField']!, x);
 });
 // A part of the drawing that is a knob (the lamp on its arm): dragged, it turns the knob; the tap after it does no step.
 let dragged = false;
@@ -1313,7 +1313,7 @@ scene.element.addEventListener('pointerdown', (e) => {
   const part = (e.target as Element).closest<SVGElement>('#sc-bench [data-live]');
   const own = preset?.bench ? sceneOf(preset.bench) : undefined;
   const g = part?.closest<SVGGraphicsElement>('.bench-at');
-  if (!part || !g || !own?.live?.drag || liveBox.hidden) return;
+  if (!part || !g || !own?.live?.drag || running || instrumentBusy) return;
   e.preventDefault();
   const knob = part.dataset['live']!;
   const svgEl = g.ownerSVGElement!;

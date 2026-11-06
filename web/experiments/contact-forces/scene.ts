@@ -1,5 +1,5 @@
 import { balanceText, magnetLoss, TOUCH_GAP, TOUCH_MASS, touchForce, type TouchCase, type TouchCommand } from '../../../src/experiments/contact-forces/bench.js';
-import { massText, type TouchMagnet } from '../../../src/experiments/contact-forces/shared.js';
+import type { TouchMagnet } from '../../../src/experiments/contact-forces/shared.js';
 import { barMagnetFieldDirection } from '../../../src/domains/electrical/magnet.js';
 import { G } from '../../../src/domains/mechanics/constants.js';
 import { forceDivision, BAR_MAGNET } from '../../../src/scenarios/bench-kit.js';
@@ -8,7 +8,8 @@ import { SCALES } from '../../../src/equipment/scales.js';
 import type { Locale } from '../../../src/knowledge/i18n.js';
 import { t as tl } from '../../../src/knowledge/messages.js';
 import { TABLE } from '../../graphics/scene/constants.js';
-import { dynamometerSvg, forceGaugeSvg, labBalanceSvg, standSvg, THREAD, weightsSvg } from '../../graphics/scene/kit.js';
+import { dynamometerSvg, forceGaugeSvg, labBalanceSvg, standSvg, THREAD } from '../../graphics/scene/kit.js';
+import { loadHeight, loadSvg } from '../../graphics/scene/weights.js';
 import { Channel, type Motion } from '../../motion.js';
 import { clack, scraping, thud } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
@@ -173,16 +174,6 @@ const ARM_Y = 34;
 const HOOK = ARM_Y + 96;
 const LET_GO = 0.3;
 
-function bodySvg(t: TouchView, x: number, top: number): string {
-  const hundreds = Math.round(t.mass / 0.1);
-  if (hundreds >= 1 && hundreds <= 10 && Math.abs(t.mass - hundreds * 0.1) < 1e-9) return weightsSvg(x, top, hundreds, 28, 10);
-  return `<rect x="${x - 22}" y="${top}" width="44" height="30" rx="2" style="fill:#9a6b33;stroke:#5e3f1a;stroke-width:1.5"/><text class="bench-reading" x="${x}" y="${top + 19}" text-anchor="middle">${massText(t.mass, t.locale)}</text>`;
-}
-const bodyHeight = (t: TouchView): number => {
-  const hundreds = Math.round(t.mass / 0.1);
-  return hundreds >= 1 && hundreds <= 10 && Math.abs(t.mass - hundreds * 0.1) < 1e-9 ? hundreds * 10 : 30;
-};
-
 /** The weight on the instrument, let go: it falls (the way grows as t²); the Earth's field stands around, straight down. */
 function fallSvg(t: TouchView): string {
   const x = BALANCE_X;
@@ -192,7 +183,7 @@ function fallSvg(t: TouchView): string {
   const hanging = t.k < LET_GO;
   const u = hanging ? 0 : (t.k - LET_GO) / (1 - LET_GO);
   const start = HOOK + 8;
-  const top = start + (TABLE - bodyHeight(t) - start) * u * u;
+  const top = start + (TABLE - loadHeight(t.mass) - start) * u * u;
   const shown = formatMeasured('force', hanging && t.k > 0 ? Math.round(F / d) * d : 0, d, t.locale);
   const meter = gauge ? forceGaugeSvg(x, ARM_Y + 6, shown) : `${dynamometerSvg(x, ARM_Y + 6, false, shown)}<path d="M${x},${ARM_Y + 86} V${HOOK}" style="stroke:#3a3f46;stroke-width:2"/>`;
   const column = (cx: number) => `<path class="field-flow" d="M${cx},40 V${TABLE - 6}" style="fill:none;stroke:${FIELD};stroke-opacity:0.5;stroke-width:1.2;stroke-dasharray:6 18;${flowing(1.6)}"/><path d="M${cx - 4},${TABLE - 14} L${cx},${TABLE - 6} L${cx + 4},${TABLE - 14} z" style="fill:${FIELD};fill-opacity:0.6"/>`;
@@ -200,7 +191,7 @@ function fallSvg(t: TouchView): string {
   const thread = hanging ? `<path d="M${x},${HOOK} V${start}" style="stroke:#3a3f46;stroke-width:2"/>` : '';
   const arrow = `<path class="bench-mark" d="M${x + 34},${Math.min(top + 4, TABLE - 36)} v30 m-4,-6 l4,6 l4,-6" style="fill:none"/>`;
   const read = t.read ? `<text class="bench-reading" x="596" y="28" text-anchor="end">${t.read}</text>` : '';
-  return `${field}${standSvg(330, x + 6, ARM_Y)}${meter}${thread}${bodySvg(t, x, top)}${arrow}${read}`;
+  return `${field}${standSvg(330, x + 6, ARM_Y)}${meter}${thread}${loadSvg(x, top, t.mass, t.locale)}${arrow}${read}`;
 }
 
 /**

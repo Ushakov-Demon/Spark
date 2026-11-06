@@ -709,3 +709,19 @@ describe('the density of a liquid: water beside it, by the same measure', () => 
     expect(c.kind === 'choice' ? c.options.map((o) => o.id) : []).not.toContain('water');
   });
 });
+
+describe('adding forces: a load of any mass, the weights anywhere on the ruler', () => {
+  const p = PRESETS.find((x) => x.id === 'adding-forces')!;
+  const answerFor = (mass: number, at: number) => {
+    const q = withValues(p, { mass });
+    const plan = (q.plan ?? []).map((s) => (s.kind === 'bench' && (s.command as { again?: boolean }).again ? ({ ...s, command: { ...s.command, at } } as ProtocolStep) : s));
+    const first: ProtocolStep = { kind: 'operation', action: q.params.action };
+    const out = runProtocol({ base: q.params, steps: [first, ...plan], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
+    return PRESET_ANSWERS['adding-forces']!({ steps, simulation, readings: readingsAll(out) as never });
+  };
+
+  it.each([[0.2, 0.22], [0.2, 0.01], [0.5, 0.29], [1.5, 0.1], [0.01, 0.15]])('%d kg at %d m: the resultant stays the load’s weight', (mass, at) => {
+    expect(answerFor(mass!, at!).correct).toBe('same');
+  }, 60_000);
+});

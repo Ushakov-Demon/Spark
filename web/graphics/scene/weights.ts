@@ -1,9 +1,25 @@
+import { massText } from '../../../src/experiments/pulley/shared.js';
+import type { Locale } from '../../../src/knowledge/i18n.js';
 import { Channel, type ProcedureStep } from '../../motion.js';
+import { weightsSvg } from './kit.js';
 
 /**
  * A set of weights on a balance's pan, for any scene with one: how they stand on the pan (`weightsOnPan`) and how they
- * are put there one by one (`placingWeights`).
+ * are put there one by one (`placingWeights`); and a load of any mass on a hook (`loadSvg`).
  */
+
+const hundreds = (mass: number): number | null => {
+  const n = Math.round(mass / 0.1);
+  return n >= 1 && n <= 10 && Math.abs(mass - n * 0.1) < 1e-9 ? n : null;
+};
+/** How tall a load on a hook is drawn. */
+export const loadHeight = (mass: number): number => (hundreds(mass) ?? 3) * 10;
+/** A load on a hook, its top at (x, top): 100 g weights for whole hundreds of grams up to a kilogram, else a crate with its mass. */
+export function loadSvg(x: number, top: number, mass: number, locale: Locale, width = 28): string {
+  const n = hundreds(mass);
+  if (n !== null) return weightsSvg(x, top, n, width, 10);
+  return `<rect x="${x - 22}" y="${top}" width="44" height="30" rx="2" style="fill:#9a6b33;stroke:#5e3f1a;stroke-width:1.5"/><text class="bench-reading" x="${x}" y="${top + 19}" text-anchor="middle">${massText(mass, locale)}</text>`;
+}
 
 /** How far a row of weights reaches each way from the pan's middle. */
 const PAN_ROW_HALF = 30;
