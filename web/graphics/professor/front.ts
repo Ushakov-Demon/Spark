@@ -84,6 +84,11 @@ export function professorSvg(mood: Mood = 'neutral', size = 220, held: Held = 'f
     ? `<path d="M62,184 q-14,-10 22,-34" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M62,184 q-14,-10 22,-34" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="84" cy="150" r="8" fill="${skin}"/>`
     : `<path d="M62,182 q-22,36 -18,78" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round" fill="none"/><path d="M62,182 q-22,36 -18,78" stroke="${coat}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="44" cy="262" r="8" fill="${skin}"/>`;
 
+  // The flyswatter, its handle in the hand at (176, 160): far longer than the pocket it lives in, as it should be.
+  const swatter = `<path d="M176,168 V84" stroke="#b5651d" stroke-width="5" stroke-linecap="round"/>
+    <rect x="152" y="30" width="48" height="56" rx="8" fill="#39b36b" stroke="#1e6b3d" stroke-width="3"/>
+    <path d="M164,32 V84 M176,32 V84 M188,32 V84 M154,44 H198 M154,58 H198 M154,72 H198" stroke="#1e6b3d" stroke-width="1.5"/>`;
+
   // Parts are grouped (legs, hands, head, eyes, glasses, mouth) so the idle scenes can move them;
   // closed eyes, a yawning mouth, "z-z-z" and a flying piece of chalk wait hidden until needed.
   return `<svg class="prof-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="${size}" height="${(size * 3) / 2}" role="img" aria-label="Professor (${mood})">
@@ -136,6 +141,23 @@ export function professorSvg(mood: Mood = 'neutral', size = 220, held: Held = 'f
     <circle cx="93" cy="160" r="8" fill="${skin}"/>
   </g>
   <g class="p-hand-l">${thinkingHand}</g>
+  <!-- the flyswatter coming out of the breast pocket: a viewport ending at the pocket's edge hides what is still inside -->
+  <svg x="-400" y="-300" width="1000" height="497" viewBox="-400 -300 1000 497"><g transform="translate(-50.7 38.6)"><g class="p-pull" opacity="0">${swatter}</g></g></svg>
+  <!-- the arm that swings it: shoulder and elbow turn, the swatter stays upright at the wrist while the hand is at the pocket -->
+  <g class="p-swing" opacity="0"><g class="p-arm-up">
+    <path d="M138,184 L176,204" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round"/><path d="M138,184 L176,204" stroke="${coat}" stroke-width="18" stroke-linecap="round"/>
+    <g class="p-arm-fore">
+      <g class="p-swatter" opacity="0">${swatter}</g>
+      <path d="M176,204 V160" stroke="#9aa0a6" stroke-width="22" stroke-linecap="round"/><path d="M176,204 V160" stroke="${coat}" stroke-width="18" stroke-linecap="round"/>
+      <circle cx="176" cy="160" r="8" fill="${skin}"/>
+    </g>
+  </g></g>
+  <!-- a fly, moved about from the corner of the view box -->
+  <g class="p-fly" opacity="0"><g class="p-fly-body">
+    <ellipse class="p-fly-wing" cx="-9" cy="-9" rx="7" ry="13" transform="rotate(-30 -9 -9)" fill="#eef5fa" stroke="#6b7a86" stroke-width="1"/>
+    <ellipse class="p-fly-wing" cx="9" cy="-9" rx="7" ry="13" transform="rotate(30 9 -9)" fill="#eef5fa" stroke="#6b7a86" stroke-width="1"/>
+    <g fill="#23262b" stroke="#f4f1e6" stroke-width="1.6"><ellipse cx="0" cy="1" rx="7" ry="9"/><circle cx="0" cy="9" r="5.5"/></g><circle cx="-3.4" cy="10" r="2.2" fill="#e74c3c"/><circle cx="3.4" cy="10" r="2.2" fill="#e74c3c"/>
+  </g></g>
   <g class="p-zzz" opacity="0" fill="#5b8cff" font-family="Georgia, serif" font-weight="700"><text x="140" y="70" font-size="16">z</text><text x="152" y="52" font-size="20">z</text><text x="166" y="30" font-size="25">Z</text></g>
 </svg>`;
 }

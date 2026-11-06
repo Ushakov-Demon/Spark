@@ -165,6 +165,7 @@ export interface UiText {
     chalk: (idea: string) => readonly string[];
     tap: readonly string[];
     coffee: readonly string[];
+    fly: readonly string[];
   };
   /** Looking at a clean board for a while: over the shoulder, then turned round, then a hint. */
   emptyBoard: readonly string[];
@@ -493,6 +494,7 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   chalk: (idea) => [tl(lang, 'ui-idle-chalk'), `…${idea.charAt(0).toLowerCase()}${idea.slice(1)}`, tl(lang, 'ui-idle-chalk-2')],
   tap: [tl(lang, 'ui-idle-tap'), tl(lang, 'ui-idle-tap-2')],
   coffee: [tl(lang, 'ui-idle-coffee'), tl(lang, 'ui-idle-coffee-2'), tl(lang, 'ui-idle-coffee-3')],
+  fly: [tl(lang, 'ui-idle-fly'), tl(lang, 'ui-idle-fly-2'), tl(lang, 'ui-idle-fly-3'), tl(lang, 'ui-idle-fly-4'), tl(lang, 'ui-idle-fly-5'), tl(lang, 'ui-idle-fly-6')],
 },
   emptyBoard: [tl(lang, 'ui-empty-board'), tl(lang, 'ui-empty-board-2'), tl(lang, 'ui-empty-board-3')],
   byTheWay: {

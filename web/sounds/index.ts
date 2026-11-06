@@ -2,7 +2,7 @@
  * Sounds of the lab, synthesized in the browser (Web Audio) — no sound files.
  * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down,
  * a stopwatch's «пік», a ball rolling and hitting a stop, the wind, a camera's shutter and a stroboscope's flashes,
- * a windlass creaking, a block dragged along a table, a weight landing.
+ * a windlass creaking, a block dragged along a table, a weight landing, a body going into water and its bubbles.
  * Off by the 🔇 button (remembered); browsers allow sound only after a click
  * or a key, which is always how these happen.
  */
@@ -165,12 +165,29 @@ export function beep(): void {
   o.stop(t + 0.12);
 }
 
+/** Two seconds of noise, round and round. */
+function noiseLoop(a: AudioContext): AudioBufferSourceNode {
+  const buf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const source = a.createBufferSource();
+  source.buffer = buf;
+  source.loop = true;
+  return source;
+}
+/** A raw tone, rich in overtones. */
+function sawTone(a: AudioContext): OscillatorNode {
+  const o = a.createOscillator();
+  o.type = 'sawtooth';
+  return o;
+}
+
 /**
  * A noise that lasts while something moves: called on every frame with how it sounds now. No frame for `gap` ms (the
  * thing has stopped, or the motion was cut short), and it dies away by itself.
  */
-function sustained(type: BiquadFilterType, gap: number) {
-  let now: { readonly source: AudioBufferSourceNode; readonly tone: BiquadFilterNode; readonly level: GainNode; readonly shake: OscillatorNode; quiet: number } | null = null;
+function sustained(type: BiquadFilterType, gap: number, pitched = false) {
+  let now: { readonly source: AudioScheduledSourceNode; readonly tone: BiquadFilterNode; readonly level: GainNode; readonly shake: OscillatorNode; quiet: number } | null = null;
   const end = () => {
     const r = now;
     now = null;
@@ -180,17 +197,12 @@ function sustained(type: BiquadFilterType, gap: number) {
     r.source.stop(t + gap / 500);
     r.shake.stop(t + gap / 500);
   };
-  /** `hz` — its pitch; `volume` — how loud; `flutter` — how fast it wavers, Hz. */
-  return (hz: number, volume: number, flutter: number): void => {
+  /** `hz` — its pitch (of the filter); `volume` — how loud; `flutter` — how fast it wavers, Hz; `note` — the tone itself, when pitched. */
+  return (hz: number, volume: number, flutter: number, note = 0): void => {
     const a = audio();
     if (!a) return;
     if (!now) {
-      const buf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-      const source = a.createBufferSource();
-      source.buffer = buf;
-      source.loop = true;
+      const source = pitched ? sawTone(a) : noiseLoop(a);
       const tone = a.createBiquadFilter();
       tone.type = type;
       const wavering = a.createGain();
@@ -208,6 +220,7 @@ function sustained(type: BiquadFilterType, gap: number) {
     }
     const t = a.currentTime;
     now.tone.frequency.setTargetAtTime(hz, t, 0.05);
+    if (now.source instanceof OscillatorNode) now.source.frequency.setTargetAtTime(note, t, 0.05);
     now.shake.frequency.setTargetAtTime(flutter, t, 0.05);
     now.level.gain.setTargetAtTime(volume, t, 0.05);
     window.clearTimeout(now.quiet);
@@ -226,6 +239,31 @@ export const scraping = (speed: number): void => scrapeNoise(700 + 500 * speed, 
 const windNoise = sustained('bandpass', 400);
 /** The wind: a hollow rush that swells slowly, higher and louder the stronger it blows. Every frame it blows, `strength` from 0 to 1. */
 export const blowing = (strength: number): void => windNoise(350 + 550 * strength, EVENT_LEVEL * (0.5 + 1.1 * strength), 0.4 + 0.5 * strength);
+
+const flyTone = sustained('bandpass', 150, true);
+/** A fly: a thin rasping tone that never holds still, higher and louder the nearer it is. Every frame it flies, `near` from 0 to 1. */
+export const buzzing = (near: number): void => flyTone(1500 + 500 * near, EVENT_LEVEL * (0.15 + 0.85 * near), 9, 165 + 55 * near + 14 * Math.sin(performance.now() / 170));
+
+/** Something long and light cutting the air: a rush of noise that rises and falls in a moment. */
+export function swish(): void {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime;
+  const source = noiseLoop(a);
+  const tone = a.createBiquadFilter();
+  tone.type = 'bandpass';
+  tone.Q.value = 1.5;
+  tone.frequency.setValueAtTime(500, t);
+  tone.frequency.exponentialRampToValueAtTime(2600, t + 0.09);
+  tone.frequency.exponentialRampToValueAtTime(700, t + 0.2);
+  const g = a.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(EVENT_LEVEL * 2, t + 0.08);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+  source.connect(tone).connect(g).connect(a.destination);
+  source.start(t);
+  source.stop(t + 0.25);
+}
 
 /** One creak of old wood and rope: quick stick-slip pulses that speed up through a narrow band, a little different each time. */
 function creak(): void {
@@ -338,6 +376,38 @@ export function clack(): void {
 
 /** A ball falling into the sea: a big, low «бульк». */
 export const splash = (): void => plop(1.8, EVENT_LEVEL);
+
+/** Bubbles coming up after something sank: a few quick rising «буль», uneven in pitch and in time. */
+export function bubbling(count = 5): void {
+  const a = audio();
+  if (!a) return;
+  const out = a.createGain();
+  out.gain.value = EVENT_LEVEL * 1.6;
+  out.connect(a.destination);
+  let t = a.currentTime + 0.1;
+  for (let i = 0; i < count; i++) {
+    const hz = 420 + Math.random() * 500;
+    const len = 0.05 + Math.random() * 0.04;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(hz, t);
+    o.frequency.exponentialRampToValueAtTime(hz * 1.9, t + len);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(1 - i / (count + 2), t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + len + 0.02);
+    t += 0.07 + Math.random() * 0.09;
+  }
+}
+
+/** A body going into water: a «бульк», its bubbles after it. */
+export function plunge(size = 1): void {
+  plop(size, EVENT_LEVEL * 2);
+  bubbling();
+}
 
 /** A ball falling on land: a dull «тук». */
 export function thud(): void {

@@ -4,6 +4,7 @@ import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js'
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, PLASTICINE, STEEL } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { plunge, thud } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** The aquarium: its water's surface, 8 units to the centimetre down from it; the marks at 5 and 25 cm. */
@@ -11,13 +12,20 @@ const DRAG_TOP = 62;
 const DRAG_K = 800;
 const DRAG_X = 508;
 
+/** How much the ball flattens landing: hard through the air, hardly at all at the slow pace it has in water. */
+const LANDED: Readonly<Record<'water' | 'air', number>> = { water: 0.25, air: 1 };
+/** Flattened fully, it is so much lower and wider (about the same plasticine); how long that takes, s of the slowed clock. */
+const FLAT = 0.42;
+const WIDE = 0.28;
+const SQUASH_TIME = 0.09;
+
 /** The drag: the body played slowed DRAG_SLOW times, falling as the model has it; the frames counted between the marks. */
 const DRAG_SLOW = 2;
 /**
  * The drag: the plasticine body (its form) let go in the aquarium's water or in the air; `at` — how far it has
  * fallen from where it was let go (m); `count` — the frames counted between the marks so far; `read` — the result.
  */
-export type DragView = { readonly shape: 'ball' | 'cube' | 'plate'; readonly medium: 'water' | 'air'; readonly at: number; readonly size: number; readonly count?: string; readonly read?: string; readonly slow?: string; readonly moving?: boolean; readonly air: string };
+export type DragView = { readonly shape: 'ball' | 'cube' | 'plate'; readonly medium: 'water' | 'air'; readonly at: number; readonly size: number; readonly count?: string; readonly read?: string; readonly slow?: string; readonly moving?: boolean; readonly air: string; /** The ball flattened where it landed, 0…1 (plasticine stays as it was hit). */ readonly squash?: number };
 
 function view({ last, command, plan, locale }: SceneContext): DragView {
   const r = last ? readingsOf([last])[0]?.record : undefined;
@@ -27,7 +35,7 @@ function view({ last, command, plan, locale }: SceneContext): DragView {
   const cmd = dc ?? (next?.kind === 'bench' ? (next.command as unknown as Drag) : { shape: 'ball' as const, medium: 'water' as const });
   const frames = dc && r ? (r.inputs?.['frames'] ?? 0) : null;
   const air = tl(locale, 'drag-form-view-air');
-  return { shape: cmd.shape, medium: cmd.medium, size: dragBody(cmd.shape).across, at: frames !== null ? 1 : 0, air, ...(frames !== null ? { count: String(frames), read: `${framesText(frames, locale)} ≈ ${formatMeasured('time', r!.value, 0.01, locale)}`, slow: `${tl(locale, 'drag-form-view-slow')} ×${DRAG_SLOW}` } : {}) };
+  return { shape: cmd.shape, medium: cmd.medium, size: dragBody(cmd.shape).across, at: frames !== null ? 1 : 0, air, ...(frames !== null && cmd.shape === 'ball' ? { squash: LANDED[cmd.medium] } : {}), ...(frames !== null ? { count: String(frames), read: `${framesText(frames, locale)} ≈ ${formatMeasured('time', r!.value, 0.01, locale)}`, slow: `${tl(locale, 'drag-form-view-slow')} ×${DRAG_SLOW}` } : {}) };
 }
 
 /**
@@ -45,7 +53,9 @@ function dragSvg(d: DragView): string {
   const marks = `<path d="M${x0 - 10},${m1} h${w + 20} M${x0 - 10},${m2} h${w + 20}" style="stroke:#c0392b;stroke-width:1.5;stroke-dasharray:5 3"/><text class="bench-label" x="${x0 - 14}" y="${m1 + 4}" text-anchor="end">0</text><text class="bench-label" x="${x0 - 14}" y="${m2 + 4}" text-anchor="end">20 см</text>`;
   const px = d.size * 100 * 8;
   const y = Math.min(DRAG_TOP + d.at * DRAG_K, bottom - (d.shape === 'plate' ? 2 : px / 2));
-  const body = d.shape === 'ball' ? `<circle cx="${DRAG_X}" cy="${y}" r="${px / 2}" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : d.shape === 'cube' ? `<rect x="${DRAG_X - px / 2}" y="${y - px / 2}" width="${px}" height="${px}" rx="1.5" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : `<rect x="${DRAG_X - px / 2}" y="${y - 2}" width="${px}" height="4" rx="1" style="fill:${PLASTICINE};stroke:#8a3a12"/>`;
+  const flat = d.squash ?? 0;
+  const ry = (px / 2) * (1 - FLAT * flat);
+  const body = d.shape === 'ball' ? `<ellipse cx="${DRAG_X}" cy="${flat ? bottom - ry : y}" rx="${(px / 2) * (1 + WIDE * flat)}" ry="${ry}" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : d.shape === 'cube' ? `<rect x="${DRAG_X - px / 2}" y="${y - px / 2}" width="${px}" height="${px}" rx="1.5" style="fill:${PLASTICINE};stroke:#8a3a12"/>` : `<rect x="${DRAG_X - px / 2}" y="${y - 2}" width="${px}" height="4" rx="1" style="fill:${PLASTICINE};stroke:#8a3a12"/>`;
   // The phone on a stand beside the aquarium, its lens to the marks; the count of frames on its screen.
   const px0 = x0 + w + 14;
   const phone = `<rect x="${px0}" y="${m1 + 30}" width="34" height="62" rx="5" style="fill:#2b2f36"/><rect x="${px0 + 3}" y="${m1 + 36}" width="28" height="48" rx="2" style="fill:#cfe3f3"/><circle cx="${px0 + 17}" cy="${m1 + 33}" r="1.6" style="fill:#9aa"/><path d="M${px0 + 17},${m1 + 92} V${bottom + 6}" style="stroke:${STEEL};stroke-width:3"/>`;
@@ -59,18 +69,31 @@ function dragRun(next: DragView, draw: (v: DragView) => void): Motion | null {
   const d = next;
   if (!d.read) return null;
   const f = dragFall(d.shape, d.medium);
-  const end = f.timeTo(0.3);
+  // To the aquarium's floor (where the body stops), and a moment more for the ball to flatten.
+  const px = d.size * 100 * 8;
+  const floor = (TABLE - 6 - (d.shape === 'plate' ? 2 : px / 2) - DRAG_TOP) / DRAG_K;
+  const end = f.timeTo(floor);
+  const flatten = d.squash ?? 0;
   const t0 = f.timeTo(DRAG_START);
   const t1 = f.timeTo(DRAG_START + DRAG_TRACK);
-  const clock = new Channel(0, end, { kind: 'steady', speed: 1 / DRAG_SLOW }, 1e-5);
-  const { read: _r, count: _c, ...rest } = d;
+  const clock = new Channel(0, end + (flatten ? SQUASH_TIME : 0), { kind: 'steady', speed: 1 / DRAG_SLOW }, 1e-5);
+  const { read: _r, count: _c, squash: _s, ...rest } = d;
+  // Let go in the water it goes under at once; through the air it is heard when it lands.
+  let entered = false;
+  let landed = false;
   return {
     channels: [clock],
     frame: (done) => {
-      if (done) return draw(next);
+      if (!entered && d.medium === 'water') plunge(d.shape === 'plate' ? 1.3 : 1);
+      entered = true;
       const t = clock.value;
+      if (!landed && (done || t >= end)) {
+        landed = true;
+        if (d.medium === 'air') thud();
+      }
+      if (done) return draw(next);
       const frames = t < t0 ? 0 : Math.floor((Math.min(t, t1) - t0) * DRAG_FPS);
-      draw({ ...rest, at: f.at(t), moving: true, ...(t >= t0 ? { count: String(frames) } : {}) });
+      draw({ ...rest, at: f.at(Math.min(t, end)), moving: true, ...(t >= t0 ? { count: String(frames) } : {}), ...(t > end && flatten ? { squash: (flatten * (t - end)) / SQUASH_TIME } : {}) });
     },
   };
 }

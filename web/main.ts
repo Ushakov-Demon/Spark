@@ -149,7 +149,7 @@ import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
-import { babble, canSpeak, currentVoice, fizz, giggle, hum, hush, plop, setMusic, setSound, setVoice, soundOn, VOICE_IDS, type VoiceId } from './sounds/index.js';
+import { babble, buzzing, canSpeak, currentVoice, fizz, giggle, hum, hush, plop, setMusic, setSound, setVoice, soundOn, swish, VOICE_IDS, type VoiceId } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -644,12 +644,12 @@ function sendPower(v: number) {
 /**
  * When nobody touches anything for a while (and no experiment is running), the
  * Professor plays a little scene: paces, loses his glasses, yawns, dozes off,
- * tosses chalk, taps his foot. Any action of the user ends it at once.
+ * tosses chalk, taps his foot, goes after a fly. Any action of the user ends it at once.
  */
 // ?idle=3 in the address: start after 3 s (to see the scenes without waiting).
 const IDLE_START = (Number(new URLSearchParams(location.search).get('idle')) || 25) * 1000;
 interface IdleAct {
-  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap' | 'coffee' | 'bytheway' | 'empty-board';
+  readonly name: 'pace' | 'glasses' | 'yawn' | 'sleep' | 'chalk' | 'tap' | 'coffee' | 'fly' | 'bytheway' | 'empty-board';
   readonly mood: SceneView['professor']['mood'];
   readonly length: number; // ms, matches the CSS animation
   readonly lines: readonly string[];
@@ -663,7 +663,20 @@ const ACTS: readonly { name: Exclude<IdleAct['name'], 'bytheway' | 'empty-board'
   { name: 'chalk', mood: 'thinking', length: 7000 },
   { name: 'tap', mood: 'neutral', length: 6000 },
   { name: 'coffee', mood: 'neutral', length: 9000 },
+  { name: 'fly', mood: 'thinking', length: 16_000 },
 ];
+/** The fly scene by its animation's clock (parts of the scene): close by from, gone at; the swatter's two swings. */
+const FLY_NEAR = 0.12;
+const FLY_GONE = 0.78;
+const FLY_SWINGS = [0.523, 0.603];
+let flySwings = 0;
+/** Its sounds at `k` of the scene: every frame, like the buzz itself. */
+function flySounds(k: number) {
+  if (k < FLY_GONE) buzzing(Math.min(1, k / FLY_NEAR, (FLY_GONE - k) / FLY_NEAR));
+  const swung = FLY_SWINGS.filter((s) => s <= k).length;
+  if (swung > flySwings) swish();
+  flySwings = swung;
+}
 let lastActivity = performance.now();
 let nextActAt = lastActivity + IDLE_START;
 let idleAct: IdleAct | null = null;
@@ -805,6 +818,7 @@ function idleTick(now: number): boolean {
       nextActAt = now + IDLE_START + Math.random() * IDLE_START * 0.8;
       return true;
     }
+    if (idleAct.name === 'fly') flySounds(t / idleAct.length);
     const line = Math.min(idleAct.lines.length - 1, Math.floor((t / idleAct.length) * idleAct.lines.length));
     if (line === idleLine) return false;
     idleLine = line;
@@ -836,7 +850,8 @@ function idleTick(now: number): boolean {
     nextActAt = now + IDLE_START + Math.random() * IDLE_START * 0.8;
     return false;
   }
-  const pool = ACTS.filter((a) => a.name !== lastActName);
+  // (The fly is all motion: with none it would be only a buzz and words.)
+  const pool = ACTS.filter((a) => a.name !== lastActName && (a.name !== 'fly' || moving()));
   const a = pool[Math.floor(Math.random() * pool.length)]!;
   lastActName = a.name;
   const u = t();

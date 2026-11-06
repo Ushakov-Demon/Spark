@@ -6,6 +6,7 @@ import { PLAY_SECONDS } from '../../graphics/scene/bench-motion.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { stopwatchSvg } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { plunge } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /**
@@ -17,7 +18,7 @@ import { defineScene, type SceneContext } from '../types.js';
 const SINK_LEAD = 30 / 800;
 
 /** A body in a liquid: a bubble in the bottle or a ball in the cylinder; the liquid's colour; its marks (m from the zero one) and where the body is now (m past the zero mark; none — not let go yet); its size, m. */
-export type Sink = { readonly body: 'bubble' | 'ball'; readonly color: string; readonly marks: readonly number[]; readonly at?: number; readonly diameter: number; readonly label?: string; readonly speed?: number; readonly turn?: number };
+export type Sink = { readonly body: 'bubble' | 'ball'; /** Thicker than water: it swallows the ball with a lower sound. */ readonly thick?: boolean; readonly color: string; readonly marks: readonly number[]; readonly at?: number; readonly diameter: number; readonly label?: string; readonly speed?: number; readonly turn?: number };
 /** A body in a liquid, the stopwatch and the run; the bottle carried along the table, when it is (relative-motion). */
 export type SinkView = { readonly sink: Sink; readonly stopwatch?: { readonly display: string; readonly fast?: number }; readonly run?: { readonly seconds: number }; readonly carry?: { readonly speed: number; readonly shift: number; readonly path?: string; readonly rise?: string } };
 
@@ -29,7 +30,7 @@ function view({ last, command, plan, locale }: SceneContext): SinkView {
   const lap = laps[laps.length - 1];
   const color = { 'washing-up': 'rgba(120,200,120,0.55)', glycerol: 'rgba(225,235,245,0.55)', 'sunflower-oil': 'rgba(240,200,80,0.6)', water: 'rgba(120,170,230,0.5)' }[cmd?.liquid ?? 'water'] ?? 'rgba(120,170,230,0.5)';
   const label = cmd ? (cmd.body === 'bubble' ? `${tl(locale, 'bodies-in-liquids-view-label')} ≈ ${String(cmd.diameter * 1000).replace('.', tl(locale, 'bodies-in-liquids-view-label-2'))} ${tl(locale, 'unit-sym-mm')}` : tr(localized((l: Locale) => sinkLiquidName(cmd.liquid as SinkLiquid)[l]), locale)) : undefined;
-  return { ...(lap ? { stopwatch: { display: formatMeasured('time', lap.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: lap.value ?? 0 } } : {}), sink: { body: cmd?.body ?? 'ball', color, marks: cmd?.marks ?? [], diameter: cmd?.diameter ?? 0.002, ...(lap ? { at: lap.inputs?.['mark'] ?? 0, speed: lap.inputs?.['speed'] ?? 0 } : {}), ...(label ? { label } : {}) } };
+  return { ...(lap ? { stopwatch: { display: formatMeasured('time', lap.value, 0.01, locale).replace(/ (с|s)$/, '') }, run: { seconds: lap.value ?? 0 } } : {}), sink: { body: cmd?.body ?? 'ball', thick: (cmd?.liquid ?? 'water') !== 'water', color, marks: cmd?.marks ?? [], diameter: cmd?.diameter ?? 0.002, ...(lap ? { at: lap.inputs?.['mark'] ?? 0, speed: lap.inputs?.['speed'] ?? 0 } : {}), ...(label ? { label } : {}) } };
 }
 
 export function sinkSvg(s: Sink): string {
@@ -75,10 +76,16 @@ export function through<V extends SinkView>(next: V, run: NonNullable<SinkView['
   const flip = s.body === 'bubble' ? 1.2 * fast : 0;
   const lead = SINK_LEAD / v;
   const clock = new Channel(0, flip + lead + run.seconds, { kind: 'steady', speed: fast }, 1e-6);
+  // The ball goes in with a «бульк», lower in a thick liquid; a bubble in a bottle makes no sound.
+  let entered = s.body !== 'ball';
   return {
     channels: [clock],
     frame: (done) => {
       const u = clock.value;
+      if (!entered && u >= flip) {
+        entered = true;
+        plunge(s.thick ? 1.4 : 1);
+      }
       if (!done && u < flip) return draw({ ...next, stopwatch: { display: lcd(0), fast }, sink: { ...s, turn: 1 - u / flip }, ...(next.carry ? { carry: { speed: next.carry.speed, shift: 0 } } : {}) } as V);
       const t = u - flip - lead;
       const sink = { ...s, at: done ? (s.at ?? 0) : t < 0 ? -SINK_LEAD + (u - flip) * v : t * v };
