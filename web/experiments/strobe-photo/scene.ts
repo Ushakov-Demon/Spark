@@ -3,6 +3,7 @@ import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
+import { flash, shutter } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /**
@@ -67,18 +68,40 @@ function strobeSvg(st: StrobeView): string {
   return `${print}${track}${imgs}${flash}${ruler}${gaps}`;
 }
 
-/** A stroboscopic photo: the flashes leave the ball's images one by one (four a second, played at half that), then the ruler is put to it. */
+/** How long the shutter stands open before the first flash, in flashes. */
+const SHUTTER_LEAD = 0.4;
+
+/**
+ * A stroboscopic photo: the shutter opens, the flashes leave the ball's images one by one (four a second, played at
+ * half that), the shutter closes; then the ruler is put to it.
+ */
 function strobeRun(next: StrobeView, draw: (v: StrobeView) => void): Motion | null {
   const st = next;
   if (!st.gaps) return null;
   const n = st.at.length;
-  const k = new Channel(0, n + 0.6, { kind: 'steady', speed: 2 }, 0.001);
+  const k = new Channel(-SHUTTER_LEAD, n + 0.6, { kind: 'steady', speed: 2 }, 0.001);
+  // What has been heard so far: the shutter opening, the flashes, the shutter closing.
+  let opened = false;
+  let flashed = 0;
+  let closed = false;
   return {
     channels: [k],
     frame: (done) => {
+      if (!opened) {
+        opened = true;
+        shutter();
+      }
+      if (flashed < n && k.value >= flashed) {
+        flashed++;
+        flash();
+      }
+      if (!closed && k.value >= n) {
+        closed = true;
+        shutter();
+      }
       if (done || k.value >= n + 0.5) return draw(next);
       const { gaps: _g, ...rest } = st;
-      draw({ ...rest, shown: k.value });
+      draw({ ...rest, shown: Math.max(0, k.value) });
     },
   };
 }

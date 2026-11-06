@@ -6,4 +6,4 @@ wind-speed-question = A soap bubble is so light that it flies with the air: its 
 wind-speed-choices = 2–3 metres a second
 wind-speed-choices-2 = About half a metre a second
 wind-speed-choices-3 = About 10 metres a second
-wind-speed-setup = A yard on three windy days: two marks 6 m apart along the wind (a tape measure), soap bubbles, a stopwatch
+wind-speed-setup = A yard on three windy days: two marks 6 m apart along the wind (a tape measure), a wind vane, soap bubbles, a stopwatch
