@@ -474,7 +474,8 @@ describe('ready-made experiments with values to change', () => {
   it('contact and non-contact forces: magnet, comb and gravity act without touching, friction does not', () => {
     const { answer } = run(PRESETS.find((x) => x.id === 'contact-forces')!);
     expect(answer.correct).toBe('field');
-    expect(answer.text.uk).toContain('тертя об стіл немає');
+    expect(answer.text.uk).toMatch(/магніт і кулька — F = [\d,]+ мН/);
+    expect(answer.text.uk).toContain('над столом F = 0,0 Н');
   }, 60_000);
 
   it('inertia: the faster the card goes, the less the coin moves; snatched, it drops into the glass', () => {

@@ -8,6 +8,8 @@ import { defineScene, type SceneContext } from '../types.js';
 /** The coin on the card: 12 units to the centimetre; the glass's axis. */
 const COIN_K = 1200;
 const COIN_X = 400;
+/** Half the width kept for the bench, units of the drawing: with the card pulled aside it comes to the same size. */
+const COIN_ROOM = 180;
 /**
  * Inertia, frame by frame: the card goes at its speed; slipping, the coin is dragged at μ·g until the card's edge
  * leaves it (t = l / v), then falls (g) — to the glass's bottom, or onto the rim and off it beside the glass. Drawn
@@ -59,7 +61,9 @@ function coinSvg(c: Coin): string {
   const coin = `<g transform="rotate(${c.tilt} ${cx} ${cy})"><rect x="${cx - 0.013 * k}" y="${cy - 2}" width="${0.026 * k}" height="4" rx="1.5" style="fill:#d9b44a;stroke:#8a6a1f"/></g>`;
   const slow = c.slow ? `<text class="bench-label" x="${COIN_X}" y="${mouth - 70}" text-anchor="middle">${c.slow}</text>` : '';
   const read = c.read ? `<text class="bench-reading" x="${COIN_X}" y="${mouth - 40}" text-anchor="middle">${c.read}</text>` : '';
-  return `${glass}${card}${coin}${slow}${read}`;
+  // Unseen: the room the card and the labels will take, so that the first look is drawn to the size of the later ones.
+  const room = `<rect x="${COIN_X - COIN_ROOM}" y="${mouth - 84}" width="${2 * COIN_ROOM}" height="84" style="fill:none"/>`;
+  return `${room}${glass}${card}${coin}${slow}${read}`;
 }
 
 function coinRun(next: CoinView, run: NonNullable<CoinView['coinRun']>, draw: (v: CoinView) => void): Motion {

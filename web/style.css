@@ -1286,5 +1286,7 @@ html.live-dragging, html.live-dragging * { cursor: var(--cursor-grabbing) !impor
 /* The wind: the vane's windmill turning, streaks going by (their timing is set where they are drawn). */
 .wind-mill { animation: wind-turn linear infinite; transform-box: fill-box; transform-origin: center; }
 .wind-streak { animation: wind-pass linear infinite; }
+.field-flow { animation: field-flow linear infinite; }
+@keyframes field-flow { to { stroke-dashoffset: -24; } }
 @keyframes wind-turn { to { transform: rotate(360deg); } }
 @keyframes wind-pass { 0% { transform: translateX(-50px); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateX(150px); opacity: 0; } }

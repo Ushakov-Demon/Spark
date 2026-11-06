@@ -5,6 +5,7 @@ import { cite, sv } from '../../components/sourced.js';
 import { COMPONENTS } from '../../components/index.js';
 import { peakEmf, type CoilAndMagnet } from '../../domains/electrical/induction.js';
 import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
+import { BAR_MAGNET } from '../../scenarios/bench-kit.js';
 import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 
@@ -16,12 +17,6 @@ import type { SourcedValue } from '../../knowledge/types.js';
  * is taken as quick enough to follow; the coil's own inductance is left out (L/R ≪ the motion's time).
  */
 
-/** The ferrite bar magnet: Y30-like remanence; 10 cm long, its 2 × 1 cm section taken as a circle of the same area. */
-export const BAR_MAGNET: { readonly remanence: SourcedValue; readonly radius: SourcedValue; readonly length: SourcedValue } = {
-  remanence: sv(0.38, 'T', 'sintered ferrite, grade Y30', 'cross-checked', 0.05, [cite('stanford-magnets-ferrite', 'Y30: Br 370–400 mT', 'room temperature', 0.38), cite('magnetexpert-ferrite-grades', 'Y30: Br 370–400 mT', 'room temperature', 0.38)], 'Which grade a school magnet is, is not known: ferrites go from about 0.2 to 0.44 T.'),
-  radius: sv(0.008, 'm', '2 × 1 cm section, as a circle of the same area', 'estimate', 0.2, [cite('spark', 'estimate', 'school bar magnets are about 2 × 1 × 10 cm', 0.008)], 'Estimate.'),
-  length: sv(0.1, 'm', 'a school bar magnet', 'estimate', 0.1, [cite('spark', 'estimate', 'school bar magnets are about 10 cm long', 0.1)], 'Estimate.'),
-};
 /** The coil: its turns 2 cm from the axis, 4 cm long, of 0.3 mm copper wire. */
 export const INDUCT_COIL = {
   radius: sv(0.02, 'm', 'the coil’s mean radius', 'estimate', 0.2, [cite('spark', 'estimate', 'a coil a bar magnet passes through freely', 0.02)], 'Estimate.'),

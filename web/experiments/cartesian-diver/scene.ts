@@ -1,6 +1,7 @@
 import { t as tl } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
+import { labBalanceSvg } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
 import { defineScene, type SceneContext } from '../types.js';
 
@@ -45,11 +46,7 @@ function balanceSvg(mass: string | undefined, weighed: boolean): string {
   const x = 400;
   const top = 286;
   const [dx, dy] = weighed ? [x, top - 16] : [x + 120, TABLE - 8];
-  return `<rect class="scale-body lab" x="${x - 60}" y="${top}" width="120" height="${TABLE - top}" rx="6"/>` +
-    `<rect class="scale-stem" x="${x - 4}" y="${top - 6}" width="8" height="6"/><ellipse class="scale-pan" cx="${x}" cy="${top - 6}" rx="40" ry="5"/>` +
-    `<g transform="rotate(-90 ${dx} ${dy})">${diverSvg(dx, dy - DIVER_H / 2, 0)}</g>` +
-    `<rect class="scale-lcd" x="${x - 36}" y="${TABLE - 24}" width="72" height="16" rx="2"/>` +
-    `<text class="scale-text" x="${x}" y="${TABLE - 12.5}" text-anchor="middle">${mass ?? ''}</text>`;
+  return `${labBalanceSvg(x, top, mass ?? '')}<g transform="rotate(-90 ${dx} ${dy})">${diverSvg(dx, dy - DIVER_H / 2, 0)}</g>`;
 }
 
 /** The 10 mL cylinder (a millilitre — 14 px), the diver held under on a wire. */

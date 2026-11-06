@@ -2,7 +2,7 @@
  * Sounds of the lab, synthesized in the browser (Web Audio) — no sound files.
  * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down,
  * a stopwatch's «пік», a ball rolling and hitting a stop, the wind, a camera's shutter and a stroboscope's flashes,
- * a windlass creaking.
+ * a windlass creaking, a block dragged along a table.
  * Off by the 🔇 button (remembered); browsers allow sound only after a click
  * or a key, which is always how these happen.
  */
@@ -218,6 +218,10 @@ function sustained(type: BiquadFilterType, gap: number) {
 const rollNoise = sustained('lowpass', 120);
 /** A ball rolling down a groove: dull noise with a fast flutter, higher and louder the faster it goes. Every frame of its motion, `speed` from 0 to 1. */
 export const rolling = (speed: number): void => rollNoise(300 + 900 * speed, EVENT_LEVEL * (0.5 + 0.7 * speed), 10 + 30 * speed);
+
+const scrapeNoise = sustained('bandpass', 120);
+/** A block dragged along a table: a dry rasp of wood on wood, with a quick shudder. Every frame of its motion, `speed` from 0 to 1. */
+export const scraping = (speed: number): void => scrapeNoise(700 + 500 * speed, EVENT_LEVEL * (0.7 + 0.5 * speed), 18 + 14 * speed);
 
 const windNoise = sustained('bandpass', 400);
 /** The wind: a hollow rush that swells slowly, higher and louder the stronger it blows. Every frame it blows, `strength` from 0 to 1. */

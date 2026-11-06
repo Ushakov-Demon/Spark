@@ -52,6 +52,11 @@ export function forceGaugeSvg(x: number, y: number, display: string): string {
   return `<circle cx="${x}" cy="${y + 4}" r="5" style="fill:none;stroke:${DARK};stroke-width:2.5"/><rect x="${x - 17}" y="${y + 9}" width="34" height="56" rx="6" style="fill:#e6b422;stroke:#8a6a10;stroke-width:1.5"/><rect x="${x - 13}" y="${y + 16}" width="26" height="14" rx="2" style="fill:#c9d8b6;stroke:#6f7f5c"/><path d="M${x},${y + 65} v8 q0,7 -6,7" style="fill:none;stroke:${DARK};stroke-width:2.5"/><text class="dyn-text" x="${x + 22}" y="${y + 40}">${display}</text>`;
 }
 
+/** Electronic lab scales on the table at x, their pan at `top` − 6: the body, the pan and the display (what it shows). */
+export function labBalanceSvg(x: number, top: number, display: string): string {
+  return `<rect class="scale-body lab" x="${x - 60}" y="${top}" width="120" height="${TABLE - top}" rx="6"/><rect class="scale-stem" x="${x - 4}" y="${top - 6}" width="8" height="6"/><ellipse class="scale-pan" cx="${x}" cy="${top - 6}" rx="40" ry="5"/><rect class="scale-lcd" x="${x - 36}" y="${TABLE - 24}" width="72" height="16" rx="2"/><text class="scale-text" x="${x}" y="${TABLE - 12.5}" text-anchor="middle">${display}</text>`;
+}
+
 /** A stopwatch standing on the table at x, its bottom just above it: its display (and, when the drawing is sped up, by how much). */
 export function stopwatchSvg(sw: { readonly display: string; readonly fast?: number }, x: number): string {
   const y = TABLE - 30;

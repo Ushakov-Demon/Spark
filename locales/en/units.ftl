@@ -3,6 +3,8 @@
 unit-km = { $value } km
 unit-sym-dot = {"."}
 unit-sym-N = N
+unit-sym-mN = mN
+unit-sym-uN = µN
 unit-sym-Pa = Pa
 unit-sym-m2 = m²
 unit-sym-kg = kg

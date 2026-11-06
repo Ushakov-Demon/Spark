@@ -702,6 +702,20 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'magnetexpert-neodymium-grades': source({
+    id: 'magnetexpert-neodymium-grades',
+    title: 'Magnet Expert, Magnetic properties of neodymium magnets: N35 — Br 1170–1220 mT, (BH)max 263–287 kJ/m³, up to 80 °C',
+    url: 'https://www.magnetexpert.com/magnetic-properties-of-neodymium-magnets-i694',
+    license: 'facts-only',
+    retrieved: '2026-11-06',
+  }),
+  'magnetika-neodymium-grades': source({
+    id: 'magnetika-neodymium-grades',
+    title: 'Magnetika, Neodymium magnet grades: N35 — Br 11.8–12.2 kG, (BH)max 33–36 MGOe, up to 80 °C',
+    url: 'https://www.magnetika.com.mx/en/productos/',
+    license: 'facts-only',
+    retrieved: '2026-11-06',
+  }),
   'magnetexpert-ferrite-grades': source({
     id: 'magnetexpert-ferrite-grades',
     title: 'Magnet Expert, Grades of ferrite magnets: Y30 — Br 370–400 mT',

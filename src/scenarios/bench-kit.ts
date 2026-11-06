@@ -34,6 +34,17 @@ export const blockMass = (): number => BENCH_BLOCK.edges[0] * BENCH_BLOCK.edges[
 export const SYRINGE_SMALL: SourcedValue = sv(0.012, 'm', '5 mL syringe, inside', 'estimate', 0.15, [cite('spark', 'estimate', 'a 5 mL syringe is about 12 mm wide inside', 0.012)], 'Estimate: the ruler measures it all the same.');
 export const SYRINGE_LARGE: SourcedValue = sv(0.026, 'm', '50 mL syringe, inside', 'estimate', 0.15, [cite('spark', 'estimate', 'a 50 mL syringe is about 26–29 mm wide inside', 0.026)], 'Estimate: the ruler measures it all the same.');
 
+/** The ferrite bar magnet: Y30-like remanence; 10 cm long, its 2 × 1 cm section taken as a circle of the same area. */
+export const BAR_MAGNET: { readonly remanence: SourcedValue; readonly radius: SourcedValue; readonly length: SourcedValue } = {
+  remanence: sv(0.38, 'T', 'sintered ferrite, grade Y30', 'cross-checked', 0.05, [cite('stanford-magnets-ferrite', 'Y30: Br 370–400 mT', 'room temperature', 0.38), cite('magnetexpert-ferrite-grades', 'Y30: Br 370–400 mT', 'room temperature', 0.38)], 'Which grade a school magnet is, is not known: ferrites go from about 0.2 to 0.44 T.'),
+  radius: sv(0.008, 'm', '2 × 1 cm section, as a circle of the same area', 'estimate', 0.2, [cite('spark', 'estimate', 'school bar magnets are about 2 × 1 × 10 cm', 0.008)], 'Estimate.'),
+  length: sv(0.1, 'm', 'a school bar magnet', 'estimate', 0.1, [cite('spark', 'estimate', 'school bar magnets are about 10 cm long', 0.1)], 'Estimate.'),
+};
+/** A neodymium magnet of grade N35, the weakest of the grades: its remanence (a bar of the same size as the ferrite one). */
+export const NEODYMIUM_REMANENCE: SourcedValue = sv(1.2, 'T', 'sintered NdFeB, grade N35', 'cross-checked', 0.05, [cite('magnetexpert-neodymium-grades', 'N35: Br 1170–1220 mT', 'room temperature', 1.2), cite('magnetika-neodymium-grades', 'N35: Br 11.8–12.2 kG', 'room temperature', 1.2)], 'Within a grade Br varies by a few per cent.');
+/** Office paper: mass of a square metre, from an A4 sheet of 80 g/m². */
+export const PAPER_AREAL: SourcedValue = sv(0.08, 'kg/m²', 'office paper, 80 gsm', 'single-source', 0.03, [cite('papersizes-weights', 'A4, 80 gsm: 5 g (A0 = 1 m² by ISO 216)', '—', 0.08)], 'Paper of 80 g/m² varies by a few per cent.');
+
 /** A pupil's ruler: millimetre divisions. */
 export const RULER_DIVISION = 0.001;
 export const ruler = (x: number) => Math.round(x / RULER_DIVISION) * RULER_DIVISION;

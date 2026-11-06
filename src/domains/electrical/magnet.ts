@@ -54,5 +54,44 @@ export function electromagnetField(e: Electromagnet, z: number): number {
   return coil + coilAxisField((mu - 1) * nI, e.core.length, e.radius, z);
 }
 
+/** A permanent bar magnet's field on its axis, `s` beyond its end: a rod magnetized along its axis, Br for μ₀·M. */
+export const barMagnetAxisField = (remanence: number, length: number, radius: number, s: number): number => coilAxisField(remanence / MU0, length, radius, s + length / 2);
+
+/**
+ * The pull of a bar magnet on a small iron ball on its axis, `gap` from its end to the ball's surface. The field
+ * magnetizes the ball: M = χ·H / (1 + χ/3), a sphere's demagnetizing factor being 1/3, so even a soft iron ball takes
+ * no more than 3·H. A moment m = M·V in a field that falls with distance is pulled by F = m·dB/ds. Holds while
+ * the ball is small beside the distance and far from saturation (B in the iron ≪ 1.5 T).
+ */
+export function barMagnetPullOnBall(remanence: number, length: number, radius: number, gap: number, ballRadius: number, mur: number): number {
+  const s = gap + ballRadius;
+  const B = (x: number) => barMagnetAxisField(remanence, length, radius, x);
+  const h = ballRadius / 100;
+  const gradient = (B(s + h) - B(s - h)) / (2 * h);
+  const susceptibility = mur - 1;
+  const moment = ((susceptibility / (1 + susceptibility / 3)) * (B(s) / MU0) * 4 * Math.PI * ballRadius ** 3) / 3;
+  return Math.abs(moment * gradient);
+}
+
+/**
+ * Which way a bar magnet's field points at (x, y) — the magnet upright, its middle at the origin, its north end up: a
+ * pole of many points on each end face, the lines leaving the north one and coming into the south one. A direction
+ * for drawing the field's lines, not a value in teslas.
+ */
+export function barMagnetFieldDirection(length: number, radius: number, x: number, y: number): readonly [number, number] {
+  let bx = 0;
+  let by = 0;
+  for (let i = -3; i <= 3; i++)
+    for (const [end, sign] of [[length / 2, 1], [-length / 2, -1]] as const) {
+      const dx = x - (i / 3) * radius;
+      const dy = y - end;
+      const r3 = Math.hypot(dx, dy) ** 3;
+      bx += (sign * dx) / r3;
+      by += (sign * dy) / r3;
+    }
+  const b = Math.hypot(bx, by);
+  return [bx / b, by / b];
+}
+
 /** A compass needle's turn from north when a field B across the Earth's horizontal one H acts on it, degrees. */
 export const compassDeflection = (b: number, h: number): number => (Math.atan2(b, h) * 180) / Math.PI;
