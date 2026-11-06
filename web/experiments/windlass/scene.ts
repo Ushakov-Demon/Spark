@@ -3,6 +3,7 @@ import { t } from '../../../src/knowledge/messages.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { CM, DARK, rulerSvg, standSvg, STEEL, THREAD, weightsSvg, WOOD_EDGE } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { cranking } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** The windlass's drawing: its axis, and the load's way down the ruler (6 units to the centimetre, as the other rulers). */
@@ -67,10 +68,12 @@ function winch(next: WinchView, draw: (v: WinchView) => void): Motion {
   // Let down — from the spool; turned up — from where the handle's turns started it (low on the ruler).
   const from = w.turned < 0 ? w.drop + Math.PI * w.d * -w.turned : 0;
   const k = new Channel(0, 1, { kind: 'steady', speed: 0.35 }, 0.001);
+  const crank = cranking();
   return {
     channels: [k],
     frame: (done) => {
       if (done) return draw(next);
+      crank(w.turned * k.value);
       const { read: _r, ...rest } = w;
       draw({ ...rest, drop: from + (w.drop - from) * k.value, turned: w.turned * k.value });
     },

@@ -1,7 +1,8 @@
 /**
  * Sounds of the lab, synthesized in the browser (Web Audio) — no sound files.
  * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down,
- * a stopwatch's «пік», a ball rolling and hitting a stop, the wind, a camera's shutter and a stroboscope's flashes.
+ * a stopwatch's «пік», a ball rolling and hitting a stop, the wind, a camera's shutter and a stroboscope's flashes,
+ * a windlass creaking.
  * Off by the 🔇 button (remembered); browsers allow sound only after a click
  * or a key, which is always how these happen.
  */
@@ -221,6 +222,51 @@ export const rolling = (speed: number): void => rollNoise(300 + 900 * speed, EVE
 const windNoise = sustained('bandpass', 400);
 /** The wind: a hollow rush that swells slowly, higher and louder the stronger it blows. Every frame it blows, `strength` from 0 to 1. */
 export const blowing = (strength: number): void => windNoise(350 + 550 * strength, EVENT_LEVEL * (0.5 + 1.1 * strength), 0.4 + 0.5 * strength);
+
+/** One creak of old wood and rope: quick stick-slip pulses that speed up through a narrow band, a little different each time. */
+function creak(): void {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime;
+  const k = 0.85 + Math.random() * 0.3;
+  const o = a.createOscillator();
+  const f = a.createBiquadFilter();
+  const g = a.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(48 * k, t);
+  o.frequency.linearRampToValueAtTime(92 * k, t + 0.22);
+  f.type = 'bandpass';
+  f.Q.value = 4;
+  f.frequency.setValueAtTime(800 * k, t);
+  f.frequency.linearRampToValueAtTime(1250 * k, t + 0.22);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(EVENT_LEVEL * 1.6, t + 0.06);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+  o.connect(f).connect(g).connect(a.destination);
+  o.start(t);
+  o.stop(t + 0.28);
+}
+
+const crankNoise = sustained('lowpass', 150);
+/** The least time between two creaks, ms. */
+const CREAK_GAP = 350;
+/**
+ * A well's windlass, a block: a low wooden rumble while it turns, and a creak now and then. Made for one motion; called on
+ * every frame with the turns so far.
+ */
+export function cranking(): (turns: number) => void {
+  let next = 0.15;
+  let heard = 0;
+  return (turns) => {
+    crankNoise(240, EVENT_LEVEL * 0.6, 7);
+    // (Turning fast, the creaks do not pile up on one another.)
+    const now = performance.now();
+    if (Math.abs(turns) < next || now - heard < CREAK_GAP) return;
+    creak();
+    heard = now;
+    next = Math.abs(turns) + 0.45 + Math.random() * 0.3;
+  };
+}
 
 /** A camera's shutter: a dry «клац», a click of noise over a small low knock. */
 export function shutter(): void {

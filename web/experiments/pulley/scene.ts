@@ -8,6 +8,7 @@ import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js'
 import { TABLE } from '../../graphics/scene/constants.js';
 import { dynamometerSvg, forceGaugeSvg, standSvg, weightsSvg } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { cranking } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /**
@@ -96,13 +97,24 @@ function svg(v: PulleyView): string {
   return `${stand}${rope(`M${left},${ARM + 6} V${wy} A13,13 0 0 0 ${right},${wy} V${y + 80}`)}${wheel(cx, wy)}<path d="M${cx},${wy + 13} V${top - 8}" style="stroke:#3a3f46;stroke-width:2"/>${load(cx)}${meter(right, y)}${reading}`;
 }
 
+/** How many times a block's wheel goes round in the lift, for its creaks. */
+const BLOCK_TURNS = 2.5;
+
 /** The load goes up (about 1.5 s) — and the instrument with it, as far as the rope says. */
 function motion(next: PulleyView, draw: (v: PulleyView) => void): Motion | null {
   if (!next.force) return null;
   const clock = new Channel(0, 1, { kind: 'steady', speed: 1 / 1.5 }, 1e-6);
   const { force: _f, rope: _r, ...still } = next;
   void _f, void _r;
-  return { channels: [clock], frame: (done) => draw(done ? next : { ...still, up: clock.value }) };
+  // (A block creaks as its wheel turns; lifted straight up there is none.)
+  const crank = next.how === 'straight' ? null : cranking();
+  return {
+    channels: [clock],
+    frame: (done) => {
+      if (!done) crank?.(clock.value * BLOCK_TURNS);
+      draw(done ? next : { ...still, up: clock.value });
+    },
+  };
 }
 
 export const pulleyScene = defineScene({ kind: 'pulley', view, svg, motion });
