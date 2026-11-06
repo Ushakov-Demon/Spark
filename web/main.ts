@@ -57,6 +57,8 @@ import {
   parsePlace,
   withValues,
   drawnValues,
+  boundedValues,
+  controlMax,
   type PresetValues,
   BENCH_BLOCK,
   BENCH_SPRING_L0,
@@ -1804,7 +1806,7 @@ function renderVary() {
   if (box.dataset['k'] === key) return;
   box.dataset['k'] = key;
   const u = t();
-  const vals = { ...defaultValues(chosen, locale), ...presetVals };
+  const vals = boundedValues(chosen, { ...defaultValues(chosen, locale), ...presetVals });
   const changed = JSON.stringify(vals) !== JSON.stringify(defaultValues(chosen, locale));
   const controls = chosen.vary.controls
     .filter((c) => !c.hidden)
@@ -1824,7 +1826,7 @@ function renderVary() {
       if (c.kind === 'number' && inUnit && c.units)
         return `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" step="any" value="${Number((Number(vals[c.id]) / inUnit.factor).toPrecision(10))}"/><select data-vary-unit="${c.id}">${c.units.map((x) => `<option value="${x.id}"${x.id === inUnit.id ? ' selected' : ''}>${tl(locale, `unit-sym-${x.id}`)}</option>`).join('')}</select></label>`;
       return c.kind === 'number'
-        ? `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" min="${c.min}" max="${c.max}" step="${c.step || 'any'}" value="${vals[c.id]}"/><span class="muted">${unit}</span></label>`
+        ? `<label class="vary-item">${label}<input type="number" data-vary="${c.id}" min="${c.min}" max="${controlMax(c, vals)}" step="${c.step || 'any'}" value="${vals[c.id]}"/><span class="muted">${unit}</span></label>`
         : `<label class="vary-item">${label}<select data-vary="${c.id}">${c.options.map((o) => `<option value="${o.id}"${o.id === vals[c.id] ? ' selected' : ''}>${tr(o.label, locale)}</option>`).join('')}</select></label>`;
     })
     .join('');
@@ -1856,7 +1858,7 @@ $('#vary').addEventListener('change', (e) => {
     const unit = c?.kind === 'number' ? c.units?.find((x) => x.id === unitSel.value) : undefined;
     const shown = Number(String(unitSel.closest('label')?.querySelector<HTMLInputElement>('[data-vary]')?.value ?? '').replace(',', '.'));
     if (!c || c.kind !== 'number' || !unit || !Number.isFinite(shown)) return renderVary();
-    return startPreset(presetGiven, { ...presetVals, [id]: Math.min(c.max, Math.max(c.min, shown * unit.factor)) });
+    return startPreset(presetGiven, { ...presetVals, [id]: Math.min(controlMax(c, boundedValues(presetGiven, presetVals)), Math.max(c.min, shown * unit.factor)) });
   }
   const el = (e.target as HTMLElement).closest<HTMLInputElement | HTMLSelectElement>('[data-vary]');
   if (!el || !presetGiven?.vary) return;
@@ -1865,7 +1867,7 @@ $('#vary').addEventListener('change', (e) => {
   // A number is kept within the experiment's frame (and on its step, if it has one: step 0 — any value); put in a unit — turned into the control's own.
   const shownIn = c.kind === 'number' ? c.units?.find((x) => x.id === el.closest('label')?.querySelector<HTMLSelectElement>('[data-vary-unit]')?.value) : undefined;
   const raw = Number(String(el.value).replace(',', '.')) * (shownIn?.factor ?? 1);
-  const value = c.kind === 'number' ? Math.min(c.max, Math.max(c.min, c.step ? Math.round(raw / c.step) * c.step : raw)) : el.value;
+  const value = c.kind === 'number' ? Math.min(controlMax(c, boundedValues(presetGiven, presetVals)), Math.max(c.min, c.step ? Math.round(raw / c.step) * c.step : raw)) : el.value;
   startPreset(presetGiven, { ...presetVals, [c.id]: Number.isFinite(value as number) || typeof value === 'string' ? value : c.value });
 });
 // The city field: suggestions as one types (from three letters, a moment after the last key), the place once chosen.

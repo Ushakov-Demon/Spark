@@ -7,6 +7,7 @@ import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured, readingText } from '../../scenarios/measuring.js';
 import type { BoardAt, StepText } from '../types.js';
 import { STRETCH_TEXT, type StretchCommand } from './bench.js';
+import { massText } from './shared.js';
 
 
 export const text = (c: StretchCommand): StepText => STRETCH_TEXT(c);
@@ -49,7 +50,7 @@ export function board(c: StretchCommand, trace: readonly MeasurementRecord[], { 
   if (springL0 === null) return out;
   const x = r.value! - springL0;
   const F = r.inputs?.['F'] ?? 0;
-  out.push({ id: `hooke:${i}`, title: t(locale, 'hooke-spring-board-title-2', { w: String(w) }), formula: 'k = F / x', numbers: `${F2(F)} / ${n(x)} ${t(locale, 'unit-sym-m')} ≈ ${n(F / x)} ${t(locale, 'unit-sym-N-per-m')} (x = ${cm(r.value!)} − ${cm(springL0)})` });
+  out.push({ id: `hooke:${i}`, title: t(locale, 'hooke-spring-board-title-2', { w: String(w), m: massText(r.inputs?.['mass'] ?? 0.1, locale) }), formula: 'k = F / x', numbers: `${F2(F)} / ${n(x)} ${t(locale, 'unit-sym-m')} ≈ ${n(F / x)} ${t(locale, 'unit-sym-N-per-m')} (x = ${cm(r.value!)} − ${cm(springL0)})` });
   return out;
   return out;
 }

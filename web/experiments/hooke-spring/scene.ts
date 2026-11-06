@@ -5,14 +5,14 @@ import { Channel, type Motion } from '../../motion.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** The spring on the stand: so many weights on it; its length now, m, and its stiffness, N/m; what the ruler shows. */
-export type SpringView = { readonly weights: number; readonly springLength: number; readonly stiffness?: number; readonly reading?: string };
+export type SpringView = { readonly weights: number; readonly springLength: number; readonly stiffness?: number; readonly mass?: number; readonly reading?: string };
 
 function view({ last, command, locale }: SceneContext): SpringView {
   const r = last ? readingsOf([last])[0]?.record : undefined;
   const c = command;
   const show = (q: 'force' | 'length', v: number | null | undefined) => formatMeasured(q, v ?? 0, q === 'force' ? 0.1 : 0.001, locale);
   const n = c?.type === 'lab.stretch' ? Number(c['weights']) : 0;
-  return { weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r?.inputs?.['k'] ? { stiffness: r.inputs['k'] } : {}), ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
+  return { weights: n, springLength: r?.exact ?? BENCH_SPRING_L0, ...(r?.inputs?.['k'] ? { stiffness: r.inputs['k'] } : {}), ...(r?.inputs?.['mass'] ? { mass: r.inputs['mass'] } : {}), ...(r ? { reading: `l = ${show('length', r.value)}` } : {}) };
 }
 
 /** The stand with the spring, its weights and a 30 cm ruler beside. */
@@ -29,7 +29,7 @@ function springBenchSvg(v: SpringView): string {
 
 /** A spring with a load: it drops to its new length and bounces about it — period 2π√(m/k), a little damping. */
 function spring(prev: SpringView, next: SpringView, draw: (v: SpringView) => void): Motion {
-  const m = next.weights * BENCH_WEIGHT.value;
+  const m = next.weights * (next.mass ?? BENCH_WEIGHT.value);
   const period = 2 * Math.PI * Math.sqrt(m / (next.stiffness ?? BENCH_SPRING_K.value));
   const length = new Channel(prev.springLength ?? next.springLength, next.springLength, { kind: 'damped', period, damping: 0.12 }, 0.0004);
   return {

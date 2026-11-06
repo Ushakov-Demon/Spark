@@ -725,3 +725,16 @@ describe('adding forces: a load of any mass, the weights anywhere on the ruler',
     expect(answerFor(mass!, at!).correct).toBe('same');
   }, 60_000);
 });
+
+describe('Hooke’s law: weights of any mass, up to what the spring takes', () => {
+  const p = PRESETS.find((x) => x.id === 'hooke-spring')!;
+  const massOf = (v: Record<string, string | number>) => (withValues(p, v).plan![0] as { command: { mass: number } }).command.mass;
+
+  it('the top hangs on the spring: all four weights stretch it to 40 cm at most', () => {
+    const c = p.vary!.controls.find((x) => x.id === 'mass')!;
+    expect(c.kind === 'number' && c.max).toBeCloseTo(0.203, 3);
+    expect(massOf({ spring: '25', mass: 0.203 })).toBe(0.203);
+    expect(massOf({ spring: '15', mass: 0.203 })).toBeCloseTo(0.122, 3);
+    expect(massOf({ spring: '15', mass: 0.05 })).toBe(0.05);
+  });
+});

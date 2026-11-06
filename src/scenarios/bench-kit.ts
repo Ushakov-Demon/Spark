@@ -15,6 +15,8 @@ export const BENCH_SPRING_K: SourcedValue = sv(25, 'N/m', 'the stiffest spring o
 export const SPRING_SET: readonly number[] = [2.5, 5, 10, 15, 25];
 /** Its length unloaded, m: the spring of this lab (the listing gives no lengths). */
 export const BENCH_SPRING_L0 = 0.08;
+/** The longest it is let stretch, m: to the end of the 40 cm ruler measuring it (the listing gives no limit of its own). */
+export const BENCH_SPRING_LONGEST: SourcedValue = sv(0.4, 'm', 'a spring of the set, stretched', 'estimate', 0.2, [cite('spark', 'estimate', 'the ruler beside it reads to 40 cm; the springs are about 8 cm unloaded', 0.4)], 'Estimate: beyond its elastic limit a spring would stay stretched, and the listing does not give that limit.');
 /** One slotted weight, kg: as in the lab work (four of 100 g). */
 export const BENCH_WEIGHT: SourcedValue = sv(0.1, 'kg', 'one slotted weight', 'single-source', 0.01, [cite('ua-textbook-2024-bariakhtar-physics-7', 'Лабораторна робота № 6, обладнання: 4 тягарці масою 100 г кожен', '—', 0.1)]);
 /** Wood sliding on wood. */

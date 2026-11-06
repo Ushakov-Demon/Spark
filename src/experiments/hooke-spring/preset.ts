@@ -3,6 +3,7 @@ import { beaker, ch, INTERACTION, room, varied } from '../../scenarios/preset-ki
 import type { Preset } from '../../scenarios/presets.js';
 import type { Locale } from '../../knowledge/i18n.js';
 import { defineCard } from '../types.js';
+import { heaviestWeight, massText, STRETCH_WEIGHTS } from './shared.js';
 
 export const preset_hooke_spring: Preset = varied(
   {
@@ -19,14 +20,18 @@ export const preset_hooke_spring: Preset = varied(
     expect: 'reached',
   },
   {
-    // Only the springs that four 100 g weights stretch within the 40 cm ruler.
-    controls: [{ id: 'spring', label: msg('hooke-spring-controls-label'), kind: 'choice', options: [ch('25', msg('hooke-spring-controls-options')), ch('15', msg('hooke-spring-controls-options-2'))], value: '25' }],
+    controls: [
+      { id: 'spring', label: msg('hooke-spring-controls-label'), kind: 'choice', options: [ch('25', msg('hooke-spring-controls-options')), ch('15', msg('hooke-spring-controls-options-2'))], value: '25' },
+      // One weight, the same each time: from what the ruler still tells, up to what all of them stretch the spring to its longest.
+      { id: 'mass', label: msg('hooke-spring-mass'), kind: 'number', unit: 'kg', min: 0.01, max: heaviestWeight(25), maxBy: (v) => heaviestWeight(Number(v['spring'])), step: 0, value: 0.1, units: [{ id: 'g', factor: 0.001 }, { id: 'kg', factor: 1 }] },
+    ],
     build: (v) => {
       const stiffness = Number(v['spring']);
+      const mass = Number(v['mass']);
       return {
-        question: msg('hooke-spring-build-question', { value: (l: Locale) => stiffness === 25 ? t(l, 'hooke-spring-question-uk') : t(l, 'hooke-spring-question-uk-2') }),
+        question: msg('hooke-spring-build-question', { value: (l: Locale) => stiffness === 25 ? t(l, 'hooke-spring-question-uk') : t(l, 'hooke-spring-question-uk-2'), mass: (l: Locale) => massText(mass, l) }),
         params: { ...room, ...beaker, action: 'settle', substance: 'water', startTemp: 20 },
-        plan: [0, 1, 2, 3, 4].map((weights) => ({ kind: 'bench', command: { type: 'lab.stretch', weights, stiffness } }) as const),
+        plan: Array.from({ length: STRETCH_WEIGHTS + 1 }, (_, weights) => ({ kind: 'bench', command: { type: 'lab.stretch', weights, stiffness, mass } }) as const),
       };
     },
   },

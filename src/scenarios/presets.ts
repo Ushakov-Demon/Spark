@@ -105,7 +105,8 @@ export type PresetControl = {
   // A number within its frame; `step` 0 — any value at all (the pupil's own measurement), otherwise kept on its step.
   // `unit` — its symbol's id (`unit-sym-<id>` in units.ftl; '' — a bare number). `units` — the units it may be put in
   // (a number and a unit to choose): the value is kept in the one of factor 1.
-  | { readonly kind: 'number'; readonly unit: string; readonly min: number; readonly max: number; readonly step: number; readonly value: number; readonly units?: readonly ControlUnit[] }
+  // `maxBy` — where the top of the frame hangs on the other conditions (`max` — the widest it can be).
+  | { readonly kind: 'number'; readonly unit: string; readonly min: number; readonly max: number; readonly step: number; readonly value: number; readonly units?: readonly ControlUnit[]; readonly maxBy?: (v: PresetValues) => number }
   | { readonly kind: 'choice'; readonly options: readonly Choice[]; readonly value: string }
   // A place on the Earth, as «name|latitude|longitude»: the default for Ukrainian, another for English (an example each).
   | { readonly kind: 'place'; readonly value: string; readonly en: string }
@@ -121,20 +122,26 @@ export interface PresetVary {
   readonly build: (v: PresetValues) => PresetVariant;
 }
 
-/** The preset with these values: its setup, plan, question and choices built from them. */
-export function withValues(p: Preset, v: PresetValues): Preset {
-  if (!p.vary) return p;
+/** The top of a number's frame under these conditions: its own `max`, or what its `maxBy` makes of them (never above `max`). */
+export const controlMax = (c: Extract<PresetControl, { kind: 'number' }>, v: PresetValues): number => Math.min(c.max, c.maxBy?.(v) ?? c.max);
+
+/** The values within the preset's frame: out-of-range or unknown ones fall back to the defaults; a number above a top that hangs on the other conditions comes down to it. */
+export function boundedValues(p: Preset, v: PresetValues): PresetValues {
   const all = { ...defaultValues(p), ...v };
-  // Out-of-range or unknown values fall back to the defaults: the experiment stays within its frame.
-  const clean = Object.fromEntries(
-    p.vary.controls.map((c) => {
+  return Object.fromEntries(
+    (p.vary?.controls ?? []).map((c) => {
       const x = all[c.id];
-      if (c.kind === 'number') return [c.id, typeof x === 'number' && x >= c.min && x <= c.max ? x : c.value];
+      if (c.kind === 'number') return [c.id, typeof x === 'number' && x >= c.min && x <= c.max ? Math.min(x, controlMax(c, all)) : c.value];
       if (c.kind === 'place') return [c.id, parsePlace(x) ? String(x) : c.value];
       return [c.id, typeof x === 'string' && c.options.some((o) => o.id === x) ? x : c.value];
     }),
   );
-  return { ...p, ...p.vary.build(clean) };
+}
+
+/** The preset with these values: its setup, plan, question and choices built from them. */
+export function withValues(p: Preset, v: PresetValues): Preset {
+  if (!p.vary) return p;
+  return { ...p, ...p.vary.build(boundedValues(p, v)) };
 }
 
 /** A run's hidden conditions: each drawn at random from its options. */
