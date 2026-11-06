@@ -115,7 +115,7 @@ import { parsePlace } from './place.js';
 import { defaultValues, ELECTRIC, MEDIA, varied } from './preset-kit.js';
 export { defaultValues };
 export type PresetValues = Readonly<Record<string, number | string>>;
-export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'question' | 'choices' | 'given'>>;
+export type PresetVariant = Partial<Pick<Preset, 'params' | 'setup' | 'plan' | 'ask' | 'question' | 'choices' | 'given'>>;
 export interface PresetVary {
   readonly controls: readonly PresetControl[];
   readonly build: (v: PresetValues) => PresetVariant;

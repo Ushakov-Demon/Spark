@@ -2,15 +2,18 @@
  * A pointing finger for what is out of sight: the list of experiments when the table is empty, the first step's
  * button when an experiment is chosen, «Пояснити» when it is done. It waits on the screen's edge (or the edge of the
  * phone's panel the target is in), turned to the target's middle; once the target is in sight it is not needed and
- * goes. A tap on it scrolls (smoothly) to the target.
+ * goes. A tap on it scrolls to the target.
  */
-import { moving } from './prefs.js';
+import { glide, glideToTop } from './glide.js';
 
 type Direction = 'left' | 'right' | 'up' | 'down';
 
 const GLYPH: Record<Direction, string> = { left: '👈', right: '👉', up: '👆', down: '👇' };
 const SIZE = 48;
 const EDGE = 8;
+/** A target scrolled to stands this far from the screen's edge. */
+const BOTTOM_GAP = 28;
+const TOP_GAP = 16;
 
 export interface Finger {
   /** Point at what `find` finds (each frame: the page re-renders); null — put the finger away. */
@@ -27,18 +30,21 @@ export function createFinger(): Finger {
   el.hidden = true;
   document.body.append(el);
   let find: (() => Element | null) | null = null;
-  // A tap: the target scrolled into the middle of the screen — on a phone, of the experiment's panel only (the scene stays put).
+  // A tap: a short target comes up just over the screen's bottom, so that what is above it stays in sight (one above the
+  // screen — to the middle); a tall one, its beginning to the top. On a phone, of the experiment's panel only (the scene stays put).
   el.onclick = () => {
     const target = find?.();
     if (!target) return;
-    const behavior: ScrollBehavior = moving() ? 'smooth' : 'auto';
-    // A tall one (the conclusion): its beginning to the top of the screen.
     const tall = tallTarget(target);
-    const panel = target.closest('.exp-panel-body');
-    if (!panel) return target.scrollIntoView({ behavior, block: tall ? 'start' : 'center', inline: 'nearest' });
     const r = target.getBoundingClientRect();
-    const p = panel.getBoundingClientRect();
-    panel.scrollBy({ top: tall ? r.top - p.top - EDGE : r.top + r.height / 2 - (p.top + p.height / 2), behavior });
+    const panel = target.closest('.exp-panel-body');
+    if (panel) {
+      const p = panel.getBoundingClientRect();
+      return void glide(panel.scrollTop + (tall ? r.top - p.top - EDGE : r.top + r.height / 2 - (p.top + p.height / 2)), panel);
+    }
+    if (tall) return void glideToTop(target, TOP_GAP);
+    const vh = window.innerHeight;
+    void glide(window.scrollY + (r.top < 0 ? r.top + r.height / 2 - vh / 2 : r.bottom - (vh - BOTTOM_GAP)));
   };
   let frame = 0;
 

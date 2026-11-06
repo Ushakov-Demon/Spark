@@ -16,12 +16,20 @@ export const METAL: Readonly<Record<string, { fill: string; edge: string }>> = {
 export const isGlass = (m: string) => m === 'glass' || m === 'borosilicate-glass';
 
 export const LIQUID: Readonly<Record<LiquidKind, string>> = {
-  water: 'rgba(96, 170, 240, 0.55)',
+  water: 'rgba(80, 165, 245, 0.72)',
   salt: 'rgba(120, 178, 205, 0.62)',
-  alcohol: 'rgba(205, 228, 255, 0.4)',
+  alcohol: 'rgba(175, 215, 255, 0.62)',
   acid: 'rgba(238, 238, 214, 0.5)',
   oil: 'rgba(233, 188, 52, 0.78)',
   other: 'rgba(200, 210, 220, 0.5)',
+};
+
+/** Liquids that would look alike by their kind: each drawn with a tint of its own (a clear liquid drawn as clear would look like an empty vessel). */
+export const LIQUID_TINT: Readonly<Partial<Record<string, string>>> = {
+  water: LIQUID.water,
+  ethanol: LIQUID.alcohol,
+  glycerol: 'rgba(232, 226, 188, 0.72)',
+  'sunflower-oil': LIQUID.oil,
 };
 
 /** Colour of a liquid on the drawing (also its swatch on the shelf). */

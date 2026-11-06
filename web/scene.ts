@@ -348,6 +348,7 @@ export function createScene(): Scene {
           ${glass ? '' : `<path d="${g.inner}" class="inside"/>`}
           <g clip-path="url(#sc-liq)">
             <rect id="sc-liquid" x="${g.left - 10}" y="${g.top - 10}" width="${g.right - g.left + 20}" height="${g.bottom - g.top + 20}"/>
+            <rect id="sc-surface" x="${g.left - 10}" y="0" width="${g.right - g.left + 20}" height="2" style="fill:rgba(255,255,255,0.6)"/>
             <g id="sc-bubbles" class="bubbles">${Array.from({ length: 14 }, (_, i) => `<circle cx="${g.left + 16 + ((i * 37) % Math.max(20, g.right - g.left - 30))}" cy="${g.bottom - 8}" r="${2 + (i % 3)}" style="animation-delay:${(i * 0.17) % 1.6}s"/>`).join('')}</g>
           </g>
           <g id="sc-ice" class="ice"><rect x="${g.left - 10}" y="0" width="${g.right - g.left + 20}" height="0"/><path class="cracks" d="M${g.left + 20},0 l18,10 l14,-6 M${g.right - 40},0 l-12,9 l-16,-3"/></g>
@@ -459,6 +460,8 @@ export function createScene(): Scene {
       const level = g.bottom - Math.max(0, Math.min(1, v.fill)) * (g.bottom - g.top);
       $('sc-liq-rect')?.setAttribute('y', String(level));
       $('sc-liq-rect')?.setAttribute('height', String(g.bottom - level + 2));
+      // (The surface's bright line: a clear liquid is told from an empty vessel by it.)
+      $('sc-surface')?.setAttribute('y', String(level));
       const liq = $<SVGRectElement>('sc-liquid');
       if (liq) liq.style.fill = v.tint && !v.dry && v.solid < 1 ? v.tint : v.dry ? (v.solid > 0 && v.solid >= 1 ? v.dry.solid : v.dry.melt) : v.solid >= 1 ? 'rgba(220, 240, 255, 0.92)' : LIQUID[v.liquid];
       // Ice is lighter than water: a growing layer floats on top. A metal or salt melting dry: the solid

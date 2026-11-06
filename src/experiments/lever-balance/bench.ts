@@ -2,6 +2,7 @@ import type { CommandHandler } from '../../core/commands.js';
 import { err, ok } from '../../core/result.js';
 import type { LocalizedText, Locale } from '../../knowledge/i18n.js';
 import { cite, sv } from '../../components/sourced.js';
+import { SUBSTANCES } from '../../substances/catalog.js';
 import { msg, t } from '../../knowledge/messages.js';
 import type { SourcedValue } from '../../knowledge/types.js';
 import type { SubstanceId } from '../../substances/catalog.js';
@@ -16,6 +17,8 @@ export interface BalanceCommand {
   readonly what: 'body' | 'vessel' | 'vessel-empty';
   readonly substance?: SubstanceId;
   readonly mass?: number;
+  /** A liquid poured in by measure: how much, m³ (known, nothing to read). */
+  readonly volume?: number;
   readonly label?: LocalizedText;
 }
 
@@ -51,11 +54,12 @@ export const balanceCommand: CommandHandler<BalanceCommand> = {
       m = c.mass;
     } else {
       const w = weigh(state, 'lab-balance');
-      m = c.what === 'vessel' ? w.exact.total : w.exact.vessel;
+      // (Water poured into the vessel in place of the run's liquid: the same vessel, the same measure.)
+      m = c.what === 'vessel' ? (c.substance && c.volume ? w.exact.vessel + SUBSTANCES[c.substance].liquid.density.value * c.volume : w.exact.total) : w.exact.vessel;
     }
     const set = balanceWeights(m);
     const value = set ? set.reduce((a, b) => a + b, 0) : null;
-    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('lever-balance', 'mass', value, m, { division: 0.00001 })] });
+    return ok({ state, kind: 'measurement', externalEnergy: 0, trace: [measured('lever-balance', 'mass', value, m, { division: 0.00001, ...(c.volume ? { volume: c.volume } : {}) })] });
   },
 };
 

@@ -687,3 +687,25 @@ describe('ready-made experiments with values to change', () => {
     expect(withValues(p, { cold: 5000, tHot: 'boiling' }).params).toEqual(withValues(p, defaultValues(p)).params);
   });
 });
+
+describe('the density of a liquid: water beside it, by the same measure', () => {
+  const answer = async (liquid: string) => {
+    const p = PRESETS.find((x) => x.id === 'liquid-density')!;
+    const q = withValues(p, { liquid });
+    const first: ProtocolStep = { kind: 'operation', action: q.params.action };
+    const out = runProtocol({ base: q.params, steps: [first, ...(q.plan ?? [])], simulation, commands: commands as never, sampleEvery: seconds(60), maxStepSeconds: 12 * 3600 });
+    const steps = out.filter((o) => o.params && o.status).map((o) => ({ params: o.params!, result: o.result as never, status: o.status! }));
+    return PRESET_ANSWERS['liquid-density']!({ steps, simulation, readings: readingsAll(out) as never });
+  };
+
+  it.each([['glycerol', 'heavier'], ['ethanol', 'lighter'], ['sunflower-oil', 'lighter']])('%s: %s than the water weighed', async (liquid, verdict) => {
+    const a = await answer(liquid!);
+    expect(a.correct).toBe(verdict);
+    expect(a.text.uk).toMatch(/Вода: m = [\d, ]+г − [\d, ]+г = [\d, ]+г, ρ = 99\d кг\/м³/);
+  }, 60_000);
+
+  it('water is no longer a choice of liquid: it is always there', () => {
+    const c = PRESETS.find((x) => x.id === 'liquid-density')!.vary!.controls[0]!;
+    expect(c.kind === 'choice' ? c.options.map((o) => o.id) : []).not.toContain('water');
+  });
+});

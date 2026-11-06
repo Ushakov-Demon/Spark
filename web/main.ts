@@ -141,6 +141,7 @@ import { createChooser, fly, type ChoiceCard, type ChooserStage } from './choose
 import { deviceSvg } from './graphics/scene/devices.js';
 import { baseFor, vesselGeom } from './graphics/scene/vessels.js';
 import { H, W } from './graphics/scene/constants.js';
+import { LIQUID_TINT } from './graphics/scene/colors.js';
 import { createScene, incandescent, signedLabel, vesselPreview, type DeviceKind, type LiquidKind, type SceneView, type VesselShape } from './scene.js';
 import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
@@ -151,6 +152,7 @@ import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
 import { createFinger } from './finger.js';
+import { glide, glideToTop } from './glide.js';
 import { answerLines } from '../src/scenarios/preset-kit.js';
 import { instant, isOn, moving, setOn, store, type Switch } from './prefs.js';
 
@@ -1551,7 +1553,7 @@ function sceneView(): SceneView {
     material: params.material,
     lid: params.lid,
     liquid,
-    ...(tintOf(mix) ? { tint: tintOf(mix)! } : {}),
+    ...(tintOf(mix) ?? (mix ? undefined : LIQUID_TINT[sub.id]) ? { tint: (tintOf(mix) ?? LIQUID_TINT[sub.id])! } : {}),
     // Being set up over the table: what is not on it yet is not drawn, the liquid not yet poured.
     ...(assembly ? { away: { device: !assembly.placed.has('device'), vessel: !assembly.placed.has('vessel') } } : {}),
     fill: assembly && !assembly.placed.has('liquid') ? 0 : Math.min(1, usedVolume() / params.size),
@@ -3994,8 +3996,8 @@ function buildPresets() {
     const go = el('button', { type: 'button', className: 'primary preset-go' }, u.presetStart);
     go.onclick = () => {
       startPreset(p);
-      // The kitchen's top to the top of the screen (smoothly), whatever the screen.
-      $('.kitchen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // The kitchen's top to the top of the screen, whatever the screen.
+      void glideToTop($('.kitchen'));
     };
     card.append(go);
     // The full description: a page of a lab notebook, in the middle of the screen.
@@ -4100,7 +4102,7 @@ function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
     renderGrip();
     toGame(() => {}, false);
   }
-  else if (matchMedia('(max-width: 900px)').matches) $('.kitchen').scrollIntoView({ behavior: 'smooth' });
+  else if (matchMedia('(max-width: 900px)').matches) void glideToTop($('.kitchen'));
 }
 /** What a ready-made experiment puts into the vessel before the start (hot water, a block from boiling water). */
 function presetSetup() {
@@ -4513,17 +4515,7 @@ function toGame(action: () => void, step = true) {
   };
   const top = Math.max(0, $('.kitchen').getBoundingClientRect().top + window.scrollY - 2);
   if (Math.abs(window.scrollY - top) < 4) return run();
-  let done = false;
-  const go = () => {
-    if (done) return;
-    done = true;
-    window.removeEventListener('scrollend', go);
-    run();
-  };
-  window.addEventListener('scrollend', go, { once: true });
-  // (A browser without «scrollend»: the scroll is over by then.)
-  window.setTimeout(go, 900);
-  window.scrollTo({ top, behavior: moving() ? 'smooth' : 'auto' });
+  void glide(top).then(run);
 }
 // Held upright: the lab asks for the phone on its side (where the browser can, it turns the screen itself).
 const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
@@ -4563,7 +4555,7 @@ $('#rotate-go').onclick = () => {
   new IntersectionObserver(([e]) => (up.hidden = !e || e.intersectionRatio >= 0.3 || e.boundingClientRect.top > 0 || !e.boundingClientRect.height), { threshold: [0, 0.3] }).observe($('.kitchen'));
   up.onclick = () => {
     if (phone()) return toGame(() => {}, false);
-    $('.kitchen').scrollIntoView({ behavior: moving() ? 'smooth' : 'auto', block: 'start' });
+    void glideToTop($('.kitchen'));
   };
 }
 PHONE.addEventListener('change', placePhone);
@@ -4758,7 +4750,11 @@ $('#quiz').addEventListener('click', (e) => {
     return render();
   }
   const step = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-plan]');
-  if (step) return toGame(nextPlanStep);
+  if (step) {
+    // The experiment begins: back up to the working view (the button was brought up from the bottom of the page).
+    if (!phone() && plan.length === planTotal) void glideToTop($('.kitchen'));
+    return toGame(nextPlanStep);
+  }
   // An optional part skipped: on to the next one (or the conclusion); a part that follows it up goes with it.
   if ((e.target as HTMLElement).closest('button[data-skip]') && plan.length) {
     const starts = (s: ProtocolStep | undefined) => s?.kind === 'bench' && !!s.optional;

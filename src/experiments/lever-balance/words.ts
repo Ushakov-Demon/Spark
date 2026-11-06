@@ -1,6 +1,7 @@
 import type { ExperimentLogEntry } from '../../core/experiment.js';
 import type { MeasurementRecord } from '../../core/trace.js';
 import type { Locale, LocalizedText } from '../../knowledge/i18n.js';
+import { sig } from '../../explain/format.js';
 import { msg, t } from '../../knowledge/messages.js';
 import type { BoardLine } from '../../scenarios/lab-board.js';
 import { formatMeasured, readingText } from '../../scenarios/measuring.js';
@@ -38,10 +39,16 @@ export function board(c: BalanceCommand, trace: readonly MeasurementRecord[], { 
   const g = (kg: number) => formatMeasured('mass', kg, 0.00001, locale);
   const set = balanceWeights(r.value!) ?? [];
   out.push({ id: `bal:${i}`, title: t(locale, 'lever-balance-board-title', { label: label.toLowerCase() }), formula: `m = ${g(r.value!)}`, numbers: weightsText(set, locale) });
-  // (The density itself, with the volume by the marks, is the general board's: two instruments.)
   const emptyVessel = what === 'vessel' ? (earlier(before, 'lab.balance', (x) => x['what'] === 'vessel-empty').pop()?.value ?? null) : null;
   if (emptyVessel !== null) {
     out.push({ id: `liq:${i}`, title: t(locale, 'lever-balance-board-title-2'), formula: 'm = m₂ − m₁', numbers: `${g(r.value!)} − ${g(emptyVessel)} = ${g((r.value! - emptyVessel))}` });
+    // The density, when the volume is known: poured by measure.
+    const V = c.volume;
+    if (V) {
+      const m = r.value! - emptyVessel;
+      const n = (x: number) => sig(x, 3, locale);
+      out.push({ id: `rhoL:${i}`, title: c.substance ? t(locale, 'lever-balance-board-rho-water') : t(locale, 'lab-board-liquid-density-line-title'), formula: 'ρ = m / V', numbers: `${n(m * 1000)} ${t(locale, 'unit-sym-g')} / ${n(V * 1e6)} ${t(locale, 'unit-sym-cm3')} ≈ ${n(m / V / 1000)} ${t(locale, 'unit-sym-g-per-cm3')} = ${n(m / V)} ${t(locale, 'unit-sym-kg-per-m3')}` });
+    }
   }
   return out;
 }

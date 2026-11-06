@@ -5,14 +5,13 @@ lever-balance-question = On a lever balance we weigh an aluminium cylinder, a wo
 lever-balance-choices = The difference of weighings: the glass with water minus the empty glass
 lever-balance-choices-2 = As much as the balance showed with the glass of water
 lever-balance-choices-3 = As much as the empty glass weighs
-lever-balance-liquid-density-ask = Is the liquid lighter or heavier than water, for equal volumes?
+lever-balance-liquid-density-ask = Which is heavier, for equal volumes: { $name } or water?
 lever-balance-liquid-density-title = What is the density of a liquid?
 lever-balance-liquid-label = Liquid
 lever-balance-volume-label = How much to pour
-lever-balance-build-choices = Lighter
-lever-balance-build-choices-2 = The same
-lever-balance-build-choices-3 = Heavier
+lever-balance-choice-same = The same
+lever-balance-choice-water = Water
 lever-balance-setup = A lever balance, a set of weights, tweezers
 
 ## $name — the liquid's name; $gen — in the genitive.
-lever-balance-liquid-question = We weigh an empty measuring cylinder on a lever balance, pour ≈ { $volume } mL of { $gen } into it, weigh it again and read on the marks how much we poured. For equal volumes, is it lighter or heavier than water?
+lever-balance-liquid-question = We weigh an empty measuring cylinder on a lever balance. We pour in { $volume } mL of water and weigh it, then weigh as much of the liquid: { $gen }.

@@ -302,16 +302,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
   let dissolvedAdded = false;
   let body: { m?: number; v?: number } = {};
   const airByBody = new Map<string, number>();
-  // A liquid weighed on the balance (empty vessel, then with the liquid) and its volume read by the marks: its density.
-  let emptyVessel: number | null = null;
-  let liquidMass: number | null = null;
-  let liquidVolume: number | null = null;
-  let liquidDone = false;
-  const liquidDensityLine = (i: number) => {
-    if (liquidDone || liquidMass === null || liquidVolume === null || !(liquidVolume > 0)) return;
-    liquidDone = true;
-    out.push({ id: `rhoL:${i}`, title: tl(locale, 'lab-board-liquid-density-line-title'), formula: 'ρ = m / V', numbers: `${n(liquidMass * 1000)} ${tl(locale, 'unit-sym-g')} / ${n(liquidVolume * 1e6)} ${tl(locale, 'unit-sym-cm3')} ≈ ${n(liquidMass / liquidVolume / 1000)} ${tl(locale, 'unit-sym-g-per-cm3')} = ${n(liquidMass / liquidVolume)} ${tl(locale, 'unit-sym-kg-per-m3')}` });
-  };
   const count = { volume: 0, mass: 0 };
   const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]!);
   log.forEach((e, i) => {
@@ -320,13 +310,7 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
     // An experiment module writes its own lines.
     const mod = experimentOf(c.type);
     if (mod) {
-      // The density of a liquid: weighed in its vessel on the lever balance (empty, then with the liquid), its
-      // volume read by the marks — two instruments, the module's and the vessel's, so it is reckoned here.
-      const weighed = c.type === 'lab.balance' ? e.trace.find((x): x is MeasurementRecord => x.kind === 'measurement')?.value : undefined;
-      if (weighed != null && c['what'] === 'vessel-empty') emptyVessel = weighed;
-      if (weighed != null && c['what'] === 'vessel' && emptyVessel !== null) liquidMass = weighed - emptyVessel;
       if (mod.board) out.push(...mod.board(c as never, e.trace.filter((x): x is MeasurementRecord => x.kind === 'measurement' && x.value !== null), { index: i, before: log.slice(0, i), locale }));
-      if (weighed != null) liquidDensityLine(i);
       return;
     }
     if (c.type === 'thermal.add') {
@@ -371,10 +355,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `dm:${i}`, title: tl(locale, 'lab-board-measured-lines-title-5'), formula: 'Δm = m₂ − m₁', numbers: `${g(r.value)} − ${g(before)} = ${g(dm)}` });
       if (I > 0) out.push({ id: `kEq:${i}`, title: tl(locale, 'lab-board-measured-lines-title-6', { I: n(I, 2), t: n(t / 60, 3) }), formula: 'k = Δm / (I·t)', numbers: `${n(dm * 1e6, 3)} ${tl(locale, 'unit-sym-mg')} / (${n(I, 2)} ${tl(locale, 'unit-sym-A')} · ${n(t, 4)} ${tl(locale, 'unit-sym-s')}) ≈ ${n((dm * 1e6) / (I * t), 2)} ${tl(locale, 'lab-board-measured-lines-numbers')}` });
       return;
-    }
-    if (r.quantity === 'volume' && liquidVolume === null && emptyVessel !== null) {
-      liquidVolume = r.value;
-      // (The reading's own line follows below; the density is written once the mass is known too.)
     }
     if (r.quantity === 'volume') {
       const div = r.inputs?.['division'] ?? 1e-6;
@@ -428,7 +408,6 @@ export function measuredLines(log: readonly ExperimentLogEntry<{ type: string }>
       out.push({ id: `rho:${i}`, title: hollow ? (tl(locale, 'lab-board-measured-lines-title-20')) : tl(locale, 'lab-board-measured-lines-title-21'), formula: 'ρ = m / V', numbers: `${n(body.m * 1000)} ${tl(locale, 'unit-sym-g')} / ${n(body.v * 1e6)} ${tl(locale, 'unit-sym-cm3')} ≈ ${n(rho / 1000)} ${tl(locale, 'unit-sym-g-per-cm3')} = ${n(rho)} ${tl(locale, 'unit-sym-kg-per-m3')}` });
       body = {};
     }
-    liquidDensityLine(i);
   });
   return out;
 }

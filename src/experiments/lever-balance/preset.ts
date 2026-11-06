@@ -6,7 +6,7 @@ import { type SubstanceId, SUBSTANCES } from '../../substances/catalog.js';
 import { defineCard } from '../types.js';
 
 /** Liquids whose density the lab work finds (all fit the balance in a 100 mL cylinder). */
-const LIQUIDS_FOR_DENSITY: readonly Choice[] = (['sunflower-oil', 'glycerol', 'ethanol', 'water'] as const).map((id) => ({ id, label: SUBSTANCES[id].name }));
+const LIQUIDS_FOR_DENSITY: readonly Choice[] = (['sunflower-oil', 'glycerol', 'ethanol'] as const).map((id) => ({ id, label: SUBSTANCES[id].name }));
 
 export const preset_lever_balance: Preset = {
   id: 'lever-balance',
@@ -33,7 +33,6 @@ export const preset_lever_balance: Preset = {
 
 export const preset_liquid_density: Preset = varied(
   {
-    ask: msg('lever-balance-liquid-density-ask'),
     id: 'liquid-density',
     grade: 7,
     topic: INTERACTION,
@@ -57,14 +56,17 @@ export const preset_liquid_density: Preset = varied(
       // The liquid's name, and in the genitive (where the language needs it).
       const names = { name: (l: Locale) => liquid.name[l].toLowerCase(), gen: (l: Locale) => (liquid.genitive?.[l] ?? liquid.name[l]).toLowerCase() };
       return {
+        ask: msg('lever-balance-liquid-density-ask', names),
         question: msg('lever-balance-liquid-question', { volume: String(volume), ...names }),
         params: { ...room, vessel: 'cylinder', size: 0.1, material: 'glass', liters: volume / 1000, action: 'settle', substance: liquid.id as SubstanceId, startTemp: 20 },
         plan: [
           { kind: 'bench', command: { type: 'lab.balance', what: 'vessel-empty', label: msg('lever-balance-command-label-5') } },
-          { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', label: msg('lever-balance-cylinder-label', names) } },
-          { kind: 'level' },
+          // Water first, the same volume of it: what the liquid is compared with is measured too.
+          { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', substance: 'water', volume: volume * 1e-6, label: msg('lever-balance-water-label') } },
+          { kind: 'bench', command: { type: 'lab.balance', what: 'vessel', volume: volume * 1e-6, label: msg('lever-balance-cylinder-label', names) } },
         ],
-        choices: [ch('lighter', msg('lever-balance-build-choices')), ch('same', msg('lever-balance-build-choices-2')), ch('heavier', msg('lever-balance-build-choices-3'))],
+        // (What the question asks: which of the two is heavier. `heavier` — the liquid.)
+        choices: [ch('heavier', liquid.name), ch('same', msg('lever-balance-choice-same')), ch('lighter', msg('lever-balance-choice-water'))],
       };
     },
   },
