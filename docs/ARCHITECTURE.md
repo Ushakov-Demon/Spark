@@ -184,7 +184,7 @@ C_i · dT_i/dt = P_i + Σ_j G_ij · (T_j − T_i)
   - [web/graphics/scene/weights.ts](../web/graphics/scene/weights.ts): `weightsOnPan` (гирьки на чаше: от центра в стороны, что не влезло — ярусом выше, миллиграммовые стопкой сверху, масса на гирьке), `placingWeights` (подбор рукой: от больших к меньшим, лишняя снимается, коромысло качается), `loadSvg` и `loadHeight` (груз на крючке: грузики по 100 г или ящик с подписью массы).
   - [web/graphics/scene/kit.ts](../web/graphics/scene/kit.ts): `labBalanceSvg` (электронные весы с дисплеем).
   - [web/graphics/scene/colors.ts](../web/graphics/scene/colors.ts): `LIQUID_TINT` (свой оттенок жидкости по веществу: прозрачная, нарисованная прозрачной, выглядит пустым сосудом).
-  - [web/sounds/index.ts](../web/sounds/index.ts): `scraping` (брусок по столу, вызывать каждый кадр движения).
+  - [web/sounds/index.ts](../web/sounds/index.ts): `scraping` (брусок по столу, вызывать каждый кадр движения), `clunk` (металлический груз упал на твёрдое), `giggling` (смех «хі-хі-хі» из слогов: придыхание и гласная «і» с формантами, тон падает к концу; идёт с анимацией, от выбора голоса не зависит).
   - [web/glide.ts](../web/glide.ts): `glide`, `glideToTop` (своя прокрутка; `scrollIntoView` со `smooth` для новых мест не использовать).
   - [src/scenarios/bench-kit.ts](../src/scenarios/bench-kit.ts): `BAR_MAGNET`, `NEODYMIUM_REMANENCE`, `PAPER_AREAL`, `BENCH_SPRING_LONGEST`.
   - [src/domains/electrical/magnet.ts](../src/domains/electrical/magnet.ts): `barMagnetAxisField`, `barMagnetPullOnBall`, `barMagnetFieldDirection`.

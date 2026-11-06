@@ -14,10 +14,10 @@ export const busy = (): LocalizedText => msg('weight-in-lift-busy');
 
 export const shown = (_c: LiftCommand, recs: readonly MeasurementRecord[], locale: Locale): string => formatMeasured('force', recs[0]?.value ?? null, 0.1, locale);
 
-/** What the dynamometer shows now. */
+/** What the dynamometer shows now, and during what: the reading means little without the lift's motion. */
 export function say(c: LiftCommand, recs: readonly MeasurementRecord[], locale: Locale): string {
   const P = formatMeasured('force', recs[0]?.value ?? null, 0.1, locale);
-  return c.phase === 'fall' ? t(locale, 'weight-in-lift-say', { P }) : t(locale, 'weight-in-lift-say-2', { P });
+  return c.phase === 'fall' ? t(locale, 'weight-in-lift-say', { P }) : t(locale, `weight-in-lift-seen-${c.phase}`, { P });
 }
 
 /** The board's lines for a done step. */

@@ -4,6 +4,7 @@ import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js'
 import { TABLE } from '../../graphics/scene/constants.js';
 import { blockSvg, CM, dynamometerSvg, THREAD, weightsSvg, WOOD_EDGE } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { scraping } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** The full length of the board the block is pulled along, units of the drawing. */
@@ -42,7 +43,10 @@ function pull(next: FrictionView, draw: (v: FrictionView) => void): Motion {
   return {
     channels: [slide],
     // The reading is taken while it slides steadily, after the start.
-    frame: (done) => draw({ ...next, slide: slide.value, pull: done || slide.value > 25 ? next.pull! : '…' }),
+    frame: (done) => {
+      if (!done) scraping(0.6);
+      draw({ ...next, slide: slide.value, pull: done || slide.value > 25 ? next.pull! : '…' });
+    },
   };
 }
 

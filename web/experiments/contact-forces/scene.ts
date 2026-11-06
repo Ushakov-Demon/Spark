@@ -11,7 +11,7 @@ import { TABLE } from '../../graphics/scene/constants.js';
 import { dynamometerSvg, forceGaugeSvg, labBalanceSvg, standSvg, THREAD } from '../../graphics/scene/kit.js';
 import { loadHeight, loadSvg } from '../../graphics/scene/weights.js';
 import { Channel, type Motion } from '../../motion.js';
-import { clack, scraping, thud } from '../../sounds/index.js';
+import { clunk, scraping } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** Contact and non-contact forces: the case shown, how far it has played (0 — before, 1 — done), its conditions. */
@@ -214,10 +214,7 @@ function touchRun(next: TouchView, draw: (v: TouchView) => void): Motion | null 
     channels: [k],
     frame: (done) => {
       if (done) {
-        if (next.case === 'fall') {
-          thud();
-          clack();
-        }
+        if (next.case === 'fall') clunk();
         return draw(next);
       }
       if (next.case === 'table') scraping(0.6);

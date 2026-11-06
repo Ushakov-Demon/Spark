@@ -10,8 +10,6 @@ const MASS_UNITS = [
   { id: 'kg', factor: 1 },
   { id: 't', factor: 1000 },
 ];
-/** A body's mass: any (the instrument suits it); the defaults — one, two and four 100 g weights. */
-const massControl = (id: string, value: number) => ({ id, label: msg(`mass-gravity-${id}`), kind: 'number', unit: 'kg', min: 0.001, max: 1e6, step: 0, value, units: MASS_UNITS }) as const;
 
 export const preset_mass_gravity: Preset = varied(
   {
@@ -34,15 +32,14 @@ export const preset_mass_gravity: Preset = varied(
     expect: 'reached',
   },
   {
-    // Any three masses, and the «what if…» — a block of another substance, as heavy as the third body.
+    // Any first mass (the instrument suits it), each next twice as much; and the «what if…» — a block of another substance, as heavy as the third body.
     controls: [
-      massControl('m1', 0.1),
-      massControl('m2', 0.2),
-      massControl('m3', 0.4),
+      { id: 'mass', label: msg('mass-gravity-mass'), kind: 'number', unit: 'kg', min: 0.001, max: 1e6, step: 0, value: 0.1, units: MASS_UNITS },
       { id: 'block', label: msg('mass-gravity-block-label'), kind: 'choice', value: 'wood', options: MG_BLOCKS.map((b) => ch(b, blockName(b))) },
     ],
     build: (v) => {
-      const masses = [Number(v['m1']), Number(v['m2']), Number(v['m3'])];
+      const first = Number(v['mass']);
+      const masses = [first, 2 * first, 4 * first];
       const block = String(v['block']) as MgBlock;
       const m = (x: number) => (l: Locale) => massText(x, l);
       return {

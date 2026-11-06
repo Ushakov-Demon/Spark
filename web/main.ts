@@ -2333,11 +2333,12 @@ function render() {
     const line = scene.page;
     // A catch sprung: first he giggles, then says it.
     const laugh = view.professor.act === 'giggle';
-    if (line && !scene.reading && !lookingAt && isOn('speaker'))
+    if (line && !scene.reading && !lookingAt)
       sayTimer = window.setTimeout(() => {
-        const g = laugh ? giggle(currentVoice()) : 0;
+        // (The giggle goes with its animation: a sound of the scene, there whatever the voice; 🔇 alone silences it.)
+        const g = laugh ? giggle() : 0;
         if (g) scene.talk(g);
-        sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), g ? g * 1000 + 150 : 0);
+        if (isOn('speaker')) sayTimer = window.setTimeout(() => scene.talk(babble(line, currentVoice(), locale)), g ? g * 1000 + 150 : 0);
       }, 140);
   }
   lastSaid = view.professor.says;

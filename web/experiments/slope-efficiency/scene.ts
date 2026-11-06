@@ -4,6 +4,7 @@ import { readingsOf, formatMeasured } from '../../../src/scenarios/measuring.js'
 import { TABLE } from '../../graphics/scene/constants.js';
 import { blockSvg, dynamometerSvg, standSvg, THREAD, weightsSvg, WOOD_EDGE } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { scraping } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** The inclined plane (grade 8): how high its end is, m, and the board's length; how far up the block is (0…1). */
@@ -50,7 +51,10 @@ function slopeUp(next: SlopeView, draw: (v: SlopeView) => void): Motion {
   const up = new Channel(0, 1, { kind: 'steady', speed: 0.35 }, 0.005);
   return {
     channels: [up],
-    frame: (done) => draw({ ...next, slope: { ...next.slope, up: up.value }, pull: done || up.value > 0.2 ? next.pull! : '…' }),
+    frame: (done) => {
+      if (!done) scraping(0.4);
+      draw({ ...next, slope: { ...next.slope, up: up.value }, pull: done || up.value > 0.2 ? next.pull! : '…' });
+    },
   };
 }
 

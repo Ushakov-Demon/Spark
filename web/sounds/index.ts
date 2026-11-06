@@ -2,7 +2,7 @@
  * Sounds of the lab, synthesized in the browser (Web Audio) — no sound files.
  * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down,
  * a stopwatch's «пік», a ball rolling and hitting a stop, the wind, a camera's shutter and a stroboscope's flashes,
- * a windlass creaking, a block dragged along a table.
+ * a windlass creaking, a block dragged along a table, a weight landing.
  * Off by the 🔇 button (remembered); browsers allow sound only after a click
  * or a key, which is always how these happen.
  */
@@ -361,6 +361,12 @@ export function thud(): void {
   noise(a, out, t, 0.12, 900, 0.6);
 }
 
+/** A metal weight landing on something hard: a dull blow with a knock of metal in it. */
+export function clunk(): void {
+  thud();
+  clack();
+}
+
 /** Salt dissolving: a quiet fizz that fades. */
 export function fizz(seconds = 1.6): void {
   const a = audio();
@@ -415,8 +421,6 @@ interface Voice {
   readonly bright: number;
   /** How loud the voice stays at the join of two syllables, 0…1 (one breath, never silent: 0.4). */
   readonly join?: number;
-  /** A breathy «х» before every syllable (a laugh), not now and then a consonant. */
-  readonly huff?: boolean;
 }
 // Matched by spectrogram to a cartoon voice the author liked (not copied: no recording is used) —
 // ≈ 150…290 Hz (set lower here, ≈ 120…195), little at 2–2.5 kHz, a strong band near 4 kHz — and made
@@ -424,8 +428,6 @@ interface Voice {
 // jumps about but stays level over the line (the sample climbed; line after line that sounded like a
 // voice forever going up).
 const TOON: Voice = { low: 120, high: 195, step: 0.2, glide: 1.04, volume: 0.55, rasp: 0.15, formantShift: 1.2, clarity: 0.45, contour: 0.95, arc: 1.15, ring: 3900, bright: 0.8 };
-// The same Professor giggling: higher, breathy, short syllables falling in pitch, nearly silent between them.
-const GIGGLE: Voice = { ...TOON, low: 230, high: 290, step: 0.13, glide: 0.92, volume: 0.5, rasp: 0.6, formantShift: 1.3, contour: 0.72, arc: 1.05, join: 0.05, huff: true };
 export const VOICE_IDS: readonly VoiceId[] = ['toon', 'speech', 'none'];
 /** Consonants as short noise bursts: centre frequency, Hz, and length, s (с, ш, т, к, п/б, м/н — a soft hum). */
 const CONSONANTS: readonly (readonly [number, number])[] = [[6000, 0.05], [3000, 0.05], [4000, 0.018], [1800, 0.02], [900, 0.015], [300, 0.03]];
@@ -451,7 +453,7 @@ function quiet(a: AudioContext): void {
 
 /** A second of white noise, made once: breath for a hoarse voice. */
 let breathBuf: AudioBuffer | null = null;
-function breathBuffer(a: AudioContext): AudioBuffer {
+function breathBuffer(a: BaseAudioContext): AudioBuffer {
   if (breathBuf) return breathBuf;
   breathBuf = a.createBuffer(1, Math.ceil(a.sampleRate * 1), a.sampleRate);
   const d = breathBuf.getChannelData(0);
@@ -461,7 +463,7 @@ function breathBuffer(a: AudioContext): AudioBuffer {
 
 /** A "vocal folds" source: harmonics falling off as 1/kᶠ, like a human voice. */
 const glottal = new Map<number, PeriodicWave>();
-function glottalWave(a: AudioContext, fall: number): PeriodicWave {
+function glottalWave(a: BaseAudioContext, fall: number): PeriodicWave {
   const made = glottal.get(fall);
   if (made) return made;
   const n = 40;
@@ -486,7 +488,7 @@ function browserVoice(lang: string): SpeechSynthesisVoice | null {
  */
 function flowing(a: AudioContext, out: GainNode, vc: Voice, count: number, question: boolean, exclaim: boolean, t0: number): number {
   // Gibberish is uneven: some syllables run together, some are drawn out.
-  const lens = Array.from({ length: count }, (_, i) => vc.step * (i === count - 1 ? 1.5 : vc.huff ? 0.9 + Math.random() * 0.2 : 0.6 + Math.random() * 0.8));
+  const lens = Array.from({ length: count }, (_, i) => vc.step * (i === count - 1 ? 1.5 : 0.6 + Math.random() * 0.8));
   const end = t0 + lens.reduce((x, y) => x + y, 0);
   const o = a.createOscillator();
   o.setPeriodicWave(glottalWave(a, vc.bright));
@@ -576,8 +578,7 @@ function flowing(a: AudioContext, out: GainNode, vc: Voice, count: number, quest
     formants[0]!.bp.frequency.linearRampToValueAtTime(b1 * shift, t + len * 0.9);
     formants[1]!.bp.frequency.linearRampToValueAtTime(b2 * shift, t + len * 0.9);
     formants[2]!.bp.frequency.setValueAtTime(2500 * shift, t);
-    if (vc.huff) noise(a, out, t - 0.02, 0.05, 1600, 0.2);
-    else if (i > 0 && Math.random() < 0.6) {
+    if (i > 0 && Math.random() < 0.6) {
       const [cf, cl] = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)]!;
       noise(a, out, t - cl * 0.3, cl, cf, 0.12);
     }
@@ -629,16 +630,84 @@ export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
 }
 
 /** The Professor giggling — «хі-хі-хі» in his own voice (none when he is silent). Returns how long it lasts, s. */
-export function giggle(v: VoiceId = voice): number {
-  if (v === 'none') return 0;
+export function giggle(): number {
   const a = audio();
   if (!a) return 0;
   quiet(a);
   const out = a.createGain();
-  out.gain.value = GIGGLE.volume;
+  out.gain.value = 1;
   out.connect(a.destination);
   speaking = out;
-  return flowing(a, out, GIGGLE, 4 + Math.round(Math.random()), false, true, a.currentTime + 0.03);
+  return giggling(a, out, a.currentTime + 0.03);
+}
+
+/** The vowel of a laugh, «і»: its formants (centre, Hz; sharpness; strength). */
+const LAUGH_VOWEL: readonly (readonly [number, number, number])[] = [[290, 5, 0.7], [2650, 5, 2.6], [3400, 7, 1.7]];
+const LAUGH_LEVEL = 0.5;
+/**
+ * A giggle, «хі-хі-хі-хі-хі», as a laugh is made: a run of short syllables some five a second, each a long soft breath
+ * (the «х», wide noise that swells without an edge) going over into a voiced «і» that falls in pitch and dies away; the voice
+ * starts high and sinks from syllable to syllable, and the last one is drawn out. Returns how long it lasts, s.
+ */
+export function giggling(a: BaseAudioContext, out: AudioNode, t0: number, random: () => number = Math.random): number {
+  const mouth = a.createGain();
+  mouth.gain.value = LAUGH_LEVEL;
+  mouth.connect(out);
+  const vowel = a.createGain();
+  for (const [hz, q, strength] of LAUGH_VOWEL) {
+    const band = a.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = hz;
+    band.Q.value = q;
+    const g = a.createGain();
+    g.gain.value = strength;
+    vowel.connect(band).connect(g).connect(mouth);
+  }
+  // The «х» is breath, wide: not the vowel's narrow bands, which would ring.
+  const hiss = a.createBiquadFilter();
+  hiss.type = 'bandpass';
+  hiss.frequency.value = 3200;
+  hiss.Q.value = 0.8;
+  hiss.connect(mouth);
+  const count = 5 + Math.round(random());
+  const wave = glottalWave(a, 0.9);
+  const breath = breathBuffer(a);
+  let t = t0;
+  for (let i = 0; i < count; i++) {
+    const last = i === count - 1;
+    const share = i / (count - 1);
+    const hz = (365 - 95 * share) * (0.97 + 0.06 * random());
+    // Louder at once, fading towards the end of the laugh.
+    const loud = (i === 0 ? 0.8 : 1) * (1 - 0.45 * share);
+    const puff = 0.07;
+    const voiced = last ? 0.2 : 0.09;
+    // «х»: a long soft breath with no edge to it (one that starts sharply is heard as «т»), wide in the mouth's upper band.
+    const air = a.createBufferSource();
+    air.buffer = breath;
+    const airGain = a.createGain();
+    airGain.gain.setValueAtTime(0, t);
+    airGain.gain.linearRampToValueAtTime(0.5 * loud, t + puff * 0.75);
+    airGain.gain.linearRampToValueAtTime(0.28 * loud, t + puff + 0.02);
+    airGain.gain.linearRampToValueAtTime(0, t + puff + voiced * 0.8);
+    air.connect(airGain).connect(hiss);
+    air.start(t, random() * 0.7, puff + voiced + 0.02);
+    // «і»: the voice swells in under the breath, a little lower at its end.
+    const start = t + puff * 0.6;
+    const o = a.createOscillator();
+    o.setPeriodicWave(wave);
+    o.frequency.setValueAtTime(hz * 1.05, start);
+    o.frequency.exponentialRampToValueAtTime(hz * (last ? 0.78 : 0.9), start + voiced);
+    const g = a.createGain();
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(loud, start + 0.035);
+    g.gain.exponentialRampToValueAtTime(0.5 * loud, start + 0.035 + voiced * 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + voiced + 0.03);
+    o.connect(g).connect(vowel);
+    o.start(start);
+    o.stop(start + voiced + 0.05);
+    t += last ? puff + voiced : 0.2 + 0.03 * random();
+  }
+  return t - t0;
 }
 
 /**

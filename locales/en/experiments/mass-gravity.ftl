@@ -10,9 +10,7 @@ mass-gravity-choice-proportional = Twice the mass — twice the force
 mass-gravity-choice-slower = The force grows, but more slowly than the mass
 mass-gravity-choice-same = The Earth pulls every body with the same force
 
-mass-gravity-m1 = The first body
-mass-gravity-m2 = The second body
-mass-gravity-m3 = The third body
+mass-gravity-mass = Mass of the first body
 mass-gravity-block-label = The «what if…» block
 mass-gravity-optional = What if the body is of another substance? We hook on a block { mass-gravity-of } — { $mass } as well.
 ## $block — the block's substance (its id).

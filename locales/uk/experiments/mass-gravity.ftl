@@ -10,9 +10,7 @@ mass-gravity-choice-proportional = Удвічі більша маса — удв
 mass-gravity-choice-slower = Сила росте, але повільніше, ніж маса
 mass-gravity-choice-same = Земля тягне всі тіла з однаковою силою
 
-mass-gravity-m1 = Перше тіло
-mass-gravity-m2 = Друге тіло
-mass-gravity-m3 = Третє тіло
+mass-gravity-mass = Маса першого тіла
 mass-gravity-block-label = Брусок «а якщо…»
 mass-gravity-optional = А якщо тіло з іншої речовини? Чіпляємо брусок { mass-gravity-of } — теж { $mass }.
 ## $block — речовина бруска (id), від неї — прийменник: зі скла, з алюмінію, із деревини.
