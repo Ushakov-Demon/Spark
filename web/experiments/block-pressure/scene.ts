@@ -29,4 +29,4 @@ function pressureSvg(v: PressureView): string {
   return `${top}${blockSvg(x, base, v.block)}${e?.index === 1 ? `<path class="bench-mark" d="M${x + w + 2},${base - h} l${depth},${-depth * 0.6}"/>` : ''}${ruler}${label}`;
 }
 
-export const blockPressureScene = defineScene({ kind: 'pressure', view, svg: pressureSvg, motion: () => null });
+export const blockPressureScene = defineScene({ kind: 'pressure', view, svg: pressureSvg, share: 0, motion: () => null });

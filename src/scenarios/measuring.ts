@@ -135,6 +135,8 @@ export interface HangCommand {
   readonly into: 'air' | 'liquid';
   /** What the body is called ("невідомий брусок"), instead of its substance's name. */
   readonly label?: LocalizedText;
+  /** A box-shaped body of its own size (its edges — length, width, height, m): drawn so, not as a generic block. */
+  readonly box?: readonly [number, number, number];
 }
 
 

@@ -76,7 +76,7 @@ export interface SceneView {
   /** Bumped when salt is poured in: grains sink and dissolve in a little cloud. */
   readonly dissolve?: number;
   /** A body hanging on the dynamometer, in the air above the vessel or lowered into the liquid; what the dial shows. */
-  readonly hang?: { readonly display: string; readonly into: 'air' | 'liquid'; readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean };
+  readonly hang?: { readonly display: string; readonly into: 'air' | 'liquid'; readonly color: string; readonly volume: number; readonly share: number; readonly ball?: boolean; /** Its edges, m: drawn at the bench's scale (as the same body on the table). */ readonly box?: readonly [number, number, number] };
   /** The mechanics bench on the table instead of the vessel (grade 7: a spring, a block on a board). */
   readonly bench?: BenchView;
   /** The level was just read by the marks: a line at the level and the reading. */
@@ -548,7 +548,7 @@ export function createScene(): Scene {
           bench.innerHTML = v.bench ? benchSvgAt(v.bench) : '';
           done();
         }
-        if (fresh) centreBench(bench, (v.bench && sceneOf(v.bench.kind)?.share) || BENCH_SHARE);
+        if (fresh) centreBench(bench, (v.bench && sceneOf(v.bench.kind)?.share) ?? BENCH_SHARE);
         benchShown = v.bench ?? null;
       }
       root.classList.toggle('bench-on', !!v.bench);

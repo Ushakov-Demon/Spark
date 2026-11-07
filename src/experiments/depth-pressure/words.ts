@@ -10,8 +10,8 @@ import { DEPTH_TEXT, type DepthCommand } from './bench.js';
 
 export const text = (c: DepthCommand): StepText => DEPTH_TEXT['lab.depth'](c);
 
-/** No motion: the picture just changes. */
-export const busy = (): LocalizedText | null => null;
+/** The funnel goes down to its depth (or turns sideways), the manometer's water following. */
+export const busy = (c: DepthCommand): LocalizedText | null => (c.sideways ? msg('depth-pressure-busy-turn') : msg('depth-pressure-busy'));
 
 const cm = (x: number, locale: Locale) => formatMeasured('length', x, 0.001, locale);
 

@@ -1612,7 +1612,7 @@ function sceneView(): SceneView {
       return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: (bodyMass(e) * (ice ? s : 1)) / density, share: pieceShare(session.state, e), ...(ice ? { melting: Math.min(1, s * 4) } : {}), ...(!ice && sub.bodyShape === 'ball' ? { ball: true } : {}) }];
     }),
     ...(measured?.command.type === 'lab.hang'
-      ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1, ...(SUBSTANCES[measured.command.substance as SubstanceId]?.bodyShape === 'ball' ? { ball: true } : {}) } }
+      ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1, ...(SUBSTANCES[measured.command.substance as SubstanceId]?.bodyShape === 'ball' ? { ball: true } : {}), ...(measured.command.box ? { box: measured.command.box } : {}) } }
       : {}),
     // The coil on the multimeter: the latest reading stays on its display (dashes before the first).
     ...(preset?.plan?.some((s) => s.kind === 'bench' && s.command.type === 'lab.ohm') ? { ohmmeter: { display: ohmShown() } } : {}),

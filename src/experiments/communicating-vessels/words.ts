@@ -10,8 +10,8 @@ import { UTUBE_TEXT, type UtubeCommand } from './bench.js';
 
 export const text = (c: UtubeCommand): StepText => UTUBE_TEXT['lab.utube'](c);
 
-/** No motion: the picture just changes. */
-export const busy = (): LocalizedText | null => null;
+/** The water poured in, or the oil — each with its motion on the scene. */
+export const busy = (c: { readonly poured: number }): LocalizedText | null => (c.poured === 0 ? msg('communicating-vessels-busy') : msg('communicating-vessels-busy-oil'));
 
 const cm = (x: number, locale: Locale) => formatMeasured('length', x, 0.001, locale);
 

@@ -1,13 +1,15 @@
 import { ballAt } from './bodies.js';
 import { TABLE, VIEW_TOP } from './constants.js';
+import { CM } from './kit.js';
 import type { VesselGeom } from './vessels.js';
 
 /** Measuring instruments on the scene: the dynamometer over the vessel, electronic scales on the table. */
 /** A spring dynamometer hanging over the vessel; its body in the air above it or lowered into the liquid. */
-export function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number; ball?: boolean }, g: VesselGeom, level: number): string {
+export function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number; ball?: boolean; box?: readonly [number, number, number] }, g: VesselGeom, level: number): string {
   const x = (g.left + g.right) / 2;
-  const w = Math.max(12, Math.min(44, 22 * Math.cbrt(h.volume / 1e-5), g.right - g.left - 10));
-  const bh = h.ball ? w : w * 0.7;
+  // A body of its own shape (a block measured later on the table) at the table's scale; else a generic one, sized by its volume.
+  const w = h.box ? h.box[0] * 100 * CM : Math.max(12, Math.min(44, 22 * Math.cbrt(h.volume / 1e-5), g.right - g.left - 10));
+  const bh = h.box ? h.box[2] * 100 * CM : h.ball ? w : w * 0.7;
   // In the liquid the body hangs under the surface (or floats on it); in the air, above the rim.
   const bodyTop = h.into === 'air' ? g.top - bh - 26 : h.share < 1 ? level - (1 - h.share) * bh : Math.min(g.bottom - bh - 4, level + 10);
   // The dial never leaves the picture (its top edge is at VIEW_TOP).

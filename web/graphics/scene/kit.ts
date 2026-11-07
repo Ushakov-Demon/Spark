@@ -140,3 +140,15 @@ export function blockSvg(x: number, base: number, block: readonly [number, numbe
 
 /** How solid bodies look: in the vessel, on the balance's pan. */
 export const BODY_COLOR: Partial<Record<string, string>> = { 'table-salt': 'rgba(246, 246, 242, 0.97)', 'ammonium-chloride': '#f7f7f3', 'caustic-soda': '#f3f3ee', 'sodium-acetate': '#f6f6f1', sugar: '#fbfbf8', 'baking-soda': '#f4f4f0', 'copper-sulfate': '#2f7fd6', chalk: '#f1eee6', 'iron-ii-hydroxide': '#7f9a63', graphite: '#3a3d42', porcelain: '#f6f3ec', brick: '#b5553a', 'stearic-acid': '#f3efe4', tin: '#c8ccd0', aluminium: '#c9ced4', copper: '#c46b3c', iron: '#6d7177', steel: '#8d949c', brass: '#c9a43a', wood: '#c8995a', glass: 'rgba(170, 220, 230, 0.75)' };
+
+/**
+ * A U-tube of glass (a manometer, communicating vessels), all one piece: its arms at x and x + gap from `top` down to
+ * `bottom`, the bend below; the water one run too — from its level in the left arm down, round the bend and up to its
+ * level in the right one (none: `left` and `right` NaN). `bore` — the tube's width inside.
+ */
+export function uManometerSvg(x: number, gap: number, top: number, bottom: number, left: number, right: number, bore = 7): string {
+  const r = gap / 2;
+  const glass = `M${x},${top} V${bottom} a${r},${r} 0 0 0 ${gap},0 V${top}`;
+  const water = Number.isFinite(left) ? `<path d="M${x},${left} V${bottom} a${r},${r} 0 0 0 ${gap},0 V${right}" style="fill:none;stroke:#3b82c4;stroke-width:${bore}"/>` : '';
+  return `<path d="${glass}" style="fill:none;stroke:#8fb8dd;stroke-width:${bore + 4}"/><path d="${glass}" style="fill:none;stroke:#eef5fb;stroke-width:${bore + 1.5}"/>${water}`;
+}

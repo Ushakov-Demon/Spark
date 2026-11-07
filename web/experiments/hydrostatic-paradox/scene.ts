@@ -1,5 +1,6 @@
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
+import { uManometerSvg } from '../../graphics/scene/kit.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** Pascal's device: the vessel screwed on (none yet), the water's height in it, m; the manometer's Δh, m, and what was read. */
@@ -46,11 +47,10 @@ function vesselsSvg(v: VesselView): string {
   const left = rest + d;
   const right = rest - d;
   const tube = `<path d="M${x + 36},${base + 14} H${mx - 30} V${mTop - 14} H${mx} V${mTop}" style="fill:none;stroke:#7b8a99;stroke-width:3"/>`;
-  const arm = (ax: number) => `<rect x="${ax - 5}" y="${mTop}" width="10" height="${mBot - mTop}" style="fill:rgba(220,235,250,0.35);stroke:#8fb8dd"/>`;
-  const mw = `<rect x="${mx - 4}" y="${left}" width="8" height="${mBot - left}" style="fill:#3b82c4"/><rect x="${mx + 36}" y="${right}" width="8" height="${mBot - right}" style="fill:#3b82c4"/><path d="M${mx - 5},${mBot} q0,16 25,16 q25,0 25,-16" style="fill:none;stroke:#3b82c4;stroke-width:9"/>`;
+  const mw = uManometerSvg(mx, 40, mTop, mBot, left, right);
   const board = `<rect x="${mx - 18}" y="${mTop - 10}" width="76" height="${mBot - mTop + 32}" rx="4" style="fill:#e9dfc4;stroke:#a8945a"/>`;
   const marks = d > 1 ? `<path class="bench-mark" d="M${mx - 12},${left} H${mx + 52} M${mx - 12},${right} H${mx + 52}"/>${v?.read ? `<text class="bench-reading" x="${mx + 20}" y="${mBot + 40}" text-anchor="middle">Δh = ${v.read}</text>` : ''}` : '';
-  return `${ruler}${stand}${water}${glass}${poured}${board}${tube}${arm(mx)}${arm(mx + 40)}${mw}${marks}`;
+  return `${ruler}${stand}${water}${glass}${poured}${board}${tube}${mw}${marks}`;
 }
 
 export const hydrostaticParadoxScene = defineScene({ kind: 'vessels', view, svg: vesselsSvg, motion: () => null });

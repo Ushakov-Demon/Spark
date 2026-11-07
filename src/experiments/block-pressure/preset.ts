@@ -1,4 +1,5 @@
 import { msg } from '../../knowledge/messages.js';
+import { BENCH_BLOCK } from '../../scenarios/bench-kit.js';
 import { beaker, ch, PRESSURE, room } from '../../scenarios/preset-kit.js';
 import type { Preset } from '../../scenarios/presets.js';
 import { SUBSTANCES } from '../../substances/catalog.js';
@@ -15,7 +16,7 @@ export const preset_block_pressure: Preset = {
   guided: true,
   bench: 'pressure',
   plan: [
-    { kind: 'hang', substance: 'wood', mass: 0.12 * 0.06 * 0.04 * SUBSTANCES.wood.liquid.density.value, into: 'air', label: msg('block-pressure-plan-label') },
+    { kind: 'hang', substance: 'wood', mass: BENCH_BLOCK.edges[0] * BENCH_BLOCK.edges[1] * BENCH_BLOCK.edges[2] * SUBSTANCES.wood.liquid.density.value, into: 'air', label: msg('block-pressure-plan-label'), box: BENCH_BLOCK.edges },
     ...([0, 1, 2] as const).map((edge) => ({ kind: 'bench', command: { type: 'lab.edge', edge } }) as const),
   ],
   choices: [ch('largest', msg('block-pressure-choices')), ch('smallest', msg('block-pressure-choices-2')), ch('same', msg('block-pressure-choices-3'))],
