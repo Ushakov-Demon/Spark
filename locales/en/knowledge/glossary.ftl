@@ -121,6 +121,12 @@ term-beauplan-map-text = Guillaume de Beauplan’s map of 1648 — the «General
 term-led-zeppelin = Led Zeppelin
     .stems = led zeppelin
 term-led-zeppelin-text = A rock band. The cover of its first album (1969) is George Hardie’s drawing of Sam Shere’s photograph of the burning Hindenburg, taken on 6 May 1937. The name itself is a joke: “it would go over like a lead balloon”.
+term-noaa = NOAA
+    .stems = =noaa
+term-noaa-text = The National Oceanic and Atmospheric Administration: a scientific agency of the US Department of Commerce, formed on 3 October 1970. It forecasts the weather, watches the oceans and the atmosphere, charts the seas.
+term-utc = Coordinated Universal Time (UTC)
+    .stems = =utc
+term-utc-text = The main time standard the world’s clocks are set by; in everyday use it took the place of Greenwich Mean Time (GMT). It rests on International Atomic Time. Time zones are written as offsets from it: UTC+2 is two hours ahead. Ukraine is in UTC+2 (Eastern European Time).
 term-density = Density
     .stems = density
 term-density-text = The mass of a unit volume of a substance: ρ = m/V. A body denser than the liquid sinks, a less dense one floats.

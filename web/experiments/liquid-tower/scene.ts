@@ -5,6 +5,7 @@ import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, WOOD, WOOD_EDGE } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { plunge } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** The tower's cylinder: 11 units to the centimetre; 250 mL across 3.8 cm inside — 50 mL is 4.4 cm of it. */
@@ -69,6 +70,9 @@ function towerRun(next: TowerView, draw: (v: TowerView) => void): Motion | null 
   const pour = t.anim === 'pour';
   const clock = new Channel(0, 1, { kind: 'steady', speed: pour ? 1 / 4 : 1 / 1.6 }, 1e-4);
   const last = t.bodies[t.bodies.length - 1];
+  // A small body into the top layer, the four liquids' surface: a little «бульк» as it goes in.
+  const surface = 50 * TOWER_COLORS.length;
+  let entered = pour || !last || last.at >= surface;
   return {
     channels: [clock],
     frame: (done) => {
@@ -77,6 +81,10 @@ function towerRun(next: TowerView, draw: (v: TowerView) => void): Motion | null 
       if (pour) return draw({ ...t, poured: 4 * u });
       // (From above the cylinder's top, fast through the light layers, slowing down: an ease-out.)
       const at = last ? 280 + (last.at - 280) * (1 - (1 - u) ** 3) : 0;
+      if (!entered && at <= surface) {
+        entered = true;
+        plunge(0.8);
+      }
       draw({ ...t, bodies: [...t.bodies.slice(0, -1), ...(last ? [{ ...last, at }] : [])] });
     },
   };

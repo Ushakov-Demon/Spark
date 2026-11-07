@@ -94,6 +94,8 @@ export const GLOSSARY: readonly Term[] = [
   { ...term('beauplan'), source: 'wikipedia-beauplan', reference: true },
   { ...term('beauplan-map'), source: 'wikipedia-beauplan', reference: true },
   { ...term('led-zeppelin'), source: 'wikipedia-led-zeppelin-album', reference: true },
+  { ...term('noaa'), source: 'wikipedia-noaa', reference: true },
+  { ...term('utc'), source: 'wikipedia-utc' },
   term('density'),
   term('buoyancy'),
   // ---------------------------------------------------------------- equipment

@@ -1000,6 +1000,8 @@ export const SOURCES = {
     retrieved: '2026-10-29',
     caveats: 'Approximate formulas (no year correction): the declination near an equinox can be off by a few tenths of a degree.',
   }),
+  'wikipedia-noaa': source({ id: 'wikipedia-noaa', title: 'Wikipedia, National Oceanic and Atmospheric Administration: “a United States scientific and regulatory agency tasked with forecasting weather, monitoring oceanic and atmospheric conditions, charting the seas…”; “part of the United States Department of Commerce”; “formed on October 3, 1970”', url: 'https://en.wikipedia.org/wiki/National_Oceanic_and_Atmospheric_Administration', license: 'CC-BY-SA-4.0', retrieved: '2026-11-07' }),
+  'wikipedia-utc': source({ id: 'wikipedia-utc', title: 'Wikipedia, Coordinated Universal Time: “the primary time standard used globally to regulate clocks and time”; “the effective successor to Greenwich Mean Time (GMT)”; “UTC is based on TAI (International Atomic Time)”; “Time zones around the world are expressed using positive, zero, or negative offsets from UTC”. Time in Ukraine: “part of the Eastern European Time zone (UTC+02:00)” (https://en.wikipedia.org/wiki/Time_in_Ukraine)', url: 'https://en.wikipedia.org/wiki/Coordinated_Universal_Time', license: 'CC-BY-SA-4.0', retrieved: '2026-11-07' }),
   'wikipedia-kyiv': source({ id: 'wikipedia-kyiv', title: 'Wikipedia, Kyiv: coordinates 50°27′00″N 30°31′24″E (50.45000°N 30.52333°E)', url: 'https://en.wikipedia.org/wiki/Kyiv', license: 'CC-BY-SA-4.0', retrieved: '2026-10-29' }),
   'wikipedia-pmma': source({
     id: 'wikipedia-pmma',

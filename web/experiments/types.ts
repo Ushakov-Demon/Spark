@@ -24,6 +24,8 @@ export interface ExperimentScene<V, K extends string = string> {
   readonly kind: K;
   readonly view: (ctx: SceneContext) => V;
   readonly svg: (v: V) => string;
+  /** The least share of the board's room right of the Professor its apparatus takes (2/3 if not said): more for a long, low one. */
+  readonly share?: number;
   /** The motion from the previous picture (`prev`, when it was this experiment's too) to `next`; null — nothing to play. */
   readonly motion: (next: V, draw: (v: V) => void, prev: V | null) => Motion | null;
   /**

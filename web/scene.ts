@@ -22,6 +22,7 @@ import { BUBBLE_PAGE, BUBBLE_PAGE_PHONE, bubblePages } from './bubble.js';
 /** What a bubble takes besides its lines, px: its margin over the Professor, its padding, the page turn under the text, a gap at the top. */
 const BUBBLE_CHROME = 125;
 import { moving } from './prefs.js';
+import { sceneOf } from './experiments/index.js';
 
 // The drawings live in graphics/; the scene puts them together and moves the live parts.
 export type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
@@ -279,7 +280,7 @@ export function createScene(): Scene {
     benchAt = `translate(${f.mid.toFixed(1)} ${TABLE}) scale(${f.k.toFixed(3)}) translate(${(-f.cx).toFixed(1)} ${-TABLE})`;
     inner.setAttribute('transform', benchAt);
   };
-  const centreBench = (bench: SVGGElement) => {
+  const centreBench = (bench: SVGGElement, share = BENCH_SHARE) => {
     const box = benchBox(bench);
     const m = root.querySelector<SVGSVGElement>('.scene-svg')?.getScreenCTM();
     if (!box || !m) return;
@@ -297,7 +298,7 @@ export function createScene(): Scene {
     if (b.width > room) return;
     const high = TABLE - b.y;
     const top = toY(stage.top + board.offsetTop + board.clientTop) + TOP_MARGIN;
-    const k = Math.max(1, Math.min((room * BENCH_SHARE) / b.width, high > 0 ? (TABLE - top) / high : 1));
+    const k = Math.max(1, Math.min((room * share) / b.width, high > 0 ? (TABLE - top) / high : 1));
     benchFit = { mid: (left + right) / 2, cx: b.x + b.width / 2, k, lo, hi: right, top };
     setBenchAt(inner, benchFit);
   };
@@ -547,7 +548,7 @@ export function createScene(): Scene {
           bench.innerHTML = v.bench ? benchSvgAt(v.bench) : '';
           done();
         }
-        if (fresh) centreBench(bench);
+        if (fresh) centreBench(bench, (v.bench && sceneOf(v.bench.kind)?.share) || BENCH_SHARE);
         benchShown = v.bench ?? null;
       }
       root.classList.toggle('bench-on', !!v.bench);
