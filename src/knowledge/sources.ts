@@ -800,6 +800,21 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'rehal-2017-murcott': source({
+    id: 'rehal-2017-murcott',
+    title: 'Rehal J. et al. Studies on physico-mechanical properties of W. Murcott mandarin. Journal of Applied and Natural Science 9 (1): 80–84 (2017): «The average fruit mass of W. Murcott with and without peel was found to be 177.1g and 88.21 g respectively»; «The TSS … was found to be 10.8° B»; «The bulk density and true density is 680.14 kg/m3 and 750 kg/m3» (true density by water displacement, the fruit held under with a thin rod); «The thickness of the peel varied from 3.5-4.65 mm»; «fruit diameter varied from 81.82-68.97 mm»',
+    url: 'https://pdfs.semanticscholar.org/b01a/03a4a88e945678728184a76bc386b8695c7e.pdf',
+    license: 'facts-only',
+    retrieved: '2026-11-08',
+    caveats: 'The volume in its Table 2 is by the mean diameter (171.99 cm³) and does not agree with the true density by displacement; the displacement value is used.',
+  }),
+  'wikipedia-personal-flotation-device': source({
+    id: 'wikipedia-personal-flotation-device',
+    title: 'Wikipedia, Personal flotation device — History: «In 1804, a cork life jacket was available for sale in The Sporting Magazine»; «The modern life jacket is generally credited to the Inspector of Lifeboats at the Royal National Lifeboat Institution in the UK, Captain John Ross Ward … He created a brown cork vest in 1854 to be worn by lifeboat crews for both weather protection and buoyancy»; «In 1904 the rigid cork material was supplanted by pouches containing watertight cells filled with kapok, a vegetable material»',
+    url: 'https://en.wikipedia.org/wiki/Personal_flotation_device',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-11-08',
+  }),
   'itf-rules-2026-ball': source({
     id: 'itf-rules-2026-ball',
     title: 'ITF Rules of Tennis 2026, Appendix I «The Ball»: Type 2 (medium) — mass 56.0–59.4 grams, rebound 135–147 cm',

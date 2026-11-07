@@ -974,7 +974,7 @@ export const PRESET_ORDER: readonly string[] = [
   'coin-inertia', 'contact-forces', 'carts-mass', 'lever-balance', 'mystery-metal', 'liquid-density', 'adding-forces', 'hooke-spring', 'weight-in-lift', 'mass-gravity', 'friction-factors', 'friction-coefficient', 'drag-form', 'ball-in-liquids', 'liquid-tower', 'solar-noon', 'roots-gravity', 'air-column', 'solar-system-model', 'calendars', 'newton-cannon', 'scales-diy', 'dyno-diy', 'rubber-motor',
   // Pressure: of solids; Pascal's law and the pressure at a depth; communicating vessels; the hydraulic machine;
   // the atmosphere's; the buoyant force; floating.
-  'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'fountain-model', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'cartesian-diver', 'ice-level', 'balloon-lift',
+  'block-pressure', 'depth-pressure', 'hydrostatic-paradox', 'communicating-vessels', 'fountain-model', 'hydraulic-press', 'atmospheric-pressure', 'hydrostatic-weighing', 'archimedes-salt', 'floating-conditions', 'cartesian-diver', 'ice-level', 'balloon-lift', 'mandarin-float',
   // Mechanical work and energy: energy changing form; the lever and the slope (Kreminskyi: grade 8, lab works 1–2).
   'stairs-power', 'rolling-energy', 'ball-bounce', 'lever-moments', 'pulley', 'slope-efficiency', 'gear-train',
   // Chemistry, grade 9, topic 1: solutions.

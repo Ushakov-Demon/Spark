@@ -57,6 +57,11 @@ export function labBalanceSvg(x: number, top: number, display: string): string {
   return `<rect class="scale-body lab" x="${x - 60}" y="${top}" width="120" height="${TABLE - top}" rx="6"/><rect class="scale-stem" x="${x - 4}" y="${top - 6}" width="8" height="6"/><ellipse class="scale-pan" cx="${x}" cy="${top - 6}" rx="40" ry="5"/><rect class="scale-lcd" x="${x - 36}" y="${TABLE - 24}" width="72" height="16" rx="2"/><text class="scale-text" x="${x}" y="${TABLE - 12.5}" text-anchor="middle">${display}</text>`;
 }
 
+/** Kitchen scales on the table at x, their flat plate at `top` − 3 (a bigger load than the lab balance takes): the body, the plate, the display. */
+export function kitchenScaleSvg(x: number, top: number, display: string): string {
+  return `<rect class="scale-body" x="${x - 66}" y="${top}" width="132" height="${TABLE - top}" rx="6"/><rect class="scale-plate" x="${x - 70}" y="${top - 3}" width="140" height="5" rx="2"/><rect class="scale-lcd" x="${x - 34}" y="${TABLE - 18}" width="68" height="14" rx="2"/><text class="scale-text" x="${x}" y="${TABLE - 7.5}" text-anchor="middle">${display}</text>`;
+}
+
 /** A stopwatch standing on the table at x, its bottom just above it: its display (and, when the drawing is sped up, by how much). */
 export function stopwatchSvg(sw: { readonly display: string; readonly fast?: number }, x: number): string {
   const y = TABLE - 30;
