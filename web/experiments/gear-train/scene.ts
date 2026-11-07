@@ -2,6 +2,7 @@ import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { Channel, type Motion } from '../../motion.js';
+import { meshing } from '../../sounds/index.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /**
@@ -64,18 +65,22 @@ function svg(v: GearView): string {
   return board + out.join('') + read;
 }
 
-/** The handle turned: the driver turns its turns (about a second and a half a turn, at most 4 s), the rest with it. */
+/** The handle turned: the driver turns its turns (about a second and a half a turn, at most 4 s), the rest with it, clicking tooth by tooth. */
 function motion(next: GearView, draw: (v: GearView) => void): Motion | null {
   if (!next.read) return null;
   const T = Math.min(4, 1.5 * next.turned);
   const clock = new Channel(0, 1, { kind: 'steady', speed: 1 / T }, 1e-6);
+  // The teeth click as they go in: the driver's teeth through the mesh (every mesh of the train passes as many).
+  const click = meshing();
   return {
     channels: [clock],
     frame: (done) => {
       if (done) return draw(next);
       const { read: _r, ...rest } = next;
       void _r;
-      draw({ ...rest, turned: next.turned * clock.value });
+      const turned = next.turned * clock.value;
+      click(turned * (next.train[0] ?? 0));
+      draw({ ...rest, turned });
     },
   };
 }

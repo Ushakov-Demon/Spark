@@ -276,6 +276,8 @@ export function createScene(): Scene {
   let benchAt = '';
   /** The least share of the room the apparatus takes; the board's top it does not pass (a margin under it). */
   const BENCH_SHARE = 2 / 3;
+  /** A small apparatus is drawn bigger — at most this much: more, and it reads as something else (a balance as a table, a block as a crate). */
+  const BENCH_MAX_ZOOM = 1.8;
   const TOP_MARGIN = 8;
   const benchBox = (bench: SVGGElement) => {
     const inner = bench.firstElementChild as SVGGElement | null;
@@ -311,7 +313,7 @@ export function createScene(): Scene {
     if (b.width > room) return;
     const high = TABLE - b.y;
     const top = toY(stage.top + board.offsetTop + board.clientTop) + TOP_MARGIN;
-    const k = Math.max(1, Math.min((room * share) / b.width, high > 0 ? (TABLE - top) / high : 1));
+    const k = Math.max(1, Math.min(BENCH_MAX_ZOOM, (room * share) / b.width, high > 0 ? (TABLE - top) / high : 1));
     benchFit = { mid: (left + right) / 2, cx: b.x + b.width / 2, k, lo, hi: right, top };
     setBenchAt(inner, benchFit);
   };
@@ -616,9 +618,16 @@ export function createScene(): Scene {
         // (Only a motion starts and stops a stopwatch: a picture drawn as it stands is silent.)
         const shownWatch = () => bench.querySelector('.sw-text')?.textContent ?? undefined;
         const ear = stopwatchEar(shownWatch(), beep);
+        // The first frame of a step already at the size it will keep: what the step brings (a bottle after a balance)
+        // is fitted onto the board at once, not shrunk after its motion is over.
+        let fitted = false;
         const draw = (x: BenchView) => {
           bench.innerHTML = benchSvgAt(x);
           ear.hear(shownWatch(), performance.now());
+          if (!fitted) {
+            fitted = true;
+            keepOnBoard(bench);
+          }
         };
         const motion = v.bench && moving() ? benchMotion(benchShown, v.bench, draw) : null;
         const done = () => {

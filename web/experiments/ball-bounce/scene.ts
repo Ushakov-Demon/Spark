@@ -4,6 +4,7 @@ import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, STEEL, WOOD_EDGE } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
+import { sound } from '../../sounds/events.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** g for the bounce's timing, m/s². */
@@ -92,11 +93,24 @@ function bounce(next: BounceView, draw: (v: BounceView) => void): Motion {
   const FLATTEN = 0.15;
   const total = legs.reduce((a, x) => a + x.time, 0) + (flat ? FLATTEN : 0);
   const clock = new Channel(0, total, { kind: 'steady', speed: 0.4 }, 1e-4);
+  // Each fall ends on the plate: the ball's own knock (from its mass and size), as loud as the speed it hit with
+  // (√ of the height it fell); plasticine thuds.
+  const spec = BOUNCE_BALLS[b.ball as BounceBall];
+  let end = 0;
+  const falls = legs.map((leg) => ({ leg, at: (end += leg.time) })).filter(({ leg }) => leg.to === 0);
+  let heard = 0;
+  const hear = (now: number) => {
+    for (; heard < falls.length && falls[heard]!.at <= now; heard++) {
+      const h = falls[heard]!.leg.from;
+      sound(flat && heard === falls.length - 1 ? { kind: 'lands' } : { kind: 'bounces', mass: spec.mass.value, size: spec.size, strength: Math.sqrt(h) });
+    }
+  };
   return {
     channels: [clock],
     frame: (done) => {
       if (done) return draw(next);
       let t = clock.value;
+      hear(t);
       const { read: _r, ...rest } = b;
       for (const leg of legs) {
         if (t <= leg.time) {

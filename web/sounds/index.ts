@@ -2,7 +2,7 @@
  * Sounds of the lab, synthesized in the browser (Web Audio) — no sound files.
  * A "plop" when a body goes into a liquid, a soft fizz while salt dissolves, a cannon's shot and its ball coming down,
  * a stopwatch's «пік», a ball rolling and hitting a stop, the wind, a camera's shutter and a stroboscope's flashes,
- * a windlass creaking, a block dragged along a table, a weight landing, a body going into water and its bubbles.
+ * a windlass creaking, gears clicking tooth by tooth, a block dragged along a table, a weight landing, a body going into water and its bubbles.
  * Off by the 🔇 button (remembered); browsers allow sound only after a click
  * or a key, which is always how these happen.
  */
@@ -323,6 +323,51 @@ export function cranking(): (turns: number) => void {
   };
 }
 
+/** One tooth of a gear going into another's: a small dry plastic «тік», at `at` (the audio clock), its pitch a touch off each time. */
+function tick(a: AudioContext, at: number, volume: number): void {
+  const out = a.createGain();
+  out.gain.value = volume;
+  out.connect(a.destination);
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(2600 * (0.92 + Math.random() * 0.16), at);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(1, at + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.03);
+  o.connect(g).connect(out);
+  o.start(at);
+  o.stop(at + 0.04);
+  noise(a, out, at, 0.015, 4500, 0.6);
+}
+
+const gearWhir = sustained('bandpass', 150);
+/** At most this many tooth clicks are heard in one frame: faster, they are a whir, not clicks one by one. */
+const TICKS_PER_FRAME = 3;
+/**
+ * Gears meshing: a «тік» for each tooth that goes in, and a soft whir that grows with the speed. Made for one motion;
+ * called on every frame with the teeth gone through the mesh so far (turns × teeth — the same at every mesh of a train).
+ */
+export function meshing(): (teeth: number) => void {
+  let done = 0;
+  let last = performance.now();
+  return (teeth) => {
+    const a = audio();
+    if (!a) return;
+    const now = performance.now();
+    const dt = Math.max(1, now - last);
+    last = now;
+    const n = Math.floor(Math.abs(teeth)) - done;
+    if (n <= 0) return;
+    done += n;
+    // (Teeth a second: the whir rises with them; the clicks are spread over the frame, as they came.)
+    const rate = (n * 1000) / dt;
+    gearWhir(500 + 20 * Math.min(rate, 60), EVENT_LEVEL * Math.min(0.5, rate / 120), 20);
+    const heard = Math.min(n, TICKS_PER_FRAME);
+    for (let i = 0; i < heard; i++) tick(a, a.currentTime + (i * dt) / 1000 / heard, EVENT_LEVEL * 0.9);
+  };
+}
+
 /** A camera's shutter: a dry «клац», a click of noise over a small low knock. */
 export function shutter(): void {
   const a = audio();
@@ -442,6 +487,34 @@ export function thud(): void {
   o.start(t);
   o.stop(t + 0.25);
   noise(a, out, t, 0.12, 900, 0.6);
+}
+
+/**
+ * A ball bouncing off something hard: a short knock at the ball's own ring (`pitch`, Hz — a hollow ping-pong ball
+ * high and bright, a felt-covered tennis ball low and dull) with a click of the impact; `strength` 0…1 — how fast it hit.
+ */
+export function tock(pitch: number, strength = 1): void {
+  const a = audio();
+  if (!a) return;
+  const t = a.currentTime;
+  const s = Math.max(0.05, Math.min(1, strength));
+  const out = a.createGain();
+  out.gain.value = EVENT_LEVEL * (0.35 + 0.9 * s);
+  out.connect(a.destination);
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(pitch * 1.15, t);
+  o.frequency.exponentialRampToValueAtTime(pitch, t + 0.02);
+  // (A high, hollow ball rings a little longer than a low, dull one.)
+  const ring = Math.min(0.12, 0.03 + pitch / 40000);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(1, t + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + ring);
+  o.connect(g).connect(out);
+  o.start(t);
+  o.stop(t + ring + 0.02);
+  noise(a, out, t, 0.03, Math.min(6000, pitch * 2), 0.5);
 }
 
 /** A metal weight landing on something hard: a dull blow with a knock of metal in it. */
