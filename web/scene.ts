@@ -10,12 +10,13 @@ import { blocksSvg, type TubePiece } from './graphics/scene/bodies.js';
 import { isGlass, LIQUID, METAL } from './graphics/scene/colors.js';
 import { CX, H, TABLE, VIEW_TOP, W } from './graphics/scene/constants.js';
 import { deviceSvg } from './graphics/scene/devices.js';
-import { dynamometerSvg, plateSvg, scalesSvg } from './graphics/scene/instruments.js';
+import { dynamometerSvg, hangBody, plateSvg, scalesSvg } from './graphics/scene/instruments.js';
 import { benchSvg, type BenchView } from './graphics/scene/bench.js';
 import { benchMotion } from './graphics/scene/bench-motion.js';
 import { stopwatchEar } from './graphics/scene/kit.js';
 import { play } from './motion.js';
 import { beep } from './sounds/index.js';
+import { once } from './sounds/events.js';
 import { baseFor, steamPuffs, vesselGeom, vesselPreview, type VesselGeom } from './graphics/scene/vessels.js';
 import type { DeviceKind, LiquidKind, VesselShape } from './graphics/scene/types.js';
 import { BUBBLE_PAGE, BUBBLE_PAGE_PHONE, bubblePages } from './bubble.js';
@@ -54,6 +55,8 @@ export interface SceneView {
   readonly crystalTint?: string;
   /** Bubbles in the whole volume (boiling). */
   readonly boiling: boolean;
+  /** Liquids that did not mix, each its layer (the vessel's own among them, colour ''): its colour and where it lies in the liquid's column (0 — the bottom, 1 — the surface). */
+  readonly layers?: readonly { readonly color: string; readonly from: number; readonly to: number }[];
   /** Steam over the surface, 0…1. */
   readonly steam: number;
   /** Temperature of the vessel wall, °C: above ≈ 500 °C it glows dull red, then cherry, then orange. */
@@ -221,6 +224,16 @@ export function createScene(): Scene {
   let lastView: SceneView | null = null;
   let shownFill: number | null = null;
   let fillAnim = 0;
+  /** The hung body going down into the liquid or up out of it: where it is (0 — in the air, 1 — in the liquid), the dial's last reading meanwhile. */
+  let hangAt = 0;
+  let hangAnim = 0;
+  let hangShown: { readonly into: 'air' | 'liquid'; readonly display: string } | null = null;
+  let hangHold = '';
+  /** The last body hung, kept while it is taken away (lifted out, the dynamometer fading). */
+  let hangGone: SceneView['hang'] | null = null;
+  let hangFade = 1;
+  /** The level waits this long (ms) for a body being lowered to reach the surface. */
+  let fillWait = 0;
   let lastDevice = '';
   /** Bodies drawn in the liquid so far: one more means one was just dropped in. */
   let piecesShown = 0;
@@ -349,6 +362,7 @@ export function createScene(): Scene {
           ${glass ? '' : `<path d="${g.inner}" class="inside"/>`}
           <g clip-path="url(#sc-liq)">
             <rect id="sc-liquid" x="${g.left - 10}" y="${g.top - 10}" width="${g.right - g.left + 20}" height="${g.bottom - g.top + 20}"/>
+            <g id="sc-layers"></g>
             <rect id="sc-surface" x="${g.left - 10}" y="0" width="${g.right - g.left + 20}" height="2" style="fill:rgba(255,255,255,0.6)"/>
             <g id="sc-bubbles" class="bubbles">${Array.from({ length: 14 }, (_, i) => `<circle cx="${g.left + 16 + ((i * 37) % Math.max(20, g.right - g.left - 30))}" cy="${g.bottom - 8}" r="${2 + (i % 3)}" style="animation-delay:${(i * 0.17) % 1.6}s"/>`).join('')}</g>
           </g>
@@ -424,19 +438,72 @@ export function createScene(): Scene {
       setFolded(on);
     },
     render(v) {
+      const prevView = lastView;
       lastView = v;
       // The level moves smoothly when it changes between frames of a paused experiment (a body
       // dropped in, water poured): from what is shown to the new value — after the body has fallen.
+      // A hung body goes down into the liquid (or comes up out of it) smoothly, the dial keeping its reading till it is there.
+      const into = v.hang?.into;
+      if (into && hangShown && hangShown.into !== into && moving()) {
+        cancelAnimationFrame(hangAnim);
+        const from = hangAt;
+        const to = into === 'liquid' ? 1 : 0;
+        hangHold = hangShown.display;
+        const t0 = performance.now();
+        fillWait = to ? 650 : 150;
+        // Going down, a «бульк» when its bottom reaches the surface (the wider the body, the fuller).
+        const b0 = geom && v.hang ? hangBody(v.hang, geom, 0, 1) : null;
+        const enters = once({ kind: 'into-liquid', size: Math.min(1.6, 0.7 + (b0?.w ?? 30) / 50) }, !to);
+        const tick = (now: number) => {
+          const k = Math.max(0, Math.min(1, (now - t0) / 1400));
+          hangAt = from + (to - from) * (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2);
+          if (geom && v.hang) {
+            const level = geom.bottom - Math.max(0, Math.min(1, shownFill ?? v.fill)) * (geom.bottom - geom.top);
+            const b = hangBody(v.hang, geom, level, hangAt);
+            enters(b.top + b.h >= level);
+          }
+          if (k >= 1) hangHold = '';
+          draw({ ...lastView!, fill: shownFill ?? lastView!.fill });
+          hangAnim = k < 1 ? requestAnimationFrame(tick) : 0;
+        };
+        hangAnim = requestAnimationFrame(tick);
+      } else if (!into && hangShown && prevView?.hang && moving()) {
+        // Taken away: lifted out of the liquid (if it is in), then the dynamometer fades.
+        cancelAnimationFrame(hangAnim);
+        hangGone = prevView.hang;
+        const from = hangAt;
+        const t0 = performance.now();
+        fillWait = 250;
+        const tick = (now: number) => {
+          const k = Math.max(0, Math.min(1, (now - t0) / 1600));
+          const lift = Math.min(1, k / 0.6);
+          hangAt = from * (1 - (lift < 0.5 ? 2 * lift * lift : 1 - (-2 * lift + 2) ** 2 / 2));
+          hangFade = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+          if (k >= 1) hangGone = null;
+          draw({ ...lastView!, fill: shownFill ?? lastView!.fill });
+          hangAnim = k < 1 ? requestAnimationFrame(tick) : 0;
+        };
+        hangAnim = requestAnimationFrame(tick);
+      } else if (!hangAnim) hangAt = into === 'liquid' ? 1 : 0;
+      if (v.hang) {
+        hangGone = null;
+        hangFade = 1;
+      }
+      hangShown = v.hang ? { into: v.hang.into, display: v.hang.display } : null;
       if (shownFill === null || v.running || v.device !== lastDevice) shownFill = v.fill;
       lastDevice = v.device;
       const grew = (v.pieces?.length ?? 0) > piecesShown;
       if (Math.abs(v.fill - shownFill) > 0.002 && !fillAnim) {
         const from = shownFill;
         const to = v.fill;
-        const t0 = performance.now() + (grew ? 420 : 0);
+        const t0 = performance.now() + (grew ? 420 : fillWait);
+        fillWait = 0;
+        // It comes to the new level and rocks about it a few times, dying away — then lies still.
         const tick = (now: number) => {
-          const k = Math.max(0, Math.min(1, (now - t0) / 700));
-          shownFill = from + (to - from) * (1 - (1 - k) ** 3);
+          const k = Math.max(0, Math.min(1, (now - t0) / 1800));
+          // (Up to it first — over a third of the time — then a few small, dying swings about it.)
+          const rise = 1 - (1 - Math.min(1, k / 0.35)) ** 3;
+          shownFill = k >= 1 ? to : from + (to - from) * (rise + 0.22 * Math.exp(-4 * k) * Math.sin(5 * Math.PI * Math.max(0, k - 0.2)));
           draw({ ...lastView!, fill: shownFill });
           fillAnim = k < 1 ? requestAnimationFrame(tick) : 0;
         };
@@ -464,7 +531,21 @@ export function createScene(): Scene {
       // (The surface's bright line: a clear liquid is told from an empty vessel by it.)
       $('sc-surface')?.setAttribute('y', String(level));
       const liq = $<SVGRectElement>('sc-liquid');
-      if (liq) liq.style.fill = v.tint && !v.dry && v.solid < 1 ? v.tint : v.dry ? (v.solid > 0 && v.solid >= 1 ? v.dry.solid : v.dry.melt) : v.solid >= 1 ? 'rgba(220, 240, 255, 0.92)' : LIQUID[v.liquid];
+      const ownColour = v.tint && !v.dry && v.solid < 1 ? v.tint : v.dry ? (v.solid > 0 && v.solid >= 1 ? v.dry.solid : v.dry.melt) : v.solid >= 1 ? 'rgba(220, 240, 255, 0.92)' : LIQUID[v.liquid];
+      // (In layers each is drawn on its own, the vessel's liquid too: one over another would mix their colours.)
+      if (liq) liq.style.fill = v.layers?.length ? 'transparent' : ownColour;
+      // Layers that did not mix: each where its density puts it, a bright line where two meet.
+      const layersG = $<SVGGElement>('sc-layers');
+      if (layersG) {
+        const depth = g.bottom - level;
+        layersG.innerHTML = (v.layers ?? [])
+          .map((x) => {
+            const top = g.bottom - x.to * depth;
+            const h = (x.to - x.from) * depth;
+            return `<rect x="${g.left - 10}" y="${top}" width="${g.right - g.left + 20}" height="${h + 0.5}" style="fill:${x.color || ownColour}"/>${x.to < 0.999 ? `<rect x="${g.left - 10}" y="${top - 0.75}" width="${g.right - g.left + 20}" height="1.5" style="fill:rgba(255,255,255,0.5)"/>` : ''}${x.from > 0.001 ? `<rect x="${g.left - 10}" y="${g.bottom - x.from * depth - 0.75}" width="${g.right - g.left + 20}" height="1.5" style="fill:rgba(255,255,255,0.5)"/>` : ''}`;
+          })
+          .join('');
+      }
       // Ice is lighter than water: a growing layer floats on top. A metal or salt melting dry: the solid
       // left lies on the bottom under its melt.
       const ice = $<SVGGElement>('sc-ice');
@@ -512,11 +593,13 @@ export function createScene(): Scene {
         }
       }
       // The dynamometer with its body, and the level mark.
-      const hk = v.hang ? `${v.hang.display}|${v.hang.into}|${v.hang.color}|${v.hang.volume}|${Math.round(level)}` : '';
+      const hang = v.hang ?? hangGone ?? undefined;
+      const hk = hang ? `${hangHold || hang.display}|${hang.into}|${hang.color}|${hang.volume}|${Math.round(level)}|${hangAt.toFixed(3)}|${hangFade.toFixed(2)}` : '';
       const dyn = $<SVGGElement>('sc-dyn');
       if (dyn && dyn.dataset['k'] !== hk) {
         dyn.dataset['k'] = hk;
-        dyn.innerHTML = v.hang ? dynamometerSvg(v.hang, g, level) : '';
+        dyn.innerHTML = hang ? dynamometerSvg(hangHold ? { ...hang, display: hangHold } : hang, g, level, hangAt) : '';
+        dyn.style.opacity = hangFade < 1 ? String(hangFade) : '';
       }
       // The bench replaces the vessel on the table.
       const bk = v.bench ? JSON.stringify(v.bench) : '';

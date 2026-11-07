@@ -42,6 +42,7 @@ import {
   readingsOf,
   readingText,
   formatMeasured,
+  liquidDensity,
   pieceShare,
   floatsInside,
   tubeGlass,
@@ -133,7 +134,8 @@ import { SUBSTANCE_FAMILIES, SUBSTANCES, type SubstanceId, type SubstanceItem } 
 import { createChart } from './chart.js';
 import { searchPlaces } from './place-search.js';
 import { catalogHtml, catalogUi, pagePath, parsePath, presetDescription, SITE, type Route } from './site.js';
-import { labSheetHtml as labSheetHtmlIn, planStepLabel as planStepLabelIn, predictsFirst, TOPIC_NUMBER, unspoiledSteps } from './experiment-sheet.js';
+import { esc, labSheetHtml as labSheetHtmlIn, planStepLabel as planStepLabelIn, predictsFirst, TOPIC_NUMBER, unspoiledSteps } from './experiment-sheet.js';
+import { goOnClick, goOnHtml, goOnMark, goOnOf, goOnReady, goOnReset } from './go-on.js';
 import { createKnob } from './knob.js';
 import { aboutHtml, ABOUT_UI, BUG_TEXT, bugReport, bugUrl, DEVELOPER, SAFETY_LINE } from './about.js';
 import { annotate, installFootnotes } from './terms.js';
@@ -318,6 +320,8 @@ function liveRowKey(): string | null {
 }
 /** A ready-made experiment led to its answer: it may go on freely from here (not on the bench: nothing is added there). */
 const presetDone = () => !!preset?.guided && !plan.length && presetAnswer !== null && !preset.bench;
+/** Answered and going on (choosing what to add or what to do, or something added): the dynamometer is taken away — it has done its part. */
+const hangPutAway = (): boolean => presetDone() && (adding || goOnReady() || !!assembly);
 /**
  * Going on after the answer: the experiment is a free one from now on — the same vessel with what is in it,
  * the protocol and the board kept; its own question is answered.
@@ -780,6 +784,9 @@ $('#music').onclick = () => labSetting('music', !isOn('music'));
 const newsButton = el('button', { type: 'button', className: 'news-button' });
 const addOverButton = el('button', { type: 'button', className: 'news-button add-over' });
 addOverButton.onclick = () => openAdding();
+/** Beside it: what is done with the vessel — the action, picked over the table. */
+const actionOverButton = el('button', { type: 'button', className: 'news-button action-over' });
+actionOverButton.onclick = () => startAssembly('action', true);
 newsButton.onclick = () => byTheWay(performance.now(), true);
 $('#paper-more').onclick = () => {
   $('#paper-body').innerHTML = `<p class="paper-loading">${t().byTheWay.loading}</p>`;
@@ -1185,6 +1192,7 @@ function addPortion(id: SubstanceId, grams: number, tempC: number, frozen: boole
   const entry = session.apply({ type: 'thermal.add', into: SAMPLE_ID, substance: id, mass: (grams / 1000) as never, temperature: celsius(tempC), ...(frozen ? { frozen: true } : {}) });
   if (!entry.ok) return tr(entry.error, locale);
   (finished ? pendingAdds : stepAdds).push({ what: sub.name, mass: grams / 1000 });
+  if (presetDone()) goOnMark();
   // The Professor comments on what was put in (salt dissolving, or some left on the bottom) — in free play too.
   lastDrop = { at: session.state.time, step: session };
   splash(id, grams / 1000, frozen);
@@ -1292,7 +1300,7 @@ function phaseNote(): { text: string; pct: number } | null {
 // ---------- rendering ----------
 const chart = createChart();
 const scene = createScene();
-scene.element.querySelector('.table-buttons')!.prepend(addOverButton, newsButton);
+scene.element.querySelector('.table-buttons')!.prepend(addOverButton, actionOverButton, newsButton);
 /**
  * The experiment's next move: the guide's step, the step offered, or Start (not while it runs) — what a tap on the
  * apparatus does, and the scene's own button on a phone (there the panel with the buttons may be folded away).
@@ -1447,6 +1455,35 @@ function liquidKindOf(sub: SubstanceItem): LiquidKind {
 }
 
 /** What the scene should show right now: read from the state, nothing computed here. */
+/**
+ * Liquids that did not mix with the vessel's own (oil on water, water under oil), each a layer of its own: stacked by
+ * density, the densest at the bottom — the vessel's liquid among them where its density puts it (its colour '': the
+ * scene's own for it). Shares of the liquid column, bottom 0 … top 1.
+ */
+function liquidLayers(): SceneView['layers'] {
+  const own = substance();
+  const layers = Object.values(session.state.entities).flatMap((e) => {
+    if (!isThermalBody(e) || !e.id.startsWith(`${SAMPLE_ID}+`) || (e.state.solidFraction ?? 0) > 0) return [];
+    const id = 'substance' in e.params ? (e.params.substance as SubstanceId | undefined) : undefined;
+    const s = id ? SUBSTANCES[id] : undefined;
+    if (!s || !s.category.startsWith('liquid.')) return [];
+    const density = s.liquid.density.value;
+    return [{ color: LIQUID_TINT[s.id] ?? BODY_COLOR[s.id] ?? 'rgba(232, 190, 60, 0.6)', density, litres: (bodyMass(e) / density) * 1000 }];
+  });
+  if (!layers.length) return undefined;
+  const total = usedVolume();
+  const ownLitres = Math.max(0, total - layers.reduce((a, x) => a + x.litres, 0));
+  // (The vessel's liquid as it is now: a solution is denser than its water — salty water lifts oil higher.)
+  const stack = [...layers, { color: '', density: liquidDensity(session.state) ?? own.liquid.density.value, litres: ownLitres }].sort((a, b) => b.density - a.density);
+  let from = 0;
+  return stack.flatMap((x) => {
+    const to = from + x.litres / total;
+    const layer = { color: x.color, from, to };
+    from = to;
+    return [layer];
+  });
+}
+
 function sceneView(): SceneView {
   const u = t();
   const b = sample();
@@ -1498,20 +1535,23 @@ function sceneView(): SceneView {
       : { mood: idleAct.mood, says: idleAct.lines[Math.max(0, idleLine)] ?? '', act: idleAct.name }
     : reply
     ? { mood: quiz!.options.find((o) => o.id === picked.ids[picked.ids.length - 1])?.right === false ? 'thinking' : 'happy', says: reply }
-    : verdict && presetAnswer && presetAnswer !== 'computing'
+    : verdict && presetAnswer && presetAnswer !== 'computing' && !goOnReady()
     ? tricked()
       ? { mood: 'happy', says: verdict, act: 'giggle' }
       : { mood: verdict === predictionVerdictRight() ? 'happy' : 'surprised', says: `${tr(presetAnswer.say, locale)} ${verdict}` }
     : measureError && !running
     ? { mood: 'thinking', says: measureError }
     : showingDrop()
-    ? { mood: 'surprised', says: showingDrop() === 'salt' ? droppedDissolves() : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'seeded' ? seededSay() : showingDrop() === 'float' ? u.guide.floats : showingDrop() === 'inside' ? u.guide.inside : u.guide.dropped }
-    : measured
+    ? { mood: 'surprised', says: showingDrop() === 'salt' ? droppedDissolves() : showingDrop() === 'salt-left' ? saltLeftSay() : showingDrop() === 'seeded' ? seededSay() : showingDrop() === 'float' ? u.guide.floats : showingDrop() === 'inside' ? u.guide.inside : showingDrop() === 'layer-top' || showingDrop() === 'layer-bottom' ? u.guide.layer(tr(SUBSTANCES[lastAddedId()].name, locale), showingDrop() === 'layer-top') : showingDrop() === 'mixed' ? u.guide.mixed(tr(SUBSTANCES[lastAddedId()].name, locale)) : u.guide.dropped }
+    : measured && !goOnReady()
     ? { mood: measured.record.value === null ? 'surprised' : 'happy', says: measureSay() }
     : weighShown
     ? { mood: weighShown.reading === null ? 'surprised' : 'happy', says: weighSay() }
-    : presetAnswer && presetAnswer !== 'computing' && tr(presetAnswer.say, locale)
+    : presetAnswer && presetAnswer !== 'computing' && tr(presetAnswer.say, locale) && !goOnReady()
     ? { mood: 'happy', says: tr(presetAnswer.say, locale) }
+    : // (Answered, then something put in or another action picked: the answer is behind; now — on.)
+      goOnReady() && !running && stepElapsed() === 0
+    ? { mood: 'happy', says: u.prof.goOn((finished || history.length ? u.continueStep : u.start).replace(/^[^\p{L}]+/u, '')) }
     : preset && !running && stepElapsed() === 0 && !history.length && !st
     ? { mood: 'thinking', says: tr(preset.question, locale) }
     : st && nextLabel
@@ -1573,7 +1613,9 @@ function sceneView(): SceneView {
     ...(tintOf(mix) ?? (mix ? undefined : LIQUID_TINT[sub.id]) ? { tint: (tintOf(mix) ?? LIQUID_TINT[sub.id])! } : {}),
     // Being set up over the table: what is not on it yet is not drawn, the liquid not yet poured.
     ...(assembly ? { away: { device: !assembly.placed.has('device'), vessel: !assembly.placed.has('vessel') } } : {}),
-    fill: assembly && !assembly.placed.has('liquid') ? 0 : Math.min(1, usedVolume() / params.size),
+    // (A body hung down into the liquid pushes its level up by the volume under the surface: L, as the vessel's size.)
+    ...(liquidLayers() ? { layers: liquidLayers()! } : {}),
+    fill: assembly && !assembly.placed.has('liquid') ? 0 : Math.min(1, (usedVolume() + (measured?.command.type === 'lab.hang' && !hangPutAway() && measured.command.into === 'liquid' ? (measured.record.inputs?.['share'] ?? 1) * (measured.record.inputs?.['volume'] ?? 0) * 1000 : 0)) / params.size),
     temperature: T,
     solid: mix && mix.water <= 1e-9 ? 0 : s,
     crystals: mix && mix.salt > 0 ? mix.crystals / mix.salt : 0,
@@ -1611,7 +1653,7 @@ function sceneView(): SceneView {
       const density = ice ? (sub.freezing?.solidDensity?.value ?? sub.liquid.density.value) : sub.liquid.density.value;
       return [{ color: ice ? 'rgba(225, 242, 255, 0.9)' : (BODY_COLOR[sub.id] ?? '#9aa1a8'), volume: (bodyMass(e) * (ice ? s : 1)) / density, share: pieceShare(session.state, e), ...(ice ? { melting: Math.min(1, s * 4) } : {}), ...(!ice && sub.bodyShape === 'ball' ? { ball: true } : {}) }];
     }),
-    ...(measured?.command.type === 'lab.hang'
+    ...(measured?.command.type === 'lab.hang' && !hangPutAway()
       ? { hang: { display: formatMeasured('force', measured.record.value, 0.1, locale), into: measured.command.into, color: BODY_COLOR[measured.command.substance] ?? '#9aa1a8', volume: measured.record.inputs?.['volume'] ?? 1e-5, share: measured.record.inputs?.['share'] ?? 1, ...(SUBSTANCES[measured.command.substance as SubstanceId]?.bodyShape === 'ball' ? { ball: true } : {}), ...(measured.command.box ? { box: measured.command.box } : {}) } }
       : {}),
     // The coil on the multimeter: the latest reading stays on its display (dashes before the first).
@@ -1734,8 +1776,28 @@ let lastSaid = '';
 let sayTimer = 0;
 
 /** "New experiment": the board is wiped with a sponge, then all is set up again from the start. */
-const renewButton = () => `<button type="button" class="renew" data-renew="1">${t().renew}</button>`;
-function renew() {
+const renewButton = () => `${goOnPanel()}<button type="button" class="renew" data-renew="1">${t().renew}</button>`;
+/** How this experiment goes on after its answer (go-on.ts — one for all), drawn under the answer. */
+function goOnPanel(): string {
+  const u = t();
+  const op = OPERATIONS[params.action];
+  const target = op.target && params.target !== undefined ? ` ${params.target} °C` : '';
+  const g = goOnOf({
+    answered: !!preset?.guided && !plan.length && presetAnswer !== null && presetAnswer !== 'computing',
+    bench: !!preset?.bench,
+    varies: !!presetGiven?.vary?.controls.some((c) => !c.hidden),
+    action: { label: tr(op.label, locale).replace('…', ''), will: `${tr(op.verbs.future, locale)}${target}` },
+  });
+  return goOnHtml(g, { ...u.goOn, add: u.choose.add, needs: u.startNeedsSomething });
+}
+/** Again on the same apparatus with other conditions: the experiment anew, its conditions open and in view. */
+function repeatWithOtherConditions() {
+  if (!presetGiven) return;
+  varyOpenFor = presetGiven.id;
+  startPreset(presetGiven, presetVals);
+  const box = document.querySelector<HTMLElement>('#vary');
+  if (box) void glideToTop(box, 16);
+}function renew() {
   running = false;
   scene.read(false);
   scene.wipe(() => {
@@ -1749,8 +1811,14 @@ function renew() {
 let planTotal = 0;
 /** The latest thing put into the vessel during a guided procedure (the Professor comments on it). */
 let lastDrop: { readonly at: number; readonly step: ExperimentSession<LabCommand> } | null = null;
-/** What was just put in, while nothing has happened since: a body that sank or floats, or salt that dissolved. */
-function showingDrop(): 'body' | 'float' | 'inside' | 'salt' | 'salt-left' | 'seeded' | null {
+/** What was put in last (the latest add command's substance). */
+function lastAddedId(): SubstanceId {
+  const l = session.result().log;
+  const c = [...l].reverse().find((e) => e.command.type === 'thermal.add')?.command;
+  return (c?.type === 'thermal.add' ? c.substance : 'water') as SubstanceId;
+}
+/** What was just put in, while nothing has happened since: a body that sank or floats, salt that dissolved, a liquid that lay in a layer. */
+function showingDrop(): 'body' | 'float' | 'inside' | 'salt' | 'salt-left' | 'seeded' | 'layer-top' | 'layer-bottom' | 'mixed' | null {
   if (!lastDrop || lastDrop.step !== session || running || session.state.time !== lastDrop.at) return null;
   const l = session.result().log;
   const c = l[l.length - 1]?.command;
@@ -1764,6 +1832,13 @@ function showingDrop(): 'body' | 'float' | 'inside' | 'salt' | 'salt-left' | 'se
   }
   const pieces = Object.values(session.state.entities).filter((e) => isThermalBody(e) && e.id.startsWith(`${SAMPLE_ID}+`));
   const last = pieces[pieces.length - 1];
+  // A liquid poured in: mixed into one liquid, or — not mixing — a layer of its own: on top if it is less dense than the vessel's liquid, else under it.
+  const poured = SUBSTANCES[c.substance as SubstanceId];
+  if (poured?.category.startsWith('liquid.') && !c['frozen']) {
+    const layer = last && isThermalBody(last) && last.params.substance === poured.id && (last.state.solidFraction ?? 0) <= 0;
+    if (!layer) return 'mixed';
+    return poured.liquid.density.value < (liquidDensity(session.state) ?? substance().liquid.density.value) ? 'layer-top' : 'layer-bottom';
+  }
   if (last && isThermalBody(last) && floatsInside(session.state, last)) return 'inside';
   return last && isThermalBody(last) && pieceShare(session.state, last) < 1 ? 'float' : 'body';
 }
@@ -2147,6 +2222,8 @@ function showOnlyWhatMatters() {
   document.querySelector('#expect')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', true);
   document.querySelector('#add')?.closest<HTMLElement>('section.card')?.toggleAttribute('hidden', bench);
   hide('.add-over', bench || (!preset && !tableSet) || !!assembly);
+  // (A ready-made procedure keeps its action until it is answered.)
+  hide('.action-over', bench || (!preset && !tableSet) || !!assembly || (!!preset?.guided && !presetDone()));
   hide('.edit-table', bench || !!preset || $('#setup').hidden || !!assembly || adding);
   scene.element.classList.toggle('editable', !bench && sandboxOpen() && !assembly && !adding);
   const somethingToExplain = stepsSoFar().some((x) => x.result.final.time > x.result.initial.time) || allReadings().length > 0;
@@ -2281,6 +2358,10 @@ function render() {
   startBtn.textContent = running ? u.pause : finished || history.length ? u.continueStep : u.start;
   // A guided procedure is led by its steps, not by "Start" — until it is answered: then it may go on.
   startBtn.hidden = !!preset?.guided && !presetDone();
+  // Answered, it may go on — once there is something to go on with (a thing put in, another action); till then it waits.
+  const idleStart = presetDone() && !goOnReady() && !running;
+  startBtn.disabled = idleStart;
+  startBtn.title = idleStart ? u.startNeedsSomething : '';
   $<HTMLButtonElement>('#reset').textContent = u.reset;
   $<HTMLButtonElement>('#weigh').textContent = u.weigh.button;
   $<HTMLButtonElement>('#read-level').textContent = u.measure.level;
@@ -2289,6 +2370,8 @@ function render() {
   renderVoice();
   signedLabel(newsButton, u.byTheWay.button);
   signedLabel(addOverButton, `➕ ${u.choose.add}`);
+  signedLabel(actionOverButton, u.choose.actionButton);
+  actionOverButton.title = u.action;
   editButton.textContent = !preset && !tableSet ? `🛠 ${u.choose.build}` : `✎ ${u.choose.change}`;
   addOverButton.title = u.choose.open;
   $('#chart-toggle').textContent = chartOpen ? u.chartHide : u.chartShow;
@@ -2778,6 +2861,8 @@ function closeChooser() {
 function openAdding(error?: string) {
   assembly = null;
   adding = true;
+  // (The dynamometer, if one hangs over the vessel, goes now: what is chosen is put into the vessel.)
+  render();
   scene.read(false);
   const u = t();
   const addable = new Set(addableTo(session.state, commands).map((x) => x.id));
@@ -3380,6 +3465,7 @@ function substanceChoices(matches: Matches = everything): ChoiceGroup[] {
 }
 
 function setAction(a: LabAction) {
+  if (presetDone() && a !== params.action) goOnMark();
   const op = OPERATIONS[a];
   const uses = op.uses;
   // Freezing and cooling take hours of model time: such operations start faster.
@@ -3852,7 +3938,7 @@ function nextPlanStep() {
 }
 
 // ---------- ready-made experiments ----------
-const escAttr = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const escAttr = esc;
 /** Physics, chemistry…: the ready-made experiments by subject, then by grade (both remembered). */
 let presetSubject: Subject = store.get('subject') === 'chemistry' ? 'chemistry' : 'physics';
 const gradeStored = store.get('grade');
@@ -4069,6 +4155,7 @@ $('#lab-sheet').addEventListener('click', (e) => {
 });
 
 function startPreset(chosen: Preset, chosenValues: PresetValues = {}) {
+  goOnReset();
   // The experiment's module and picture come when it opens (chunks of their own): it starts once they are here.
   if (chosen.bench && !sceneOf(chosen.bench)) return void loadExperiment(chosen.bench).then(() => startPreset(chosen, chosenValues), (e: unknown) => console.error(e));
   closeChooser();
@@ -4761,6 +4848,8 @@ setConsole(store.get('console') === 'open');
 // ---------- wiring ----------
 $('#quiz').addEventListener('click', (e) => {
   if ((e.target as HTMLElement).closest('button[data-renew]')) return renew();
+  // Going on after the answer (the block under it; go-on.ts).
+  if (goOnClick(e.target as HTMLElement, { add: () => openAdding(), action: () => startAssembly('action', true), start: () => toGame(() => ((lookingAt = null), toggleStart())), repeat: repeatWithOtherConditions })) return;
   if ((e.target as HTMLElement).closest('button[data-rechoose]')) {
     // The prediction opened again: all the choices, to pick anew.
     picked = { key: '', ids: [] };
@@ -4872,6 +4961,7 @@ function resetExperiment() {
   planTotal = plan.length;
   prediction = null;
   presetAnswer = null;
+  goOnReset();
   newSession();
   presetSetup();
 }

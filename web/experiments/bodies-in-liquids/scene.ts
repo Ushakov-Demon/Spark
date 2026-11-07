@@ -6,7 +6,7 @@ import { PLAY_SECONDS } from '../../graphics/scene/bench-motion.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { stopwatchSvg } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
-import { plunge } from '../../sounds/index.js';
+import { once } from '../../sounds/events.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /**
@@ -77,15 +77,12 @@ export function through<V extends SinkView>(next: V, run: NonNullable<SinkView['
   const lead = SINK_LEAD / v;
   const clock = new Channel(0, flip + lead + run.seconds, { kind: 'steady', speed: fast }, 1e-6);
   // The ball goes in with a «бульк», lower in a thick liquid; a bubble in a bottle makes no sound.
-  let entered = s.body !== 'ball';
+  const enters = once({ kind: 'into-liquid', thick: !!s.thick }, s.body !== 'ball');
   return {
     channels: [clock],
     frame: (done) => {
       const u = clock.value;
-      if (!entered && u >= flip) {
-        entered = true;
-        plunge(s.thick ? 1.4 : 1);
-      }
+      enters(u >= flip);
       if (!done && u < flip) return draw({ ...next, stopwatch: { display: lcd(0), fast }, sink: { ...s, turn: 1 - u / flip }, ...(next.carry ? { carry: { speed: next.carry.speed, shift: 0 } } : {}) } as V);
       const t = u - flip - lead;
       const sink = { ...s, at: done ? (s.at ?? 0) : t < 0 ? -SINK_LEAD + (u - flip) * v : t * v };

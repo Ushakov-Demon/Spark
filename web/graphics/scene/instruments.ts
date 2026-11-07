@@ -4,14 +4,25 @@ import { CM } from './kit.js';
 import type { VesselGeom } from './vessels.js';
 
 /** Measuring instruments on the scene: the dynamometer over the vessel, electronic scales on the table. */
-/** A spring dynamometer hanging over the vessel; its body in the air above it or lowered into the liquid. */
-export function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number; ball?: boolean; box?: readonly [number, number, number] }, g: VesselGeom, level: number): string {
-  const x = (g.left + g.right) / 2;
+/**
+ * Where a body hung on the dynamometer is: its top and height (px) — in the air above the vessel, in the liquid, or on
+ * its way between (`at`: 0 — in the air, 1 — in the liquid). The drawing and the sounds take it from here alike.
+ */
+export function hangBody(h: { into: 'air' | 'liquid'; volume: number; share: number; ball?: boolean; box?: readonly [number, number, number] }, g: VesselGeom, level: number, at_?: number): { top: number; w: number; h: number } {
   // A body of its own shape (a block measured later on the table) at the table's scale; else a generic one, sized by its volume.
   const w = h.box ? h.box[0] * 100 * CM : Math.max(12, Math.min(44, 22 * Math.cbrt(h.volume / 1e-5), g.right - g.left - 10));
   const bh = h.box ? h.box[2] * 100 * CM : h.ball ? w : w * 0.7;
   // In the liquid the body hangs under the surface (or floats on it); in the air, above the rim.
-  const bodyTop = h.into === 'air' ? g.top - bh - 26 : h.share < 1 ? level - (1 - h.share) * bh : Math.min(g.bottom - bh - 4, level + 10);
+  const inAir = g.top - bh - 26;
+  const inLiquid = h.share < 1 ? level - (1 - h.share) * bh : Math.min(g.bottom - bh - 4, level + 10);
+  const at = at_ ?? (h.into === 'air' ? 0 : 1);
+  return { top: inAir + (inLiquid - inAir) * at, w, h: bh };
+}
+
+/** A spring dynamometer hanging over the vessel; its body in the air above it or lowered into the liquid. */
+export function dynamometerSvg(h: { display: string; into: 'air' | 'liquid'; color: string; volume: number; share: number; ball?: boolean; box?: readonly [number, number, number] }, g: VesselGeom, level: number, at_?: number): string {
+  const x = (g.left + g.right) / 2;
+  const { top: bodyTop, w, h: bh } = hangBody(h, g, level, at_);
   // The dial never leaves the picture (its top edge is at VIEW_TOP).
   const top = Math.max(VIEW_TOP + 4, Math.min(g.top - 150, bodyTop - 140));
   const caseH = 92;

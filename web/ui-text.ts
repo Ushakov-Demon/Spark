@@ -74,6 +74,10 @@ export interface UiText {
     btnHang(into: 'air' | 'liquid'): string;
     dropped: string;
     floats: string;
+    /** A liquid that did not mix: its layer on top (less dense) or at the bottom. */
+    layer(what: string, top: boolean): string;
+    /** A liquid that mixed in: one liquid now. */
+    mixed(what: string): string;
     /** A body that neither sinks nor comes up: its density that of the liquid. */
     inside: string;
     dissolved(what: string, salty: boolean): string;
@@ -95,6 +99,8 @@ export interface UiText {
   };
   instruments: string;
   renew: string;
+  /** Going on with the vessel after a ready-made experiment's answer. */
+  goOn: { title: string; now(action: string, will: string): string; first: string; change: string; repeatTitle: string; repeatText: string; repeat: string };
   sound: { on: string; off: string; musicOn: string; musicOff: string };
   voice: { label: string; names: Readonly<Record<string, string>>; sample: string; noSpeech: string };
   dissolves: string;
@@ -190,6 +196,8 @@ export interface UiText {
   planDone: string;
   prof: {
     idle: string;
+    /** A ready-made experiment answered, then something put in (or another action picked): now it may go on. */
+    goOn(button: string): string;
     /** Nothing on the table yet: choose an experiment or build one. */
     bare: string;
     impossible: string;
@@ -225,7 +233,7 @@ export interface UiText {
   targetLine: string;
   addTitle: string;
   /** Choosing things over the table: a picture in the middle, its neighbours at the sides; the chosen one goes on the table. */
-  choose: { put: string; pour: string; putIn: string; add: string; change: string; what: string; build: string; close: string; prev: string; next: string; open: string };
+  choose: { put: string; pour: string; putIn: string; add: string; /** The button beside «Add» over the table: the action. */ actionButton: string; change: string; what: string; build: string; close: string; prev: string; next: string; open: string };
   addButton: string;
   addLiquid: string;
   addFrozen: string;
@@ -264,6 +272,8 @@ export interface UiText {
   apply: string;
   experiment: string;
   start: string;
+  /** Why «Start» waits after a ready-made experiment is answered. */
+  startNeedsSomething: string;
   continueStep: string;
   sideFold: string;
   sideUnfold: string;
@@ -393,6 +403,8 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   btnHang: (into) => (into === 'air' ? tl(lang, 'ui-guide-btn-hang') : tl(lang, 'ui-guide-btn-hang-2')),
   dropped: tl(lang, 'ui-guide-dropped'),
   floats: tl(lang, 'ui-guide-floats'),
+  layer: (what, top) => tl(lang, 'ui-guide-layer', { what, where: top ? 'top' : 'bottom' }),
+  mixed: (what) => tl(lang, 'ui-guide-mixed', { what }),
   inside: tl(lang, 'ui-guide-inside'),
   seeded: (w, c, t, warmed) => tl(lang, 'ui-guide-seeded-3', { c, w, t, value: warmed ? tl(lang, 'ui-guide-seeded') : tl(lang, 'ui-guide-seeded-2') }),
   dissolved: (w, salty) => tl(lang, 'ui-guide-dissolved-2', { w, value: salty ? tl(lang, 'ui-guide-dissolved') : '' }),
@@ -412,6 +424,7 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
 },
   instruments: tl(lang, 'ui-instruments'),
   renew: tl(lang, 'ui-renew'),
+  goOn: { title: tl(lang, 'ui-go-on-title'), now: (action, will) => tl(lang, 'ui-go-on-now', { action, will }), first: tl(lang, 'ui-go-on-first'), change: tl(lang, 'ui-go-on-change'), repeatTitle: tl(lang, 'ui-go-on-repeat-title'), repeatText: tl(lang, 'ui-go-on-repeat-text'), repeat: tl(lang, 'ui-go-on-repeat') },
   sound: {
   on: tl(lang, 'ui-sound-on'),
   off: tl(lang, 'ui-sound-off'),
@@ -547,6 +560,7 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   planDone: tl(lang, 'ui-plan-done'),
   prof: {
   idle: tl(lang, 'ui-prof-idle'),
+  goOn: (button) => tl(lang, 'ui-prof-go-on', { button }),
   bare: tl(lang, 'ui-prof-bare'),
   impossible: tl(lang, 'ui-prof-impossible'),
   heating: tl(lang, 'ui-prof-heating'),
@@ -587,6 +601,7 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   what: tl(lang, 'ui-choose-what'),
   build: tl(lang, 'ui-choose-build'),
   add: tl(lang, 'ui-choose-add'),
+  actionButton: tl(lang, 'ui-choose-action-button'),
   close: tl(lang, 'ui-by-the-way-close'),
   prev: tl(lang, 'ui-choose-prev'),
   next: tl(lang, 'ui-choose-next'),
@@ -630,6 +645,7 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   apply: tl(lang, 'ui-apply'),
   experiment: tl(lang, 'ui-details-experiment'),
   start: tl(lang, 'ui-start-2'),
+  startNeedsSomething: tl(lang, 'ui-start-needs-something'),
   continueStep: tl(lang, 'ui-continue-step'),
   sideFold: tl(lang, 'ui-side-fold'),
   sideUnfold: tl(lang, 'ui-side-unfold'),

@@ -244,6 +244,10 @@ const flyTone = sustained('bandpass', 150, true);
 /** A fly: a thin rasping tone that never holds still, higher and louder the nearer it is. Every frame it flies, `near` from 0 to 1. */
 export const buzzing = (near: number): void => flyTone(1500 + 500 * near, EVENT_LEVEL * (0.15 + 0.85 * near), 9, 165 + 55 * near + 14 * Math.sin(performance.now() / 170));
 
+const splashNoise = sustained('bandpass', 250);
+/** Water falling into water: a bright, quickly wavering hiss, louder the stronger the stream. Every frame it falls, `strength` from 0 to 1. */
+export const splashing = (strength: number): void => splashNoise(2400 + 1400 * strength, EVENT_LEVEL * (0.3 + 0.9 * strength), 13 + 9 * strength);
+
 const carEngine = sustained('lowpass', 150, true);
 const racerEngine = sustained('bandpass', 150, true);
 /**

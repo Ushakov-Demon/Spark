@@ -4,7 +4,7 @@ import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js'
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, PLASTICINE, STEEL } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
-import { plunge, thud } from '../../sounds/index.js';
+import { once } from '../../sounds/events.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** The aquarium: its water's surface, 8 units to the centimetre down from it; the marks at 5 and 25 cm. */
@@ -79,18 +79,14 @@ function dragRun(next: DragView, draw: (v: DragView) => void): Motion | null {
   const clock = new Channel(0, end + (flatten ? SQUASH_TIME : 0), { kind: 'steady', speed: 1 / DRAG_SLOW }, 1e-5);
   const { read: _r, count: _c, squash: _s, ...rest } = d;
   // Let go in the water it goes under at once; through the air it is heard when it lands.
-  let entered = false;
-  let landed = false;
+  const enters = once({ kind: 'into-liquid', size: d.shape === 'plate' ? 1.3 : 1 }, d.medium !== 'water');
+  const lands = once({ kind: 'lands' }, d.medium !== 'air');
   return {
     channels: [clock],
     frame: (done) => {
-      if (!entered && d.medium === 'water') plunge(d.shape === 'plate' ? 1.3 : 1);
-      entered = true;
+      enters(true);
       const t = clock.value;
-      if (!landed && (done || t >= end)) {
-        landed = true;
-        if (d.medium === 'air') thud();
-      }
+      lands(done || t >= end);
       if (done) return draw(next);
       const frames = t < t0 ? 0 : Math.floor((Math.min(t, t1) - t0) * DRAG_FPS);
       draw({ ...rest, at: f.at(Math.min(t, end)), moving: true, ...(t >= t0 ? { count: String(frames) } : {}), ...(t > end && flatten ? { squash: (flatten * (t - end)) / SQUASH_TIME } : {}) });

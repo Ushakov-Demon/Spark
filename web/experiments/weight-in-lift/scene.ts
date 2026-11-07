@@ -4,7 +4,7 @@ import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js'
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, STEEL, THREAD, weightsSvg } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
-import { clunk } from '../../sounds/index.js';
+import { once } from '../../sounds/events.js';
 import { defineScene, type SceneContext } from '../types.js';
 
 /** Where each phase of the ride starts, 0 — the ground floor, 1 — the top (it ends where the next one starts). */
@@ -104,15 +104,12 @@ function lift(was: LiftView | null, next: LiftView, draw: (v: LiftView) => void)
   const k = new Channel(0, 1, { kind: 'steady', speed: l.phase === 'fall' ? 1.6 : 0.45 }, 0.001);
   const spring = new Channel(was?.force ?? l.force, l.force, { kind: 'damped', period: 0.5, damping: 0.2 }, 0.01);
   // (It hits the floor when the fall is over, a moment before the spring has settled and the step is done.)
-  let landed = false;
+  const lands = once({ kind: 'lands', metal: true });
   return {
     channels: [k, spring],
     frame: (done) => {
       const { read: _r, diff: _d, ...rest } = l;
-      if (l.phase === 'fall' && !landed && (done || k.value >= 1)) {
-        landed = true;
-        clunk();
-      }
+      lands(l.phase === 'fall' && (done || k.value >= 1));
       if (done) return draw(next);
       if (l.phase === 'fall') return draw({ ...rest, y: 0, force: Math.max(0, spring.value), fall: k.value * k.value });
       draw({ ...rest, y: from + (l.y - from) * shape(k.value), force: Math.max(0, spring.value) });

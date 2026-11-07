@@ -345,7 +345,7 @@ const LIST: readonly Preset[] = [
     topic: PRESSURE,
     title: msg('preset-hydrostatic-weighing-list-title'),
     question: msg('preset-hydrostatic-weighing-list-question'),
-    params: { ...room, ...beaker, liters: 0.2, action: 'settle', substance: 'water', startTemp: 20 },
+    params: { ...room, ...beaker, size: 0.5, liters: 0.2, action: 'settle', substance: 'water', startTemp: 20 },
     guided: true,
     plan: [
       { kind: 'hang', substance: 'aluminium', mass: 0.4, into: 'air', label: msg('preset-hydrostatic-weighing-plan-label') },
@@ -366,7 +366,7 @@ const LIST: readonly Preset[] = [
     topic: PRESSURE,
     title: msg('preset-archimedes-salt-list-title'),
     question: msg('preset-archimedes-salt-list-question'),
-    params: { ...room, ...beaker, liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
+    params: { ...room, ...beaker, size: 0.5, liters: 0.15, action: 'settle', substance: 'water', startTemp: 20 },
     guided: true,
     plan: [
       { kind: 'hang', substance: 'aluminium', mass: 0.25, into: 'air' },

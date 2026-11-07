@@ -875,6 +875,11 @@ body.console-open .console-fab { bottom: calc(var(--console-h, 260px) + 10px); }
 
 /* ---------- "New experiment": a sponge wipes the board ---------- */
 .renew-bar { margin-top: 10px; display: flex; justify-content: center; }
+/* Going on with the vessel after the answer. */
+.go-on { margin: 12px 0 6px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; }
+.go-on p { margin: 0 0 6px; }
+.go-on-title { font-weight: 700; }
+.go-on-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .guide .renew, .renew-bar .renew { justify-self: start; margin-top: 4px; }
 .board-sponge { position: absolute; z-index: 2; top: 0; bottom: 0; left: -22%; width: 20%; opacity: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(241, 239, 228, 0.18) 40%, rgba(241, 239, 228, 0.28) 55%, transparent); border-radius: 30px; }
 .board.wiping .board-sponge { animation: sponge 0.9s ease-in-out; }
@@ -1051,6 +1056,9 @@ body.in-about .about-btn { border-color: var(--accent); background: var(--accent
 .chooser.flying { opacity: 0; pointer-events: none; }
 /* (The row is where the Professor's bubble is: he waits quietly meanwhile.) */
 .scene-stage.choosing .bubble { visibility: hidden; }
+/* What stands on the table fades back while choosing: the choice in front must not merge with the vessel behind it. */
+.scene-svg { transition: opacity 0.25s; }
+.scene-stage.choosing .scene-svg { opacity: 0.2; }
 /* Just the board behind the row: what is written on it would show through. */
 .scene-stage.choosing .board-lines, .scene-stage.choosing .board-empty { visibility: hidden; }
 .ch-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px 0 16px; }

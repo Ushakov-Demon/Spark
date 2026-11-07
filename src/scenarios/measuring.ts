@@ -38,7 +38,8 @@ export function liquidDensity(state: SystemState): number | null {
   const b = state.entities[entityId(SAMPLE_ID)];
   if (!b || !isThermalBody(b)) return null;
   const mix = b.state.mixture;
-  if (mix) return mix.water - mix.ice > 1e-9 ? solutionDensity(mix) : null;
+  // (Liquid is what is not ice or crystals: water and all dissolved — alcohol with glycerol has no water at all.)
+  if (mix) return mix.water - mix.ice + (mix.salt - mix.crystals) > 1e-9 ? solutionDensity(mix) : null;
   if ((b.state.solidFraction ?? 0) >= 1) return null;
   return substanceOf(b)?.liquid.density.value ?? WATER_DENSITY;
 }
