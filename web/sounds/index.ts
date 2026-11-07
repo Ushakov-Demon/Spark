@@ -244,6 +244,15 @@ const flyTone = sustained('bandpass', 150, true);
 /** A fly: a thin rasping tone that never holds still, higher and louder the nearer it is. Every frame it flies, `near` from 0 to 1. */
 export const buzzing = (near: number): void => flyTone(1500 + 500 * near, EVENT_LEVEL * (0.15 + 0.85 * near), 9, 165 + 55 * near + 14 * Math.sin(performance.now() / 170));
 
+const carEngine = sustained('lowpass', 150, true);
+const racerEngine = sustained('bandpass', 150, true);
+/**
+ * A car driving: an engine's low rumble, higher and louder the faster it goes; `racer` — a racing car's whine instead,
+ * shrill at speed. Every frame it drives, `speed` from 0 to 1.
+ */
+export const driving = (speed: number, racer = false): void =>
+  racer ? racerEngine(1200 + 2200 * speed, EVENT_LEVEL * (0.35 + 1.1 * speed), 30, 240 + 760 * speed) : carEngine(450 + 1000 * speed, EVENT_LEVEL * (0.35 + 0.9 * speed), 12, 55 + 115 * speed);
+
 /** Something long and light cutting the air: a rush of noise that rises and falls in a moment. */
 export function swish(): void {
   const a = audio();

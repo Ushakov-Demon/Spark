@@ -5,7 +5,9 @@ import { BENCH_SPRING_K } from '../../../src/scenarios/bench-kit.js';
 import { formatMeasured, readingsOf } from '../../../src/scenarios/measuring.js';
 import { TABLE } from '../../graphics/scene/constants.js';
 import { DARK, PLASTICINE, springSvg, STEEL, THREAD, weightsSvg, WOOD, WOOD_EDGE } from '../../graphics/scene/kit.js';
+import { RUBBER_TURNS } from '../../../src/experiments/rubber-motor/shared.js';
 import { Channel, type Motion } from '../../motion.js';
+import { cranking, driving } from '../../sounds/index.js';
 import { dynoSvg, type DynoView } from '../dyno-diy/scene.js';
 import { defineScene, type SceneContext } from '../types.js';
 
@@ -69,7 +71,7 @@ function rubberSvg(r: RubberView): string {
 /**
  * The rubber motor: the band pulled down on the dynamometer (1.5 s); or the car — wound (the back wheels turned back,
  * the coil growing, 1.5 s), then let go: it speeds off and slows to its stop (constant slowing, 2.5 s), the band
- * unwinding on the way.
+ * unwinding on the way. Heard: the winding creaks like a windlass; the run, an engine (the most wound — a racing car).
  */
 function rubberRun(next: RubberView, draw: (v: RubberView) => void): Motion | null {
   const r = next;
@@ -79,6 +81,9 @@ function rubberRun(next: RubberView, draw: (v: RubberView) => void): Motion | nu
   const clock = new Channel(0, length, { kind: 'steady', speed: 1 }, 1e-4);
   const { anim: _a, read: _r, ...rest } = r;
   const wheelR = 0.03;
+  // Wound with the windlass's creak; let go, it drives off like a car — the most wound, like a racing car.
+  const crank = cranking();
+  const racer = (r.turns ?? 0) >= Math.max(...RUBBER_TURNS);
   return {
     channels: [clock],
     frame: (done) => {
@@ -90,10 +95,14 @@ function rubberRun(next: RubberView, draw: (v: RubberView) => void): Motion | nu
         return draw({ ...rest, band: { ...b, stretch: b.stretch * u } });
       }
       const N = r.turns ?? 0;
-      if (t < 1.5) return draw({ ...rest, x: 0, wound: (N * t) / 1.5, spin: (-N * t) / 1.5 });
+      if (t < 1.5) {
+        crank((N * t) / 1.5);
+        return draw({ ...rest, x: 0, wound: (N * t) / 1.5, spin: (-N * t) / 1.5 });
+      }
       // Let go: s(u) = S·(1 − (1 − u)²) — fast at first, slowing to the stop.
       const u = Math.min(1, (t - 1.5) / 2.5);
       const x = r.x * (1 - (1 - u) ** 2);
+      if (u < 1 && r.x > 0) driving(1 - u, racer);
       draw({ ...rest, x, wound: Math.max(0, N * (1 - u * 2)), spin: -N + x / (2 * Math.PI * wheelR) });
     },
   };
