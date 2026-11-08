@@ -4065,12 +4065,58 @@ function buildPresets() {
   const heads = [...new Set(graded.map(headOf))];
   const shown = [...graded].sort((a, b) => heads.indexOf(headOf(a)) - heads.indexOf(headOf(b)));
   if (!shown.length) list.append(el('p', { className: 'muted small' }, u.presetsNone));
+  // A topic's number: the one its experiments' programmes (of this subject and grade) give it most often; «Вступ» — the introduction.
+  const numberOf = (name: string): number | 'intro' | null => {
+    if (query) return null;
+    const counts = new Map<number | 'intro', number>();
+    for (const p of shown.filter((x) => headOf(x) === name))
+      for (const x of presetPrograms(p)) {
+        const c = getCurriculum(x.program);
+        if (x.match === 'related' || c?.subject !== presetSubject || (x.grade !== undefined && x.grade !== presetGrade)) continue;
+        const label = x.topic ?? x.item ?? '';
+        const n = /^Тема\s*(\d+)\./.exec(label)?.[1];
+        const key = n ? Number(n) : /^Вступ/.test(label) ? 'intro' : null;
+        if (key !== null) counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  };
+  // Folded topics are remembered (for this subject and grade).
+  const folded = new Set<string>(((): string[] => {
+    try {
+      return JSON.parse(store.get('topics-folded') ?? '[]') as string[];
+    } catch {
+      return [];
+    }
+  })());
   let topic = '';
+  let group: HTMLElement = list;
   for (const p of shown) {
     const heading = query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : headOf(p);
     if (heading !== topic) {
       topic = heading;
-      list.append(el('h3', { className: 'presets-topic' }, topic));
+      // A topic: its heading (sticking to the top while its experiments scroll by) folds and unfolds them.
+      const key = `${presetSubject}|${presetGrade}|${heading}`;
+      const count = shown.filter((x) => (query ? false : headOf(x) === heading)).length;
+      group = el('section', { className: `presets-group${!query && folded.has(key) ? ' folded' : ''}` });
+      const head = el('button', { type: 'button', className: 'presets-topic' });
+      const label = () => (group.classList.contains('folded') ? u.topicUnfold(count) : u.topicFold);
+      head.innerHTML = `<span class="presets-topic-fold" aria-hidden="true">▾</span><span>${escAttr(u.topicHead(heading, numberOf(heading)))}</span>`;
+      head.setAttribute('aria-expanded', String(!group.classList.contains('folded')));
+      head.title = label();
+      const own = group;
+      head.onclick = () => {
+        const fold = !own.classList.contains('folded');
+        // (Folding the topic it is in: back up to its heading, so the list does not jump away.)
+        own.classList.toggle('folded', fold);
+        if (fold) folded.add(key);
+        else folded.delete(key);
+        store.set('topics-folded', JSON.stringify([...folded]));
+        head.setAttribute('aria-expanded', String(!fold));
+        head.title = label();
+        if (fold && own.getBoundingClientRect().top < 0) own.scrollIntoView({ block: 'start' });
+      };
+      group.append(head);
+      list.append(group);
     }
     // The question with this language's defaults (in English the example city is another).
     const question = tr(withValues(p, defaultValues(p, locale)).question, locale);
@@ -4106,7 +4152,7 @@ function buildPresets() {
     card.append(go);
     // The full description: a page of a lab notebook, in the middle of the screen.
     card.querySelector<HTMLButtonElement>('.preset-more-btn')!.onclick = () => openLabSheet(p);
-    list.append(card);
+    group.append(card);
   }
 }
 

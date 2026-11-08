@@ -181,6 +181,10 @@ export interface UiText {
   /** The left panel's tabs: the free sandbox and the ready-made experiments. */
   shelfTabs: { sandbox: string; experiments: string };
   presetsNone: string;
+  /** A topic's heading in the list of experiments: numbered as in the programme, or the introduction. */
+  topicHead(name: string, n: number | 'intro' | null): string;
+  topicFold: string;
+  topicUnfold(count: number): string;
   subjects: Record<Subject, string>;
   grade(n: number): string;
   forEveryone: string;
@@ -526,6 +530,9 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   experiments: tl(lang, 'ui-shelf-tabs-experiments'),
 },
   presetsNone: tl(lang, 'ui-presets-none'),
+  topicHead: (name, n) => (n === null ? name : n === 'intro' ? tl(lang, 'ui-topic-intro', { name }) : tl(lang, 'ui-topic-numbered', { n: String(n), name })),
+  topicFold: tl(lang, 'ui-topic-fold'),
+  topicUnfold: (count) => tl(lang, 'ui-topic-unfold', { count: String(count) }),
   subjects: {
   physics: tl(lang, 'ui-subjects-physics'),
   chemistry: tl(lang, 'ui-subjects-chemistry'),

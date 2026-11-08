@@ -358,7 +358,13 @@ details.more > summary { cursor: var(--cursor-point); color: var(--accent); }
 .shelf-tab.selected { color: var(--text); border-bottom-color: var(--accent); }
 .shelf-tab:hover:not(.selected) { color: var(--text); }
 .presets-list { display: grid; gap: 8px; margin-top: 10px; }
-.presets-topic { margin: 8px 2px 0; font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+/* A topic: its heading sticks to the top of the panel while its experiments scroll by (the panel's padding is 12px), and folds them. */
+.presets-group { display: grid; gap: 8px; }
+.presets-topic { position: sticky; top: -12px; z-index: 2; display: flex; align-items: center; gap: 6px; width: 100%; margin: 8px 0 0; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--line); background: var(--card); font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; text-align: left; cursor: pointer; }
+.presets-topic:hover { color: var(--text); }
+.presets-topic-fold { display: inline-block; transition: transform 0.15s ease; }
+.presets-group.folded > .preset { display: none; }
+.presets-group.folded .presets-topic-fold { transform: rotate(-90deg); }
 .preset { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 4px 10px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(180deg, var(--card), var(--bg)); }
 .preset.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .preset h4 { margin: 0 0 4px; font-size: 0.95rem; }
