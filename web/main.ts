@@ -4616,6 +4616,14 @@ function openDrawer(open: boolean) {
       store.set('shelfTab', shelfTab);
       buildShelfTabs();
     }
+    // The experiment open now, in the middle of the list (its topic unfolded for it, not remembered): its topic's heading on top.
+    const current = document.querySelector<HTMLElement>('#presets-list .preset.current');
+    if (current) {
+      const group = current.closest('.presets-group');
+      group?.classList.remove('folded');
+      group?.querySelector('.presets-topic')?.setAttribute('aria-expanded', 'true');
+      current.scrollIntoView({ block: 'center' });
+    }
   }
   renderDrawer();
 }

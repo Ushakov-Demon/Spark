@@ -91,7 +91,11 @@ button.wide { width: 100%; }
 @media (max-width: 900px) { .app { grid-template-columns: 1fr; } .main { order: -1; } }
 
 /* ---------- shelf (left) ---------- */
-.shelf { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; }
+.shelf { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0 12px 12px; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; }
+/* The panel's top: an opaque band that stays while the list scrolls (in place of a padding — browsers measure a sticky
+   heading's offset from a padding differently); a topic's heading sticks right under it, nothing showing above. */
+.shelf { --shelf-top: 12px; }
+.shelf::before { content: ''; display: block; position: sticky; top: 0; z-index: 3; height: var(--shelf-top); margin: 0 -12px; background: var(--card); flex: none; }
 @media (max-width: 900px) { .shelf { position: static; max-height: none; } }
 .shelf-title { margin: 4px 4px 10px; }
 .search { width: 100%; margin-bottom: 8px; }
@@ -360,7 +364,7 @@ details.more > summary { cursor: var(--cursor-point); color: var(--accent); }
 .presets-list { display: grid; gap: 8px; margin-top: 10px; }
 /* A topic: its heading sticks to the top of the panel while its experiments scroll by (the panel's padding is 12px), and folds them. */
 .presets-group { display: grid; gap: 8px; }
-.presets-topic { position: sticky; top: -12px; z-index: 2; display: flex; align-items: center; gap: 6px; width: 100%; margin: 8px 0 0; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--line); background: var(--card); font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; text-align: left; cursor: pointer; }
+.presets-topic { position: sticky; top: var(--shelf-top, 12px); z-index: 2; display: flex; align-items: center; gap: 6px; width: 100%; margin: 8px 0 0; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--line); background: var(--card); font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; text-align: left; cursor: pointer; }
 .presets-topic:hover { color: var(--text); }
 .presets-topic-name { flex: 1; }
 .presets-topic-count { flex: none; min-width: 1.6em; padding: 1px 6px; border-radius: 999px; background: var(--line); color: var(--text); font-size: 0.72rem; text-align: center; letter-spacing: 0; }
@@ -1195,7 +1199,7 @@ html.phone .scene .bubble-chip:not([hidden]) { width: 48px; height: 48px; font-s
 /* The drawer on the right: the experiments (and the sandbox), the settings under a button at its foot. */
 html.phone .drawer-toggle { display: grid; place-items: center; position: fixed; top: 6px; right: 6px; z-index: 72; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 12px; font-size: 1.4rem; background: var(--card); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); }
 html.phone .drawer-shade:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.35); }
-html.phone .shelf { position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; width: min(400px, 90vw); max-height: none; margin: 0; border-radius: 14px 0 0 14px; padding: 60px 12px 0; display: flex; flex-direction: column; gap: 6px; overflow: auto; transform: translateX(105%); visibility: hidden; transition: transform 0.25s ease, visibility 0s 0.25s; }
+html.phone .shelf { position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; width: min(400px, 90vw); max-height: none; margin: 0; border-radius: 14px 0 0 14px; padding: 0 12px 0; --shelf-top: 60px; display: flex; flex-direction: column; gap: 6px; overflow: auto; transform: translateX(105%); visibility: hidden; transition: transform 0.25s ease, visibility 0s 0.25s; }
 html.phone .shelf.drawer-open { transform: none; visibility: visible; transition: transform 0.25s ease, visibility 0s; }
 html.phone .shelf > .panel-head .fold-btn, html.phone .shelf > .fold-strip { display: none; }
 html.phone .shelf .drawer-settings { display: block; position: sticky; bottom: 0; margin: auto -12px 0; padding: 12px; border-radius: 0; border-width: 1px 0 0; background: var(--card); font-weight: 600; min-height: 52px; }
