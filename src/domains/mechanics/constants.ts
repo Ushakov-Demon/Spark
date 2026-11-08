@@ -99,3 +99,27 @@ export const EARTH_GM: SourcedValue = {
   citations: [{ source: 'wikipedia-standard-gravitational-parameter', locator: 'Solar system: «It equals (3.986004418±0.000000008)×10^14 m3⋅s−2»', conditions: 'Earth', value: 3.986004418e14 }],
   note: 'Known far better than G and the Earth’s mass apart: their product is what an orbit shows.',
 };
+
+/**
+ * Grains poured into a vessel fill this share of its volume (the packing fraction); the rest is the gaps between them,
+ * full of air. Same-size spheres «poured into bed» — 0.609–0.625; «dropped into bed or packed by hand» — 0.59–0.60.
+ */
+export const POURED_PACKING: SourcedValue = {
+  value: 0.61,
+  unit: '',
+  conditions: 'grains poured into a vessel',
+  verification: 'estimate',
+  tolerance: 0.1,
+  citations: [{ source: 'wikipedia-random-close-pack', locator: 'For spheres (table): «Poured random packing … 0.609 to 0.625»; «Loose random packing … 0.59 to 0.60»', conditions: 'same-size spheres', range: [0.59, 0.625] }],
+  note: 'Estimate for real grains: the table is for spheres; crystals and grains of other shapes pack a little otherwise (a sugar or salt crystal, a filing), and a fine powder looser still.',
+};
+/** Shaken or tapped till they settle no more, grains fill this share: random close packing («the bed vibrated» — 0.625–0.641). */
+export const SHAKEN_PACKING: SourcedValue = {
+  value: 0.64,
+  unit: '',
+  conditions: 'grains shaken till they settle no more',
+  verification: 'single-source',
+  tolerance: 0.03,
+  citations: [{ source: 'wikipedia-random-close-pack', locator: 'Lead: «gives a maximum volume fraction of about 64%»; Definition: «shaken or tapped until the objects do not compact any further, at this point the packing state is RCP»', conditions: 'same-size spheres', value: 0.64 }],
+  note: 'For spheres; other shapes settle a little denser (M&M’s — 0.68, the same page).',
+};

@@ -814,6 +814,20 @@ export const SOURCES = {
     license: 'CC-BY-SA-4.0',
     retrieved: '2026-11-08',
   }),
+  'wikipedia-random-close-pack': source({
+    id: 'wikipedia-random-close-pack',
+    title: 'Wikipedia, Random close pack: «the most compact way to pack hard perfect same-size spheres randomly gives a maximum volume fraction of about 64%»; «shaking the container will reduce the volume taken up by the objects … shaking increases the density of packed objects»; table «For spheres»: «Poured random packing — Spheres poured into bed — 0.609 to 0.625», «Loose random packing — dropped into bed or packed by hand — 0.59 to 0.60», «Close random packing — the bed vibrated — 0.625 to 0.641»',
+    url: 'https://en.wikipedia.org/wiki/Random_close_pack',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-11-08',
+  }),
+  'wikipedia-kepler-conjecture': source({
+    id: 'wikipedia-kepler-conjecture',
+    title: 'Wikipedia, Kepler conjecture: «first stated by Johannes Kepler (1611) in his paper "On the six-cornered snowflake"»; Kepler began after «his correspondence with … Thomas Harriot in 1606»; «Harriot was a friend and assistant of Sir Walter Raleigh, who had asked Harriot to find formulas for counting stacked cannonballs»; density π/(3√2) = 0.740480489…; «In 1998 … Thomas Hales … announced that he had a proof»; «a proof by exhaustion involving the checking of many individual cases using complex computer calculations»; «In 2005, the Annals published Hales\' 100-page article»; formal proof (Flyspeck) «announced on August 10, 2014», «In 2017, the formal proof was accepted by the journal Forum of Mathematics»',
+    url: 'https://en.wikipedia.org/wiki/Kepler_conjecture',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-11-08',
+  }),
   'rehal-2017-murcott': source({
     id: 'rehal-2017-murcott',
     title: 'Rehal J. et al. Studies on physico-mechanical properties of W. Murcott mandarin. Journal of Applied and Natural Science 9 (1): 80–84 (2017): «The average fruit mass of W. Murcott with and without peel was found to be 177.1g and 88.21 g respectively»; «The TSS … was found to be 10.8° B»; «The bulk density and true density is 680.14 kg/m3 and 750 kg/m3» (true density by water displacement, the fruit held under with a thin rod); «The thickness of the peel varied from 3.5-4.65 mm»; «fruit diameter varied from 81.82-68.97 mm»',
