@@ -202,6 +202,11 @@ ui-presets-none = Такого досліду поки немає.
 ui-topic-numbered = Тема { $n }. { $name }
 ui-topic-intro = Вступ. { $name }
 ui-topic-fold = Згорнути тему
+ui-topic-count = { $count } { $count ->
+        [one] дослід
+        [few] досліди
+       *[many] дослідів
+    }
 ui-topic-unfold = Розгорнути тему ({ $count })
 ui-subjects-physics = Фізика
 ui-subjects-chemistry = Хімія

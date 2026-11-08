@@ -362,6 +362,8 @@ details.more > summary { cursor: var(--cursor-point); color: var(--accent); }
 .presets-group { display: grid; gap: 8px; }
 .presets-topic { position: sticky; top: -12px; z-index: 2; display: flex; align-items: center; gap: 6px; width: 100%; margin: 8px 0 0; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--line); background: var(--card); font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; text-align: left; cursor: pointer; }
 .presets-topic:hover { color: var(--text); }
+.presets-topic-name { flex: 1; }
+.presets-topic-count { flex: none; min-width: 1.6em; padding: 1px 6px; border-radius: 999px; background: var(--line); color: var(--text); font-size: 0.72rem; text-align: center; letter-spacing: 0; }
 .presets-topic-fold { display: inline-block; transition: transform 0.15s ease; }
 .presets-group.folded > .preset { display: none; }
 .presets-group.folded .presets-topic-fold { transform: rotate(-90deg); }

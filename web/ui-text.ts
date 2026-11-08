@@ -184,6 +184,8 @@ export interface UiText {
   /** A topic's heading in the list of experiments: numbered as in the programme, or the introduction. */
   topicHead(name: string, n: number | 'intro' | null): string;
   topicFold: string;
+  /** «5 дослідів» — how many experiments a topic has. */
+  topicCount(count: number): string;
   topicUnfold(count: number): string;
   subjects: Record<Subject, string>;
   grade(n: number): string;
@@ -532,6 +534,7 @@ export const UI: Readonly<Record<Locale, UiText>> = byLocale((lang: Locale) => (
   presetsNone: tl(lang, 'ui-presets-none'),
   topicHead: (name, n) => (n === null ? name : n === 'intro' ? tl(lang, 'ui-topic-intro', { name }) : tl(lang, 'ui-topic-numbered', { n: String(n), name })),
   topicFold: tl(lang, 'ui-topic-fold'),
+  topicCount: (count) => tl(lang, 'ui-topic-count', { count }),
   topicUnfold: (count) => tl(lang, 'ui-topic-unfold', { count: String(count) }),
   subjects: {
   physics: tl(lang, 'ui-subjects-physics'),

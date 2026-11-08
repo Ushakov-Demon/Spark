@@ -202,6 +202,10 @@ ui-presets-none = No such experiment yet.
 ui-topic-numbered = Topic { $n }. { $name }
 ui-topic-intro = Introduction. { $name }
 ui-topic-fold = Fold the topic
+ui-topic-count = { $count } { $count ->
+        [one] experiment
+       *[other] experiments
+    }
 ui-topic-unfold = Unfold the topic ({ $count })
 ui-subjects-physics = Physics
 ui-subjects-chemistry = Chemistry

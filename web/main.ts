@@ -4090,17 +4090,18 @@ function buildPresets() {
   })());
   let topic = '';
   let group: HTMLElement = list;
+  const headingOf = (p: Preset) => (query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : headOf(p));
   for (const p of shown) {
-    const heading = query ? `${presetSubjects(p).map((x) => u.subjects[x]).join(', ')} · ${p.grade === null ? u.forEveryone : u.grade(p.grade)} · ${tr(p.topic, locale)}` : headOf(p);
+    const heading = headingOf(p);
     if (heading !== topic) {
       topic = heading;
       // A topic: its heading (sticking to the top while its experiments scroll by) folds and unfolds them.
       const key = `${presetSubject}|${presetGrade}|${heading}`;
-      const count = shown.filter((x) => (query ? false : headOf(x) === heading)).length;
+      const count = shown.filter((x) => headingOf(x) === heading).length;
       group = el('section', { className: `presets-group${!query && folded.has(key) ? ' folded' : ''}` });
       const head = el('button', { type: 'button', className: 'presets-topic' });
       const label = () => (group.classList.contains('folded') ? u.topicUnfold(count) : u.topicFold);
-      head.innerHTML = `<span class="presets-topic-fold" aria-hidden="true">▾</span><span>${escAttr(u.topicHead(heading, numberOf(heading)))}</span>`;
+      head.innerHTML = `<span class="presets-topic-fold" aria-hidden="true">▾</span><span class="presets-topic-name">${escAttr(u.topicHead(heading, numberOf(heading)))}</span><span class="presets-topic-count" title="${escAttr(u.topicCount(count))}">${count}</span>`;
       head.setAttribute('aria-expanded', String(!group.classList.contains('folded')));
       head.title = label();
       const own = group;
