@@ -46,6 +46,7 @@ import { gearTrainExperiment } from './gear-train/index.js';
 import { pulleyExperiment } from './pulley/index.js';
 import { balloonLift } from './balloon-lift/index.js';
 import { mandarinFloat } from './mandarin-float/index.js';
+import { paperCups } from './paper-cups/index.js';
 import { mapScale } from './map-scale/index.js';
 import { leafArea } from './leaf-area/index.js';
 import { readThermometer } from './read-thermometer/index.js';
@@ -61,7 +62,7 @@ import type { CommandOf, ExperimentModule } from './types.js';
  * experiment of the bench is one. Imported, it registers them all (registry.ts): the tests and the scripts load the
  * whole lab; the page does not import it — it loads a module when its experiment opens.
  */
-export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces, bodiesInLiquids, relativeMotion, depthPressure, communicatingVessels, hydrostaticParadox, hydraulicPress, atmosphericPressure, diodeBlackBox, electromagnet, electromagneticInduction, leverMoments, slopeEfficiency, resistorCircuit, twoResistors, hookeSpring, slidingFriction, blockPressure, leverBalance, motionLabWorks, cartesianDiver, fountainModel, stairsPower, rollingEnergy, gearTrainExperiment, pulleyExperiment, balloonLift, mandarinFloat, mapScale, leafArea, readThermometer, lightMeter, plantMotion, newtonCannon, massGravity] as const;
+export const EXPERIMENTS = [calendars, rootsGravity, scalesDiy, dynoDiy, rubberMotor, solarSystem, airColumn, solarNoon, liquidTower, dragForm, cartsMass, contactForces, coinInertia, snailSpeed, strobePhoto, windSpeed, windlass, smallBodies, ballBounce, weightInLift, addingForces, bodiesInLiquids, relativeMotion, depthPressure, communicatingVessels, hydrostaticParadox, hydraulicPress, atmosphericPressure, diodeBlackBox, electromagnet, electromagneticInduction, leverMoments, slopeEfficiency, resistorCircuit, twoResistors, hookeSpring, slidingFriction, blockPressure, leverBalance, motionLabWorks, cartesianDiver, fountainModel, stairsPower, rollingEnergy, gearTrainExperiment, pulleyExperiment, balloonLift, mandarinFloat, paperCups, mapScale, leafArea, readThermometer, lightMeter, plantMotion, newtonCannon, massGravity] as const;
 
 export type ExperimentKind = (typeof EXPERIMENTS)[number]['kind'];
 export type ExperimentCommand = CommandOf<(typeof EXPERIMENTS)[number]>;

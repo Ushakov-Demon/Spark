@@ -644,6 +644,8 @@ export function createScene(): Scene {
         benchShown = v.bench ?? null;
       }
       root.classList.toggle('bench-on', !!v.bench);
+      const onStage = v.bench?.scene !== undefined ? sceneOf(v.bench.kind)?.onStage : undefined;
+      root.classList.toggle('prof-on-stage', !!(v.bench && onStage?.(v.bench.scene as never)));
       root.classList.toggle('bare', !!v.bare);
       root.classList.toggle('away-device', !!v.away?.device);
       root.classList.toggle('away-vessel', !!v.away?.vessel);

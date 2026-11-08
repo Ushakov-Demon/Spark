@@ -800,6 +800,20 @@ export const SOURCES = {
     license: 'facts-only',
     retrieved: '2026-10-28',
   }),
+  'toppan-us10358253': source({
+    id: 'toppan-us10358253',
+    title: 'US Patent 10,358,253 B2, «Paper cup, paper cup for acidic food» (Toppan Printing, 2019): «after the paper cup is caused to free-fall 5 times towards a concrete floor surface from a height of 1 m … the paper cup has a buckling strength of 350 N or more»; buckling strength — «measured in a case where the paper cup 10 is sandwiched between two parallel plate surfaces with an opening portion of the paper cup 10 facing upward, and compressed in a perpendicular direction»; «a paper cup with a capacity of 250 mL»; raw paper «having a basis weight of 260 g/m2»',
+    url: 'https://patents.google.com/patent/US10358253B2/en',
+    license: 'facts-only',
+    retrieved: '2026-11-08',
+  }),
+  'wikipedia-paper-cup': source({
+    id: 'wikipedia-paper-cup',
+    title: 'Wikipedia, Paper cup — History: shared glasses or dippers at water sources «caused public health concerns»; Alvin Davison, «Death in School Drinking Cups», Technical World Magazine, August 1908; «One of the first American railway companies to use disposable paper cups was the Lackawanna Railroad, which began using them in 1909». Dixie cups: «first developed in the United States in 1907 by Lawrence Luellen, an inventor in Boston, Massachusetts, who was concerned about germs being spread by people sharing glasses or dippers»; «The Dixie Cup was first called "Health Kup", but from 1919 it was named after a line of dolls made by Alfred Schindler\'s Dixie Doll Company in New York»',
+    url: 'https://en.wikipedia.org/wiki/Paper_cup',
+    license: 'CC-BY-SA-4.0',
+    retrieved: '2026-11-08',
+  }),
   'rehal-2017-murcott': source({
     id: 'rehal-2017-murcott',
     title: 'Rehal J. et al. Studies on physico-mechanical properties of W. Murcott mandarin. Journal of Applied and Natural Science 9 (1): 80–84 (2017): «The average fruit mass of W. Murcott with and without peel was found to be 177.1g and 88.21 g respectively»; «The TSS … was found to be 10.8° B»; «The bulk density and true density is 680.14 kg/m3 and 750 kg/m3» (true density by water displacement, the fruit held under with a thin rod); «The thickness of the peel varied from 3.5-4.65 mm»; «fruit diameter varied from 81.82-68.97 mm»',

@@ -157,3 +157,15 @@ export function uManometerSvg(x: number, gap: number, top: number, bottom: numbe
   const water = Number.isFinite(left) ? `<path d="M${x},${left} V${bottom} a${r},${r} 0 0 0 ${gap},0 V${right}" style="fill:none;stroke:#3b82c4;stroke-width:${bore}"/>` : '';
   return `<path d="${glass}" style="fill:none;stroke:#8fb8dd;stroke-width:${bore + 4}"/><path d="${glass}" style="fill:none;stroke:#eef5fb;stroke-width:${bore + 1.5}"/>${water}`;
 }
+
+/**
+ * A person (a pupil, a child) standing or walking with their feet at (x, foot): a head, a body, legs apart as they go
+ * (`stride` −1…1), leaning forward when running; `size` — 1 is some 75 px tall.
+ */
+export function personSvg(x: number, foot: number, run: boolean, stride: number, size = 1): string {
+  const lean = (run ? 6 : 2) * size;
+  const hip = foot - 26 * size;
+  const neck = foot - 50 * size;
+  const leg = (s: number) => `<path d="M${x},${hip} L${x + s * 7 * size},${foot}" style="stroke:#2f4f8f;stroke-width:${4 * size};stroke-linecap:round"/>`;
+  return `<g>${leg(stride)}${leg(-stride)}<path d="M${x},${hip} L${x + lean},${neck}" style="stroke:#e0623a;stroke-width:${7 * size};stroke-linecap:round"/><path d="M${x + lean},${neck + 4 * size} l${-stride * 8 * size},${14 * size} M${x + lean},${neck + 4 * size} l${stride * 8 * size},${14 * size}" style="stroke:#e7b892;stroke-width:${3 * size};stroke-linecap:round"/><circle cx="${x + lean + size}" cy="${neck - 9 * size}" r="${8 * size}" style="fill:#e7b892;stroke:#a8714d"/></g>`;
+}

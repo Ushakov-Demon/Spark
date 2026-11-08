@@ -316,3 +316,12 @@ formula-mechanics-orbit-period-a-name = the orbit’s semi-major axis (for a cir
 formula-mechanics-orbit-period-beyond-curriculum = The period by Kepler’s third law is not calculated in grade 7; the formula is beyond the programme.
 formula-mechanics-orbit-period-explanation-novice = The higher the orbit, the longer a satellite takes to go round the Earth.
 formula-mechanics-orbit-period-explanation-school = By Kepler’s third law T = 2π √(a³ / μ): the square of the period is proportional to the cube of the orbit’s semi-major axis.
+formula-mechanics-support-force = The force on one support of a board
+formula-mechanics-support-force-f-name = the force the board presses the support with
+formula-mechanics-support-force-n-name = number of supports
+formula-mechanics-support-force-e-name = where the load stands: its distance from the supports’ middle
+formula-mechanics-support-force-x-name = where the support is: its distance from the middle
+formula-mechanics-support-force-sum-name = the sum of the squares of all the supports’ distances from the middle
+formula-mechanics-support-force-beyond-curriculum = In grade 7 — qualitatively: a board shares the weight among its supports, and those nearer the load carry more; the formula itself (from the balance of forces and moments) is beyond the programme.
+formula-mechanics-support-force-explanation-novice = In the middle of a board the weight is shared equally among the supports. Step towards an edge — and the end supports press harder, the far ones less.
+formula-mechanics-support-force-explanation-school = A rigid board on equal supports goes down evenly or tilted, so a support is squeezed the more the nearer it is to the load. The supports’ forces add up to the weight P (the resultant), their moments about the middle to the weight’s moment P·e (the law of moments). Hence F_i = P/n + P·e·x_i/Σx².

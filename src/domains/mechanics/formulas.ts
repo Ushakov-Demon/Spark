@@ -162,6 +162,12 @@ export const conicalPeriod = (threadLength: number, radius: number, g: number): 
 
 /** Moment of a force about an axis: the force times its arm, M = F·l. */
 export const moment = (force: number, arm: number): number => force * arm;
+/**
+ * A rigid board on n equal supports (each pressed down as far as the board goes down there): the force on the support at
+ * x (from the middle of the supports), the weight P standing at e — the forces add up to P, their moments to P·e:
+ * F = P/n + P·e·x/Σx². Below zero — the board would lift off that support.
+ */
+export const supportForce = (weight: number, n: number, at: number, x: number, sumX2: number): number => weight / n + (sumX2 > 0 ? (weight * at * x) / sumX2 : 0);
 
 /** Efficiency of a machine: the useful work over the work done, η = A_useful / A_done. */
 export const efficiency = (useful: number, done: number): number => useful / done;

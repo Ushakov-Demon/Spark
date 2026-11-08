@@ -316,3 +316,12 @@ formula-mechanics-orbit-period-a-name = велика піввісь орбіти
 formula-mechanics-orbit-period-beyond-curriculum = Період за третім законом Кеплера в 7 класі не обчислюють; формула — поза програмою.
 formula-mechanics-orbit-period-explanation-novice = Що вища орбіта, то довше супутник облітає Землю.
 formula-mechanics-orbit-period-explanation-school = За третім законом Кеплера T = 2π √(a³ / μ): квадрат періоду пропорційний кубу великої півосі орбіти.
+formula-mechanics-support-force = Сила на одну опору дошки
+formula-mechanics-support-force-f-name = сила, з якою дошка тисне на опору
+formula-mechanics-support-force-n-name = кількість опор
+formula-mechanics-support-force-e-name = де стоїть вантаж: відстань від середини опор
+formula-mechanics-support-force-x-name = де опора: відстань від середини опор
+formula-mechanics-support-force-sum-name = сума квадратів відстаней усіх опор від середини
+formula-mechanics-support-force-beyond-curriculum = У 7 класі — якісно: дошка розподіляє вагу між опорами, а ближчі до вантажу несуть більше; сама формула (з умов рівноваги сил і моментів) — поза програмою.
+formula-mechanics-support-force-explanation-novice = Посередині дошки вага ділиться між опорами порівну. Стань ближче до краю — і крайні опори тиснуть дужче, а дальні слабше.
+formula-mechanics-support-force-explanation-school = Тверда дошка на однакових опорах опускається рівно або з нахилом, тож опора стискається тим більше, що ближче вона до вантажу. Сили опор разом дорівнюють вазі P (рівнодійна), а їхні моменти щодо середини — моменту ваги P·e (правило моментів). Звідси F_i = P/n + P·e·x_i/Σx².

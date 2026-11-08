@@ -268,6 +268,8 @@ details.more > summary { cursor: var(--cursor-point); color: var(--accent); }
 .scene-svg { width: 100%; aspect-ratio: 640 / 408; max-height: 480px; display: block; }
 /* The Professor stands at the left edge of the table, in front of it. */
 .scene-prof { position: absolute; left: 1%; bottom: 2%; width: 15%; max-width: 120px; min-width: 64px; }
+/* The Professor is in the picture himself (standing on the apparatus): his figure in the corner goes, his bubble stays. */
+.prof-on-stage .scene-prof .prof, .prof-on-stage .scene-prof .prof-side { visibility: hidden; }
 .scene-prof .prof svg { display: block; width: 100%; height: auto; }
 /* The Professor's line: a round speech bubble with a tail pointing down at him (the tail has the outline too). */
 .scene .bubble { position: absolute; left: 0; bottom: 100%; margin-bottom: 14px; width: 290px; z-index: 2; background: var(--card); color: var(--text); border: 1.5px solid var(--line); border-radius: 22px; padding: 12px 18px; font-size: 1.02rem; line-height: 1.55; box-shadow: 0 6px 18px rgba(0,0,0,0.14); }

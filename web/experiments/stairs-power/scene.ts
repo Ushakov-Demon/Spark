@@ -3,7 +3,7 @@ import { t } from '../../../src/knowledge/messages.js';
 import { readingsOf } from '../../../src/scenarios/measuring.js';
 import { PLAY_SECONDS } from '../../graphics/scene/bench-motion.js';
 import { TABLE } from '../../graphics/scene/constants.js';
-import { stopwatchSvg } from '../../graphics/scene/kit.js';
+import { personSvg, stopwatchSvg } from '../../graphics/scene/kit.js';
 import { Channel, type Motion } from '../../motion.js';
 import { defineScene, type SceneContext } from '../types.js';
 
@@ -46,15 +46,6 @@ function view({ last, command, plan, locale }: SceneContext): StairsView {
   if (sc.step === 'measure') return { ...base, where: 'ruler', floor, read: `h₁ = ${dec(String(Math.round((r?.value ?? 0) * 1000) / 10))} ${t(locale, 'unit-sym-cm')}` };
   const time = r?.value ?? 0;
   return { ...base, where: 'stairs', floor, at: 1, run: sc.pace === 'run', time, fast: Math.max(1, time / PLAY_SECONDS) };
-}
-
-/** A pupil: a head, a body, legs apart as they go (`stride` −1…1), leaning forward when running. */
-function personSvg(x: number, foot: number, run: boolean, stride: number): string {
-  const lean = run ? 6 : 2;
-  const hip = foot - 26;
-  const neck = foot - 50;
-  const leg = (s: number) => `<path d="M${x},${hip} L${x + s * 7},${foot}" style="stroke:#2f4f8f;stroke-width:4;stroke-linecap:round"/>`;
-  return `<g>${leg(stride)}${leg(-stride)}<path d="M${x},${hip} L${x + lean},${neck}" style="stroke:#e0623a;stroke-width:7;stroke-linecap:round"/><path d="M${x + lean},${neck + 4} l${-stride * 8},14 M${x + lean},${neck + 4} l${stride * 8},14" style="stroke:#e7b892;stroke-width:3;stroke-linecap:round"/><circle cx="${x + lean + 1}" cy="${neck - 9}" r="8" style="fill:#e7b892;stroke:#a8714d"/></g>`;
 }
 
 function svg(v: StairsView): string {
