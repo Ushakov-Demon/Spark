@@ -14,7 +14,14 @@ let on = true;
  */
 let woke = false;
 if (typeof window !== 'undefined') {
-  const wake = () => (woke = true);
+  const wake = () => {
+    woke = true;
+    // (A phone's browser lets a page speak only once it has spoken within a touch: an empty line now, and the voices asked for.)
+    if (typeof speechSynthesis !== 'undefined') {
+      speechSynthesis.getVoices();
+      speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+    }
+  };
   for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, wake, { once: true, capture: true });
 }
 
@@ -634,9 +641,12 @@ function glottalWave(a: BaseAudioContext, fall: number): PeriodicWave {
 /** The browser's own voice for this language, if it has one. */
 function browserVoice(lang: string): SpeechSynthesisVoice | null {
   if (typeof speechSynthesis === 'undefined') return null;
-  const all = speechSynthesis.getVoices();
-  return all.find((v) => v.lang.toLowerCase().startsWith(lang)) ?? null;
+  // (Its language as «uk-UA», «uk_UA» or «uk»; one on the device first — it needs no network.)
+  const mine = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').split('-')[0] === lang);
+  return mine.find((v) => v.localService) ?? mine[0] ?? null;
 }
+/** The voice that reads lines in this language here: its name, or null — none in the browser's list. */
+export const speechVoiceName = (lang: string): string | null => browserVoice(lang)?.name ?? null;
 /**
  * A line in one breath: one source for the whole line, its pitch gliding from syllable to syllable,
  * the loudness dipping between them, the mouth (formants) wandering, a short consonant at some of
@@ -749,6 +759,8 @@ function flowing(a: AudioContext, out: GainNode, vc: Voice, count: number, quest
 
 /** Can the "speech" voice speak this language here? (Otherwise it burbles.) */
 export const canSpeak = (lang: string): boolean => browserVoice(lang) !== null;
+/** A page's language as speech wants it. */
+const SPEECH_LANG: Readonly<Record<string, string>> = { uk: 'uk-UA', en: 'en-GB' };
 
 /**
  * The Professor "speaking" a line. "speech" — the browser reads it out (a lower, slower voice);
@@ -758,15 +770,27 @@ export const canSpeak = (lang: string): boolean => browserVoice(lang) !== null;
 export function babble(text: string, v: VoiceId = voice, lang = 'uk'): number {
   if (v === 'none' || !text.trim()) return 0;
   if (v === 'speech') {
-    const sv = on && woke ? browserVoice(lang) : null;
-    if (sv) {
+    if (!on || !woke) return 0;
+    if (typeof speechSynthesis !== 'undefined') {
+      // Read out in the page's language: by its voice when the browser lists one — and when it lists none, the
+      // device may still have one (a phone's list comes late or short): asked for by the language alone. If it has
+      // not begun to speak in a moment, there is no such voice — the cartoon voice says it instead.
+      const sv = browserVoice(lang);
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.voice = sv;
-      u.lang = sv.lang;
+      if (sv) u.voice = sv;
+      u.lang = sv?.lang ?? SPEECH_LANG[lang] ?? lang;
       u.pitch = 0.8;
       u.rate = 1.02;
+      let began = false;
+      u.onstart = () => (began = true);
       speechSynthesis.speak(u);
+      if (!sv)
+        window.setTimeout(() => {
+          if (began) return;
+          speechSynthesis.cancel();
+          babble(text, 'toon', lang);
+        }, 1200);
       return Math.min(12, text.length * 0.065);
     }
     v = 'toon';

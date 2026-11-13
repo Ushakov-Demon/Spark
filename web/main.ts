@@ -151,7 +151,7 @@ import { icon } from './graphics/icons/index.js';
 import { ballSvg, blockSvg, bottleSvg } from './graphics/shelf/pictures.js';
 import { createConsole } from './console.js';
 import { fetchArticle, paperHtml } from './newspaper.js';
-import { babble, buzzing, canSpeak, currentVoice, fizz, giggle, hum, hush, plop, setMusic, setSound, setVoice, soundOn, swish, VOICE_IDS, type VoiceId } from './sounds/index.js';
+import { babble, buzzing, currentVoice, fizz, giggle, hum, hush, plop, setMusic, setSound, setVoice, soundOn, speechVoiceName, swish, VOICE_IDS, type VoiceId } from './sounds/index.js';
 import { referenceHtml, type RefTarget } from './reference.js';
 import { RECIPES, type RecipeId } from '../src/recipes/index.js';
 import { UI } from './ui-text.js';
@@ -745,7 +745,9 @@ const voiceSel = $<HTMLSelectElement>('#voice');
 const renderVoice = () => {
   const u = t().voice;
   $('#lbl-voice').textContent = u.label;
-  const opts = VOICE_IDS.map((v) => `<option value="${v}"${v === currentVoice() ? ' selected' : ''}>${u.names[v] ?? v}${v === 'speech' && !canSpeak(locale) ? u.noSpeech : ''}</option>`).join('');
+  // (Real speech: the voice it reads with — or that the browser lists none for this language.)
+  const named = speechVoiceName(locale);
+  const opts = VOICE_IDS.map((v) => `<option value="${v}"${v === currentVoice() ? ' selected' : ''}>${u.names[v] ?? v}${v === 'speech' ? (named ? ` — ${escAttr(named)}` : u.noSpeech) : ''}</option>`).join('');
   if (voiceSel.dataset['html'] !== opts) {
     voiceSel.innerHTML = opts;
     voiceSel.dataset['html'] = opts;
